@@ -1031,6 +1031,7 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
         break;
 
     case Microsoft_Windows_Dwm_Core::SCHEDULE_PRESENT_Start::Id:
+        DwmProcessId = hdr.ProcessId;
         DwmPresentThreadId = hdr.ThreadId;
         break;
 
