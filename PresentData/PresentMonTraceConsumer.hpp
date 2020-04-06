@@ -182,9 +182,10 @@ struct PMTraceConsumer
     bool mFilteredEvents;
     bool mSimpleMode;
 
-    // A set of presents that are "completed":
-    // They progressed as far as they can through the pipeline before being either discarded or hitting the screen.
-    // These will be handed off to the consumer thread.
+    // Store completed presents until the consumer thread removes them using
+    // DequeuePresents().  Completed presents are those that have progressed as
+    // far as they can through the pipeline before being either discarded or
+    // hitting the screen.
     std::mutex mPresentEventMutex;
     std::vector<std::shared_ptr<PresentEvent>> mPresentEvents;
 
@@ -192,29 +193,56 @@ struct PMTraceConsumer
     std::mutex mProcessEventMutex;
     std::vector<ProcessEvent> mProcessEvents;
 
-    // For each process, stores each in-progress present in order. Used for present batching
+
+    // These data structures store in-progress presents (i.e., ones that are
+    // still being processed by the system and are not yet completed).
+    //
+    // mPresentByThreadId stores the in-progress present that was last operated
+    // on by each thread for event sequences that are known to execute on the
+    // same thread.
+    //
+    // mPresentsByProcess stores each process' in-progress presents in the
+    // order that they were presented.  This is used to look up presents across
+    // systems running on different threads (DXGI/D3D/DXGK/Win32) and for
+    // batched present tracking, so we know to discard all older presents with
+    // one is completed.
+    //
+    // mPresentsByProcessAndSwapChain stores each swapchain's in-progress
+    // presents in the order that they were created by PresentMon.  This is
+    // primarily used to ensure that the consumer sees per-swapchain presents
+    // in the same order that they were submitted.
+    //
+    // TODO: shouldn't batching via mPresentsByProcess be per swapchain as
+    // well?  Is the create order used by mPresentsByProcessAndSwapChain really
+    // different than QpcTime order?  If no on these, should we combine
+    // mPresentsByProcess and mPresentsByProcessAndSwapChain?
+    //
+    // All flip model presents (windowed flip, dFlip, iFlip) are uniquely
+    // identifyed by a Win32K present history token (composition surface,
+    // present count, and bind id).  mWin32KPresentHistoryTokens stores the
+    // mapping from this token to in-progress present to optimize lookups
+    // during Win32K events.
+
+    // [thread id]
+    std::map<uint32_t, std::shared_ptr<PresentEvent>> mPresentByThreadId;
+
+    // [process id][qpc time]
     std::map<uint32_t, std::map<uint64_t, std::shared_ptr<PresentEvent>>> mPresentsByProcess;
 
-    // For each (process, swapchain) pair, stores each present started. Used to ensure consumer sees presents targeting the same swapchain in the order they were submitted.
+    // [(process id, swapchain address)]
     typedef std::tuple<uint32_t, uint64_t> ProcessAndSwapChainKey;
     std::map<ProcessAndSwapChainKey, std::deque<std::shared_ptr<PresentEvent>>> mPresentsByProcessAndSwapChain;
 
-    // Presents in the process of being submitted
-    // The first map contains a single present that is currently in-between a set of expected events on the same thread:
-    //   (e.g. DXGI_Present_Start/DXGI_Present_Stop, or Flip/QueueSubmit)
-    // Used for mapping from runtime events to future events, and thread map used extensively for correlating kernel events
-    std::map<uint32_t, std::shared_ptr<PresentEvent>> mPresentByThreadId;
 
     // Maps from queue packet submit sequence
     // Used for Flip -> MMIOFlip -> VSyncDPC for FS, for PresentHistoryToken -> MMIOFlip -> VSyncDPC for iFlip,
     // and for Blit Submission -> Blit completion for FS Blit
     std::map<uint32_t, std::shared_ptr<PresentEvent>> mPresentsBySubmitSequence;
 
-    // Win32K present history tokens are uniquely identified by (composition surface pointer, present count, bind id)
-    // Using a tuple instead of named struct simply to have auto-generated comparison operators
-    // These tokens are used for "flip model" presents (windowed flip, dFlip, iFlip) only
+    // [(composition surface pointer, present count, bind id)]
     typedef std::tuple<uint64_t, uint64_t, uint64_t> Win32KPresentHistoryTokenKey;
     std::map<Win32KPresentHistoryTokenKey, std::shared_ptr<PresentEvent>> mWin32KPresentHistoryTokens;
+
 
     // DxgKrnl present history tokens are uniquely identified and used for all
     // types of windowed presents to track a "ready" time.
@@ -295,8 +323,9 @@ struct PMTraceConsumer
     void CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t recurseDepth=0);
     std::shared_ptr<PresentEvent> FindBySubmitSequence(uint32_t submitSequence);
     decltype(mPresentByThreadId.begin()) FindOrCreatePresent(EVENT_HEADER const& hdr);
-    decltype(mPresentByThreadId.begin()) CreatePresent(std::shared_ptr<PresentEvent> present, decltype(mPresentsByProcess.begin()->second)& processMap);
+    decltype(mPresentByThreadId.begin()) CreatePresent(std::shared_ptr<PresentEvent> present, decltype(mPresentsByProcess.begin()->second)& presentsByThisProcess);
     void CreatePresent(std::shared_ptr<PresentEvent> present);
+    void HandleStuckPresent(EVENT_HEADER const& hdr, decltype(mPresentByThreadId.begin())* eventIter);
     void RuntimePresentStop(EVENT_HEADER const& hdr, bool AllowPresentBatching);
 
     void HandleNTProcessEvent(EVENT_RECORD* pEventRecord);

@@ -169,17 +169,12 @@ void PMTraceConsumer::HandleDXGIEvent(EVENT_RECORD* pEventRecord)
 
 void PMTraceConsumer::HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool redirectedPresent)
 {
+    // Lookup the in-progress present.  It should not have a known present mode
+    // yet, so PresentMode!=Unknown implies we looked up a 'stuck' present
+    // whose tracking was lost for some reason.
     auto eventIter = FindOrCreatePresent(hdr);
-
-    // Check if we might have retrieved a 'stuck' present from a previous
-    // frame.  If the present mode isn't unknown at this point, we've already
-    // seen this present progress further
-    //
-    // TODO: do we really want to just throw it away?  Should we complete with
-    // unknown completion status or something?  Does this happen?
     if (eventIter->second->PresentMode != PresentMode::Unknown) {
-        mPresentByThreadId.erase(eventIter);
-        eventIter = FindOrCreatePresent(hdr);
+        HandleStuckPresent(hdr, &eventIter);
     }
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(eventIter->second);
@@ -202,14 +197,16 @@ void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterv
     // A flip event is emitted during fullscreen present submission.
     // Afterwards, expect an MMIOFlip packet on the same thread, used
     // to trace the flip to screen.
-    auto eventIter = FindOrCreatePresent(hdr);
 
-    // Check if we might have retrieved a 'stuck' present from a previous frame.
-    // The only events that we can expect before a Flip/FlipMPO are a runtime present start, or a previous FlipMPO.
+    // Lookup the in-progress present.  The only events that we can expect
+    // before a Flip/FlipMPO are a runtime present start, or a previous
+    // FlipMPO.  If that's not the case, we looked up a 'stuck' present whose
+    // tracking was lost for some reason.
+    //
+    // TODO: should have PresentMode==Unknown as well?  Worth checking?
+    auto eventIter = FindOrCreatePresent(hdr);
     if (eventIter->second->QueueSubmitSequence != 0 || eventIter->second->SeenDxgkPresent) {
-        // It's already progressed further but didn't complete, ignore it and create a new one.
-        mPresentByThreadId.erase(eventIter);
-        eventIter = FindOrCreatePresent(hdr);
+        HandleStuckPresent(hdr, &eventIter);
     }
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(eventIter->second);
@@ -414,13 +411,13 @@ void PMTraceConsumer::HandleDxgkSubmitPresentHistoryEventArgs(
 {
     // These events are emitted during submission of all types of windowed presents while DWM is on.
     // It gives us up to two different types of keys to correlate further.
-    auto eventIter = FindOrCreatePresent(hdr);
 
-    // Check if we might have retrieved a 'stuck' present from a previous frame.
+    // Lookup the in-progress present.  It should not have a known TokenPtr
+    // yet, so TokenPtr!=0 implies we looked up a 'stuck' present whose
+    // tracking was lost for some reason.
+    auto eventIter = FindOrCreatePresent(hdr);
     if (eventIter->second->TokenPtr != 0) {
-        // It's already progressed further but didn't complete, ignore it and create a new one.
-        mPresentByThreadId.erase(eventIter);
-        eventIter = FindOrCreatePresent(hdr);
+        HandleStuckPresent(hdr, &eventIter);
     }
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(eventIter->second);
@@ -889,12 +886,12 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
         auto PresentCount           = desc[1].GetData<uint64_t>();
         auto BindId                 = desc[2].GetData<uint64_t>();
 
+        // Lookup the in-progress present.  It should not have seen any Win32K
+        // events yet, so SeenWin32KEvents==true implies we looked up a 'stuck'
+        // present whose tracking was lost for some reason.
         auto eventIter = FindOrCreatePresent(hdr);
-
-        // Check if we might have retrieved a 'stuck' present from a previous frame.
         if (eventIter->second->SeenWin32KEvents) {
-            mPresentByThreadId.erase(eventIter);
-            eventIter = FindOrCreatePresent(hdr);
+            HandleStuckPresent(hdr, &eventIter);
         }
 
         TRACK_PRESENT_PATH(eventIter->second);
@@ -1180,8 +1177,13 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
             mDxgKrnlPresentHistoryTokens.erase(iter);
         }
     }
-    auto& processMap = mPresentsByProcess[p->ProcessId];
-    processMap.erase(p->QpcTime);
+
+    // TODO: Only way to CompletePresent() a present without
+    // FindOrCreatePresent() finding it first is the while loop below, in which
+    // case we should remove it there instead.  Or, when created by
+    // FindOrCreatePresent() (which itself is a separate TODO).
+    auto& presentsByThisProcess = mPresentsByProcess[p->ProcessId];
+    presentsByThisProcess.erase(p->QpcTime);
 
     auto& presentDeque = mPresentsByProcessAndSwapChain[std::make_tuple(p->ProcessId, p->SwapChainAddress)];
     auto presentIter = presentDeque.begin();
@@ -1217,24 +1219,42 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindBySubmitSequence(uint32_t sub
 
 decltype(PMTraceConsumer::mPresentByThreadId.begin()) PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER const& hdr)
 {
-    // Easy: we're on a thread that had some step in the present process
+    // First, check if there is a known in-progress present that this thread is
+    // already working on.
     auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
     if (eventIter == mPresentByThreadId.end()) {
 
-        // No such luck, check for batched presents
-        auto& processMap = mPresentsByProcess[hdr.ProcessId];
-        auto processIter = std::find_if(processMap.begin(), processMap.end(),
-            [](auto processIter) {return processIter.second->PresentMode == PresentMode::Unknown; });
-        if (processIter != processMap.end()) {
-            // Assume batched presents are popped off the front of the driver queue by process in order, do the same here
+        // If not, lookup the oldest in-progress present that was created by
+        // this process but still doesn't have a known PresentMode.  This is
+        // the mechanism for DXGK/Win32K events for looking up a present
+        // created by DXGI/D3D Present on a different thread. It assumes that
+        // batched presents are popped off the front of the driver queue by
+        // process in order.
+        //
+        // TODO: present's get removed if found.  How would there be any
+        // presents in this list that have PresentMode != Unknown?  i.e., is
+        // processIter always == presentsByThisProcess.begin()?
+
+        auto& presentsByThisProcess = mPresentsByProcess[hdr.ProcessId];
+        auto processIter = std::find_if(presentsByThisProcess.begin(), presentsByThisProcess.end(), [](auto processIter) {
+            return processIter.second->PresentMode == PresentMode::Unknown;
+        });
+        if (processIter != presentsByThisProcess.end()) {
             eventIter = mPresentByThreadId.emplace(hdr.ThreadId, processIter->second).first;
-            processMap.erase(processIter);
+            presentsByThisProcess.erase(processIter);
         } else {
 
-            // This likely didn't originate from a runtime whose events we're tracking (DXGI/D3D9)
-            // Could be composition buffers, or maybe another runtime (e.g. GL)
+            // This process is not working on a known in-progress present.
+            // This is most likely to happen if the present didn't originate
+            // from a runtime whose events we're tracking (i.e., DXGI or D3D9)
+            // in which case a DXGKRNL event will be the first present-related
+            // event we ever see.  Start tracking it from here.
+            //
+            // TODO: Why do we add it to presentsByThisProcess?  We're already
+            // past the stage where we need to look it up by that mechanism...
+            // mPresentByThreadId should be good enough at this point right?
             auto newEvent = std::make_shared<PresentEvent>(hdr, Runtime::Other);
-            eventIter = CreatePresent(newEvent, processMap);
+            eventIter = CreatePresent(newEvent, presentsByThisProcess);
         }
     }
 
@@ -1244,11 +1264,11 @@ decltype(PMTraceConsumer::mPresentByThreadId.begin()) PMTraceConsumer::FindOrCre
 
 decltype(PMTraceConsumer::mPresentByThreadId.begin()) PMTraceConsumer::CreatePresent(
     std::shared_ptr<PresentEvent> newEvent,
-    decltype(PMTraceConsumer::mPresentsByProcess.begin()->second)& processMap)
+    decltype(PMTraceConsumer::mPresentsByProcess.begin()->second)& presentsByThisProcess)
 {
     DebugCreatePresent(*newEvent);
 
-    processMap.emplace(newEvent->QpcTime, newEvent);
+    presentsByThisProcess.emplace(newEvent->QpcTime, newEvent);
     mPresentsByProcessAndSwapChain[std::make_tuple(newEvent->ProcessId, newEvent->SwapChainAddress)].emplace_back(newEvent);
 
     auto p = mPresentByThreadId.emplace(newEvent->ThreadId, newEvent);
@@ -1267,6 +1287,16 @@ void PMTraceConsumer::CreatePresent(std::shared_ptr<PresentEvent> present)
         mPresentByThreadId.erase(iter);
     }
     CreatePresent(present, mPresentsByProcess[present->ProcessId]);
+}
+
+void PMTraceConsumer::HandleStuckPresent(
+    EVENT_HEADER const& hdr,
+    decltype(PMTraceConsumer::mPresentByThreadId.begin())* eventIter)
+{
+    // TODO: review stuck policy; should we mark it as stuck/error in some way,
+    // or dropped, instead of just deleting it?
+    mPresentByThreadId.erase(*eventIter);
+    *eventIter = FindOrCreatePresent(hdr);
 }
 
 // No TRACK_PRESENT instrumentation here because each runtime Present::Start
@@ -1290,6 +1320,9 @@ void PMTraceConsumer::RuntimePresentStop(EVENT_HEADER const& hdr, bool AllowPres
         CompletePresent(eventIter->second);
     }
 
+    // We now remove this present from mPresentByThreadId because any future
+    // event related to it (e.g., from DXGK/Win32K/etc.) is not expected to
+    // come from this thread.
     mPresentByThreadId.erase(eventIter);
 }
 
