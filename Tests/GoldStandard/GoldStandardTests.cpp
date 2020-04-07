@@ -40,7 +40,7 @@ static void RunPresentMon(char* tracename, char* processname)
 #endif
     char cmdline[256];
     PRESENTMON_EXPECT_HRESULT_SUCCEEDED(StringCchPrintfA(cmdline, ARRAYSIZE(cmdline),
-        "..\\..\\build\\%s\\bin\\PresentMon%s-dev.exe -etl_file ..\\..\\PresentMonTests\\GoldStandard\\Resources\\Traces\\%s.etl -process_name %s -verbose -output_file ..\\..\\PresentMonTests\\Output\\%s.csv",
+        "..\\..\\build\\%s\\bin\\PresentMon%s-dev.exe -etl_file ..\\..\\Tests\\GoldStandard\\Resources\\Traces\\%s.etl -process_name %s -verbose -output_file ..\\..\\Tests\\Output\\%s.csv",
         BINDIR, ARCH, tracename, processname, tracename));
 #undef BINDIR
 #undef ARCH
@@ -74,7 +74,7 @@ static void RunPresentMon(char* tracename, char* processname)
 
     // Create a CSV reader on the expected output of this trace. Use single-byte string file names for CSV reader.
     char referenceFilePath[256];
-    StringCchPrintfA(referenceFilePath, ARRAYSIZE(referenceFilePath), "..\\..\\PresentMonTests\\GoldStandard\\Resources\\References\\%s.csv", tracename);
+    StringCchPrintfA(referenceFilePath, ARRAYSIZE(referenceFilePath), "..\\..\\Tests\\GoldStandard\\Resources\\References\\%s.csv", tracename);
     io::CSVReader<17> ref(referenceFilePath);
 
     // Define receivers of csv column data
@@ -117,7 +117,7 @@ static void RunPresentMon(char* tracename, char* processname)
 
     // Create a CSV reader on the actual output of this test run. Use single-byte string file names for CSV reader.
     char outputFilePath[256];
-    StringCchPrintfA(outputFilePath, ARRAYSIZE(outputFilePath), "..\\..\\PresentMonTests\\Output\\%s.csv", tracename);
+    StringCchPrintfA(outputFilePath, ARRAYSIZE(outputFilePath), "..\\..\\Tests\\Output\\%s.csv", tracename);
     io::CSVReader<17> output(outputFilePath);
 
     // Define receivers of csv column data
@@ -222,7 +222,7 @@ Cleanup:
 void GoldStandardTestsSetup()
 {
     // Setup the output directory
-    BOOL result = CreateDirectory(_T("..\\..\\PresentMonTests\\Output"), NULL);
+    BOOL result = CreateDirectory(_T("..\\..\\Tests\\Output"), NULL);
     if (!result)
     {
         if (GetLastError() != ERROR_ALREADY_EXISTS && GetLastError() != ERROR_PATH_NOT_FOUND)

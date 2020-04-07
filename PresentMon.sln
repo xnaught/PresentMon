@@ -10,7 +10,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PresentMon", "PresentMon\Pr
 		{892028E5-32F6-45FC-8AB2-90FCBCAC4BF6} = {892028E5-32F6-45FC-8AB2-90FCBCAC4BF6}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PresentMonTests", "PresentMonTests\PresentMonTests.vcxproj", "{0F60DFD9-208E-443E-8D01-43C902B458A6}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PresentMonTests", "Tests\PresentMonTests.vcxproj", "{0F60DFD9-208E-443E-8D01-43C902B458A6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
