@@ -13,7 +13,7 @@ std::string outDir_;
 
 class GoldStandardTests : public ::testing::Test {
 public:
-    void RunPresentMon(char* tracename, char* processname)
+    void RunPresentMon(char* tracename)
     {
         char tracenameMsg[256];
         EXPECT_HRESULT_SUCCEEDED(StringCchPrintfA(tracenameMsg, ARRAYSIZE(tracenameMsg), "TraceName: %s", tracename));
@@ -27,10 +27,9 @@ public:
 
         char cmdline[256];
         EXPECT_HRESULT_SUCCEEDED(StringCchPrintfA(cmdline, ARRAYSIZE(cmdline),
-            "\"%s\" -etl_file \"%s%s.etl\" -stop_existing_session -process_name %s -verbose -output_file \"%s%s.csv\"",
+            "\"%s\" -etl_file \"%s%s.etl\" -stop_existing_session -verbose -output_file \"%s%s.csv\"",
             presentMonPath_.c_str(),
             testDir_.c_str(), tracename,
-            processname,
             outDir_.c_str(), tracename));
 
         printf(cmdline);
@@ -109,7 +108,7 @@ public:
 
 TEST_F(GoldStandardTests, TrivialFlipTest)
 {
-    RunPresentMon("trivflip", "trivflip12.exe");
+    RunPresentMon("trivflip");
 }
 
 bool CheckPath(
