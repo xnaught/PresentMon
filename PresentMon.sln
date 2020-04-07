@@ -11,6 +11,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PresentMon", "PresentMon\Pr
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PresentMonTests", "Tests\PresentMonTests.vcxproj", "{0F60DFD9-208E-443E-8D01-43C902B458A6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{4EB9794B-1F12-48CE-ADC1-917E9810F29E} = {4EB9794B-1F12-48CE-ADC1-917E9810F29E}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,5 +1,6 @@
 #include "PresentMonCsv.h"
 
+#include <../PresentMon/generated/version.h>
 #include <gtest/gtest.h>
 #include <strsafe.h>
 #include <windows.h>
@@ -165,7 +166,13 @@ bool CheckPath(
 void SetDefaults()
 {
     // PresentMon path
-    presentMonPath_ = "PresentMon64-dev.exe";
+    presentMonPath_ = "PresentMon64-";
+    if (strncmp(PRESENT_MON_VERSION, "dev", 3) == 0) {
+        presentMonPath_ += "dev";
+    } else {
+        presentMonPath_ += PRESENT_MON_VERSION;
+    }
+    presentMonPath_ += ".exe";
 
     // Test dir
     testDir_ = "../../../Tests/Gold";
