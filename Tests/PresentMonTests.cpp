@@ -40,7 +40,7 @@ protected:
 #endif
         char cmdline[256];
         EXPECT_HRESULT_SUCCEEDED(StringCchPrintfA(cmdline, ARRAYSIZE(cmdline),
-            "PresentMon%s-dev.exe -etl_file ..\\..\\..\\Tests\\GoldStandard\\Resources\\Traces\\%s.etl -process_name %s -verbose -output_file ..\\..\\..\\Tests\\Output\\%s.csv",
+            "PresentMon%s-dev.exe -etl_file ..\\..\\..\\Tests\\Gold\\%s.etl -process_name %s -verbose -output_file ..\\..\\..\\Tests\\Output\\%s.csv",
             ARCH, tracename, processname, tracename));
 #undef ARCH
 
@@ -75,7 +75,7 @@ protected:
 
         // Create a CSV reader on the expected output of this trace. Use single-byte string file names for CSV reader.
         char referenceFilePath[256];
-        StringCchPrintfA(referenceFilePath, ARRAYSIZE(referenceFilePath), "..\\..\\..\\Tests\\GoldStandard\\Resources\\References\\%s.csv", tracename);
+        StringCchPrintfA(referenceFilePath, ARRAYSIZE(referenceFilePath), "..\\..\\..\\Tests\\Gold\\%s.csv", tracename);
         PresentMonCsv goldCsv;
         RETURN_ON_FATAL_FAILURE(goldCsv.Open(referenceFilePath));
 

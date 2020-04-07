@@ -31,4 +31,4 @@ ipch/
 
 # Disallow CSV files except in the Tests gold reference directory
 *.csv
-!Tests/GoldStandard/Resources/References/*.csv
+!Tests/Gold/*.csv
