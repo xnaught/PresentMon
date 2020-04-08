@@ -64,35 +64,23 @@ public:
         RETURN_ON_FATAL_FAILURE(testCsv.Open((outDir_ + tracename + ".csv").c_str()));
         RETURN_ON_FATAL_FAILURE(testCsv.CompareColumns(goldCsv));
 
-        UINT lineNumber = 0;
+        // Compare gold/test CSV data rows
+        UINT errorLineCount = 0;
+        for (;;) {
+            auto goldDone = !goldCsv.ReadRow();
+            auto testDone = !testCsv.ReadRow();
+            EXPECT_EQ(goldDone, testDone);
+            if (goldDone || testDone) {
+                break;
+            }
 
-        // Compare following data members of all lines
-        bool refReadResult = goldCsv.ReadRow();
-
-        // Expect at least one row in the output.
-        EXPECT_TRUE(refReadResult);
-
-        while(refReadResult)
-        {
-            bool outputReadResult;
-            lineNumber++;
-
-            TCHAR lineNumberMsg[256];
-            EXPECT_HRESULT_SUCCEEDED(StringCchPrintf(lineNumberMsg, ARRAYSIZE(lineNumberMsg), L"TraceName: %s line: %i", tracename, lineNumber));
-            SCOPED_TRACE(lineNumberMsg);
-
-            // If fail to read row, it means the two trace files are not the same.
-            outputReadResult = testCsv.ReadRow();
-            ASSERT_TRUE(outputReadResult);
-
-            ASSERT_TRUE(goldCsv.CompareRow(testCsv, false, nullptr, nullptr));
-
-            refReadResult = goldCsv.ReadRow();
+            errorLineCount += goldCsv.CompareRow(testCsv, errorLineCount == 0, "GOLD", "TEST") ? 0 : 1;
         }
 
-        // Ensure that output does not have more rows than ref.
-        refReadResult = testCsv.ReadRow();
-        EXPECT_FALSE(refReadResult);
+        goldCsv.Close();
+        testCsv.Close();
+
+        EXPECT_EQ(errorLineCount, 0u);
     }
 };
 
