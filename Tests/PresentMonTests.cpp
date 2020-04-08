@@ -15,18 +15,28 @@ class GoldStandardTests : public ::testing::Test {
 public:
     void RunPresentMon(char* tracename)
     {
+        // Open the gold CSV
+        PresentMonCsv goldCsv;
+        RETURN_ON_FATAL_FAILURE(goldCsv.Open((testDir_ + tracename + ".csv").c_str()));
+
         // Generate command line, querying gold CSV to try and match expected
         // data.
         std::string cmdline;
         cmdline += '\"';
         cmdline += presentMonPath_;
-        cmdline += "\" -stop_existing_session -verbose -no_top -etl_file \"";
+        cmdline += "\" -stop_existing_session -no_top -etl_file \"";
         cmdline += testDir_;
         cmdline += tracename;
         cmdline += ".etl\" -output_file \"";
         cmdline += outDir_;
         cmdline += tracename;
         cmdline += ".csv\"";
+
+        if (goldCsv.GetColumnIndex("AllowsTearing") == SIZE_MAX) {
+            cmdline += " -simple";
+        } else if (goldCsv.GetColumnIndex("WasBatched") != SIZE_MAX) {
+            cmdline += " -verbose";
+        }
 
         SCOPED_TRACE(cmdline);
 
@@ -49,17 +59,9 @@ public:
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
 
-        // Create a CSV reader on the expected output of this trace. Use single-byte string file names for CSV reader.
-        char referenceFilePath[256];
-        StringCchPrintfA(referenceFilePath, ARRAYSIZE(referenceFilePath), "%s%s.csv", testDir_.c_str(), tracename);
-        PresentMonCsv goldCsv;
-        RETURN_ON_FATAL_FAILURE(goldCsv.Open(referenceFilePath));
-
-        // Create a CSV reader on the actual output of this test run. Use single-byte string file names for CSV reader.
-        char outputFilePath[256];
-        StringCchPrintfA(outputFilePath, ARRAYSIZE(outputFilePath), "%s%s.csv", outDir_.c_str(), tracename);
+        // Open test CSV file and check it has the same columns as gold
         PresentMonCsv testCsv;
-        RETURN_ON_FATAL_FAILURE(testCsv.Open(outputFilePath));
+        RETURN_ON_FATAL_FAILURE(testCsv.Open((outDir_ + tracename + ".csv").c_str()));
         RETURN_ON_FATAL_FAILURE(testCsv.CompareColumns(goldCsv));
 
         UINT lineNumber = 0;
