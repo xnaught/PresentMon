@@ -93,16 +93,11 @@
     <Manifest />
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="GoldStandard\GoldStandardTests.cpp" />
+    <ClCompile Include="PresentMonTests.cpp" />
     <ClCompile Include="googletest\googletest\src\gtest-all.cc" />
     <ClCompile Include="googletest\googletest\src\gtest_main.cc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Common\GoogleTestMacros.h" />
-    <ClInclude Include="Common\RuntimeParameters.h" />
-    <ClInclude Include="Common\TaefTestMacros.h" />
-    <ClInclude Include="Common\test.h" />
-    <ClInclude Include="GoldStandard\GoldStandardTests.h" />
     <ClInclude Include="googletest\googletest\include\gtest\gtest.h" />
     <ClInclude Include="PresentMonCsv.h" />
   </ItemGroup>
