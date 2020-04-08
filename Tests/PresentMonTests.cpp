@@ -15,49 +15,37 @@ class GoldStandardTests : public ::testing::Test {
 public:
     void RunPresentMon(char* tracename)
     {
-        char tracenameMsg[256];
-        EXPECT_HRESULT_SUCCEEDED(StringCchPrintfA(tracenameMsg, ARRAYSIZE(tracenameMsg), "TraceName: %s", tracename));
-        SCOPED_TRACE(tracenameMsg);
+        // Generate command line, querying gold CSV to try and match expected
+        // data.
+        std::string cmdline;
+        cmdline += '\"';
+        cmdline += presentMonPath_;
+        cmdline += "\" -stop_existing_session -verbose -no_top -etl_file \"";
+        cmdline += testDir_;
+        cmdline += tracename;
+        cmdline += ".etl\" -output_file \"";
+        cmdline += outDir_;
+        cmdline += tracename;
+        cmdline += ".csv\"";
 
-        STARTUPINFOA si;
-        PROCESS_INFORMATION pi;
-        ZeroMemory(&si, sizeof(si));
+        SCOPED_TRACE(cmdline);
+
+        // Start PresentMon wait for it to complete.
+        STARTUPINFOA si = {};
         si.cb = sizeof(si);
-        ZeroMemory(&pi, sizeof(pi));
+        si.dwFlags = STARTF_USESTDHANDLES;
 
-        char cmdline[256];
-        EXPECT_HRESULT_SUCCEEDED(StringCchPrintfA(cmdline, ARRAYSIZE(cmdline),
-            "\"%s\" -etl_file \"%s%s.etl\" -stop_existing_session -verbose -output_file \"%s%s.csv\"",
-            presentMonPath_.c_str(),
-            testDir_.c_str(), tracename,
-            outDir_.c_str(), tracename));
-
-        printf(cmdline);
-
-        // Start PresentMon on an etl trace. 
-        if (!CreateProcessA(NULL,    // No module name (use command line)
-            cmdline,                // Command line
-            NULL,                   // Process handle not inheritable
-            NULL,                   // Thread handle not inheritable
-            FALSE,                  // Set handle inheritance to FALSE
-            0,                      // No creation flags
-            NULL,                   // Use parent's environment block
-            NULL,                   // Use parent's starting directory 
-            &si,                    // Pointer to STARTUPINFO structure
-            &pi)                    // Pointer to PROCESS_INFORMATION structure
-            )
-        {
-            char path[256];
-            GetCurrentDirectoryA(
-                256,
-                path
-            );
-            printf("CreateProcess failed (%d). Path %s.\n", GetLastError(), path);
-            ADD_FAILURE() << "Failed to start the PresentMon process.";
+        PROCESS_INFORMATION pi = {};
+        if (!CreateProcessA(nullptr, (LPSTR) cmdline.c_str(), nullptr, nullptr, TRUE, 0, nullptr, nullptr, &si, &pi)) {
+            FAIL() << "Failed to start the PresentMon process.";
         }
 
-        // Wait until child process exits.
         WaitForSingleObject(pi.hProcess, INFINITE);
+
+        DWORD exitCode = 0;
+        EXPECT_TRUE(GetExitCodeProcess(pi.hProcess, &exitCode));
+        EXPECT_EQ(exitCode, 0u);
+
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
 
