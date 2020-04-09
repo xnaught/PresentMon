@@ -207,12 +207,49 @@ void AddGoldEtlCsvTests(
     FindClose(h);
 }
 
+void DeleteDirectory(
+    char const* dir)
+{
+    char path[MAX_PATH];
+    auto fnidx = strlen(dir);
+    if (fnidx + 1 >= _countof(path)) {
+        return;
+    }
+    memcpy(path, dir, fnidx);
+    path[fnidx + 0] = '*';
+    path[fnidx + 1] = '\0';
+
+    WIN32_FIND_DATAA ff = {};
+    auto h = FindFirstFileA(path, &ff);
+    if (h == INVALID_HANDLE_VALUE) {
+        return;
+    }
+    do
+    {
+        if (ff.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            if (strcmp(ff.cFileName, ".") != 0 &&
+                strcmp(ff.cFileName, "..") != 0) {
+                strcpy_s(path + fnidx, _countof(path) - fnidx, ff.cFileName);
+                DeleteDirectory(path);
+            }
+        } else {
+            strcpy_s(path + fnidx, _countof(path) - fnidx, ff.cFileName);
+            DeleteFileA(path);
+        }
+    } while (FindNextFileA(h, &ff) != 0);
+
+    path[fnidx - 1] = '\0';
+    RemoveDirectoryA(path);
+
+    FindClose(h);
+}
+
 bool CheckPath(
     char const* commandLineArg,
     std::string* str,
     char const* path,
     bool directory,
-    bool willCreate)
+    bool* exists)
 {
     // If path not specified in command line, use default value
     if (path == nullptr) {
@@ -231,11 +268,12 @@ bool CheckPath(
     // Make sure file exists and is the right type (file vs directory).
     auto attr = GetFileAttributesA(fullPath);
     if (attr == INVALID_FILE_ATTRIBUTES) {
-        if (!willCreate) {
+        if (exists == nullptr) { // must exist
             fprintf(stderr, "error: path does not exist: %s\n", fullPath);
             fprintf(stderr, "       Specify a new path using the %s command line argument.\n", commandLineArg);
             return false;
         }
+        *exists = false;
     } else if ((attr & FILE_ATTRIBUTE_DIRECTORY) != (directory ? FILE_ATTRIBUTE_DIRECTORY : 0u)) {
         fprintf(stderr, "error: path is not a %s: %s\n", directory ? "directory" : "file", fullPath);
         fprintf(stderr, "       Specify a new path using the %s command line argument.\n", commandLineArg);
@@ -289,6 +327,7 @@ int main(
                 "    --presentmon=path    Path to the PresentMon exe path to test (default=%s).\n"
                 "    --testdir=path       Path to directory of test ETLs and gold CSVs (default=%s).\n"
                 "    --outdir=path        Path to directory for test outputs (default=%%temp%%/PresentMonTestOutput).\n"
+                "    --delete             Delete output directory after tests, unless the directory already existed.\n"
                 "\n",
                 presentMonPath_.c_str(),
                 testDir_.c_str());
@@ -310,6 +349,7 @@ int main(
     char* presentMonPath = nullptr;
     char* testDir = nullptr;
     char* outDir = nullptr;
+    bool deleteOutDir = false;
     for (int i = 1; i < argc; ++i) {
         if (_strnicmp(argv[i], "--presentmon=", 13) == 0) {
             presentMonPath = argv[i] + 13;
@@ -326,15 +366,21 @@ int main(
             continue;
         }
 
+        if (_stricmp(argv[i], "--delete") == 0) {
+            deleteOutDir = true;
+            continue;
+        }
+
         fprintf(stderr, "error: unrecognized command line argument: %s.\n", argv[i]);
         fprintf(stderr, "       Use --help command line argument for usage.\n");
         return 1;
     }
 
     // Check command line arguments...
-    if (!CheckPath("--presentmon", &presentMonPath_, presentMonPath, false, false) ||
-        !CheckPath("--testdir", &testDir_, testDir, true, false) ||
-        !CheckPath("--outdir", &outDir_, outDir, true, true)) {
+    bool outDirExisted = true;
+    if (!CheckPath("--presentmon", &presentMonPath_, presentMonPath, false, nullptr) ||
+        !CheckPath("--testdir", &testDir_, testDir, true, nullptr) ||
+        !CheckPath("--outdir", &outDir_, outDir, true, &outDirExisted)) {
         return 1;
     }
 
@@ -342,5 +388,17 @@ int main(
     AddGoldEtlCsvTests(testDir_.c_str());
 
     // Run all the tests
-    return RUN_ALL_TESTS();
+    int result = RUN_ALL_TESTS();
+
+    // If we created the output directory, and the user requested it, delete
+    // the output directory.
+    if (deleteOutDir) {
+        if (outDirExisted) {
+            fprintf(stderr, "warning: output directory existed before running tests, and won't be deleted.\n");
+        } else {
+            DeleteDirectory(outDir_.c_str());
+        }
+    }
+
+    return result;
 }
