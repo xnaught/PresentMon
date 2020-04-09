@@ -13,11 +13,48 @@ std::string outDir_;
 
 class GoldStandardTests : public ::testing::Test {
 public:
-    void RunPresentMon(char* tracename)
+    struct Paths {
+        std::string etl_;
+        std::string goldCsv_;
+        std::string testCsv_;
+    } path_;
+
+    explicit GoldStandardTests(Paths const& paths)
+        : path_(paths)
+    {
+    }
+
+    bool CreateOutputDirectories() const
+    {
+        auto path = (char*) &path_.testCsv_[0];
+        for (auto i = outDir_.size() - 1, n = path_.testCsv_.size(); i < n; ++i) {
+            if (path[i] == '\\') {
+                path[i] = '\0';
+
+                auto attr = GetFileAttributesA(path);
+                if (attr == INVALID_FILE_ATTRIBUTES) {
+                    if (!CreateDirectoryA(path, NULL)) {
+                        return false;
+                    }
+                } else if ((attr & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+                    return false;
+                }
+
+                path[i] = '\\';
+            }
+        }
+
+        return true;
+    }
+
+    void TestBody() override
     {
         // Open the gold CSV
         PresentMonCsv goldCsv;
-        RETURN_ON_FATAL_FAILURE(goldCsv.Open((testDir_ + tracename + ".csv").c_str()));
+        RETURN_ON_FATAL_FAILURE(goldCsv.Open(path_.goldCsv_.c_str()));
+
+        // Make sure output directory exists.
+        ASSERT_TRUE(CreateOutputDirectories());
 
         // Generate command line, querying gold CSV to try and match expected
         // data.
@@ -25,12 +62,10 @@ public:
         cmdline += '\"';
         cmdline += presentMonPath_;
         cmdline += "\" -stop_existing_session -no_top -etl_file \"";
-        cmdline += testDir_;
-        cmdline += tracename;
-        cmdline += ".etl\" -output_file \"";
-        cmdline += outDir_;
-        cmdline += tracename;
-        cmdline += ".csv\"";
+        cmdline += path_.etl_;
+        cmdline += "\" -output_file \"";
+        cmdline += path_.testCsv_;
+        cmdline += "\"";
 
         if (goldCsv.GetColumnIndex("AllowsTearing") == SIZE_MAX) {
             cmdline += " -simple";
@@ -61,7 +96,7 @@ public:
 
         // Open test CSV file and check it has the same columns as gold
         PresentMonCsv testCsv;
-        RETURN_ON_FATAL_FAILURE(testCsv.Open((outDir_ + tracename + ".csv").c_str()));
+        RETURN_ON_FATAL_FAILURE(testCsv.Open(path_.testCsv_.c_str()));
         RETURN_ON_FATAL_FAILURE(testCsv.CompareColumns(goldCsv));
 
         // Compare gold/test CSV data rows
@@ -84,9 +119,92 @@ public:
     }
 };
 
-TEST_F(GoldStandardTests, TrivialFlipTest)
+bool CheckGoldEtlCsvPair(
+    char* relName,
+    size_t relNameLen,
+    GoldStandardTests::Paths* paths)
 {
-    RunPresentMon("trivflip");
+    (void) relNameLen;
+
+    // Confirm fileName is an ETL
+    auto len = strlen(relName);
+    if (len < 4 || _strnicmp(relName + len - 4, ".etl", 4) != 0) {
+        return false;
+    }
+
+    paths->etl_ = testDir_;
+    paths->etl_ += relName;
+
+    // Check if there is a CSV with the same path/name but different extension
+    relName[len - 3] = 'c';
+    relName[len - 2] = 's';
+    relName[len - 1] = 'v';
+
+    paths->goldCsv_ = testDir_;
+    paths->goldCsv_ += relName;
+
+    auto attr = GetFileAttributesA(paths->goldCsv_.c_str());
+    if (attr == INVALID_FILE_ATTRIBUTES || (attr & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+        return false;
+    }
+
+    // Create test CSV path
+    paths->testCsv_ = outDir_;
+    paths->testCsv_ += relName;
+
+    // Prune off extension to use as test name
+    relName[len - 4] = '\0';
+    return true;
+}
+
+void AddGoldEtlCsvTests(
+    char const* dir)
+{
+    GoldStandardTests::Paths paths;
+    auto fnidx = strlen(dir);
+    auto relidx = testDir_.size();
+
+    // Start listing files at dir/*
+    char path[MAX_PATH];
+    if (fnidx + 1 >= _countof(path)) {
+        return;
+    }
+    memcpy(path, dir, fnidx);
+    path[fnidx + 0] = '*';
+    path[fnidx + 1] = '\0';
+
+    auto relName = path + relidx;
+    auto relNameLen = _countof(path) - relidx;
+
+    WIN32_FIND_DATAA ff = {};
+    auto h = FindFirstFileA(path, &ff);
+    if (h == INVALID_HANDLE_VALUE) {
+        return;
+    }
+    do
+    {
+        auto len = strlen(ff.cFileName);
+        if (ff.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            if (len == 1 && ff.cFileName[0] == '.') continue;
+            if (len == 2 && ff.cFileName[0] == '.' && ff.cFileName[1] == '.') continue;
+            if (fnidx + len + 2 > _countof(path)) continue;
+
+            memcpy(path + fnidx, ff.cFileName, len);
+            memcpy(path + fnidx + len, "\\", 2);
+            AddGoldEtlCsvTests(path);
+        } else {
+            if (fnidx + len + 1 > _countof(path)) continue;
+            memcpy(path + fnidx, ff.cFileName, len + 1);
+
+            if (CheckGoldEtlCsvPair(relName, relNameLen, &paths)) {
+                ::testing::RegisterTest(
+                    "CsvCompareTests", relName, nullptr, nullptr, __FILE__, __LINE__,
+                    [=]() -> ::testing::Test* { return new GoldStandardTests(paths); });
+            }
+        }
+    } while (FindNextFileA(h, &ff) != 0);
+
+    FindClose(h);
 }
 
 bool CheckPath(
@@ -94,7 +212,7 @@ bool CheckPath(
     std::string* str,
     char const* path,
     bool directory,
-    bool createDirectory)
+    bool willCreate)
 {
     // If path not specified in command line, use default value
     if (path == nullptr) {
@@ -110,18 +228,11 @@ bool CheckPath(
         return false;
     }
 
-    // Make sure file exists and is the right type (file vs directory).  If
-    // createDirectory==true, then create the directory if it doesn't already
-    // exist.
+    // Make sure file exists and is the right type (file vs directory).
     auto attr = GetFileAttributesA(fullPath);
     if (attr == INVALID_FILE_ATTRIBUTES) {
-        if (!directory || !createDirectory) {
-            fprintf(stderr, "error: path is not a %s: %s\n", directory ? "directory" : "file", fullPath);
-            fprintf(stderr, "       Specify a new path using the %s command line argument.\n", commandLineArg);
-            return false;
-        }
-        if (!CreateDirectoryA(fullPath, NULL)) {
-            fprintf(stderr, "error: failed to create directory: %s\n", fullPath);
+        if (!willCreate) {
+            fprintf(stderr, "error: path does not exist: %s\n", fullPath);
             fprintf(stderr, "       Specify a new path using the %s command line argument.\n", commandLineArg);
             return false;
         }
@@ -226,6 +337,9 @@ int main(
         !CheckPath("--outdir", &outDir_, outDir, true, true)) {
         return 1;
     }
+
+    // Search test dir for gold ETL/CSV test pairs.
+    AddGoldEtlCsvTests(testDir_.c_str());
 
     // Run all the tests
     return RUN_ALL_TESTS();
