@@ -11,10 +11,16 @@
       <Filter>googletest</Filter>
     </ClInclude>
     <ClInclude Include="PresentMonCsv.h" />
+    <ClInclude Include="..\build\obj\generated\version.h">
+      <Filter>generated</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="googletest">
       <UniqueIdentifier>{b681c494-7da7-4f5f-93a9-c13fc6360488}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="generated">
+      <UniqueIdentifier>{07aca15f-fc4c-46b8-82bb-4b305f905c6b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

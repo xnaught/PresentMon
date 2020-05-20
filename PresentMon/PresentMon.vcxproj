@@ -102,302 +102,196 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\PresentMon.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\PresentMon.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\PresentMon.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\PresentMon.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\PresentMon.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\PresentMon.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\PresentMon.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\PresentMon.props" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros">
-    <PresentMonVersion>dev</PresentMonVersion>
-  </PropertyGroup>
+  <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>..\build\debug\</OutDir>
-    <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(PresentMonVersion)-x86</TargetName>
     <LinkIncremental>true</LinkIncremental>
-    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
-    <OutDir>..\build\debug\</OutDir>
-    <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(PresentMonVersion)-arm</TargetName>
     <LinkIncremental>true</LinkIncremental>
-    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>..\build\debug\</OutDir>
-    <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(PresentMonVersion)-x64</TargetName>
     <LinkIncremental>true</LinkIncremental>
-    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <OutDir>..\build\debug\</OutDir>
-    <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(PresentMonVersion)-arm64</TargetName>
     <LinkIncremental>true</LinkIncremental>
-    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\build\release\</OutDir>
-    <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(PresentMonVersion)-x86</TargetName>
     <LinkIncremental>false</LinkIncremental>
-    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
-    <OutDir>..\build\release\</OutDir>
-    <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(PresentMonVersion)-arm</TargetName>
     <LinkIncremental>false</LinkIncremental>
-    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>..\build\release\</OutDir>
-    <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(PresentMonVersion)-x64</TargetName>
     <LinkIncremental>false</LinkIncremental>
-    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <OutDir>..\build\release\</OutDir>
-    <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(PresentMonVersion)-arm64</TargetName>
     <LinkIncremental>false</LinkIncremental>
-    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <AdditionalLibraryDirectories>..\build\obj\PresentData-$(Platform)-$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData-$(Platform).lib;user32.lib</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData.lib;user32.lib</AdditionalDependencies>
     </Link>
     <Manifest />
-    <CustomBuildStep>
-      <Message>Generating version sources</Message>
-      <Command>..\scripts\generate_version_sources.cmd $(PresentMonVersion) "$(IntDir)generated\version.h"</Command>
-      <Outputs>$(IntDir)generated\version.h</Outputs>
-      <TreatOutputAsContent>false</TreatOutputAsContent>
-    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <ClCompile>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <AdditionalLibraryDirectories>..\build\obj\PresentData-$(Platform)-$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData-$(Platform).lib;user32.lib</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData.lib;user32.lib</AdditionalDependencies>
     </Link>
     <Manifest />
-    <CustomBuildStep>
-      <Message>Generating version sources</Message>
-      <Command>..\scripts\generate_version_sources.cmd $(PresentMonVersion) "$(IntDir)generated\version.h"</Command>
-      <Outputs>$(IntDir)generated\version.h</Outputs>
-      <TreatOutputAsContent>false</TreatOutputAsContent>
-    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <AdditionalLibraryDirectories>..\build\obj\PresentData-$(Platform)-$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData-$(Platform).lib;user32.lib</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData.lib;user32.lib</AdditionalDependencies>
     </Link>
     <Manifest />
-    <CustomBuildStep>
-      <Message>Generating version sources</Message>
-      <Command>..\scripts\generate_version_sources.cmd $(PresentMonVersion) "$(IntDir)generated\version.h"</Command>
-      <Outputs>$(IntDir)generated\version.h</Outputs>
-      <TreatOutputAsContent>false</TreatOutputAsContent>
-    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <ClCompile>
       <PrecompiledHeader>
       </PrecompiledHeader>
-      <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <AdditionalLibraryDirectories>..\build\obj\PresentData-$(Platform)-$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData-$(Platform).lib;user32.lib</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData.lib;user32.lib</AdditionalDependencies>
     </Link>
     <Manifest />
-    <CustomBuildStep>
-      <Message>Generating version sources</Message>
-      <Command>..\scripts\generate_version_sources.cmd $(PresentMonVersion) "$(IntDir)generated\version.h"</Command>
-      <Outputs>$(IntDir)generated\version.h</Outputs>
-      <TreatOutputAsContent>false</TreatOutputAsContent>
-    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <WarningLevel>Level4</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <AdditionalLibraryDirectories>..\build\obj\PresentData-$(Platform)-$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData-$(Platform).lib;user32.lib</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData.lib;user32.lib</AdditionalDependencies>
     </Link>
     <Manifest />
-    <CustomBuildStep>
-      <Message>Generating version sources</Message>
-      <Command>..\scripts\generate_version_sources.cmd $(PresentMonVersion) "$(IntDir)generated\version.h"</Command>
-      <Outputs>$(IntDir)generated\version.h</Outputs>
-      <TreatOutputAsContent>false</TreatOutputAsContent>
-    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <ClCompile>
-      <WarningLevel>Level4</WarningLevel>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <AdditionalLibraryDirectories>..\build\obj\PresentData-$(Platform)-$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData-$(Platform).lib;user32.lib</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData.lib;user32.lib</AdditionalDependencies>
     </Link>
     <Manifest />
-    <CustomBuildStep>
-      <Message>Generating version sources</Message>
-      <Command>..\scripts\generate_version_sources.cmd $(PresentMonVersion) "$(IntDir)generated\version.h"</Command>
-      <Outputs>$(IntDir)generated\version.h</Outputs>
-      <TreatOutputAsContent>false</TreatOutputAsContent>
-    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level4</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <AdditionalLibraryDirectories>..\build\obj\PresentData-$(Platform)-$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData-$(Platform).lib;user32.lib</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData.lib;user32.lib</AdditionalDependencies>
     </Link>
     <Manifest />
-    <CustomBuildStep>
-      <Message>Generating version sources</Message>
-      <Command>..\scripts\generate_version_sources.cmd $(PresentMonVersion) "$(IntDir)generated\version.h"</Command>
-      <Outputs>$(IntDir)generated\version.h</Outputs>
-      <TreatOutputAsContent>false</TreatOutputAsContent>
-    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <ClCompile>
-      <WarningLevel>Level4</WarningLevel>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
       <AdditionalLibraryDirectories>..\build\obj\PresentData-$(Platform)-$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData-$(Platform).lib;user32.lib</AdditionalDependencies>
+      <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData.lib;user32.lib</AdditionalDependencies>
     </Link>
     <Manifest />
-    <CustomBuildStep>
-      <Message>Generating version sources</Message>
-      <Command>..\scripts\generate_version_sources.cmd $(PresentMonVersion) "$(IntDir)generated\version.h"</Command>
-      <Outputs>$(IntDir)generated\version.h</Outputs>
-      <TreatOutputAsContent>false</TreatOutputAsContent>
-    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CommandLine.cpp" />
@@ -411,6 +305,7 @@
     <ClCompile Include="TraceSession.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\build\obj\generated\version.h" />
     <ClInclude Include="LateStageReprojectionData.hpp" />
     <ClInclude Include="PresentMon.hpp" />
   </ItemGroup>

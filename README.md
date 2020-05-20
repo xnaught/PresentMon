@@ -1,3 +1,9 @@
+![](https://img.shields.io/github/license/GameTechDev/PresentMon)
+[![](https://img.shields.io/github/v/release/GameTechDev/PresentMon)](https://github.com/GameTechDev/PresentMon/releases/latest)
+![](https://img.shields.io/github/commits-since/GameTechDev/PresentMon/latest)
+![](https://img.shields.io/github/issues/GameTechDev/PresentMon)
+![](https://img.shields.io/github/last-commit/GameTechDev/PresentMon)
+
 # PresentMon
 
 PresentMon is a tool to capture and analyze
@@ -31,7 +37,7 @@ This readme contains the following sections:
 
 ## License
 
-Copyright 2017-2019 Intel Corporation
+Copyright 2017-2020 Intel Corporation
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in

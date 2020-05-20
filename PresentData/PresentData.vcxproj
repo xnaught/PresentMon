@@ -127,49 +127,41 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</OutDir>
     <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(Platform)</TargetName>
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</OutDir>
     <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(Platform)</TargetName>
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</OutDir>
     <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(Platform)</TargetName>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</OutDir>
     <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(Platform)</TargetName>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <OutDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</OutDir>
     <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(Platform)</TargetName>
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
     <OutDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</OutDir>
     <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(Platform)</TargetName>
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <OutDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</OutDir>
     <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(Platform)</TargetName>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
     <OutDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</OutDir>
     <IntDir>..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <TargetName>$(ProjectName)-$(Platform)</TargetName>
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

@@ -22,7 +22,7 @@ SOFTWARE.
 
 #include "PresentMonCsv.h"
 
-#include <../PresentMon/generated/version.h>
+#include <generated/version.h>
 #include <gtest/gtest.h>
 #include <strsafe.h>
 #include <windows.h>
@@ -314,16 +314,16 @@ bool CheckPath(
 void SetDefaults()
 {
     // PresentMon path
-    presentMonPath_ = "PresentMon64-";
+    presentMonPath_ = "PresentMon-";
     if (strncmp(PRESENT_MON_VERSION, "dev", 3) == 0) {
         presentMonPath_ += "dev";
     } else {
         presentMonPath_ += PRESENT_MON_VERSION;
     }
-    presentMonPath_ += ".exe";
+    presentMonPath_ += "-x64.exe";
 
     // Test dir
-    testDir_ = "../../../Tests/Gold";
+    testDir_ = "../../Tests/Gold";
 
     // Output dir
     char path[MAX_PATH];
@@ -337,6 +337,7 @@ int main(
     char** argv)
 {
     // Put out usage before googletest
+    SetDefaults();
     auto help = false;
     for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "--help") == 0 ||
@@ -363,9 +364,6 @@ int main(
     if (help) {
         return 0;
     }
-
-    // Set option defaults
-    SetDefaults();
 
     // Parse remaining command line arguments for custom commands.
     char* presentMonPath = nullptr;

@@ -14,5 +14,13 @@
   <ItemGroup>
     <ClInclude Include="LateStageReprojectionData.hpp" />
     <ClInclude Include="PresentMon.hpp" />
+    <ClInclude Include="..\build\obj\generated\version.h">
+      <Filter>generated</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="generated">
+      <UniqueIdentifier>{f09f81fa-1336-4ff5-8273-d1c8f9c8871e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>
