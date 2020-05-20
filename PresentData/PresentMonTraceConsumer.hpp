@@ -113,6 +113,12 @@ struct PresentEvent {
     // Additional transient state
     std::deque<std::shared_ptr<PresentEvent>> DependentPresents;
 
+    // Track the path the present took through the PresentMon analysis.
+#ifdef TRACK_PRESENT_PATHS
+    uint64_t AnalysisPath;
+#endif
+
+    // Give every present a unique id for debugging.
 #if DEBUG_VERBOSE
     uint64_t Id;
 #endif
@@ -260,6 +266,11 @@ struct PMTraceConsumer
     // Process events
     std::mutex mNTProcessEventMutex;
     std::vector<NTProcessEvent> mNTProcessEvents;
+
+    // Storage for passing present path tracking id to Handle...() functions.
+#ifdef TRACK_PRESENT_PATHS
+    uint32_t mAnalysisPathID;
+#endif
 
     bool DequeueProcessEvents(std::vector<NTProcessEvent>& outProcessEvents)
     {
