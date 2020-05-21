@@ -195,10 +195,11 @@ void ElevatePrivilege(int argc, char** argv)
     if (!args.mTryToElevate) {
         fprintf(stderr,
             "warning: PresentMon requires elevated privilege in order to query processes\n"
-            "    started on another account, so these processes won't be targetted by name\n"
-            "    and will be listed as '<error>'.  Further, there may be tracking errors\n"
-            "    near process termination, and if they are targetted\n"
-            "    -terminate_on_proc_exit won't work.\n");
+            "    started on another account.  Without elevation, these processes can't be\n"
+            "    targetted by name and will be listed as '<error>'.\n");
+        if (args.mTerminateOnProcExit && args.mTargetPid == 0) {
+            fprintf(stderr, "    -terminate_on_proc_exit will also not work.\n");
+        }
         return;
     }
 

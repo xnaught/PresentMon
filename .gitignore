@@ -29,4 +29,6 @@ ipch/
 *.vspx
 *.sap
 
+# Disallow CSV files except in the Tests gold reference directory
 *.csv
+!Tests/Gold/*.csv

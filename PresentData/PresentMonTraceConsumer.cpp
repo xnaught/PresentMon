@@ -1207,6 +1207,7 @@ void PMTraceConsumer::HandleNTProcessEvent(EVENT_RECORD* pEventRecord)
 {
     NTProcessEvent event;
     event.QpcTime = pEventRecord->EventHeader.TimeStamp.QuadPart;
+    event.ProcessId = UINT32_MAX;
 
     switch (pEventRecord->EventHeader.EventDescriptor.Opcode) {
     case EVENT_TRACE_TYPE_START:
@@ -1219,6 +1220,11 @@ void PMTraceConsumer::HandleNTProcessEvent(EVENT_RECORD* pEventRecord)
     case EVENT_TRACE_TYPE_DC_END:
         event.ProcessId = mMetadata.GetEventData<uint32_t>(pEventRecord, L"ProcessId");
         break;
+
+    // EVENT_TRACE_TYPE_LOAD
+    // EVENT_TRACE_TYPE_TERMINATE
+    default:
+        return;
     }
 
     {

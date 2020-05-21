@@ -118,10 +118,7 @@ Execution options:
                             PresentMon requires elevated privilege in order to
                             query processes started on another account. Without
                             it, these processes cannot be targetted by name and
-                            will be listed as '<error>', and if they are
-                            targetted -terminate_on_proc_exit won't work and
-                            there may be tracking errors near process
-                            termination.
+                            will be listed as '<error>'.
   -terminate_on_proc_exit   Terminate PresentMon when all the target processes
                             have exited.
   -terminate_after_timed    When using -timed, terminate PresentMon after the

@@ -163,12 +163,19 @@ static ProcessInfo* GetProcessInfo(uint32_t processId)
         // In ETL capture, we should have gotten an NTProcessEvent for this
         // process updated via UpdateNTProcesses(), so this path should only
         // happen in realtime capture.
-        char path[MAX_PATH];
-        DWORD numChars = sizeof(path);
-        auto h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId);
-        auto processName = QueryFullProcessImageNameA(h, 0, path, &numChars) ? PathFindFileNameA(path) : "<error>";
+        auto const& args = GetCommandLineArgs();
+        HANDLE handle = NULL;
+        char const* processName = "<error>";
+        if (args.mEtlFileName == nullptr) {
+            char path[MAX_PATH];
+            DWORD numChars = sizeof(path);
+            handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId);
+            if (QueryFullProcessImageNameA(handle, 0, path, &numChars)) {
+                processName = PathFindFileNameA(path);
+            }
+        }
 
-        InitProcessInfo(processInfo, processId, h, processName);
+        InitProcessInfo(processInfo, processId, handle, processName);
     }
 
     return processInfo;
