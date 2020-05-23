@@ -4,6 +4,9 @@
 # Build results
 /build/
 
+# PresentMonTests default ETL/CSV pairs
+/Tests/Gold/
+
 # User-specific files
 *.suo
 *.user
