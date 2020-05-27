@@ -183,8 +183,8 @@ exit /b 0
 :: -----------------------------------------------------------------------------
 :gtests
     if not exist "%pmdir%\%~1" exit /b 0
-    echo [90m"%pmtest%" --presentmon=%1 --testdir=Tests\Gold --delete[0m
-    "%pmdir%\%pmtest%" --presentmon="%pmdir%\%~1" --testdir="%pmdir%\Tests\Gold" --delete
+    echo [90m"%pmtest%" --presentmon=%1 --golddir=Tests\Gold[0m
+    "%pmdir%\%pmtest%" --presentmon="%pmdir%\%~1" --golddir="%pmdir%\Tests\Gold"
     if not "%errorlevel%"=="0" set /a errorcount=%errorcount%+1
     echo.
     exit /b 0
