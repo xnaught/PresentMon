@@ -80,6 +80,7 @@ struct CommandLineArgs {
     bool mOutputQpcTime;
     bool mScrollLockIndicator;
     bool mExcludeDropped;
+    bool mTerminateExisting;
     bool mTerminateOnProcExit;
     bool mStartTimer;
     bool mTerminateAfterTimer;

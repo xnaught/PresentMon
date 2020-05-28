@@ -298,7 +298,7 @@ static void PrintHelp()
                                     " of the default \"PresentMon\". This can be used to start multiple"
                                     " realtime capture process at the same time (using distinct names)."
                                     " A realtime PresentMon capture cannot start if there are any"
-                                    " existing sessions with the same name.",
+                                    " existing sessions with the same name.  name is not sensitive to case.",
         "-stop_existing_session",   "If a trace session with the same name is already running, stop"
                                     " the existing session (to allow this one to proceed).",
         "-dont_restart_as_admin",   "Don't try to elevate privilege.  Elevated privilege isn't required"
@@ -310,6 +310,8 @@ static void PrintHelp()
         "-terminate_after_timed",   "When using -timed, terminate PresentMon after the timed capture completes.",
 
         "Beta options", nullptr,
+        "-terminate_existing",      "Terminate any existing PresentMon realtime trace sessions, then exit."
+                                    " Use with -session_name to target particular sessions.",
         "-include_mixed_reality",   "Capture Windows Mixed Reality data to a CSV file with \"_WMR\" suffix.",
     };
 
@@ -378,6 +380,7 @@ bool ParseCommandLine(int argc, char** argv)
     args->mExcludeDropped = false;
     args->mVerbosity = Verbosity::Normal;
     args->mConsoleOutputType = ConsoleOutput::Full;
+    args->mTerminateExisting = false;
     args->mTerminateOnProcExit = false;
     args->mStartTimer = false;
     args->mTerminateAfterTimer = false;
@@ -422,6 +425,7 @@ bool ParseCommandLine(int argc, char** argv)
         else if (ParseArg(argv[i], "terminate_after_timed"))  { args->mTerminateAfterTimer = true;  continue; }
 
         // Beta options:
+        else if (ParseArg(argv[i], "terminate_existing"))    { args->mTerminateExisting          = true; continue; }
         else if (ParseArg(argv[i], "include_mixed_reality")) { args->mIncludeWindowsMixedReality = true; continue; }
 
         // Provided argument wasn't recognized
@@ -518,6 +522,34 @@ bool ParseCommandLine(int argc, char** argv)
             PrintHelp();
             return false;
         }
+    }
+
+    // If -terminate_existing, warn about any normal arguments since we'll just
+    // be stopping an existing session and then exiting.
+    if (args->mTerminateExisting && (
+        !args->mTargetProcessNames.empty() ||
+        !args->mExcludeProcessNames.empty() ||
+        args->mTargetPid != 0 ||
+        args->mEtlFileName != nullptr ||
+        args->mOutputCsvFileName != nullptr ||
+        args->mOutputCsvToStdout ||
+        args->mMultiCsv ||
+        args->mOutputCsvToFile == false ||
+        args->mConsoleOutputType == ConsoleOutput::Simple ||
+        args->mOutputQpcTime ||
+        args->mHotkeySupport ||
+        args->mDelay != 0 ||
+        args->mTimer != 0 ||
+        args->mStartTimer ||
+        args->mExcludeDropped ||
+        args->mScrollLockIndicator ||
+        simple ||
+        verbose ||
+        args->mTerminateOnProcExit ||
+        args->mTerminateAfterTimer ||
+        args->mIncludeWindowsMixedReality)) {
+        fprintf(stderr, "warning: -terminate_existing exits without capturing anything; ignoring all capture,\n");
+        fprintf(stderr, "         output, and recording arguments.\n");
     }
 
     return true;

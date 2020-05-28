@@ -21,6 +21,7 @@ SOFTWARE.
 */
 
 #include "PresentMon.hpp"
+#include "../PresentData/TraceSession.hpp"
 
 enum {
     HOTKEY_ID = 0x80,
@@ -202,6 +203,17 @@ int main(int argc, char** argv)
     }
 
     auto const& args = GetCommandLineArgs();
+
+    // Special case handling for -terminate_existing
+    if (args.mTerminateExisting) {
+        auto status = TraceSession::StopNamedSession(args.mSessionName);
+        switch (status) {
+        case ERROR_SUCCESS: return 0;
+        case ERROR_WMI_INSTANCE_NOT_FOUND: fprintf(stderr, "error: no existing sessions found: %s\n", args.mSessionName); break;
+        default: fprintf(stderr, "error: failed to terminate existing session (%s): %u\n", args.mSessionName, status); break;
+        }
+        return 7;
+    }
 
     // Attempt to elevate process privilege if necessary.
     //

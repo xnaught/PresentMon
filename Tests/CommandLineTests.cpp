@@ -38,6 +38,28 @@ void TerminateAfterTimedTest(uint32_t timed, DWORD timeoutMilliseconds)
     // We don't check the CSV... it's ok if buffers drain adn we get more data
 }
 
+void TerminateExistingTest(wchar_t const* sessionName)
+{
+    PresentMon pm;
+    pm.Add(L"-no_csv");
+    if (sessionName != nullptr) {
+        pm.Add(L" -session_name");
+        pm.Add(sessionName);
+    }
+    pm.Start();
+    EXPECT_TRUE(pm.IsRunning(1000));
+
+    PresentMon pm2;
+    pm2.Add(L"-terminate_existing");
+    if (sessionName != nullptr) {
+        pm2.Add(L" -session_name");
+        pm2.Add(sessionName);
+    }
+    pm2.Start();
+    pm2.ExpectExit(__FILE__, __LINE__, 1000);
+    pm.ExpectExit(__FILE__, __LINE__, 1000);
+}
+
 }
 
 TEST(CommandLineTests, TerminateAfterTimed_0s)
@@ -48,4 +70,22 @@ TEST(CommandLineTests, TerminateAfterTimed_0s)
 TEST(CommandLineTests, TerminateAfterTimed_1s)
 {
     TerminateAfterTimedTest(1, 2000);
+}
+
+TEST(CommandLineTests, TerminateExisting_Default)
+{
+    TerminateExistingTest(nullptr);
+}
+
+TEST(CommandLineTests, TerminateExisting_Named)
+{
+    TerminateExistingTest(L"sessionname");
+}
+
+TEST(CommandLineTests, TerminateExisting_NotFound)
+{
+    PresentMon pm;
+    pm.Add(L"-terminate_existing -session_name session_name_that_hopefully_isnt_in_use");
+    pm.Start();
+    pm.ExpectExit(__FILE__, __LINE__, 1000, 7); // session name not found -> exit code = 7
 }
