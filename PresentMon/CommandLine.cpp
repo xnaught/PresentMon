@@ -319,6 +319,7 @@ bool ParseCommandLine(int argc, char** argv)
     args->mVerbosity = Verbosity::Normal;
     args->mConsoleOutputType = ConsoleOutput::Full;
     args->mTerminateOnProcExit = false;
+    args->mStartTimer = false;
     args->mTerminateAfterTimer = false;
     args->mHotkeySupport = false;
     args->mTryToElevate = true;
@@ -369,7 +370,7 @@ bool ParseCommandLine(int argc, char** argv)
         // Recording options:
         else if (strcmp(argv[i], "-hotkey") == 0) { if (AssignHotkey(++i, argc, argv, args)) continue; }
         else ARG2("-delay",                  args->mDelay                      = atou(argv[i]))
-        else ARG2("-timed",                  args->mTimer                      = atou(argv[i]))
+        else ARG2("-timed",                  args->mTimer                      = atou(argv[i]); args->mStartTimer = true)
         else ARG1("-exclude_dropped",        args->mExcludeDropped             = true)
         else ARG1("-scroll_indicator",       args->mScrollLockIndicator        = true)
         else ARG1("-simple",                 simple                            = true)

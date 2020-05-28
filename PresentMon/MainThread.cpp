@@ -97,7 +97,7 @@ static void StartRecording()
     SetOutputRecordingState(true);
 
     // Start -timed timer
-    if (args.mTimer > 0) {
+    if (args.mStartTimer) {
         SetTimer(gWnd, TIMED_TIMER_ID, args.mTimer * 1000, (TIMERPROC) nullptr);
     }
 }
@@ -110,7 +110,9 @@ static void StopRecording()
     gIsRecording = false;
 
     // Stop time -timed timer if there is one
-    KillTimer(gWnd, TIMED_TIMER_ID);
+    if (args.mStartTimer) {
+        KillTimer(gWnd, TIMED_TIMER_ID);
+    }
 
     // Tell OutputThread to stop recording
     SetOutputRecordingState(false);

@@ -40,7 +40,7 @@ void TerminateAfterTimedTest(uint32_t timed, DWORD timeoutMilliseconds)
 
 }
 
-TEST(CommandLineTests, DISABLED_TerminateAfterTimed_0s)
+TEST(CommandLineTests, TerminateAfterTimed_0s)
 {
     TerminateAfterTimedTest(0, 2000);
 }

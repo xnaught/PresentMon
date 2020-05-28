@@ -81,6 +81,7 @@ struct CommandLineArgs {
     bool mScrollLockIndicator;
     bool mExcludeDropped;
     bool mTerminateOnProcExit;
+    bool mStartTimer;
     bool mTerminateAfterTimer;
     bool mHotkeySupport;
     bool mTryToElevate;
