@@ -278,8 +278,7 @@ static void PrintHelp()
         "-multi_csv",               "Create a separate CSV file for each captured process.",
         "-no_csv",                  "Do not create any output file.",
         "-no_top",                  "Don't display active swap chains in the console window.",
-        "-qpc_time",                "Output present time as performance counter value (see"
-                                    " QueryPerformanceCounter()).",
+        "-qpc_time",                "Output present time as a performance counter value.",
 
         "Recording options", nullptr,
         "-hotkey key",              "Use provided key to start and stop recording, writing to a"
@@ -310,6 +309,7 @@ static void PrintHelp()
         "-terminate_after_timed",   "When using -timed, terminate PresentMon after the timed capture completes.",
 
         "Beta options", nullptr,
+        "-qpc_time_s",              "Output present time as a performance counter value converted to seconds.",
         "-terminate_existing",      "Terminate any existing PresentMon realtime trace sessions, then exit."
                                     " Use with -session_name to target particular sessions.",
         "-include_mixed_reality",   "Capture Windows Mixed Reality data to a CSV file with \"_WMR\" suffix.",
@@ -376,6 +376,7 @@ bool ParseCommandLine(int argc, char** argv)
     args->mOutputCsvToFile = true;
     args->mOutputCsvToStdout = false;
     args->mOutputQpcTime = false;
+    args->mOutputQpcTimeInSeconds = false;
     args->mScrollLockIndicator = false;
     args->mExcludeDropped = false;
     args->mVerbosity = Verbosity::Normal;
@@ -425,6 +426,7 @@ bool ParseCommandLine(int argc, char** argv)
         else if (ParseArg(argv[i], "terminate_after_timed"))  { args->mTerminateAfterTimer = true;  continue; }
 
         // Beta options:
+        else if (ParseArg(argv[i], "qpc_time_s"))            { args->mOutputQpcTimeInSeconds     = true; continue; }
         else if (ParseArg(argv[i], "terminate_existing"))    { args->mTerminateExisting          = true; continue; }
         else if (ParseArg(argv[i], "include_mixed_reality")) { args->mIncludeWindowsMixedReality = true; continue; }
 
@@ -447,6 +449,12 @@ bool ParseCommandLine(int argc, char** argv)
         args->mVerbosity = Verbosity::Simple;
     }
 
+    // Enable -qpc_time if only -qpc_time_s was provided, since we use that to
+    // add the column.
+    if (args->mOutputQpcTimeInSeconds) {
+        args->mOutputQpcTime = true;
+    }
+
     // Disallow hotkey of CTRL+C, CTRL+SCROLL, and F12
     if (args->mHotkeySupport) {
         if ((args->mHotkeyModifiers & MOD_CONTROL) != 0 && (
@@ -464,12 +472,13 @@ bool ParseCommandLine(int argc, char** argv)
         }
     }
 
-    // If -no_csv is used, ignore -qpc_time, -multi_csv, -output_file, or -output_stdout
-    // if they are also used.
+    // If -no_csv is used, ignore -qpc_time, -qpc_time_s, -multi_csv,
+    // -output_file, or -output_stdout if they are also used.
     if (!args->mOutputCsvToFile) {
         if (args->mOutputQpcTime) {
-            fprintf(stderr, "warning: -qpc_time and -no_csv arguments are not compatible; ignoring -qpc_time.\n");
+            fprintf(stderr, "warning: -qpc_time and -qpc_time_s are only relevant for CSV output; ignoring due to -no_csv.\n");
             args->mOutputQpcTime = false;
+            args->mOutputQpcTimeInSeconds = false;
         }
         if (args->mMultiCsv) {
             fprintf(stderr, "warning: -multi_csv and -no_csv arguments are not compatible; ignoring -multi_csv.\n");
@@ -537,6 +546,7 @@ bool ParseCommandLine(int argc, char** argv)
         args->mOutputCsvToFile == false ||
         args->mConsoleOutputType == ConsoleOutput::Simple ||
         args->mOutputQpcTime ||
+        args->mOutputQpcTimeInSeconds ||
         args->mHotkeySupport ||
         args->mDelay != 0 ||
         args->mTimer != 0 ||

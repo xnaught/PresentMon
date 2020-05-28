@@ -61,8 +61,7 @@ Output options (see README for file naming defaults):
   -no_csv                  Do not create any output file.
   -no_top                  Don't display active swap chains in the console
                            window.
-  -qpc_time                Output present time as performance counter value (see
-                           QueryPerformanceCounter()).
+  -qpc_time                Output present time as a performance counter value.
 
 Recording options:
   -hotkey key              Use provided key to start and stop recording, writing
@@ -102,6 +101,8 @@ Execution options:
                            timed capture completes.
 
 Beta options:
+  -qpc_time_s              Output present time as a performance counter value
+                           converted to seconds.
   -terminate_existing      Terminate any existing PresentMon realtime trace
                            sessions, then exit. Use with -session_name to target
                            particular sessions.

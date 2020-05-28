@@ -60,7 +60,7 @@ public:
         pm.AddCsvPath(testCsv_);
         if (goldCsv.simple_) pm.Add(L"-simple");
         if (goldCsv.verbose_) pm.Add(L"-verbose");
-        if (goldCsv.GetColumnIndex("QPCTime") != SIZE_MAX) pm.Add(L"-qpc_time");
+        if (goldCsv.GetColumnIndex("QPCTime") != SIZE_MAX) pm.Add(L"-qpc_time"); // TODO: check if %ull or %.9lf to see if -qpc_time_s
         pm.Start();
         pm.ExpectExit(__FILE__, __LINE__);
 
