@@ -15,26 +15,29 @@ if not exist "%etw_list%" (
     )
 )
 
+for %%a in ("%~dp0..") do set out_dir=%%~fa\PresentData\ETW
+if not exist "%out_dir%\." mkdir "%out_dir%"
+
 set year=
 for /f "tokens=1 delims=/-." %%a in ('date /t') do set year=%%a
 
 set events=
 set events=%events% --event=Present::Start
 set events=%events% --event=Present::Stop
-call :etw_list "Microsoft-Windows-D3D9" "%~dp0..\PresentData\D3d9EventStructs.hpp"
+call :etw_list "Microsoft-Windows-D3D9" "%out_dir%\Microsoft_Windows_D3D9.h"
 
 set events=
 set events=%events% --event=MILEVENT_MEDIA_UCE_PROCESSPRESENTHISTORY_GetPresentHistory::Info
 set events=%events% --event=SCHEDULE_PRESENT::Start
 set events=%events% --event=SCHEDULE_SURFACEUPDATE::Info
-call :etw_list "Microsoft-Windows-Dwm-Core" "%~dp0..\PresentData\DwmEventStructs.hpp"
+call :etw_list "Microsoft-Windows-Dwm-Core" "%out_dir%\Microsoft_Windows_Dwm_Core.h"
 
 set events=
 set events=%events% --event=Present::Start
 set events=%events% --event=Present::Stop
 set events=%events% --event=PresentMultiplaneOverlay::Start
 set events=%events% --event=PresentMultiplaneOverlay::Stop
-call :etw_list "Microsoft-Windows-DXGI" "%~dp0..\PresentData\DxgiEventStructs.hpp"
+call :etw_list "Microsoft-Windows-DXGI" "%out_dir%\Microsoft_Windows_DXGI.h"
 
 set events=
 set events=%events% --event=Blit::Info
@@ -50,15 +53,17 @@ set events=%events% --event=PresentHistoryDetailed::Start
 set events=%events% --event=QueuePacket::Start
 set events=%events% --event=QueuePacket::Stop
 set events=%events% --event=VSyncDPC::Info
-call :etw_list "Microsoft-Windows-DxgKrnl" "%~dp0..\PresentData\DxgKrnlEventStructs.hpp"
+call :etw_list "Microsoft-Windows-DxgKrnl" "%out_dir%\Microsoft_Windows_DxgKrnl.h"
 
 set events=
 set events=%events% --event=TokenCompositionSurfaceObject::Info
 set events=%events% --event=TokenStateChanged::Info
-call :etw_list "Microsoft-Windows-Win32k" "%~dp0..\PresentData\Win32kEventStructs.hpp"
+call :etw_list "Microsoft-Windows-Win32k" "%out_dir%\Microsoft_Windows_Win32k.h"
 
+echo.
+echo note: error expected on this one, file should still be created:
 set events=
-call :etw_list "{3d6fa8d0-fe05-11d0-9dda-00c04fd7ba7c}" "%~dp0..\PresentData\NTProcessEventStructs.hpp"
+call :etw_list "{3d6fa8d0-fe05-11d0-9dda-00c04fd7ba7c}" "%out_dir%\NT_Process.h"
 
 exit /b 0
 

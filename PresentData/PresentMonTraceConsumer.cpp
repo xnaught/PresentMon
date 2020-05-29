@@ -1,5 +1,5 @@
 /*
-Copyright 2017-2019 Intel Corporation
+Copyright 2017-2020 Intel Corporation
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -22,12 +22,12 @@ SOFTWARE.
 
 #include "PresentMonTraceConsumer.hpp"
 
-#include "D3d9EventStructs.hpp"
-#include "DwmEventStructs.hpp"
-#include "DxgiEventStructs.hpp"
-#include "DxgkrnlEventStructs.hpp"
-#include "EventMetadataEventStructs.hpp"
-#include "Win32kEventStructs.hpp"
+#include "ETW/Microsoft_Windows_D3D9.h"
+#include "ETW/Microsoft_Windows_Dwm_Core.h"
+#include "ETW/Microsoft_Windows_DXGI.h"
+#include "ETW/Microsoft_Windows_DxgKrnl.h"
+#include "ETW/Microsoft_Windows_EventMetadata.h"
+#include "ETW/Microsoft_Windows_Win32k.h"
 
 #include <algorithm>
 #include <assert.h>

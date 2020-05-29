@@ -20,7 +20,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 #include "TraceConsumer.hpp"
-#include "EventMetadataEventStructs.hpp"
+#include "ETW/Microsoft_Windows_EventMetadata.h"
 
 namespace {
 
