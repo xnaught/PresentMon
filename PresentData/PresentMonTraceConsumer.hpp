@@ -38,11 +38,6 @@ SOFTWARE.
 #include "Debug.hpp"
 #include "TraceConsumer.hpp"
 
-template <typename mutex_t> std::unique_lock<mutex_t> scoped_lock(mutex_t &m)
-{
-    return std::unique_lock<mutex_t>(m);
-}
-
 enum class PresentMode
 {
     Unknown,
@@ -273,26 +268,16 @@ struct PMTraceConsumer
     uint32_t mAnalysisPathID;
 #endif
 
-    bool DequeueProcessEvents(std::vector<ProcessEvent>& outProcessEvents)
+    void DequeueProcessEvents(std::vector<ProcessEvent>& outProcessEvents)
     {
-        if (mProcessEvents.empty()) {
-            return false;
-        }
-
-        auto lock = scoped_lock(mProcessEventMutex);
+        std::lock_guard<std::mutex> lock(mProcessEventMutex);
         outProcessEvents.swap(mProcessEvents);
-        return true;
     }
 
-    bool DequeuePresentEvents(std::vector<std::shared_ptr<PresentEvent>>& outPresents)
+    void DequeuePresentEvents(std::vector<std::shared_ptr<PresentEvent>>& outPresentEvents)
     {
-        if (mPresentEvents.empty()) {
-            return false;
-        }
-
-        auto lock = scoped_lock(mPresentEventMutex);
-        outPresents.swap(mPresentEvents);
-        return true;
+        std::lock_guard<std::mutex> lock(mPresentEventMutex);
+        outPresentEvents.swap(mPresentEvents);
     }
 
     void HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool redirectedPresent);

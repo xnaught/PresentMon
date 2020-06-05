@@ -1196,7 +1196,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
 
     p->Completed = true;
     if (*presentIter == p) {
-        auto lock = scoped_lock(mPresentEventMutex);
+        std::lock_guard<std::mutex> lock(mPresentEventMutex);
         while (presentIter != presentDeque.end() && presentIter->get()->Completed) {
             mPresentEvents.push_back(*presentIter);
             presentDeque.pop_front();
@@ -1317,10 +1317,8 @@ void PMTraceConsumer::HandleNTProcessEvent(EVENT_RECORD* pEventRecord)
         return;
     }
 
-    {
-        auto lock = scoped_lock(mProcessEventMutex);
-        mProcessEvents.emplace_back(event);
-    }
+    std::lock_guard<std::mutex> lock(mProcessEventMutex);
+    mProcessEvents.emplace_back(event);
 }
 
 void PMTraceConsumer::HandleMetadataEvent(EVENT_RECORD* pEventRecord)

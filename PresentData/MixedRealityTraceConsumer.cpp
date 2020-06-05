@@ -147,7 +147,7 @@ void MRTraceConsumer::CompleteLSR(std::shared_ptr<LateStageReprojectionEvent> p)
 
     p->Completed = true;
     {
-        auto lock = scoped_lock(mMutex);
+        std::lock_guard<std::mutex> lock(mMutex);
         mCompletedLSRs.push_back(p);
     }
 }
