@@ -258,6 +258,10 @@ void PresentMon::AddCsvPath(std::wstring const& csvPath)
     cmdline_ += csvPath;
     cmdline_ += L'\"';
     csvArgSet_ = true;
+
+    // Delete the file if it exists.  Otherwise, PresentMon may not output
+    // anything and any previous content will remain.
+    DeleteFile(csvPath.c_str());
 }
 
 void PresentMon::Add(wchar_t const* args)
