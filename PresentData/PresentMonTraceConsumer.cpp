@@ -1295,30 +1295,21 @@ void PMTraceConsumer::RuntimePresentStop(EVENT_HEADER const& hdr, bool AllowPres
 
 void PMTraceConsumer::HandleNTProcessEvent(EVENT_RECORD* pEventRecord)
 {
-    ProcessEvent event;
-    event.QpcTime = pEventRecord->EventHeader.TimeStamp.QuadPart;
-    event.ProcessId = UINT32_MAX;
-
-    switch (pEventRecord->EventHeader.EventDescriptor.Opcode) {
-    case EVENT_TRACE_TYPE_START:
-    case EVENT_TRACE_TYPE_DC_START:
+    if (pEventRecord->EventHeader.EventDescriptor.Opcode == EVENT_TRACE_TYPE_START ||
+        pEventRecord->EventHeader.EventDescriptor.Opcode == EVENT_TRACE_TYPE_DC_START ||
+        pEventRecord->EventHeader.EventDescriptor.Opcode == EVENT_TRACE_TYPE_END||
+        pEventRecord->EventHeader.EventDescriptor.Opcode == EVENT_TRACE_TYPE_DC_END) {
+        ProcessEvent event;
+        event.QpcTime       = pEventRecord->EventHeader.TimeStamp.QuadPart;
         event.ProcessId     = mMetadata.GetEventData<uint32_t>(pEventRecord, L"ProcessId");
         event.ImageFileName = mMetadata.GetEventData<std::string>(pEventRecord, L"ImageFileName");
-        break;
+        event.IsStartEvent  = pEventRecord->EventHeader.EventDescriptor.Opcode == EVENT_TRACE_TYPE_START ||
+                              pEventRecord->EventHeader.EventDescriptor.Opcode == EVENT_TRACE_TYPE_DC_START;
 
-    case EVENT_TRACE_TYPE_END:
-    case EVENT_TRACE_TYPE_DC_END:
-        event.ProcessId = mMetadata.GetEventData<uint32_t>(pEventRecord, L"ProcessId");
-        break;
-
-    // EVENT_TRACE_TYPE_LOAD
-    // EVENT_TRACE_TYPE_TERMINATE
-    default:
+        std::lock_guard<std::mutex> lock(mProcessEventMutex);
+        mProcessEvents.emplace_back(event);
         return;
     }
-
-    std::lock_guard<std::mutex> lock(mProcessEventMutex);
-    mProcessEvents.emplace_back(event);
 }
 
 void PMTraceConsumer::HandleMetadataEvent(EVENT_RECORD* pEventRecord)

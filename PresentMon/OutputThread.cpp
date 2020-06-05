@@ -231,22 +231,19 @@ static void HandleTerminatedProcess(uint32_t processId)
 static void UpdateProcesses(std::vector<ProcessEvent> const& processEvents, std::vector<std::pair<uint32_t, uint64_t>>* terminatedProcesses)
 {
     for (auto const& processEvent : processEvents) {
-        // An empty ImageFileName indicates that the event is a process
-        // termination; record the termination in terminatedProcess to be
-        // handled once the present event stream catches up to the termination
-        // time.
-        if (processEvent.ImageFileName.empty()) {
+        if (processEvent.IsStartEvent) {
+            // This event is a new process starting, the pid should not already be
+            // in gProcesses.
+            auto result = gProcesses.emplace(processEvent.ProcessId, ProcessInfo());
+            auto processInfo = &result.first->second;
+            auto newProcess = result.second;
+            if (newProcess) {
+                InitProcessInfo(processInfo, processEvent.ProcessId, NULL, processEvent.ImageFileName);
+            }
+        } else {
+            // Note any process termination in terminatedProcess, to be handled
+            // once the present event stream catches up to the termination time.
             terminatedProcesses->emplace_back(processEvent.ProcessId, processEvent.QpcTime);
-            continue;
-        }
-
-        // This event is a new process starting, the pid should not already be
-        // in gProcesses.
-        auto result = gProcesses.emplace(processEvent.ProcessId, ProcessInfo());
-        auto processInfo = &result.first->second;
-        auto newProcess = result.second;
-        if (newProcess) {
-            InitProcessInfo(processInfo, processEvent.ProcessId, NULL, processEvent.ImageFileName);
         }
     }
 }

@@ -64,10 +64,12 @@ enum class Runtime
     DXGI, D3D9, Other
 };
 
+// A ProcessEvent occurs whenever a Process starts or stops.
 struct ProcessEvent {
-    std::string ImageFileName;  // If ImageFileName.empty(), then event is that process ending
+    std::string ImageFileName;
     uint64_t QpcTime;
     uint32_t ProcessId;
+    bool IsStartEvent;
 };
 
 struct PresentEvent {
