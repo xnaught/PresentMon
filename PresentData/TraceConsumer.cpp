@@ -239,7 +239,7 @@ void EventMetadata::GetEventData(EVENT_RECORD* eventRecord, EventDataDesc* desc,
             if (desc[j].status_ == PROP_STATUS_NOT_FOUND && wcscmp(propName, desc[j].name_) == 0) {
                 assert(desc[j].arrayIndex_ < count);
 
-                desc[j].data_   = (void*) ((uintptr_t) eventRecord->UserData + offset + desc[j].arrayIndex_ * size);
+                desc[j].data_   = (void*) ((uintptr_t) eventRecord->UserData + (offset + desc[j].arrayIndex_ * size));
                 desc[j].size_   = size;
                 desc[j].status_ = status;
 

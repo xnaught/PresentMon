@@ -314,9 +314,9 @@ ULONG TraceSession::Start(
     auto includeWinMR       = mrConsumer != nullptr;
 
     UINT callbackFlags =
-        saveFirstTimestamp ? 4 : 0 |
-        simple             ? 2 : 0 |
-        includeWinMR       ? 1 : 0;
+        (saveFirstTimestamp ? 4 : 0) |
+        (simple             ? 2 : 0) |
+        (includeWinMR       ? 1 : 0);
     switch (callbackFlags) {
     case 0: traceProps.EventRecordCallback = &EventRecordCallback<false, false, false>; break;
     case 1: traceProps.EventRecordCallback = &EventRecordCallback<false, false, true>; break;

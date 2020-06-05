@@ -212,7 +212,7 @@ FILE* CreateLsrCsvFile(char const* path)
     char ext[_MAX_EXT];
     _splitpath_s(path, drive, dir, name, ext);
 
-    char outputPath[MAX_PATH];
+    char outputPath[MAX_PATH] = {};
     _snprintf_s(outputPath, _TRUNCATE, "%s%s%s_WMR%s", drive, dir, name, ext);
 
     // Open output file

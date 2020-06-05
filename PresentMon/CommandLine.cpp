@@ -24,6 +24,12 @@ SOFTWARE.
 
 #include "PresentMon.hpp"
 
+enum {
+    CONSOLE_WIDTH           = 80,
+    MAX_ARG_COLUMN_WIDTH    = 40,
+    ARG_DESC_COLUMN_PADDING = 4,
+};
+
 struct KeyNameCode
 {
     char const* mName;
@@ -154,7 +160,7 @@ static bool ParseKeyName(KeyNameCode const* valid, size_t validCount, char* name
 
     for (size_t i = 0; i < validCount; ++i) {
         auto len = strlen(valid[i].mName);
-        if (col + len + 1 > 80) {
+        if (col + len + 1 > CONSOLE_WIDTH) {
             col = fprintf(stderr, "\n   ") - 1;
         }
         col += fprintf(stderr, " %s", valid[i].mName);
@@ -315,9 +321,9 @@ static void PrintHelp()
         "-include_mixed_reality",   "Capture Windows Mixed Reality data to a CSV file with \"_WMR\" suffix.",
     };
 
-    // NOTE: remember to update README.md when modifying usage
     fprintf(stderr, "PresentMon %s\n", PRESENT_MON_VERSION);
 
+    // Layout usage 
     size_t argWidth = 0;
     for (size_t i = 0; i < _countof(s); i += 2) {
         auto arg = s[i];
@@ -327,8 +333,11 @@ static void PrintHelp()
         }
     }
 
-    size_t descWidth = 80 - 4 - min(40, argWidth);
+    argWidth = min(argWidth, MAX_ARG_COLUMN_WIDTH);
 
+    size_t descWidth = CONSOLE_WIDTH - ARG_DESC_COLUMN_PADDING - argWidth;
+
+    // Print usage
     for (size_t i = 0; i < _countof(s); i += 2) {
         auto arg = s[i];
         auto desc = s[i + 1];
