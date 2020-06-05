@@ -338,16 +338,16 @@ static void AddPresents(LateStageReprojectionData* lsrData,
 
 // Limit the present history stored in SwapChainData to 2 seconds.
 static void PruneHistory(
-    std::vector<ProcessEvent> const& pProcessEvents,
+    std::vector<ProcessEvent> const& processEvents,
     std::vector<std::shared_ptr<PresentEvent>> const& presentEvents,
     std::vector<std::shared_ptr<LateStageReprojectionEvent>> const& lsrEvents)
 {
-    assert(pProcessEvents.size() + presentEvents.size() + lsrEvents.size() > 0);
+    assert(processEvents.size() + presentEvents.size() + lsrEvents.size() > 0);
 
     auto latestQpc = max(max(
-        pProcessEvents.empty() ? 0ull : pProcessEvents.back().QpcTime,
-        presentEvents.empty()  ? 0ull : presentEvents.back()->QpcTime),
-        lsrEvents.empty()      ? 0ull : lsrEvents.back()->QpcTime);
+        processEvents.empty() ? 0ull : processEvents.back().QpcTime,
+        presentEvents.empty() ? 0ull : presentEvents.back()->QpcTime),
+        lsrEvents.empty()     ? 0ull : lsrEvents.back()->QpcTime);
 
     auto minQpc = latestQpc - SecondsDeltaToQpc(2.0);
 

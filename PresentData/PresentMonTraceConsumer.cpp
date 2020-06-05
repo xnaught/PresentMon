@@ -1299,10 +1299,16 @@ void PMTraceConsumer::HandleNTProcessEvent(EVENT_RECORD* pEventRecord)
         pEventRecord->EventHeader.EventDescriptor.Opcode == EVENT_TRACE_TYPE_DC_START ||
         pEventRecord->EventHeader.EventDescriptor.Opcode == EVENT_TRACE_TYPE_END||
         pEventRecord->EventHeader.EventDescriptor.Opcode == EVENT_TRACE_TYPE_DC_END) {
+        EventDataDesc desc[] = {
+            { L"ProcessId" },
+            { L"ImageFileName" },
+        };
+        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+
         ProcessEvent event;
         event.QpcTime       = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        event.ProcessId     = mMetadata.GetEventData<uint32_t>(pEventRecord, L"ProcessId");
-        event.ImageFileName = mMetadata.GetEventData<std::string>(pEventRecord, L"ImageFileName");
+        event.ProcessId     = desc[0].GetData<uint32_t>();
+        event.ImageFileName = desc[1].GetData<std::string>();
         event.IsStartEvent  = pEventRecord->EventHeader.EventDescriptor.Opcode == EVENT_TRACE_TYPE_START ||
                               pEventRecord->EventHeader.EventDescriptor.Opcode == EVENT_TRACE_TYPE_DC_START;
 

@@ -260,36 +260,36 @@ void EventMetadata::GetEventData(EVENT_RECORD* eventRecord, EventDataDesc* desc,
 namespace {
 
 template <typename T>
-T GetEventString(EventMetadata* metadata, EVENT_RECORD* eventRecord, wchar_t const* name, uint32_t arrayIndex, uint32_t statusCheck)
+T GetEventString(EventDataDesc const& desc)
 {
-    EventDataDesc desc = { name, arrayIndex, };
-    metadata->GetEventData(eventRecord, &desc, 1);
-
-    assert(desc.status_ & statusCheck);
-    (void) statusCheck;
-
-    // Don't include null termination character
-    if (desc.status_ & PROP_STATUS_NULL_TERMINATED) {
-        assert(desc.size_ >= sizeof(T::value_type));
-        desc.size_ -= sizeof(T::value_type);
-    }
+    assert(desc.status_ & PROP_STATUS_FOUND);
+    assert(desc.status_ & (std::is_same<char, typename T::value_type>::value ? PROP_STATUS_CHAR_STRING : PROP_STATUS_WCHAR_STRING));
+    assert(desc.status_ & PROP_STATUS_NULL_TERMINATED);
+    assert((desc.size_ % sizeof(typename T::value_type)) == 0);
 
     auto start = (typename T::value_type*) desc.data_;
     auto end   = (typename T::value_type*) ((uintptr_t) desc.data_ + desc.size_);
+
+    // Don't include null termination character
+    if (desc.status_ & PROP_STATUS_NULL_TERMINATED) {
+        assert(end > start);
+        end -= 1;
+    }
+
     return T(start, end);
 }
 
 }
 
 template <>
-std::string EventMetadata::GetEventData<std::string>(EVENT_RECORD* eventRecord, wchar_t const* name, uint32_t arrayIndex)
+std::string EventDataDesc::GetData<std::string>() const
 {
-    return GetEventString<std::string>(this, eventRecord, name, arrayIndex, PROP_STATUS_CHAR_STRING);
+    return GetEventString<std::string>(*this);
 }
 
 template <>
-std::wstring EventMetadata::GetEventData<std::wstring>(EVENT_RECORD* eventRecord, wchar_t const* name, uint32_t arrayIndex)
+std::wstring EventDataDesc::GetData<std::wstring>() const
 {
-    return GetEventString<std::wstring>(this, eventRecord, name, arrayIndex, PROP_STATUS_WCHAR_STRING);
+    return GetEventString<std::wstring>(*this);
 }
 
