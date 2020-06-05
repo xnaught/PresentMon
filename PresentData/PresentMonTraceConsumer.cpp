@@ -1196,9 +1196,9 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
 
     p->Completed = true;
     if (*presentIter == p) {
-        auto lock = scoped_lock(mMutex);
+        auto lock = scoped_lock(mPresentEventMutex);
         while (presentIter != presentDeque.end() && presentIter->get()->Completed) {
-            mCompletedPresents.push_back(*presentIter);
+            mPresentEvents.push_back(*presentIter);
             presentDeque.pop_front();
             presentIter = presentDeque.begin();
         }
@@ -1295,7 +1295,7 @@ void PMTraceConsumer::RuntimePresentStop(EVENT_HEADER const& hdr, bool AllowPres
 
 void PMTraceConsumer::HandleNTProcessEvent(EVENT_RECORD* pEventRecord)
 {
-    NTProcessEvent event;
+    ProcessEvent event;
     event.QpcTime = pEventRecord->EventHeader.TimeStamp.QuadPart;
     event.ProcessId = UINT32_MAX;
 
@@ -1318,8 +1318,8 @@ void PMTraceConsumer::HandleNTProcessEvent(EVENT_RECORD* pEventRecord)
     }
 
     {
-        auto lock = scoped_lock(mNTProcessEventMutex);
-        mNTProcessEvents.emplace_back(event);
+        auto lock = scoped_lock(mProcessEventMutex);
+        mProcessEvents.emplace_back(event);
     }
 }
 

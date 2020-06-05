@@ -131,12 +131,12 @@ void CheckLostReports(ULONG* eventsLost, ULONG* buffersLost)
 }
 
 void DequeueAnalyzedInfo(
-    std::vector<NTProcessEvent>* ntProcessEvents,
-    std::vector<std::shared_ptr<PresentEvent>>* presents,
+    std::vector<ProcessEvent>* processEvents,
+    std::vector<std::shared_ptr<PresentEvent>>* presentEvents,
     std::vector<std::shared_ptr<LateStageReprojectionEvent>>* lsrs)
 {
-    gPMConsumer->DequeueProcessEvents(*ntProcessEvents);
-    gPMConsumer->DequeuePresents(*presents);
+    gPMConsumer->DequeueProcessEvents(*processEvents);
+    gPMConsumer->DequeuePresentEvents(*presentEvents);
     if (gMRConsumer != nullptr) {
         gMRConsumer->DequeueLSRs(*lsrs);
     }

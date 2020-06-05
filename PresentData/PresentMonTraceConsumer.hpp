@@ -69,7 +69,7 @@ enum class Runtime
     DXGI, D3D9, Other
 };
 
-struct NTProcessEvent {
+struct ProcessEvent {
     std::string ImageFileName;  // If ImageFileName.empty(), then event is that process ending
     uint64_t QpcTime;
     uint32_t ProcessId;
@@ -185,11 +185,15 @@ struct PMTraceConsumer
     bool mFilteredEvents;
     bool mSimpleMode;
 
-    std::mutex mMutex;
     // A set of presents that are "completed":
     // They progressed as far as they can through the pipeline before being either discarded or hitting the screen.
     // These will be handed off to the consumer thread.
-    std::vector<std::shared_ptr<PresentEvent>> mCompletedPresents;
+    std::mutex mPresentEventMutex;
+    std::vector<std::shared_ptr<PresentEvent>> mPresentEvents;
+
+    // Process events
+    std::mutex mProcessEventMutex;
+    std::vector<ProcessEvent> mProcessEvents;
 
     // For each process, stores each in-progress present in order. Used for present batching
     std::map<uint32_t, std::map<uint64_t, std::shared_ptr<PresentEvent>>> mPresentsByProcess;
@@ -264,34 +268,30 @@ struct PMTraceConsumer
     // Yet another unique way of tracking present history tokens, this time from DxgKrnl -> DWM, only for legacy blit
     std::map<uint64_t, std::shared_ptr<PresentEvent>> mPresentsByLegacyBlitToken;
 
-    // Process events
-    std::mutex mNTProcessEventMutex;
-    std::vector<NTProcessEvent> mNTProcessEvents;
-
     // Storage for passing present path tracking id to Handle...() functions.
 #ifdef TRACK_PRESENT_PATHS
     uint32_t mAnalysisPathID;
 #endif
 
-    bool DequeueProcessEvents(std::vector<NTProcessEvent>& outProcessEvents)
+    bool DequeueProcessEvents(std::vector<ProcessEvent>& outProcessEvents)
     {
-        if (mNTProcessEvents.empty()) {
+        if (mProcessEvents.empty()) {
             return false;
         }
 
-        auto lock = scoped_lock(mNTProcessEventMutex);
-        outProcessEvents.swap(mNTProcessEvents);
+        auto lock = scoped_lock(mProcessEventMutex);
+        outProcessEvents.swap(mProcessEvents);
         return true;
     }
 
-    bool DequeuePresents(std::vector<std::shared_ptr<PresentEvent>>& outPresents)
+    bool DequeuePresentEvents(std::vector<std::shared_ptr<PresentEvent>>& outPresents)
     {
-        if (mCompletedPresents.empty()) {
+        if (mPresentEvents.empty()) {
             return false;
         }
 
-        auto lock = scoped_lock(mMutex);
-        outPresents.swap(mCompletedPresents);
+        auto lock = scoped_lock(mPresentEventMutex);
+        outPresents.swap(mPresentEvents);
         return true;
     }
 

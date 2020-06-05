@@ -159,8 +159,8 @@ bool StartTraceSession();
 void StopTraceSession();
 void CheckLostReports(ULONG* eventsLost, ULONG* buffersLost);
 void DequeueAnalyzedInfo(
-    std::vector<NTProcessEvent>* ntProcessEvents,
-    std::vector<std::shared_ptr<PresentEvent>>* presents,
+    std::vector<ProcessEvent>* processEvents,
+    std::vector<std::shared_ptr<PresentEvent>>* presentEvents,
     std::vector<std::shared_ptr<LateStageReprojectionEvent>>* lsrs);
 double QpcDeltaToSeconds(uint64_t qpcDelta);
 uint64_t SecondsDeltaToQpc(double secondsDelta);
