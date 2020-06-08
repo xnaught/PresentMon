@@ -107,11 +107,64 @@ PresentEvent::~PresentEvent()
     assert(Completed || gPresentMonTraceConsumer_Exiting);
 }
 
+PMTraceConsumer::PMTraceConsumer(bool filteredEvents, bool simple)
+    : mFilteredEvents(filteredEvents)
+    , mSimpleMode(simple)
+{
+}
+
 PMTraceConsumer::~PMTraceConsumer()
 {
 #ifndef NDEBUG
     gPresentMonTraceConsumer_Exiting = true;
 #endif
+}
+
+void PMTraceConsumer::HandleD3D9Event(EVENT_RECORD* pEventRecord)
+{
+    DebugEvent(pEventRecord, &mMetadata);
+
+    auto const& hdr = pEventRecord->EventHeader;
+    switch (hdr.EventDescriptor.Id) {
+    case Microsoft_Windows_D3D9::Present_Start::Id:
+    {
+        EventDataDesc desc[] = {
+            { L"pSwapchain" },
+            { L"Flags" },
+        };
+        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+        auto pSwapchain = desc[0].GetData<uint64_t>();
+        auto Flags      = desc[1].GetData<uint32_t>();
+
+        auto present = std::make_shared<PresentEvent>(hdr, Runtime::D3D9);
+        present->SwapChainAddress = pSwapchain;
+        present->PresentFlags =
+            ((Flags & D3DPRESENT_DONOTFLIP) ? DXGI_PRESENT_DO_NOT_SEQUENCE : 0) |
+            ((Flags & D3DPRESENT_DONOTWAIT) ? DXGI_PRESENT_DO_NOT_WAIT : 0) |
+            ((Flags & D3DPRESENT_FLIPRESTART) ? DXGI_PRESENT_RESTART : 0);
+        if ((Flags & D3DPRESENT_FORCEIMMEDIATE) != 0) {
+            present->SyncInterval = 0;
+        }
+
+        CreatePresent(present);
+        TRACK_PRESENT_PATH(present);
+        break;
+    }
+    case Microsoft_Windows_D3D9::Present_Stop::Id:
+    {
+        auto result = mMetadata.GetEventData<uint32_t>(pEventRecord, L"Result");
+
+        bool AllowBatching =
+            SUCCEEDED(result) &&
+            result != S_PRESENT_OCCLUDED;
+
+        RuntimePresentStop(hdr, AllowBatching);
+        break;
+    }
+    default:
+        assert(!mFilteredEvents); // Assert that filtering is working if expected
+        break;
+    }
 }
 
 void PMTraceConsumer::HandleDXGIEvent(EVENT_RECORD* pEventRecord)
@@ -1091,53 +1144,6 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
     default:
         assert(!mFilteredEvents || // Assert that filtering is working if expected
                hdr.ProviderId == Microsoft_Windows_Dwm_Core::Win7::GUID);
-        break;
-    }
-}
-
-void PMTraceConsumer::HandleD3D9Event(EVENT_RECORD* pEventRecord)
-{
-    DebugEvent(pEventRecord, &mMetadata);
-
-    auto const& hdr = pEventRecord->EventHeader;
-    switch (hdr.EventDescriptor.Id) {
-    case Microsoft_Windows_D3D9::Present_Start::Id:
-    {
-        EventDataDesc desc[] = {
-            { L"pSwapchain" },
-            { L"Flags" },
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto pSwapchain = desc[0].GetData<uint64_t>();
-        auto Flags      = desc[1].GetData<uint32_t>();
-
-        auto present = std::make_shared<PresentEvent>(hdr, Runtime::D3D9);
-        present->SwapChainAddress = pSwapchain;
-        present->PresentFlags =
-            ((Flags & D3DPRESENT_DONOTFLIP) ? DXGI_PRESENT_DO_NOT_SEQUENCE : 0) |
-            ((Flags & D3DPRESENT_DONOTWAIT) ? DXGI_PRESENT_DO_NOT_WAIT : 0) |
-            ((Flags & D3DPRESENT_FLIPRESTART) ? DXGI_PRESENT_RESTART : 0);
-        if ((Flags & D3DPRESENT_FORCEIMMEDIATE) != 0) {
-            present->SyncInterval = 0;
-        }
-
-        CreatePresent(present);
-        TRACK_PRESENT_PATH(present);
-        break;
-    }
-    case Microsoft_Windows_D3D9::Present_Stop::Id:
-    {
-        auto result = mMetadata.GetEventData<uint32_t>(pEventRecord, L"Result");
-
-        bool AllowBatching =
-            SUCCEEDED(result) &&
-            result != S_PRESENT_OCCLUDED;
-
-        RuntimePresentStop(hdr, AllowBatching);
-        break;
-    }
-    default:
-        assert(!mFilteredEvents); // Assert that filtering is working if expected
         break;
     }
 }

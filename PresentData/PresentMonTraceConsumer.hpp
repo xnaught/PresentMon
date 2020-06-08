@@ -174,7 +174,7 @@ private:
 
 struct PMTraceConsumer
 {
-    PMTraceConsumer(bool filteredEvents, bool simple) : mFilteredEvents(filteredEvents), mSimpleMode(simple) { }
+    PMTraceConsumer(bool filteredEvents, bool simple);
     ~PMTraceConsumer();
 
     EventMetadata mMetadata;
