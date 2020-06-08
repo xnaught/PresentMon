@@ -85,9 +85,9 @@ bool StartTraceSession()
         switch (status) {
         case ERROR_FILE_NOT_FOUND:    fprintf(stderr, " (file not found)"); break;
         case ERROR_PATH_NOT_FOUND:    fprintf(stderr, " (path not found)"); break;
-        case ERROR_INVALID_PARAMETER: fprintf(stderr, " (Logfile is NULL)"); break;
-        case ERROR_BAD_PATHNAME:      fprintf(stderr, " (invalid LoggerName)"); break;
+        case ERROR_BAD_PATHNAME:      fprintf(stderr, " (invalid --session_name)"); break;
         case ERROR_ACCESS_DENIED:     fprintf(stderr, " (access denied)"); break;
+        case ERROR_FILE_CORRUPT:      fprintf(stderr, " (invalid --etl_file)"); break;
         default:                      fprintf(stderr, " (error=%u)", status); break;
         }
         fprintf(stderr, ".\n");
