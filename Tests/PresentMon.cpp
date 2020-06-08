@@ -21,9 +21,7 @@ SOFTWARE.
 */
 #include "PresentMonTests.h"
 
-namespace {
-
-void AddFailure(PresentMonCsv const& csv, char const* fmt, ...)
+void AddTestFailure(char const* file, int line, char const* fmt, ...)
 {
     char buffer[512];
 
@@ -32,23 +30,10 @@ void AddFailure(PresentMonCsv const& csv, char const* fmt, ...)
     vsnprintf(buffer, _countof(buffer), fmt, val);
     va_end(val);
 
-    GTEST_MESSAGE_AT_(Convert(csv.path_).c_str(), (int) csv.line_, buffer, ::testing::TestPartResult::kFatalFailure);
+    GTEST_MESSAGE_AT_(file, line, buffer, ::testing::TestPartResult::kNonFatalFailure);
 }
 
-char const* GetHeader(size_t h)
-{
-    constexpr auto n0 = _countof(PresentMonCsv::REQUIRED_HEADER);
-    constexpr auto n1 = _countof(PresentMonCsv::NOT_SIMPLE_HEADER);
-    constexpr auto n2 = _countof(PresentMonCsv::VERBOSE_HEADER);
-    constexpr auto n3 = _countof(PresentMonCsv::OPT_HEADER);
-
-    return
-        h                < n0 ? PresentMonCsv::REQUIRED_HEADER  [h] :
-        h - n0           < n1 ? PresentMonCsv::NOT_SIMPLE_HEADER[h - n0] :
-        h - n0 - n1      < n2 ? PresentMonCsv::VERBOSE_HEADER   [h - n0 - n1] :
-        h - n0 - n1 - n2 < n3 ? PresentMonCsv::OPT_HEADER       [h - n0 - n1 - n2] :
-                                "Unknown";
-}
+namespace {
 
 size_t FindHeader(
     char const* header,
@@ -95,7 +80,7 @@ PresentMonCsv::PresentMonCsv()
 {
 }
 
-bool PresentMonCsv::Open(std::wstring const& path, char const* file, int line)
+bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
 {
     memset(headerColumnIndex_, 0xff, sizeof(headerColumnIndex_));
     cols_.clear();
@@ -103,7 +88,7 @@ bool PresentMonCsv::Open(std::wstring const& path, char const* file, int line)
     line_ = 0;
 
     if (_wfopen_s(&fp_, path.c_str(), L"rb")) {
-        GTEST_MESSAGE_AT_(file, line, "Failed to open file:", ::testing::TestPartResult::kFatalFailure) << path;
+        AddTestFailure(file, line, "Failed to open file: %ls", path.c_str());
         return false;
     }
 
@@ -126,9 +111,9 @@ bool PresentMonCsv::Open(std::wstring const& path, char const* file, int line)
     for (uint32_t i = 0, n = (uint32_t) cols_.size(); i < n; ++i) {
         auto idx = FindHeader(cols_[i], &requiredCount, &notSimpleCount, &verboseCount);
         if (idx == SIZE_MAX) {
-            AddFailure(*this, "Unrecognised column: %s", cols_[i]);
+            AddTestFailure(Convert(path_).c_str(), (int) line_, "Unrecognised column: %s", cols_[i]);
         } else if (headerColumnIndex_[idx] != SIZE_MAX) {
-            AddFailure(*this, "Duplicate column: %s", cols_[i]);
+            AddTestFailure(Convert(path_).c_str(), (int) line_, "Duplicate column: %s", cols_[i]);
         } else {
             headerColumnIndex_[idx] = i;
         }
@@ -140,7 +125,7 @@ bool PresentMonCsv::Open(std::wstring const& path, char const* file, int line)
     if (requiredCount != 10 ||
         (!simple_ && notSimpleCount != 5) ||
         (verbose_ && verboseCount != 2)) {
-        AddFailure(*this, "Missing required columns.");
+        AddTestFailure(Convert(path_).c_str(), (int) line_, "Missing required columns.");
     }
 
     return true;
@@ -160,7 +145,7 @@ bool PresentMonCsv::ReadRow()
     // Read a line
     if (fgets(row_, _countof(row_), fp_) == nullptr) {
         if (ferror(fp_) != 0) {
-            AddFailure(*this, "File read error");
+            AddTestFailure(Convert(path_).c_str(), (int) line_, "File read error");
         }
         return false;
     }
@@ -193,48 +178,6 @@ size_t PresentMonCsv::GetColumnIndex(char const* header) const
         : headerColumnIndex_[headerIdx];
 }
 
-bool PresentMonCsv::CompareColumns(PresentMonCsv const& cmp) const
-{
-    bool ok = true;
-    for (size_t h = 0; h < _countof(headerColumnIndex_); ++h) {
-        if ((headerColumnIndex_[h] == SIZE_MAX) != (cmp.headerColumnIndex_[h] == SIZE_MAX)) {
-            AddFailure(*this, "CSVs have different headers: %s", GetHeader((uint32_t) h));
-            ok = false;
-        }
-    }
-    return ok;
-}
-
-bool PresentMonCsv::CompareRow(PresentMonCsv const& cmp, bool print, char const* name, char const* cmpName) const
-{
-    bool same = true;
-    for (size_t h = 0; h < _countof(headerColumnIndex_); ++h) {
-        if (headerColumnIndex_[h] != SIZE_MAX && cmp.headerColumnIndex_[h] != SIZE_MAX) {
-            char const* a = cols_[headerColumnIndex_[h]];
-            char const* b = cmp.cols_[cmp.headerColumnIndex_[h]];
-            if (_stricmp(a, b) != 0) {
-                if (print) {
-                    int r;
-                    if (same) {
-                        printf("%s = %ls(%zu)\n", name, path_.c_str(), line_);
-                        printf("%s = %ls(%zu)\n", cmpName, cmp.path_.c_str(), cmp.line_);
-                        printf("Difference:\n");
-                        printf("%29s", "");
-                        r = printf(" %s", name);
-                        printf("%*s %s\n", r < 38 ? 38 - r : 0, "", cmpName);
-                    }
-                    r = printf("    %s", GetHeader(h)); printf("%*s", r < 29 ? 29 - r : 0, "");
-                    r = printf(" %s", a);               printf("%*s", r < 38 ? 38 - r : 0, "");
-                    printf(" %s\n", b);
-                }
-
-                same = false;
-            }
-        }
-    }
-    return same;
-}
-
 PresentMon::PresentMon()
     : cmdline_()
     , csvArgSet_(false)
@@ -242,6 +185,13 @@ PresentMon::PresentMon()
     cmdline_ += L'\"';
     cmdline_ += exePath_;
     cmdline_ += L"\" -no_top -dont_restart_as_admin";
+}
+
+PresentMon::~PresentMon()
+{
+    if (::testing::Test::HasFailure()) {
+        printf("%ls\n", cmdline_.c_str());
+    }
 }
 
 void PresentMon::AddEtlPath(std::wstring const& etlPath)
@@ -270,7 +220,7 @@ void PresentMon::Add(wchar_t const* args)
     cmdline_ += args;
 }
 
-void PresentMon::Start()
+void PresentMon::Start(char const* file, int line)
 {
     if (!csvArgSet_) {
         cmdline_ += L" -no_csv";
@@ -280,8 +230,9 @@ void PresentMon::Start()
     STARTUPINFO si = {};
     si.cb = sizeof(si);
     si.dwFlags = STARTF_USESTDHANDLES;
-    EXPECT_NE(CreateProcess(nullptr, &cmdline_[0], nullptr, nullptr, TRUE, 0, nullptr, nullptr, &si, (PROCESS_INFORMATION*) this), 0)
-        << cmdline_;
+    if (CreateProcess(nullptr, &cmdline_[0], nullptr, nullptr, TRUE, 0, nullptr, nullptr, &si, (PROCESS_INFORMATION*) this) == 0) {
+        AddTestFailure(file, line, "Failed to start PresentMon");
+    }
 }
 
 bool PresentMon::IsRunning(DWORD timeoutMilliseconds) const
@@ -289,24 +240,23 @@ bool PresentMon::IsRunning(DWORD timeoutMilliseconds) const
     return WaitForSingleObject(hProcess, timeoutMilliseconds) == WAIT_TIMEOUT;
 }
 
-void PresentMon::ExpectExit(char const* file, int line, DWORD timeoutMilliseconds, DWORD expectedExitCode)
+void PresentMon::ExpectExited(char const* file, int line, DWORD timeoutMilliseconds, DWORD expectedExitCode)
 {
     auto isRunning = IsRunning(timeoutMilliseconds);
     if (isRunning) {
-        ADD_FAILURE_AT(file, line) << "PresentMon still running after " << timeoutMilliseconds << "ms";
+        AddTestFailure(file, line, "PresentMon still running after %ums", timeoutMilliseconds);
 
-        EXPECT_NE(TerminateProcess(hProcess, 0), FALSE);
+        TerminateProcess(hProcess, 0);
         WaitForSingleObject(hProcess, INFINITE);
     } else {
         DWORD exitCode = 0;
-        EXPECT_TRUE(GetExitCodeProcess(hProcess, &exitCode));
-        EXPECT_EQ(exitCode, expectedExitCode);
+        GetExitCodeProcess(hProcess, &exitCode);
+
+        if (exitCode != expectedExitCode) {
+            AddTestFailure(file, line, "Unexpected PresentMon exit code: %d (expecting %d)", exitCode, expectedExitCode);
+        }
     }
 
     CloseHandle(hProcess);
     CloseHandle(hThread);
-
-    if (::testing::Test::HasFailure()) {
-        printf("%ls\n", cmdline_.c_str());
-    }
 }

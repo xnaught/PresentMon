@@ -40,8 +40,8 @@ void TerminateAfterTimedTest(uint32_t timed, DWORD timeoutMilliseconds)
     PresentMon pm;
     pm.Add(L"-stop_existing_session -terminate_after_timed -timed");
     pm.Add(timedArg);
-    pm.Start();
-    pm.ExpectExit(__FILE__, __LINE__, timeoutMilliseconds, 0);
+    pm.PMSTART();
+    pm.PMEXITED(timeoutMilliseconds, 0);
 
     // We don't check the CSV... it's ok if buffers drain adn we get more data
 }
@@ -49,12 +49,12 @@ void TerminateAfterTimedTest(uint32_t timed, DWORD timeoutMilliseconds)
 void TerminateExistingTest(wchar_t const* sessionName)
 {
     PresentMon pm;
-    pm.Add(L"-no_csv");
+    pm.Add(L"-stop_existing_session -no_csv");
     if (sessionName != nullptr) {
         pm.Add(L" -session_name");
         pm.Add(sessionName);
     }
-    pm.Start();
+    pm.PMSTART();
     EXPECT_TRUE(pm.IsRunning(1000));
 
     PresentMon pm2;
@@ -63,9 +63,9 @@ void TerminateExistingTest(wchar_t const* sessionName)
         pm2.Add(L" -session_name");
         pm2.Add(sessionName);
     }
-    pm2.Start();
-    pm2.ExpectExit(__FILE__, __LINE__, 1000);
-    pm.ExpectExit(__FILE__, __LINE__, 1000);
+    pm2.PMSTART();
+    pm2.PMEXITED(1000);
+    pm.PMEXITED(1000);
 }
 
 template<typename T>
@@ -81,21 +81,20 @@ void QpcTimeTest(wchar_t const* qpcTimeArg)
     // TODO: Seems to work, but how can we make sure to capture presents during
     // this 1 second? Do we need to also launch a presenting process?
     PresentMon pm;
-    pm.Add(L"-simple -stop_existing_session -terminate_after_timed -timed 1");
+    pm.Add(L"-stop_existing_session -terminate_after_timed -timed 1 -simple");
     pm.Add(qpcTimeArg);
     pm.AddCsvPath(csvPath);
 
     QueryPerformanceCounter(&qpcMin);
-    pm.Start();
-    pm.ExpectExit(__FILE__, __LINE__, 2000, 0);
+    pm.PMSTART();
+    pm.PMEXITED(2000, 0);
     QueryPerformanceCounter(&qpcMax);
     if (::testing::Test::HasFailure()) {
         return;
     }
 
     PresentMonCsv csv;
-    if (!csv.Open(csvPath, __FILE__, __LINE__)) {
-        printf("%ls\n", pm.cmdline_.c_str());
+    if (!csv.CSVOPEN(csvPath)) {
         return;
     }
 
@@ -132,7 +131,6 @@ void QpcTimeTest(wchar_t const* qpcTimeArg)
     csv.Close();
 
     if (::testing::Test::HasFailure()) {
-        printf("%ls\n", pm.cmdline_.c_str());
         printf("%ls\n", csvPath.c_str());
     }
 }
@@ -163,8 +161,8 @@ TEST(CommandLineTests, TerminateExisting_NotFound)
 {
     PresentMon pm;
     pm.Add(L"-terminate_existing -session_name session_name_that_hopefully_isnt_in_use");
-    pm.Start();
-    pm.ExpectExit(__FILE__, __LINE__, 1000, 7); // session name not found -> exit code = 7
+    pm.PMSTART();
+    pm.PMEXITED(1000, 7); // session name not found -> exit code = 7
 }
 
 TEST(CommandLineTests, QPCTime)

@@ -57,6 +57,21 @@ struct PresentMonCsv
         "QPCTime",
     };
 
+    static constexpr char const* GetHeader(size_t h)
+    {
+        constexpr auto n0 = _countof(PresentMonCsv::REQUIRED_HEADER);
+        constexpr auto n1 = _countof(PresentMonCsv::NOT_SIMPLE_HEADER);
+        constexpr auto n2 = _countof(PresentMonCsv::VERBOSE_HEADER);
+        constexpr auto n3 = _countof(PresentMonCsv::OPT_HEADER);
+
+        return
+            h < n0                ? PresentMonCsv::REQUIRED_HEADER  [h] :
+            h - n0 < n1           ? PresentMonCsv::NOT_SIMPLE_HEADER[h - n0] :
+            h - n0 - n1 < n2      ? PresentMonCsv::VERBOSE_HEADER   [h - n0 - n1] :
+            h - n0 - n1 - n2 < n3 ? PresentMonCsv::OPT_HEADER       [h - n0 - n1 - n2] :
+                                    "Unknown";
+    }
+
     std::wstring path_;
     size_t line_;
     FILE* fp_;
@@ -70,36 +85,43 @@ struct PresentMonCsv
     bool verbose_;
 
     PresentMonCsv();
-    bool Open(std::wstring const& path, char const* file, int line);
+    bool Open(char const* file, int line, std::wstring const& path);
     void Close();
     bool ReadRow();
 
-    bool CompareColumns(PresentMonCsv const& cmp) const;
-    bool CompareRow(PresentMonCsv const& cmp, bool print, char const* name, char const* cmpName) const;
-
     size_t GetColumnIndex(char const* header) const;
 };
+
+#define CSVOPEN(_P) Open(__FILE__, __LINE__, _P)
 
 struct PresentMon : PROCESS_INFORMATION {
     static std::wstring exePath_;
     std::wstring cmdline_;
     bool csvArgSet_;
+
     PresentMon();
+    ~PresentMon();
+
     void AddEtlPath(std::wstring const& etlPath);
     void AddCsvPath(std::wstring const& csvPath);
     void Add(wchar_t const* args);
-    void Start();
+    void Start(char const* file, int line);
 
     // Returns true if the process is still running for timeoutMilliseconds
     bool IsRunning(DWORD timeoutMilliseconds=0) const;
 
     // Expect the process to exit with expectedExitCode within
     // timeoutMilliseconds (or kill it otherwise).
-    void ExpectExit(char const* file, int line, DWORD timeoutMilliseconds=INFINITE, DWORD expectedExitCode=0);
+    void ExpectExited(char const* file, int line, DWORD timeoutMilliseconds=INFINITE, DWORD expectedExitCode=0);
 };
+
+#define PMSTART() Start(__FILE__, __LINE__)
+#define PMEXITED(...) ExpectExited(__FILE__, __LINE__, __VA_ARGS__)
 
 extern std::wstring outDir_;
 
+// PresentMon.cpp
+void AddTestFailure(char const* file, int line, char const* fmt, ...);
 
 // PresentMonTests.cpp
 bool EnsureDirectoryCreated(std::wstring path);

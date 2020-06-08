@@ -41,7 +41,7 @@ public:
     {
         // Open the gold CSV
         PresentMonCsv goldCsv;
-        if (!goldCsv.Open(goldCsv_, __FILE__, __LINE__)) {
+        if (!goldCsv.CSVOPEN(goldCsv_)) {
             return;
         }
 
@@ -56,44 +56,75 @@ public:
         // Generate command line, querying gold CSV to try and match expected
         // data.
         PresentMon pm;
+        pm.Add(L"-stop_existing_session");
         pm.AddEtlPath(etl_);
         pm.AddCsvPath(testCsv_);
         if (goldCsv.simple_) pm.Add(L"-simple");
         if (goldCsv.verbose_) pm.Add(L"-verbose");
         if (goldCsv.GetColumnIndex("QPCTime") != SIZE_MAX) pm.Add(L"-qpc_time"); // TODO: check if %ull or %.9lf to see if -qpc_time_s
-        pm.Start();
-        pm.ExpectExit(__FILE__, __LINE__);
+        pm.PMSTART();
+        pm.PMEXITED();
 
         // Open test CSV file and check it has the same columns as gold
         PresentMonCsv testCsv;
-        if (!testCsv.Open(testCsv_, __FILE__, __LINE__)) {
+        if (!testCsv.CSVOPEN(testCsv_)) {
             goldCsv.Close();
             return;
         }
 
         // Compare gold/test CSV data rows
-        if (!testCsv.CompareColumns(goldCsv)) {
-            goldCsv.Close();
-            testCsv.Close();
-            return;
+        for (size_t h = 0; h < _countof(PresentMonCsv::headerColumnIndex_); ++h) {
+            if ((testCsv.headerColumnIndex_[h] == SIZE_MAX) != (goldCsv.headerColumnIndex_[h] == SIZE_MAX)) {
+                AddTestFailure(__FILE__, __LINE__, "CSVs have different headers: %s", PresentMonCsv::GetHeader((uint32_t) h));
+                printf("GOLD = %ls\n", goldCsv_.c_str());
+                printf("TEST = %ls\n", testCsv_.c_str());
+                goldCsv.Close();
+                testCsv.Close();
+                return;
+            }
         }
 
-        UINT errorLineCount = 0;
         for (;;) {
             auto goldDone = !goldCsv.ReadRow();
             auto testDone = !testCsv.ReadRow();
-            EXPECT_EQ(goldDone, testDone);
             if (goldDone || testDone) {
+                if (!goldDone || !testDone) {
+                    AddTestFailure(__FILE__, __LINE__, "GOLD and TEST CSV had different number of rows");
+                    printf("GOLD = %ls\n", goldCsv_.c_str());
+                    printf("TEST = %ls\n", testCsv_.c_str());
+                }
                 break;
             }
 
-            errorLineCount += goldCsv.CompareRow(testCsv, errorLineCount == 0, "GOLD", "TEST") ? 0 : 1;
+            auto rowOk = true;
+            for (size_t h = 0; h < _countof(PresentMonCsv::headerColumnIndex_); ++h) {
+                if (testCsv.headerColumnIndex_[h] != SIZE_MAX && goldCsv.headerColumnIndex_[h] != SIZE_MAX) {
+                    char const* a = testCsv.cols_[testCsv.headerColumnIndex_[h]];
+                    char const* b = goldCsv.cols_[goldCsv.headerColumnIndex_[h]];
+                    if (_stricmp(a, b) != 0) {
+                        if (rowOk) {
+                            rowOk = false;
+                            printf("GOLD = %ls\n", goldCsv_.c_str());
+                            printf("TEST = %ls\n", testCsv_.c_str());
+                            AddTestFailure(__FILE__, __LINE__, "Difference on line: %zu", testCsv.line_);
+                            printf("    COLUMN                    TEST VALUE                            GOLD VALUE\n");
+                        }
+
+                        auto r = printf("    %s", testCsv.GetHeader(h));
+                        printf("%*s", r < 29 ? 29 - r : 0, "");
+                        r = printf(" %s", a);
+                        printf("%*s", r < 38 ? 38 - r : 0, "");
+                        printf(" %s\n", b);
+                    }
+                }
+            }
+            if (!rowOk) {
+                break;
+            }
         }
 
         goldCsv.Close();
         testCsv.Close();
-
-        EXPECT_EQ(errorLineCount, 0u);
     }
 };
 
