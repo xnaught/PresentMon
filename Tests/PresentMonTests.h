@@ -129,6 +129,4 @@ std::string Convert(std::wstring const& s);
 std::wstring Convert(std::string const& s);
 
 // GoldEtlCsvTests.cpp
-void AddGoldEtlCsvTests(
-    std::wstring const& dir,
-    size_t relIdx);
+void AddGoldEtlCsvTests(std::wstring const& dir, size_t relIdx, bool reportAllCsvDiffs);

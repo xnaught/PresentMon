@@ -177,6 +177,7 @@ int wmain(
                 "    --golddir=path       Path to directory of test ETLs and gold CSVs (default=%ls).\n"
                 "    --outdir=path        Path to directory for test outputs (default=%%temp%%/PresentMonTestOutput).\n"
                 "    --nodelete           Keep the output directory after tests.\n"
+                "    --allcsvdiffs        Report all CSV differences, not just the first.\n"
                 "\n",
                 PresentMon::exePath_.c_str(),
                 goldDir.c_str());
@@ -196,6 +197,7 @@ int wmain(
     wchar_t* goldDirArg = nullptr;
     wchar_t* outDirArg = nullptr;
     bool deleteOutDir = true;
+    bool reportAllCsvDiffs = false;
     for (int i = 1; i < argc; ++i) {
         if (_wcsnicmp(argv[i], L"--presentmon=", 13) == 0) {
             presentMonPathArg = argv[i] + 13;
@@ -217,6 +219,11 @@ int wmain(
             continue;
         }
 
+        if (_wcsicmp(argv[i], L"--allcsvdiffs") == 0) {
+            reportAllCsvDiffs = true;
+            continue;
+        }
+
         fprintf(stderr, "error: unrecognized command line argument: %ls.\n", argv[i]);
         fprintf(stderr, "       Use --help command line argument for usage.\n");
         return 1;
@@ -232,7 +239,7 @@ int wmain(
     }
 
     if (goldDirExists) {
-        AddGoldEtlCsvTests(goldDir, goldDir.size());
+        AddGoldEtlCsvTests(goldDir, goldDir.size(), reportAllCsvDiffs);
     } else {
         fprintf(stderr, "warning: gold directory does not exist: %ls\n", goldDir.c_str());
         fprintf(stderr, "         Continuing, but no GoldEtlCsvTests.* will run.  Specify a new path\n");

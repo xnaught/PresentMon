@@ -28,6 +28,7 @@ struct TestArgs {
     std::wstring etl_;
     std::wstring goldCsv_;
     std::wstring testCsv_;
+    bool reportAllCsvDiffs_;
 };
 
 class Tests : public ::testing::Test, TestArgs {
@@ -118,7 +119,7 @@ public:
                     }
                 }
             }
-            if (!rowOk) {
+            if (!reportAllCsvDiffs_ && !rowOk) {
                 break;
             }
         }
@@ -163,8 +164,12 @@ bool CheckGoldEtlCsvPair(
 
 void AddGoldEtlCsvTests(
     std::wstring const& dir,
-    size_t relIdx)
+    size_t relIdx,
+    bool reportAllCsvDiffs)
 {
+    TestArgs args;
+    args.reportAllCsvDiffs_ = reportAllCsvDiffs;
+
     WIN32_FIND_DATA ff = {};
     auto h = FindFirstFile((dir + L'*').c_str(), &ff);
     if (h == INVALID_HANDLE_VALUE) {
@@ -175,9 +180,8 @@ void AddGoldEtlCsvTests(
         if (ff.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             if (wcscmp(ff.cFileName, L".") == 0) continue;
             if (wcscmp(ff.cFileName, L"..") == 0) continue;
-            AddGoldEtlCsvTests(dir + ff.cFileName + L'\\', relIdx);
+            AddGoldEtlCsvTests(dir + ff.cFileName + L'\\', relIdx, reportAllCsvDiffs);
         } else {
-            TestArgs args;
             if (CheckGoldEtlCsvPair(dir, relIdx, ff.cFileName, &args)) {
                 ::testing::RegisterTest(
                     "GoldEtlCsvTests", args.name_.c_str(), nullptr, nullptr, __FILE__, __LINE__,
