@@ -2,20 +2,12 @@
 
 PresentMon testing is primarily done by having a specific PresentMon build analyze a collection of ETW logs and ensuring its output matches the expected result.  The PresentMonTests application will add a test for every .etl/.csv pair it finds under a specified root directory.
 
-To run the standard PresentMon tests, run the following two commands:
-```
-Tools\download_tests.cmd
-Tools\run_tests.cmd
-```
-
-`Tools\download_tests.cmd` will download a set of test logs along with their expected results from the [PresentMonTestEtls](https://github.com/GameTechDev/PresentMon/releases/tag/PresentMonTestEtls) release, and place them into the Tests\Gold directory (which is the default root directory for PresentMonTests).
-
 `Tools\run_tests.cmd` will build all configurations of PresentMon, and use PresentMonTests to validate the x86 and x64 builds using the contents of the Tests\Gold directory.
 
 
 #### PresentMonTestEtls Coverage
 
-The ETW logs provided in the PresentMonTestEtls release binary were chosen to minimally cover as many different present paths as possible.  These logs currently exercise the following PresentMon paths:
+The ETW logs provided in the PresentMon repository were chosen to minimally cover as many different present paths as possible.  These logs currently exercise the following PresentMon paths:
 
 | PresentMode | TRACK_PRESENT_PATH | Test case |
 | ----------- | ----------- | -- |
