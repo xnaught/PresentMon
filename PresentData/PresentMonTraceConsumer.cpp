@@ -158,7 +158,7 @@ void PMTraceConsumer::HandleD3D9Event(EVENT_RECORD* pEventRecord)
             SUCCEEDED(result) &&
             result != S_PRESENT_OCCLUDED;
 
-        RuntimePresentStop(hdr, AllowBatching);
+        RuntimePresentStop(hdr, AllowBatching, Runtime::D3D9);
         break;
     }
     default:
@@ -188,6 +188,12 @@ void PMTraceConsumer::HandleDXGIEvent(EVENT_RECORD* pEventRecord)
 
         // Ignore PRESENT_TEST: it's just to check if you're still fullscreen
         if ((Flags & DXGI_PRESENT_TEST) != 0) {
+            // mPresentByThreadId isn't cleaned up properly when non-runtime
+            // presents (e.g. created by Dxgk via FindOrCreatePresent())
+            // complete.  So we need to clear mPresentByThreadId here to
+            // prevent the corresponding Present_Stop event from modifying
+            // anything.
+            mPresentByThreadId.erase(hdr.ThreadId);
             break;
         }
 
@@ -211,7 +217,7 @@ void PMTraceConsumer::HandleDXGIEvent(EVENT_RECORD* pEventRecord)
             result != DXGI_STATUS_MODE_CHANGE_IN_PROGRESS &&
             result != DXGI_STATUS_NO_DESKTOP_ACCESS;
 
-        RuntimePresentStop(hdr, AllowBatching);
+        RuntimePresentStop(hdr, AllowBatching, Runtime::DXGI);
         break;
     }
     default:
@@ -1308,7 +1314,7 @@ void PMTraceConsumer::HandleStuckPresent(
 // No TRACK_PRESENT instrumentation here because each runtime Present::Start
 // event is instrumented and we assume we'll see the corresponding Stop event
 // for any completed present.
-void PMTraceConsumer::RuntimePresentStop(EVENT_HEADER const& hdr, bool AllowPresentBatching)
+void PMTraceConsumer::RuntimePresentStop(EVENT_HEADER const& hdr, bool AllowPresentBatching, Runtime runtime)
 {
     auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
     if (eventIter == mPresentByThreadId.end()) {
@@ -1318,7 +1324,13 @@ void PMTraceConsumer::RuntimePresentStop(EVENT_HEADER const& hdr, bool AllowPres
 
     DebugModifyPresent(event);
 
+    // eventIter should be equal to the PresentEvent created by the
+    // corresponding ???::Present_Start event with event.Runtime==runtime.
+    // However, sometimes this is not the case due to the corresponding Start
+    // event happened before capture started, or missed events.
+    assert(event.Runtime == Runtime::Other || event.Runtime == runtime);
     assert(event.QpcTime <= *(uint64_t*) &hdr.TimeStamp);
+    event.Runtime   = runtime;
     event.TimeTaken = *(uint64_t*) &hdr.TimeStamp - event.QpcTime;
 
     if (!AllowPresentBatching || mSimpleMode) {
