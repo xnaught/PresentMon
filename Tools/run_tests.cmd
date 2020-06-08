@@ -80,6 +80,8 @@ if %oneconfig% equ 1 (
     set test_platforms=x64
 )
 
+set prebuild_errorcount=%errorcount%
+
 echo.
 echo [96mBuilding...[90m
 if %dobuild% equ 0 (
@@ -87,6 +89,11 @@ if %dobuild% equ 0 (
 ) else (
     for %%a in (%build_platforms%) do for %%b in (%build_configs%) do call :build %%a %%b "PresentMon.sln"
     for %%a in (%test_platforms%)  do for %%b in (%build_configs%) do call :build %%a %%b "Tools\etw_list\etw_list.sln"
+)
+
+if %errorcount% neq %prebuild_errorcount% (
+    echo [31mFAIL: build failed, cannot continue[0m
+    exit /b 1
 )
 
 :: -----------------------------------------------------------------------------
