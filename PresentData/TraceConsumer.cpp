@@ -106,6 +106,7 @@ void GetPropertySize(TRACE_EVENT_INFO const& tei, EVENT_RECORD const& eventRecor
 
         case TDH_INTYPE_POINTER:    // TODO: Not sure this is needed, epi.length seems to be correct?
         case TDH_INTYPE_SIZET:
+            *propStatus |= PROP_STATUS_POINTER_SIZE;
             size = (eventRecord.EventHeader.Flags & EVENT_HEADER_FLAG_64_BIT_HEADER) ? 8 : 4;
             break;
 

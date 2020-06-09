@@ -43,6 +43,7 @@ enum PropertyStatus {
     PROP_STATUS_CHAR_STRING     = 1 << 1,
     PROP_STATUS_WCHAR_STRING    = 1 << 2,
     PROP_STATUS_NULL_TERMINATED = 1 << 3,
+    PROP_STATUS_POINTER_SIZE    = 1 << 4,
 };
 
 struct EventDataDesc {
@@ -56,15 +57,11 @@ struct EventDataDesc {
     {
         assert(status_ & PROP_STATUS_FOUND);
         assert(data_ != nullptr);
-        assert(size_ <= sizeof(T));
 
-        // size_ < sizeof(T) is allowed.  e.g., sometimes we want a
-        // uint32_t promoted into uint64_t (for example to simplify pointer
-        // handling).  It may also be a mistake though so we keep a warning
-        // in DEBUG_VERBOSE.
-#if DEBUG_VERBOSE
-        assert(size_ == sizeof(T));
-#endif
+        // Expect the correct size, except allow 32-bit pointer/size_t to promote to u64
+        assert(
+            size_ == sizeof(T) ||
+            ((status_ & PROP_STATUS_POINTER_SIZE) != 0 && size_ == 4 && sizeof(T) == 8));
 
         T t {};
         memcpy(&t, data_, size_);
