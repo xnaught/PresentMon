@@ -22,11 +22,14 @@ SOFTWARE.
 
 #include <generated/version.h>
 
+#define NOMINMAX
 #include "PresentMon.hpp"
+#include <algorithm>
 
 enum {
-    CONSOLE_WIDTH           = 80,
+    DEFAULT_CONSOLE_WIDTH   = 80,
     MAX_ARG_COLUMN_WIDTH    = 40,
+    MIN_DESC_COLUMN_WIDTH   = 20,
     ARG_DESC_COLUMN_PADDING = 4,
 };
 
@@ -147,6 +150,14 @@ static KeyNameCode const HOTKEY_KEYS[] = {
 
 static CommandLineArgs gCommandLineArgs;
 
+static size_t GetConsoleWidth()
+{
+    CONSOLE_SCREEN_BUFFER_INFO info = {};
+    return GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info) == 0
+        ? DEFAULT_CONSOLE_WIDTH
+        : std::max<size_t>(DEFAULT_CONSOLE_WIDTH, info.srWindow.Right - info.srWindow.Left + 1);
+}
+
 static bool ParseKeyName(KeyNameCode const* valid, size_t validCount, char* name, char const* errorMessage, UINT* outKeyCode)
 {
     for (size_t i = 0; i < validCount; ++i) {
@@ -156,11 +167,12 @@ static bool ParseKeyName(KeyNameCode const* valid, size_t validCount, char* name
         }
     }
 
-    int col = fprintf(stderr, "error: %s '%s'. Valid options (case insensitive):", errorMessage, name);
+    int col = fprintf(stderr, "error: %s '%s'.\nValid options (case insensitive):", errorMessage, name);
 
+    size_t consoleWidth = GetConsoleWidth();
     for (size_t i = 0; i < validCount; ++i) {
         auto len = strlen(valid[i].mName);
-        if (col + len + 1 > CONSOLE_WIDTH) {
+        if (col + len + 1 > consoleWidth) {
             col = fprintf(stderr, "\n   ") - 1;
         }
         col += fprintf(stderr, " %s", valid[i].mName);
@@ -329,13 +341,13 @@ static void PrintHelp()
         auto arg = s[i];
         auto desc = s[i + 1];
         if (desc != nullptr) {
-            argWidth = max(argWidth, strlen(arg));
+            argWidth = std::max(argWidth, strlen(arg));
         }
     }
 
-    argWidth = min(argWidth, MAX_ARG_COLUMN_WIDTH);
+    argWidth = std::min<size_t>(argWidth, MAX_ARG_COLUMN_WIDTH);
 
-    size_t descWidth = CONSOLE_WIDTH - ARG_DESC_COLUMN_PADDING - argWidth;
+    size_t descWidth = std::max<size_t>(MIN_DESC_COLUMN_WIDTH, GetConsoleWidth() - ARG_DESC_COLUMN_PADDING - argWidth);
 
     // Print usage
     for (size_t i = 0; i < _countof(s); i += 2) {
@@ -419,8 +431,8 @@ bool ParseCommandLine(int argc, char** argv)
         else if (ParseArg(argv[i], "qpc_time"))      { args->mOutputQpcTime     = true;                  continue; }
 
         // Recording options:
-        else if (ParseArg(argv[i], "hotkey"))           { if (ParseValue(argv, argc, &i))                { AssignHotkey(argv[i], args); continue; } }
-        else if (ParseArg(argv[i], "delay"))            { if (ParseValue(argv, argc, &i, &args->mDelay)) { continue; } }
+        else if (ParseArg(argv[i], "hotkey"))           { if (ParseValue(argv, argc, &i) && AssignHotkey(argv[i], args)) continue; }
+        else if (ParseArg(argv[i], "delay"))            { if (ParseValue(argv, argc, &i, &args->mDelay)) continue; }
         else if (ParseArg(argv[i], "timed"))            { if (ParseValue(argv, argc, &i, &args->mTimer)) { args->mStartTimer = true; continue; } }
         else if (ParseArg(argv[i], "exclude_dropped"))  { args->mExcludeDropped      = true; continue; }
         else if (ParseArg(argv[i], "scroll_indicator")) { args->mScrollLockIndicator = true; continue; }
@@ -440,7 +452,9 @@ bool ParseCommandLine(int argc, char** argv)
         else if (ParseArg(argv[i], "include_mixed_reality")) { args->mIncludeWindowsMixedReality = true; continue; }
 
         // Provided argument wasn't recognized
-        else fprintf(stderr, "error: unrecognized argument '%s'.\n", argv[i]);
+        else if (!(ParseArg(argv[i], "?") || ParseArg(argv[i], "h") || ParseArg(argv[i], "help"))) {
+            fprintf(stderr, "error: unrecognized argument '%s'.\n", argv[i]);
+        }
 
         PrintHelp();
         return false;
