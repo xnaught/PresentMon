@@ -997,6 +997,9 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
         {
             TRACK_PRESENT_PATH(eventIter->second);
 
+            // If we're compositing a newer present than the last known window
+            // present, then the last known one was discarded.  We won't
+            // necessarily see a transition to Discarded for it.
             if (event.Hwnd) {
                 auto hWndIter = mLastWindowPresent.find(event.Hwnd);
                 if (hWndIter == mLastWindowPresent.end()) {
@@ -1019,26 +1022,24 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
         case (uint32_t) Microsoft_Windows_Win32k::TokenState::Confirmed: // Present has been submitted
             TRACK_PRESENT_PATH(eventIter->second);
 
-            // If we haven't already decided we're going to discard a token,
-            // now's a good time to indicate it'll make it to screen
-            if (event.FinalState == PresentResult::Unknown) {
-                if (event.PresentFlags & DXGI_PRESENT_DO_NOT_SEQUENCE) {
-                    // DO_NOT_SEQUENCE presents may get marked as confirmed,
-                    // if a frame was composed when this token was completed
-                    event.FinalState = PresentResult::Discarded;
-                } else {
-                    event.FinalState = PresentResult::Presented;
-                }
+            // Handle DO_NOT_SEQUENCE presents, which may get marked as confirmed,
+            // if a frame was composed when this token was completed
+            if (event.FinalState == PresentResult::Unknown &&
+                (event.PresentFlags & DXGI_PRESENT_DO_NOT_SEQUENCE) != 0) {
+                event.FinalState = PresentResult::Discarded;
             }
             if (event.Hwnd) {
                 mLastWindowPresent.erase(event.Hwnd);
             }
             break;
 
-        case (uint32_t) Microsoft_Windows_Win32k::TokenState::Retired: // Present has been completed, token's buffer is now displayed
+        case (uint32_t) Microsoft_Windows_Win32k::TokenState::Retired: // Present has been completed
             TRACK_PRESENT_PATH(eventIter->second);
 
-            event.ScreenTime = hdr.TimeStamp.QuadPart;
+            if (event.FinalState == PresentResult::Unknown) {
+                event.ScreenTime = hdr.TimeStamp.QuadPart;
+                event.FinalState = PresentResult::Presented;
+            }
             break;
 
         case (uint32_t) Microsoft_Windows_Win32k::TokenState::Discarded: // Present has been discarded
@@ -1168,7 +1169,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
     for (auto& p2 : p->DependentPresents) {
         DebugModifyPresent(*p2);
         p2->ScreenTime = p->ScreenTime;
-        p2->FinalState = PresentResult::Presented;
+        p2->FinalState = p->FinalState;
         CompletePresent(p2, recurseDepth + 1);
     }
     p->DependentPresents.clear();
