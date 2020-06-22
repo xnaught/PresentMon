@@ -517,7 +517,7 @@ void PMTraceConsumer::HandleDxgkSyncDPC(EVENT_HEADER const& hdr, uint32_t flipSu
     }
 }
 
-void PMTraceConsumer::HandleDxgkSubmitPresentHistoryEventArgs(
+void PMTraceConsumer::HandleDxgkPresentHistory(
     EVENT_HEADER const& hdr,
     uint64_t token,
     uint64_t tokenData,
@@ -583,7 +583,7 @@ void PMTraceConsumer::HandleDxgkSubmitPresentHistoryEventArgs(
     }
 }
 
-void PMTraceConsumer::HandleDxgkPropagatePresentHistoryEventArgs(EVENT_HEADER const& hdr, uint64_t token)
+void PMTraceConsumer::HandleDxgkPresentHistoryInfo(EVENT_HEADER const& hdr, uint64_t token)
 {
     // This event is emitted when a token is being handed off to DWM, and is a good way to indicate a ready state
     auto eventIter = mDxgKrnlPresentHistoryTokens.find(token);
@@ -785,12 +785,12 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
         }
 
         TRACK_PRESENT_PATH_GENERATE_ID();
-        HandleDxgkSubmitPresentHistoryEventArgs(hdr, Token, TokenData, presentMode);
+        HandleDxgkPresentHistory(hdr, Token, TokenData, presentMode);
         break;
     }
     case Microsoft_Windows_DxgKrnl::PresentHistory_Info::Id:
         TRACK_PRESENT_PATH_GENERATE_ID();
-        HandleDxgkPropagatePresentHistoryEventArgs(hdr, mMetadata.GetEventData<uint64_t>(pEventRecord, L"Token"));
+        HandleDxgkPresentHistoryInfo(hdr, mMetadata.GetEventData<uint64_t>(pEventRecord, L"Token"));
         break;
     case Microsoft_Windows_DxgKrnl::Blit_Info::Id:
     {
@@ -950,14 +950,14 @@ void PMTraceConsumer::HandleWin7DxgkPresentHistory(EVENT_RECORD* pEventRecord)
     auto pPresentHistoryEvent = reinterpret_cast<Win7::DXGKETW_PRESENTHISTORYEVENT*>(pEventRecord->UserData);
     if (pEventRecord->EventHeader.EventDescriptor.Opcode == EVENT_TRACE_TYPE_START) {
         TRACK_PRESENT_PATH_GENERATE_ID();
-        HandleDxgkSubmitPresentHistoryEventArgs(
+        HandleDxgkPresentHistory(
             pEventRecord->EventHeader,
             pPresentHistoryEvent->Token,
             0,
             PresentMode::Unknown);
     } else if (pEventRecord->EventHeader.EventDescriptor.Opcode == EVENT_TRACE_TYPE_INFO) {
         TRACK_PRESENT_PATH_GENERATE_ID();
-        HandleDxgkPropagatePresentHistoryEventArgs(pEventRecord->EventHeader, pPresentHistoryEvent->Token);
+        HandleDxgkPresentHistoryInfo(pEventRecord->EventHeader, pPresentHistoryEvent->Token);
     }
 }
 
@@ -1367,7 +1367,7 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
         // A lost present has already been added to mLostPresentEvents, we should never modify it.
     }
 
-    // Completed Presented presents should make it here.
+    // Completed Presented presents should not make it here.
     assert(!(p->Completed && p->FinalState == PresentResult::Presented));
 
     // Remove the present from any struct that would only host the event temporarily.
@@ -1526,7 +1526,7 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
 
 void PMTraceConsumer::TrackPresent(
     std::shared_ptr<PresentEvent> present,
-    decltype(PMTraceConsumer::mPresentsByProcess.begin()->second)& presentsByThisProcess)
+    OrderedPresents& presentsByThisProcess)
 {
     DebugCreatePresent(*present);
 

@@ -90,8 +90,8 @@ ULONG EnableFilteredProvider(
 ULONG EnableProviders(
     TRACEHANDLE sessionHandle,
     GUID const& sessionGuid,
-    bool simple,
-    bool includeWinMR)
+    PMTraceConsumer* pmConsumer,
+    MRTraceConsumer* mrConsumer)
 {
     // Microsoft_Windows_DXGI
     auto keywordMask =
@@ -115,7 +115,7 @@ ULONG EnableProviders(
     });
     if (status != ERROR_SUCCESS) return status;
 
-    if (!simple) {
+    if (!pmConsumer->mSimpleMode) {
         // Microsoft_Windows_DxgKrnl
         keywordMask =
             (uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance |
@@ -170,13 +170,13 @@ ULONG EnableProviders(
         if (status != ERROR_SUCCESS) return status;
     }
 
-    if (includeWinMR) {
+    if (mrConsumer != nullptr) {
         // DHD
         status = EnableTraceEx2(sessionHandle, &DHD_PROVIDER_GUID, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
                                 TRACE_LEVEL_VERBOSE, 0x1C00000, 0, 0, nullptr);
         if (status != ERROR_SUCCESS) return status;
 
-        if (!simple) {
+        if (!mrConsumer->mSimpleMode) {
             // SPECTRUMCONTINUOUS
             status = EnableTraceEx2(sessionHandle, &SPECTRUMCONTINUOUS_PROVIDER_GUID, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
                                     TRACE_LEVEL_VERBOSE, 0x800000, 0, 0, nullptr);
@@ -344,7 +344,7 @@ ULONG TraceSession::Start(
             return status;
         }
 
-        status = EnableProviders(mSessionHandle, sessionProps.Wnode.Guid, simple, includeWinMR);
+        status = EnableProviders(mSessionHandle, sessionProps.Wnode.Guid, pmConsumer, mrConsumer);
         if (status != ERROR_SUCCESS) {
             Stop();
             return status;

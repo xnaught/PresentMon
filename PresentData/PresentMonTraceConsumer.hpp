@@ -244,7 +244,8 @@ struct PMTraceConsumer
     std::map<uint32_t, std::shared_ptr<PresentEvent>> mPresentByThreadId;
 
     // [process id][qpc time]
-    std::map<uint32_t, std::map<uint64_t, std::shared_ptr<PresentEvent>>> mPresentsByProcess;
+    using OrderedPresents = std::map<uint64_t, std::shared_ptr<PresentEvent>>;
+    std::map<uint32_t, OrderedPresents> mPresentsByProcess;
 
     // [(process id, swapchain address)]
     typedef std::tuple<uint32_t, uint64_t> ProcessAndSwapChainKey;
@@ -345,14 +346,14 @@ struct PMTraceConsumer
     void HandleDxgkMMIOFlip(EVENT_HEADER const& hdr, uint32_t flipSubmitSequence, uint32_t flags);
     void HandleDxgkMMIOFlipMPO(EVENT_HEADER const& hdr, uint32_t flipSubmitSequence, uint32_t flipEntryStatusAfterFlip, bool flipEntryStatusAfterFlipValid);
     void HandleDxgkSyncDPC(EVENT_HEADER const& hdr, uint32_t flipSubmitSequence);
-    void HandleDxgkSubmitPresentHistoryEventArgs(EVENT_HEADER const& hdr, uint64_t token, uint64_t tokenData, PresentMode knownPresentMode);
-    void HandleDxgkPropagatePresentHistoryEventArgs(EVENT_HEADER const& hdr, uint64_t token);
+    void HandleDxgkPresentHistory(EVENT_HEADER const& hdr, uint64_t token, uint64_t tokenData, PresentMode knownPresentMode);
+    void HandleDxgkPresentHistoryInfo(EVENT_HEADER const& hdr, uint64_t token);
 
     void CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t recurseDepth=0);
     std::shared_ptr<PresentEvent> FindBySubmitSequence(uint32_t submitSequence);
     std::shared_ptr<PresentEvent> FindOrCreatePresent(EVENT_HEADER const& hdr);
     void TrackPresentOnThread(std::shared_ptr<PresentEvent> present);
-    void TrackPresent(std::shared_ptr<PresentEvent> present, decltype(mPresentsByProcess.begin()->second)& presentsByThisProcess);
+    void TrackPresent(std::shared_ptr<PresentEvent> present, OrderedPresents& presentsByThisProcess);
     void RemoveLostPresent(std::shared_ptr<PresentEvent> present);
     void RemovePresentFromTemporaryTrackingCollections(std::shared_ptr<PresentEvent> present);
     void RuntimePresentStop(EVENT_HEADER const& hdr, bool AllowPresentBatching, ::Runtime runtime);
