@@ -122,7 +122,10 @@ void QpcTimeTest(wchar_t const* qpcTimeArg)
         q -= q0;
 
         auto tq = Convert<double>(q, freq);
-        EXPECT_LE(fabs(t - tq), 0.000001); // TimeInSeconds format is %.6lf
+        EXPECT_LE(fabs(t - tq), 0.0000010001) // TimeInSeconds format is %.6lf
+            << "    t=" << t << std::endl
+            << "    tq=" << tq << std::endl
+            << "    fabs(t-tq)=" << fabs(t - tq) << std::endl;
 
         if (::testing::Test::HasFailure()) {
             printf("line %zu\n", csv.line_);
