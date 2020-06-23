@@ -1,6 +1,6 @@
 [![](https://img.shields.io/github/license/GameTechDev/PresentMon)]()
 [![](https://img.shields.io/github/v/release/GameTechDev/PresentMon)](https://github.com/GameTechDev/PresentMon/releases/latest)
-[![](https://img.shields.io/github/commits-since/GameTechDev/PresentMon/latest)]()
+[![](https://img.shields.io/github/commits-since/GameTechDev/PresentMon/latest/main)]()
 [![](https://img.shields.io/github/issues/GameTechDev/PresentMon)]()
 [![](https://img.shields.io/github/last-commit/GameTechDev/PresentMon)]()
 
