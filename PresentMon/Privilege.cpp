@@ -19,10 +19,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
-
-#include "PresentMon.hpp"
-
-namespace {
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <shellapi.h>
+#include <stdio.h>
 
 bool EnableDebugPrivilege()
 {
@@ -140,38 +140,5 @@ int RestartAsAdministrator(
     }
 
     return code;
-}
-
-}
-
-// Returning from this function means keep running in this process.
-void ElevatePrivilege(int argc, char** argv)
-{
-    auto const& args = GetCommandLineArgs();
-
-    // If we are processing an ETL file, then we don't need elevated privilege
-    if (args.mEtlFileName != nullptr) {
-        return;
-    }
-
-    // Try to load advapi to check and set required privilege.
-    if (EnableDebugPrivilege()) {
-        return;
-    }
-
-    // If user requested to run anyway, warn about potential issues.
-    if (!args.mTryToElevate) {
-        fprintf(stderr,
-            "warning: PresentMon requires elevated privilege in order to query processes\n"
-            "    started on another account.  Without elevation, these processes can't be\n"
-            "    targetted by name and will be listed as '<error>'.\n");
-        if (args.mTerminateOnProcExit && args.mTargetPid == 0) {
-            fprintf(stderr, "    -terminate_on_proc_exit will also not work.\n");
-        }
-        return;
-    }
-
-    // Try to restart PresentMon with admin privileve
-    exit(RestartAsAdministrator(argc, argv));
 }
 

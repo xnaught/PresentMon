@@ -152,7 +152,8 @@ void StopOutputThread();
 void SetOutputRecordingState(bool record);
 
 // Privilege.cpp:
-void ElevatePrivilege(int argc, char** argv);
+bool EnableDebugPrivilege();
+int RestartAsAdministrator(int argc, char** argv);
 
 // TraceSession.cpp:
 bool StartTraceSession();
