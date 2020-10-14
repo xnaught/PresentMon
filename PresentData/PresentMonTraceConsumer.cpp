@@ -98,26 +98,10 @@ PresentEvent::PresentEvent(EVENT_HEADER const& hdr, ::Runtime runtime)
 #endif
 }
 
-#ifndef NDEBUG
-static bool gPresentMonTraceConsumer_Exiting = false;
-#endif
-
-PresentEvent::~PresentEvent()
-{
-    assert(Completed || gPresentMonTraceConsumer_Exiting);
-}
-
 PMTraceConsumer::PMTraceConsumer(bool filteredEvents, bool simple)
     : mFilteredEvents(filteredEvents)
     , mSimpleMode(simple)
 {
-}
-
-PMTraceConsumer::~PMTraceConsumer()
-{
-#ifndef NDEBUG
-    gPresentMonTraceConsumer_Exiting = true;
-#endif
 }
 
 void PMTraceConsumer::HandleD3D9Event(EVENT_RECORD* pEventRecord)

@@ -121,7 +121,6 @@ struct PresentEvent {
 #endif
 
     PresentEvent(EVENT_HEADER const& hdr, ::Runtime runtime);
-    ~PresentEvent();
 
 private:
     PresentEvent(PresentEvent const& copy); // dne
@@ -175,7 +174,6 @@ private:
 struct PMTraceConsumer
 {
     PMTraceConsumer(bool filteredEvents, bool simple);
-    ~PMTraceConsumer();
 
     EventMetadata mMetadata;
 
