@@ -122,11 +122,6 @@ LateStageReprojectionEvent::LateStageReprojectionEvent(EVENT_HEADER const& hdr)
 {
 }
 
-LateStageReprojectionEvent::~LateStageReprojectionEvent()
-{
-    assert(Completed || gMixedRealityTraceConsumer_Exiting);
-}
-
 MRTraceConsumer::~MRTraceConsumer()
 {
 #ifndef NDEBUG

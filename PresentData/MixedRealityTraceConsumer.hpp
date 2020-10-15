@@ -164,7 +164,6 @@ struct LateStageReprojectionEvent {
     bool Completed;
 
     LateStageReprojectionEvent(EVENT_HEADER const& hdr);
-    ~LateStageReprojectionEvent();
 
     inline bool IsValidAppFrame() const
     {
