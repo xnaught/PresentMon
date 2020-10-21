@@ -309,6 +309,8 @@ static void AddPresents(LateStageReprojectionData* lsrData,
     for (auto n = presentEvents.size(); i < n; ++i) {
         auto presentEvent = presentEvents[i];
         assert(presentEvent->Completed);
+        assert(presentEvent->Source.pHolographicFrame == nullptr ||
+               presentEvent->Source.pHolographicFrame->Completed);
 
         // Stop processing events if we hit the next stop time.
         if (checkStopQpc && presentEvent->QpcTime >= stopQpc) {
