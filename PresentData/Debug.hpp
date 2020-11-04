@@ -41,6 +41,7 @@ void DebugEvent(_EVENT_RECORD* eventRecord, EventMetadata* metadata);
 void DebugCreatePresent(PresentEvent const& p);
 void DebugModifyPresent(PresentEvent const& p);
 void DebugCompletePresent(PresentEvent const& p, int indent);
+void DebugLostPresent(PresentEvent const& p);
 
 #else
 
@@ -50,5 +51,6 @@ void DebugCompletePresent(PresentEvent const& p, int indent);
 #define DebugCreatePresent(p)                               (void) p
 #define DebugModifyPresent(p)                               (void) p
 #define DebugCompletePresent(p, indent)                     (void) p, indent
+#define DebugLostPresent(p)                                 (void) p
 
 #endif

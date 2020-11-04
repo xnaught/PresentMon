@@ -107,8 +107,17 @@ struct PresentEvent {
     bool DwmNotified;
     bool Completed;
 
-    // Additional transient state
+    // Additional transient tracking state
     std::deque<std::shared_ptr<PresentEvent>> DependentPresents;
+    uint32_t TrackingIndex;
+    bool ValidHContext;
+    uint64_t DxgKrnlHContext;
+    bool ValidHistoryTokenKey;
+    uint64_t Win32KPresentCount;
+    uint64_t Win32KBindId;
+    uint64_t LegacyBlitTokenData;
+    // We need a signal to prevent us from looking fruitlessly through the WaitingForDwm list.
+    bool WaitingForDwmCompletion;
 
     // Track the path the present took through the PresentMon analysis.
 #ifdef TRACK_PRESENT_PATHS
@@ -221,6 +230,17 @@ struct PMTraceConsumer
     // mapping from this token to in-progress present to optimize lookups
     // during Win32K events.
 
+    // Circular buffer of all Presents, older presents will be considered lost if not completed by the next visit.
+#ifdef DEBUG
+    static constexpr int PRESENTEVENT_CIRCULAR_BUFFER_SIZE = 32768;
+#else
+    static constexpr int PRESENTEVENT_CIRCULAR_BUFFER_SIZE = 8192;
+#endif
+
+    unsigned int mCurrentPresentTrackingIndex;
+    unsigned int mTrackingPresentsCount;
+    std::vector<std::shared_ptr<PresentEvent>> mAllPresents;
+
     // [thread id]
     std::map<uint32_t, std::shared_ptr<PresentEvent>> mPresentByThreadId;
 
@@ -230,7 +250,7 @@ struct PMTraceConsumer
     // [(process id, swapchain address)]
     typedef std::tuple<uint32_t, uint64_t> ProcessAndSwapChainKey;
     std::map<ProcessAndSwapChainKey, std::deque<std::shared_ptr<PresentEvent>>> mPresentsByProcessAndSwapChain;
-
+    std::map<ProcessAndSwapChainKey, uint32_t> mCountLostPresentsByProcessAndSwapChain;
 
     // Maps from queue packet submit sequence
     // Used for Flip -> MMIOFlip -> VSyncDPC for FS, for PresentHistoryToken -> MMIOFlip -> VSyncDPC for iFlip,
@@ -323,6 +343,8 @@ struct PMTraceConsumer
     decltype(mPresentByThreadId.begin()) FindOrCreatePresent(EVENT_HEADER const& hdr);
     decltype(mPresentByThreadId.begin()) CreatePresent(std::shared_ptr<PresentEvent> present, decltype(mPresentsByProcess.begin()->second)& presentsByThisProcess);
     void CreatePresent(std::shared_ptr<PresentEvent> present);
+    void RemoveLostPresent(std::shared_ptr<PresentEvent> present);
+    void RemovePresentFromTemporaryTrackingCollections(std::shared_ptr<PresentEvent> present);
     void HandleStuckPresent(EVENT_HEADER const& hdr, decltype(mPresentByThreadId.begin())* eventIter);
     void RuntimePresentStop(EVENT_HEADER const& hdr, bool AllowPresentBatching, ::Runtime runtime);
 

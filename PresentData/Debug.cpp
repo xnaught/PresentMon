@@ -383,4 +383,19 @@ void DebugCompletePresent(PresentEvent const& p, int indent)
     printf("\n");
 }
 
+
+void DebugLostPresent(PresentEvent const& p)
+{
+    if (!gDebugTrace) return;
+    FlushModifiedPresent();
+    PrintUpdateHeader(p.Id);
+    printf(" CreatePresent");
+    printf(" SwapChainAddress=%llx", p.SwapChainAddress);
+    printf(" PresentFlags=%x", p.PresentFlags);
+    printf(" SyncInterval=%u", p.SyncInterval);
+    printf(" Runtime=");
+    PrintRuntime(p.Runtime);
+    printf("\n");
+}
+
 #endif // if DEBUG_VERBOSE

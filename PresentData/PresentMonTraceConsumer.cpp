@@ -86,6 +86,14 @@ PresentEvent::PresentEvent(EVENT_HEADER const& hdr, ::Runtime runtime)
     , WasBatched(false)
     , DwmNotified(false)
     , Completed(false)
+    , TrackingIndex(0)
+    , ValidHContext(false)
+    , DxgKrnlHContext(0)
+    , ValidHistoryTokenKey(false)
+    , Win32KPresentCount(0)
+    , Win32KBindId(0)
+    , LegacyBlitTokenData(0)
+    , WaitingForDwmCompletion(false)
 {
 #ifdef TRACK_PRESENT_PATHS
     AnalysisPath = 0ull;
@@ -101,7 +109,11 @@ PresentEvent::PresentEvent(EVENT_HEADER const& hdr, ::Runtime runtime)
 PMTraceConsumer::PMTraceConsumer(bool filteredEvents, bool simple)
     : mFilteredEvents(filteredEvents)
     , mSimpleMode(simple)
+    , mCurrentPresentTrackingIndex(0)
+    , mTrackingPresentsCount(0)
+    , mAllPresents({})
 {
+    mAllPresents.resize(PRESENTEVENT_CIRCULAR_BUFFER_SIZE);
 }
 
 void PMTraceConsumer::HandleD3D9Event(EVENT_RECORD* pEventRecord)
@@ -290,6 +302,7 @@ void PMTraceConsumer::HandleDxgkQueueSubmit(
     // event - the present will be considered completed once its work is done, or if the work is already done, complete it now.
     if (!supportsDxgkPresentEvent) {
         auto eventIter = mBltsByDxgContext.find(context);
+        bool completedPresent = false;
         if (eventIter != mBltsByDxgContext.end()) {
             TRACK_PRESENT_PATH(eventIter->second);
             if (eventIter->second->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer) {
@@ -297,9 +310,15 @@ void PMTraceConsumer::HandleDxgkQueueSubmit(
                 eventIter->second->SeenDxgkPresent = true;
                 if (eventIter->second->ScreenTime != 0) {
                     CompletePresent(eventIter->second);
+                    completedPresent = true;
                 }
             }
-            mBltsByDxgContext.erase(eventIter);
+
+            if (!completedPresent)
+            {   
+                mBltsByDxgContext.erase(eventIter);
+                // If the present event is completed, then this removal would have been done in CompletePresent.
+            }
         }
     }
 
@@ -316,11 +335,17 @@ void PMTraceConsumer::HandleDxgkQueueSubmit(
         TRACK_PRESENT_PATH(eventIter->second);
         DebugModifyPresent(*eventIter->second);
 
+        // TODO: What happens if there already is an item in mPresentsBySubmitSequence?
+        // We should assert if that's impossible, or remove the existing event from other tracking lists.
         eventIter->second->QueueSubmitSequence = submitSequence;
         mPresentsBySubmitSequence.emplace(submitSequence, eventIter->second);
 
         if (eventIter->second->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer && !supportsDxgkPresentEvent) {
+            // TODO: What happens if there already is an item in mBltsByDxgContext?
+            // We should assert if that's impossible, or remove the existing event from other tracking lists
             mBltsByDxgContext[context] = eventIter->second;
+            eventIter->second->DxgKrnlHContext = context;
+            eventIter->second->ValidHContext = true;
         }
     }
 }
@@ -471,6 +496,10 @@ void PMTraceConsumer::HandleDxgkSubmitPresentHistoryEventArgs(
     eventIter->second->FinalState = PresentResult::Unknown;
     eventIter->second->TokenPtr = token;
 
+    // TODO: What happens if there already is an item in mDxgKrnlPresentHistoryTokens?
+    // We should assert if that's impossible, or remove the existing event from other tracking lists.
+    mDxgKrnlPresentHistoryTokens[token] = eventIter->second;
+
     if (eventIter->second->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer) {
         eventIter->second->PresentMode = PresentMode::Composed_Copy_GPU_GDI;
         assert(knownPresentMode == PresentMode::Unknown ||
@@ -490,11 +519,14 @@ void PMTraceConsumer::HandleDxgkSubmitPresentHistoryEventArgs(
         if (tokenData == 0) {
             // This is the best we can do, we won't be able to tell how many frames are actually displayed.
             mPresentsWaitingForDWM.emplace_back(eventIter->second);
+            eventIter->second->WaitingForDwmCompletion = true;
         } else {
+            // TODO: what if there is already an element in mPresentsByLegacyBlitToken?
+            // We should assert if that's impossible, or remove that event from other tracking lists.
             mPresentsByLegacyBlitToken[tokenData] = eventIter->second;
+            eventIter->second->LegacyBlitTokenData = tokenData;
         }
     }
-    mDxgKrnlPresentHistoryTokens[token] = eventIter->second;
 }
 
 void PMTraceConsumer::HandleDxgkPropagatePresentHistoryEventArgs(EVENT_HEADER const& hdr, uint64_t token)
@@ -515,11 +547,15 @@ void PMTraceConsumer::HandleDxgkPropagatePresentHistoryEventArgs(EVENT_HEADER co
     if (eventIter->second->PresentMode == PresentMode::Composed_Composition_Atlas ||
         (eventIter->second->PresentMode == PresentMode::Composed_Flip && !eventIter->second->SeenWin32KEvents)) {
         mPresentsWaitingForDWM.emplace_back(eventIter->second);
+        eventIter->second->WaitingForDwmCompletion = true;
     }
 
     if (eventIter->second->PresentMode == PresentMode::Composed_Copy_GPU_GDI) {
         // Manipulate the map here
         // When DWM is ready to present, we'll query for the most recent blt targeting this window and take it out of the map
+
+        // TODO: what if there is already an element in mLastWindowPresent?
+        // We should assert if that's impossible, or remove that event from other tracking lists.
         mLastWindowPresent[eventIter->second->Hwnd] = eventIter->second;
     }
 
@@ -644,20 +680,27 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
             eventIter->second->Hwnd = mMetadata.GetEventData<uint64_t>(pEventRecord, L"hWindow");
         }
 
-        if (eventIter->second->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer &&
-            eventIter->second->ScreenTime != 0) {
-            // This is a fullscreen or DWM-off blit where all work associated was already done, so it's on-screen
-            // It was deferred to here because there was no way to be sure it was really fullscreen until now
-            CompletePresent(eventIter->second);
-        }
+        // Create a temporary copy of the shared_ptr since we may erase the iterator before we are done with its data.
+        std::shared_ptr<PresentEvent> event = eventIter->second;
 
-        if (eventIter->second->ThreadId != hdr.ThreadId) {
-            if (eventIter->second->TimeTaken == 0) {
-                eventIter->second->TimeTaken = hdr.TimeStamp.QuadPart - eventIter->second->QpcTime;
+        if (event->ThreadId != hdr.ThreadId) {
+            // In this case the same presentEvent may have two entries in mPresentByThreadId. Remove the extra one.
+            // We can't do this removal after CompletePresent since eventIter may no longer be valid.
+            if (event->TimeTaken == 0) {
+                event->TimeTaken = hdr.TimeStamp.QuadPart - event->QpcTime;
             }
-            eventIter->second->WasBatched = true;
+            event->WasBatched = true;
+
             mPresentByThreadId.erase(eventIter);
         }
+
+        if (event->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer &&
+            event->ScreenTime != 0) {
+            // This is a fullscreen or DWM-off blit where all work associated was already done, so it's on-screen
+            // It was deferred to here because there was no way to be sure it was really fullscreen until now
+            CompletePresent(event);
+        }
+
         break;
     }
     case Microsoft_Windows_DxgKrnl::PresentHistoryDetailed_Start::Id:
@@ -940,7 +983,6 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
         TRACK_PRESENT_PATH(eventIter->second);
 
         eventIter->second->PresentMode = PresentMode::Composed_Flip;
-        eventIter->second->CompositionSurfaceLuid = CompositionSurfaceLuid;
         eventIter->second->SeenWin32KEvents = true;
 
         if (hdr.EventDescriptor.Version >= 1) {
@@ -949,7 +991,13 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
         }
 
         PMTraceConsumer::Win32KPresentHistoryTokenKey key(CompositionSurfaceLuid, PresentCount, BindId);
+        // TODO: what if there is already an element in mWin32KPresentHistoryTokens?
+        // We should assert if that's impossible, or remove the existing event from other tracking lists.
         mWin32KPresentHistoryTokens[key] = eventIter->second;
+        eventIter->second->CompositionSurfaceLuid = CompositionSurfaceLuid;
+        eventIter->second->Win32KPresentCount = PresentCount;
+        eventIter->second->Win32KBindId = BindId;
+        eventIter->second->ValidHistoryTokenKey = true;
         break;
     }
     case Microsoft_Windows_Win32k::TokenStateChanged_Info::Id:
@@ -1067,6 +1115,7 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
             DebugModifyPresent(*present);
             present->DwmNotified = true;
             mPresentsWaitingForDWM.emplace_back(present);
+            present->WaitingForDwmCompletion = true;
         }
         mLastWindowPresent.clear();
         break;
@@ -1139,6 +1188,169 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
     }
 }
 
+void PMTraceConsumer::RemovePresentFromTemporaryTrackingCollections(std::shared_ptr<PresentEvent> p)
+{
+    // Remove the present from any struct that would only host the event temporarily.
+    // Currently defined as all structures except for mPresentsByProcess, 
+    // mPresentsByProcessAndSwapChain, and mAllPresents.
+
+    // mPresentByThreadId
+    {
+        auto eventIter = mPresentByThreadId.find(p->ThreadId);
+        if (eventIter != mPresentByThreadId.end() && eventIter->second == p) {
+            mPresentByThreadId.erase(eventIter);
+        }
+        // TODO: Assert that an element has been removed if this element must exist.
+    }
+
+    // mPresentsBySubmitSequence
+    {
+        // TODO: is 0 a valid QueueSubmitSequence?
+        if (p->QueueSubmitSequence != 0) {
+            auto eventIter = mPresentsBySubmitSequence.find(p->QueueSubmitSequence);
+            if (eventIter != mPresentsBySubmitSequence.end() && (eventIter->second == p)) {
+                mPresentsBySubmitSequence.erase(eventIter);
+                // TODO: Assert elementsRemoved = 1 if this element must exist.
+            }
+        }
+    }
+
+    // mWin32KPresentHistoryTokens
+    {
+        if (p->ValidHistoryTokenKey) {
+            PMTraceConsumer::Win32KPresentHistoryTokenKey key(
+                p->CompositionSurfaceLuid,
+                p->Win32KPresentCount,
+                p->Win32KBindId
+            );
+
+            auto eventIter = mWin32KPresentHistoryTokens.find(key);
+            if (eventIter != mWin32KPresentHistoryTokens.end() && (eventIter->second == p)) {
+                mWin32KPresentHistoryTokens.erase(eventIter);
+                // TODO: Assert elementsRemoved = 1 if this element must exist.
+            }
+        }
+    }
+
+    // mDxgKrnlPresentHistoryTokens
+    {
+        if (p->TokenPtr != 0) {
+            auto eventIter = mDxgKrnlPresentHistoryTokens.find(p->TokenPtr);
+            if (eventIter != mDxgKrnlPresentHistoryTokens.end() && eventIter->second == p) {
+                mDxgKrnlPresentHistoryTokens.erase(eventIter);
+                // TODO: Assert that an element has been removed if this element must exist.
+            }
+        }
+    }
+
+    // mBltsByDxgContext
+    {
+        if (p->ValidHContext) {
+            auto eventIter = mBltsByDxgContext.find(p->DxgKrnlHContext);
+            if (eventIter != mBltsByDxgContext.end() && eventIter->second == p) {
+                mBltsByDxgContext.erase(eventIter);
+                // TODO: Assert that an element has been removed if this element must exist.
+            }
+        }
+    }
+
+    // mLastWindowPresent
+    {
+        // 0 is a invalid hwnd
+        if (p->Hwnd != 0) {
+            auto eventIter = mLastWindowPresent.find(p->Hwnd);
+            if (eventIter != mLastWindowPresent.end() && eventIter->second == p) {
+                mLastWindowPresent.erase(eventIter);
+            }
+            // There's no hard guaruntee that this element must exist, no assert needed here.
+        }
+    }
+
+    // mPresentsWaitingForDWM
+    {
+        if (p->WaitingForDwmCompletion)
+        {
+            auto eventIter = mPresentsWaitingForDWM.begin();
+            while (eventIter != mPresentsWaitingForDWM.end() && p != *eventIter)
+            {
+                // This loop should in theory be short because the present is old.
+                // If we are in this loop for dozens of times, something is likely wrong.
+                eventIter++;
+            }
+
+            if (eventIter != mPresentsWaitingForDWM.end())
+            {
+                mPresentsWaitingForDWM.erase(eventIter);
+            }
+            // Cannot assert that an event MUST be removed since it could be moved to some other present event's dependentPresents.
+        }
+    }
+
+    // mPresentsByLegacyBlitToken
+    {
+        // LegacyTokenData cannot be 0 if it's in mPresentsByLegacyBlitToken list.
+        if (p->LegacyBlitTokenData != 0) {
+            auto eventIter = mPresentsByLegacyBlitToken.find(p->LegacyBlitTokenData);
+            if (eventIter != mPresentsByLegacyBlitToken.end() && eventIter->second == p) {
+                mPresentsByLegacyBlitToken.erase(eventIter);
+                // TODO: Assert that an element has been removed if this element must exist.
+            }
+        }
+    }
+}
+
+void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
+{
+    // This present has been timed out. Remove all references to it from all tracking structures.
+    // mPresentsByProcessAndSwapChain and mPresentsByProcess should always track the present's lifetime,
+    // so these also have an assert to validate this assumption.
+
+    DebugLostPresent(p);
+
+    // Only incomplete presents should make it here.
+    assert(!p->Completed);
+
+    // Remove the present from any struct that would only host the event temporarily.
+    // Should we loop through and remove the dependent presents?
+    RemovePresentFromTemporaryTrackingCollections(p);
+
+    // mPresentsByProcess
+    {
+        auto& presentsByThisProcess = mPresentsByProcess[p->ProcessId];
+        auto eventIter = presentsByThisProcess.find(p->QpcTime);
+        if (eventIter != presentsByThisProcess.end() && (eventIter->second == p)) {
+            presentsByThisProcess.erase(eventIter);
+            // TODO: Assert elementsRemoved = 1 if this element must exist. (What if QpcTime is not unique enough?)
+        }
+    }
+
+    // mPresentsByProcessAndSwapChain
+    {
+        auto& presentDeque = mPresentsByProcessAndSwapChain[std::make_tuple(p->ProcessId, p->SwapChainAddress)];
+        auto presentIter = presentDeque.begin();
+        while (presentIter != presentDeque.end() && p != *presentIter)
+        {
+            // This loop should in theory be short because the present is old.
+            // If we are in this loop for dozens of times, something is likely wrong.
+            presentIter++;
+        }
+        assert(presentIter != presentDeque.end());
+        presentDeque.erase(presentIter);
+    }
+
+    // Update the count of lost presents.
+    auto processAndThreadKey = std::make_tuple(
+        mAllPresents.at(mCurrentPresentTrackingIndex)->ProcessId, 
+        mAllPresents.at(mCurrentPresentTrackingIndex)->ThreadId
+    );
+    mCountLostPresentsByProcessAndSwapChain[processAndThreadKey]++;
+
+    // mAllPresents
+    {
+        mAllPresents[p->TrackingIndex] = nullptr;
+    }
+}
+
 void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t recurseDepth)
 {
     DebugCompletePresent(*p, recurseDepth);
@@ -1159,21 +1371,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
     p->DependentPresents.clear();
 
     // Remove it from any tracking maps that it may have been inserted into
-    if (p->QueueSubmitSequence != 0) {
-        mPresentsBySubmitSequence.erase(p->QueueSubmitSequence);
-    }
-    if (p->Hwnd != 0) {
-        auto hWndIter = mLastWindowPresent.find(p->Hwnd);
-        if (hWndIter != mLastWindowPresent.end() && hWndIter->second == p) {
-            mLastWindowPresent.erase(hWndIter);
-        }
-    }
-    if (p->TokenPtr != 0) {
-        auto iter = mDxgKrnlPresentHistoryTokens.find(p->TokenPtr);
-        if (iter != mDxgKrnlPresentHistoryTokens.end() && iter->second == p) {
-            mDxgKrnlPresentHistoryTokens.erase(iter);
-        }
-    }
+    RemovePresentFromTemporaryTrackingCollections(p);
 
     // TODO: Only way to CompletePresent() a present without
     // FindOrCreatePresent() finding it first is the while loop below, in which
@@ -1197,6 +1395,11 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
     if (*presentIter == p) {
         std::lock_guard<std::mutex> lock(mPresentEventMutex);
         while (presentIter != presentDeque.end() && presentIter->get()->Completed) {
+            // TODO: we have to choose between pushing presentIter vs presentDeque[0] here. presentDeque[0] is likely the more reliable one.
+            mAllPresents[presentDeque[0]->TrackingIndex] = nullptr;
+            mTrackingPresentsCount--;
+            
+            assert(presentDeque[0] == *presentIter);
             mPresentEvents.push_back(*presentIter);
             presentDeque.pop_front();
             presentIter = presentDeque.begin();
@@ -1265,6 +1468,20 @@ decltype(PMTraceConsumer::mPresentByThreadId.begin()) PMTraceConsumer::CreatePre
 {
     DebugCreatePresent(*newEvent);
 
+    newEvent->TrackingIndex = mCurrentPresentTrackingIndex;
+
+    if (mAllPresents[mCurrentPresentTrackingIndex] != nullptr)
+    {
+        // Existing present not completed by the time the circular buffer has come around.
+        // Remove this lost present.
+        fprintf(stderr, "Warning: present from process %u overwritten.\n", mAllPresents[mCurrentPresentTrackingIndex]->ProcessId);
+        RemoveLostPresent(mAllPresents[mCurrentPresentTrackingIndex]);
+        mTrackingPresentsCount--;
+    }
+    mAllPresents[mCurrentPresentTrackingIndex] = newEvent;
+    mTrackingPresentsCount++;
+    mCurrentPresentTrackingIndex = (mCurrentPresentTrackingIndex + 1) % PRESENTEVENT_CIRCULAR_BUFFER_SIZE;
+
     presentsByThisProcess.emplace(newEvent->QpcTime, newEvent);
     mPresentsByProcessAndSwapChain[std::make_tuple(newEvent->ProcessId, newEvent->SwapChainAddress)].emplace_back(newEvent);
 
@@ -1321,12 +1538,15 @@ void PMTraceConsumer::RuntimePresentStop(EVENT_HEADER const& hdr, bool AllowPres
     if (!AllowPresentBatching || mSimpleMode) {
         event.FinalState = AllowPresentBatching ? PresentResult::Presented : PresentResult::Discarded;
         CompletePresent(eventIter->second);
+        // CompletePresent removes the entry in mPresentByThreadId.
     }
-
-    // We now remove this present from mPresentByThreadId because any future
-    // event related to it (e.g., from DXGK/Win32K/etc.) is not expected to
-    // come from this thread.
-    mPresentByThreadId.erase(eventIter);
+    else
+    {
+        // We now remove this present from mPresentByThreadId because any future
+        // event related to it (e.g., from DXGK/Win32K/etc.) is not expected to
+        // come from this thread.
+        mPresentByThreadId.erase(eventIter);
+    }
 }
 
 void PMTraceConsumer::HandleNTProcessEvent(EVENT_RECORD* pEventRecord)
