@@ -1293,7 +1293,7 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
 
     // mPresentsByProcess
     auto& presentsByThisProcess = mPresentsByProcess[p->ProcessId];
-    auto elementsRemoved = presentsByThisProcess.erase(p->QpcTime);
+    presentsByThisProcess.erase(p->QpcTime);
 
     // mPresentsByProcessAndSwapChain
     auto& presentDeque = mPresentsByProcessAndSwapChain[std::make_tuple(p->ProcessId, p->SwapChainAddress)];
