@@ -1192,6 +1192,7 @@ void PMTraceConsumer::RemovePresentFromTemporaryTrackingCollections(std::shared_
     if (threadEventIter != mPresentByThreadId.end() && threadEventIter->second == p) {
         mPresentByThreadId.erase(threadEventIter);
     }
+
     if (p->DriverBatchThreadId != 0)
     {
         auto batchThreadEventIter = mPresentByThreadId.find(p->DriverBatchThreadId);
@@ -1280,8 +1281,8 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
 
     // Presents dependent on this event can no longer be trakced.
     auto dependentPresents = p->DependentPresents;
-    for (auto dependentIter = dependentPresents.begin(); dependentIter != dependentPresents.end(); dependentIter++) {
-        RemoveLostPresent(*dependentIter);
+    for (auto& dependentPresent : dependentPresents) {
+        RemoveLostPresent(dependentPresent);
     }
 
     // Only incomplete presents should make it here.
