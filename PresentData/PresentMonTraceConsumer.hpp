@@ -110,14 +110,12 @@ struct PresentEvent {
     // Additional transient tracking state
     std::deque<std::shared_ptr<PresentEvent>> DependentPresents;
     uint32_t TrackingIndex;
-    bool ValidHContext;
     uint64_t DxgKrnlHContext;
-    bool ValidHistoryTokenKey;
     uint64_t Win32KPresentCount;
     uint64_t Win32KBindId;
     uint64_t LegacyBlitTokenData;
     // We need a signal to prevent us from looking fruitlessly through the WaitingForDwm list.
-    bool WaitingForDwmCompletion;
+    bool PresentInDwmWaitingStruct;
 
     // Track the path the present took through the PresentMon analysis.
 #ifdef TRACK_PRESENT_PATHS
