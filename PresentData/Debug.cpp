@@ -53,7 +53,7 @@ struct {
     bool MMIO;
     bool SeenDxgkPresent;
     bool SeenWin32KEvents;
-    bool WasBatched;
+    uint32_t DriverBatchThreadId;
     bool DwmNotified;
     bool Completed;
 } gOriginalPresentValues;
@@ -171,7 +171,7 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintBool,          MMIO)
     FLUSH_MEMBER(PrintBool,          SeenDxgkPresent)
     FLUSH_MEMBER(PrintBool,          SeenWin32KEvents)
-    FLUSH_MEMBER(PrintBool,          WasBatched)
+    FLUSH_MEMBER(PrintU32,           DriverBatchThreadId)
     FLUSH_MEMBER(PrintBool,          DwmNotified)
     FLUSH_MEMBER(PrintBool,          Completed)
 #undef FLUSH_MEMBER
@@ -351,7 +351,7 @@ void DebugModifyPresent(PresentEvent const& p)
         gOriginalPresentValues.MMIO                = p.MMIO;
         gOriginalPresentValues.SeenDxgkPresent     = p.SeenDxgkPresent;
         gOriginalPresentValues.SeenWin32KEvents    = p.SeenWin32KEvents;
-        gOriginalPresentValues.WasBatched          = p.WasBatched;
+        gOriginalPresentValues.DriverBatchThreadId = p.DriverBatchThreadId;
         gOriginalPresentValues.DwmNotified         = p.DwmNotified;
         gOriginalPresentValues.Completed           = p.Completed;
     }

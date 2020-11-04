@@ -103,7 +103,7 @@ struct PresentEvent {
     bool MMIO;
     bool SeenDxgkPresent;
     bool SeenWin32KEvents;
-    bool WasBatched;
+    uint32_t DriverBatchThreadId;
     bool DwmNotified;
     bool Completed;
 
