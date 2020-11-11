@@ -138,6 +138,7 @@ void DequeueAnalyzedInfo(
 {
     gPMConsumer->DequeueProcessEvents(*processEvents);
     gPMConsumer->DequeuePresentEvents(*presentEvents);
+    gPMConsumer->DequeueLostPresentEvents(*lostPresentEvents);
     if (gMRConsumer != nullptr) {
         gMRConsumer->DequeueLSRs(*lsrs);
     }
