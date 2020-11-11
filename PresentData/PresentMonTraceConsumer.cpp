@@ -92,6 +92,7 @@ PresentEvent::PresentEvent(EVENT_HEADER const& hdr, ::Runtime runtime)
     , DriverBatchThreadId(0)
     , DwmNotified(false)
     , Completed(false)
+    , IsLost(false)
     , mAllPresentsTrackingIndex(0)
     , DxgKrnlHContext(0)
     , Win32KPresentCount(0)
@@ -1288,14 +1289,21 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
 
     DebugLostPresent(p);
 
+    p->IsLost = true;
+
     // Presents dependent on this event can no longer be trakced.
     auto dependentPresents = p->DependentPresents;
     for (auto& dependentPresent : dependentPresents) {
-        RemoveLostPresent(dependentPresent);
+        if (!p->IsLost)
+        {
+            RemoveLostPresent(dependentPresent);
+        }
+        // The only place a lost present could still exist outside of mLostPresentEvents is the dependents list.
+        // A lost present has already been added to mLostPresentEvents, we should never modify it.
     }
 
-    // Only incomplete presents should make it here.
-    assert(!p->Completed);
+    // Completed Presented presents should make it here.
+    assert(!(p->Completed && p->FinalState == PresentResult::Presented));
 
     // Remove the present from any struct that would only host the event temporarily.
     // Should we loop through and remove the dependent presents?
@@ -1342,10 +1350,15 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
 
     // Complete all other presents that were riding along with this one (i.e. this one came from DWM)
     for (auto& p2 : p->DependentPresents) {
-        DebugModifyPresent(*p2);
-        p2->ScreenTime = p->ScreenTime;
-        p2->FinalState = p->FinalState;
-        CompletePresent(p2, recurseDepth + 1);
+        if (!p2->IsLost)
+        {
+            DebugModifyPresent(*p2);
+            p2->ScreenTime = p->ScreenTime;
+            p2->FinalState = p->FinalState;
+            CompletePresent(p2, recurseDepth + 1);
+        }
+        // The only place a lost present could still exist outside of mLostPresentEvents is the dependents list.
+        // A lost present has already been added to mLostPresentEvents, we should never modify it.
     }
     p->DependentPresents.clear();
 

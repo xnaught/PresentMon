@@ -108,12 +108,13 @@ struct PresentEvent {
     bool Completed;
 
     // Additional transient tracking state
+    bool IsLost;                        // Whether this present has been timed-out, unlikely to ever complete.
+    uint32_t mAllPresentsTrackingIndex; // Index in PMTraceConsumer's mAllPresents.
+    uint64_t DxgKrnlHContext;           // Key for mBltsByDxgContext
+    uint64_t Win32KPresentCount;        // Combine with CompositionSurfaceLuid and Win32KBindId as key into mWin32KPresentHistoryTokens
+    uint64_t Win32KBindId;              // Combine with CompositionSurfaceLuid and Win32KPresentCount as key into mWin32KPresentHistoryTokens
+    uint64_t LegacyBlitTokenData;       // Key for mPresentsByLegacyBlitToken
     std::deque<std::shared_ptr<PresentEvent>> DependentPresents;
-    uint32_t mAllPresentsTrackingIndex;
-    uint64_t DxgKrnlHContext;       // Key for mBltsByDxgContext
-    uint64_t Win32KPresentCount;    // Combine with CompositionSurfaceLuid and Win32KBindId as key into mWin32KPresentHistoryTokens
-    uint64_t Win32KBindId;          // Combine with CompositionSurfaceLuid and Win32KPresentCount as key into mWin32KPresentHistoryTokens
-    uint64_t LegacyBlitTokenData;   // Key for mPresentsByLegacyBlitToken
     
     // We need a signal to prevent us from looking fruitlessly through the WaitingForDwm list
     bool PresentInDwmWaitingStruct;
