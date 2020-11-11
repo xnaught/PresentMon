@@ -381,6 +381,7 @@ static void ProcessEvents(
     LateStageReprojectionData* lsrData,
     std::vector<ProcessEvent>* processEvents,
     std::vector<std::shared_ptr<PresentEvent>>* presentEvents,
+    std::vector<std::shared_ptr<PresentEvent>>* lostPresentEvents,
     std::vector<std::shared_ptr<LateStageReprojectionEvent>>* lsrEvents,
     std::vector<uint64_t>* recordingToggleHistory,
     std::vector<std::pair<uint32_t, uint64_t>>* terminatedProcesses)
@@ -389,7 +390,7 @@ static void ProcessEvents(
 
     // Copy any analyzed information from ConsumerThread and early-out if there
     // isn't any.
-    DequeueAnalyzedInfo(processEvents, presentEvents, lsrEvents);
+    DequeueAnalyzedInfo(processEvents, presentEvents, lostPresentEvents, lsrEvents);
     if (processEvents->empty() && presentEvents->empty() && lsrEvents->empty()) {
         return;
     }
@@ -479,6 +480,7 @@ done:
     // Clear events processed.
     processEvents->clear();
     presentEvents->clear();
+    lostPresentEvents->clear();
     lsrEvents->clear();
     recordingToggleHistory->clear();
 
@@ -504,6 +506,7 @@ void Output()
     LateStageReprojectionData lsrData;
     std::vector<ProcessEvent> processEvents;
     std::vector<std::shared_ptr<PresentEvent>> presentEvents;
+    std::vector<std::shared_ptr<PresentEvent>> lostPresentEvents;
     std::vector<std::shared_ptr<LateStageReprojectionEvent>> lsrEvents;
     std::vector<uint64_t> recordingToggleHistory;
     std::vector<std::pair<uint32_t, uint64_t>> terminatedProcesses;
@@ -521,7 +524,7 @@ void Output()
 
         // Copy and process all the collected events, and update the various
         // tracking and statistics data structures.
-        ProcessEvents(&lsrData, &processEvents, &presentEvents, &lsrEvents, &recordingToggleHistory, &terminatedProcesses);
+        ProcessEvents(&lsrData, &processEvents, &presentEvents, &lostPresentEvents, &lsrEvents, &recordingToggleHistory, &terminatedProcesses);
 
         // Display information to console if requested.  If debug build and
         // simple console, print a heartbeat if recording.
