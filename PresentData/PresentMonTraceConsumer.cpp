@@ -232,6 +232,8 @@ void PMTraceConsumer::HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool
     auto eventIter = FindOrCreatePresent(hdr);
     if (eventIter->second->PresentMode != PresentMode::Unknown) {
         RemoveLostPresent(eventIter->second);
+        eventIter = FindOrCreatePresent(hdr);
+        assert(eventIter->second->PresentMode == PresentMode::Unknown);
     }
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(eventIter->second);
@@ -264,6 +266,8 @@ void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterv
     auto eventIter = FindOrCreatePresent(hdr);
     if (eventIter->second->QueueSubmitSequence != 0 || eventIter->second->SeenDxgkPresent) {
         RemoveLostPresent(eventIter->second);
+        eventIter = FindOrCreatePresent(hdr);
+        assert(!(eventIter->second->QueueSubmitSequence != 0 || eventIter->second->SeenDxgkPresent));
     }
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(eventIter->second);
@@ -485,6 +489,8 @@ void PMTraceConsumer::HandleDxgkSubmitPresentHistoryEventArgs(
     auto eventIter = FindOrCreatePresent(hdr);
     if (eventIter->second->TokenPtr != 0) {
         RemoveLostPresent(eventIter->second);
+        eventIter = FindOrCreatePresent(hdr);
+        assert(eventIter->second->TokenPtr == 0);
     }
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(eventIter->second);
@@ -974,6 +980,8 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
         auto eventIter = FindOrCreatePresent(hdr);
         if (eventIter->second->SeenWin32KEvents) {
             RemoveLostPresent(eventIter->second);
+            eventIter = FindOrCreatePresent(hdr);
+            assert(!eventIter->second->SeenWin32KEvents);
         }
 
         TRACK_PRESENT_PATH(eventIter->second);
@@ -1356,7 +1364,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
 
     if (p->FinalState == PresentResult::Presented) {
         auto presentIter = presentDeque.begin();
-        while (*presentIter != p) {
+        while (presentIter != presentDeque.end() && *presentIter != p) {
             CompletePresent(*presentIter, recurseDepth + 1);
             presentIter = presentDeque.begin();
         }
