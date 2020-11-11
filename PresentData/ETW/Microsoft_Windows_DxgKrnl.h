@@ -157,11 +157,6 @@ struct Blit_Info_Struct {
 };
 
 template<typename PointerT>
-struct Blit_Cancel_Struct {
-    PointerT    hwnd;
-};
-
-template<typename PointerT>
 struct Flip_Info_Struct {
     PointerT    pDmaBuffer;
     uint32_t    VidPnSourceId;
