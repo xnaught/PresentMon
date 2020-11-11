@@ -309,6 +309,7 @@ struct PMTraceConsumer
     }
 
     void HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool redirectedPresent);
+    void HandleDxgkBltCancel(EVENT_HEADER const& hdr);
     void HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterval, bool mmio);
     void HandleDxgkQueueSubmit(EVENT_HEADER const& hdr, uint32_t packetType, uint32_t submitSequence, uint64_t context, bool present, bool supportsDxgkPresentEvent);
     void HandleDxgkQueueComplete(EVENT_HEADER const& hdr, uint32_t submitSequence);

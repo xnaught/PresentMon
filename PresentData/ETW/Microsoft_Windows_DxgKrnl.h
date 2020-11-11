@@ -111,6 +111,7 @@ enum class Channel : uint8_t {
 };
 
 EVENT_DESCRIPTOR_DECL(Blit_Info                     , 0x00a6, 0x00, 0x11, 0x04, 0x00, 0x0067, 0x4000000000000001)
+EVENT_DESCRIPTOR_DECL(Blit_Cancel                   , 0x01f5, 0x00, 0x11, 0x04, 0x00, 0x0135, 0x4000000000000001)
 EVENT_DESCRIPTOR_DECL(Flip_Info                     , 0x00a8, 0x00, 0x11, 0x00, 0x00, 0x0003, 0x4000000000000001)
 EVENT_DESCRIPTOR_DECL(FlipMultiPlaneOverlay_Info    , 0x00fc, 0x00, 0x11, 0x00, 0x00, 0x008f, 0x4000000000000001)
 EVENT_DESCRIPTOR_DECL(HSyncDPCMultiPlane_Info       , 0x017e, 0x00, 0x11, 0x00, 0x00, 0x00e6, 0x4000000000000001)
@@ -153,6 +154,11 @@ struct Blit_Info_Struct {
     int32_t     Dest_Top;
     int32_t     Dest_Bottom;
     uint32_t    SubRectCount;
+};
+
+template<typename PointerT>
+struct Blit_Cancel_Struct {
+    PointerT    hwnd;
 };
 
 template<typename PointerT>

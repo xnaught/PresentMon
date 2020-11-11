@@ -235,6 +235,16 @@ void PMTraceConsumer::HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool
     }
 }
 
+void PMTraceConsumer::HandleDxgkBltCancel(EVENT_HEADER const& hdr)
+{
+    auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
+
+    if (eventIter != mPresentByThreadId.end()) {
+        eventIter->second->FinalState = PresentResult::Discarded;
+        CompletePresent(eventIter->second);
+    }
+}
+
 void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterval, bool mmio)
 {
     // A flip event is emitted during fullscreen present submission.
@@ -705,6 +715,12 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
 
         TRACK_PRESENT_PATH_GENERATE_ID();
         HandleDxgkBlt(hdr, hwnd, bRedirectedPresent);
+        break;
+    }
+    case Microsoft_Windows_DxgKrnl::Blit_Cancel::Id:
+    {
+        TRACK_PRESENT_PATH_GENERATE_ID();
+        HandleDxgkBltCancel(hdr);
         break;
     }
     default:
