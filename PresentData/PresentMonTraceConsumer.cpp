@@ -1316,17 +1316,18 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
     // mPresentsByProcessAndSwapChain
     auto& presentDeque = mPresentsByProcessAndSwapChain[std::make_tuple(p->ProcessId, p->SwapChainAddress)];
 
-    auto originalQueueSize = presentDeque.size();
+    bool hasRemovedElement = false;
     for (auto presentIter = presentDeque.begin(); presentIter != presentDeque.end(); presentIter++) {
         // This loop should in theory be short because the present is old.
         // If we are in this loop for dozens of times, something is likely wrong.
         if (p == *presentIter) {
+            hasRemovedElement = true;
             presentDeque.erase(presentIter);
             break;
         }
     }
     // We expect an element to be removed here.
-    assert(presentDeque.size() < originalQueueSize);
+    assert(hasRemovedElement);
 
 
     // Update the list of lost presents.
