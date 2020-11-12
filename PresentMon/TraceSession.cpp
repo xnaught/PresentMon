@@ -41,11 +41,16 @@ bool StartTraceSession()
     auto expectFilteredEvents =
         args.mEtlFileName == nullptr && // Scope filtering based on event ID only works for realtime collection
         IsWindows8Point1OrGreater();    // and requires Win8.1+
+    auto filterProcessTracking = args.mTargetPid != 0; // Does not support process names at this point
 
     // Create consumers
-    gPMConsumer = new PMTraceConsumer(expectFilteredEvents, simple);
+    gPMConsumer = new PMTraceConsumer(expectFilteredEvents, simple, filterProcessTracking);
     if (includeWinMR) {
         gMRConsumer = new MRTraceConsumer(simple);
+    }
+
+    if (filterProcessTracking) {
+        gPMConsumer->AddTrackedProcessForFiltering(args.mTargetPid);
     }
 
     // Start the session;
