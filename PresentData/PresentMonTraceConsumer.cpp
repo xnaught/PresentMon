@@ -234,10 +234,9 @@ void PMTraceConsumer::HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool
 
     if (eventIter->second->PresentMode != PresentMode::Unknown) {
         HandleStuckPresent(hdr, &eventIter);
-    }
-
-    if (eventIter == mPresentByThreadId.end()) {
-        return;
+        if (eventIter == mPresentByThreadId.end()) {
+           return;
+        }
     }
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(eventIter->second);
@@ -275,10 +274,9 @@ void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterv
 
     if (eventIter->second->QueueSubmitSequence != 0 || eventIter->second->SeenDxgkPresent) {
         HandleStuckPresent(hdr, &eventIter);
-    }
-
-    if (eventIter == mPresentByThreadId.end()) {
-        return;
+        if (eventIter == mPresentByThreadId.end()) {
+            return;
+        }
     }
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(eventIter->second);
@@ -495,10 +493,9 @@ void PMTraceConsumer::HandleDxgkSubmitPresentHistoryEventArgs(
 
     if (eventIter->second->TokenPtr != 0) {
         HandleStuckPresent(hdr, &eventIter);
-    }
-
-    if (eventIter == mPresentByThreadId.end()) {
-        return;
+        if (eventIter == mPresentByThreadId.end()) {
+           return;
+        }
     }
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(eventIter->second);
@@ -978,10 +975,9 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
 
         if (eventIter->second->SeenWin32KEvents) {
             HandleStuckPresent(hdr, &eventIter);
-        }
-
-        if (eventIter == mPresentByThreadId.end()) {
-            return;
+            if (eventIter == mPresentByThreadId.end()) {
+                return;
+            }
         }
 
         TRACK_PRESENT_PATH(eventIter->second);
