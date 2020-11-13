@@ -237,9 +237,13 @@ void PMTraceConsumer::HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool
 
 void PMTraceConsumer::HandleDxgkBltCancel(EVENT_HEADER const& hdr)
 {
+    // There are cases where a present blt can be optimized out in kernel.
+    // In such cases, we return success to the caller, but issue no further work
+    // for the present. Mark these cases as discarded.
     auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
 
     if (eventIter != mPresentByThreadId.end()) {
+        TRACK_PRESENT_PATH(eventIter->second);
         eventIter->second->FinalState = PresentResult::Discarded;
         CompletePresent(eventIter->second);
     }
@@ -719,7 +723,6 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
     }
     case Microsoft_Windows_DxgKrnl::Blit_Cancel::Id:
     {
-        TRACK_PRESENT_PATH_GENERATE_ID();
         HandleDxgkBltCancel(hdr);
         break;
     }
