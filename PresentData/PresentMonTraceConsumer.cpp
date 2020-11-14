@@ -695,6 +695,12 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
             mPresentByThreadId.erase(eventIter);
         }
 
+        // mPresentByThreadId tracks runtime present API as far as possible. If the runtime is not DXGI or D3D9,
+        // then this is as far as we can track it.
+        if (event->Runtime == Runtime::Other) {
+            mPresentByThreadId.erase(event->ThreadId);
+        }
+
         if (event->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer &&
             event->ScreenTime != 0) {
             // This is a fullscreen or DWM-off blit where all work associated was already done, so it's on-screen

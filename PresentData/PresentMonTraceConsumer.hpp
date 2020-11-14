@@ -209,7 +209,8 @@ struct PMTraceConsumer
     //
     // mPresentByThreadId stores the in-progress present that was last operated
     // on by each thread for event sequences that are known to execute on the
-    // same thread.
+    // same thread. Its members' lifetime should track the lifetime of the 
+    // runtime present API as much as possible.
     //
     // mPresentsByProcess stores each process' in-progress presents in the
     // order that they were presented.  This is used to look up presents across
