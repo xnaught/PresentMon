@@ -230,25 +230,25 @@ void PMTraceConsumer::HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool
     // Lookup the in-progress present.  It should not have a known present mode
     // yet, so PresentMode!=Unknown implies we looked up a 'stuck' present
     // whose tracking was lost for some reason.
-    auto eventIter = FindOrCreatePresent(hdr);
-    if (eventIter->second->PresentMode != PresentMode::Unknown) {
-        RemoveLostPresent(eventIter->second);
-        eventIter = FindOrCreatePresent(hdr);
-        assert(eventIter->second->PresentMode == PresentMode::Unknown);
+    auto presentEvent = FindOrCreatePresent(hdr);
+    if (presentEvent->PresentMode != PresentMode::Unknown) {
+        RemoveLostPresent(presentEvent);
+        presentEvent = FindOrCreatePresent(hdr);
+        assert(presentEvent->PresentMode == PresentMode::Unknown);
     }
 
-    TRACK_PRESENT_PATH_SAVE_GENERATED_ID(eventIter->second);
+    TRACK_PRESENT_PATH_SAVE_GENERATED_ID(presentEvent);
 
     // This could be one of several types of presents. Further events will clarify.
     // For now, assume that this is a blt straight into a surface which is already on-screen.
-    eventIter->second->Hwnd = hwnd;
+    presentEvent->Hwnd = hwnd;
     if (redirectedPresent) {
-        TRACK_PRESENT_PATH(eventIter->second);
-        eventIter->second->PresentMode = PresentMode::Composed_Copy_CPU_GDI;
-        eventIter->second->SupportsTearing = false;
+        TRACK_PRESENT_PATH(presentEvent);
+        presentEvent->PresentMode = PresentMode::Composed_Copy_CPU_GDI;
+        presentEvent->SupportsTearing = false;
     } else {
-        eventIter->second->PresentMode = PresentMode::Hardware_Legacy_Copy_To_Front_Buffer;
-        eventIter->second->SupportsTearing = true;
+        presentEvent->PresentMode = PresentMode::Hardware_Legacy_Copy_To_Front_Buffer;
+        presentEvent->SupportsTearing = true;
     }
 }
 
@@ -264,28 +264,28 @@ void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterv
     // tracking was lost for some reason.
     //
     // TODO: should have PresentMode==Unknown as well?  Worth checking?
-    auto eventIter = FindOrCreatePresent(hdr);
-    if (eventIter->second->QueueSubmitSequence != 0 || eventIter->second->SeenDxgkPresent) {
-        RemoveLostPresent(eventIter->second);
-        eventIter = FindOrCreatePresent(hdr);
-        assert(!(eventIter->second->QueueSubmitSequence != 0 || eventIter->second->SeenDxgkPresent));
+    auto presentEvent = FindOrCreatePresent(hdr);
+    if (presentEvent->QueueSubmitSequence != 0 || presentEvent->SeenDxgkPresent) {
+        RemoveLostPresent(presentEvent);
+        presentEvent = FindOrCreatePresent(hdr);
+        assert(!(presentEvent->QueueSubmitSequence != 0 || presentEvent->SeenDxgkPresent));
     }
 
-    TRACK_PRESENT_PATH_SAVE_GENERATED_ID(eventIter->second);
+    TRACK_PRESENT_PATH_SAVE_GENERATED_ID(presentEvent);
 
-    if (eventIter->second->PresentMode != PresentMode::Unknown) {
+    if (presentEvent->PresentMode != PresentMode::Unknown) {
         // For MPO, N events may be issued, but we only care about the first
         return;
     }
 
-    eventIter->second->MMIO = mmio;
-    eventIter->second->PresentMode = PresentMode::Hardware_Legacy_Flip;
+    presentEvent->MMIO = mmio;
+    presentEvent->PresentMode = PresentMode::Hardware_Legacy_Flip;
 
-    if (eventIter->second->SyncInterval == -1) {
-        eventIter->second->SyncInterval = flipInterval;
+    if (presentEvent->SyncInterval == -1) {
+        presentEvent->SyncInterval = flipInterval;
     }
     if (!mmio) {
-        eventIter->second->SupportsTearing = flipInterval == 0;
+        presentEvent->SupportsTearing = flipInterval == 0;
     }
 
     // If this is the DWM thread, piggyback these pending presents on our fullscreen present
@@ -293,7 +293,7 @@ void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterv
         for (auto iter = mPresentsWaitingForDWM.begin(); iter != mPresentsWaitingForDWM.end(); iter++) {
             iter->get()->PresentInDwmWaitingStruct = false;
         }
-        std::swap(eventIter->second->DependentPresents, mPresentsWaitingForDWM);
+        std::swap(presentEvent->DependentPresents, mPresentsWaitingForDWM);
         DwmPresentThreadId = 0;
     }
 }
@@ -487,50 +487,48 @@ void PMTraceConsumer::HandleDxgkSubmitPresentHistoryEventArgs(
     // Lookup the in-progress present.  It should not have a known TokenPtr
     // yet, so TokenPtr!=0 implies we looked up a 'stuck' present whose
     // tracking was lost for some reason.
-    auto eventIter = FindOrCreatePresent(hdr);
-    if (eventIter->second->TokenPtr != 0) {
-        RemoveLostPresent(eventIter->second);
-        eventIter = FindOrCreatePresent(hdr);
-        assert(eventIter->second->TokenPtr == 0);
+    auto presentEvent = FindOrCreatePresent(hdr);
+    if (presentEvent->TokenPtr != 0) {
+        RemoveLostPresent(presentEvent);
+        presentEvent = FindOrCreatePresent(hdr);
+        assert(presentEvent->TokenPtr == 0);
     }
 
-    TRACK_PRESENT_PATH_SAVE_GENERATED_ID(eventIter->second);
+    TRACK_PRESENT_PATH_SAVE_GENERATED_ID(presentEvent);
 
-    eventIter->second->ReadyTime = 0;
-    eventIter->second->ScreenTime = 0;
-    eventIter->second->SupportsTearing = false;
-    eventIter->second->FinalState = PresentResult::Unknown;
-    eventIter->second->TokenPtr = token;
+    presentEvent->ReadyTime = 0;
+    presentEvent->ScreenTime = 0;
+    presentEvent->SupportsTearing = false;
+    presentEvent->FinalState = PresentResult::Unknown;
+    presentEvent->TokenPtr = token;
 
-    // TODO: What happens if there already is an item in mDxgKrnlPresentHistoryTokens?
-    // We should assert if that's impossible, or remove the existing event from other tracking lists.
     assert(mDxgKrnlPresentHistoryTokens.find(token) == mDxgKrnlPresentHistoryTokens.end());
-    mDxgKrnlPresentHistoryTokens[token] = eventIter->second;
+    mDxgKrnlPresentHistoryTokens[token] = presentEvent;
 
-    if (eventIter->second->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer) {
-        eventIter->second->PresentMode = PresentMode::Composed_Copy_GPU_GDI;
+    if (presentEvent->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer) {
+        presentEvent->PresentMode = PresentMode::Composed_Copy_GPU_GDI;
         assert(knownPresentMode == PresentMode::Unknown ||
                knownPresentMode == PresentMode::Composed_Copy_GPU_GDI);
 
-    } else if (eventIter->second->PresentMode == PresentMode::Unknown) {
+    } else if (presentEvent->PresentMode == PresentMode::Unknown) {
         if (knownPresentMode == PresentMode::Composed_Composition_Atlas) {
-            eventIter->second->PresentMode = PresentMode::Composed_Composition_Atlas;
+            presentEvent->PresentMode = PresentMode::Composed_Composition_Atlas;
         } else {
             // When there's no Win32K events, we'll assume PHTs that aren't after a blt, and aren't composition tokens
             // are flip tokens and that they're displayed. There are no Win32K events on Win7, and they might not be
             // present in some traces - don't let presents get stuck/dropped just because we can't track them perfectly.
-            assert(!eventIter->second->SeenWin32KEvents);
-            eventIter->second->PresentMode = PresentMode::Composed_Flip;
+            assert(!presentEvent->SeenWin32KEvents);
+            presentEvent->PresentMode = PresentMode::Composed_Flip;
         }
-    } else if (eventIter->second->PresentMode == PresentMode::Composed_Copy_CPU_GDI) {
+    } else if (presentEvent->PresentMode == PresentMode::Composed_Copy_CPU_GDI) {
         if (tokenData == 0) {
             // This is the best we can do, we won't be able to tell how many frames are actually displayed.
-            mPresentsWaitingForDWM.emplace_back(eventIter->second);
-            eventIter->second->PresentInDwmWaitingStruct = true;
+            mPresentsWaitingForDWM.emplace_back(presentEvent);
+            presentEvent->PresentInDwmWaitingStruct = true;
         } else {
             assert(mPresentsByLegacyBlitToken.find(tokenData) == mPresentsByLegacyBlitToken.end());
-            mPresentsByLegacyBlitToken[tokenData] = eventIter->second;
-            eventIter->second->LegacyBlitTokenData = tokenData;
+            mPresentsByLegacyBlitToken[tokenData] = presentEvent;
+            presentEvent->LegacyBlitTokenData = tokenData;
         }
     }
 }
@@ -703,6 +701,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
             // It was deferred to here because there was no way to be sure it was really fullscreen until now
             CompletePresent(event);
         }
+
 
         break;
     }
@@ -978,29 +977,29 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
         // Lookup the in-progress present.  It should not have seen any Win32K
         // events yet, so SeenWin32KEvents==true implies we looked up a 'stuck'
         // present whose tracking was lost for some reason.
-        auto eventIter = FindOrCreatePresent(hdr);
-        if (eventIter->second->SeenWin32KEvents) {
-            RemoveLostPresent(eventIter->second);
-            eventIter = FindOrCreatePresent(hdr);
-            assert(!eventIter->second->SeenWin32KEvents);
+        auto PresentEvent = FindOrCreatePresent(hdr);
+        if (PresentEvent->SeenWin32KEvents) {
+            RemoveLostPresent(PresentEvent);
+            PresentEvent = FindOrCreatePresent(hdr);
+            assert(!PresentEvent->SeenWin32KEvents);
         }
 
-        TRACK_PRESENT_PATH(eventIter->second);
+        TRACK_PRESENT_PATH(PresentEvent);
 
-        eventIter->second->PresentMode = PresentMode::Composed_Flip;
-        eventIter->second->SeenWin32KEvents = true;
+        PresentEvent->PresentMode = PresentMode::Composed_Flip;
+        PresentEvent->SeenWin32KEvents = true;
 
         if (hdr.EventDescriptor.Version >= 1) {
-            eventIter->second->DestWidth  = desc[3].GetData<uint32_t>();
-            eventIter->second->DestHeight = desc[4].GetData<uint32_t>();
+            PresentEvent->DestWidth  = desc[3].GetData<uint32_t>();
+            PresentEvent->DestHeight = desc[4].GetData<uint32_t>();
         }
 
         PMTraceConsumer::Win32KPresentHistoryTokenKey key(CompositionSurfaceLuid, PresentCount, BindId);
         assert(mWin32KPresentHistoryTokens.find(key) == mWin32KPresentHistoryTokens.end());
-        mWin32KPresentHistoryTokens[key] = eventIter->second;
-        eventIter->second->CompositionSurfaceLuid = CompositionSurfaceLuid;
-        eventIter->second->Win32KPresentCount = PresentCount;
-        eventIter->second->Win32KBindId = BindId;
+        mWin32KPresentHistoryTokens[key] = PresentEvent;
+        PresentEvent->CompositionSurfaceLuid = CompositionSurfaceLuid;
+        PresentEvent->Win32KPresentCount = PresentCount;
+        PresentEvent->Win32KBindId = BindId;
         break;
     }
     case Microsoft_Windows_Win32k::TokenStateChanged_Info::Id:
@@ -1408,12 +1407,13 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindBySubmitSequence(uint32_t sub
     return eventIter->second;
 }
 
-decltype(PMTraceConsumer::mPresentByThreadId.begin()) PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER const& hdr)
+std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER const& hdr)
 {
     // First, check if there is a known in-progress present that this thread is
     // already working on.
-    auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
-    if (eventIter == mPresentByThreadId.end()) {
+    std::shared_ptr<PresentEvent> presentEvent(nullptr);
+    auto threadEventIter = mPresentByThreadId.find(hdr.ThreadId);
+    if (threadEventIter == mPresentByThreadId.end()) {
 
         // If not, lookup the oldest in-progress present that was created by
         // this process but still doesn't have a known PresentMode.  This is
@@ -1431,8 +1431,9 @@ decltype(PMTraceConsumer::mPresentByThreadId.begin()) PMTraceConsumer::FindOrCre
             return processIter.second->PresentMode == PresentMode::Unknown;
         });
         if (processIter != presentsByThisProcess.end()) {
-            eventIter = mPresentByThreadId.emplace(hdr.ThreadId, processIter->second).first;
+            threadEventIter = mPresentByThreadId.emplace(hdr.ThreadId, processIter->second).first;
             presentsByThisProcess.erase(processIter);
+            presentEvent = threadEventIter->second;
         } else {
 
             // This process is not working on a known in-progress present.
@@ -1445,15 +1446,18 @@ decltype(PMTraceConsumer::mPresentByThreadId.begin()) PMTraceConsumer::FindOrCre
             // past the stage where we need to look it up by that mechanism...
             // mPresentByThreadId should be good enough at this point right?
             auto newEvent = std::make_shared<PresentEvent>(hdr, Runtime::Other);
-            eventIter = CreatePresent(newEvent, presentsByThisProcess);
+            presentEvent = CreatePresent(newEvent, presentsByThisProcess);
         }
+    } else {
+        presentEvent = threadEventIter->second;
     }
 
-    DebugModifyPresent(*eventIter->second);
-    return eventIter;
+    assert(presentEvent != nullptr);
+    DebugModifyPresent(presentEvent);
+    return presentEvent;
 }
 
-decltype(PMTraceConsumer::mPresentByThreadId.begin()) PMTraceConsumer::CreatePresent(
+std::shared_ptr<PresentEvent> PMTraceConsumer::CreatePresent(
     std::shared_ptr<PresentEvent> newEvent,
     decltype(PMTraceConsumer::mPresentsByProcess.begin()->second)& presentsByThisProcess)
 {
@@ -1475,9 +1479,9 @@ decltype(PMTraceConsumer::mPresentByThreadId.begin()) PMTraceConsumer::CreatePre
     presentsByThisProcess.emplace(newEvent->QpcTime, newEvent);
     mPresentsByProcessAndSwapChain[std::make_tuple(newEvent->ProcessId, newEvent->SwapChainAddress)].emplace_back(newEvent);
 
-    auto p = mPresentByThreadId.emplace(newEvent->ThreadId, newEvent);
-    assert(p.second);
-    return p.first;
+    mPresentByThreadId.emplace(newEvent->ThreadId, newEvent);
+
+    return newEvent;
 }
 
 void PMTraceConsumer::CreatePresent(std::shared_ptr<PresentEvent> present)
