@@ -28,10 +28,12 @@ SOFTWARE.
 #include <map>
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #include <stdint.h>
 #include <string>
 #include <tuple>
 #include <vector>
+#include <set>
 #include <windows.h>
 #include <evntcons.h> // must include after windows.h
 
@@ -182,7 +184,7 @@ private:
 
 struct PMTraceConsumer
 {
-    PMTraceConsumer(bool filteredEvents, bool simple);
+    PMTraceConsumer(bool filteredEvents, bool simple, bool trackedFiltering=false);
 
     EventMetadata mMetadata;
 
@@ -307,6 +309,11 @@ struct PMTraceConsumer
     // Yet another unique way of tracking present history tokens, this time from DxgKrnl -> DWM, only for legacy blit
     std::map<uint64_t, std::shared_ptr<PresentEvent>> mPresentsByLegacyBlitToken;
 
+    // Limit tracking to specified processes
+    bool mEnableTrackedProcessFiltering;
+    std::set<uint32_t> mTrackedProcessFilter;
+    std::shared_mutex mTrackedProcessFilterMutex;
+
     // Storage for passing present path tracking id to Handle...() functions.
 #ifdef TRACK_PRESENT_PATHS
     uint32_t mAnalysisPathID;
@@ -331,6 +338,7 @@ struct PMTraceConsumer
     }
 
     void HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool redirectedPresent);
+    void HandleDxgkBltCancel(EVENT_HEADER const& hdr);
     void HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterval, bool mmio);
     void HandleDxgkQueueSubmit(EVENT_HEADER const& hdr, uint32_t packetType, uint32_t submitSequence, uint64_t context, bool present, bool supportsDxgkPresentEvent);
     void HandleDxgkQueueComplete(EVENT_HEADER const& hdr, uint32_t submitSequence);
@@ -363,5 +371,9 @@ struct PMTraceConsumer
     void HandleWin7DxgkQueuePacket(EVENT_RECORD* pEventRecord);
     void HandleWin7DxgkVSyncDPC(EVENT_RECORD* pEventRecord);
     void HandleWin7DxgkMMIOFlip(EVENT_RECORD* pEventRecord);
+
+    void AddTrackedProcessForFiltering(uint32_t processID);
+    void RemoveTrackedProcessForFiltering(uint32_t processID);
+    bool IsProcessTrackedForFiltering(uint32_t processID);
 };
 

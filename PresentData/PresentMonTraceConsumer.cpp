@@ -111,11 +111,12 @@ PresentEvent::PresentEvent(EVENT_HEADER const& hdr, ::Runtime runtime)
 #endif
 }
 
-PMTraceConsumer::PMTraceConsumer(bool filteredEvents, bool simple)
+PMTraceConsumer::PMTraceConsumer(bool filteredEvents, bool simple, bool trackedFiltering)
     : mFilteredEvents(filteredEvents)
     , mSimpleMode(simple)
     , mAllPresentsNextIndex(0)
     , mAllPresents(PRESENTEVENT_CIRCULAR_BUFFER_SIZE)
+    , mEnableTrackedProcessFiltering(trackedFiltering)
 {
 }
 
@@ -124,6 +125,11 @@ void PMTraceConsumer::HandleD3D9Event(EVENT_RECORD* pEventRecord)
     DebugEvent(pEventRecord, &mMetadata);
 
     auto const& hdr = pEventRecord->EventHeader;
+
+    if (!IsProcessTrackedForFiltering(hdr.ProcessId)) {
+        return;
+    }
+
     switch (hdr.EventDescriptor.Id) {
     case Microsoft_Windows_D3D9::Present_Start::Id:
     {
@@ -171,6 +177,11 @@ void PMTraceConsumer::HandleDXGIEvent(EVENT_RECORD* pEventRecord)
     DebugEvent(pEventRecord, &mMetadata);
 
     auto const& hdr = pEventRecord->EventHeader;
+
+    if (!IsProcessTrackedForFiltering(hdr.ProcessId)) {
+        return;
+    }
+
     switch (hdr.EventDescriptor.Id) {
     case Microsoft_Windows_DXGI::Present_Start::Id:
     case Microsoft_Windows_DXGI::PresentMultiplaneOverlay_Start::Id:
@@ -231,9 +242,17 @@ void PMTraceConsumer::HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool
     // yet, so PresentMode!=Unknown implies we looked up a 'stuck' present
     // whose tracking was lost for some reason.
     auto presentEvent = FindOrCreatePresent(hdr);
+    if (presentEvent == nullptr) {
+        return;
+    }
+
     if (presentEvent->PresentMode != PresentMode::Unknown) {
         RemoveLostPresent(presentEvent);
         presentEvent = FindOrCreatePresent(hdr);
+
+        if (presentEvent == nullptr) {
+            return;
+        }
         assert(presentEvent->PresentMode == PresentMode::Unknown);
     }
 
@@ -252,6 +271,20 @@ void PMTraceConsumer::HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool
     }
 }
 
+void PMTraceConsumer::HandleDxgkBltCancel(EVENT_HEADER const& hdr)
+{
+    // There are cases where a present blt can be optimized out in kernel.
+    // In such cases, we return success to the caller, but issue no further work
+    // for the present. Mark these cases as discarded.
+    auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
+
+    if (eventIter != mPresentByThreadId.end()) {
+        TRACK_PRESENT_PATH(eventIter->second);
+        eventIter->second->FinalState = PresentResult::Discarded;
+        CompletePresent(eventIter->second);
+    }
+}
+
 void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterval, bool mmio)
 {
     // A flip event is emitted during fullscreen present submission.
@@ -265,9 +298,16 @@ void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterv
     //
     // TODO: should have PresentMode==Unknown as well?  Worth checking?
     auto presentEvent = FindOrCreatePresent(hdr);
+    if (presentEvent == nullptr) {
+        return;
+    }
+
     if (presentEvent->QueueSubmitSequence != 0 || presentEvent->SeenDxgkPresent) {
         RemoveLostPresent(presentEvent);
         presentEvent = FindOrCreatePresent(hdr);
+        if (presentEvent == nullptr) {
+            return;
+        }
         assert(!(presentEvent->QueueSubmitSequence != 0 || presentEvent->SeenDxgkPresent));
     }
 
@@ -488,9 +528,17 @@ void PMTraceConsumer::HandleDxgkSubmitPresentHistoryEventArgs(
     // yet, so TokenPtr!=0 implies we looked up a 'stuck' present whose
     // tracking was lost for some reason.
     auto presentEvent = FindOrCreatePresent(hdr);
+    if (presentEvent == nullptr) {
+        return;
+    }
+
     if (presentEvent->TokenPtr != 0) {
         RemoveLostPresent(presentEvent);
         presentEvent = FindOrCreatePresent(hdr);
+        if (presentEvent == nullptr) {
+            return;
+        }
+
         assert(presentEvent->TokenPtr == 0);
     }
 
@@ -758,6 +806,11 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
         HandleDxgkBlt(hdr, hwnd, bRedirectedPresent);
         break;
     }
+    case Microsoft_Windows_DxgKrnl::Blit_Cancel::Id:
+    {
+        HandleDxgkBltCancel(hdr);
+        break;
+    }
     default:
         assert(!mFilteredEvents); // Assert that filtering is working if expected
         break;
@@ -984,9 +1037,17 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
         // events yet, so SeenWin32KEvents==true implies we looked up a 'stuck'
         // present whose tracking was lost for some reason.
         auto PresentEvent = FindOrCreatePresent(hdr);
+        if (PresentEvent == nullptr) {
+            return;
+        }
+
         if (PresentEvent->SeenWin32KEvents) {
             RemoveLostPresent(PresentEvent);
             PresentEvent = FindOrCreatePresent(hdr);
+            if (PresentEvent == nullptr) {
+                return;
+            }
+
             assert(!PresentEvent->SeenWin32KEvents);
         }
 
@@ -1421,6 +1482,10 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
     auto threadEventIter = mPresentByThreadId.find(hdr.ThreadId);
     if (threadEventIter == mPresentByThreadId.end()) {
 
+        if (!IsProcessTrackedForFiltering(hdr.ProcessId)) {
+            return eventIter; // mPresentByThreadId.end()
+        }
+
         // If not, lookup the oldest in-progress present that was created by
         // this process but still doesn't have a known PresentMode.  This is
         // the mechanism for DXGK/Win32K events for looking up a present
@@ -1567,6 +1632,39 @@ void PMTraceConsumer::HandleNTProcessEvent(EVENT_RECORD* pEventRecord)
 void PMTraceConsumer::HandleMetadataEvent(EVENT_RECORD* pEventRecord)
 {
     mMetadata.AddMetadata(pEventRecord);
+}
+
+void PMTraceConsumer::AddTrackedProcessForFiltering(uint32_t processID)
+{
+    std::unique_lock<std::shared_mutex> lock(mTrackedProcessFilterMutex);
+    mTrackedProcessFilter.insert(processID);
+}
+
+void PMTraceConsumer::RemoveTrackedProcessForFiltering(uint32_t processID)
+{
+    std::unique_lock<std::shared_mutex> lock(mTrackedProcessFilterMutex);
+    auto iterator = mTrackedProcessFilter.find(processID);
+    
+    if (iterator != mTrackedProcessFilter.end()) {
+        mTrackedProcessFilter.erase(processID);
+    }
+    else {
+        assert(false);
+    }
+
+    // Completion events will remove any currently tracked events for this process
+    // from data structures, so we don't need to proactively remove them now.
+}
+
+bool PMTraceConsumer::IsProcessTrackedForFiltering(uint32_t processID)
+{
+    if (!mEnableTrackedProcessFiltering || processID == DwmProcessId) {
+        return true;
+    }
+
+    std::shared_lock<std::shared_mutex> lock(mTrackedProcessFilterMutex);
+    auto iterator = mTrackedProcessFilter.find(processID);
+    return (iterator != mTrackedProcessFilter.end());
 }
 
 #ifdef TRACK_PRESENT_PATHS
