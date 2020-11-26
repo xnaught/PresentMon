@@ -121,32 +121,60 @@ int RestartAsAdministrator(
     int argc,
     char** argv)
 {
+    // Get the exe path
     char exe_path[MAX_PATH] = {};
     GetModuleFileNameA(NULL, exe_path, sizeof(exe_path));
 
-    // Combine arguments into single array
-    char args[1024] = {};
-    for (int idx = 0, i = 1; i < argc && (size_t) idx < sizeof(args); ++i) {
-        if (idx >= sizeof(args)) {
-            fprintf(stderr, "internal error: command line arguments too long.\n");
-            return false; // was truncated
+    // Combine arguments into single char* and add -dont_restart_as_admin to
+    // prevent an endless loop if the escalation fails.
+    char* args = nullptr;
+    {
+        static char const* const extra_args = "-dont_restart_as_admin";
+        size_t idx = strlen(extra_args);
+        size_t len = idx + 1;
+        for (int i = 1; i < argc; ++i) {
+            len += strlen(argv[i]) + 2 + 1; // +2 for possible quotes, +1 for space or null
         }
 
-        if (argv[i][0] != '\"' && strchr(argv[i], ' ')) {
-            idx += snprintf(args + idx, sizeof(args) - idx, " \"%s\"", argv[i]);
-        } else {
-            idx += snprintf(args + idx, sizeof(args) - idx, " %s", argv[i]);
+        args = new char [len];
+        memcpy(args, extra_args, idx + 1);
+        for (int i = 1; i < argc; ++i) {
+            auto addQuotes = argv[i][0] != '\"' && strchr(argv[i], ' ') != nullptr;
+            auto n = strlen(argv[i]);
+
+            args[idx] = ' ';
+
+            if (addQuotes) {
+                args[idx + 1] = '\"';
+                memcpy(args + idx + 2, argv[i], n);
+                args[idx + n + 2] = '\"';
+                args[idx + n + 3] = '\0';
+                idx += 2;
+            } else {
+                memcpy(args + idx + 1, argv[i], n + 1);
+            }
+
+            idx += n + 1;
         }
     }
 
+    // Re-run the process with the runas verb
+    DWORD code = 2;
+
     SHELLEXECUTEINFOA info = {};
     info.cbSize       = sizeof(info);
-    info.fMask        = SEE_MASK_NOCLOSEPROCESS;
+    info.fMask        = SEE_MASK_NOCLOSEPROCESS; // return info.hProcess for explicit wait
     info.lpVerb       = "runas";
     info.lpFile       = exe_path;
     info.lpParameters = args;
-    info.nShow        = SW_SHOW;
-    if (!ShellExecuteExA(&info) || info.hProcess == NULL) {
+    info.nShow        = SW_SHOWDEFAULT;
+    auto ok = ShellExecuteExA(&info);
+    delete[] args;
+    if (ok) {
+        WaitForSingleObject(info.hProcess, INFINITE);
+        GetExitCodeProcess(info.hProcess, &code);
+        CloseHandle(info.hProcess);
+    } else {
         fprintf(stderr, "error: failed to elevate privilege ");
         int e = GetLastError();
         switch (e) {
@@ -159,16 +187,7 @@ int RestartAsAdministrator(
         case ERROR_SHARING_VIOLATION: fprintf(stderr, "(sharing violation).\n"); break;
         default:                      fprintf(stderr, "(%u).\n", e); break;
         }
-        return 2;
     }
-
-    WaitForSingleObject(info.hProcess, INFINITE);
-
-    DWORD code = 0;
-    GetExitCodeProcess(info.hProcess, &code);
-    int e = GetLastError();
-    (void) e;
-    CloseHandle(info.hProcess);
 
     return code;
 }
