@@ -24,98 +24,48 @@ SOFTWARE.
 
 namespace {
 
-typedef BOOL(WINAPI *OpenProcessTokenProc)(HANDLE ProcessHandle, DWORD DesiredAccess, PHANDLE TokenHandle);
-typedef BOOL(WINAPI *GetTokenInformationProc)(HANDLE TokenHandle, TOKEN_INFORMATION_CLASS TokenInformationClass, LPVOID TokenInformation, DWORD TokenInformationLength, DWORD *ReturnLength);
-typedef BOOL(WINAPI *LookupPrivilegeValueAProc)(LPCSTR lpSystemName, LPCSTR lpName, PLUID lpLuid);
-typedef BOOL(WINAPI *AdjustTokenPrivilegesProc)(HANDLE TokenHandle, BOOL DisableAllPrivileges, PTOKEN_PRIVILEGES NewState, DWORD BufferLength, PTOKEN_PRIVILEGES PreviousState, PDWORD ReturnLength);
-
-struct Advapi {
-    HMODULE HModule;
-    OpenProcessTokenProc OpenProcessToken;
-    GetTokenInformationProc GetTokenInformation;
-    LookupPrivilegeValueAProc LookupPrivilegeValueA;
-    AdjustTokenPrivilegesProc AdjustTokenPrivileges;
-
-    Advapi()
-        : HModule(NULL)
-    {
+bool EnableDebugPrivilege()
+{
+    auto hmodule = LoadLibraryA("advapi32.dll");
+    auto pOpenProcessToken      = (decltype(&OpenProcessToken))      GetProcAddress(hmodule, "OpenProcessToken");
+    auto pGetTokenInformation   = (decltype(&GetTokenInformation))   GetProcAddress(hmodule, "GetTokenInformation");
+    auto pLookupPrivilegeValue  = (decltype(&LookupPrivilegeValueA)) GetProcAddress(hmodule, "LookupPrivilegeValueA");
+    auto pAdjustTokenPrivileges = (decltype(&AdjustTokenPrivileges)) GetProcAddress(hmodule, "AdjustTokenPrivileges");
+    if (pOpenProcessToken      == nullptr ||
+        pGetTokenInformation   == nullptr ||
+        pLookupPrivilegeValue  == nullptr ||
+        pAdjustTokenPrivileges == nullptr) {
+        FreeLibrary(hmodule);
+        return false;
     }
 
-    ~Advapi()
-    {
-        if (HModule != NULL) {
-            FreeLibrary(HModule);
-        }
+    HANDLE hToken = NULL;
+    if (pOpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken) == 0) {
+        FreeLibrary(hmodule);
+        return false;
     }
 
-    bool Load()
-    {
-        HModule = LoadLibraryA("advapi32.dll");
-        if (HModule == NULL) {
-            return false;
-        }
+    // Try to enable required privilege
+    TOKEN_PRIVILEGES tp = {};
+    tp.PrivilegeCount = 1;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 
-        OpenProcessToken = (OpenProcessTokenProc) GetProcAddress(HModule, "OpenProcessToken");
-        GetTokenInformation = (GetTokenInformationProc) GetProcAddress(HModule, "GetTokenInformation");
-        LookupPrivilegeValueA = (LookupPrivilegeValueAProc) GetProcAddress(HModule, "LookupPrivilegeValueA");
-        AdjustTokenPrivileges = (AdjustTokenPrivilegesProc) GetProcAddress(HModule, "AdjustTokenPrivileges");
-
-        if (OpenProcessToken == nullptr ||
-            GetTokenInformation == nullptr ||
-            LookupPrivilegeValueA == nullptr ||
-            AdjustTokenPrivileges == nullptr) {
-            FreeLibrary(HModule);
-            HModule = NULL;
-            return false;
-        }
-
-        return true;
-    }
-
-    bool HasElevatedPrivilege() const
-    {
-        HANDLE hToken = NULL;
-        if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
-            return false;
-        }
-
-        /** BEGIN WORKAROUND: struct TOKEN_ELEVATION and enum value TokenElevation
-         * are not defined in the vs2003 headers, so we reproduce them here. **/
-        enum { WA_TokenElevation = 20 };
-        DWORD TokenIsElevated = 0;
-        /** END WA **/
-
-        DWORD dwSize = 0;
-        if (!GetTokenInformation(hToken, (TOKEN_INFORMATION_CLASS) WA_TokenElevation, &TokenIsElevated, sizeof(TokenIsElevated), &dwSize)) {
-            TokenIsElevated = 0;
-        }
-
+    if (pLookupPrivilegeValue(NULL, "SeDebugPrivilege", &tp.Privileges[0].Luid) == 0) {
         CloseHandle(hToken);
-
-        return TokenIsElevated != 0;
+        FreeLibrary(hmodule);
+        return false;
     }
 
-    bool EnableDebugPrivilege() const
-    {
-        HANDLE hToken = NULL;
-        if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &hToken)) {
-            return false;
-        }
+    auto adjustResult = pAdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), nullptr, nullptr);
+    auto adjustError = GetLastError();
 
-        TOKEN_PRIVILEGES tp = {};
-        tp.PrivilegeCount = 1;
-        tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+    CloseHandle(hToken);
+    FreeLibrary(hmodule);
 
-        bool enabled =
-            LookupPrivilegeValueA(NULL, "SeDebugPrivilege", &tp.Privileges[0].Luid) &&
-            AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), nullptr, nullptr) &&
-            GetLastError() != ERROR_NOT_ALL_ASSIGNED;
-
-        CloseHandle(hToken);
-
-        return enabled;
-    }
-};
+    return
+        adjustResult != 0 &&
+        adjustError != ERROR_NOT_ALL_ASSIGNED;
+}
 
 int RestartAsAdministrator(
     int argc,
@@ -205,8 +155,7 @@ void ElevatePrivilege(int argc, char** argv)
     }
 
     // Try to load advapi to check and set required privilege.
-    Advapi advapi;
-    if (advapi.Load() && advapi.EnableDebugPrivilege()) {
+    if (EnableDebugPrivilege()) {
         return;
     }
 
