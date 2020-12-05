@@ -112,15 +112,17 @@ public:
 
                     // Doubles should be good for 15 digits of precision.
 
-                    double testNumber = strtod(a, nullptr);
-                    double goldNumber = strtod(b, nullptr);
+                    double testNumber, goldNumber;
+                    int testSucceededCount = sscanf_s(a, "%lf", &testNumber);
+                    int goldSucceededCount = sscanf_s(b, "%lf", &goldNumber);
+
                     const char* testDecimalAddr = strchr(a, '.');
                     const char* goldDecimalAddr = strchr(b, '.');
-                    if (testNumber != 0.0 && goldNumber != 0.0 && testDecimalAddr != NULL && goldDecimalAddr != NULL) {
+                    if (testSucceededCount == 1 && goldSucceededCount == 1 && testDecimalAddr != NULL && goldDecimalAddr != NULL) {
                         size_t testDecimalNumbersCount = (a + strlen(a)) - testDecimalAddr - 1;
                         size_t goldDecimalNumbersCount = (b + strlen(b)) - goldDecimalAddr - 1;
                         double difference = (testNumber * pow(10.0, testDecimalNumbersCount)) - (goldNumber * pow(10.0, goldDecimalNumbersCount));
-                        if (difference > -1.001 && difference < 1.001) {
+                        if (testDecimalNumbersCount == goldDecimalNumbersCount && difference > -1.001 && difference < 1.001) {
                             continue;
                         }
                     }
