@@ -1208,7 +1208,6 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
     if (p->Completed)
     {
         p->FinalState = PresentResult::Error;
-        return;
     }
 
     // Complete all other presents that were riding along with this one (i.e. this one came from DWM)
@@ -1248,9 +1247,11 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
     auto presentIter = presentDeque.begin();
     assert(!presentIter->get()->Completed); // It wouldn't be here anymore if it was
 
+    // Only if state is presented, remove all previous presents up till this one.
     if (p->FinalState == PresentResult::Presented) {
         while (*presentIter != p) {
             CompletePresent(*presentIter, recurseDepth + 1);
+            assert(presentIter != presentDeque.begin()); // Otherwise we enter an infinite loop.
             presentIter = presentDeque.begin();
         }
     }
