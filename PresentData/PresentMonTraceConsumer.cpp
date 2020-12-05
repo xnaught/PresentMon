@@ -1205,8 +1205,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
 {
     DebugCompletePresent(*p, recurseDepth);
 
-    if (p->Completed)
-    {
+    if (p->Completed && p->FinalState != PresentResult::Presented) {
         p->FinalState = PresentResult::Error;
     }
 
@@ -1245,7 +1244,6 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
 
     auto& presentDeque = mPresentsByProcessAndSwapChain[std::make_tuple(p->ProcessId, p->SwapChainAddress)];
     auto presentIter = presentDeque.begin();
-    assert(!presentIter->get()->Completed); // It wouldn't be here anymore if it was
 
     // Only if state is presented, remove all previous presents up till this one.
     if (p->FinalState == PresentResult::Presented) {
