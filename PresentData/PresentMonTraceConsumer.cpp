@@ -1249,7 +1249,6 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
     if (p->FinalState == PresentResult::Presented) {
         while (*presentIter != p) {
             CompletePresent(*presentIter, recurseDepth + 1);
-            assert(presentIter != presentDeque.begin()); // Otherwise we enter an infinite loop.
             presentIter = presentDeque.begin();
         }
     }
