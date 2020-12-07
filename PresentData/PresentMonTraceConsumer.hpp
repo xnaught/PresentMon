@@ -94,14 +94,14 @@ struct PresentEvent {
     // Properties deduced by watching events through present pipeline
     uint64_t Hwnd;
     uint64_t TokenPtr;
+    uint64_t CompositionSurfaceLuid;
     uint32_t QueueSubmitSequence;
+    uint32_t DestWidth;
+    uint32_t DestHeight;
+    uint32_t DriverBatchThreadId;
     Runtime Runtime;
     PresentMode PresentMode;
     PresentResult FinalState;
-    uint32_t DestWidth;
-    uint32_t DestHeight;
-    uint64_t CompositionSurfaceLuid;
-    uint32_t DriverBatchThreadId;
     bool SupportsTearing;
     bool MMIO;
     bool SeenDxgkPresent;
@@ -217,7 +217,7 @@ struct PMTraceConsumer
     // mPresentsByProcess stores each process' in-progress presents in the
     // order that they were presented.  This is used to look up presents across
     // systems running on different threads (DXGI/D3D/DXGK/Win32) and for
-    // batched present tracking, so we know to discard all older presents with
+    // batched present tracking, so we know to discard all older presents when
     // one is completed.
     //
     // mPresentsByProcessAndSwapChain stores each swapchain's in-progress
@@ -351,8 +351,8 @@ struct PMTraceConsumer
     void CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t recurseDepth=0);
     std::shared_ptr<PresentEvent> FindBySubmitSequence(uint32_t submitSequence);
     std::shared_ptr<PresentEvent> FindOrCreatePresent(EVENT_HEADER const& hdr);
-    std::shared_ptr<PresentEvent> CreatePresent(std::shared_ptr<PresentEvent> present, decltype(mPresentsByProcess.begin()->second)& presentsByThisProcess);
-    void CreatePresent(std::shared_ptr<PresentEvent> present);
+    void TrackPresentOnThread(std::shared_ptr<PresentEvent> present);
+    void TrackPresent(std::shared_ptr<PresentEvent> present, decltype(mPresentsByProcess.begin()->second)& presentsByThisProcess);
     void RemoveLostPresent(std::shared_ptr<PresentEvent> present);
     void RemovePresentFromTemporaryTrackingCollections(std::shared_ptr<PresentEvent> present);
     void RuntimePresentStop(EVENT_HEADER const& hdr, bool AllowPresentBatching, ::Runtime runtime);

@@ -39,21 +39,21 @@ struct {
     uint64_t TimeTaken;
     uint64_t ReadyTime;
     uint64_t ScreenTime;
-    
+
     uint64_t SwapChainAddress;
     int32_t SyncInterval;
     uint32_t PresentFlags;
-    
+
     uint64_t Hwnd;
     uint64_t TokenPtr;
     uint32_t QueueSubmitSequence;
+    uint32_t DriverBatchThreadId;
     PresentMode PresentMode;
     PresentResult FinalState;
     bool SupportsTearing;
     bool MMIO;
     bool SeenDxgkPresent;
     bool SeenWin32KEvents;
-    uint32_t DriverBatchThreadId;
     bool DwmNotified;
     bool Completed;
 } gOriginalPresentValues;
@@ -165,13 +165,13 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintU64Ptr,        Hwnd)
     FLUSH_MEMBER(PrintU64Ptr,        TokenPtr)
     FLUSH_MEMBER(PrintU32,           QueueSubmitSequence)
+    FLUSH_MEMBER(PrintU32,           DriverBatchThreadId)
     FLUSH_MEMBER(PrintPresentMode,   PresentMode)
     FLUSH_MEMBER(PrintPresentResult, FinalState)
     FLUSH_MEMBER(PrintBool,          SupportsTearing)
     FLUSH_MEMBER(PrintBool,          MMIO)
     FLUSH_MEMBER(PrintBool,          SeenDxgkPresent)
     FLUSH_MEMBER(PrintBool,          SeenWin32KEvents)
-    FLUSH_MEMBER(PrintU32,           DriverBatchThreadId)
     FLUSH_MEMBER(PrintBool,          DwmNotified)
     FLUSH_MEMBER(PrintBool,          Completed)
 #undef FLUSH_MEMBER
@@ -345,13 +345,13 @@ void DebugModifyPresent(PresentEvent const& p)
         gOriginalPresentValues.Hwnd                = p.Hwnd;
         gOriginalPresentValues.TokenPtr            = p.TokenPtr;
         gOriginalPresentValues.QueueSubmitSequence = p.QueueSubmitSequence;
+        gOriginalPresentValues.DriverBatchThreadId = p.DriverBatchThreadId;
         gOriginalPresentValues.PresentMode         = p.PresentMode;
         gOriginalPresentValues.FinalState          = p.FinalState;
         gOriginalPresentValues.SupportsTearing     = p.SupportsTearing;
         gOriginalPresentValues.MMIO                = p.MMIO;
         gOriginalPresentValues.SeenDxgkPresent     = p.SeenDxgkPresent;
         gOriginalPresentValues.SeenWin32KEvents    = p.SeenWin32KEvents;
-        gOriginalPresentValues.DriverBatchThreadId = p.DriverBatchThreadId;
         gOriginalPresentValues.DwmNotified         = p.DwmNotified;
         gOriginalPresentValues.Completed           = p.Completed;
     }
