@@ -163,6 +163,11 @@ static ProcessInfo* GetProcessInfo(uint32_t processId)
         // In ETL capture, we should have gotten an NTProcessEvent for this
         // process updated via UpdateNTProcesses(), so this path should only
         // happen in realtime capture.
+        //
+        // Try to open a limited handle into the process in order to query its
+        // name and also periodically check if it has terminated.  This will
+        // fail (with GetLastError() == ERROR_ACCESS_DENIED) if the process was
+        // run on another account, unless we're running with SeDebugPrivilege.
         auto const& args = GetCommandLineArgs();
         HANDLE handle = NULL;
         char const* processName = "<error>";
