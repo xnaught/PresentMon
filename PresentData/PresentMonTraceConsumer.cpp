@@ -1353,7 +1353,7 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
     // mPresentsByProcessAndSwapChain and mPresentsByProcess should always track the present's lifetime,
     // so these also have an assert to validate this assumption.
 
-    DebugLostPresent(p);
+    DebugLostPresent(*p);
 
     p->IsLost = true;
 
