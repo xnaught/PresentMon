@@ -1215,8 +1215,8 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
         // The 64-bit token data from the PHT submission is actually two 32-bit
         // data chunks, corresponding to a "flip chain" id and present id
         auto token = ((uint64_t) ulFlipChain << 32ull) | ulSerialNumber;
-        auto flipIter = mDxgKrnlPresentHistoryTokens.find(token);
-        if (flipIter == mDxgKrnlPresentHistoryTokens.end()) {
+        auto flipIter = mPresentsByLegacyBlitToken.find(token);
+        if (flipIter == mPresentsByLegacyBlitToken.end()) {
             return;
         }
 
