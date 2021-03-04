@@ -1,5 +1,5 @@
 /*
-Copyright 2017-2020 Intel Corporation
+Copyright 2017-2021 Intel Corporation
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -1409,9 +1409,8 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
 {
     DebugCompletePresent(*p, recurseDepth);
 
-    if (p->Completed) {
+    if (p->Completed && p->FinalState != PresentResult::Presented) {
         p->FinalState = PresentResult::Error;
-        return;
     }
 
     // Complete all other presents that were riding along with this one (i.e. this one came from DWM)
@@ -1438,8 +1437,8 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
     presentsByThisProcess.erase(p->QpcTime);
 
     auto& presentDeque = mPresentsByProcessAndSwapChain[std::make_tuple(p->ProcessId, p->SwapChainAddress)];
-    assert(!presentDeque.front()->Completed); // It wouldn't be here anymore if it was
 
+    // If presented, remove all previous presents up till this one.
     if (p->FinalState == PresentResult::Presented) {
         auto presentIter = presentDeque.begin();
         while (presentIter != presentDeque.end() && *presentIter != p) {
