@@ -407,12 +407,16 @@ void PMTraceConsumer::HandleDxgkQueueComplete(EVENT_HEADER const& hdr, uint32_t 
         pEvent->ScreenTime = hdr.TimeStamp.QuadPart;
         pEvent->FinalState = PresentResult::Presented;
 
-        // Sometimes, the queue packets associated with a present will complete before the DxgKrnl present event is fired
-        // In this case, for blit presents, we have no way to differentiate between fullscreen and windowed blits
-        // So, defer the completion of this present until we know all events have been fired
-        if (pEvent->SeenDxgkPresent || pEvent->PresentMode != PresentMode::Hardware_Legacy_Copy_To_Front_Buffer) {
-            CompletePresent(pEvent);
+        // Sometimes, the queue packets associated with a present will complete
+        // before the DxgKrnl PresentInfo event is fired.  For blit presents in
+        // this case, we have no way to differentiate between fullscreen and
+        // windowed blits, so we defer the completion of this present until
+        // we've also seen the Dxgk Present_Info event.
+        if (!pEvent->SeenDxgkPresent && pEvent->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer) {
+            return;
         }
+
+        CompletePresent(pEvent);
     }
 }
 
@@ -714,44 +718,43 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
     case Microsoft_Windows_DxgKrnl::Present_Info::Id:
     {
         // This event is emitted at the end of the kernel present, before returning.
-        // The presence of this event is used with blt presents to indicate that no
-        // PHT is to be expected.
         auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
         if (eventIter == mPresentByThreadId.end()) {
             return;
         }
 
-        DebugModifyPresent(*eventIter->second);
-        TRACK_PRESENT_PATH(eventIter->second);
+        auto present = eventIter->second;
+        DebugModifyPresent(*present);
+        TRACK_PRESENT_PATH(present);
 
-        // Create a temporary copy of the shared_ptr since we may erase the iterator before we are done with its data.
-        std::shared_ptr<PresentEvent> event = eventIter->second;
+        // Store the fact we've seen this present.  This is used to improve
+        // tracking and to defer blt present completion until both Present_Info
+        // and present QueuePacket_Stop have been seen.
+        present->SeenDxgkPresent = true;
 
-        event->SeenDxgkPresent = true;
-        if (event->Hwnd == 0) {
-            event->Hwnd = mMetadata.GetEventData<uint64_t>(pEventRecord, L"hWindow");
+        if (present->Hwnd == 0) {
+            present->Hwnd = mMetadata.GetEventData<uint64_t>(pEventRecord, L"hWindow");
         }
 
-        if (event->ThreadId != hdr.ThreadId) {
-            if (event->TimeTaken == 0) {
-                event->TimeTaken = hdr.TimeStamp.QuadPart - event->QpcTime;
+        // If we are not expecting an API present end event, then treat this as
+        // the end of the present.  This can happen due to batched presents or
+        // non-instrumented present APIs (i.e., not DXGI nor D3D9).
+        if (present->ThreadId != hdr.ThreadId) {
+            present->DriverBatchThreadId = hdr.ThreadId;
+            if (present->TimeTaken == 0) {
+                present->TimeTaken = hdr.TimeStamp.QuadPart - present->QpcTime;
             }
-            event->DriverBatchThreadId = hdr.ThreadId;
 
+            mPresentByThreadId.erase(eventIter);
+        } else if (present->Runtime == Runtime::Other) {
             mPresentByThreadId.erase(eventIter);
         }
 
-        // mPresentByThreadId tracks runtime present API as far as possible. If the runtime is not DXGI or D3D9,
-        // then this is as far as we can track it.
-        if (event->Runtime == Runtime::Other) {
-            mPresentByThreadId.erase(event->ThreadId);
-        }
-
-        if (event->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer &&
-            event->ScreenTime != 0) {
-            // This is a fullscreen or DWM-off blit where all work associated was already done, so it's on-screen
-            // It was deferred to here because there was no way to be sure it was really fullscreen until now
-            CompletePresent(event);
+        // If this is a deferred blit that's already seen QueuePacket_Stop,
+        // then complete it now.
+        if (present->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer &&
+            present->ScreenTime != 0) {
+            CompletePresent(present);
         }
         break;
     }
@@ -1265,8 +1268,7 @@ void PMTraceConsumer::RemovePresentFromTemporaryTrackingCollections(std::shared_
         mPresentByThreadId.erase(threadEventIter);
     }
 
-    if (p->DriverBatchThreadId != 0)
-    {
+    if (p->DriverBatchThreadId != 0) {
         auto batchThreadEventIter = mPresentByThreadId.find(p->DriverBatchThreadId);
         if (batchThreadEventIter != mPresentByThreadId.end() && batchThreadEventIter->second == p) {
             mPresentByThreadId.erase(batchThreadEventIter);
@@ -1389,7 +1391,6 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
     }
     // We expect an element to be removed here.
     assert(hasRemovedElement);
-
 
     // Update the list of lost presents.
     {
