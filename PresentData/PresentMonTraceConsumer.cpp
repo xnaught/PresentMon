@@ -1356,14 +1356,14 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
     p->IsLost = true;
 
     // Presents dependent on this event can no longer be trakced.
-    auto dependentPresents = p->DependentPresents;
-    for (auto& dependentPresent : dependentPresents) {
-        if (!p->IsLost) {
+    for (auto& dependentPresent : p->DependentPresents) {
+        if (!dependentPresent->IsLost) {
             RemoveLostPresent(dependentPresent);
         }
         // The only place a lost present could still exist outside of mLostPresentEvents is the dependents list.
         // A lost present has already been added to mLostPresentEvents, we should never modify it.
     }
+    p->DependentPresents.clear();
 
     // Completed Presented presents should not make it here.
     assert(!(p->Completed && p->FinalState == PresentResult::Presented));
