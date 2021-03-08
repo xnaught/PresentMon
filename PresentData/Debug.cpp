@@ -70,9 +70,9 @@ uint64_t ConvertTimestampDeltaToNs(uint64_t timestampDelta)
     return 1000000000ull * timestampDelta / gTimestampFrequency.QuadPart;
 }
 
-uint64_t ConvertTimestampToNs(LARGE_INTEGER timestamp)
+uint64_t ConvertTimestampToNs(uint64_t timestamp)
 {
-    return ConvertTimestampDeltaToNs(timestamp.QuadPart - gFirstTimestamp->QuadPart);
+    return ConvertTimestampDeltaToNs(timestamp - gFirstTimestamp->QuadPart);
 }
 
 char* AddCommas(uint64_t t)
@@ -98,6 +98,7 @@ char* AddCommas(uint64_t t)
 void PrintU32(uint32_t value) { printf("%u", value); }
 void PrintU64(uint64_t value) { printf("%llu", value); }
 void PrintU64x(uint64_t value) { printf("%llx", value); }
+void PrintTime(uint64_t value) { printf("%s", AddCommas(ConvertTimestampToNs(value))); }
 void PrintTimeDelta(uint64_t value) { printf("%s", AddCommas(ConvertTimestampDeltaToNs(value))); }
 void PrintBool(bool value) { printf("%s", value ? "true" : "false"); }
 void PrintRuntime(Runtime value)
@@ -181,7 +182,7 @@ void PrintPresentFlags(uint32_t flags)
 
 void PrintEventHeader(EVENT_HEADER const& hdr)
 {
-    printf("%16s %5u %5u ", AddCommas(ConvertTimestampToNs(hdr.TimeStamp)), hdr.ProcessId, hdr.ThreadId);
+    printf("%16s %5u %5u ", AddCommas(ConvertTimestampToNs(hdr.TimeStamp.QuadPart)), hdr.ProcessId, hdr.ThreadId);
 }
 
 void PrintEventHeader(EVENT_HEADER const& hdr, char const* name)
@@ -232,8 +233,8 @@ void FlushModifiedPresent()
         _Fn(gModifiedPresent->_Name); \
     }
     FLUSH_MEMBER(PrintTimeDelta,     TimeTaken)
-    FLUSH_MEMBER(PrintTimeDelta,     ReadyTime)
-    FLUSH_MEMBER(PrintTimeDelta,     ScreenTime)
+    FLUSH_MEMBER(PrintTime,          ReadyTime)
+    FLUSH_MEMBER(PrintTime,          ScreenTime)
     FLUSH_MEMBER(PrintU64x,          SwapChainAddress)
     FLUSH_MEMBER(PrintU32,           SyncInterval)
     FLUSH_MEMBER(PrintU32,           PresentFlags)
@@ -280,7 +281,7 @@ void DebugEvent(EVENT_RECORD* eventRecord, EventMetadata* metadata)
 
     FlushModifiedPresent();
 
-    auto t = ConvertTimestampToNs(hdr.TimeStamp);
+    auto t = ConvertTimestampToNs(hdr.TimeStamp.QuadPart);
     if (t >= DEBUG_START_TIME_NS) {
         gDebugTrace = true;
     }
