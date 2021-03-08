@@ -290,33 +290,29 @@ void PMTraceConsumer::HandleDxgkBltCancel(EVENT_HEADER const& hdr)
 void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterval, bool mmio)
 {
     // A flip event is emitted during fullscreen present submission.
-    // Afterwards, expect an MMIOFlip packet on the same thread, used
-    // to trace the flip to screen.
+    // Afterwards, expect an MMIOFlip packet on the same thread, used to trace
+    // the flip to screen.
 
-    // Lookup the in-progress present.  The only events that we can expect
-    // before a Flip/FlipMPO are a runtime present start, or a previous
-    // FlipMPO.  If that's not the case, we looked up a 'stuck' present whose
-    // tracking was lost for some reason.
-    //
-    // TODO: should have PresentMode==Unknown as well?  Worth checking?
+    // Lookup the in-progress present.  The only events that we expect before a
+    // Flip/FlipMPO are a runtime present start, or a previous FlipMPO.  If
+    // that's not the case, we assume that correct tracking has been lost.
     auto presentEvent = FindOrCreatePresent(hdr);
     if (presentEvent == nullptr) {
         return;
     }
 
-    if (presentEvent->QueueSubmitSequence != 0 || presentEvent->SeenDxgkPresent) {
+    while (presentEvent->QueueSubmitSequence != 0 || presentEvent->SeenDxgkPresent) {
         RemoveLostPresent(presentEvent);
         presentEvent = FindOrCreatePresent(hdr);
         if (presentEvent == nullptr) {
             return;
         }
-        assert(!(presentEvent->QueueSubmitSequence != 0 || presentEvent->SeenDxgkPresent));
     }
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(presentEvent);
 
+    // For MPO, N events may be issued, but we only care about the first
     if (presentEvent->PresentMode != PresentMode::Unknown) {
-        // For MPO, N events may be issued, but we only care about the first
         return;
     }
 
