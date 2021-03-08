@@ -191,6 +191,11 @@ struct PMTraceConsumer
     bool mFilteredEvents;
     bool mSimpleMode;
 
+    // Whether we've seen Dxgk complete a present.  This is used to indicate
+    // that the Dxgk provider has started and it's safe to start tracking
+    // presents.
+    bool mSeenDxgkPresentInfo;
+
     // Store completed presents until the consumer thread removes them using
     // DequeuePresents().  Completed presents are those that have progressed as
     // far as they can through the pipeline before being either discarded or

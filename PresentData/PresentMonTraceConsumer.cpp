@@ -117,6 +117,7 @@ PMTraceConsumer::PMTraceConsumer(bool filteredEvents, bool simple, bool trackedF
     , mAllPresentsNextIndex(0)
     , mAllPresents(PRESENTEVENT_CIRCULAR_BUFFER_SIZE)
     , mEnableTrackedProcessFiltering(trackedFiltering)
+    , mSeenDxgkPresentInfo(false)
 {
 }
 
@@ -734,42 +735,66 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
     {
         // This event is emitted at the end of the kernel present, before returning.
         auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
-        if (eventIter == mPresentByThreadId.end()) {
-            return;
-        }
+        if (eventIter != mPresentByThreadId.end()) {
+            auto present = eventIter->second;
+            DebugModifyPresent(*present);
+            TRACK_PRESENT_PATH(present);
 
-        auto present = eventIter->second;
-        DebugModifyPresent(*present);
-        TRACK_PRESENT_PATH(present);
+            // Store the fact we've seen this present.  This is used to improve
+            // tracking and to defer blt present completion until both Present_Info
+            // and present QueuePacket_Stop have been seen.
+            present->SeenDxgkPresent = true;
 
-        // Store the fact we've seen this present.  This is used to improve
-        // tracking and to defer blt present completion until both Present_Info
-        // and present QueuePacket_Stop have been seen.
-        present->SeenDxgkPresent = true;
-
-        if (present->Hwnd == 0) {
-            present->Hwnd = mMetadata.GetEventData<uint64_t>(pEventRecord, L"hWindow");
-        }
-
-        // If we are not expecting an API present end event, then treat this as
-        // the end of the present.  This can happen due to batched presents or
-        // non-instrumented present APIs (i.e., not DXGI nor D3D9).
-        if (present->ThreadId != hdr.ThreadId) {
-            present->DriverBatchThreadId = hdr.ThreadId;
-            if (present->TimeTaken == 0) {
-                present->TimeTaken = hdr.TimeStamp.QuadPart - present->QpcTime;
+            if (present->Hwnd == 0) {
+                present->Hwnd = mMetadata.GetEventData<uint64_t>(pEventRecord, L"hWindow");
             }
 
-            mPresentByThreadId.erase(eventIter);
-        } else if (present->Runtime == Runtime::Other) {
-            mPresentByThreadId.erase(eventIter);
+            // If we are not expecting an API present end event, then treat this as
+            // the end of the present.  This can happen due to batched presents or
+            // non-instrumented present APIs (i.e., not DXGI nor D3D9).
+            if (present->ThreadId != hdr.ThreadId) {
+                present->DriverBatchThreadId = hdr.ThreadId;
+                if (present->TimeTaken == 0) {
+                    present->TimeTaken = hdr.TimeStamp.QuadPart - present->QpcTime;
+                }
+
+                mPresentByThreadId.erase(eventIter);
+            } else if (present->Runtime == Runtime::Other) {
+                mPresentByThreadId.erase(eventIter);
+            }
+
+            // If this is a deferred blit that's already seen QueuePacket_Stop,
+            // then complete it now.
+            if (present->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer &&
+                present->ScreenTime != 0) {
+                CompletePresent(present);
+            }
         }
 
-        // If this is a deferred blit that's already seen QueuePacket_Stop,
-        // then complete it now.
-        if (present->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer &&
-            present->ScreenTime != 0) {
-            CompletePresent(present);
+        // We use the first observed event to indicate that Dxgk provider is
+        // running and able to successfully track/complete presents.
+        //
+        // There may be numerous presents that were previously started and
+        // queued.  However, it's possible that they actually completed but we
+        // never got their Dxgk events due to the trace startup process.  When
+        // that happens, QpcTime/TimeTaken and ReadyTime/ScreenTime times can
+        // become mis-matched, actually coming from different Present() calls.
+        //
+        // This is especially prevalent in ETLs that start runtime providers
+        // before backend providers and/or start capturing while an intensive
+        // graphics application is already running.
+        //
+        // We handle this by throwing away all queued presents up to this
+        // point.
+        if (mSeenDxgkPresentInfo == false) {
+            mSeenDxgkPresentInfo = true;
+
+            for (uint32_t i = 0; i < mAllPresentsNextIndex; ++i) {
+                auto& p = mAllPresents[i];
+                if (p != nullptr && !p->Completed && !p->IsLost) {
+                    RemoveLostPresent(p);
+                }
+            }
         }
         break;
     }
@@ -1423,6 +1448,13 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
 
     if (p->Completed && p->FinalState != PresentResult::Presented) {
         p->FinalState = PresentResult::Error;
+    }
+
+    // Throw away events until we've seen at least one Dxgk PresentInfo event
+    // (unless we're in simple mode where we don't enable Dxgk provider)
+    if (!mSimpleMode && !mSeenDxgkPresentInfo) {
+        RemoveLostPresent(p);
+        return;
     }
 
     // Complete all other presents that were riding along with this one (i.e. this one came from DWM)
