@@ -707,6 +707,18 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
         }
         break;
     }
+    case Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id:
+    {
+        TRACK_PRESENT_PATH_GENERATE_ID();
+
+        auto FlipCount = mMetadata.GetEventData<uint32_t>(pEventRecord, L"FlipEntryCount");
+        for (uint32_t i = 0; i < FlipCount; i++) {
+            // TODO: Combine these into single GetEventData() call?
+            auto FlipId = mMetadata.GetEventData<uint64_t>(pEventRecord, L"FlipSubmitSequence", i);
+            HandleDxgkSyncDPC(hdr, (uint32_t)(FlipId >> 32u));
+        }
+        break;
+    }
     case Microsoft_Windows_DxgKrnl::VSyncDPC_Info::Id:
     {
         TRACK_PRESENT_PATH_GENERATE_ID();
