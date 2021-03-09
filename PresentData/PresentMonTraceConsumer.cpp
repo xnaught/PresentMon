@@ -510,10 +510,14 @@ void PMTraceConsumer::HandleDxgkSyncDPC(EVENT_HEADER const& hdr, uint32_t flipSu
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(pEvent);
 
-    pEvent->ScreenTime = hdr.TimeStamp.QuadPart;
-    pEvent->FinalState = PresentResult::Presented;
-    if (pEvent->PresentMode == PresentMode::Hardware_Legacy_Flip) {
-        CompletePresent(pEvent);
+    // Prevent double-complete when VSyncDPCMultiPlane and VSyncDPC are both sent for a plane.
+    if (pEvent->FinalState != PresentResult::Presented)
+    {
+        pEvent->ScreenTime = hdr.TimeStamp.QuadPart;
+        pEvent->FinalState = PresentResult::Presented;
+        if (pEvent->PresentMode == PresentMode::Hardware_Legacy_Flip) {
+            CompletePresent(pEvent);
+        }
     }
 }
 
