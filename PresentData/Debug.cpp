@@ -37,28 +37,7 @@ SOFTWARE.
 namespace {
 
 PresentEvent const* gModifiedPresent = nullptr;
-struct {
-    uint64_t TimeTaken;
-    uint64_t ReadyTime;
-    uint64_t ScreenTime;
-
-    uint64_t SwapChainAddress;
-    int32_t SyncInterval;
-    uint32_t PresentFlags;
-
-    uint64_t Hwnd;
-    uint64_t TokenPtr;
-    uint32_t QueueSubmitSequence;
-    uint32_t DriverBatchThreadId;
-    PresentMode PresentMode;
-    PresentResult FinalState;
-    bool SupportsTearing;
-    bool MMIO;
-    bool SeenDxgkPresent;
-    bool SeenWin32KEvents;
-    bool DwmNotified;
-    bool Completed;
-} gOriginalPresentValues;
+PresentEvent gOriginalPresentValues(EVENT_HEADER{}, Runtime::Other);
 
 bool gDebugDone = false;
 bool gDebugTrace = false;
@@ -98,8 +77,8 @@ char* AddCommas(uint64_t t)
 void PrintU32(uint32_t value) { printf("%u", value); }
 void PrintU64(uint64_t value) { printf("%llu", value); }
 void PrintU64x(uint64_t value) { printf("%llx", value); }
-void PrintTime(uint64_t value) { printf("%s", AddCommas(ConvertTimestampToNs(value))); }
-void PrintTimeDelta(uint64_t value) { printf("%s", AddCommas(ConvertTimestampDeltaToNs(value))); }
+void PrintTime(uint64_t value) { printf("%s", value == 0 ? "0" : AddCommas(ConvertTimestampToNs(value))); }
+void PrintTimeDelta(uint64_t value) { printf("%s", value == 0 ? "0" : AddCommas(ConvertTimestampDeltaToNs(value))); }
 void PrintBool(bool value) { printf("%s", value ? "true" : "false"); }
 void PrintRuntime(Runtime value)
 {
@@ -204,7 +183,10 @@ void PrintEventHeader(EVENT_RECORD* eventRecord, EventMetadata* metadata, char c
         printf(" %ls=", propName);
 
              if (propFunc == PrintU32)                  PrintU32(metadata->GetEventData<uint32_t>(eventRecord, propName));
+        else if (propFunc == PrintU64)                  PrintU64(metadata->GetEventData<uint64_t>(eventRecord, propName));
         else if (propFunc == PrintU64x)                 PrintU64x(metadata->GetEventData<uint64_t>(eventRecord, propName));
+        else if (propFunc == PrintTime)                 PrintTime(metadata->GetEventData<uint64_t>(eventRecord, propName));
+        else if (propFunc == PrintTimeDelta)            PrintTimeDelta(metadata->GetEventData<uint64_t>(eventRecord, propName));
         else if (propFunc == PrintTokenState)           PrintTokenState(metadata->GetEventData<uint32_t>(eventRecord, propName));
         else if (propFunc == PrintQueuePacketType)      PrintQueuePacketType(metadata->GetEventData<uint32_t>(eventRecord, propName));
         else if (propFunc == PrintPresentFlags)         PrintPresentFlags(metadata->GetEventData<uint32_t>(eventRecord, propName));
@@ -395,27 +377,8 @@ void DebugModifyPresent(PresentEvent const& p)
     if (!gDebugTrace) return;
     if (gModifiedPresent != &p) {
         FlushModifiedPresent();
-
         gModifiedPresent = &p;
-
-        gOriginalPresentValues.TimeTaken           = p.TimeTaken;
-        gOriginalPresentValues.ReadyTime           = p.ReadyTime;
-        gOriginalPresentValues.ScreenTime          = p.ScreenTime;
-        gOriginalPresentValues.SwapChainAddress    = p.SwapChainAddress;
-        gOriginalPresentValues.SyncInterval        = p.SyncInterval;
-        gOriginalPresentValues.PresentFlags        = p.PresentFlags;
-        gOriginalPresentValues.Hwnd                = p.Hwnd;
-        gOriginalPresentValues.TokenPtr            = p.TokenPtr;
-        gOriginalPresentValues.QueueSubmitSequence = p.QueueSubmitSequence;
-        gOriginalPresentValues.DriverBatchThreadId = p.DriverBatchThreadId;
-        gOriginalPresentValues.PresentMode         = p.PresentMode;
-        gOriginalPresentValues.FinalState          = p.FinalState;
-        gOriginalPresentValues.SupportsTearing     = p.SupportsTearing;
-        gOriginalPresentValues.MMIO                = p.MMIO;
-        gOriginalPresentValues.SeenDxgkPresent     = p.SeenDxgkPresent;
-        gOriginalPresentValues.SeenWin32KEvents    = p.SeenWin32KEvents;
-        gOriginalPresentValues.DwmNotified         = p.DwmNotified;
-        gOriginalPresentValues.Completed           = p.Completed;
+        gOriginalPresentValues = p;
     }
 }
 
@@ -432,19 +395,6 @@ void DebugCreatePresent(PresentEvent const& p)
     PrintRuntime(p.Runtime);
     printf("\n");
 }
-
-void DebugCompletePresent(PresentEvent const& p, int indent)
-{
-    if (!gDebugTrace) return;
-    FlushModifiedPresent();
-    PrintUpdateHeader(p.Id, indent);
-    printf(" Completed=");
-    PrintBool(p.Completed);
-    printf("->");
-    PrintBool(true);
-    printf("\n");
-}
-
 
 void DebugLostPresent(PresentEvent const& p)
 {

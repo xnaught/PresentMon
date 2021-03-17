@@ -1437,11 +1437,10 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
     mAllPresents[p->mAllPresentsTrackingIndex] = nullptr;
 }
 
-void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t recurseDepth)
+void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
 {
-    DebugCompletePresent(*p, recurseDepth);
-
     if (p->Completed && p->FinalState != PresentResult::Presented) {
+        DebugModifyPresent(*p);
         p->FinalState = PresentResult::Error;
     }
 
@@ -1459,7 +1458,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
             DebugModifyPresent(*p2);
             p2->ScreenTime = p->ScreenTime;
             p2->FinalState = p->FinalState;
-            CompletePresent(p2, recurseDepth + 1);
+            CompletePresent(p2);
         }
         // The only place a lost present could still exist outside of mLostPresentEvents is the dependents list.
         // A lost present has already been added to mLostPresentEvents, we should never modify it.
@@ -1482,11 +1481,12 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
     if (p->FinalState == PresentResult::Presented) {
         auto presentIter = presentDeque.begin();
         while (presentIter != presentDeque.end() && *presentIter != p) {
-            CompletePresent(*presentIter, recurseDepth + 1);
+            CompletePresent(*presentIter);
             presentIter = presentDeque.begin();
         }
     }
 
+    DebugModifyPresent(*p);
     p->Completed = true;
 
     // Move presents to ready list.
