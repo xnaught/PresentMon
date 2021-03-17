@@ -330,6 +330,7 @@ void DebugEvent(EVENT_RECORD* eventRecord, EventMetadata* metadata)
         case Microsoft_Windows_DxgKrnl::Flip_Info::Id:                      PrintEventHeader(hdr, "DxgKrnl_Flip_Info"); break;
         case Microsoft_Windows_DxgKrnl::FlipMultiPlaneOverlay_Info::Id:     PrintEventHeader(hdr, "DxgKrnl_FlipMultiPlaneOverlay_Info"); break;
         case Microsoft_Windows_DxgKrnl::HSyncDPCMultiPlane_Info::Id:        PrintEventHeader(hdr, "DxgKrnl_HSyncDPCMultiPlane_Info"); break;
+        case Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id:        PrintEventHeader(hdr, "DxgKrnl_VSyncDPCMultiPlane_Info"); break;
         case Microsoft_Windows_DxgKrnl::MMIOFlip_Info::Id:                  PrintEventHeader(hdr, "DxgKrnl_MMIOFlip_Info"); break;
         case Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay_Info::Id: PrintEventHeader(hdr, "DxgKrnl_MMIOFlipMultiPlaneOverlay_Info"); break;
         case Microsoft_Windows_DxgKrnl::Present_Info::Id:                   PrintEventHeader(hdr, "DxgKrnl_Present_Info"); break;
