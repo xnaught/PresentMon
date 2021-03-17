@@ -356,7 +356,9 @@ void DebugEvent(EVENT_RECORD* eventRecord, EventMetadata* metadata)
                                                                                 L"hContext", PrintU64x,
                                                                                 L"SubmitSequence", PrintU32,
                                                                             }); break;
-        case Microsoft_Windows_DxgKrnl::VSyncDPC_Info::Id:                  PrintEventHeader(hdr, "DxgKrnl_VSyncDPC_Info"); break;
+        case Microsoft_Windows_DxgKrnl::VSyncDPC_Info::Id:                  PrintEventHeader(eventRecord, metadata, "DxgKrnl_VSyncDPC_Info", {
+                                                                                L"FlipFenceId", PrintU64x,
+                                                                            }); break;
         }
         return;
     }
