@@ -580,6 +580,12 @@ void PMTraceConsumer::HandleDxgkPresentHistory(
             presentEvent->LegacyBlitTokenData = tokenData;
         }
     }
+
+    // If we are not tracking further GPU/display-related events, complete the
+    // present here.
+    if (!mTrackDisplay) {
+        CompletePresent(presentEvent);
+    }
 }
 
 void PMTraceConsumer::HandleDxgkPresentHistoryInfo(EVENT_HEADER const& hdr, uint64_t token)
@@ -1445,8 +1451,8 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
     }
 
     // Throw away events until we've seen at least one Dxgk PresentInfo event
-    // (unless we're not tracking display in which case we don't enable Dxgk
-    // provider)
+    // (unless we're not tracking display in which case provider start order
+    // is not an issue)
     if (mTrackDisplay && !mSeenDxgkPresentInfo) {
         RemoveLostPresent(p);
         return;
