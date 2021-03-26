@@ -556,6 +556,11 @@ void PMTraceConsumer::HandleDxgkPresentHistory(
     presentEvent->FinalState = PresentResult::Unknown;
     presentEvent->TokenPtr = token;
 
+    auto iter = mDxgKrnlPresentHistoryTokens.find(token);
+    if (iter != mDxgKrnlPresentHistoryTokens.end())
+    {
+        RemoveLostPresent(iter->second);
+    }
     assert(mDxgKrnlPresentHistoryTokens.find(token) == mDxgKrnlPresentHistoryTokens.end());
     mDxgKrnlPresentHistoryTokens[token] = presentEvent;
 
@@ -753,7 +758,6 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
             // the end of the present.  This can happen due to batched presents or
             // non-instrumented present APIs (i.e., not DXGI nor D3D9).
             if (present->ThreadId != hdr.ThreadId) {
-                present->DriverBatchThreadId = hdr.ThreadId;
                 if (present->TimeTaken == 0) {
                     present->TimeTaken = hdr.TimeStamp.QuadPart - present->QpcTime;
                 }
@@ -1544,6 +1548,9 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
     });
     if (processIter != presentsByThisProcess.end()) {
         auto presentEvent = processIter->second;
+
+        assert(presentEvent->DriverBatchThreadId == 0);
+        presentEvent->DriverBatchThreadId = hdr.ThreadId;
 
         // TODO: Do we need to move it to mPresentByThreadId anymore?
         presentsByThisProcess.erase(processIter);
