@@ -712,8 +712,12 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
         // The number of non-zero PresentIdOrPhysicalAddress (VSync) or ScannedPhysicalAddress (HSync) determine the number of active planes at the given moment.
         auto PlaneCount = mMetadata.GetEventData<uint32_t>(pEventRecord, L"PlaneCount");
         uint32_t ActivePlaneCount = 0;
-        auto PresentIdentifierName = hdr.EventDescriptor.Id == Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id ?
-            L"PresentIdOrPhysicalAddress" : L"ScannedPhysicalAddress";
+        auto PresentIdentifierName = L"ScannedPhysicalAddress";
+        
+        // Capture parameter name change.
+        if (hdr.EventDescriptor.Id == Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id && hdr.EventDescriptor.Version >= 1) {
+            PresentIdentifierName = L"PresentIdOrPhysicalAddress";
+        }
 
         for (uint32_t id = 0; id < PlaneCount; id++) {
             if (mMetadata.GetEventData<uint64_t>(pEventRecord, PresentIdentifierName, id) != 0) {
