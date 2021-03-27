@@ -507,8 +507,7 @@ void PMTraceConsumer::HandleDxgkSyncDPC(EVENT_HEADER const& hdr, uint32_t flipSu
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(pEvent);
     
     if (isMultiPlane &&
-        (pEvent->PresentMode == PresentMode::Hardware_Independent_Flip || pEvent->PresentMode == PresentMode::Composed_Flip))
-    {
+        (pEvent->PresentMode == PresentMode::Hardware_Independent_Flip || pEvent->PresentMode == PresentMode::Composed_Flip)) {
         pEvent->PresentMode = PresentMode::Hardware_Composed_Independent_Flip;
     }
 
@@ -516,8 +515,7 @@ void PMTraceConsumer::HandleDxgkSyncDPC(EVENT_HEADER const& hdr, uint32_t flipSu
     // VSyncDPCMultiPlaneOverlay is sent afterward and contains info on whether this vsync/hsync contains an overlay.
     // So we should avoid updating ScreenTime and FinalState with the second event, but update isMultiPlane with the 
     // correct information when we have them.
-    if (pEvent->FinalState != PresentResult::Presented)
-    {
+    if (pEvent->FinalState != PresentResult::Presented) {
         pEvent->ScreenTime = hdr.TimeStamp.QuadPart;
         pEvent->FinalState = PresentResult::Presented;
         if (pEvent->PresentMode == PresentMode::Hardware_Legacy_Flip) {
