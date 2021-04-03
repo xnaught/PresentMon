@@ -465,11 +465,6 @@ void PMTraceConsumer::HandleDxgkMMIOFlipMPO(EVENT_HEADER const& hdr, uint32_t fl
         pEvent->ReadyTime = hdr.TimeStamp.QuadPart;
     }
 
-    if (pEvent->PresentMode == PresentMode::Hardware_Independent_Flip ||
-        pEvent->PresentMode == PresentMode::Composed_Flip) {
-        pEvent->PresentMode = PresentMode::Hardware_Composed_Independent_Flip;
-    }
-
     if (!flipEntryStatusAfterFlipValid) {
         return;
     }
@@ -500,7 +495,7 @@ void PMTraceConsumer::HandleDxgkMMIOFlipMPO(EVENT_HEADER const& hdr, uint32_t fl
     }
 }
 
-void PMTraceConsumer::HandleDxgkSyncDPC(EVENT_HEADER const& hdr, uint32_t flipSubmitSequence)
+void PMTraceConsumer::HandleDxgkSyncDPC(EVENT_HEADER const& hdr, uint32_t flipSubmitSequence, bool isMultiPlane)
 {
     // The VSyncDPC/HSyncDPC contains a field telling us what flipped to screen.
     // This is the way to track completion of a fullscreen present.
@@ -511,7 +506,15 @@ void PMTraceConsumer::HandleDxgkSyncDPC(EVENT_HEADER const& hdr, uint32_t flipSu
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(pEvent);
 
-    // Prevent double-complete when VSyncDPCMultiPlane and VSyncDPC are both sent for a plane.
+    if (isMultiPlane &&
+        (pEvent->PresentMode == PresentMode::Hardware_Independent_Flip || pEvent->PresentMode == PresentMode::Composed_Flip)) {
+        pEvent->PresentMode = PresentMode::Hardware_Composed_Independent_Flip;
+    }
+
+    // VSyncDPC and VSyncDPCMultiPlaneOverlay are both sent, with VSyncDPC only including flipSubmitSequence for one layer.
+    // VSyncDPCMultiPlaneOverlay is sent afterward and contains info on whether this vsync/hsync contains an overlay.
+    // So we should avoid updating ScreenTime and FinalState with the second event, but update isMultiPlane with the 
+    // correct information when we have them.
     if (pEvent->FinalState != PresentResult::Presented) {
         pEvent->ScreenTime = hdr.TimeStamp.QuadPart;
         pEvent->FinalState = PresentResult::Presented;
@@ -699,32 +702,44 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
         HandleDxgkMMIOFlipMPO(hdr, flipSubmitSequence, FlipEntryStatusAfterFlip, flipEntryStatusAfterFlipValid);
         break;
     }
+    case Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id:
     case Microsoft_Windows_DxgKrnl::HSyncDPCMultiPlane_Info::Id:
     {
-        // Used for Hardware Independent Flip, and Hardware Composed Flip to signal flipping to the screen 
-        // on Windows 10 build numbers 17134 and up where the associated display is connected to 
-        // integrated graphics
-        // MMIOFlipMPO [EntryStatus:FlipWaitHSync] ->HSync DPC
+        // HSync is used for Hardware Independent Flip, and Hardware Composed
+        // Flip to signal flipping to the screen on Windows 10 build numbers
+        // 17134 and up where the associated display is connected to integrated
+        // graphics
+        //
+        // MMIOFlipMPO [EntryStatus:FlipWaitHSync] -> HSync DPC
 
         TRACK_PRESENT_PATH_GENERATE_ID();
 
-        auto FlipCount = mMetadata.GetEventData<uint32_t>(pEventRecord, L"FlipEntryCount");
-        for (uint32_t i = 0; i < FlipCount; i++) {
-            // TODO: Combine these into single GetEventData() call?
-            auto FlipId = mMetadata.GetEventData<uint64_t>(pEventRecord, L"FlipSubmitSequence", i);
-            HandleDxgkSyncDPC(hdr, (uint32_t)(FlipId >> 32u));
+        EventDataDesc desc[] = {
+            { L"PlaneCount" },
+            { L"FlipEntryCount" },
+        };
+        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+        auto PlaneCount = desc[0].GetData<uint32_t>();
+        auto FlipCount  = desc[1].GetData<uint32_t>();
+
+        // The number of active planes is determined by the number of non-zero
+        // PresentIdOrPhysicalAddress (VSync) or ScannedPhysicalAddress (HSync)
+        // properties.
+        auto addressPropName = (hdr.EventDescriptor.Id == Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id && hdr.EventDescriptor.Version >= 1)
+            ? L"PresentIdOrPhysicalAddress"
+            : L"ScannedPhysicalAddress";
+
+        uint32_t activePlaneCount = 0;
+        for (uint32_t id = 0; id < PlaneCount; id++) {
+            if (mMetadata.GetEventData<uint64_t>(pEventRecord, addressPropName, id) != 0) {
+                activePlaneCount++;
+            }
         }
-        break;
-    }
-    case Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id:
-    {
-        TRACK_PRESENT_PATH_GENERATE_ID();
 
-        auto FlipCount = mMetadata.GetEventData<uint32_t>(pEventRecord, L"FlipEntryCount");
+        auto isMultiPlane = activePlaneCount > 1;
         for (uint32_t i = 0; i < FlipCount; i++) {
-            // TODO: Combine these into single GetEventData() call?
             auto FlipId = mMetadata.GetEventData<uint64_t>(pEventRecord, L"FlipSubmitSequence", i);
-            HandleDxgkSyncDPC(hdr, (uint32_t)(FlipId >> 32u));
+            HandleDxgkSyncDPC(hdr, (uint32_t)(FlipId >> 32u), isMultiPlane);
         }
         break;
     }
@@ -733,7 +748,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
         TRACK_PRESENT_PATH_GENERATE_ID();
 
         auto FlipFenceId = mMetadata.GetEventData<uint64_t>(pEventRecord, L"FlipFenceId");
-        HandleDxgkSyncDPC(hdr, (uint32_t)(FlipFenceId >> 32u));
+        HandleDxgkSyncDPC(hdr, (uint32_t)(FlipFenceId >> 32u), false);
         break;
     }
     case Microsoft_Windows_DxgKrnl::Present_Info::Id:
@@ -1030,7 +1045,9 @@ void PMTraceConsumer::HandleWin7DxgkVSyncDPC(EVENT_RECORD* pEventRecord)
     TRACK_PRESENT_PATH_GENERATE_ID();
 
     auto pVSyncDPCEvent = reinterpret_cast<Win7::DXGKETW_SCHEDULER_VSYNC_DPC*>(pEventRecord->UserData);
-    HandleDxgkSyncDPC(pEventRecord->EventHeader, (uint32_t)(pVSyncDPCEvent->FlipFenceId.QuadPart >> 32u));
+
+    // Windows 7 does not support MultiPlaneOverlay.
+    HandleDxgkSyncDPC(pEventRecord->EventHeader, (uint32_t)(pVSyncDPCEvent->FlipFenceId.QuadPart >> 32u), false);
 }
 
 void PMTraceConsumer::HandleWin7DxgkMMIOFlip(EVENT_RECORD* pEventRecord)

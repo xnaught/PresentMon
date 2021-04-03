@@ -157,7 +157,7 @@ private:
 //   [-> VSyncDPC or HSyncDPC (by submit sequence, for screen time)]
 //
 // Hardware Composed Independent Flip:
-//   Identical to hardware independent flip, but MMIOFlipMPO is received instead of MMIOFlip
+//   Identical to hardware independent flip, but VSyncDPCMPO and HSyncDPCMPO contains more than one valid plane and SubmitSequence.
 //
 // Composed Copy with GPU GDI (a.k.a. Win7 Blit):
 //   Runtime PresentStart -> DxgKrnl_Blit (by thread/process, for classification) ->
@@ -350,7 +350,7 @@ struct PMTraceConsumer
     void HandleDxgkQueueComplete(EVENT_HEADER const& hdr, uint32_t submitSequence);
     void HandleDxgkMMIOFlip(EVENT_HEADER const& hdr, uint32_t flipSubmitSequence, uint32_t flags);
     void HandleDxgkMMIOFlipMPO(EVENT_HEADER const& hdr, uint32_t flipSubmitSequence, uint32_t flipEntryStatusAfterFlip, bool flipEntryStatusAfterFlipValid);
-    void HandleDxgkSyncDPC(EVENT_HEADER const& hdr, uint32_t flipSubmitSequence);
+    void HandleDxgkSyncDPC(EVENT_HEADER const& hdr, uint32_t flipSubmitSequence, bool isMultiplane);
     void HandleDxgkPresentHistory(EVENT_HEADER const& hdr, uint64_t token, uint64_t tokenData, PresentMode knownPresentMode);
     void HandleDxgkPresentHistoryInfo(EVENT_HEADER const& hdr, uint64_t token);
 
