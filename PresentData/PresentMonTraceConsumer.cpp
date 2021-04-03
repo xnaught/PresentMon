@@ -111,13 +111,8 @@ PresentEvent::PresentEvent(EVENT_HEADER const& hdr, ::Runtime runtime)
 #endif
 }
 
-PMTraceConsumer::PMTraceConsumer(bool filteredEvents, bool simple, bool trackedFiltering)
-    : mFilteredEvents(filteredEvents)
-    , mSimpleMode(simple)
-    , mAllPresentsNextIndex(0)
-    , mAllPresents(PRESENTEVENT_CIRCULAR_BUFFER_SIZE)
-    , mEnableTrackedProcessFiltering(trackedFiltering)
-    , mSeenDxgkPresentInfo(false)
+PMTraceConsumer::PMTraceConsumer()
+    : mAllPresents(PRESENTEVENT_CIRCULAR_BUFFER_SIZE)
 {
 }
 
@@ -592,6 +587,12 @@ void PMTraceConsumer::HandleDxgkPresentHistory(
             mPresentsByLegacyBlitToken[tokenData] = presentEvent;
             presentEvent->LegacyBlitTokenData = tokenData;
         }
+    }
+
+    // If we are not tracking further GPU/display-related events, complete the
+    // present here.
+    if (!mTrackDisplay) {
+        CompletePresent(presentEvent);
     }
 }
 
@@ -1463,17 +1464,17 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
     mAllPresents[p->mAllPresentsTrackingIndex] = nullptr;
 }
 
-void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t recurseDepth)
+void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
 {
-    DebugCompletePresent(*p, recurseDepth);
-
     if (p->Completed && p->FinalState != PresentResult::Presented) {
+        DebugModifyPresent(*p);
         p->FinalState = PresentResult::Error;
     }
 
     // Throw away events until we've seen at least one Dxgk PresentInfo event
-    // (unless we're in simple mode where we don't enable Dxgk provider)
-    if (!mSimpleMode && !mSeenDxgkPresentInfo) {
+    // (unless we're not tracking display in which case provider start order
+    // is not an issue)
+    if (mTrackDisplay && !mSeenDxgkPresentInfo) {
         RemoveLostPresent(p);
         return;
     }
@@ -1484,7 +1485,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
             DebugModifyPresent(*p2);
             p2->ScreenTime = p->ScreenTime;
             p2->FinalState = p->FinalState;
-            CompletePresent(p2, recurseDepth + 1);
+            CompletePresent(p2);
         }
         // The only place a lost present could still exist outside of mLostPresentEvents is the dependents list.
         // A lost present has already been added to mLostPresentEvents, we should never modify it.
@@ -1507,11 +1508,12 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p, uint32_t 
     if (p->FinalState == PresentResult::Presented) {
         auto presentIter = presentDeque.begin();
         while (presentIter != presentDeque.end() && *presentIter != p) {
-            CompletePresent(*presentIter, recurseDepth + 1);
+            CompletePresent(*presentIter);
             presentIter = presentDeque.begin();
         }
     }
 
+    DebugModifyPresent(*p);
     p->Completed = true;
 
     // Move presents to ready list.
@@ -1646,13 +1648,11 @@ void PMTraceConsumer::RuntimePresentStop(EVENT_HEADER const& hdr, bool AllowPres
     event.Runtime   = runtime;
     event.TimeTaken = *(uint64_t*) &hdr.TimeStamp - event.QpcTime;
 
-    if (!AllowPresentBatching || mSimpleMode) {
+    if (!AllowPresentBatching || !mTrackDisplay) {
         event.FinalState = AllowPresentBatching ? PresentResult::Presented : PresentResult::Discarded;
         CompletePresent(eventIter->second);
         // CompletePresent removes the entry in mPresentByThreadId.
-    }
-    else
-    {
+    } else {
         // We now remove this present from mPresentByThreadId because any future
         // event related to it (e.g., from DXGK/Win32K/etc.) is not expected to
         // come from this thread.
@@ -1714,7 +1714,7 @@ void PMTraceConsumer::RemoveTrackedProcessForFiltering(uint32_t processID)
 
 bool PMTraceConsumer::IsProcessTrackedForFiltering(uint32_t processID)
 {
-    if (!mEnableTrackedProcessFiltering || processID == DwmProcessId) {
+    if (!mFilteredProcessIds || processID == DwmProcessId) {
         return true;
     }
 
