@@ -95,7 +95,7 @@ struct PresentEvent {
     uint64_t Hwnd;
     uint64_t TokenPtr;
     uint64_t CompositionSurfaceLuid;
-    uint32_t QueueSubmitSequence;
+    uint32_t QueueSubmitSequence;    // Submit sequence for the Present packet
     uint32_t DestWidth;
     uint32_t DestHeight;
     uint32_t DriverBatchThreadId;
@@ -188,9 +188,9 @@ struct PMTraceConsumer
 
     EventMetadata mMetadata;
 
-    bool mFilteredEvents = false;
-    bool mFilteredProcessIds = false;
-    bool mTrackDisplay = true;
+    bool mFilteredEvents = false;       // Whether the trace session was configured to filter non-PresentMon events
+    bool mFilteredProcessIds = false;   // Whether to filter presents to specific processes
+    bool mTrackDisplay = true;          // Whether the analysis should track presents to display
 
     // Whether we've seen Dxgk complete a present.  This is used to indicate
     // that the Dxgk provider has started and it's safe to start tracking
@@ -198,11 +198,11 @@ struct PMTraceConsumer
     bool mSeenDxgkPresentInfo = false;
 
     // Store completed presents until the consumer thread removes them using
-    // DequeuePresents().  Completed presents are those that have progressed as
-    // far as they can through the pipeline before being either discarded or
-    // hitting the screen.
+    // Dequeue*PresentEvents().  Completed presents are those that have
+    // determined to be either discarded or displayed.  Lost presents were
+    // found in an unexpected state, likely due to a missed related ETW event.
     std::mutex mPresentEventMutex;
-    std::vector<std::shared_ptr<PresentEvent>> mPresentEvents;
+    std::vector<std::shared_ptr<PresentEvent>> mCompletePresentEvents;
 
     std::mutex mLostPresentEventMutex;
     std::vector<std::shared_ptr<PresentEvent>> mLostPresentEvents;
@@ -218,7 +218,8 @@ struct PMTraceConsumer
     // mPresentByThreadId stores the in-progress present that was last operated
     // on by each thread for event sequences that are known to execute on the
     // same thread. Its members' lifetime should track the lifetime of the 
-    // runtime present API as much as possible.
+    // runtime present API as much as possible. Only one present will be going
+    // through this sequence on any particular thread at a time.
     //
     // mPresentsByProcess stores each process' in-progress presents in the
     // order that they were presented.  This is used to look up presents across
@@ -235,6 +236,9 @@ struct PMTraceConsumer
     // well?  Is the create order used by mPresentsByProcessAndSwapChain really
     // different than QpcTime order?  If no on these, should we combine
     // mPresentsByProcess and mPresentsByProcessAndSwapChain?
+    //
+    // mPresentsBySubmitSequence is used to lookup the active present associated
+    // with a present queue packet.
     //
     // All flip model presents (windowed flip, dFlip, iFlip) are uniquely
     // identifyed by a Win32K present history token (composition surface,
@@ -260,6 +264,8 @@ struct PMTraceConsumer
     // Maps from queue packet submit sequence
     // Used for Flip -> MMIOFlip -> VSyncDPC for FS, for PresentHistoryToken -> MMIOFlip -> VSyncDPC for iFlip,
     // and for Blit Submission -> Blit completion for FS Blit
+
+    // [submit sequence]
     std::map<uint32_t, std::shared_ptr<PresentEvent>> mPresentsBySubmitSequence;
 
     // [(composition surface pointer, present count, bind id)]
@@ -309,7 +315,10 @@ struct PMTraceConsumer
 
     // Presents that will be completed by DWM's next present
     std::deque<std::shared_ptr<PresentEvent>> mPresentsWaitingForDWM;
-    // Used to understand that a flip event is coming from the DWM
+
+    // Store the DWM process id, and the last DWM thread id to have started
+    // a present.  This is needed to determine if a flip event is coming from
+    // DWM, but can also be useful for targetting non-DWM processes.
     uint32_t DwmProcessId = 0;
     uint32_t DwmPresentThreadId = 0;
 
@@ -334,7 +343,7 @@ struct PMTraceConsumer
     void DequeuePresentEvents(std::vector<std::shared_ptr<PresentEvent>>& outPresentEvents)
     {
         std::lock_guard<std::mutex> lock(mPresentEventMutex);
-        outPresentEvents.swap(mPresentEvents);
+        outPresentEvents.swap(mCompletePresentEvents);
     }
 
     void DequeueLostPresentEvents(std::vector<std::shared_ptr<PresentEvent>>& outPresentEvents)

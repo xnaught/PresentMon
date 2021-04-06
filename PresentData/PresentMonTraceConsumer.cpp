@@ -78,14 +78,14 @@ PresentEvent::PresentEvent(EVENT_HEADER const& hdr, ::Runtime runtime)
     , PresentFlags(0)
     , Hwnd(0)
     , TokenPtr(0)
+    , CompositionSurfaceLuid(0)
     , QueueSubmitSequence(0)
+    , DestWidth(0)
+    , DestHeight(0)
     , DriverBatchThreadId(0)
     , Runtime(runtime)
     , PresentMode(PresentMode::Unknown)
     , FinalState(PresentResult::Unknown)
-    , DestWidth(0)
-    , DestHeight(0)
-    , CompositionSurfaceLuid(0)
     , SupportsTearing(false)
     , MMIO(false)
     , SeenDxgkPresent(false)
@@ -390,6 +390,7 @@ void PMTraceConsumer::HandleDxgkQueueSubmit(
 
 void PMTraceConsumer::HandleDxgkQueueComplete(EVENT_HEADER const& hdr, uint32_t submitSequence)
 {
+    // Check if this is a present Packet being tracked...
     auto pEvent = FindBySubmitSequence(submitSequence);
     if (pEvent == nullptr) {
         return;
@@ -397,6 +398,8 @@ void PMTraceConsumer::HandleDxgkQueueComplete(EVENT_HEADER const& hdr, uint32_t 
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(pEvent);
 
+    // If this is one of the present modes for which packet completion implies
+    // display, then complete the present now.
     if (pEvent->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer ||
         (pEvent->PresentMode == PresentMode::Hardware_Legacy_Flip && !pEvent->MMIO)) {
         pEvent->ReadyTime = hdr.TimeStamp.QuadPart;
@@ -555,8 +558,7 @@ void PMTraceConsumer::HandleDxgkPresentHistory(
     presentEvent->TokenPtr = token;
 
     auto iter = mDxgKrnlPresentHistoryTokens.find(token);
-    if (iter != mDxgKrnlPresentHistoryTokens.end())
-    {
+    if (iter != mDxgKrnlPresentHistoryTokens.end()) {
         RemoveLostPresent(iter->second);
     }
     assert(mDxgKrnlPresentHistoryTokens.find(token) == mDxgKrnlPresentHistoryTokens.end());
@@ -823,13 +825,13 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
     {
         EventDataDesc desc[] = {
             { L"Token" },
-            { L"TokenData" },
             { L"Model" },
+            { L"TokenData" },
         };
         mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
         auto Token     = desc[0].GetData<uint64_t>();
-        auto TokenData = desc[1].GetData<uint64_t>();
-        auto Model     = desc[2].GetData<uint32_t>();
+        auto Model     = desc[1].GetData<uint32_t>();
+        auto TokenData = desc[2].GetData<uint64_t>();
 
         if (Model == D3DKMT_PM_REDIRECTED_GDI) {
             break;
@@ -866,10 +868,8 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
         break;
     }
     case Microsoft_Windows_DxgKrnl::Blit_Cancel::Id:
-    {
         HandleDxgkBltCancel(hdr);
         break;
-    }
     default:
         assert(!mFilteredEvents); // Assert that filtering is working if expected
         break;
@@ -1513,6 +1513,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
         }
     }
 
+    // Move the present into the consumer thread queue.
     DebugModifyPresent(*p);
     p->Completed = true;
 
@@ -1520,10 +1521,11 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
     {
         std::lock_guard<std::mutex> lock(mPresentEventMutex);
         while (!presentDeque.empty() && presentDeque.front()->Completed) {
-            mAllPresents[presentDeque.front()->mAllPresentsTrackingIndex] = nullptr;
-
-            mPresentEvents.push_back(presentDeque.front());
+            auto p2 = presentDeque.front();
             presentDeque.pop_front();
+
+            mAllPresents[p2->mAllPresentsTrackingIndex] = nullptr;
+            mCompletePresentEvents.push_back(p2);
         }
     }
 }
@@ -1554,27 +1556,22 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
     }
 
     // Search for an in-progress present created by this process that still
-    // doesn't have a known PresentMode.
-    //
-    // This can be the case for DXGI/D3D presents created on a different
-    // thread, which are batched and then handled later during a DXGK/Win32K
-    // event. We want the oldest such present, based on the assumption that
-    // batched presents are popped off the front of the driver queue by process
-    // in order.
+    // doesn't have a known PresentMode.  This can be the case for DXGI/D3D
+    // presents created on a different thread, which are batched and then
+    // handled later during a DXGK/Win32K event.  If found, we add it to
+    // mPresentByThreadId to indicate what present this thread is working on.
     auto& presentsByThisProcess = mPresentsByProcess[hdr.ProcessId];
     auto processIter = std::find_if(presentsByThisProcess.begin(), presentsByThisProcess.end(), [](auto processIter) {
         return processIter.second->PresentMode == PresentMode::Unknown;
     });
     if (processIter != presentsByThisProcess.end()) {
         auto presentEvent = processIter->second;
-
         assert(presentEvent->DriverBatchThreadId == 0);
+        DebugModifyPresent(*presentEvent);
         presentEvent->DriverBatchThreadId = hdr.ThreadId;
-
         // TODO: Do we need to move it to mPresentByThreadId anymore?
         presentsByThisProcess.erase(processIter);
         mPresentByThreadId.emplace(hdr.ThreadId, presentEvent);
-
         return presentEvent;
     }
 
@@ -1584,10 +1581,6 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
     // D3D9) in which case a DXGKRNL event will be the first present-related
     // event we ever see.  So, we create the PresentEvent and start tracking it
     // from here.
-    //
-    // TODO: Why do we add it to presentsByThisProcess?  We're already past the
-    // stage where we need to look it up by that mechanism...
-    // mPresentByThreadId should be good enough at this point right?
     auto presentEvent = std::make_shared<PresentEvent>(hdr, Runtime::Other);
     TrackPresent(presentEvent, presentsByThisProcess);
     return presentEvent;
@@ -1631,32 +1624,25 @@ void PMTraceConsumer::TrackPresentOnThread(std::shared_ptr<PresentEvent> present
 // for any completed present.
 void PMTraceConsumer::RuntimePresentStop(EVENT_HEADER const& hdr, bool AllowPresentBatching, Runtime runtime)
 {
+    // Lookup the present most-recently operated on in the same thread.  If
+    // there isn't one, ignore this event.
     auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
-    if (eventIter == mPresentByThreadId.end()) {
-        return;
-    }
-    auto &event = *eventIter->second;
+    if (eventIter != mPresentByThreadId.end()) {
+        auto& present = eventIter->second;
 
-    DebugModifyPresent(event);
+        DebugModifyPresent(*present);
+        present->Runtime   = runtime;
+        present->TimeTaken = *(uint64_t*) &hdr.TimeStamp - present->QpcTime;
 
-    // eventIter should be equal to the PresentEvent created by the
-    // corresponding ???::Present_Start event with event.Runtime==runtime.
-    // However, sometimes this is not the case due to the corresponding Start
-    // event happened before capture started, or missed events.
-    assert(event.Runtime == Runtime::Other || event.Runtime == runtime);
-    assert(event.QpcTime <= *(uint64_t*) &hdr.TimeStamp);
-    event.Runtime   = runtime;
-    event.TimeTaken = *(uint64_t*) &hdr.TimeStamp - event.QpcTime;
-
-    if (!AllowPresentBatching || !mTrackDisplay) {
-        event.FinalState = AllowPresentBatching ? PresentResult::Presented : PresentResult::Discarded;
-        CompletePresent(eventIter->second);
-        // CompletePresent removes the entry in mPresentByThreadId.
-    } else {
-        // We now remove this present from mPresentByThreadId because any future
-        // event related to it (e.g., from DXGK/Win32K/etc.) is not expected to
-        // come from this thread.
-        mPresentByThreadId.erase(eventIter);
+        if (AllowPresentBatching && mTrackDisplay) {
+            // We now remove this present from mPresentByThreadId because any future
+            // event related to it (e.g., from DXGK/Win32K/etc.) is not expected to
+            // come from this thread.
+            mPresentByThreadId.erase(eventIter);
+        } else {
+            present->FinalState = AllowPresentBatching ? PresentResult::Presented : PresentResult::Discarded;
+            CompletePresent(present);
+        }
     }
 }
 
