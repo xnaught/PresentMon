@@ -1569,8 +1569,6 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
         assert(presentEvent->DriverBatchThreadId == 0);
         DebugModifyPresent(*presentEvent);
         presentEvent->DriverBatchThreadId = hdr.ThreadId;
-        // TODO: Do we need to move it to mPresentByThreadId anymore?
-        presentsByThisProcess.erase(processIter);
         mPresentByThreadId.emplace(hdr.ThreadId, presentEvent);
         return presentEvent;
     }
