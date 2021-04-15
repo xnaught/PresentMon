@@ -76,15 +76,15 @@ static void WriteCsvHeader(FILE* fp)
         ",PresentFlags"
         ",Dropped"
         ",TimeInSeconds"
-        ",MsInPresentAPI"
-        ",MsBetweenPresents");
+        ",msInPresentAPI"
+        ",msBetweenPresents");
     if (args.mTrackDisplay) {
         fprintf(fp,
             ",AllowsTearing"
             ",PresentMode"
-            ",MsUntilRenderComplete"
-            ",MsUntilDisplayed"
-            ",MsBetweenDisplayChange");
+            ",msUntilRenderComplete"
+            ",msUntilDisplayed"
+            ",msBetweenDisplayChange");
     }
     if (args.mTrackDebug) {
         fprintf(fp,
