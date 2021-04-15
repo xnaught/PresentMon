@@ -297,6 +297,7 @@ static void PrintHelp()
         "-no_csv",                  "Do not create any output file.",
         "-no_top",                  "Don't display active swap chains in the console window.",
         "-qpc_time",                "Output present time as a performance counter value.",
+        "-qpc_time_s",              "Output present time as a performance counter value converted to seconds.",
 
         "Recording options", nullptr,
         "-hotkey key",              "Use provided key to start and stop recording, writing to a"
@@ -318,6 +319,8 @@ static void PrintHelp()
                                     " existing sessions with the same name.",
         "-stop_existing_session",   "If a trace session with the same name is already running, stop"
                                     " the existing session (to allow this one to proceed).",
+        "-terminate_existing",      "Terminate any existing PresentMon realtime trace sessions, then exit."
+                                    " Use with -session_name to target particular sessions.",
         "-restart_as_admin",        "If not running with elevated privilege, restart as administrator."
                                     " Elevated privilege isn't required to trace a process you started,"
                                     " but it is in order to query processes started on another account."
@@ -327,9 +330,6 @@ static void PrintHelp()
         "-terminate_after_timed",   "When using -timed, terminate PresentMon after the timed capture completes.",
 
         "Beta options", nullptr,
-        "-qpc_time_s",              "Output present time as a performance counter value converted to seconds.",
-        "-terminate_existing",      "Terminate any existing PresentMon realtime trace sessions, then exit."
-                                    " Use with -session_name to target particular sessions.",
         "-track_mixed_reality",     "Capture Windows Mixed Reality data to a CSV file with \"_WMR\" suffix.",
     };
 
@@ -427,11 +427,12 @@ bool ParseCommandLine(int argc, char** argv)
 
         // Output options:
         else if (ParseArg(argv[i], "output_file"))   { if (ParseValue(argv, argc, &i, &args->mOutputCsvFileName)) continue; }
-        else if (ParseArg(argv[i], "output_stdout")) { args->mOutputCsvToStdout = true;                  continue; }
-        else if (ParseArg(argv[i], "multi_csv"))     { args->mMultiCsv          = true;                  continue; }
-        else if (ParseArg(argv[i], "no_csv"))        { args->mOutputCsvToFile   = false;                 continue; }
-        else if (ParseArg(argv[i], "no_top"))        { args->mConsoleOutputType = ConsoleOutput::Simple; continue; }
-        else if (ParseArg(argv[i], "qpc_time"))      { args->mOutputQpcTime     = true;                  continue; }
+        else if (ParseArg(argv[i], "output_stdout")) { args->mOutputCsvToStdout      = true;                  continue; }
+        else if (ParseArg(argv[i], "multi_csv"))     { args->mMultiCsv               = true;                  continue; }
+        else if (ParseArg(argv[i], "no_csv"))        { args->mOutputCsvToFile        = false;                 continue; }
+        else if (ParseArg(argv[i], "no_top"))        { args->mConsoleOutputType      = ConsoleOutput::Simple; continue; }
+        else if (ParseArg(argv[i], "qpc_time"))      { args->mOutputQpcTime          = true;                  continue; }
+        else if (ParseArg(argv[i], "qpc_time_s"))    { args->mOutputQpcTimeInSeconds = true;                  continue; }
 
         // Recording options:
         else if (ParseArg(argv[i], "hotkey"))           { if (ParseValue(argv, argc, &i) && AssignHotkey(argv[i], args)) continue; }
@@ -447,16 +448,15 @@ bool ParseCommandLine(int argc, char** argv)
         // Execution options:
         else if (ParseArg(argv[i], "session_name"))           { if (ParseValue(argv, argc, &i, &args->mSessionName)) continue; }
         else if (ParseArg(argv[i], "stop_existing_session"))  { args->mStopExistingSession = true; continue; }
+        else if (ParseArg(argv[i], "terminate_existing"))     { args->mTerminateExisting   = true; continue; }
         else if (ParseArg(argv[i], "dont_restart_as_admin"))  { DEPRECATED_dontRestart     = true; continue; }
         else if (ParseArg(argv[i], "restart_as_admin"))       { args->mTryToElevate        = true; continue; }
         else if (ParseArg(argv[i], "terminate_on_proc_exit")) { args->mTerminateOnProcExit = true; continue; }
         else if (ParseArg(argv[i], "terminate_after_timed"))  { args->mTerminateAfterTimer = true; continue; }
 
         // Beta options:
-        else if (ParseArg(argv[i], "qpc_time_s"))            { args->mOutputQpcTimeInSeconds     = true; continue; }
-        else if (ParseArg(argv[i], "terminate_existing"))    { args->mTerminateExisting          = true; continue; }
-        else if (ParseArg(argv[i], "track_mixed_reality"))   { args->mTrackWMR                   = true; continue; }
-        else if (ParseArg(argv[i], "include_mixed_reality")) { DEPRECATED_wmr                    = true; continue; }
+        else if (ParseArg(argv[i], "track_mixed_reality"))   { args->mTrackWMR = true; continue; }
+        else if (ParseArg(argv[i], "include_mixed_reality")) { DEPRECATED_wmr  = true; continue; }
 
         // Provided argument wasn't recognized
         else if (!(ParseArg(argv[i], "?") || ParseArg(argv[i], "h") || ParseArg(argv[i], "help"))) {

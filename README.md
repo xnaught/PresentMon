@@ -60,14 +60,15 @@ If PresentMon is not run with administrator privilege, it will not have complete
 
 ### Output Options
 
-|                     |                                                       |
-| ------------------- | ----------------------------------------------------- |
-| `-output_file path` | Write CSV output to the provided path.                |
-| `-output_stdout`    | Write CSV output to STDOUT.                           |
-| `-multi_csv`        | Create a separate CSV file for each captured process. |
-| `-no_csv`           | Do not create any output file.                        |
-| `-no_top`           | Don't display active swap chains in the console       |
-| `-qpc_time`         | Output present time as a performance counter value.   |
+|                     |                                                                          |
+| ------------------- | ------------------------------------------------------------------------ |
+| `-output_file path` | Write CSV output to the provided path.                                   |
+| `-output_stdout`    | Write CSV output to STDOUT.                                              |
+| `-multi_csv`        | Create a separate CSV file for each captured process.                    |
+| `-no_csv`           | Do not create any output file.                                           |
+| `-no_top`           | Don't display active swap chains in the console                          |
+| `-qpc_time`         | Output present time as a performance counter value.                      |
+| `-qpc_time_s`       | Output present time as a performance counter value converted to seconds. |
 
 ### Recording Options
 
@@ -87,16 +88,15 @@ If PresentMon is not run with administrator privilege, it will not have complete
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `-session_name name`     | Use the provided name to start a new realtime ETW session, instead of the default "PresentMon". This can be used to start multiple realtime captures at the same time (using distinct, case-insensitive names). A realtime PresentMon capture cannot start if there are any existing sessions with the same name. |
 | `-stop_existing_session` | If a trace session with the same name is already running, stop the existing session (to allow this one to proceed).                                                                                                                                                                                               |
+| `-terminate_existing`    | Terminate any existing PresentMon realtime trace sessions, then exit. Use with `-session_name` to target particular sessions.                       |
 | `-restart_as_admin`      | If not running with elevated privilege, restart and request to be run as administrator. (See discussion above).                                                                                                                                                                                                   |
 | `-terminate_on_proc_exit | Terminate PresentMon when all the target processes have exited.                                                                                                                                                                                                                                                   |
-| `-terminate_after_timed` | When using -timed, terminate PresentMon after the timed capture completes.                                                                                                                                                                                                                                        |
+| `-terminate_after_timed` | When using `-timed`, terminate PresentMon after the timed capture completes.                                                                                                                                                                                                                                      |
 
 ### Beta Options
 
 |                        |                                                                                                                             |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `-qpc_time_s`          | Output present time as a performance counter value converted to seconds.                                                    |
-| `-terminate_existing`  | Terminate any existing PresentMon realtime trace sessions, then exit. Use with -session_name to target particular sessions. |
 | `-track_mixed_reality` | Capture Windows Mixed Reality data to a CSV file with "_WMR" suffix.                                                        |
 
 ## Comma-separated value (CSV) file output
