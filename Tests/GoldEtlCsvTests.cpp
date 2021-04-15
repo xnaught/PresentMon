@@ -106,23 +106,24 @@ public:
                         continue;
                     }
 
-                    // Floating point may be inconsistently rounded by printf accross different platforms.
-                    // Do a rounding check by ensuring the difference between the two numebrs are less than 
-                    // the final digit +-1.001
+                    // Different versions of PresentMon may output different decimal precision.  Also, 
+                    // floating point may be inconsistently rounded by printf() on different platforms.
+                    // Therefore, we do a rounding check by ensuring the difference between the two
+                    // numbers is less than 1 in the final printed digit.
 
-                    // Doubles should be good for 15 digits of precision.
-
-                    double testNumber, goldNumber;
+                    double testNumber = 0.0;
+                    double goldNumber = 0.0;
                     int testSucceededCount = sscanf_s(a, "%lf", &testNumber);
                     int goldSucceededCount = sscanf_s(b, "%lf", &goldNumber);
+                    if (testSucceededCount == 1 && goldSucceededCount == 1) {
+                        const char* testDecimalAddr = strchr(a, '.');
+                        const char* goldDecimalAddr = strchr(b, '.');
+                        size_t testDecimalNumbersCount = testDecimalAddr == nullptr ? 0 : ((a + strlen(a)) - testDecimalAddr - 1);
+                        size_t goldDecimalNumbersCount = goldDecimalAddr == nullptr ? 0 : ((b + strlen(b)) - goldDecimalAddr - 1);
+                        double threshold = pow(0.1, std::min(testDecimalNumbersCount, goldDecimalNumbersCount));
+                        double difference = testNumber - goldNumber;
 
-                    const char* testDecimalAddr = strchr(a, '.');
-                    const char* goldDecimalAddr = strchr(b, '.');
-                    if (testSucceededCount == 1 && goldSucceededCount == 1 && testDecimalAddr != NULL && goldDecimalAddr != NULL) {
-                        size_t testDecimalNumbersCount = (a + strlen(a)) - testDecimalAddr - 1;
-                        size_t goldDecimalNumbersCount = (b + strlen(b)) - goldDecimalAddr - 1;
-                        double difference = (testNumber * pow(10.0, testDecimalNumbersCount)) - (goldNumber * pow(10.0, goldDecimalNumbersCount));
-                        if (testDecimalNumbersCount == goldDecimalNumbersCount && difference > -1.001 && difference < 1.001) {
+                        if (difference > -threshold && difference < threshold) {
                             continue;
                         }
                     }

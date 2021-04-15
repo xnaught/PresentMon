@@ -144,7 +144,7 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
     }
 
     // Output in CSV format
-    fprintf(fp, "%s,%d,0x%016llX,%s,%d,%d,%s,%lf,%lf,%lf",
+    fprintf(fp, "%s,%d,0x%016llX,%s,%d,%d,%s,%.*lf,%.*lf,%.*lf",
         processInfo->mModuleName.c_str(),
         p.ProcessId,
         p.SwapChainAddress,
@@ -152,16 +152,16 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
         p.SyncInterval,
         p.PresentFlags,
         FinalStateToDroppedString(p.FinalState),
-        timeInSeconds,
-        msInPresentApi,
-        msBetweenPresents);
+        DBL_DIG - 1, timeInSeconds,
+        DBL_DIG - 1, msInPresentApi,
+        DBL_DIG - 1, msBetweenPresents);
     if (args.mTrackDisplay) {
-        fprintf(fp, ",%d,%s,%lf,%lf,%lf",
+        fprintf(fp, ",%d,%s,%.*lf,%.*lf,%.*lf",
             p.SupportsTearing,
             PresentModeToString(p.PresentMode),
-            msUntilRenderComplete,
-            msUntilDisplayed,
-            msBetweenDisplayChange);
+            DBL_DIG - 1, msUntilRenderComplete,
+            DBL_DIG - 1, msUntilDisplayed,
+            DBL_DIG - 1, msBetweenDisplayChange);
     }
     if (args.mTrackDebug) {
         fprintf(fp, ",%d,%d",
@@ -170,7 +170,7 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
     }
     if (args.mOutputQpcTime) {
         if (args.mOutputQpcTimeInSeconds) {
-            fprintf(fp, ",%lf", QpcDeltaToSeconds(p.QpcTime));
+            fprintf(fp, ",%.*lf", DBL_DIG - 1, QpcDeltaToSeconds(p.QpcTime));
         } else {
             fprintf(fp, ",%llu", p.QpcTime);
         }
