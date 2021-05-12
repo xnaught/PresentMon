@@ -1305,6 +1305,7 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
             DebugModifyPresent(*eventIter->second);
             if (eventIter->second->SeenInFrameEvent)
             {
+                eventIter->second->DwmNotified = true;
                 mPresentsWaitingForDWM.emplace_back(eventIter->second);
                 eventIter->second->PresentInDwmWaitingStruct = true;
             }
