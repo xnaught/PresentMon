@@ -91,6 +91,7 @@ PresentEvent::PresentEvent(EVENT_HEADER const& hdr, ::Runtime runtime)
     , SeenDxgkPresent(false)
     , SeenWin32KEvents(false)
     , DwmNotified(false)
+    , SeenInFrameEvent(false)
     , Completed(false)
     , IsLost(false)
     , mAllPresentsTrackingIndex(0)
@@ -1161,6 +1162,8 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
         {
             TRACK_PRESENT_PATH(eventIter->second);
 
+            event.SeenInFrameEvent = true;
+
             // If we're compositing a newer present than the last known window
             // present, then the last known one was discarded.  We won't
             // necessarily see a transition to Discarded for it.
@@ -1300,9 +1303,11 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
         if (eventIter != mWin32KPresentHistoryTokens.end()) {
             TRACK_PRESENT_PATH(eventIter->second);
             DebugModifyPresent(*eventIter->second);
-            eventIter->second->DwmNotified = true;
-            mPresentsWaitingForDWM.emplace_back(eventIter->second);
-            eventIter->second->PresentInDwmWaitingStruct = true;
+            if (eventIter->second->SeenInFrameEvent)
+            {
+                mPresentsWaitingForDWM.emplace_back(eventIter->second);
+                eventIter->second->PresentInDwmWaitingStruct = true;
+            }
         }
         break;
     }
