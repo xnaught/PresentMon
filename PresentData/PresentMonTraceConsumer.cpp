@@ -1209,9 +1209,8 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
 
             if (!event.SeenInFrameEvent && (event.FinalState == PresentResult::Unknown || event.ScreenTime == 0)) {
                 event.FinalState = PresentResult::Discarded;
-            }
-
-            if (event.PresentMode != PresentMode::Composed_Flip) {
+                CompletePresent(sharedPtr);
+            } else if (event.PresentMode != PresentMode::Composed_Flip) {
                 CompletePresent(sharedPtr);
             }
 
