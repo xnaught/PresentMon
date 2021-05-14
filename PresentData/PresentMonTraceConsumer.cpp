@@ -1207,11 +1207,14 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
             auto sharedPtr = eventIter->second;
             mWin32KPresentHistoryTokens.erase(eventIter);
 
-            if (event.FinalState == PresentResult::Unknown || event.ScreenTime == 0) {
+            if (!event.SeenInFrameEvent && (event.FinalState == PresentResult::Unknown || event.ScreenTime == 0)) {
                 event.FinalState = PresentResult::Discarded;
             }
 
-            CompletePresent(sharedPtr);
+            if (event.PresentMode != PresentMode::Composed_Flip) {
+                CompletePresent(sharedPtr);
+            }
+
             break;
         }
         }
@@ -1303,8 +1306,7 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
         if (eventIter != mWin32KPresentHistoryTokens.end()) {
             TRACK_PRESENT_PATH(eventIter->second);
             DebugModifyPresent(*eventIter->second);
-            if (eventIter->second->SeenInFrameEvent)
-            {
+            if (eventIter->second->SeenInFrameEvent) {
                 eventIter->second->DwmNotified = true;
                 mPresentsWaitingForDWM.emplace_back(eventIter->second);
                 eventIter->second->PresentInDwmWaitingStruct = true;
@@ -1480,12 +1482,27 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
         return;
     }
 
+    std::set<uint64_t> completedComposedFlipHwnds;
+    // Each DWM present only completes the most recent Composed Flip present per HWND. Mark the others as discarded.
+    for (auto rit = p->DependentPresents.rbegin(); rit != p->DependentPresents.rend(); ++rit) {
+        if ((*rit)->PresentMode == PresentMode::Composed_Flip) {
+            if (completedComposedFlipHwnds.find((*rit)->Hwnd) == completedComposedFlipHwnds.end()) {
+                completedComposedFlipHwnds.insert((*rit)->Hwnd);
+            }
+            else {
+                (*rit)->FinalState = PresentResult::Discarded;
+            }
+        }
+    }
+
     // Complete all other presents that were riding along with this one (i.e. this one came from DWM)
     for (auto& p2 : p->DependentPresents) {
         if (!p2->IsLost) {
             DebugModifyPresent(*p2);
             p2->ScreenTime = p->ScreenTime;
-            p2->FinalState = p->FinalState;
+            if (p2->FinalState != PresentResult::Discarded) {
+                p2->FinalState = p->FinalState;
+            }
             CompletePresent(p2);
         }
         // The only place a lost present could still exist outside of mLostPresentEvents is the dependents list.
