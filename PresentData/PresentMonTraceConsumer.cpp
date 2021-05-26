@@ -91,6 +91,7 @@ PresentEvent::PresentEvent(EVENT_HEADER const& hdr, ::Runtime runtime)
     , SeenDxgkPresent(false)
     , SeenWin32KEvents(false)
     , DwmNotified(false)
+    , SeenInFrameEvent(false)
     , Completed(false)
     , IsLost(false)
     , mAllPresentsTrackingIndex(0)
@@ -613,10 +614,12 @@ void PMTraceConsumer::HandleDxgkPresentHistoryInfo(EVENT_HEADER const& hdr, uint
         ? hdr.TimeStamp.QuadPart
         : std::min(eventIter->second->ReadyTime, (uint64_t) hdr.TimeStamp.QuadPart);
 
+    // Composed Composition Atlas or Win7 Flip does not have DWM events indicating intent to present this frame.
     if (eventIter->second->PresentMode == PresentMode::Composed_Composition_Atlas ||
         (eventIter->second->PresentMode == PresentMode::Composed_Flip && !eventIter->second->SeenWin32KEvents)) {
         mPresentsWaitingForDWM.emplace_back(eventIter->second);
         eventIter->second->PresentInDwmWaitingStruct = true;
+        eventIter->second->DwmNotified = true;
     }
 
     if (eventIter->second->PresentMode == PresentMode::Composed_Copy_GPU_GDI) {
@@ -1159,6 +1162,8 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
         {
             TRACK_PRESENT_PATH(eventIter->second);
 
+            event.SeenInFrameEvent = true;
+
             // If we're compositing a newer present than the last known window
             // present, then the last known one was discarded.  We won't
             // necessarily see a transition to Discarded for it.
@@ -1195,14 +1200,10 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
             }
             break;
 
-        case (uint32_t) Microsoft_Windows_Win32k::TokenState::Retired: // Present has been completed
-            TRACK_PRESENT_PATH(eventIter->second);
-
-            if (event.FinalState == PresentResult::Unknown) {
-                event.ScreenTime = hdr.TimeStamp.QuadPart;
-                event.FinalState = PresentResult::Presented;
-            }
-            break;
+        // Note: Going forward, TokenState::Retired events are no longer
+        // guaranteed to be sent at the end of a frame in multi-monitor
+        // scenarios.  Instead, we use DWM's present stats to understand the
+        // Composed Flip timeline.
 
         case (uint32_t) Microsoft_Windows_Win32k::TokenState::Discarded: // Present has been discarded
         {
@@ -1211,11 +1212,13 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
             auto sharedPtr = eventIter->second;
             mWin32KPresentHistoryTokens.erase(eventIter);
 
-            if (event.FinalState == PresentResult::Unknown || event.ScreenTime == 0) {
+            if (!event.SeenInFrameEvent && (event.FinalState == PresentResult::Unknown || event.ScreenTime == 0)) {
                 event.FinalState = PresentResult::Discarded;
+                CompletePresent(sharedPtr);
+            } else if (event.PresentMode != PresentMode::Composed_Flip) {
+                CompletePresent(sharedPtr);
             }
 
-            CompletePresent(sharedPtr);
             break;
         }
         }
@@ -1307,7 +1310,11 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
         if (eventIter != mWin32KPresentHistoryTokens.end()) {
             TRACK_PRESENT_PATH(eventIter->second);
             DebugModifyPresent(*eventIter->second);
-            eventIter->second->DwmNotified = true;
+            if (eventIter->second->SeenInFrameEvent) {
+                eventIter->second->DwmNotified = true;
+                mPresentsWaitingForDWM.emplace_back(eventIter->second);
+                eventIter->second->PresentInDwmWaitingStruct = true;
+            }
         }
         break;
     }
@@ -1479,12 +1486,27 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
         return;
     }
 
+    std::set<uint64_t> completedComposedFlipHwnds;
+    // Each DWM present only completes the most recent Composed Flip present per HWND. Mark the others as discarded.
+    for (auto rit = p->DependentPresents.rbegin(); rit != p->DependentPresents.rend(); ++rit) {
+        if ((*rit)->PresentMode == PresentMode::Composed_Flip) {
+            if (completedComposedFlipHwnds.find((*rit)->Hwnd) == completedComposedFlipHwnds.end()) {
+                completedComposedFlipHwnds.insert((*rit)->Hwnd);
+            }
+            else {
+                (*rit)->FinalState = PresentResult::Discarded;
+            }
+        }
+    }
+
     // Complete all other presents that were riding along with this one (i.e. this one came from DWM)
     for (auto& p2 : p->DependentPresents) {
         if (!p2->IsLost) {
             DebugModifyPresent(*p2);
             p2->ScreenTime = p->ScreenTime;
-            p2->FinalState = p->FinalState;
+            if (p2->FinalState != PresentResult::Discarded) {
+                p2->FinalState = p->FinalState;
+            }
             CompletePresent(p2);
         }
         // The only place a lost present could still exist outside of mLostPresentEvents is the dependents list.

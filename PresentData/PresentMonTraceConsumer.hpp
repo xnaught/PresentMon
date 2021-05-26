@@ -107,6 +107,7 @@ struct PresentEvent {
     bool SeenDxgkPresent;
     bool SeenWin32KEvents;
     bool DwmNotified;
+    bool SeenInFrameEvent;
     bool Completed;
 
     // Additional transient tracking state
@@ -147,7 +148,9 @@ private:
 // Composed Flip (FLIP_SEQUENTIAL, FLIP_DISCARD, FlipEx):
 //   Runtime PresentStart -> TokenCompositionSurfaceObject (by thread/process, for classification and token key) ->
 //   PresentHistoryDetailed (by thread, for token ptr) -> QueueSubmit (by thread, for submit sequence) ->
-//   DxgKrnl_PresentHistory (by token ptr, for ready time) and TokenStateChanged (by token key, for discard status and screen time)
+//   DxgKrnl_PresentHistory (by token ptr, for ready time) and TokenStateChanged (by token key, for discard status and intent to present) ->
+//   DWM Present (consumes most recent present per hWnd, marks DWM thread ID) ->
+//   A fullscreen present is issued by DWM, and when it completes, this present is on screen
 //
 // Hardware Direct Flip:
 //   N/A, not currently uniquely detectable (follows the same path as composed flip)
