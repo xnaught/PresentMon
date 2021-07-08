@@ -204,20 +204,10 @@ struct PMTraceConsumer
     // through this sequence on any particular thread at a time.
     //
     // mPresentsByProcess stores each process' in-progress presents in the
-    // order that they were presented.  This is used to look up presents across
-    // systems running on different threads (DXGI/D3D/DXGK/Win32) and for
-    // batched present tracking, so we know to discard all older presents when
-    // one is completed.
-    //
-    // mPresentsByProcessAndSwapChain stores each swapchain's in-progress
-    // presents in the order that they were created by PresentMon.  This is
-    // primarily used to ensure that the consumer sees per-swapchain presents
-    // in the same order that they were submitted.
-    //
-    // TODO: shouldn't batching via mPresentsByProcess be per swapchain as
-    // well?  Is the create order used by mPresentsByProcessAndSwapChain really
-    // different than QpcTime order?  If no on these, should we combine
-    // mPresentsByProcess and mPresentsByProcessAndSwapChain?
+    // order that they were created by PresentMon.  This is used to look up
+    // presents across systems running on different threads
+    // (DXGI/D3D/DXGK/Win32) including batched presents, and so that we know to
+    // discard all older presents when a newer one is completed.
     //
     // mPresentsBySubmitSequence is used to lookup the active present
     // associated with a present queue packet.
@@ -238,10 +228,6 @@ struct PMTraceConsumer
     // [process id][qpc time]
     using OrderedPresents = std::map<uint64_t, std::shared_ptr<PresentEvent>>;
     std::map<uint32_t, OrderedPresents> mPresentsByProcess;
-
-    // [(process id, swapchain address)]
-    using ProcessAndSwapChainKey = std::tuple<uint32_t, uint64_t>;
-    std::map<ProcessAndSwapChainKey, std::deque<std::shared_ptr<PresentEvent>>> mPresentsByProcessAndSwapChain;
 
     // Maps from queue packet submit sequence
     // Used for Flip -> MMIOFlip -> VSyncDPC for FS, for PresentHistoryToken -> MMIOFlip -> VSyncDPC for iFlip,
@@ -346,6 +332,7 @@ struct PMTraceConsumer
     void HandleDxgkPresentHistoryInfo(EVENT_HEADER const& hdr, uint64_t token);
 
     void CompletePresent(std::shared_ptr<PresentEvent> p);
+    void CompletePresentHelper(std::shared_ptr<PresentEvent> p, OrderedPresents* completed);
     std::shared_ptr<PresentEvent> FindBySubmitSequence(uint32_t submitSequence);
     std::shared_ptr<PresentEvent> FindOrCreatePresent(EVENT_HEADER const& hdr);
     void TrackPresentOnThread(std::shared_ptr<PresentEvent> present);

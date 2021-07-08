@@ -1426,22 +1426,6 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
     // Remove the present from any tracking structures.
     RemovePresentFromTemporaryTrackingCollections(p);
 
-    // mPresentsByProcessAndSwapChain
-    auto& presentDeque = mPresentsByProcessAndSwapChain[std::make_tuple(p->ProcessId, p->SwapChainAddress)];
-
-    bool hasRemovedElement = false;
-    for (auto presentIter = presentDeque.begin(); presentIter != presentDeque.end(); presentIter++) {
-        // This loop should in theory be short because the present is old.
-        // If we are in this loop for dozens of times, something is likely wrong.
-        if (p == *presentIter) {
-            hasRemovedElement = true;
-            presentDeque.erase(presentIter);
-            break;
-        }
-    }
-    // We expect an element to be removed here.
-    assert(hasRemovedElement);
-
     // Move the present into the consumer lost queue.
     DebugLostPresent(*p);
     p->IsLost = true;
@@ -1451,7 +1435,7 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
     }
 }
 
-void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
+void PMTraceConsumer::CompletePresentHelper(std::shared_ptr<PresentEvent> p, OrderedPresents* completed)
 {
     // Already-completed, Presented presents should not make it here.
     if (p->Completed && p->FinalState != PresentResult::Presented) {
@@ -1465,6 +1449,33 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
     if (mTrackDisplay && !mSeenDxgkPresentInfo) {
         RemoveLostPresent(p);
         return;
+    }
+
+    // Remove the present from any tracking structures.
+    RemovePresentFromTemporaryTrackingCollections(p);
+
+    // If presented, remove any previous presents made on the same swap chain.
+    //
+    // We need to do this before the DWM dependencies to ensure dependent
+    // presents are completed twice.  If there is a previous DWM present there
+    // is also likely a previous dependent present and if we complete
+    // dependents first, we will Complete p1 twice.
+    //
+    // | Dependent | DWM |
+    // | p1        |     |
+    // |           | p2  |
+    // | p3        |     |
+    // |           | p4  |
+    if (p->FinalState == PresentResult::Presented) {
+        auto presentsByThisProcess = &mPresentsByProcess[p->ProcessId];
+        for (auto ii = presentsByThisProcess->begin(), ie = presentsByThisProcess->end(); ii != ie; ) {
+            auto p2 = ii->second;
+            ++ii; // increment iterator first as CompletePresentHelper() will remove it
+            if (p2->SwapChainAddress == p->SwapChainAddress) {
+                if (p2->QpcTime >= p->QpcTime) break;
+                CompletePresentHelper(p2, completed);
+            }
+        }
     }
 
     // If this is a DWM present, complete any other present that contributed to
@@ -1490,33 +1501,33 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
             p2->FinalState = p->FinalState;
             p2->ScreenTime = p->ScreenTime;
         }
-        CompletePresent(p2);
+        CompletePresentHelper(p2, completed);
     }
     p->DependentPresents.clear();
 
-    // Remove the present from any tracking structures.
-    RemovePresentFromTemporaryTrackingCollections(p);
-
-    // If presented, remove any previous presents made on the same swap chain.
-    auto& presentDeque = mPresentsByProcessAndSwapChain[std::make_tuple(p->ProcessId, p->SwapChainAddress)];
-    if (p->FinalState == PresentResult::Presented) {
-        auto presentIter = presentDeque.begin();
-        while (presentIter != presentDeque.end() && *presentIter != p) {
-            CompletePresent(*presentIter);
-            presentIter = presentDeque.begin();
-        }
-    }
-
-    // Move the present into the consumer thread queue.
+    // Finally, complete this present
     DebugModifyPresent(*p);
     p->Completed = true;
-    {
-        std::lock_guard<std::mutex> lock(mPresentEventMutex);
-        while (!presentDeque.empty() && presentDeque.front()->Completed) {
-            auto p2 = presentDeque.front();
-            presentDeque.pop_front();
 
-            mCompletePresentEvents.push_back(p2);
+    completed->emplace(p->QpcTime, p);
+}
+
+void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
+{
+    // CompletePresentHelper() will complete the present and any of its
+    // dependencies.  We collect all completed presents into an OrderedPresents
+    // because the dependency walk only respects ordering for presents on the
+    // same SwapChain.
+    OrderedPresents completed;
+    CompletePresentHelper(p, &completed);
+
+    // Move the completed presents into the consumer thread queue.
+    auto numCompleted = completed.size();
+    if (numCompleted > 0) {
+        std::lock_guard<std::mutex> lock(mPresentEventMutex);
+        mCompletePresentEvents.reserve(mCompletePresentEvents.size() + numCompleted);
+        for (auto const& tuple : completed) {
+            mCompletePresentEvents.push_back(tuple.second);
         }
     }
 }
@@ -1590,7 +1601,6 @@ void PMTraceConsumer::TrackPresent(
     mAllPresentsNextIndex = (mAllPresentsNextIndex + 1) % PRESENTEVENT_CIRCULAR_BUFFER_SIZE;
 
     presentsByThisProcess->emplace(present->QpcTime, present);
-    mPresentsByProcessAndSwapChain[std::make_tuple(present->ProcessId, present->SwapChainAddress)].emplace_back(present);
     mPresentByThreadId.emplace(present->ThreadId, present);
 }
 
