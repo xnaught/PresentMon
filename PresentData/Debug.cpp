@@ -295,7 +295,18 @@ void DebugEvent(EVENT_RECORD* eventRecord, EventMetadata* metadata)
         case Microsoft_Windows_DxgKrnl::HSyncDPCMultiPlane_Info::Id:        PrintEventHeader(hdr, "DxgKrnl_HSyncDPCMultiPlane_Info"); break;
         case Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id:        PrintEventHeader(hdr, "DxgKrnl_VSyncDPCMultiPlane_Info"); break;
         case Microsoft_Windows_DxgKrnl::MMIOFlip_Info::Id:                  PrintEventHeader(hdr, "DxgKrnl_MMIOFlip_Info"); break;
-        case Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay_Info::Id: PrintEventHeader(hdr, "DxgKrnl_MMIOFlipMultiPlaneOverlay_Info"); break;
+        case Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay_Info::Id:
+            PrintEventHeader(hdr);
+            printf("DXGKrnl_MMIOFlipMultiPlaneOverlay_Info FlipSubmitSequence=%llx", metadata->GetEventData<uint64_t>(eventRecord, L"FlipSubmitSequence"));
+            if (hdr.EventDescriptor.Version >= 2) {
+                switch (metadata->GetEventData<uint32_t>(eventRecord, L"FlipEntryStatusAfterFlip")) {
+                case Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitVSync:    printf(" FlipWaitVSync"); break;
+                case Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitComplete: printf(" FlipWaitComplete"); break;
+                case Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitHSync:    printf(" FlipWaitHSync"); break;
+                }
+            }
+            printf("\n");
+            break;
         case Microsoft_Windows_DxgKrnl::Present_Info::Id:                   PrintEventHeader(hdr, "DxgKrnl_Present_Info"); break;
         case Microsoft_Windows_DxgKrnl::PresentHistory_Start::Id:           PrintEventHeader(eventRecord, metadata, "PresentHistory_Start", {
                                                                                 L"Token", PrintU64x,

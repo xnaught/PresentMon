@@ -385,6 +385,7 @@ void PMTraceConsumer::HandleDxgkQueueComplete(EVENT_HEADER const& hdr, uint32_t 
     // display, then complete the present now.
     if (pEvent->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer ||
         (pEvent->PresentMode == PresentMode::Hardware_Legacy_Flip && !pEvent->MMIO)) {
+        DebugModifyPresent(*pEvent);
         pEvent->ReadyTime = hdr.TimeStamp.QuadPart;
         pEvent->ScreenTime = hdr.TimeStamp.QuadPart;
         pEvent->FinalState = PresentResult::Presented;
@@ -444,6 +445,7 @@ void PMTraceConsumer::HandleDxgkMMIOFlipMPO(EVENT_HEADER const& hdr, uint32_t fl
 
     // Avoid double-marking a single present packet coming from the MPO API
     if (pEvent->ReadyTime == 0) {
+        DebugModifyPresent(*pEvent);
         pEvent->ReadyTime = hdr.TimeStamp.QuadPart;
     }
 
@@ -455,6 +457,7 @@ void PMTraceConsumer::HandleDxgkMMIOFlipMPO(EVENT_HEADER const& hdr, uint32_t fl
 
     // Present could tear if we're not waiting for vsync
     if (flipEntryStatusAfterFlip != (uint32_t) Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitVSync) {
+        DebugModifyPresent(*pEvent);
         pEvent->SupportsTearing = true;
     }
 
@@ -468,6 +471,7 @@ void PMTraceConsumer::HandleDxgkMMIOFlipMPO(EVENT_HEADER const& hdr, uint32_t fl
 
     TRACK_PRESENT_PATH(pEvent);
 
+    DebugModifyPresent(*pEvent);
     pEvent->FinalState = PresentResult::Presented;
     if (flipEntryStatusAfterFlip == (uint32_t) Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitComplete) {
         pEvent->ScreenTime = hdr.TimeStamp.QuadPart;
@@ -1137,14 +1141,10 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
         }
         auto presentEvent = eventIter->second;
 
-        DebugModifyPresent(*presentEvent);
-
         switch (NewState) {
         case (uint32_t) Microsoft_Windows_Win32k::TokenState::InFrame: // Composition is starting
         {
-            TRACK_PRESENT_PATH(*presentEvent);
-
-            presentEvent->SeenInFrameEvent = true;
+            TRACK_PRESENT_PATH(presentEvent);
 
             // If we're compositing a newer present than the last known window
             // present, then the last known one was discarded.  We won't
@@ -1157,9 +1157,11 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
                     DebugModifyPresent(*hWndIter->second);
                     hWndIter->second->FinalState = PresentResult::Discarded;
                     hWndIter->second = presentEvent;
-                    DebugModifyPresent(*presentEvent);
                 }
             }
+
+            DebugModifyPresent(*presentEvent);
+            presentEvent->SeenInFrameEvent = true;
 
             bool iFlip = mMetadata.GetEventData<BOOL>(pEventRecord, L"IndependentFlip") != 0;
             if (iFlip && presentEvent->PresentMode == PresentMode::Composed_Flip) {
@@ -1175,6 +1177,7 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
             // if a frame was composed when this token was completed
             if (presentEvent->FinalState == PresentResult::Unknown &&
                 (presentEvent->PresentFlags & DXGI_PRESENT_DO_NOT_SEQUENCE) != 0) {
+                DebugModifyPresent(*presentEvent);
                 presentEvent->FinalState = PresentResult::Discarded;
             }
             if (presentEvent->Hwnd) {
@@ -1193,6 +1196,7 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
             mWin32KPresentHistoryTokens.erase(eventIter);
 
             if (!presentEvent->SeenInFrameEvent && (presentEvent->FinalState == PresentResult::Unknown || presentEvent->ScreenTime == 0)) {
+                DebugModifyPresent(*presentEvent);
                 presentEvent->FinalState = PresentResult::Discarded;
                 CompletePresent(presentEvent);
             } else if (presentEvent->PresentMode != PresentMode::Composed_Flip) {
@@ -1287,14 +1291,12 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
 
         PMTraceConsumer::Win32KPresentHistoryTokenKey key(luidSurface, PresentCount, bindId);
         auto eventIter = mWin32KPresentHistoryTokens.find(key);
-        if (eventIter != mWin32KPresentHistoryTokens.end()) {
+        if (eventIter != mWin32KPresentHistoryTokens.end() && eventIter->second->SeenInFrameEvent) {
             TRACK_PRESENT_PATH(eventIter->second);
             DebugModifyPresent(*eventIter->second);
-            if (eventIter->second->SeenInFrameEvent) {
-                eventIter->second->DwmNotified = true;
-                mPresentsWaitingForDWM.emplace_back(eventIter->second);
-                eventIter->second->PresentInDwmWaitingStruct = true;
-            }
+            eventIter->second->DwmNotified = true;
+            mPresentsWaitingForDWM.emplace_back(eventIter->second);
+            eventIter->second->PresentInDwmWaitingStruct = true;
         }
         break;
     }
@@ -1594,14 +1596,13 @@ void PMTraceConsumer::TrackPresent(
     std::shared_ptr<PresentEvent> present,
     OrderedPresents* presentsByThisProcess)
 {
-    DebugCreatePresent(*present);
-
     // If there is an existing present that hasn't completed by the time the
     // circular buffer has come around, consider it lost.
     if (mAllPresents[mAllPresentsNextIndex] != nullptr) {
         RemoveLostPresent(mAllPresents[mAllPresentsNextIndex]);
     }
 
+    DebugCreatePresent(*present);
     present->mAllPresentsTrackingIndex = mAllPresentsNextIndex;
     mAllPresents[mAllPresentsNextIndex] = present;
     mAllPresentsNextIndex = (mAllPresentsNextIndex + 1) % PRESENTEVENT_CIRCULAR_BUFFER_SIZE;
