@@ -1310,8 +1310,12 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
 // Remove the present from all temporary tracking structures.
 void PMTraceConsumer::RemovePresentFromTemporaryTrackingCollections(std::shared_ptr<PresentEvent> p)
 {
-    // The PresentEvent is left in mPresentsByProcess,
-    // mPresentsByProcessAndSwapChain, and mAllPresents.
+    // mPresentsByProcess
+    auto presentsByThisProcess = &mPresentsByProcess[p->ProcessId];
+    presentsByThisProcess->erase(p->QpcTime);
+
+    // mAllPresents
+    mAllPresents[p->mAllPresentsTrackingIndex] = nullptr;
 
     // mPresentByThreadId
     auto threadEventIter = mPresentByThreadId.find(p->ThreadId);
@@ -1427,10 +1431,6 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
     // Remove the present from any tracking structures.
     RemovePresentFromTemporaryTrackingCollections(p);
 
-    // mPresentsByProcess
-    auto& presentsByThisProcess = mPresentsByProcess[p->ProcessId];
-    presentsByThisProcess.erase(p->QpcTime);
-
     // mPresentsByProcessAndSwapChain
     auto& presentDeque = mPresentsByProcessAndSwapChain[std::make_tuple(p->ProcessId, p->SwapChainAddress)];
 
@@ -1450,11 +1450,8 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
     // Move the present into the consumer lost queue.
     {
         std::lock_guard<std::mutex> lock(mLostPresentEventMutex);
-        mLostPresentEvents.push_back(mAllPresents[p->mAllPresentsTrackingIndex]);
+        mLostPresentEvents.push_back(p);
     }
-
-    // mAllPresents
-    mAllPresents[p->mAllPresentsTrackingIndex] = nullptr;
 }
 
 void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
@@ -1503,13 +1500,6 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
     // Remove the present from any tracking structures.
     RemovePresentFromTemporaryTrackingCollections(p);
 
-    // TODO: Only way to CompletePresent() a present without
-    // FindOrCreatePresent() finding it first is the while loop below, in which
-    // case we should remove it there instead.  Or, when created by
-    // FindOrCreatePresent() (which itself is a separate TODO).
-    auto& presentsByThisProcess = mPresentsByProcess[p->ProcessId];
-    presentsByThisProcess.erase(p->QpcTime);
-
     auto& presentDeque = mPresentsByProcessAndSwapChain[std::make_tuple(p->ProcessId, p->SwapChainAddress)];
 
     // If presented, remove all previous presents up till this one.
@@ -1532,7 +1522,6 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
             auto p2 = presentDeque.front();
             presentDeque.pop_front();
 
-            mAllPresents[p2->mAllPresentsTrackingIndex] = nullptr;
             mCompletePresentEvents.push_back(p2);
         }
     }
