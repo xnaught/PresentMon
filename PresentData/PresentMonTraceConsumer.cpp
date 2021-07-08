@@ -431,7 +431,8 @@ void PMTraceConsumer::HandleDxgkMMIOFlip(EVENT_HEADER const& hdr, uint32_t flipS
     }
 }
 
-void PMTraceConsumer::HandleDxgkMMIOFlipMPO(EVENT_HEADER const& hdr, uint32_t flipSubmitSequence, uint32_t flipEntryStatusAfterFlip, bool flipEntryStatusAfterFlipValid)
+void PMTraceConsumer::HandleDxgkMMIOFlipMPO(EVENT_HEADER const& hdr, uint32_t flipSubmitSequence,
+                                            uint32_t flipEntryStatusAfterFlip, bool flipEntryStatusAfterFlipValid)
 {
     auto pEvent = FindBySubmitSequence(flipSubmitSequence);
     if (pEvent == nullptr) {
@@ -457,7 +458,7 @@ void PMTraceConsumer::HandleDxgkMMIOFlipMPO(EVENT_HEADER const& hdr, uint32_t fl
     }
 
     // For the VSync ahd HSync paths, we'll wait for the corresponding ?SyncDPC
-    // event before being considering the present complete to get a more-accurate
+    // event before considering the present complete to get a more-accurate
     // ScreenTime (see HandleDxgkSyncDPC).
     if (flipEntryStatusAfterFlip == (uint32_t) Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitVSync ||
         flipEntryStatusAfterFlip == (uint32_t) Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitHSync) {
@@ -1133,51 +1134,50 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
         if (eventIter == mWin32KPresentHistoryTokens.end()) {
             return;
         }
+        auto presentEvent = eventIter->second;
 
-        auto &event = *eventIter->second;
-
-        DebugModifyPresent(event);
+        DebugModifyPresent(*presentEvent);
 
         switch (NewState) {
         case (uint32_t) Microsoft_Windows_Win32k::TokenState::InFrame: // Composition is starting
         {
-            TRACK_PRESENT_PATH(eventIter->second);
+            TRACK_PRESENT_PATH(*presentEvent);
 
-            event.SeenInFrameEvent = true;
+            presentEvent->SeenInFrameEvent = true;
 
             // If we're compositing a newer present than the last known window
             // present, then the last known one was discarded.  We won't
             // necessarily see a transition to Discarded for it.
-            if (event.Hwnd) {
-                auto hWndIter = mLastWindowPresent.find(event.Hwnd);
+            if (presentEvent->Hwnd) {
+                auto hWndIter = mLastWindowPresent.find(presentEvent->Hwnd);
                 if (hWndIter == mLastWindowPresent.end()) {
-                    mLastWindowPresent.emplace(event.Hwnd, eventIter->second);
-                } else if (hWndIter->second != eventIter->second) {
+                    mLastWindowPresent.emplace(presentEvent->Hwnd, presentEvent);
+                } else if (hWndIter->second != presentEvent) {
                     DebugModifyPresent(*hWndIter->second);
                     hWndIter->second->FinalState = PresentResult::Discarded;
-                    hWndIter->second = eventIter->second;
-                    DebugModifyPresent(event);
+                    hWndIter->second = presentEvent;
+                    DebugModifyPresent(*presentEvent);
                 }
             }
 
             bool iFlip = mMetadata.GetEventData<BOOL>(pEventRecord, L"IndependentFlip") != 0;
-            if (iFlip && event.PresentMode == PresentMode::Composed_Flip) {
-                event.PresentMode = PresentMode::Hardware_Independent_Flip;
+            if (iFlip && presentEvent->PresentMode == PresentMode::Composed_Flip) {
+                presentEvent->PresentMode = PresentMode::Hardware_Independent_Flip;
             }
             break;
         }
 
         case (uint32_t) Microsoft_Windows_Win32k::TokenState::Confirmed: // Present has been submitted
-            TRACK_PRESENT_PATH(eventIter->second);
+            TRACK_PRESENT_PATH(presentEvent);
 
             // Handle DO_NOT_SEQUENCE presents, which may get marked as confirmed,
             // if a frame was composed when this token was completed
-            if (event.FinalState == PresentResult::Unknown &&
-                (event.PresentFlags & DXGI_PRESENT_DO_NOT_SEQUENCE) != 0) {
-                event.FinalState = PresentResult::Discarded;
+            if (presentEvent->FinalState == PresentResult::Unknown &&
+                (presentEvent->PresentFlags & DXGI_PRESENT_DO_NOT_SEQUENCE) != 0) {
+                presentEvent->FinalState = PresentResult::Discarded;
             }
-            if (event.Hwnd) {
-                mLastWindowPresent.erase(event.Hwnd);
+            if (presentEvent->Hwnd) {
+                mLastWindowPresent.erase(presentEvent->Hwnd);
             }
             break;
 
@@ -1185,19 +1185,17 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
         // guaranteed to be sent at the end of a frame in multi-monitor
         // scenarios.  Instead, we use DWM's present stats to understand the
         // Composed Flip timeline.
-
         case (uint32_t) Microsoft_Windows_Win32k::TokenState::Discarded: // Present has been discarded
         {
-            TRACK_PRESENT_PATH(eventIter->second);
+            TRACK_PRESENT_PATH(presentEvent);
 
-            auto sharedPtr = eventIter->second;
             mWin32KPresentHistoryTokens.erase(eventIter);
 
-            if (!event.SeenInFrameEvent && (event.FinalState == PresentResult::Unknown || event.ScreenTime == 0)) {
-                event.FinalState = PresentResult::Discarded;
-                CompletePresent(sharedPtr);
-            } else if (event.PresentMode != PresentMode::Composed_Flip) {
-                CompletePresent(sharedPtr);
+            if (!presentEvent->SeenInFrameEvent && (presentEvent->FinalState == PresentResult::Unknown || presentEvent->ScreenTime == 0)) {
+                presentEvent->FinalState = PresentResult::Discarded;
+                CompletePresent(presentEvent);
+            } else if (presentEvent->PresentMode != PresentMode::Composed_Flip) {
+                CompletePresent(presentEvent);
             }
 
             break;
@@ -1306,10 +1304,10 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
     }
 }
 
+// Remove the present from all temporary tracking structures.
 void PMTraceConsumer::RemovePresentFromTemporaryTrackingCollections(std::shared_ptr<PresentEvent> p)
 {
-    // Remove the present from any struct that would only host the event temporarily.
-    // Currently defined as all structures except for mPresentsByProcess, 
+    // The PresentEvent is left in mPresentsByProcess,
     // mPresentsByProcessAndSwapChain, and mAllPresents.
 
     // mPresentByThreadId
@@ -1319,6 +1317,8 @@ void PMTraceConsumer::RemovePresentFromTemporaryTrackingCollections(std::shared_
     }
 
     if (p->DriverBatchThreadId != 0) {
+        // If the present was batched, it will by referenced in mPresentByThreadId
+        // by both ThreadId and DriverBatchThreadId.
         auto batchThreadEventIter = mPresentByThreadId.find(p->DriverBatchThreadId);
         if (batchThreadEventIter != mPresentByThreadId.end() && batchThreadEventIter->second == p) {
             mPresentByThreadId.erase(batchThreadEventIter);
@@ -1405,21 +1405,23 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
 
     p->IsLost = true;
 
-    // Presents dependent on this event can no longer be trakced.
-    for (auto& dependentPresent : p->DependentPresents) {
-        if (!dependentPresent->IsLost) {
-            RemoveLostPresent(dependentPresent);
+    // If this is a DWM present, any other presents that contributed to it are
+    // also lost.
+    //
+    // PresentEvents that become lost are not removed from DependentPresents
+    // tracking, so we need to protect against lost events (but they have
+    // already been added to mLostPresentEvents etc.).
+    for (auto& p2 : p->DependentPresents) {
+        if (!p2->IsLost) {
+            RemoveLostPresent(p2);
         }
-        // The only place a lost present could still exist outside of mLostPresentEvents is the dependents list.
-        // A lost present has already been added to mLostPresentEvents, we should never modify it.
     }
     p->DependentPresents.clear();
 
-    // Completed Presented presents should not make it here.
+    // Already-completed, Presented presents should not make it here.
     assert(!(p->Completed && p->FinalState == PresentResult::Presented));
 
-    // Remove the present from any struct that would only host the event temporarily.
-    // Should we loop through and remove the dependent presents?
+    // Remove the present from any tracking structures.
     RemovePresentFromTemporaryTrackingCollections(p);
 
     // mPresentsByProcess
@@ -1442,7 +1444,7 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
     // We expect an element to be removed here.
     assert(hasRemovedElement);
 
-    // Update the list of lost presents.
+    // Move the present into the consumer lost queue.
     {
         std::lock_guard<std::mutex> lock(mLostPresentEventMutex);
         mLostPresentEvents.push_back(mAllPresents[p->mAllPresentsTrackingIndex]);
@@ -1454,21 +1456,22 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
 
 void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
 {
+    // Already-completed, Presented presents should not make it here.
     if (p->Completed && p->FinalState != PresentResult::Presented) {
         DebugModifyPresent(*p);
         p->FinalState = PresentResult::Error;
     }
 
-    // Throw away events until we've seen at least one Dxgk PresentInfo event
-    // (unless we're not tracking display in which case provider start order
-    // is not an issue)
+    // Throw away initial PresentEvents until we've seen at least one Dxgk
+    // PresentInfo event (unless we're not tracking display in which case
+    // provider start order is not an issue).
     if (mTrackDisplay && !mSeenDxgkPresentInfo) {
         RemoveLostPresent(p);
         return;
     }
 
-    std::set<uint64_t> completedComposedFlipHwnds;
     // Each DWM present only completes the most recent Composed Flip present per HWND. Mark the others as discarded.
+    std::set<uint64_t> completedComposedFlipHwnds;
     for (auto rit = p->DependentPresents.rbegin(); rit != p->DependentPresents.rend(); ++rit) {
         if ((*rit)->PresentMode == PresentMode::Composed_Flip) {
             if (completedComposedFlipHwnds.find((*rit)->Hwnd) == completedComposedFlipHwnds.end()) {
@@ -1495,7 +1498,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
     }
     p->DependentPresents.clear();
 
-    // Remove it from any tracking maps that it may have been inserted into
+    // Remove the present from any tracking structures.
     RemovePresentFromTemporaryTrackingCollections(p);
 
     // TODO: Only way to CompletePresent() a present without
@@ -1583,13 +1586,13 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
     // event we ever see.  So, we create the PresentEvent and start tracking it
     // from here.
     auto presentEvent = std::make_shared<PresentEvent>(hdr, Runtime::Other);
-    TrackPresent(presentEvent, presentsByThisProcess);
+    TrackPresent(presentEvent, &presentsByThisProcess);
     return presentEvent;
 }
 
 void PMTraceConsumer::TrackPresent(
     std::shared_ptr<PresentEvent> present,
-    OrderedPresents& presentsByThisProcess)
+    OrderedPresents* presentsByThisProcess)
 {
     DebugCreatePresent(*present);
 
@@ -1603,7 +1606,7 @@ void PMTraceConsumer::TrackPresent(
     mAllPresents[mAllPresentsNextIndex] = present;
     mAllPresentsNextIndex = (mAllPresentsNextIndex + 1) % PRESENTEVENT_CIRCULAR_BUFFER_SIZE;
 
-    presentsByThisProcess.emplace(present->QpcTime, present);
+    presentsByThisProcess->emplace(present->QpcTime, present);
     mPresentsByProcessAndSwapChain[std::make_tuple(present->ProcessId, present->SwapChainAddress)].emplace_back(present);
     mPresentByThreadId.emplace(present->ThreadId, present);
 }
@@ -1617,7 +1620,7 @@ void PMTraceConsumer::TrackPresentOnThread(std::shared_ptr<PresentEvent> present
         RemoveLostPresent(iter->second);
     }
 
-    TrackPresent(present, mPresentsByProcess[present->ProcessId]);
+    TrackPresent(present, &mPresentsByProcess[present->ProcessId]);
 }
 
 // No TRACK_PRESENT instrumentation here because each runtime Present::Start

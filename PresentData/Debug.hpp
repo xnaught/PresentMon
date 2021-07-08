@@ -28,7 +28,7 @@ void DebugEvent(_EVENT_RECORD* eventRecord, EventMetadata* metadata);
 // Call when a new present is created
 void DebugCreatePresent(PresentEvent const& p);
 
-// Call before modifying any present
+// Call before modifying any PresentEvent member
 void DebugModifyPresent(PresentEvent const& p);
 
 // Call when a present is lost
