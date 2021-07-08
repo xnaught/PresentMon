@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <d3d9.h>
 #include <dxgi.h>
+#include <unordered_set>
 
 #ifdef DEBUG
 static constexpr int PRESENTEVENT_CIRCULAR_BUFFER_SIZE = 32768;
@@ -1470,31 +1471,30 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
         return;
     }
 
-    // Each DWM present only completes the most recent Composed Flip present per HWND. Mark the others as discarded.
-    std::set<uint64_t> completedComposedFlipHwnds;
-    for (auto rit = p->DependentPresents.rbegin(); rit != p->DependentPresents.rend(); ++rit) {
-        if ((*rit)->PresentMode == PresentMode::Composed_Flip) {
-            if (completedComposedFlipHwnds.find((*rit)->Hwnd) == completedComposedFlipHwnds.end()) {
-                completedComposedFlipHwnds.insert((*rit)->Hwnd);
-            }
-            else {
-                (*rit)->FinalState = PresentResult::Discarded;
-            }
+    // If this is a DWM present, complete any other present that contributed to
+    // it.  Each DWM present only completes each HWND's most recent Composed
+    // Flip PresentEvent, so we mark any others as discarded first, then
+    // proceed in order completing them all.
+    //
+    // PresentEvents that become lost are not removed from DependentPresents
+    // tracking, so we need to protect against lost events (but they have
+    // already been added to mLostPresentEvents etc.).
+    std::unordered_set<uint64_t> completedComposedFlipHwnds;
+    for (auto ii = p->DependentPresents.rbegin(), ie = p->DependentPresents.rend(); ii != ie; ++ii) {
+        auto p2 = *ii;
+        if (!p2->IsLost && p2->PresentMode == PresentMode::Composed_Flip && !completedComposedFlipHwnds.emplace(p2->Hwnd).second) {
+            DebugModifyPresent(*p2);
+            p2->FinalState = PresentResult::Discarded;
         }
     }
-
-    // Complete all other presents that were riding along with this one (i.e. this one came from DWM)
-    for (auto& p2 : p->DependentPresents) {
-        if (!p2->IsLost) {
+    completedComposedFlipHwnds.clear();
+    for (auto p2 : p->DependentPresents) {
+        if (!p2->IsLost && p2->FinalState != PresentResult::Discarded) {
             DebugModifyPresent(*p2);
+            p2->FinalState = p->FinalState;
             p2->ScreenTime = p->ScreenTime;
-            if (p2->FinalState != PresentResult::Discarded) {
-                p2->FinalState = p->FinalState;
-            }
-            CompletePresent(p2);
         }
-        // The only place a lost present could still exist outside of mLostPresentEvents is the dependents list.
-        // A lost present has already been added to mLostPresentEvents, we should never modify it.
+        CompletePresent(p2);
     }
     p->DependentPresents.clear();
 
