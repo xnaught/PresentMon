@@ -92,8 +92,9 @@ struct PresentEvent {
     bool SeenWin32KEvents;
     bool DwmNotified;
     bool SeenInFrameEvent;      // This present has gotten a Win32k TokenStateChanged event into InFrame state
-    bool Completed;             // All expected events have been observed
-    bool IsLost;                // All expected events have not been observed, but this PresentEvent is in an unexpected state or too old
+    bool CompletionIsDeferred;  // A FinalState has been determined, but not all expected events have been observed yet
+    bool IsCompleted;           // All expected events have been observed
+    bool IsLost;                // This PresentEvent was found in an unexpected state or is too old
 
     // We need a signal to prevent us from looking fruitlessly through the WaitingForDwm list
     bool PresentInDwmWaitingStruct;
@@ -179,15 +180,33 @@ struct PMTraceConsumer
     // presents.
     bool mSeenDxgkPresentInfo = false;
 
-    // Store completed presents until the consumer thread removes them using
-    // Dequeue*PresentEvents().  Completed presents are those that have
-    // determined to be either discarded or displayed.  Lost presents were
-    // found in an unexpected state, likely due to a missed related ETW event.
+    // Store completed and lost presents until the consumer thread removes them
+    // using Dequeue*PresentEvents().
+    //
+    // Completed presents are those that have seen all their expected events,
+    // based on the presentation path used.
+    //
+    // Lost presents are not yet completed, but have been waiting for
+    // completion for a long time or were found in an unexpected state.  This
+    // was most likely caused by a missed ETW event.
+
     std::mutex mPresentEventMutex;
     std::vector<std::shared_ptr<PresentEvent>> mCompletePresentEvents;
 
     std::mutex mLostPresentEventMutex;
     std::vector<std::shared_ptr<PresentEvent>> mLostPresentEvents;
+
+    // If a present has been determined to be either discarded or displayed,
+    // but it has not yet seen all of its expected events, it is removed from
+    // the tracking structures and placed into the DeferredCompletions list
+    // with CompletionIsDeferred set.  These are not completed until a
+    // case-dependent number of Presents() have occurred from the same process.
+
+    // (PresentEvent, NumPresentStopsToWaitFor)
+    using DeferredCompletions = std::vector<std::pair<std::shared_ptr<PresentEvent>, uint32_t>>;
+
+    // [Process ID] => DeferredCompletions
+    std::unordered_map<uint32_t, DeferredCompletions> mDeferredCompletions;
 
     // Process events
     std::mutex mProcessEventMutex;
@@ -331,14 +350,15 @@ struct PMTraceConsumer
     void HandleDxgkPresentHistory(EVENT_HEADER const& hdr, uint64_t token, uint64_t tokenData, PresentMode knownPresentMode);
     void HandleDxgkPresentHistoryInfo(EVENT_HEADER const& hdr, uint64_t token);
 
-    void CompletePresent(std::shared_ptr<PresentEvent> p);
-    void CompletePresentHelper(std::shared_ptr<PresentEvent> p, OrderedPresents* completed);
+    void CompletePresent(std::shared_ptr<PresentEvent> const& p);
+    void CompletePresentHelper(std::shared_ptr<PresentEvent> const& p, OrderedPresents* completed);
+    void CompleteDeferredCompletion(std::shared_ptr<PresentEvent> const& present);
     std::shared_ptr<PresentEvent> FindBySubmitSequence(uint32_t submitSequence);
     std::shared_ptr<PresentEvent> FindOrCreatePresent(EVENT_HEADER const& hdr);
     void TrackPresentOnThread(std::shared_ptr<PresentEvent> present);
     void TrackPresent(std::shared_ptr<PresentEvent> present, OrderedPresents* presentsByThisProcess);
     void RemoveLostPresent(std::shared_ptr<PresentEvent> present);
-    void RemovePresentFromTemporaryTrackingCollections(std::shared_ptr<PresentEvent> present);
+    void RemovePresentFromTemporaryTrackingCollections(std::shared_ptr<PresentEvent> present, bool waitForPresentStop);
     void RuntimePresentStop(EVENT_HEADER const& hdr, bool AllowPresentBatching, ::Runtime runtime);
 
     void HandleNTProcessEvent(EVENT_RECORD* pEventRecord);

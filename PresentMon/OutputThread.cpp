@@ -240,7 +240,7 @@ static void AddPresents(std::vector<std::shared_ptr<PresentEvent>> const& presen
     auto i = *presentEventIndex;
     for (auto n = presentEvents.size(); i < n; ++i) {
         auto presentEvent = presentEvents[i];
-        assert(presentEvent->Completed);
+        assert(presentEvent->IsCompleted);
 
         // Stop processing events if we hit the next stop time.
         if (checkStopQpc && presentEvent->QpcTime >= stopQpc) {
