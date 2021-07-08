@@ -1404,13 +1404,11 @@ void PMTraceConsumer::RemovePresentFromTemporaryTrackingCollections(std::shared_
 
 void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
 {
-    // This present has been timed out. Remove all references to it from all tracking structures.
-    // mPresentsByProcessAndSwapChain and mPresentsByProcess should always track the present's lifetime,
-    // so these also have an assert to validate this assumption.
-
-    DebugLostPresent(*p);
-
-    p->IsLost = true;
+    // Already-completed, Presented presents should not make it here.
+    if (p->Completed && p->FinalState != PresentResult::Presented) {
+        DebugModifyPresent(*p);
+        p->FinalState = PresentResult::Error;
+    }
 
     // If this is a DWM present, any other presents that contributed to it are
     // also lost.
@@ -1424,9 +1422,6 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
         }
     }
     p->DependentPresents.clear();
-
-    // Already-completed, Presented presents should not make it here.
-    assert(!(p->Completed && p->FinalState == PresentResult::Presented));
 
     // Remove the present from any tracking structures.
     RemovePresentFromTemporaryTrackingCollections(p);
@@ -1448,6 +1443,8 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
     assert(hasRemovedElement);
 
     // Move the present into the consumer lost queue.
+    DebugLostPresent(*p);
+    p->IsLost = true;
     {
         std::lock_guard<std::mutex> lock(mLostPresentEventMutex);
         mLostPresentEvents.push_back(p);
@@ -1500,9 +1497,8 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
     // Remove the present from any tracking structures.
     RemovePresentFromTemporaryTrackingCollections(p);
 
+    // If presented, remove any previous presents made on the same swap chain.
     auto& presentDeque = mPresentsByProcessAndSwapChain[std::make_tuple(p->ProcessId, p->SwapChainAddress)];
-
-    // If presented, remove all previous presents up till this one.
     if (p->FinalState == PresentResult::Presented) {
         auto presentIter = presentDeque.begin();
         while (presentIter != presentDeque.end() && *presentIter != p) {
@@ -1514,8 +1510,6 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> p)
     // Move the present into the consumer thread queue.
     DebugModifyPresent(*p);
     p->Completed = true;
-
-    // Move presents to ready list.
     {
         std::lock_guard<std::mutex> lock(mPresentEventMutex);
         while (!presentDeque.empty() && presentDeque.front()->Completed) {
@@ -1557,17 +1551,16 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
     // presents created on a different thread, which are batched and then
     // handled later during a DXGK/Win32K event.  If found, we add it to
     // mPresentByThreadId to indicate what present this thread is working on.
-    auto& presentsByThisProcess = mPresentsByProcess[hdr.ProcessId];
-    auto processIter = std::find_if(presentsByThisProcess.begin(), presentsByThisProcess.end(), [](auto processIter) {
-        return processIter.second->PresentMode == PresentMode::Unknown;
-    });
-    if (processIter != presentsByThisProcess.end()) {
-        auto presentEvent = processIter->second;
-        assert(presentEvent->DriverBatchThreadId == 0);
-        DebugModifyPresent(*presentEvent);
-        presentEvent->DriverBatchThreadId = hdr.ThreadId;
-        mPresentByThreadId.emplace(hdr.ThreadId, presentEvent);
-        return presentEvent;
+    auto presentsByThisProcess = &mPresentsByProcess[hdr.ProcessId];
+    for (auto const& tuple : *presentsByThisProcess) {
+        auto presentEvent = tuple.second;
+        if (presentEvent->PresentMode == PresentMode::Unknown) {
+            assert(presentEvent->DriverBatchThreadId == 0);
+            DebugModifyPresent(*presentEvent);
+            presentEvent->DriverBatchThreadId = hdr.ThreadId;
+            mPresentByThreadId.emplace(hdr.ThreadId, presentEvent);
+            return presentEvent;
+        }
     }
 
     // Because we couldn't find a present above, the calling event is for an
@@ -1577,7 +1570,7 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
     // event we ever see.  So, we create the PresentEvent and start tracking it
     // from here.
     auto presentEvent = std::make_shared<PresentEvent>(hdr, Runtime::Other);
-    TrackPresent(presentEvent, &presentsByThisProcess);
+    TrackPresent(presentEvent, presentsByThisProcess);
     return presentEvent;
 }
 
