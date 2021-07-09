@@ -179,23 +179,23 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
             ConsolePrintLn("%s[%d]:", processInfo.mModuleName.c_str(), processId);
         }
 
-        ConsolePrint("    %016llX (%s): SyncInterval=%d Flags=%d %.2lf ms/frame (%.1lf fps",
+        ConsolePrint("    %016llX (%s): SyncInterval=%d Flags=%d CPU%s=%.2lf",
             address,
             RuntimeToString(presentN.Runtime),
             presentN.SyncInterval,
             presentN.PresentFlags,
-            1000.0 * cpuAvg,
-            1.0 / cpuAvg);
+            dspAvg > 0.0 ? "/Display" : "",
+            1000.0 * cpuAvg);
 
-        if (dspAvg > 0.0) {
-            ConsolePrint(", %.1lf fps displayed", 1.0 / dspAvg);
-        }
+        if (dspAvg > 0.0) ConsolePrint("/%.2lf", 1000.0 * dspAvg);
+
+        ConsolePrint("ms (%.1lf", 1.0 / cpuAvg);
+        if (dspAvg > 0.0) ConsolePrint("/%.1lf", 1.0 / dspAvg);
+        ConsolePrint(" fps)");
 
         if (latAvg > 0.0) {
-            ConsolePrint(", %.2lf ms latency", 1000.0 * latAvg);
+            ConsolePrint(" latency=%.2lfms", 1000.0 * latAvg);
         }
-
-        ConsolePrint(")");
 
         if (displayN != nullptr) {
             ConsolePrint(" %s", PresentModeToString(displayN->PresentMode));
