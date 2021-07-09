@@ -364,10 +364,22 @@ ULONG TraceSession::Start(
     }
 
     // -------------------------------------------------------------------------
-    // Store trace properties
-    mQpcFrequency = traceProps.LogfileHeader.PerfFreq;
+    // Save the initial time to base capture off of.  ETL captures use the
+    // time of the first event, which matches GPUVIEW usage, and realtime
+    // captures are based off the timestamp here.
 
-    // Use current time as start for realtime traces (instead of the first event time)
+    switch (traceProps.LogfileHeader.ReservedFlags) {
+    case 2: // System time
+        mQpcFrequency.QuadPart = 10000000ull;
+        break;
+    case 3: // CPU cycle counter
+        mQpcFrequency.QuadPart = 1000000ull * traceProps.LogfileHeader.CpuSpeedInMHz;
+        break;
+    default: // 1 == QPC
+        mQpcFrequency = traceProps.LogfileHeader.PerfFreq;
+        break;
+    }
+
     if (!saveFirstTimestamp) {
         QueryPerformanceCounter(&mStartQpc);
     }
