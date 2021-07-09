@@ -56,17 +56,6 @@ public:
         }
 
         // Compare gold/test CSV data rows
-        for (size_t h = 0; h < _countof(PresentMonCsv::headerColumnIndex_); ++h) {
-            if ((testCsv.headerColumnIndex_[h] == SIZE_MAX) != (goldCsv.headerColumnIndex_[h] == SIZE_MAX)) {
-                AddTestFailure(__FILE__, __LINE__, "CSVs have different headers: %s", PresentMonCsv::GetHeader((uint32_t) h));
-                printf("GOLD = %ls\n", goldCsv_.c_str());
-                printf("TEST = %ls\n", testCsv_.c_str());
-                goldCsv.Close();
-                testCsv.Close();
-                return;
-            }
-        }
-
         for (;;) {
             auto goldDone = !goldCsv.ReadRow();
             auto testDone = !testCsv.ReadRow();
@@ -82,8 +71,12 @@ public:
             auto rowOk = true;
             for (size_t h = 0; h < _countof(PresentMonCsv::headerColumnIndex_); ++h) {
                 if (testCsv.headerColumnIndex_[h] != SIZE_MAX && goldCsv.headerColumnIndex_[h] != SIZE_MAX) {
-                    char const* a = testCsv.cols_[testCsv.headerColumnIndex_[h]];
-                    char const* b = goldCsv.cols_[goldCsv.headerColumnIndex_[h]];
+                    // Need to protect against missing columns on each line as
+                    // the file may be corrupted.
+                    auto testColIdx = testCsv.headerColumnIndex_[h];
+                    auto goldColIdx = goldCsv.headerColumnIndex_[h];
+                    char const* a = testColIdx < testCsv.cols_.size() ? testCsv.cols_[testColIdx] : "<missing>";
+                    char const* b = goldColIdx < goldCsv.cols_.size() ? goldCsv.cols_[goldColIdx] : "<missing>";
                     if (_stricmp(a, b) == 0) {
                         continue;
                     }

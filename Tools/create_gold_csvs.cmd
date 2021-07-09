@@ -37,6 +37,4 @@ exit /b 0
     echo %presentmon% %pmargs% -etl_file %1 -output_file "%~dpn1.csv"
     %presentmon% %pmargs% -etl_file %1 -output_file "%~dpn1.csv" >NUL
     echo.
-    where /q unix2dos
-    if %errorlevel% equ 0 unix2dos -q "%~dpn1.csv"
     exit /b 0

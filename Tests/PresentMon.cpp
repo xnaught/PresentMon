@@ -67,7 +67,7 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
     path_ = path;
     line_ = 0;
 
-    if (_wfopen_s(&fp_, path.c_str(), L"rb")) {
+    if (_wfopen_s(&fp_, path.c_str(), L"r")) {
         AddTestFailure(file, line, "Failed to open file: %ls", path.c_str());
         return false;
     }

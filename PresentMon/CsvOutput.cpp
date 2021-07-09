@@ -233,7 +233,7 @@ static OutputCsv CreateOutputCsv(char const* processName)
         char path[MAX_PATH];
         GenerateFilename(processName, path);
 
-        fopen_s(&outputCsv.mFile, path, "wb");
+        fopen_s(&outputCsv.mFile, path, "w");
 
         if (args.mTrackWMR) {
             outputCsv.mWmrFile = CreateLsrCsvFile(path);
