@@ -519,10 +519,7 @@ void PMTraceConsumer::HandleDxgkSyncDPCMPO(EVENT_HEADER const& hdr, uint32_t fli
         pEvent->FinalState = PresentResult::Presented;
     }
 
-    if (pEvent->PresentMode == PresentMode::Hardware_Composed_Independent_Flip ||
-        pEvent->PresentMode == PresentMode::Hardware_Independent_Flip) {
-        CompletePresent(pEvent);
-    }
+    CompletePresent(pEvent);
 }
 
 void PMTraceConsumer::HandleDxgkPresentHistory(
