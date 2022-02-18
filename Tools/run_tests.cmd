@@ -114,6 +114,7 @@ echo [96mChecking generated files...[0m
 for %%a in (%build_platforms%) do for %%b in (%build_configs%) do call :check_exist "build\%%b\PresentMon-%version%-%%a.exe"
 for %%a in (%build_platforms%) do for %%b in (%build_configs%) do call :check_exist "build\%%b\PresentMonTests-%version%-%%a.exe"
 for %%a in (%test_platforms%)  do for %%b in (%build_configs%) do call :check_exist "build\%%b\etw_list-%version%-%%a.exe"
+for %%a in (%build_platforms%) do for %%b in (%build_configs%) do call :check_dlls_delayloaded "build\%%b\PresentMon-%version%-%%a.exe" %%a
 for %%a in (%test_platforms%)  do for %%b in (%build_configs%) do call :check_pm_version "build\%%b\PresentMon-%version%-%%a.exe"
 
 :: -----------------------------------------------------------------------------
@@ -153,6 +154,42 @@ exit /b 0
     ) else (
         echo [31merror: expected build output missing: %~1[0m
         set /a errorcount=%errorcount%+1
+    )
+    exit /b 0
+
+:: -----------------------------------------------------------------------------
+:check_dlls_delayloaded
+    if not exist "%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" (
+        echo [31merror: missing dependency: vswhere.exe[0m
+        set /a errorcount=%errorcount%+1
+        exit /b 1
+    )
+    set vsdir=
+    for /f "tokens=*" %%a in ('"%programfiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -property installationPath') do (
+        set vsdir=%%a
+    )
+    if not exist "%vsdir%\VC\Tools\MSVC\14.29.30133\bin\Hostx64\%2\dumpbin.exe" (
+        echo [31merror: missing dependency: dumpbin.exe[0m
+        set /a errorcount=%errorcount%+1
+        exit /b 1
+    )
+    set checkdll=0
+    for /f "tokens=1,5" %%a in ('"%vsdir%\VC\Tools\MSVC\14.29.30133\bin\Hostx64\%2\dumpbin.exe" /dependents %~1') do (
+        if "%%a"=="Image" (
+            if "%%b"=="dependencies:" (
+                call set checkdll=1
+            ) else (
+                call set checkdll=0
+            )
+        )
+        if "%%~xa"==".dll" (
+            if !checkdll! equ 1 (
+                if not "%%a"=="KERNEL32.dll" (
+                    echo [31merror: dll dependency is not delay-loaded: %%a[0m
+                    set /a errorcount=%errorcount%+1
+                )
+            )
+        )
     )
     exit /b 0
 
