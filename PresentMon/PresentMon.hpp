@@ -1,4 +1,4 @@
-// Copyright (C) 2017,2019-2021 Intel Corporation
+// Copyright (C) 2017,2019-2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #pragma once
@@ -144,4 +144,3 @@ void DequeueAnalyzedInfo(
 double QpcDeltaToSeconds(uint64_t qpcDelta);
 uint64_t SecondsDeltaToQpc(double secondsDelta);
 double QpcToSeconds(uint64_t qpc);
-

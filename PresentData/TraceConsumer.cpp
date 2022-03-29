@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2021 Intel Corporation
+// Copyright (C) 2017-2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "TraceConsumer.hpp"
@@ -280,4 +280,3 @@ std::wstring EventDataDesc::GetData<std::wstring>() const
 {
     return GetEventString<std::wstring>(*this);
 }
-

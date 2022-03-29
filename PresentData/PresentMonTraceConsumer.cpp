@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2021 Intel Corporation
+// Copyright (C) 2017-2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "PresentMonTraceConsumer.hpp"
@@ -1096,6 +1096,7 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
         PresentEvent->Win32KBindId = BindId;
         break;
     }
+
     case Microsoft_Windows_Win32k::TokenStateChanged_Info::Id:
     {
         EventDataDesc desc[] = {

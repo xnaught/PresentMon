@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2021 Intel Corporation
+// Copyright (C) 2019-2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "PresentMonTraceConsumer.hpp"
@@ -263,23 +263,21 @@ void DebugEvent(EVENT_RECORD* eventRecord, EventMetadata* metadata)
     }
 
     if (hdr.ProviderId == Microsoft_Windows_D3D9::GUID) {
+        using namespace Microsoft_Windows_D3D9;
         switch (id) {
-        case Microsoft_Windows_D3D9::Present_Start::Id: PrintEventHeader(hdr, "D3D9PresentStart"); break;
-        case Microsoft_Windows_D3D9::Present_Stop::Id:  PrintEventHeader(hdr, "D3D9PresentStop"); break;
+        case Present_Start::Id: PrintEventHeader(hdr, "D3D9PresentStart"); break;
+        case Present_Stop::Id:  PrintEventHeader(hdr, "D3D9PresentStop"); break;
         }
         return;
     }
 
     if (hdr.ProviderId == Microsoft_Windows_DXGI::GUID) {
+        using namespace Microsoft_Windows_DXGI;
         switch (id) {
-        case Microsoft_Windows_DXGI::Present_Start::Id:                     PrintEventHeader(eventRecord, metadata, "DXGIPresent_Start", {
-                                                                                L"Flags", PrintPresentFlags,
-                                                                            }); break;
-        case Microsoft_Windows_DXGI::PresentMultiplaneOverlay_Start::Id:    PrintEventHeader(eventRecord, metadata, "DXGIPresentMPO_Start", {
-                                                                                L"Flags", PrintPresentFlags,
-                                                                            }); break;
-        case Microsoft_Windows_DXGI::Present_Stop::Id:                      PrintEventHeader(hdr, "DXGIPresent_Stop"); break;
-        case Microsoft_Windows_DXGI::PresentMultiplaneOverlay_Stop::Id:     PrintEventHeader(hdr, "DXGIPresentMPO_Stop"); break;
+        case Present_Start::Id:                  PrintEventHeader(eventRecord, metadata, "DXGIPresent_Start",    { L"Flags", PrintPresentFlags, }); break;
+        case PresentMultiplaneOverlay_Start::Id: PrintEventHeader(eventRecord, metadata, "DXGIPresentMPO_Start", { L"Flags", PrintPresentFlags, }); break;
+        case Present_Stop::Id:                   PrintEventHeader(hdr, "DXGIPresent_Stop"); break;
+        case PresentMultiplaneOverlay_Stop::Id:  PrintEventHeader(hdr, "DXGIPresentMPO_Stop"); break;
         }
         return;
     }
@@ -292,75 +290,77 @@ void DebugEvent(EVENT_RECORD* eventRecord, EventMetadata* metadata)
     if (hdr.ProviderId == Microsoft_Windows_DxgKrnl::Win7::MMIOFLIP_GUID)       { PrintEventHeader(hdr, "Win7::MMIOFLIP"); return; }
 
     if (hdr.ProviderId == Microsoft_Windows_DxgKrnl::GUID) {
+        using namespace Microsoft_Windows_DxgKrnl;
         switch (id) {
-        case Microsoft_Windows_DxgKrnl::Blit_Info::Id:                      PrintEventHeader(hdr, "DxgKrnl_Blit_Info"); break;
-        case Microsoft_Windows_DxgKrnl::Flip_Info::Id:                      PrintEventHeader(hdr, "DxgKrnl_Flip_Info"); break;
-        case Microsoft_Windows_DxgKrnl::FlipMultiPlaneOverlay_Info::Id:     PrintEventHeader(hdr, "DxgKrnl_FlipMultiPlaneOverlay_Info"); break;
-        case Microsoft_Windows_DxgKrnl::HSyncDPCMultiPlane_Info::Id:        PrintEventHeader(hdr, "DxgKrnl_HSyncDPCMultiPlane_Info"); break;
-        case Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id:        PrintEventHeader(hdr, "DxgKrnl_VSyncDPCMultiPlane_Info"); break;
-        case Microsoft_Windows_DxgKrnl::MMIOFlip_Info::Id:                  PrintEventHeader(hdr, "DxgKrnl_MMIOFlip_Info"); break;
-        case Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay_Info::Id:
+        case Blit_Info::Id:                     PrintEventHeader(hdr, "DxgKrnl_Blit_Info"); break;
+        case Flip_Info::Id:                     PrintEventHeader(hdr, "DxgKrnl_Flip_Info"); break;
+        case FlipMultiPlaneOverlay_Info::Id:    PrintEventHeader(hdr, "DxgKrnl_FlipMultiPlaneOverlay_Info"); break;
+        case HSyncDPCMultiPlane_Info::Id:       PrintEventHeader(hdr, "DxgKrnl_HSyncDPCMultiPlane_Info"); break;
+        case VSyncDPCMultiPlane_Info::Id:       PrintEventHeader(hdr, "DxgKrnl_VSyncDPCMultiPlane_Info"); break;
+        case MMIOFlip_Info::Id:                 PrintEventHeader(hdr, "DxgKrnl_MMIOFlip_Info"); break;
+        case MMIOFlipMultiPlaneOverlay_Info::Id:
             PrintEventHeader(hdr);
             printf("DXGKrnl_MMIOFlipMultiPlaneOverlay_Info FlipSubmitSequence=%llx", metadata->GetEventData<uint64_t>(eventRecord, L"FlipSubmitSequence"));
             if (hdr.EventDescriptor.Version >= 2) {
                 switch (metadata->GetEventData<uint32_t>(eventRecord, L"FlipEntryStatusAfterFlip")) {
-                case Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitVSync:    printf(" FlipWaitVSync"); break;
-                case Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitComplete: printf(" FlipWaitComplete"); break;
-                case Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitHSync:    printf(" FlipWaitHSync"); break;
+                case FlipEntryStatus::FlipWaitVSync:    printf(" FlipWaitVSync"); break;
+                case FlipEntryStatus::FlipWaitComplete: printf(" FlipWaitComplete"); break;
+                case FlipEntryStatus::FlipWaitHSync:    printf(" FlipWaitHSync"); break;
                 }
             }
             printf("\n");
             break;
-        case Microsoft_Windows_DxgKrnl::Present_Info::Id:                   PrintEventHeader(hdr, "DxgKrnl_Present_Info"); break;
-        case Microsoft_Windows_DxgKrnl::PresentHistory_Start::Id:           PrintEventHeader(eventRecord, metadata, "PresentHistory_Start", {
-                                                                                L"Token", PrintU64x,
-                                                                                L"Model", PrintPresentHistoryModel,
-                                                                            }); break;
-        case Microsoft_Windows_DxgKrnl::PresentHistory_Info::Id:            PrintEventHeader(eventRecord, metadata, "PresentHistory_Info", {
-                                                                                L"Token", PrintU64x,
-                                                                                L"Model", PrintPresentHistoryModel,
-                                                                            }); break;
-        case Microsoft_Windows_DxgKrnl::PresentHistoryDetailed_Start::Id:   PrintEventHeader(eventRecord, metadata, "PresentHistoryDetailed_Start", {
-                                                                                L"Token", PrintU64x,
-                                                                                L"Model", PrintPresentHistoryModel,
-                                                                            }); break;
-        case Microsoft_Windows_DxgKrnl::QueuePacket_Start::Id:              PrintEventHeader(eventRecord, metadata, "DxgKrnl_QueuePacket_Start", {
-                                                                                L"hContext", PrintU64x,
-                                                                                L"SubmitSequence", PrintU32,
-                                                                                L"PacketType", PrintQueuePacketType,
-                                                                                L"bPresent", PrintU32,
-                                                                            }); break;
-        case Microsoft_Windows_DxgKrnl::QueuePacket_Stop::Id:               PrintEventHeader(eventRecord, metadata, "DxgKrnl_QueuePacket_Stop", {
-                                                                                L"hContext", PrintU64x,
-                                                                                L"SubmitSequence", PrintU32,
-                                                                            }); break;
-        case Microsoft_Windows_DxgKrnl::VSyncDPC_Info::Id:                  PrintEventHeader(eventRecord, metadata, "DxgKrnl_VSyncDPC_Info", {
-                                                                                L"FlipFenceId", PrintU64x,
-                                                                            }); break;
+        case Present_Info::Id:                 PrintEventHeader(hdr, "DxgKrnl_Present_Info"); break;
+        case PresentHistory_Start::Id:         PrintEventHeader(eventRecord, metadata, "PresentHistory_Start", {
+                                                   L"Token", PrintU64x,
+                                                   L"Model", PrintPresentHistoryModel,
+                                               }); break;
+        case PresentHistory_Info::Id:          PrintEventHeader(eventRecord, metadata, "PresentHistory_Info", {
+                                                   L"Token", PrintU64x,
+                                                   L"Model", PrintPresentHistoryModel,
+                                               }); break;
+        case PresentHistoryDetailed_Start::Id: PrintEventHeader(eventRecord, metadata, "PresentHistoryDetailed_Start", {
+                                                   L"Token", PrintU64x,
+                                                   L"Model", PrintPresentHistoryModel,
+                                               }); break;
+        case QueuePacket_Start::Id:            PrintEventHeader(eventRecord, metadata, "DxgKrnl_QueuePacket_Start", {
+                                                   L"hContext", PrintU64x,
+                                                   L"SubmitSequence", PrintU32,
+                                                   L"PacketType", PrintQueuePacketType,
+                                                   L"bPresent", PrintU32,
+                                               }); break;
+        case QueuePacket_Stop::Id:             PrintEventHeader(eventRecord, metadata, "DxgKrnl_QueuePacket_Stop", {
+                                                   L"hContext", PrintU64x,
+                                                   L"SubmitSequence", PrintU32,
+                                               }); break;
+        case VSyncDPC_Info::Id:                PrintEventHeader(eventRecord, metadata, "DxgKrnl_VSyncDPC_Info", {
+                                                   L"FlipFenceId", PrintU64x,
+                                               }); break;
         }
         return;
     }
 
     if (hdr.ProviderId == Microsoft_Windows_Dwm_Core::GUID ||
         hdr.ProviderId == Microsoft_Windows_Dwm_Core::Win7::GUID) {
+        using namespace Microsoft_Windows_Dwm_Core;
         switch (id) {
-        case Microsoft_Windows_Dwm_Core::MILEVENT_MEDIA_UCE_PROCESSPRESENTHISTORY_GetPresentHistory_Info::Id:
-                                                                          PrintEventHeader(hdr, "DWM_GetPresentHistory"); break;
-        case Microsoft_Windows_Dwm_Core::SCHEDULE_PRESENT_Start::Id:      PrintEventHeader(hdr, "DWM_SCHEDULE_PRESENT_Start"); break;
-        case Microsoft_Windows_Dwm_Core::FlipChain_Pending::Id:           PrintEventHeader(hdr, "DWM_FlipChain_Pending"); break;
-        case Microsoft_Windows_Dwm_Core::FlipChain_Complete::Id:          PrintEventHeader(hdr, "DWM_FlipChain_Complete"); break;
-        case Microsoft_Windows_Dwm_Core::FlipChain_Dirty::Id:             PrintEventHeader(hdr, "DWM_FlipChain_Dirty"); break;
-        case Microsoft_Windows_Dwm_Core::SCHEDULE_SURFACEUPDATE_Info::Id: PrintEventHeader(hdr, "DWM_Schedule_SurfaceUpdate"); break;
+        case MILEVENT_MEDIA_UCE_PROCESSPRESENTHISTORY_GetPresentHistory_Info::Id: PrintEventHeader(hdr, "DWM_GetPresentHistory"); break;
+        case SCHEDULE_PRESENT_Start::Id:      PrintEventHeader(hdr, "DWM_SCHEDULE_PRESENT_Start"); break;
+        case FlipChain_Pending::Id:           PrintEventHeader(hdr, "DWM_FlipChain_Pending"); break;
+        case FlipChain_Complete::Id:          PrintEventHeader(hdr, "DWM_FlipChain_Complete"); break;
+        case FlipChain_Dirty::Id:             PrintEventHeader(hdr, "DWM_FlipChain_Dirty"); break;
+        case SCHEDULE_SURFACEUPDATE_Info::Id: PrintEventHeader(hdr, "DWM_Schedule_SurfaceUpdate"); break;
         }
         return;
     }
 
     if (hdr.ProviderId == Microsoft_Windows_Win32k::GUID) {
+        using namespace Microsoft_Windows_Win32k;
         switch (id) {
-        case Microsoft_Windows_Win32k::TokenCompositionSurfaceObject_Info::Id:  PrintEventHeader(hdr, "Win32K_TokenCompositionSurfaceObject"); break;
-        case Microsoft_Windows_Win32k::TokenStateChanged_Info::Id:              PrintEventHeader(eventRecord, metadata, "Win32K_TokenStateChanged", {
-                                                                                    L"NewState", PrintTokenState,
-                                                                                }); break;
+        case TokenCompositionSurfaceObject_Info::Id: PrintEventHeader(hdr, "Win32k_TokenCompositionSurfaceObject"); break;
+        case TokenStateChanged_Info::Id:             PrintEventHeader(eventRecord, metadata, "Win32K_TokenStateChanged", {
+                                                         L"NewState", PrintTokenState,
+                                                     }); break;
         }
         return;
     }
