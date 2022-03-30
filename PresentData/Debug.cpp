@@ -229,7 +229,7 @@ void FlushModifiedPresent()
 
 }
 
-void DebugInitialize(LARGE_INTEGER* firstTimestamp, LARGE_INTEGER timestampFrequency)
+void DebugInitialize(LARGE_INTEGER* firstTimestamp, LARGE_INTEGER const& timestampFrequency)
 {
     gDebugDone = false;
     gFirstTimestamp = firstTimestamp;
