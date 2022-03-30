@@ -1,6 +1,10 @@
 // Copyright (C) 2019-2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 
+#include "Debug.hpp"
+
+#if DEBUG_VERBOSE
+
 #include "PresentMonTraceConsumer.hpp"
 
 #include "ETW/Microsoft_Windows_D3D9.h"
@@ -12,8 +16,6 @@
 #include <assert.h>
 #include <dxgi.h>
 #include <initializer_list>
-
-#if DEBUG_VERBOSE
 
 namespace {
 
