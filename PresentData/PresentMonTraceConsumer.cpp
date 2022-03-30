@@ -796,23 +796,21 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
         };
         mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
         auto Token     = desc[0].GetData<uint64_t>();
-        auto Model     = desc[1].GetData<uint32_t>();
+        auto Model     = desc[1].GetData<Microsoft_Windows_DxgKrnl::PresentModel>();
         auto TokenData = desc[2].GetData<uint64_t>();
 
-        if (Model == (uint32_t) Microsoft_Windows_DxgKrnl::PresentModel::D3DKMT_PM_REDIRECTED_GDI) {
-            break;
-        }
+        if (Model != Microsoft_Windows_DxgKrnl::PresentModel::D3DKMT_PM_REDIRECTED_GDI) {
+            auto presentMode = PresentMode::Unknown;
+            switch (Model) {
+            case Microsoft_Windows_DxgKrnl::PresentModel::D3DKMT_PM_REDIRECTED_BLT:         presentMode = PresentMode::Composed_Copy_GPU_GDI; break;
+            case Microsoft_Windows_DxgKrnl::PresentModel::D3DKMT_PM_REDIRECTED_VISTABLT:    presentMode = PresentMode::Composed_Copy_CPU_GDI; break;
+            case Microsoft_Windows_DxgKrnl::PresentModel::D3DKMT_PM_REDIRECTED_FLIP:        presentMode = PresentMode::Composed_Flip; break;
+            case Microsoft_Windows_DxgKrnl::PresentModel::D3DKMT_PM_REDIRECTED_COMPOSITION: presentMode = PresentMode::Composed_Composition_Atlas; break;
+            }
 
-        auto presentMode = PresentMode::Unknown;
-        switch (Model) {
-        case Microsoft_Windows_DxgKrnl::PresentModel::D3DKMT_PM_REDIRECTED_BLT:         presentMode = PresentMode::Composed_Copy_GPU_GDI; break;
-        case Microsoft_Windows_DxgKrnl::PresentModel::D3DKMT_PM_REDIRECTED_VISTABLT:    presentMode = PresentMode::Composed_Copy_CPU_GDI; break;
-        case Microsoft_Windows_DxgKrnl::PresentModel::D3DKMT_PM_REDIRECTED_FLIP:        presentMode = PresentMode::Composed_Flip; break;
-        case Microsoft_Windows_DxgKrnl::PresentModel::D3DKMT_PM_REDIRECTED_COMPOSITION: presentMode = PresentMode::Composed_Composition_Atlas; break;
+            TRACK_PRESENT_PATH_GENERATE_ID();
+            HandleDxgkPresentHistory(hdr, Token, TokenData, presentMode);
         }
-
-        TRACK_PRESENT_PATH_GENERATE_ID();
-        HandleDxgkPresentHistory(hdr, Token, TokenData, presentMode);
         break;
     }
     case Microsoft_Windows_DxgKrnl::PresentHistory_Info::Id:

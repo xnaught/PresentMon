@@ -346,7 +346,8 @@ void DebugEvent(EVENT_RECORD* eventRecord, EventMetadata* metadata)
         hdr.ProviderId == Microsoft_Windows_Dwm_Core::Win7::GUID) {
         using namespace Microsoft_Windows_Dwm_Core;
         switch (id) {
-        case MILEVENT_MEDIA_UCE_PROCESSPRESENTHISTORY_GetPresentHistory_Info::Id: PrintEventHeader(hdr, "DWM_GetPresentHistory"); break;
+        case MILEVENT_MEDIA_UCE_PROCESSPRESENTHISTORY_GetPresentHistory_Info::Id:
+                                              PrintEventHeader(hdr, "DWM_GetPresentHistory"); break;
         case SCHEDULE_PRESENT_Start::Id:      PrintEventHeader(hdr, "DWM_SCHEDULE_PRESENT_Start"); break;
         case FlipChain_Pending::Id:           PrintEventHeader(hdr, "DWM_FlipChain_Pending"); break;
         case FlipChain_Complete::Id:          PrintEventHeader(hdr, "DWM_FlipChain_Complete"); break;
