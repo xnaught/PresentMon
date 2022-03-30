@@ -178,6 +178,13 @@ void ExitMainThread()
 
 int main(int argc, char** argv)
 {
+    // Load system DLLs
+    LoadLibraryExA("advapi32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    LoadLibraryExA("shell32.dll",  NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    LoadLibraryExA("shlwapi.dll",  NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    LoadLibraryExA("tdh.dll",      NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    LoadLibraryExA("user32.dll",   NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+
     // Parse command line arguments.
     if (!ParseCommandLine(argc, argv)) {
         return 1;

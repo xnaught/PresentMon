@@ -81,6 +81,7 @@
       <SubSystem>Console</SubSystem>
       <AdditionalLibraryDirectories>..\build\obj\PresentData-$(Platform)-$(Configuration)</AdditionalLibraryDirectories>
       <AdditionalDependencies>advapi32.lib;shell32.lib;shlwapi.lib;tdh.lib;PresentData.lib;user32.lib</AdditionalDependencies>
+      <DelayLoadDLLs>advapi32.dll;shell32.dll;shlwapi.dll;tdh.dll;user32.dll</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
   </ItemDefinitionGroup>
