@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2021 Intel Corporation
+// Copyright (C) 2020-2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "PresentMonTests.h"
@@ -17,37 +17,15 @@ void AddTestFailure(char const* file, int line, char const* fmt, ...)
 
 namespace {
 
-size_t FindHeader(
-    char const* header,
-    uint32_t* requiredCount,
-    uint32_t* trackDisplayCount,
-    uint32_t* trackDebugCount)
+PresentMonCsv::Header FindHeader(char const* header)
 {
-    size_t idx = 0;
-    for (size_t i = 0; i < _countof(PresentMonCsv::REQUIRED_HEADER); ++i, ++idx) {
-        if (strcmp(header, PresentMonCsv::REQUIRED_HEADER[i]) == 0) {
-            *requiredCount += 1;
-            return idx;
+    for (uint32_t i = 0; i < PresentMonCsv::KnownHeaderCount; ++i) {
+        auto h = (PresentMonCsv::Header) i;
+        if (strcmp(header, PresentMonCsv::GetHeaderString(h)) == 0) {
+            return h;
         }
     }
-    for (size_t i = 0; i < _countof(PresentMonCsv::TRACK_DISPLAY_HEADER); ++i, ++idx) {
-        if (strcmp(header, PresentMonCsv::TRACK_DISPLAY_HEADER[i]) == 0) {
-            *trackDisplayCount += 1;
-            return idx;
-        }
-    }
-    for (size_t i = 0; i < _countof(PresentMonCsv::TRACK_DEBUG_HEADER); ++i, ++idx) {
-        if (strcmp(header, PresentMonCsv::TRACK_DEBUG_HEADER[i]) == 0) {
-            *trackDebugCount += 1;
-            return idx;
-        }
-    }
-    for (size_t i = 0; i < _countof(PresentMonCsv::OPT_HEADER); ++i, ++idx) {
-        if (strcmp(header, PresentMonCsv::OPT_HEADER[i]) == 0) {
-            return idx;
-        }
-    }
-    return SIZE_MAX;
+    return PresentMonCsv::UnknownHeader;
 }
 
 }
@@ -62,7 +40,9 @@ PresentMonCsv::PresentMonCsv()
 
 bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
 {
-    memset(headerColumnIndex_, 0xff, sizeof(headerColumnIndex_));
+    for (uint32_t i = 0; i < _countof(headerColumnIndex_); ++i) {
+        headerColumnIndex_[i] = SIZE_MAX;
+    }
     cols_.clear();
     path_ = path;
     line_ = 0;
@@ -88,23 +68,51 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
     uint32_t requiredCount = 0;
     uint32_t trackDisplayCount = 0;
     uint32_t trackDebugCount = 0;
-    for (uint32_t i = 0, n = (uint32_t) cols_.size(); i < n; ++i) {
-        auto idx = FindHeader(cols_[i], &requiredCount, &trackDisplayCount, &trackDebugCount);
-        if (idx == SIZE_MAX) {
+    for (size_t i = 0, n = cols_.size(); i < n; ++i) {
+        auto h = FindHeader(cols_[i]);
+        if (h == UnknownHeader) {
             AddTestFailure(Convert(path_).c_str(), (int) line_, "Unrecognised column: %s", cols_[i]);
-        } else if (headerColumnIndex_[idx] != SIZE_MAX) {
+        } else if (headerColumnIndex_[(size_t) h] != SIZE_MAX) {
             AddTestFailure(Convert(path_).c_str(), (int) line_, "Duplicate column: %s", cols_[i]);
         } else {
-            headerColumnIndex_[idx] = i;
+            headerColumnIndex_[(size_t) h] = i;
+
+            switch (h) {
+            case Header_Application:
+            case Header_ProcessID:
+            case Header_SwapChainAddress:
+            case Header_Runtime:
+            case Header_SyncInterval:
+            case Header_PresentFlags:
+            case Header_Dropped:
+            case Header_TimeInSeconds:
+            case Header_msBetweenPresents:
+            case Header_msInPresentAPI:
+                requiredCount += 1;
+                break;
+
+            case Header_AllowsTearing:
+            case Header_PresentMode:
+            case Header_msBetweenDisplayChange:
+            case Header_msUntilRenderComplete:
+            case Header_msUntilDisplayed:
+                trackDisplayCount += 1;
+                break;
+
+            case Header_WasBatched:
+            case Header_DwmNotified:
+                trackDebugCount += 1;
+                break;
+            }
         }
     }
 
     trackDisplay_ = trackDisplayCount > 0;
-    trackDebug_ = trackDebugCount > 0;
+    trackDebug_   = trackDebugCount > 0;
 
-    if (requiredCount != _countof(REQUIRED_HEADER) ||
-        (trackDisplay_ && trackDisplayCount != _countof(TRACK_DISPLAY_HEADER)) ||
-        (trackDebug_   && trackDebugCount   != _countof(TRACK_DEBUG_HEADER))) {
+    if (                  requiredCount     != RequiredHeaderCount ||
+        (trackDisplay_ && trackDisplayCount != DisplayHeaderCount) ||
+        (trackDebug_   && trackDebugCount   != DebugHeaderCount)) {
         AddTestFailure(Convert(path_).c_str(), (int) line_, "Missing required columns.");
     }
 
@@ -151,11 +159,8 @@ bool PresentMonCsv::ReadRow()
 
 size_t PresentMonCsv::GetColumnIndex(char const* header) const
 {
-    uint32_t na = 0;
-    auto headerIdx = FindHeader(header, &na, &na, &na);
-    return headerIdx == SIZE_MAX
-        ? SIZE_MAX
-        : headerColumnIndex_[headerIdx];
+    auto h = FindHeader(header);
+    return h == UnknownHeader ? SIZE_MAX : headerColumnIndex_[h];
 }
 
 PresentMon::PresentMon()

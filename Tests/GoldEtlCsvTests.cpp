@@ -110,7 +110,7 @@ public:
                         printf("    COLUMN                    TEST VALUE                            GOLD VALUE\n");
                     }
 
-                    auto r = printf("    %s", testCsv.GetHeader(h));
+                    auto r = printf("    %s", testCsv.GetHeaderString((PresentMonCsv::Header) h));
                     printf("%*s", r < 29 ? 29 - r : 0, "");
                     r = printf(" %s", a);
                     printf("%*s", r < 38 ? 38 - r : 0, "");
@@ -190,4 +190,3 @@ void AddGoldEtlCsvTests(
 
     FindClose(h);
 }
-
