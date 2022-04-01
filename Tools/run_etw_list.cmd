@@ -1,21 +1,18 @@
-:: Copyright (C) 2020-2021 Intel Corporation
+:: Copyright (C) 2020-2022 Intel Corporation
 :: SPDX-License-Identifier: MIT
-
 @echo off
-setlocal enabledelayedexpansion
-set etw_list=%~1
-if not exist "%etw_list%" (
-    where msbuild > NUL
-    if %errorlevel% equ 0 (
-        msbuild /nologo /verbosity:quiet /maxCpuCount /p:Platform=x64,Configuration=release "%~dp0etw_list"
-        set etw_list=%~dp0..\build\Release\etw_list-dev-x64.exe
-    ) else (
-        echo error: path to etw_list not provided and msbuild is not available
-    )
-    if not exist "!etw_list!" (
-        echo usage: run_etw_list.cmd [path_to_etw_list_exe]
-        exit /b 1
-    )
+setlocal
+
+where msbuild > NUL
+if %errorlevel% neq 0 (
+    echo error: dependency missing: msbuild
+    exit /b 1
+)
+
+msbuild /nologo /verbosity:quiet /maxCpuCount /p:Platform=x64,Configuration=release "%~dp0etw_list"
+if %errorlevel% neq 0 (
+    echo error: failed to build etw_list
+    exit /b 1
 )
 
 for %%a in ("%~dp0..") do set out_dir=%%~fa\PresentData\ETW
@@ -80,6 +77,6 @@ exit /b 0
 
 :etw_list
     echo %~2
-    %etw_list% --no_event_structs %events% --provider=%~1>%2
+    "%~dp0..\build\Release\etw_list-dev-x64.exe" --no_event_structs %events% --provider=%~1>%2
     exit /b 0
 
