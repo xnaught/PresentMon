@@ -12,19 +12,48 @@ TraceSession gSession;
 static PMTraceConsumer* gPMConsumer = nullptr;
 static MRTraceConsumer* gMRConsumer = nullptr;
 
+bool FilteredEventsExpected()
+{
+    // Scope filtering based on event ID only works for realtime collection
+    auto const& args = GetCommandLineArgs();
+    if (args.mEtlFileName != nullptr) {
+        return false;
+    }
+
+    // Scope filtering based on event ID doesn't work <Win8.1
+    //
+    // Note: IsWindows8Point1OrGreater() returns FALSE if the application isn't
+    // built with a manifest.
+    auto hmodule = LoadLibraryExA("ntdll.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (hmodule == NULL) {
+        return false;
+    }
+
+    auto pRtlGetVersion = (NTSTATUS (WINAPI*)(PRTL_OSVERSIONINFOW)) GetProcAddress(hmodule, "RtlGetVersion");
+    if (pRtlGetVersion == nullptr) {
+        FreeLibrary(hmodule);
+        return false;
+    }
+
+    RTL_OSVERSIONINFOW info = {};
+    info.dwOSVersionInfoSize = sizeof(info);
+    auto status = (*pRtlGetVersion)(&info);
+    FreeLibrary(hmodule);
+
+    // Win8.1 is version 6.3
+    return status == 0 && (info.dwMajorVersion > 6 || (info.dwMajorVersion == 6 && info.dwMinorVersion >= 3));
+}
+
 }
 
 bool StartTraceSession()
 {
     auto const& args = GetCommandLineArgs();
-    auto expectFilteredEvents =
-        args.mEtlFileName == nullptr && // Scope filtering based on event ID only works for realtime collection
-        IsWindows8Point1OrGreater();    // and requires Win8.1+
     auto filterProcessIds = args.mTargetPid != 0; // Does not support process names at this point
 
     // Create consumers
     gPMConsumer = new PMTraceConsumer();
-    gPMConsumer->mFilteredEvents = expectFilteredEvents;
+    gPMConsumer->mFilteredEvents = FilteredEventsExpected();
     gPMConsumer->mFilteredProcessIds = filterProcessIds;
     gPMConsumer->mTrackDisplay = args.mTrackDisplay;
 
