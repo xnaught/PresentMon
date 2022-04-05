@@ -750,24 +750,26 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
         auto PlaneCount = desc[0].GetData<uint32_t>();
         auto FlipCount  = desc[1].GetData<uint32_t>();
 
-        // The number of active planes is determined by the number of non-zero
-        // PresentIdOrPhysicalAddress (VSync) or ScannedPhysicalAddress (HSync)
-        // properties.
-        auto addressPropName = (hdr.EventDescriptor.Id == Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id && hdr.EventDescriptor.Version >= 1)
-            ? L"PresentIdOrPhysicalAddress"
-            : L"ScannedPhysicalAddress";
+        if (FlipCount > 0) {
+            // The number of active planes is determined by the number of non-zero
+            // PresentIdOrPhysicalAddress (VSync) or ScannedPhysicalAddress (HSync)
+            // properties.
+            auto addressPropName = (hdr.EventDescriptor.Id == Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id && hdr.EventDescriptor.Version >= 1)
+                ? L"PresentIdOrPhysicalAddress"
+                : L"ScannedPhysicalAddress";
 
-        uint32_t activePlaneCount = 0;
-        for (uint32_t id = 0; id < PlaneCount; id++) {
-            if (mMetadata.GetEventData<uint64_t>(pEventRecord, addressPropName, id) != 0) {
-                activePlaneCount++;
+            uint32_t activePlaneCount = 0;
+            for (uint32_t id = 0; id < PlaneCount; id++) {
+                if (mMetadata.GetEventData<uint64_t>(pEventRecord, addressPropName, id) != 0) {
+                    activePlaneCount++;
+                }
             }
-        }
 
-        auto isMultiPlane = activePlaneCount > 1;
-        for (uint32_t i = 0; i < FlipCount; i++) {
-            auto FlipId = mMetadata.GetEventData<uint64_t>(pEventRecord, L"FlipSubmitSequence", i);
-            HandleDxgkSyncDPCMPO(hdr, (uint32_t)(FlipId >> 32u), isMultiPlane);
+            auto isMultiPlane = activePlaneCount > 1;
+            for (uint32_t i = 0; i < FlipCount; i++) {
+                auto FlipId = mMetadata.GetEventData<uint64_t>(pEventRecord, L"FlipSubmitSequence", i);
+                HandleDxgkSyncDPCMPO(hdr, (uint32_t)(FlipId >> 32u), isMultiPlane);
+            }
         }
         break;
     }
