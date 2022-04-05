@@ -70,7 +70,8 @@ struct FilteredProvider {
 
     ULONG Enable(
         TRACEHANDLE sessionHandle,
-        GUID const& sessionGuid, GUID const& providerGuid)
+        GUID const& sessionGuid,
+        GUID const& providerGuid)
     {
         assert(eventIds_.size() >= ANYSIZE_ARRAY);
         assert(eventIds_.size() <= MAX_EVENT_FILTER_EVENT_ID_COUNT);
@@ -141,7 +142,6 @@ ULONG EnableProviders(
         provider.AddEvent<Microsoft_Windows_DxgKrnl::QueuePacket_Stop>();
         provider.AddEvent<Microsoft_Windows_DxgKrnl::VSyncDPC_Info>();
     }
-
     status = provider.Enable(sessionHandle, sessionGuid, Microsoft_Windows_DxgKrnl::GUID);
     if (status != ERROR_SUCCESS) return status;
 

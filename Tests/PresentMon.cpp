@@ -3,6 +3,9 @@
 
 #include "PresentMonTests.h"
 
+#include <initializer_list>
+#include <unordered_set>
+
 void AddTestFailure(char const* file, int line, char const* fmt, ...)
 {
     char buffer[512];
@@ -17,6 +20,43 @@ void AddTestFailure(char const* file, int line, char const* fmt, ...)
 
 namespace {
 
+struct HeaderCollection {
+    wchar_t const* param_;
+    std::unordered_set<PresentMonCsv::Header> required_;
+    uint32_t foundCount_;
+
+    HeaderCollection(wchar_t const* param, std::initializer_list<PresentMonCsv::Header> const& i)
+        : param_(param)
+        , required_(i)
+        , foundCount_(0)
+    {
+    }
+
+    bool Check(PresentMonCsv::Header h)
+    {
+        if (required_.find(h) == required_.end()) {
+            return false;
+        }
+        foundCount_ += 1;
+        return true;
+    }
+
+    bool Validate(std::vector<wchar_t const*>* params) const
+    {
+        if (param_ != nullptr) {
+            if (foundCount_ == 0) {
+                if (wcsncmp(param_, L"-no_", 4) == 0) {
+                    params->push_back(param_);
+                }
+                return true;
+            }
+
+            params->push_back(param_);
+        }
+        return foundCount_ == required_.size();
+    }
+};
+
 PresentMonCsv::Header FindHeader(char const* header)
 {
     for (uint32_t i = 0; i < PresentMonCsv::KnownHeaderCount; ++i) {
@@ -30,16 +70,34 @@ PresentMonCsv::Header FindHeader(char const* header)
 
 }
 
-PresentMonCsv::PresentMonCsv()
-    : line_(0)
-    , fp_(nullptr)
-    , trackDisplay_(false)
-    , trackDebug_(false)
-{
-}
-
 bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
 {
+    // Setup the header groups
+    HeaderCollection headerGroups[] = {
+        HeaderCollection(nullptr, { Header_Application,
+                                    Header_ProcessID,
+                                    Header_SwapChainAddress,
+                                    Header_Runtime,
+                                    Header_SyncInterval,
+                                    Header_PresentFlags,
+                                    Header_Dropped,
+                                    Header_TimeInSeconds,
+                                    Header_msBetweenPresents,
+                                    Header_msInPresentAPI }),
+
+        HeaderCollection(L"-qpc_time", { Header_QPCTime, }),
+
+        HeaderCollection(L"-no_track_display", { Header_AllowsTearing,
+                                                 Header_PresentMode,
+                                                 Header_msBetweenDisplayChange,
+                                                 Header_msUntilRenderComplete,
+                                                 Header_msUntilDisplayed }),
+
+        HeaderCollection(L"-track_debug", { Header_WasBatched,
+                                            Header_DwmNotified }),
+    };
+
+    // Load the CSV
     for (uint32_t i = 0; i < _countof(headerColumnIndex_); ++i) {
         headerColumnIndex_[i] = SIZE_MAX;
     }
@@ -65,9 +123,6 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
     // Read the header and ensure required columns are present
     ReadRow();
 
-    uint32_t requiredCount = 0;
-    uint32_t trackDisplayCount = 0;
-    uint32_t trackDebugCount = 0;
     for (size_t i = 0, n = cols_.size(); i < n; ++i) {
         auto h = FindHeader(cols_[i]);
         if (h == UnknownHeader) {
@@ -77,43 +132,18 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
         } else {
             headerColumnIndex_[(size_t) h] = i;
 
-            switch (h) {
-            case Header_Application:
-            case Header_ProcessID:
-            case Header_SwapChainAddress:
-            case Header_Runtime:
-            case Header_SyncInterval:
-            case Header_PresentFlags:
-            case Header_Dropped:
-            case Header_TimeInSeconds:
-            case Header_msBetweenPresents:
-            case Header_msInPresentAPI:
-                requiredCount += 1;
-                break;
-
-            case Header_AllowsTearing:
-            case Header_PresentMode:
-            case Header_msBetweenDisplayChange:
-            case Header_msUntilRenderComplete:
-            case Header_msUntilDisplayed:
-                trackDisplayCount += 1;
-                break;
-
-            case Header_WasBatched:
-            case Header_DwmNotified:
-                trackDebugCount += 1;
-                break;
+            for (auto& hg : headerGroups) {
+                if (hg.Check(h)) {
+                    break;
+                }
             }
         }
     }
 
-    trackDisplay_ = trackDisplayCount > 0;
-    trackDebug_   = trackDebugCount > 0;
-
-    if (                  requiredCount     != RequiredHeaderCount ||
-        (trackDisplay_ && trackDisplayCount != DisplayHeaderCount) ||
-        (trackDebug_   && trackDebugCount   != DebugHeaderCount)) {
-        AddTestFailure(Convert(path_).c_str(), (int) line_, "Missing required columns.");
+    for (auto const& hg : headerGroups) {
+        if (!hg.Validate(&params_)) {
+            AddTestFailure(Convert(path_).c_str(), (int) line_, "Missing required columns.");
+        }
     }
 
     return true;

@@ -38,12 +38,7 @@ struct PresentMonCsv
 
         // Special values:
         KnownHeaderCount,
-
         UnknownHeader,
-
-        RequiredHeaderCount = 10,
-        DisplayHeaderCount  = 5,
-        DebugHeaderCount    = 2,
     };
 
     static constexpr char const* GetHeaderString(Header h)
@@ -72,8 +67,8 @@ struct PresentMonCsv
     }
 
     std::wstring path_;
-    size_t line_;
-    FILE* fp_;
+    size_t line_ = 0;
+    FILE* fp_ = nullptr;
 
     // headerColumnIndex_[h] is the file column index where h was found, or SIZE_MAX if
     // h wasn't found in the file.
@@ -81,10 +76,8 @@ struct PresentMonCsv
 
     char row_[1024];
     std::vector<char const*> cols_;
-    bool trackDisplay_;
-    bool trackDebug_;
+    std::vector<wchar_t const*> params_;
 
-    PresentMonCsv();
     bool Open(char const* file, int line, std::wstring const& path);
     void Close();
     bool ReadRow();
@@ -118,15 +111,18 @@ struct PresentMon : PROCESS_INFORMATION {
 #define PMSTART() Start(__FILE__, __LINE__)
 #define PMEXITED(...) ExpectExited(__FILE__, __LINE__, __VA_ARGS__)
 
-extern std::wstring outDir_;
-
-// PresentMon.cpp
-void AddTestFailure(char const* file, int line, char const* fmt, ...);
-
 // PresentMonTests.cpp
+extern std::wstring outDir_;
+extern bool reportAllCsvDiffs_;
+extern bool warnOnMissingCsv_;
+extern std::wstring diffPath_;
+
 bool EnsureDirectoryCreated(std::wstring path);
 std::string Convert(std::wstring const& s);
 std::wstring Convert(std::string const& s);
 
+// PresentMon.cpp
+void AddTestFailure(char const* file, int line, char const* fmt, ...);
+
 // GoldEtlCsvTests.cpp
-void AddGoldEtlCsvTests(std::wstring const& dir, size_t relIdx, bool reportAllCsvDiffs);
+void AddGoldEtlCsvTests(std::wstring const& dir, size_t relIdx);
