@@ -851,16 +851,12 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
                 present->Hwnd = mMetadata.GetEventData<uint64_t>(pEventRecord, L"hWindow");
             }
 
-            // If we are not expecting an API present end event, then treat this as
-            // the end of the present.  This can happen due to batched presents or
-            // non-instrumented present APIs (i.e., not DXGI nor D3D9).
-            if (present->ThreadId != hdr.ThreadId) {
-                if (present->TimeTaken == 0) {
-                    present->TimeTaken = hdr.TimeStamp.QuadPart - present->QpcTime;
-                }
-
-                mPresentByThreadId.erase(eventIter);
-            } else if (present->Runtime == Runtime::Other) {
+            // If we are not expecting an API present end event, then this
+            // should be the last operation on this thread.  This can happen
+            // due to batched presents or non-instrumented present APIs (i.e.,
+            // not DXGI nor D3D9).
+            if (present->Runtime == Runtime::Other ||
+                present->ThreadId != hdr.ThreadId) {
                 mPresentByThreadId.erase(eventIter);
             }
 
