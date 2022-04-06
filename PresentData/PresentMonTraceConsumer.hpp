@@ -354,7 +354,6 @@ struct PMTraceConsumer
     void CompletePresent(std::shared_ptr<PresentEvent> const& p);
     void CompletePresentHelper(std::shared_ptr<PresentEvent> const& p, OrderedPresents* completed);
     void CompleteDeferredCompletion(std::shared_ptr<PresentEvent> const& present);
-    std::shared_ptr<PresentEvent> FindBySubmitSequence(uint32_t submitSequence);
     std::shared_ptr<PresentEvent> FindOrCreatePresent(EVENT_HEADER const& hdr);
     void TrackPresentOnThread(std::shared_ptr<PresentEvent> present);
     void TrackPresent(std::shared_ptr<PresentEvent> present, OrderedPresents* presentsByThisProcess);
