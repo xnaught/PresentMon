@@ -73,12 +73,12 @@ bool StartTraceSession()
 
     if (status == ERROR_ALREADY_EXISTS) {
         if (args.mStopExistingSession) {
-            fprintf(stderr,
+            PrintWarning(
                 "warning: a trace session named \"%s\" is already running and it will be stopped.\n"
                 "         Use -session_name with a different name to start a new session.\n",
                 args.mSessionName);
         } else {
-            fprintf(stderr,
+            PrintError(
                 "error: a trace session named \"%s\" is already running. Use -stop_existing_session\n"
                 "       to stop the existing session, or use -session_name with a different name to\n"
                 "       start a new session.\n",
@@ -98,19 +98,19 @@ bool StartTraceSession()
 
     // Report error if we failed to start a new session
     if (status != ERROR_SUCCESS) {
-        fprintf(stderr, "error: failed to start trace session");
+        PrintError("error: failed to start trace session");
         switch (status) {
-        case ERROR_FILE_NOT_FOUND:    fprintf(stderr, " (file not found)"); break;
-        case ERROR_PATH_NOT_FOUND:    fprintf(stderr, " (path not found)"); break;
-        case ERROR_BAD_PATHNAME:      fprintf(stderr, " (invalid --session_name)"); break;
-        case ERROR_ACCESS_DENIED:     fprintf(stderr, " (access denied)"); break;
-        case ERROR_FILE_CORRUPT:      fprintf(stderr, " (invalid --etl_file)"); break;
-        default:                      fprintf(stderr, " (error=%lu)", status); break;
+        case ERROR_FILE_NOT_FOUND:    PrintError(" (file not found)"); break;
+        case ERROR_PATH_NOT_FOUND:    PrintError(" (path not found)"); break;
+        case ERROR_BAD_PATHNAME:      PrintError(" (invalid --session_name)"); break;
+        case ERROR_ACCESS_DENIED:     PrintError(" (access denied)"); break;
+        case ERROR_FILE_CORRUPT:      PrintError(" (invalid --etl_file)"); break;
+        default:                      PrintError(" (error=%lu)", status); break;
         }
-        fprintf(stderr, ".\n");
+        PrintError(".\n");
 
         if (status == ERROR_ACCESS_DENIED && !InPerfLogUsersGroup()) {
-            fprintf(stderr,
+            PrintError(
                 "       PresentMon requires either administrative privileges or to be run by a user in the\n"
                 "       \"Performance Log Users\" user group.  View the readme for more details.\n");
         }
