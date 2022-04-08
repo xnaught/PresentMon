@@ -1120,6 +1120,17 @@ void PMTraceConsumer::HandleWin7DxgkMMIOFlip(EVENT_RECORD* pEventRecord)
     }
 }
 
+std::size_t PMTraceConsumer::Win32KPresentHistoryTokenHash::operator()(PMTraceConsumer::Win32KPresentHistoryToken const& v) const noexcept
+{
+    auto CompositionSurfaceLuid = std::get<0>(v);
+    auto PresentCount           = std::get<1>(v);
+    auto BindId                 = std::get<2>(v);
+    PresentCount = (PresentCount << 32) | (PresentCount >> (64-32));
+    BindId       = (BindId       << 56) | (BindId       >> (64-56));
+    auto h64 = CompositionSurfaceLuid ^ PresentCount ^ BindId;
+    return std::hash<uint64_t>::operator()(h64);
+}
+
 void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
 {
     DebugEvent(pEventRecord, &mMetadata);

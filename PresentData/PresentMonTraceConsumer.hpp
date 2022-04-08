@@ -13,6 +13,7 @@
 #include <stdint.h>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 #include <vector>
 #include <set>
 #include <windows.h>
@@ -311,19 +312,22 @@ struct PMTraceConsumer
     using OrderedPresents = std::map<uint64_t, std::shared_ptr<PresentEvent>>;
 
     using Win32KPresentHistoryToken = std::tuple<uint64_t, uint64_t, uint64_t>; // (composition surface pointer, present count, bind id)
+    struct Win32KPresentHistoryTokenHash : private std::hash<uint64_t> {
+        std::size_t operator()(Win32KPresentHistoryToken const& v) const noexcept;
+    };
 
     unsigned int mAllPresentsNextIndex = 0;
     std::vector<std::shared_ptr<PresentEvent>> mAllPresents;
 
-    std::map<uint32_t, std::shared_ptr<PresentEvent>> mPresentByThreadId;                     // ThreadId -> PresentEvent
-    std::map<uint32_t, OrderedPresents>               mOrderedPresentsByProcessId;            // ProcessId -> ordered QpcTime -> PresentEvent
-    std::map<uint32_t, std::shared_ptr<PresentEvent>> mPresentBySubmitSequence;               // SubmitSequenceId -> PresentEvent
-    std::map<Win32KPresentHistoryToken, std::shared_ptr<PresentEvent>>
-                                                      mPresentByWin32KPresentHistoryToken;    // Win32KPresentHistoryToken -> PresentEvent
-    std::map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByDxgkPresentHistoryToken;      // DxgkPresentHistoryToken -> PresentEvent
-    std::map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByDxgkPresentHistoryTokenData;  // DxgkPresentHistoryTokenData -> PresentEvent
-    std::map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByDxgkContext;                  // DxgkContex -> PresentEvent
-    std::map<uint64_t, std::shared_ptr<PresentEvent>> mLastPresentByWindow;                   // HWND -> PresentEvent
+    std::unordered_map<uint32_t, std::shared_ptr<PresentEvent>> mPresentByThreadId;                     // ThreadId -> PresentEvent
+    std::unordered_map<uint32_t, OrderedPresents>               mOrderedPresentsByProcessId;            // ProcessId -> ordered QpcTime -> PresentEvent
+    std::unordered_map<uint32_t, std::shared_ptr<PresentEvent>> mPresentBySubmitSequence;               // SubmitSequenceId -> PresentEvent
+    std::unordered_map<Win32KPresentHistoryToken, std::shared_ptr<PresentEvent>,
+                       Win32KPresentHistoryTokenHash>           mPresentByWin32KPresentHistoryToken;    // Win32KPresentHistoryToken -> PresentEvent
+    std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByDxgkPresentHistoryToken;      // DxgkPresentHistoryToken -> PresentEvent
+    std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByDxgkPresentHistoryTokenData;  // DxgkPresentHistoryTokenData -> PresentEvent
+    std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByDxgkContext;                  // DxgkContex -> PresentEvent
+    std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mLastPresentByWindow;                   // HWND -> PresentEvent
 
 
     // Once an in-progress present becomes lost, discarded, or displayed, it is
