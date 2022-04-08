@@ -30,10 +30,7 @@ void DebugEvent(_EVENT_RECORD* eventRecord, EventMetadata* metadata);
 void DebugCreatePresent(PresentEvent const& p);
 
 // Call before modifying any PresentEvent member
-void DebugModifyPresent(PresentEvent const& p);
-
-// Call when a present is lost
-void DebugLostPresent(PresentEvent const& p);
+void DebugModifyPresent(PresentEvent const* p);
 
 #else
 
@@ -42,6 +39,5 @@ void DebugLostPresent(PresentEvent const& p);
 #define DebugEvent(eventRecord, metadata)                   (void) eventRecord, metadata
 #define DebugCreatePresent(p)                               (void) p
 #define DebugModifyPresent(p)                               (void) p
-#define DebugLostPresent(p)                                 (void) p
 
 #endif

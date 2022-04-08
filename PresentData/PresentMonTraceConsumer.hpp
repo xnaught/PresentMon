@@ -100,7 +100,6 @@ enum class PresentResult {
     Unknown,
     Presented,
     Discarded,
-    Error,
 };
 
 enum class Runtime {
@@ -144,6 +143,10 @@ struct PresentEvent {
     //       ProcessId : mOrderedPresentsByProcessId
     //       ThreadId  : mPresentByThreadId
 
+    // How many PresentStop events from the thread to wait for before
+    // enqueueing this present.
+    uint32_t DeferredCompletionWaitCount;
+
     // Properties deduced by watching events through present pipeline
     uint32_t DestWidth;
     uint32_t DestHeight;
@@ -157,7 +160,6 @@ struct PresentEvent {
     bool SeenWin32KEvents;
     bool DwmNotified;
     bool SeenInFrameEvent;      // This present has gotten a Win32k TokenStateChanged event into InFrame state
-    bool CompletionIsDeferred;  // A FinalState has been determined, but not all expected events have been observed yet
     bool IsCompleted;           // All expected events have been observed
     bool IsLost;                // This PresentEvent was found in an unexpected state or is too old
 
@@ -324,20 +326,28 @@ struct PMTraceConsumer
     std::map<uint64_t, std::shared_ptr<PresentEvent>> mLastPresentByWindow;                   // HWND -> PresentEvent
 
 
-    // Once an in-progress present becomes discarded, or displayed,
-    // but it has not yet seen all of its expected events, it is
+    // Once an in-progress present becomes lost, discarded, or displayed, it is
     // removed from all of the above tracking structures and moved into
     // mDeferredCompletions.
-    // The present will remain in mDeferredCompletions for
-    // DeferEnqueueCount PresentStop events from the same thread, before being
-    // enqueued for the user.
     //
-    // When all expected events are observed, or the DeferEnqueueCount expires,
-    // Presents are moved from mDeferedCompletions into either
-    // mCompletePresentEvents or mLostPresentEvents for the user to dequeue.
+    // In some cases (e.g., a present being displayed before Present() returns)
+    // such presents have not yet seen all of their expected events.  When this
+    // happens, the present will remain in mDeferredCompletions for
+    // DeferredCompletionWaitCount PresentStop events from the same thread,
+    // before being enqueued for the user.
+    //
+    // When all expected events are observed, or the
+    // DeferredCompletionWaitCount expires, Presents are moved from
+    // mDeferedCompletions into either mCompletePresentEvents or
+    // mLostPresentEvents for the user to dequeue.
 
-    std::unordered_map<uint32_t,
-        std::vector<std::pair<std::shared_ptr<PresentEvent>, uint32_t>>> mDeferredCompletions; // ProcessId -> [(PresentEvent, DeferEnqueueCount)]
+    struct DeferredCompletions {
+        OrderedPresents mOrderedPresents;
+        uint64_t mLastEnqueuedQpcTime;
+    };
+
+    std::unordered_map<uint32_t, std::unordered_map<uint64_t,
+                                        DeferredCompletions>> mDeferredCompletions;   // ProcessId -> SwapChainAddress -> DeferredCompletions
 
 
     void HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool redirectedPresent);
@@ -354,13 +364,14 @@ struct PMTraceConsumer
     void HandleDxgkPresentHistoryInfo(EVENT_HEADER const& hdr, uint64_t token);
 
     void CompletePresent(std::shared_ptr<PresentEvent> const& p);
-    void CompletePresentHelper(std::shared_ptr<PresentEvent> const& p, OrderedPresents* completed);
-    void CompleteDeferredCompletion(std::shared_ptr<PresentEvent> const& present);
+    void CompletePresentHelper(std::shared_ptr<PresentEvent> const& p);
+    void EnqueueDeferredCompletions(DeferredCompletions* deferredCompletions);
+    void EnqueueDeferredPresent(std::shared_ptr<PresentEvent> const& p);
     std::shared_ptr<PresentEvent> FindOrCreatePresent(EVENT_HEADER const& hdr);
     void TrackPresentOnThread(std::shared_ptr<PresentEvent> present);
     void TrackPresent(std::shared_ptr<PresentEvent> present, OrderedPresents* presentsByThisProcess);
     void RemoveLostPresent(std::shared_ptr<PresentEvent> present);
-    void RemovePresentFromTemporaryTrackingCollections(std::shared_ptr<PresentEvent> present, bool waitForPresentStop);
+    void RemovePresentFromTemporaryTrackingCollections(std::shared_ptr<PresentEvent> present);
     void RuntimePresentStop(EVENT_HEADER const& hdr, bool AllowPresentBatching, ::Runtime runtime);
 
     void HandleNTProcessEvent(EVENT_RECORD* pEventRecord);

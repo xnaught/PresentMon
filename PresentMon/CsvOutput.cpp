@@ -39,7 +39,6 @@ const char* FinalStateToDroppedString(PresentResult res)
 {
     switch (res) {
     case PresentResult::Presented: return "0";
-    case PresentResult::Error: return "Error";
     default: return "1";
     }
 }

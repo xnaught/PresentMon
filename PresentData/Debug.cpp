@@ -69,7 +69,7 @@ void PrintRuntime(Runtime value)
     case Runtime::DXGI:  printf("DXGI");  break;
     case Runtime::D3D9:  printf("D3D9");  break;
     case Runtime::Other: printf("Other"); break;
-    default:             printf("ERROR"); break;
+    default:             printf("Unknown (%u)", value); assert(false); break;
     }
 }
 void PrintPresentMode(PresentMode value)
@@ -84,7 +84,7 @@ void PrintPresentMode(PresentMode value)
     case PresentMode::Composed_Copy_CPU_GDI:                printf("Composed_Copy_CPU_GDI"); break;
     case PresentMode::Composed_Composition_Atlas:           printf("Composed_Composition_Atlas"); break;
     case PresentMode::Hardware_Composed_Independent_Flip:   printf("Hardware_Composed_Independent_Flip"); break;
-    default:                                                printf("ERROR"); break;
+    default:                                                printf("Unknown (%u)", value); assert(false); break;
     }
 }
 void PrintPresentResult(PresentResult value)
@@ -93,8 +93,7 @@ void PrintPresentResult(PresentResult value)
     case PresentResult::Unknown:   printf("Unknown");   break;
     case PresentResult::Presented: printf("Presented"); break;
     case PresentResult::Discarded: printf("Discarded"); break;
-    case PresentResult::Error:     printf("Error");     break;
-    default:                       printf("ERROR");     break;
+    default:                       printf("Unknown (%u)", value); assert(false); break;
     }
 }
 void PrintPresentHistoryModel(uint32_t model)
@@ -219,8 +218,9 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintBool,          SeenDxgkPresent)
     FLUSH_MEMBER(PrintBool,          SeenWin32KEvents)
     FLUSH_MEMBER(PrintBool,          DwmNotified)
-    FLUSH_MEMBER(PrintBool,          CompletionIsDeferred)
     FLUSH_MEMBER(PrintBool,          IsCompleted)
+    FLUSH_MEMBER(PrintBool,          IsLost)
+    FLUSH_MEMBER(PrintU32,           DeferredCompletionWaitCount)
 #undef FLUSH_MEMBER
     if (changedCount > 0) {
         printf("\n");
@@ -373,13 +373,15 @@ void DebugEvent(EVENT_RECORD* eventRecord, EventMetadata* metadata)
     assert(false);
 }
 
-void DebugModifyPresent(PresentEvent const& p)
+void DebugModifyPresent(PresentEvent const* p)
 {
     if (!gDebugTrace) return;
-    if (gModifiedPresent != &p) {
+    if (gModifiedPresent != p) {
         FlushModifiedPresent();
-        gModifiedPresent = &p;
-        gOriginalPresentValues = p;
+        gModifiedPresent = p;
+        if (p != nullptr) {
+            gOriginalPresentValues = *p;
+        }
     }
 }
 
@@ -394,15 +396,6 @@ void DebugCreatePresent(PresentEvent const& p)
     printf(" SyncInterval=%u", p.SyncInterval);
     printf(" Runtime=");
     PrintRuntime(p.Runtime);
-    printf("\n");
-}
-
-void DebugLostPresent(PresentEvent const& p)
-{
-    if (!gDebugTrace) return;
-    FlushModifiedPresent();
-    PrintUpdateHeader(p.Id);
-    printf(" LostPresent");
     printf("\n");
 }
 
