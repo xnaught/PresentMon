@@ -209,6 +209,8 @@ enum class PresentModel : uint32_t {
     D3DKMT_PM_REDIRECTED_GDI_SYSMEM = 6,
     D3DKMT_PM_REDIRECTED_COMPOSITION = 7,
     D3DKMT_PM_SURFACECOMPLETE = 8,
+    // Added manually
+    D3DKMT_PM_FLIPMANAGER = 9,
 };
 
 enum class QueuePacketType : uint32_t {

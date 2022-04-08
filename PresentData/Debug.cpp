@@ -109,6 +109,8 @@ void PrintPresentHistoryModel(uint32_t model)
     case PresentModel::D3DKMT_PM_SCREENCAPTUREFENCE:     printf("SCREENCAPTUREFENCE");     break;
     case PresentModel::D3DKMT_PM_REDIRECTED_GDI_SYSMEM:  printf("REDIRECTED_GDI_SYSMEM");  break;
     case PresentModel::D3DKMT_PM_REDIRECTED_COMPOSITION: printf("REDIRECTED_COMPOSITION"); break;
+    case PresentModel::D3DKMT_PM_SURFACECOMPLETE:        printf("SURFACECOMPLETE");        break;
+    case PresentModel::D3DKMT_PM_FLIPMANAGER:            printf("FLIPMANAGER");            break;
     default:                                             printf("Unknown (%u)", model); assert(false); break;
     }
 }
@@ -207,7 +209,7 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintU32,           SyncInterval)
     FLUSH_MEMBER(PrintU32,           PresentFlags)
     FLUSH_MEMBER(PrintU64x,          Hwnd)
-    FLUSH_MEMBER(PrintU64x,          TokenPtr)
+    FLUSH_MEMBER(PrintU64x,          DxgkPresentHistoryToken)
     FLUSH_MEMBER(PrintU32,           QueueSubmitSequence)
     FLUSH_MEMBER(PrintU32,           DriverBatchThreadId)
     FLUSH_MEMBER(PrintPresentMode,   PresentMode)
