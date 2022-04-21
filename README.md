@@ -197,9 +197,16 @@ In this case, TimeInSeconds will represent the first time the present is observe
 
 ### Measuring application latency
 
-PresentMon doesn't directly measure the latency from a user's input to the display of that frame because it doesn't have insight into when the application collects and applies user input.  A potential approximation is to assume that the application collects user input immediately after presenting the previous frame.  To compute this, search for the previous row that uses the same swap chain and then:
+PresentMon doesn't collect metrics for user input, so there is no direct measure for input-to-display latency in the CSV.  However, if you assume the application collects user input immediately after presenting the previous frame, then a subset of the latency can be computed by finding the previous CSV row that uses the same swap chain and then computing:
 
-```LatencyMs =~ msBetweenPresents + msUntilDisplayed - previous(msInPresentAPI)```
+```msInputLatency = msBetweenPresents + msUntilDisplayed - previous(msInPresentAPI)```
+
+This is a subset of the true input-to-display latency and doesn't include:
+
+- time spent processing input in the keyboard/controller hardware or drivers (typically a fixed additional overhead),
+- any time that input events are queued before being used by the target application (which varies, potentially up to one frame longer),
+- time spent processing the output in the display hardware or drivers (typically a fixed additional overhead), and
+- a combination of display blanking interval and scan time (which varies, depending on timing and tearing).
 
 ### Shutting down PresentMon on Windows 7
 
