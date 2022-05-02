@@ -84,7 +84,6 @@ ULONG EnableProviders(
 
     // Microsoft_Windows_DxgKrnl
     anyKeywordMask =
-        (uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance |
         (uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Base;
     allKeywordMask = anyKeywordMask;
     eventIds = {
