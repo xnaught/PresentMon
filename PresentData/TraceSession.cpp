@@ -83,9 +83,10 @@ ULONG EnableProviders(
     // we can track them.
 
     // Microsoft_Windows_DxgKrnl
+    // Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance keyword is not used in filtering as it unexpectedly enables other keywords, leading to performance degradation.
     anyKeywordMask =
         (uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Base;
-    allKeywordMask = anyKeywordMask;
+    allKeywordMask = 0;
     eventIds = {
         Microsoft_Windows_DxgKrnl::PresentHistory_Start::Id,
     };
