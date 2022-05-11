@@ -142,6 +142,14 @@ ULONG EnableProviders(
         provider.AddEvent<Microsoft_Windows_DxgKrnl::QueuePacket_Stop>();
         provider.AddEvent<Microsoft_Windows_DxgKrnl::VSyncDPC_Info>();
     }
+    // BEGIN WORKAROUND: Don't filter DXGK events using the Performance keyword,
+    // as that can have side-effects with negative performance impact on some
+    // versions of Windows.
+    if (provider.anyKeywordMask_ & (uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance) {
+        provider.anyKeywordMask_ &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance;
+        provider.allKeywordMask_ = 0;
+    }
+    // END WORKAROUND
     status = provider.Enable(sessionHandle, sessionGuid, Microsoft_Windows_DxgKrnl::GUID);
     if (status != ERROR_SUCCESS) return status;
 
