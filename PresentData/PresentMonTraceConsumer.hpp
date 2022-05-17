@@ -162,8 +162,9 @@ private:
 //   Follows the Windowed_Blit path for tracking to screen
 //
 // Composed Composition Atlas (DirectComposition):
-//   SubmitPresentHistory (use model field for classification, get token ptr) -> DxgKrnl_PresentHistory (by token ptr) ->
+//   SubmitPresentHistory (use model field for classification, get token ptr) -> DxgKrnl_PresentHistory (by token ptr) -> Disabled
 //   Assume DWM will compose this buffer on next present (missing InFrame event), follow windowed blit paths to screen time
+//   This PresentMode is currently disabled and may not return in the future.
 
 struct PMTraceConsumer
 {
@@ -356,6 +357,7 @@ struct PMTraceConsumer
     void CompleteDeferredCompletion(std::shared_ptr<PresentEvent> const& present);
     std::shared_ptr<PresentEvent> FindBySubmitSequence(uint32_t submitSequence);
     std::shared_ptr<PresentEvent> FindOrCreatePresent(EVENT_HEADER const& hdr);
+    void IgnorePresent(std::shared_ptr<PresentEvent> present);
     void TrackPresentOnThread(std::shared_ptr<PresentEvent> present);
     void TrackPresent(std::shared_ptr<PresentEvent> present, OrderedPresents* presentsByThisProcess);
     void RemoveLostPresent(std::shared_ptr<PresentEvent> present);

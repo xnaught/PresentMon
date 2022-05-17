@@ -580,6 +580,8 @@ void PMTraceConsumer::HandleDxgkPresentHistory(
     } else if (presentEvent->PresentMode == PresentMode::Unknown) {
         if (knownPresentMode == PresentMode::Composed_Composition_Atlas) {
             presentEvent->PresentMode = PresentMode::Composed_Composition_Atlas;
+            // Cancel tracking of DComp Presents. These are no longer being monitored due to complications with the PresentMode.
+            IgnorePresent(presentEvent);
         } else {
             // When there's no Win32K events, we'll assume PHTs that aren't after a blt, and aren't composition tokens
             // are flip tokens and that they're displayed. There are no Win32K events on Win7, and they might not be
@@ -1416,6 +1418,22 @@ void PMTraceConsumer::RemovePresentFromTemporaryTrackingCollections(std::shared_
             mPresentsByLegacyBlitToken.erase(eventIter);
         }
     }
+}
+
+void PMTraceConsumer::IgnorePresent(std::shared_ptr<PresentEvent> p)
+{
+    // This present should be ignored and not processed at all, and should not be added to any data structures or metrics.
+
+    // Completed Presented presents should not make it here.
+    assert(!(p->IsCompleted && p->FinalState == PresentResult::Presented));
+
+    // Only DWM Hardware Legacy Flips should have Dependent Presents, and we should never be ignoring those.
+    // If we are, then something is very wrong. 
+    assert(p->DependentPresents.size() == 0);
+
+    // Remove the present from any tracking structures.
+    auto waitForPresentStop = false;
+    RemovePresentFromTemporaryTrackingCollections(p, waitForPresentStop);
 }
 
 void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
