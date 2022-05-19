@@ -55,9 +55,9 @@ if %use_release_config% EQU 1 set build_configs=%build_configs% release
 set build_platforms=x64
 set test_platforms=x64
 if %only_x64_platform% EQU 0 (
-    set build_platforms=%build_platforms% x86
-    set build_platforms=%build_platforms% arm
-    set build_platforms=%build_platforms% arm64
+    set build_platforms=!build_platforms! x86
+    set build_platforms=!build_platforms! arm
+    set build_platforms=!build_platforms! arm64
 
     set test_platforms=%test_platforms% x86
 )
@@ -110,11 +110,14 @@ if %use_release_config% EQU 1 (
 )
 
 if %do_default_gtests% EQU 1 (
+    call :start_target_app
+
     for %%a in (%test_platforms%) do for %%b in (%build_configs%) do (
         call :gtests --presentmon="%pmdir%\build\%%b\PresentMon-%version%-%%a.exe" --golddir="%pmdir%\Tests\Gold"
     )
-)
 
+    call :stop_target_app
+)
 
 :: -----------------------------------------------------------------------------
 if %errorcount% neq 0 (
@@ -200,4 +203,32 @@ exit /b 0
     echo [90m"%pmdir%\%pmtest%" %*[0m
     "%pmdir%\%pmtest%" %*
     if not "%errorlevel%"=="0" set /a errorcount=%errorcount%+1
+    exit /b 0
+
+:: -----------------------------------------------------------------------------
+:start_target_app
+    set started_target_app_pid=0
+
+    :: Check if there's already one running, if so just leave it running and don't kill it after
+    for /f "tokens=1,2 delims=:" %%a in ('tasklist /fi "imagename eq d3d12_triangle.exe" /fo list') do (
+        if "%%a" EQU "PID" exit /b 0
+    )
+
+    if not exist "%~dp0d3d12_triangle.exe" (
+        echo [31mwarning: dependency not found: %~dp0d3d12_triangle.exe[0m
+        echo [31m         continuing, but tests requiring presents may fail[0m
+        exit /b 0
+    )
+
+    start "" "%~dp0d3d12_triangle.exe"
+    for /f "tokens=1,2 delims=:" %%a in ('tasklist /fi "imagename eq d3d12_triangle.exe" /fo list') do (
+        if "%%a" EQU "PID" (
+            set started_target_app_pid=%%b
+            exit /b 0
+        )
+    )
+    exit /b 0
+
+:stop_target_app
+    if %started_target_app_pid% NEQ 0 taskkill /PID %started_target_app_pid%
     exit /b 0

@@ -88,9 +88,9 @@ void QpcTimeTest(wchar_t const* qpcTimeArg)
     auto idxProcessID     = csv.GetColumnIndex("ProcessID");
     auto idxTimeInSeconds = csv.GetColumnIndex("TimeInSeconds");
     auto idxQPCTime       = csv.GetColumnIndex("QPCTime");
-    EXPECT_NE(idxProcessID,     SIZE_MAX);
-    EXPECT_NE(idxTimeInSeconds, SIZE_MAX);
-    EXPECT_NE(idxQPCTime,       SIZE_MAX);
+    ASSERT_NE(idxProcessID,     SIZE_MAX) << "    Output missing required column: ProcessID";
+    ASSERT_NE(idxTimeInSeconds, SIZE_MAX) << "    Output missing required column: TimeInSeconds";
+    ASSERT_NE(idxQPCTime,       SIZE_MAX) << "    Output missing required column: QPCTime";
 
     // TimeInSeconds is only ordered per-process, so we track each process separately
     std::unordered_map<uint32_t, std::pair<double, T>> firstMeasurement;
@@ -119,7 +119,7 @@ void QpcTimeTest(wchar_t const* qpcTimeArg)
     }
     csv.Close();
 
-    ASSERT_GT(csv.line_, 1)
+    ASSERT_GT(csv.line_, 1u)
         << "    PresentMon didn't capture any presents during the test.\n"
            "    Re-run the test with a graphics application running.";
 
