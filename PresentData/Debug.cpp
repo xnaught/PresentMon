@@ -390,6 +390,7 @@ void DebugCreatePresent(PresentEvent const& p)
     FlushModifiedPresent();
     PrintUpdateHeader(p.Id);
     printf(" CreatePresent");
+    printf(" ProcessId=%u", p.ProcessId);
     printf(" SwapChainAddress=%llx", p.SwapChainAddress);
     printf(" PresentFlags=%x", p.PresentFlags);
     printf(" SyncInterval=%u", p.SyncInterval);
