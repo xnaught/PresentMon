@@ -87,6 +87,17 @@ struct FilteredProvider {
         maxLevel_ = 0;
     }
 
+    void AddKeyword(uint64_t keyword)
+    {
+        if (anyKeywordMask_ == 0) {
+            anyKeywordMask_ = keyword;
+            allKeywordMask_ = keyword;
+        } else {
+            anyKeywordMask_ |= keyword;
+            allKeywordMask_ &= keyword;
+        }
+    }
+
     template<typename T>
     void AddEvent()
     {
@@ -98,13 +109,7 @@ struct FilteredProvider {
 
         #pragma warning(suppress: 4984) // C++17 extension
         if constexpr ((uint64_t) T::Keyword != 0ull) {
-            if (anyKeywordMask_ == 0) {
-                anyKeywordMask_ = (uint64_t) T::Keyword;
-                allKeywordMask_ = (uint64_t) T::Keyword;
-            } else {
-                anyKeywordMask_ |= (uint64_t) T::Keyword;
-                allKeywordMask_ &= (uint64_t) T::Keyword;
-            }
+            AddKeyword((uint64_t) T::Keyword);
         }
 
         maxLevel_ = max(maxLevel_, T::Level);
@@ -142,6 +147,7 @@ ULONG EnableProviders(
     // We can't use helpers like IsWindows8Point1OrGreater() since they FALSE
     // if the application isn't built with a manifest.
     bool isWin81OrGreater = false;
+    bool isWin11OrGreater = false;
     {
         auto hmodule = LoadLibraryExA("ntdll.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
         if (hmodule != NULL) {
@@ -150,9 +156,11 @@ ULONG EnableProviders(
                 RTL_OSVERSIONINFOW info = {};
                 info.dwOSVersionInfoSize = sizeof(info);
                 status = (*pRtlGetVersion)(&info);
-                if (status == 0 /* STATUS_SUCCEESS */) {
+                if (status == 0 /* STATUS_SUCCESS */) {
                     // win8.1 = version 6.3
-                    isWin81OrGreater = info.dwMajorVersion > 6 || (info.dwMajorVersion == 6 && info.dwMinorVersion >= 3);
+                    // win11  = version 10.0 build >= 22000
+                    isWin81OrGreater = info.dwMajorVersion >  6 || (info.dwMajorVersion ==  6 && info.dwMinorVersion >= 3);
+                    isWin11OrGreater = info.dwMajorVersion > 10 || (info.dwMajorVersion == 10 && info.dwBuildNumber  >= 22000);
                 }
             }
             FreeLibrary(hmodule);
@@ -187,6 +195,25 @@ ULONG EnableProviders(
         provider.AddEvent<Microsoft_Windows_DxgKrnl::QueuePacket_Stop>();
         provider.AddEvent<Microsoft_Windows_DxgKrnl::VSyncDPC_Info>();
     }
+    // BEGIN WORKAROUND: Windows11 adds a "Present" keyword to:
+    //     BlitCancel_Info
+    //     Blit_Info
+    //     FlipMultiPlaneOverlay_Info
+    //     Flip_Info
+    //     HSyncDPCMultiPlane_Info
+    //     MMIOFlipMultiPlaneOverlay_Info
+    //     MMIOFlip_Info
+    //     PresentHistoryDetailed_Start
+    //     PresentHistory_Info
+    //     PresentHistory_Start
+    //     Present_Info
+    //     VSyncDPC_Info
+    if (isWin11OrGreater) {
+        provider.AddKeyword((uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance |
+                            (uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Base |
+                            (uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Present);
+    }
+    // END WORKAROUND
     // BEGIN WORKAROUND: Don't filter DXGK events using the Performance keyword,
     // as that can have side-effects with negative performance impact on some
     // versions of Windows.
@@ -216,6 +243,14 @@ ULONG EnableProviders(
         provider.AddEvent<Microsoft_Windows_Dwm_Core::FlipChain_Pending>();
         provider.AddEvent<Microsoft_Windows_Dwm_Core::FlipChain_Complete>();
         provider.AddEvent<Microsoft_Windows_Dwm_Core::FlipChain_Dirty>();
+        // BEGIN WORKAROUND: Windows11 uses Scheduling keyword instead of DwmCore keyword for:
+        //     SCHEDULE_PRESENT_Start
+        //     SCHEDULE_SURFACEUPDATE_Info
+        if (isWin11OrGreater) {
+            provider.AddKeyword((uint64_t) Microsoft_Windows_Dwm_Core::Keyword::Microsoft_Windows_Dwm_Core_Diagnostic |
+                                (uint64_t) Microsoft_Windows_Dwm_Core::Keyword::Scheduling);
+        }
+        // END WORKAROUND
         status = provider.Enable(sessionHandle, Microsoft_Windows_Dwm_Core::GUID);
         if (status != ERROR_SUCCESS) return status;
 
