@@ -210,18 +210,18 @@ exit /b 0
     set started_target_app_pid=0
 
     :: Check if there's already one running, if so just leave it running and don't kill it after
-    for /f "tokens=1,2 delims=:" %%a in ('tasklist /fi "imagename eq d3d12_triangle.exe" /fo list') do (
+    for /f "tokens=1,2 delims=:" %%a in ('tasklist /fi "imagename eq PresentBench.exe" /fo list') do (
         if "%%a" EQU "PID" exit /b 0
     )
 
-    if not exist "%~dp0d3d12_triangle.exe" (
-        echo [31mwarning: dependency not found: %~dp0d3d12_triangle.exe[0m
+    if not exist "%~dp0PresentBench.exe" (
+        echo [31mwarning: dependency not found: %~dp0PresentBench.exe[0m
         echo [31m         continuing, but tests requiring presents may fail[0m
         exit /b 0
     )
 
-    start "" "%~dp0d3d12_triangle.exe"
-    for /f "tokens=1,2 delims=:" %%a in ('tasklist /fi "imagename eq d3d12_triangle.exe" /fo list') do (
+    start "" "%~dp0PresentBench.exe" /Width=320 /Height=240 /Api=DX12
+    for /f "tokens=1,2 delims=:" %%a in ('tasklist /fi "imagename eq PresentBench.exe" /fo list') do (
         if "%%a" EQU "PID" (
             set started_target_app_pid=%%b
             exit /b 0
