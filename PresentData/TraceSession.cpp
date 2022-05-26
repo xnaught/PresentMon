@@ -1,8 +1,6 @@
 // Copyright (C) 2020-2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 
-#define WIN32_LEAN_AND_MEAN
-#define VC_EXTRALEAN
 #include <assert.h>
 #include <stddef.h>
 #include <windows.h>
@@ -120,6 +118,33 @@ ULONG EnableProviders(
 {
     FilteredProvider provider;
     ULONG status = 0;
+
+    // Lookup what OS we're running on
+    //
+    // We can't use helpers like IsWindows8Point1OrGreater() since they FALSE
+    // if the application isn't built with a manifest.
+    bool isWin81OrGreater = false;
+    {
+        auto hmodule = LoadLibraryExA("ntdll.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+        if (hmodule != NULL) {
+            auto pRtlGetVersion = (NTSTATUS (WINAPI*)(PRTL_OSVERSIONINFOW)) GetProcAddress(hmodule, "RtlGetVersion");
+            if (pRtlGetVersion != nullptr) {
+                RTL_OSVERSIONINFOW info = {};
+                info.dwOSVersionInfoSize = sizeof(info);
+                status = (*pRtlGetVersion)(&info);
+                if (status == 0 /* STATUS_SUCCEESS */) {
+                    // win8.1 = version 6.3
+                    isWin81OrGreater = info.dwMajorVersion > 6 || (info.dwMajorVersion == 6 && info.dwMinorVersion >= 3);
+                }
+            }
+            FreeLibrary(hmodule);
+        }
+    }
+
+    // Scope filtering based on event ID only works on Win8.1 or greater.
+    if (isWin81OrGreater) {
+        pmConsumer->mFilteredEvents = true;
+    }
 
     // Start backend providers first to reduce Presents being queued up before
     // we can track them.
