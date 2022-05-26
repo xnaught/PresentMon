@@ -129,6 +129,7 @@ ULONG EnableProviders(
     provider.AddEvent<Microsoft_Windows_DxgKrnl::PresentHistory_Start>();
     if (pmConsumer->mTrackDisplay) {
         provider.AddEvent<Microsoft_Windows_DxgKrnl::Blit_Info>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::BlitCancel_Info>();
         provider.AddEvent<Microsoft_Windows_DxgKrnl::Flip_Info>();
         provider.AddEvent<Microsoft_Windows_DxgKrnl::IndependentFlip_Info>();
         provider.AddEvent<Microsoft_Windows_DxgKrnl::FlipMultiPlaneOverlay_Info>();

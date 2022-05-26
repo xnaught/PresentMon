@@ -296,6 +296,7 @@ void DebugEvent(EVENT_RECORD* eventRecord, EventMetadata* metadata)
         using namespace Microsoft_Windows_DxgKrnl;
         switch (id) {
         case Blit_Info::Id:                     PrintEventHeader(hdr, "DxgKrnl_Blit_Info"); break;
+        case BlitCancel_Info::Id:               PrintEventHeader(hdr, "DxgKrnl_BlitCancel_Info"); break;
         case Flip_Info::Id:                     PrintEventHeader(hdr, "DxgKrnl_Flip_Info"); break;
         case FlipMultiPlaneOverlay_Info::Id:    PrintEventHeader(hdr, "DxgKrnl_FlipMultiPlaneOverlay_Info"); break;
         case HSyncDPCMultiPlane_Info::Id:       PrintEventHeader(hdr, "DxgKrnl_HSyncDPCMultiPlane_Info"); break;

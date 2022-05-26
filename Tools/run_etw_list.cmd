@@ -38,6 +38,7 @@ call :etw_list "Microsoft-Windows-DXGI" "%out_dir%\Microsoft_Windows_DXGI.h"
 
 set events=
 set events=%events% --event=Blit::Info
+set events=%events% --event=BlitCancel::Info
 set events=%events% --event=Flip::Info
 set events=%events% --event=FlipMultiPlaneOverlay::Info
 set events=%events% --event=IndependentFlip::Info

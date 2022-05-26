@@ -886,7 +886,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
         HandleDxgkBlt(hdr, hwnd, bRedirectedPresent);
         break;
     }
-    case Microsoft_Windows_DxgKrnl::Blit_Cancel::Id:
+    case Microsoft_Windows_DxgKrnl::BlitCancel_Info::Id:
         HandleDxgkBltCancel(hdr);
         break;
     default:

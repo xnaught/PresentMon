@@ -92,6 +92,8 @@ enum class Channel : uint8_t {
     static Keyword  const Keyword = (Keyword) keyword_; \
 };
 
+// BlitCancel needs to be added manually if etw_list run on <Win11:
+EVENT_DESCRIPTOR_DECL(BlitCancel_Info               , 0x01f5, 0x00, 0x11, 0x04, 0x00, 0x0135, 0x4000000000000001)
 EVENT_DESCRIPTOR_DECL(Blit_Info                     , 0x00a6, 0x00, 0x11, 0x04, 0x00, 0x0067, 0x4000000000000001)
 EVENT_DESCRIPTOR_DECL(FlipMultiPlaneOverlay_Info    , 0x00fc, 0x00, 0x11, 0x00, 0x00, 0x008f, 0x4000000000000001)
 EVENT_DESCRIPTOR_DECL(Flip_Info                     , 0x00a8, 0x00, 0x11, 0x00, 0x00, 0x0003, 0x4000000000000001)
@@ -107,9 +109,6 @@ EVENT_DESCRIPTOR_DECL(QueuePacket_Start             , 0x00b2, 0x01, 0x11, 0x00, 
 EVENT_DESCRIPTOR_DECL(QueuePacket_Stop              , 0x00b4, 0x01, 0x11, 0x00, 0x02, 0x0009, 0x4000000000000001)
 EVENT_DESCRIPTOR_DECL(VSyncDPCMultiPlane_Info       , 0x0111, 0x02, 0x11, 0x00, 0x00, 0x009f, 0x4000000000000001)
 EVENT_DESCRIPTOR_DECL(VSyncDPC_Info                 , 0x0011, 0x00, 0x11, 0x00, 0x00, 0x000b, 0x4000000000000001)
-
-// These events added manually:
-EVENT_DESCRIPTOR_DECL(Blit_Cancel                   , 0x01f5, 0x00, 0x11, 0x04, 0x00, 0x0135, 0x4000000000000001)
 
 #undef EVENT_DESCRIPTOR_DECL
 
