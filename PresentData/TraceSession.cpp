@@ -27,22 +27,61 @@ struct TraceProperties : public EVENT_TRACE_PROPERTIES {
 };
 
 struct FilteredProvider {
-    std::vector<USHORT> eventIds_;
+    EVENT_FILTER_DESCRIPTOR filterDesc_;
+    ENABLE_TRACE_PARAMETERS params_;
     uint64_t anyKeywordMask_;
     uint64_t allKeywordMask_;
     uint8_t maxLevel_;
 
-    FilteredProvider()
-        : anyKeywordMask_(0)
-        , allKeywordMask_(0)
-        , maxLevel_(0)
+    FilteredProvider(
+        GUID const& sessionGuid,
+        bool filterEventIds)
     {
-        eventIds_.reserve(MAX_EVENT_FILTER_EVENT_ID_COUNT);
+        memset(&filterDesc_, 0, sizeof(filterDesc_));
+        memset(&params_,     0, sizeof(params_));
+
+        anyKeywordMask_ = 0;
+        allKeywordMask_ = 0;
+        maxLevel_ = 0;
+
+        if (filterEventIds) {
+            static_assert(MAX_EVENT_FILTER_EVENT_ID_COUNT >= ANYSIZE_ARRAY, "Unexpected MAX_EVENT_FILTER_EVENT_ID_COUNT");
+            auto memorySize = sizeof(EVENT_FILTER_EVENT_ID) + sizeof(USHORT) * (MAX_EVENT_FILTER_EVENT_ID_COUNT - ANYSIZE_ARRAY);
+            void* memory = _aligned_malloc(memorySize, alignof(USHORT));
+            if (memory != nullptr) {
+                auto filteredEventIds = (EVENT_FILTER_EVENT_ID*) memory;
+                filteredEventIds->FilterIn = TRUE;
+                filteredEventIds->Reserved = 0;
+                filteredEventIds->Count = 0;
+
+                filterDesc_.Ptr = (ULONGLONG) filteredEventIds;
+                filterDesc_.Size = (ULONG) memorySize;
+                filterDesc_.Type = EVENT_FILTER_TYPE_EVENT_ID;
+
+                params_.Version = ENABLE_TRACE_PARAMETERS_VERSION_2;
+                params_.EnableProperty = EVENT_ENABLE_PROPERTY_IGNORE_KEYWORD_0;
+                params_.SourceId = sessionGuid;
+                params_.EnableFilterDesc = &filterDesc_;
+                params_.FilterDescCount = 1;
+            }
+        }
+    }
+
+    ~FilteredProvider()
+    {
+        if (filterDesc_.Ptr != 0) {
+            auto memory = (void*) filterDesc_.Ptr;
+            _aligned_free(memory);
+        }
     }
 
     void ClearFilter()
     {
-        eventIds_.clear();
+        if (filterDesc_.Ptr != 0) {
+            auto filteredEventIds = (EVENT_FILTER_EVENT_ID*) filterDesc_.Ptr;
+            filteredEventIds->Count = 0;
+        }
+
         anyKeywordMask_ = 0;
         allKeywordMask_ = 0;
         maxLevel_ = 0;
@@ -51,7 +90,11 @@ struct FilteredProvider {
     template<typename T>
     void AddEvent()
     {
-        eventIds_.push_back(T::Id);
+        if (filterDesc_.Ptr != 0) {
+            auto filteredEventIds = (EVENT_FILTER_EVENT_ID*) filterDesc_.Ptr;
+            assert(filteredEventIds->Count < MAX_EVENT_FILTER_EVENT_ID_COUNT);
+            filteredEventIds->Events[filteredEventIds->Count++] = T::Id;
+        }
 
         #pragma warning(suppress: 4984) // C++17 extension
         if constexpr ((uint64_t) T::Keyword != 0ull) {
@@ -69,44 +112,20 @@ struct FilteredProvider {
 
     ULONG Enable(
         TRACEHANDLE sessionHandle,
-        GUID const& sessionGuid,
         GUID const& providerGuid)
     {
-        assert(eventIds_.size() >= ANYSIZE_ARRAY);
-        assert(eventIds_.size() <= MAX_EVENT_FILTER_EVENT_ID_COUNT);
-        auto memorySize = sizeof(EVENT_FILTER_EVENT_ID) + sizeof(USHORT) * (eventIds_.size() - ANYSIZE_ARRAY);
-        auto memory = _aligned_malloc(memorySize, alignof(USHORT));
-        if (memory == nullptr) {
-            return ERROR_NOT_ENOUGH_MEMORY;
+        ENABLE_TRACE_PARAMETERS* pparams = nullptr;
+        if (filterDesc_.Ptr != 0) {
+            pparams = &params_;
+
+            // EnableTraceEx2() failes unless Size agrees with Count.
+            auto filterEventIds = (EVENT_FILTER_EVENT_ID*) filterDesc_.Ptr;
+            filterDesc_.Size = sizeof(EVENT_FILTER_EVENT_ID) + sizeof(USHORT) * (filterEventIds->Count - ANYSIZE_ARRAY);
         }
-
-        auto filterEventIds = (EVENT_FILTER_EVENT_ID*) memory;
-        filterEventIds->FilterIn = TRUE;
-        filterEventIds->Reserved = 0;
-        filterEventIds->Count = 0;
-        for (auto id : eventIds_) {
-            filterEventIds->Events[filterEventIds->Count++] = id;
-        }
-
-        EVENT_FILTER_DESCRIPTOR filterDesc = {};
-        filterDesc.Ptr = (ULONGLONG) filterEventIds;
-        filterDesc.Size = (ULONG) memorySize;
-        filterDesc.Type = EVENT_FILTER_TYPE_EVENT_ID;
-
-        ENABLE_TRACE_PARAMETERS params = {};
-        params.Version = ENABLE_TRACE_PARAMETERS_VERSION_2;
-        params.EnableProperty = EVENT_ENABLE_PROPERTY_IGNORE_KEYWORD_0;
-        params.SourceId = sessionGuid;
-        params.EnableFilterDesc = &filterDesc;
-        params.FilterDescCount = 1;
 
         ULONG timeout = 0;
-        auto status = EnableTraceEx2(sessionHandle, &providerGuid, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
-                                     maxLevel_, anyKeywordMask_, allKeywordMask_, timeout, &params);
-
-        _aligned_free(memory);
-
-        return status;
+        return EnableTraceEx2(sessionHandle, &providerGuid, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
+                              maxLevel_, anyKeywordMask_, allKeywordMask_, timeout, pparams);
     }
 };
 
@@ -116,7 +135,6 @@ ULONG EnableProviders(
     PMTraceConsumer* pmConsumer,
     MRTraceConsumer* mrConsumer)
 {
-    FilteredProvider provider;
     ULONG status = 0;
 
     // Lookup what OS we're running on
@@ -142,12 +160,12 @@ ULONG EnableProviders(
     }
 
     // Scope filtering based on event ID only works on Win8.1 or greater.
-    if (isWin81OrGreater) {
-        pmConsumer->mFilteredEvents = true;
-    }
+    bool filterEventIds = isWin81OrGreater;
+    pmConsumer->mFilteredEvents = filterEventIds;
 
     // Start backend providers first to reduce Presents being queued up before
     // we can track them.
+    FilteredProvider provider(sessionGuid, filterEventIds);
 
     // Microsoft_Windows_DxgKrnl
     provider.ClearFilter();
@@ -175,7 +193,7 @@ ULONG EnableProviders(
     provider.anyKeywordMask_ &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance;
     provider.allKeywordMask_ &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance;
     // END WORKAROUND
-    status = provider.Enable(sessionHandle, sessionGuid, Microsoft_Windows_DxgKrnl::GUID);
+    status = provider.Enable(sessionHandle, Microsoft_Windows_DxgKrnl::GUID);
     if (status != ERROR_SUCCESS) return status;
 
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_DxgKrnl::Win7::GUID, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
@@ -187,7 +205,7 @@ ULONG EnableProviders(
         provider.ClearFilter();
         provider.AddEvent<Microsoft_Windows_Win32k::TokenCompositionSurfaceObject_Info>();
         provider.AddEvent<Microsoft_Windows_Win32k::TokenStateChanged_Info>();
-        status = provider.Enable(sessionHandle, sessionGuid, Microsoft_Windows_Win32k::GUID);
+        status = provider.Enable(sessionHandle, Microsoft_Windows_Win32k::GUID);
         if (status != ERROR_SUCCESS) return status;
 
         // Microsoft_Windows_Dwm_Core
@@ -198,7 +216,7 @@ ULONG EnableProviders(
         provider.AddEvent<Microsoft_Windows_Dwm_Core::FlipChain_Pending>();
         provider.AddEvent<Microsoft_Windows_Dwm_Core::FlipChain_Complete>();
         provider.AddEvent<Microsoft_Windows_Dwm_Core::FlipChain_Dirty>();
-        status = provider.Enable(sessionHandle, sessionGuid, Microsoft_Windows_Dwm_Core::GUID);
+        status = provider.Enable(sessionHandle, Microsoft_Windows_Dwm_Core::GUID);
         if (status != ERROR_SUCCESS) return status;
 
         status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_Dwm_Core::Win7::GUID, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
@@ -212,14 +230,14 @@ ULONG EnableProviders(
     provider.AddEvent<Microsoft_Windows_DXGI::Present_Stop>();
     provider.AddEvent<Microsoft_Windows_DXGI::PresentMultiplaneOverlay_Start>();
     provider.AddEvent<Microsoft_Windows_DXGI::PresentMultiplaneOverlay_Stop>();
-    status = provider.Enable(sessionHandle, sessionGuid, Microsoft_Windows_DXGI::GUID);
+    status = provider.Enable(sessionHandle, Microsoft_Windows_DXGI::GUID);
     if (status != ERROR_SUCCESS) return status;
 
     // Microsoft_Windows_D3D9
     provider.ClearFilter();
     provider.AddEvent<Microsoft_Windows_D3D9::Present_Start>();
     provider.AddEvent<Microsoft_Windows_D3D9::Present_Stop>();
-    status = provider.Enable(sessionHandle, sessionGuid, Microsoft_Windows_D3D9::GUID);
+    status = provider.Enable(sessionHandle, Microsoft_Windows_D3D9::GUID);
     if (status != ERROR_SUCCESS) return status;
 
     if (mrConsumer != nullptr) {
