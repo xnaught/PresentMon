@@ -295,13 +295,32 @@ void DebugEvent(EVENT_RECORD* eventRecord, EventMetadata* metadata)
     if (hdr.ProviderId == Microsoft_Windows_DxgKrnl::GUID) {
         using namespace Microsoft_Windows_DxgKrnl;
         switch (id) {
-        case Blit_Info::Id:                     PrintEventHeader(hdr, "DxgKrnl_Blit_Info"); break;
-        case BlitCancel_Info::Id:               PrintEventHeader(hdr, "DxgKrnl_BlitCancel_Info"); break;
-        case Flip_Info::Id:                     PrintEventHeader(hdr, "DxgKrnl_Flip_Info"); break;
-        case FlipMultiPlaneOverlay_Info::Id:    PrintEventHeader(hdr, "DxgKrnl_FlipMultiPlaneOverlay_Info"); break;
-        case HSyncDPCMultiPlane_Info::Id:       PrintEventHeader(hdr, "DxgKrnl_HSyncDPCMultiPlane_Info"); break;
-        case VSyncDPCMultiPlane_Info::Id:       PrintEventHeader(hdr, "DxgKrnl_VSyncDPCMultiPlane_Info"); break;
-        case MMIOFlip_Info::Id:                 PrintEventHeader(hdr, "DxgKrnl_MMIOFlip_Info"); break;
+        case Blit_Info::Id:                     PrintEventHeader(hdr, "Blit_Info"); break;
+        case BlitCancel_Info::Id:               PrintEventHeader(hdr, "BlitCancel_Info"); break;
+        case FlipMultiPlaneOverlay_Info::Id:    PrintEventHeader(hdr, "FlipMultiPlaneOverlay_Info"); break;
+        case HSyncDPCMultiPlane_Info::Id:       PrintEventHeader(hdr, "HSyncDPCMultiPlane_Info"); break;
+        case VSyncDPCMultiPlane_Info::Id:       PrintEventHeader(hdr, "VSyncDPCMultiPlane_Info"); break;
+        case MMIOFlip_Info::Id:                 PrintEventHeader(hdr, "MMIOFlip_Info"); break;
+        case Present_Info::Id:                  PrintEventHeader(hdr, "DxgKrnl_Present_Info"); break;
+
+        case Flip_Info::Id:                     PrintEventHeader(eventRecord, metadata, "Flip_Info",                    { L"FlipInterval",   PrintU32,
+                                                                                                                          L"MMIOFlip",       PrintBool, }); break;
+        case IndependentFlip_Info::Id:          PrintEventHeader(eventRecord, metadata, "IndependentFlip_Info",         { L"SubmitSequence", PrintU32,
+                                                                                                                          L"FlipInterval",   PrintU32, }); break;
+        case PresentHistory_Start::Id:          PrintEventHeader(eventRecord, metadata, "PresentHistory_Start",         { L"Token",          PrintU64x,
+                                                                                                                          L"Model",          PrintPresentHistoryModel, }); break;
+        case PresentHistory_Info::Id:           PrintEventHeader(eventRecord, metadata, "PresentHistory_Info",          { L"Token",          PrintU64x,
+                                                                                                                          L"Model",          PrintPresentHistoryModel, }); break;
+        case PresentHistoryDetailed_Start::Id:  PrintEventHeader(eventRecord, metadata, "PresentHistoryDetailed_Start", { L"Token",          PrintU64x,
+                                                                                                                          L"Model",          PrintPresentHistoryModel, }); break;
+        case QueuePacket_Start::Id:             PrintEventHeader(eventRecord, metadata, "QueuePacket_Start",            { L"hContext",       PrintU64x,
+                                                                                                                          L"SubmitSequence", PrintU32,
+                                                                                                                          L"PacketType",     PrintQueuePacketType,
+                                                                                                                          L"bPresent",       PrintU32, }); break;
+        case QueuePacket_Stop::Id:              PrintEventHeader(eventRecord, metadata, "QueuePacket_Stop",             { L"hContext",       PrintU64x,
+                                                                                                                          L"SubmitSequence", PrintU32, }); break;
+        case VSyncDPC_Info::Id:                 PrintEventHeader(eventRecord, metadata, "VSyncDPC_Info",                { L"FlipFenceId",    PrintU64x, }); break;
+
         case MMIOFlipMultiPlaneOverlay_Info::Id:
             PrintEventHeader(hdr);
             printf("DXGKrnl_MMIOFlipMultiPlaneOverlay_Info FlipSubmitSequence=%llx", metadata->GetEventData<uint64_t>(eventRecord, L"FlipSubmitSequence"));
@@ -314,32 +333,6 @@ void DebugEvent(EVENT_RECORD* eventRecord, EventMetadata* metadata)
             }
             printf("\n");
             break;
-        case Present_Info::Id:                 PrintEventHeader(hdr, "DxgKrnl_Present_Info"); break;
-        case PresentHistory_Start::Id:         PrintEventHeader(eventRecord, metadata, "PresentHistory_Start", {
-                                                   L"Token", PrintU64x,
-                                                   L"Model", PrintPresentHistoryModel,
-                                               }); break;
-        case PresentHistory_Info::Id:          PrintEventHeader(eventRecord, metadata, "PresentHistory_Info", {
-                                                   L"Token", PrintU64x,
-                                                   L"Model", PrintPresentHistoryModel,
-                                               }); break;
-        case PresentHistoryDetailed_Start::Id: PrintEventHeader(eventRecord, metadata, "PresentHistoryDetailed_Start", {
-                                                   L"Token", PrintU64x,
-                                                   L"Model", PrintPresentHistoryModel,
-                                               }); break;
-        case QueuePacket_Start::Id:            PrintEventHeader(eventRecord, metadata, "DxgKrnl_QueuePacket_Start", {
-                                                   L"hContext", PrintU64x,
-                                                   L"SubmitSequence", PrintU32,
-                                                   L"PacketType", PrintQueuePacketType,
-                                                   L"bPresent", PrintU32,
-                                               }); break;
-        case QueuePacket_Stop::Id:             PrintEventHeader(eventRecord, metadata, "DxgKrnl_QueuePacket_Stop", {
-                                                   L"hContext", PrintU64x,
-                                                   L"SubmitSequence", PrintU32,
-                                               }); break;
-        case VSyncDPC_Info::Id:                PrintEventHeader(eventRecord, metadata, "DxgKrnl_VSyncDPC_Info", {
-                                                   L"FlipFenceId", PrintU64x,
-                                               }); break;
         }
         return;
     }
@@ -363,9 +356,7 @@ void DebugEvent(EVENT_RECORD* eventRecord, EventMetadata* metadata)
         using namespace Microsoft_Windows_Win32k;
         switch (id) {
         case TokenCompositionSurfaceObject_Info::Id: PrintEventHeader(hdr, "Win32k_TokenCompositionSurfaceObject"); break;
-        case TokenStateChanged_Info::Id:             PrintEventHeader(eventRecord, metadata, "Win32K_TokenStateChanged", {
-                                                         L"NewState", PrintTokenState,
-                                                     }); break;
+        case TokenStateChanged_Info::Id:             PrintEventHeader(eventRecord, metadata, "Win32K_TokenStateChanged", { L"NewState", PrintTokenState, }); break;
         }
         return;
     }
