@@ -7,6 +7,8 @@
 #include "PresentMon.hpp"
 #include <algorithm>
 
+namespace {
+
 enum {
     DEFAULT_CONSOLE_WIDTH   = 80,
     MAX_ARG_COLUMN_WIDTH    = 40,
@@ -20,7 +22,7 @@ struct KeyNameCode
     UINT mCode;
 };
 
-static KeyNameCode const HOTKEY_MODS[] = {
+KeyNameCode const HOTKEY_MODS[] = {
     { "ALT",     MOD_ALT     },
     { "CONTROL", MOD_CONTROL },
     { "CTRL",    MOD_CONTROL },
@@ -29,7 +31,7 @@ static KeyNameCode const HOTKEY_MODS[] = {
     { "WIN",     MOD_WIN     },
 };
 
-static KeyNameCode const HOTKEY_KEYS[] = {
+KeyNameCode const HOTKEY_KEYS[] = {
     { "BACKSPACE", VK_BACK },
     { "TAB", VK_TAB },
     { "CLEAR", VK_CLEAR },
@@ -130,9 +132,9 @@ static KeyNameCode const HOTKEY_KEYS[] = {
     { "F24", VK_F24 },
 };
 
-static CommandLineArgs gCommandLineArgs;
+CommandLineArgs gCommandLineArgs;
 
-static size_t GetConsoleWidth()
+size_t GetConsoleWidth()
 {
     CONSOLE_SCREEN_BUFFER_INFO info = {};
     return GetConsoleScreenBufferInfo(GetStdHandle(STD_OUTPUT_HANDLE), &info) == 0
@@ -140,7 +142,7 @@ static size_t GetConsoleWidth()
         : std::max<size_t>(DEFAULT_CONSOLE_WIDTH, info.srWindow.Right - info.srWindow.Left + 1);
 }
 
-static bool ParseKeyName(KeyNameCode const* valid, size_t validCount, char* name, char const* errorMessage, UINT* outKeyCode)
+bool ParseKeyName(KeyNameCode const* valid, size_t validCount, char* name, char const* errorMessage, UINT* outKeyCode)
 {
     for (size_t i = 0; i < validCount; ++i) {
         if (_stricmp(name, valid[i].mName) == 0) {
@@ -164,7 +166,7 @@ static bool ParseKeyName(KeyNameCode const* valid, size_t validCount, char* name
     return false;
 }
 
-static bool AssignHotkey(char* key, CommandLineArgs* args)
+bool AssignHotkey(char* key, CommandLineArgs* args)
 {
 #pragma warning(suppress: 4996)
     auto token = strtok(key, "+");
@@ -188,7 +190,7 @@ static bool AssignHotkey(char* key, CommandLineArgs* args)
     return true;
 }
 
-static void SetCaptureAll(CommandLineArgs* args)
+void SetCaptureAll(CommandLineArgs* args)
 {
     if (!args->mTargetProcessNames.empty()) {
         PrintWarning("warning: -captureall elides all previous -process_name arguments.\n");
@@ -201,7 +203,7 @@ static void SetCaptureAll(CommandLineArgs* args)
 }
 
 // Allow /ARG, -ARG, or --ARG
-static bool ParseArgPrefix(char** arg)
+bool ParseArgPrefix(char** arg)
 {
     if (**arg == '/') {
         *arg += 1;
@@ -219,14 +221,14 @@ static bool ParseArgPrefix(char** arg)
     return false;
 }
 
-static bool ParseArg(char* arg, char const* option)
+bool ParseArg(char* arg, char const* option)
 {
     return
         ParseArgPrefix(&arg) &&
         _stricmp(arg, option) == 0;
 }
 
-static bool ParseValue(char** argv, int argc, int* i)
+bool ParseValue(char** argv, int argc, int* i)
 {
     if (*i + 1 < argc) {
         *i += 1;
@@ -236,14 +238,14 @@ static bool ParseValue(char** argv, int argc, int* i)
     return false;
 }
 
-static bool ParseValue(char** argv, int argc, int* i, char const** value)
+bool ParseValue(char** argv, int argc, int* i, char const** value)
 {
     if (!ParseValue(argv, argc, i)) return false;
     *value = argv[*i];
     return true;
 }
 
-static bool ParseValue(char** argv, int argc, int* i, std::vector<char const*>* value)
+bool ParseValue(char** argv, int argc, int* i, std::vector<char const*>* value)
 {
     char const* v = nullptr;
     if (!ParseValue(argv, argc, i, &v)) return false;
@@ -251,7 +253,7 @@ static bool ParseValue(char** argv, int argc, int* i, std::vector<char const*>* 
     return true;
 }
 
-static bool ParseValue(char** argv, int argc, int* i, UINT* value)
+bool ParseValue(char** argv, int argc, int* i, UINT* value)
 {
     char const* v = nullptr;
     if (!ParseValue(argv, argc, i, &v)) return false;
@@ -259,7 +261,7 @@ static bool ParseValue(char** argv, int argc, int* i, UINT* value)
     return true;
 }
 
-static void PrintHelp()
+void PrintHelp()
 {
     fprintf(stderr, "PresentMon %s\n", PRESENT_MON_VERSION);
 
@@ -304,6 +306,8 @@ static void PrintHelp()
             }
         }
     }
+}
+
 }
 
 CommandLineArgs const& GetCommandLineArgs()
