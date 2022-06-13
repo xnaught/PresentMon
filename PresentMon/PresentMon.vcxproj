@@ -139,7 +139,7 @@
   <ItemGroup>
     <CustomBuild Include="..\README.md">
       <FileType>Document</FileType>
-      <Message>Extracting command line options from %(Identity)...</Message>
+      <Message>..\Tools\generate_options_header.cmd %(Identity) ..\build\obj\generated\command_line_options.inl</Message>
       <Command>..\Tools\generate_options_header.cmd %(Identity) ..\build\obj\generated\command_line_options.inl</Command>
       <Outputs>..\build\obj\generated\command_line_options.inl</Outputs>
       <AdditionalInputs>..\Tools\generate_options_header.cmd</AdditionalInputs>

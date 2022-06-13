@@ -3,7 +3,6 @@
 Requirements:
 
 - Visual Studio 2022
-- awk and sed in your path (e.g., `%ProgramFiles%\Git\usr\bin`)
 
 Quick-start:
 
