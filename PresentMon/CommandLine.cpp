@@ -511,29 +511,7 @@ bool ParseCommandLine(int argc, char** argv)
 
     // If -terminate_existing, warn about any normal arguments since we'll just
     // be stopping an existing session and then exiting.
-    if (args->mTerminateExisting && (
-        !args->mTargetProcessNames.empty() ||
-        !args->mExcludeProcessNames.empty() ||
-        args->mTargetPid != 0 ||
-        args->mEtlFileName != nullptr ||
-        args->mOutputCsvFileName != nullptr ||
-        args->mOutputCsvToStdout ||
-        args->mMultiCsv ||
-        args->mOutputCsvToFile == false ||
-        args->mConsoleOutputType == ConsoleOutput::Simple ||
-        args->mOutputQpcTime ||
-        args->mOutputQpcTimeInSeconds ||
-        args->mHotkeySupport ||
-        args->mDelay != 0 ||
-        args->mTimer != 0 ||
-        args->mStartTimer ||
-        args->mExcludeDropped ||
-        args->mScrollLockIndicator ||
-        !args->mTrackDisplay ||
-        args->mTrackDebug ||
-        args->mTrackWMR ||
-        args->mTerminateOnProcExit ||
-        args->mTerminateAfterTimer)) {
+    if (args->mTerminateExisting && argc != 2) {
         PrintWarning("warning: -terminate_existing exits without capturing anything; ignoring all capture,\n"
                      "         output, and recording arguments.\n");
     }
