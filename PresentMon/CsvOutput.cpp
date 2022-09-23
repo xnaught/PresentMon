@@ -158,6 +158,10 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
         }
     }
     fprintf(fp, "\n");
+
+    if (args.mOutputCsvToStdout) {
+        fflush(fp);
+    }
 }
 
 /* This text is reproduced in the readme, modify both if there are changes:
