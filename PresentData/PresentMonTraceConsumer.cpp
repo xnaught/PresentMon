@@ -1528,6 +1528,11 @@ void PMTraceConsumer::CompletePresentHelper(std::shared_ptr<PresentEvent> const&
                     p2->FinalState = p->FinalState;
                     p2->ScreenTime = p->ScreenTime;
                 }
+
+                if (p->IsLost) {
+                    DebugModifyPresent(p2.get());
+                    p2->IsLost = true;
+                }
             }
         }
         for (auto p2 : p->DependentPresents) {
