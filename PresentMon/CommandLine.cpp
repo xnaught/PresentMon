@@ -3,7 +3,10 @@
 
 #include <generated/version.h>
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif NOMINMAX
+
 #include "PresentMon.hpp"
 #include <algorithm>
 

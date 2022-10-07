@@ -3,7 +3,9 @@
 
 #pragma once
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 
 #include <deque>
 #include <map>

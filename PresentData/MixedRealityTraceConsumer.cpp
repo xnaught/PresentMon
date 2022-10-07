@@ -1,7 +1,9 @@
 // Copyright (C) 2017-2020 Intel Corporation
 // SPDX-License-Identifier: MIT
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <algorithm>
 #include <d3d9.h>
 #include <dxgi.h>

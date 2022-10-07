@@ -1,6 +1,10 @@
 // Copyright (C) 2019-2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include "PresentMon.hpp"
 
 #include <algorithm>
@@ -334,7 +338,7 @@ static void PruneHistory(
 {
     assert(processEvents.size() + presentEvents.size() + lsrEvents.size() > 0);
 
-    auto latestQpc = max(max(
+    auto latestQpc = std::max(std::max(
         processEvents.empty() ? 0ull : processEvents.back().QpcTime,
         presentEvents.empty() ? 0ull : presentEvents.back()->QpcTime),
         lsrEvents.empty()     ? 0ull : lsrEvents.back()->QpcTime);

@@ -1,6 +1,10 @@
 // Copyright (C) 2020-2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include <assert.h>
 #include <stddef.h>
 #include <windows.h>
@@ -112,7 +116,7 @@ struct FilteredProvider {
             AddKeyword((uint64_t) T::Keyword);
         }
 
-        maxLevel_ = max(maxLevel_, T::Level);
+        maxLevel_ = std::max(maxLevel_, T::Level);
     }
 
     ULONG Enable(

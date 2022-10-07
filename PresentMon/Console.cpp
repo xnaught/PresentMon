@@ -1,6 +1,10 @@
 // Copyright (C) 2019-2021 Intel Corporation
 // SPDX-License-Identifier: MIT
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include "PresentMon.hpp"
 
 static HANDLE gConsoleHandle = INVALID_HANDLE_VALUE;
@@ -49,7 +53,7 @@ static void vConsolePrint(char const* format, va_list args)
 
     int r = vsnprintf(s, n, format, args);
     if (r > 0) {
-        gConsoleWriteBufferIndex = min((uint32_t) (n - 1), gConsoleWriteBufferIndex + r);
+        gConsoleWriteBufferIndex = std::min((uint32_t) (n - 1), gConsoleWriteBufferIndex + r);
     }
 }
 

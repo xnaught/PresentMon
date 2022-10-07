@@ -1,7 +1,9 @@
 // Copyright (C) 2020-2021 Intel Corporation
 // SPDX-License-Identifier: MIT
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #include <gtest/gtest.h>
 #include <string>
 #include <unordered_map>
