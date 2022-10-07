@@ -5,7 +5,7 @@
 
 #ifndef NOMINMAX
 #define NOMINMAX
-#endif NOMINMAX
+#endif
 
 #include "PresentMon.hpp"
 #include <algorithm>
