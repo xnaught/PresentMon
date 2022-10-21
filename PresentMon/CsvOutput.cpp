@@ -87,7 +87,7 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
     }
 
     // Early return if not outputing to CSV.
-    auto fp = GetOutputCsv(processInfo).mFile;
+    auto fp = GetOutputCsv(processInfo, p.ProcessId).mFile;
     if (fp == nullptr) {
         return;
     }
@@ -179,19 +179,19 @@ with `-INDEX` appended to the file name.
 If `-include_mixed_reality` is used, a second CSV file will be generated with
 `_WMR` appended to the filename containing the WMR data.
 */
-static void GenerateFilename(char const* processName, char* path)
+static void GenerateFilename(char* path, char const* processName, uint32_t processId)
 {
     auto const& args = GetCommandLineArgs();
 
     char ext[_MAX_EXT];
     int pathLength = MAX_PATH;
 
-#define ADD_TO_PATH(...) do { \
-    if (path != nullptr) { \
-        auto result = _snprintf_s(path, pathLength, _TRUNCATE, __VA_ARGS__); \
-        if (result == -1) path = nullptr; else { path += result; pathLength -= result; } \
-    } \
-} while (0)
+    #define ADD_TO_PATH(...) do { \
+        if (path != nullptr) { \
+            auto result = _snprintf_s(path, pathLength, _TRUNCATE, __VA_ARGS__); \
+            if (result == -1) path = nullptr; else { path += result; pathLength -= result; } \
+        } \
+    } while (0)
 
     // Generate base filename.
     if (args.mOutputCsvFileName) {
@@ -210,7 +210,10 @@ static void GenerateFilename(char const* processName, char* path)
 
     // Append -PROCESSNAME if applicable.
     if (processName != nullptr) {
-        ADD_TO_PATH("-%s", processName);
+        if (strcmp(processName, "<error>")) {
+            ADD_TO_PATH("-%s", processName);
+        }
+        ADD_TO_PATH("-%u", processId);
     }
 
     // Append -INDEX if applicable.
@@ -220,9 +223,11 @@ static void GenerateFilename(char const* processName, char* path)
 
     // Append extension.
     ADD_TO_PATH("%s", ext);
+
+    #undef ADD_TO_PATH
 }
 
-static OutputCsv CreateOutputCsv(char const* processName)
+static OutputCsv CreateOutputCsv(char const* processName, uint32_t processId)
 {
     auto const& args = GetCommandLineArgs();
 
@@ -233,7 +238,7 @@ static OutputCsv CreateOutputCsv(char const* processName)
         outputCsv.mWmrFile = nullptr;       // WMR disallowed if -output_stdout
     } else {
         char path[MAX_PATH];
-        GenerateFilename(processName, path);
+        GenerateFilename(path, processName, processId);
 
         fopen_s(&outputCsv.mFile, path, "w");
 
@@ -249,7 +254,7 @@ static OutputCsv CreateOutputCsv(char const* processName)
     return outputCsv;
 }
 
-OutputCsv GetOutputCsv(ProcessInfo* processInfo)
+OutputCsv GetOutputCsv(ProcessInfo* processInfo, uint32_t processId)
 {
     auto const& args = GetCommandLineArgs();
 
@@ -259,10 +264,10 @@ OutputCsv GetOutputCsv(ProcessInfo* processInfo)
 
     if (args.mOutputCsvToFile && processInfo->mOutputCsv.mFile == nullptr) {
         if (args.mMultiCsv) {
-            processInfo->mOutputCsv = CreateOutputCsv(processInfo->mModuleName.c_str());
+            processInfo->mOutputCsv = CreateOutputCsv(processInfo->mModuleName.c_str(), processId);
         } else {
             if (gSingleOutputCsv.mFile == nullptr) {
-                gSingleOutputCsv = CreateOutputCsv(nullptr);
+                gSingleOutputCsv = CreateOutputCsv(nullptr, 0);
             }
 
             processInfo->mOutputCsv = gSingleOutputCsv;

@@ -119,7 +119,7 @@ void WaitForConsumerThreadToExit();
 
 // CsvOutput.cpp:
 void IncrementRecordingCount();
-OutputCsv GetOutputCsv(ProcessInfo* processInfo);
+OutputCsv GetOutputCsv(ProcessInfo* processInfo, uint32_t processId);
 void CloseOutputCsv(ProcessInfo* processInfo);
 void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEvent const& p);
 const char* FinalStateToDroppedString(PresentResult res);
