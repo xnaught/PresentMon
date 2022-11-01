@@ -147,7 +147,7 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
     }
     if (args.mTrackDebug) {
         fprintf(fp, ",%d,%d",
-            p.DriverBatchThreadId != 0,
+            p.DriverThreadId != 0,
             p.DwmNotified);
     }
     if (args.mOutputQpcTime) {

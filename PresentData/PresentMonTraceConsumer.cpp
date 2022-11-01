@@ -92,7 +92,7 @@ PresentEvent::PresentEvent()
 
     , DestWidth(0)
     , DestHeight(0)
-    , DriverBatchThreadId(0)
+    , DriverThreadId(0)
 
     , Runtime(Runtime::Other)
     , PresentMode(PresentMode::Unknown)
@@ -1377,16 +1377,16 @@ void PMTraceConsumer::RemovePresentFromTemporaryTrackingCollections(std::shared_
     // mPresentByThreadId
     //
     // If the present was batched, it will by referenced in mPresentByThreadId
-    // by both ThreadId and DriverBatchThreadId.
+    // by both ThreadId and DriverThreadId.
     //
-    // We don't reset neither ThreadId nor DriverBatchThreadId as both are
-    // useful outside of tracking.
+    // We don't reset ThreadId nor DriverThreadId as both are useful outside of
+    // tracking.
     auto threadEventIter = mPresentByThreadId.find(p->ThreadId);
     if (threadEventIter != mPresentByThreadId.end() && threadEventIter->second == p) {
         mPresentByThreadId.erase(threadEventIter);
     }
-    if (p->DriverBatchThreadId != 0) {
-        threadEventIter = mPresentByThreadId.find(p->DriverBatchThreadId);
+    if (p->DriverThreadId != 0) {
+        threadEventIter = mPresentByThreadId.find(p->DriverThreadId);
         if (threadEventIter != mPresentByThreadId.end() && threadEventIter->second == p) {
             mPresentByThreadId.erase(threadEventIter);
         }
@@ -1706,9 +1706,9 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
     for (auto const& tuple : *presentsByThisProcess) {
         auto presentEvent = tuple.second;
         if (presentEvent->PresentMode == PresentMode::Unknown) {
-            assert(presentEvent->DriverBatchThreadId == 0);
+            assert(presentEvent->DriverThreadId == 0);
             DebugModifyPresent(presentEvent.get());
-            presentEvent->DriverBatchThreadId = hdr.ThreadId;
+            presentEvent->DriverThreadId = hdr.ThreadId;
             mPresentByThreadId.emplace(hdr.ThreadId, presentEvent);
             return presentEvent;
         }

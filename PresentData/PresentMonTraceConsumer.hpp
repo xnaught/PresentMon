@@ -141,9 +141,10 @@ struct PresentEvent {
     uint64_t Hwnd;                        // mLastPresentByWindow
     uint32_t mAllPresentsTrackingIndex;   // mAllPresents.
     uint32_t QueueSubmitSequence;         // mPresentBySubmitSequence
-    // Note: the following index tracking structures, but are also considered useful data:
-    //       ProcessId : mOrderedPresentsByProcessId
-    //       ThreadId  : mPresentByThreadId
+    // Note: the following index tracking structures as well but are defined elsewhere:
+    //       ProcessId                 -> mOrderedPresentsByProcessId
+    //       ThreadId, DriverThreadId  -> mPresentByThreadId
+    //       PresentInDwmWaitingStruct -> mPresentsWaitingForDWM
 
     // How many PresentStop events from the thread to wait for before
     // enqueueing this present.
@@ -152,7 +153,8 @@ struct PresentEvent {
     // Properties deduced by watching events through present pipeline
     uint32_t DestWidth;
     uint32_t DestHeight;
-    uint32_t DriverBatchThreadId;
+    uint32_t DriverThreadId;    // If the present is deferred by the driver, this will hold the
+                                // threaad id that the driver finally presented on.
     Runtime Runtime;
     PresentMode PresentMode;
     PresentResult FinalState;
@@ -165,8 +167,8 @@ struct PresentEvent {
     bool IsCompleted;           // All expected events have been observed
     bool IsLost;                // This PresentEvent was found in an unexpected state or is too old
 
-    // We need a signal to prevent us from looking fruitlessly through the WaitingForDwm list
-    bool PresentInDwmWaitingStruct;
+    bool PresentInDwmWaitingStruct; // Whether this PresentEvent is currently stored in
+                                    // PMTraceConsumer::mPresentsWaitingForDWM
 
     // Additional transient tracking state
     std::deque<std::shared_ptr<PresentEvent>> DependentPresents;
