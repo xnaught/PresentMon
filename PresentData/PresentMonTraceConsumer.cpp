@@ -129,39 +129,36 @@ void PMTraceConsumer::HandleD3D9Event(EVENT_RECORD* pEventRecord)
     DebugEvent(this, pEventRecord, &mMetadata);
 
     auto const& hdr = pEventRecord->EventHeader;
-
-    if (!IsProcessTrackedForFiltering(hdr.ProcessId)) {
-        return;
-    }
-
     switch (hdr.EventDescriptor.Id) {
     case Microsoft_Windows_D3D9::Present_Start::Id:
-    {
-        EventDataDesc desc[] = {
-            { L"pSwapchain" },
-            { L"Flags" },
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto pSwapchain = desc[0].GetData<uint64_t>();
-        auto Flags      = desc[1].GetData<uint32_t>();
+        if (IsProcessTrackedForFiltering(hdr.ProcessId)) {
+            EventDataDesc desc[] = {
+                { L"pSwapchain" },
+                { L"Flags" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto pSwapchain = desc[0].GetData<uint64_t>();
+            auto Flags      = desc[1].GetData<uint32_t>();
 
-        uint32_t dxgiPresentFlags = 0;
-        if (Flags & D3DPRESENT_DONOTFLIP)   dxgiPresentFlags |= DXGI_PRESENT_DO_NOT_SEQUENCE;
-        if (Flags & D3DPRESENT_DONOTWAIT)   dxgiPresentFlags |= DXGI_PRESENT_DO_NOT_WAIT;
-        if (Flags & D3DPRESENT_FLIPRESTART) dxgiPresentFlags |= DXGI_PRESENT_RESTART;
+            uint32_t dxgiPresentFlags = 0;
+            if (Flags & D3DPRESENT_DONOTFLIP)   dxgiPresentFlags |= DXGI_PRESENT_DO_NOT_SEQUENCE;
+            if (Flags & D3DPRESENT_DONOTWAIT)   dxgiPresentFlags |= DXGI_PRESENT_DO_NOT_WAIT;
+            if (Flags & D3DPRESENT_FLIPRESTART) dxgiPresentFlags |= DXGI_PRESENT_RESTART;
 
-        int32_t syncInterval = -1;
-        if (Flags & D3DPRESENT_FORCEIMMEDIATE) {
-            syncInterval = 0;
+            int32_t syncInterval = -1;
+            if (Flags & D3DPRESENT_FORCEIMMEDIATE) {
+                syncInterval = 0;
+            }
+
+            TRACK_PRESENT_PATH_GENERATE_ID();
+
+            RuntimePresentStart(Runtime::D3D9, hdr, pSwapchain, dxgiPresentFlags, syncInterval);
         }
-
-        TRACK_PRESENT_PATH_GENERATE_ID();
-
-        RuntimePresentStart(Runtime::D3D9, hdr, pSwapchain, dxgiPresentFlags, syncInterval);
         break;
-    }
     case Microsoft_Windows_D3D9::Present_Stop::Id:
-        RuntimePresentStop(Runtime::D3D9, hdr, mMetadata.GetEventData<uint32_t>(pEventRecord, L"Result"));
+        if (IsProcessTrackedForFiltering(hdr.ProcessId)) {
+            RuntimePresentStop(Runtime::D3D9, hdr, mMetadata.GetEventData<uint32_t>(pEventRecord, L"Result"));
+        }
         break;
     default:
         assert(!mFilteredEvents); // Assert that filtering is working if expected
@@ -174,33 +171,30 @@ void PMTraceConsumer::HandleDXGIEvent(EVENT_RECORD* pEventRecord)
     DebugEvent(this, pEventRecord, &mMetadata);
 
     auto const& hdr = pEventRecord->EventHeader;
-
-    if (!IsProcessTrackedForFiltering(hdr.ProcessId)) {
-        return;
-    }
-
     switch (hdr.EventDescriptor.Id) {
     case Microsoft_Windows_DXGI::Present_Start::Id:
     case Microsoft_Windows_DXGI::PresentMultiplaneOverlay_Start::Id:
-    {
-        EventDataDesc desc[] = {
-            { L"pIDXGISwapChain" },
-            { L"Flags" },
-            { L"SyncInterval" },
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto pSwapChain   = desc[0].GetData<uint64_t>();
-        auto Flags        = desc[1].GetData<uint32_t>();
-        auto SyncInterval = desc[2].GetData<int32_t>();
+        if (IsProcessTrackedForFiltering(hdr.ProcessId)) {
+            EventDataDesc desc[] = {
+                { L"pIDXGISwapChain" },
+                { L"Flags" },
+                { L"SyncInterval" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto pSwapChain   = desc[0].GetData<uint64_t>();
+            auto Flags        = desc[1].GetData<uint32_t>();
+            auto SyncInterval = desc[2].GetData<int32_t>();
 
-        TRACK_PRESENT_PATH_GENERATE_ID();
+            TRACK_PRESENT_PATH_GENERATE_ID();
 
-        RuntimePresentStart(Runtime::DXGI, hdr, pSwapChain, Flags, SyncInterval);
+            RuntimePresentStart(Runtime::DXGI, hdr, pSwapChain, Flags, SyncInterval);
+        }
         break;
-    }
     case Microsoft_Windows_DXGI::Present_Stop::Id:
     case Microsoft_Windows_DXGI::PresentMultiplaneOverlay_Stop::Id:
-        RuntimePresentStop(Runtime::DXGI, hdr, mMetadata.GetEventData<uint32_t>(pEventRecord, L"Result"));
+        if (IsProcessTrackedForFiltering(hdr.ProcessId)) {
+            RuntimePresentStop(Runtime::DXGI, hdr, mMetadata.GetEventData<uint32_t>(pEventRecord, L"Result"));
+        }
         break;
     default:
         assert(!mFilteredEvents); // Assert that filtering is working if expected
@@ -1691,12 +1685,6 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
         return threadEventIter->second;
     }
 
-    // If not, check if this event is from a process that is filtered out and,
-    // if so, ignore it.
-    if (!IsProcessTrackedForFiltering(hdr.ProcessId)) {
-        return nullptr;
-    }
-
     // Search for an in-progress present created by this process that still
     // doesn't have a known PresentMode.  This can be the case for DXGI/D3D
     // presents created on a different thread, which are batched and then
@@ -1714,22 +1702,27 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
         }
     }
 
-    // Because we couldn't find a present above, the calling event is for an
-    // unknown, in-progress present.  This can happen if the present didn't
+    // If we couldn't find an in-progress present on the same thread/process,
+    // then we create a new one and start tracking it from here (unless the
+    //
+    // This can happen if there was a lost event, or if the present didn't
     // originate from a runtime whose events we're tracking (i.e., DXGI or
-    // D3D9) in which case a DXGKRNL event will be the first present-related
-    // event we ever see.  So, we create the PresentEvent and start tracking it
-    // from here.
-    auto present = std::make_shared<PresentEvent>();
+    // D3D9) in which case a DxgKrnl event will be the first present-related
+    // event we ever see.
+    if (IsProcessTrackedForFiltering(hdr.ProcessId)) {
+        auto present = std::make_shared<PresentEvent>();
 
-    DebugModifyPresent(present.get());
-    present->QpcTime = *(uint64_t*) &hdr.TimeStamp;
-    present->ProcessId = hdr.ProcessId;
-    present->ThreadId = hdr.ThreadId;
+        DebugModifyPresent(present.get());
+        present->QpcTime = *(uint64_t*) &hdr.TimeStamp;
+        present->ProcessId = hdr.ProcessId;
+        present->ThreadId = hdr.ThreadId;
 
-    TrackPresent(present, presentsByThisProcess);
+        TrackPresent(present, presentsByThisProcess);
 
-    return present;
+        return present;
+    }
+
+    return nullptr;
 }
 
 void PMTraceConsumer::TrackPresent(
