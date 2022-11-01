@@ -20,7 +20,7 @@
 namespace {
 
 PresentEvent const* gModifiedPresent = nullptr;
-PresentEvent gOriginalPresentValues(EVENT_HEADER{}, Runtime::Other);
+PresentEvent gOriginalPresentValues;
 
 bool gDebugDone = false;
 bool gDebugTrace = false;
@@ -396,21 +396,6 @@ void DebugModifyPresent(PresentEvent const* p)
             gOriginalPresentValues = *p;
         }
     }
-}
-
-void DebugCreatePresent(PresentEvent const& p)
-{
-    if (!gDebugTrace) return;
-    FlushModifiedPresent();
-    PrintUpdateHeader(p.Id);
-    printf(" CreatePresent");
-    printf(" ProcessId=%u", p.ProcessId);
-    printf(" SwapChainAddress=%llx", p.SwapChainAddress);
-    printf(" PresentFlags=%x", p.PresentFlags);
-    printf(" SyncInterval=%u", p.SyncInterval);
-    printf(" Runtime=");
-    PrintRuntime(p.Runtime);
-    printf("\n");
 }
 
 #endif // if DEBUG_VERBOSE

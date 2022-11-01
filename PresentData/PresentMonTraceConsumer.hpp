@@ -181,7 +181,7 @@ struct PresentEvent {
     uint64_t Id;
     #endif
 
-    PresentEvent(EVENT_HEADER const& hdr, ::Runtime runtime);
+    PresentEvent();
 
 private:
     PresentEvent(PresentEvent const& copy); // dne

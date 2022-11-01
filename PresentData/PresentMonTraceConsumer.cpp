@@ -66,10 +66,10 @@ uint32_t GetDeferredCompletionWaitCount(PresentEvent const& p)
 #define TRACK_PRESENT_PATH_SAVE_GENERATED_ID(present) (void) present
 #endif
 
-PresentEvent::PresentEvent(EVENT_HEADER const& hdr, ::Runtime runtime)
-    : QpcTime(*(uint64_t*) &hdr.TimeStamp)
-    , ProcessId(hdr.ProcessId)
-    , ThreadId(hdr.ThreadId)
+PresentEvent::PresentEvent()
+    : QpcTime(0)
+    , ProcessId(0)
+    , ThreadId(0)
     , TimeTaken(0)
     , ReadyTime(0)
     , ScreenTime(0)
@@ -94,7 +94,7 @@ PresentEvent::PresentEvent(EVENT_HEADER const& hdr, ::Runtime runtime)
     , DestHeight(0)
     , DriverBatchThreadId(0)
 
-    , Runtime(runtime)
+    , Runtime(Runtime::Other)
     , PresentMode(PresentMode::Unknown)
     , FinalState(PresentResult::Unknown)
 
@@ -1720,9 +1720,16 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
     // D3D9) in which case a DXGKRNL event will be the first present-related
     // event we ever see.  So, we create the PresentEvent and start tracking it
     // from here.
-    auto presentEvent = std::make_shared<PresentEvent>(hdr, Runtime::Other);
-    TrackPresent(presentEvent, presentsByThisProcess);
-    return presentEvent;
+    auto present = std::make_shared<PresentEvent>();
+
+    DebugModifyPresent(present.get());
+    present->QpcTime = *(uint64_t*) &hdr.TimeStamp;
+    present->ProcessId = hdr.ProcessId;
+    present->ThreadId = hdr.ThreadId;
+
+    TrackPresent(present, presentsByThisProcess);
+
+    return present;
 }
 
 void PMTraceConsumer::TrackPresent(
@@ -1735,7 +1742,7 @@ void PMTraceConsumer::TrackPresent(
         RemoveLostPresent(mAllPresents[mAllPresentsNextIndex]);
     }
 
-    DebugCreatePresent(*present);
+    DebugModifyPresent(present.get());
     present->mAllPresentsTrackingIndex = mAllPresentsNextIndex;
     mAllPresents[mAllPresentsNextIndex] = present;
     mAllPresentsNextIndex = (mAllPresentsNextIndex + 1) % PRESENTEVENT_CIRCULAR_BUFFER_SIZE;
@@ -1760,12 +1767,16 @@ void PMTraceConsumer::RuntimePresentStart(Runtime runtime, EVENT_HEADER const& h
         return;
     }
 
-    auto present = std::make_shared<PresentEvent>(hdr, runtime);
+    auto present = std::make_shared<PresentEvent>();
 
     DebugModifyPresent(present.get());
+    present->QpcTime = *(uint64_t*) &hdr.TimeStamp;
+    present->ProcessId = hdr.ProcessId;
+    present->ThreadId = hdr.ThreadId;
+    present->Runtime = runtime;
     present->SwapChainAddress = swapchainAddr;
-    present->PresentFlags     = dxgiPresentFlags;
-    present->SyncInterval     = syncInterval;
+    present->PresentFlags = dxgiPresentFlags;
+    present->SyncInterval = syncInterval;
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(present);
 

@@ -26,9 +26,6 @@ bool DebugDone();
 // Print debug information about the handled event
 void DebugEvent(PMTraceConsumer* pmConsumer, _EVENT_RECORD* eventRecord, EventMetadata* metadata);
 
-// Call when a new present is created
-void DebugCreatePresent(PresentEvent const& p);
-
 // Call before modifying any PresentEvent member
 void DebugModifyPresent(PresentEvent const* p);
 
@@ -37,7 +34,6 @@ void DebugModifyPresent(PresentEvent const* p);
 #define DebugInitialize(firstTimestamp, timestampFrequency) (void) firstTimestamp, timestampFrequency
 #define DebugDone()                                         false
 #define DebugEvent(pmConsumer, eventRecord, metadata)       (void) pmConsumer, eventRecord, metadata
-#define DebugCreatePresent(p)                               (void) p
 #define DebugModifyPresent(p)                               (void) p
 
 #endif
