@@ -374,7 +374,6 @@ struct PMTraceConsumer
     void CompletePresentHelper(std::shared_ptr<PresentEvent> const& p);
     void EnqueueDeferredCompletions(DeferredCompletions* deferredCompletions);
     void EnqueueDeferredPresent(std::shared_ptr<PresentEvent> const& p);
-    std::shared_ptr<PresentEvent> FindOrCreatePresent(EVENT_HEADER const& hdr);
     void TrackPresent(std::shared_ptr<PresentEvent> present, OrderedPresents* presentsByThisProcess);
     void RemoveLostPresent(std::shared_ptr<PresentEvent> present);
     void RemovePresentFromTemporaryTrackingCollections(std::shared_ptr<PresentEvent> present);
@@ -399,4 +398,8 @@ struct PMTraceConsumer
     void AddTrackedProcessForFiltering(uint32_t processID);
     void RemoveTrackedProcessForFiltering(uint32_t processID);
     bool IsProcessTrackedForFiltering(uint32_t processID);
+
+    void SetThreadPresent(uint32_t threadId, std::shared_ptr<PresentEvent> const& present);
+    std::shared_ptr<PresentEvent> FindThreadPresent(uint32_t threadId);
+    std::shared_ptr<PresentEvent> FindOrCreatePresent(EVENT_HEADER const& hdr);
 };

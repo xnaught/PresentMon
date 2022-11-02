@@ -241,11 +241,10 @@ void PMTraceConsumer::HandleDxgkBltCancel(EVENT_HEADER const& hdr)
     // There are cases where a present blt can be optimized out in kernel.
     // In such cases, we return success to the caller, but issue no further work
     // for the present. Mark these cases as discarded.
-    auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
-    if (eventIter != mPresentByThreadId.end()) {
-        auto present = eventIter->second;
-
+    auto present = FindThreadPresent(hdr.ThreadId);
+    if (present != nullptr) {
         TRACK_PRESENT_PATH(present);
+
         DebugModifyPresent(present.get());
         present->FinalState = PresentResult::Discarded;
 
@@ -350,24 +349,20 @@ void PMTraceConsumer::HandleDxgkQueueSubmit(
     if (packetType == (uint32_t) Microsoft_Windows_DxgKrnl::QueuePacketType::DXGKETW_MMIOFLIP_COMMAND_BUFFER ||
         packetType == (uint32_t) Microsoft_Windows_DxgKrnl::QueuePacketType::DXGKETW_SOFTWARE_COMMAND_BUFFER ||
         isPresentPacket) {
-        auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
-        if (eventIter != mPresentByThreadId.end()) {
-            auto present = eventIter->second;
+        auto present = FindThreadPresent(hdr.ThreadId);
+        if (present != nullptr && present->QueueSubmitSequence == 0) {
 
-            if (present->QueueSubmitSequence == 0) {
+            TRACK_PRESENT_PATH(present);
 
-                TRACK_PRESENT_PATH(present);
-                DebugModifyPresent(present.get());
+            DebugModifyPresent(present.get());
+            present->QueueSubmitSequence = submitSequence;
+            mPresentBySubmitSequence.emplace(submitSequence, present);
 
-                present->QueueSubmitSequence = submitSequence;
-                mPresentBySubmitSequence.emplace(submitSequence, present);
-
-                #pragma warning(suppress: 4984) // C++17 language extension
-                if constexpr (Win7) {
-                    if (present->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer) {
-                        mPresentByDxgkContext[context] = present;
-                        present->DxgkContext = context;
-                    }
+            #pragma warning(suppress: 4984) // C++17 language extension
+            if constexpr (Win7) {
+                if (present->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer) {
+                    mPresentByDxgkContext[context] = present;
+                    present->DxgkContext = context;
                 }
             }
         }
@@ -1676,41 +1671,65 @@ void PMTraceConsumer::EnqueueDeferredCompletions(DeferredCompletions* deferredCo
     }
 }
 
-std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER const& hdr)
+void PMTraceConsumer::SetThreadPresent(uint32_t threadId, std::shared_ptr<PresentEvent> const& present)
 {
-    // Check if there is an in-progress present that this thread is already
-    // working on and, if so, continue working on that.
-    auto threadEventIter = mPresentByThreadId.find(hdr.ThreadId);
-    if (threadEventIter != mPresentByThreadId.end()) {
-        return threadEventIter->second;
+    // If there is an in-flight present on this thread already, then something
+    // has gone wrong with it's tracking so consider it lost.
+    auto ii = mPresentByThreadId.find(threadId);
+    if (ii != mPresentByThreadId.end()) {
+        RemoveLostPresent(ii->second);
     }
 
-    // Search for an in-progress present created by this process that still
-    // doesn't have a known PresentMode.  This can be the case for DXGI/D3D
-    // presents created on a different thread, which are batched and then
-    // handled later during a DXGK/Win32K event.  If found, we add it to
-    // mPresentByThreadId to indicate what present this thread is working on.
+    mPresentByThreadId.emplace(threadId, present);
+}
+
+std::shared_ptr<PresentEvent> PMTraceConsumer::FindThreadPresent(uint32_t threadId)
+{
+    auto ii = mPresentByThreadId.find(threadId);
+    return ii == mPresentByThreadId.end() ? std::shared_ptr<PresentEvent>() : ii->second;
+}
+
+std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER const& hdr)
+{
+    // First, we check if there is an in-progress present that was last
+    // operated on from this same thread.
+    auto present = FindThreadPresent(hdr.ThreadId);
+    if (present != nullptr) {
+        return present;
+    }
+
+    // Next, we look for the oldest present from the same process that may have
+    // been deferred by the driver and submitted on a different thread.  Such
+    // presents should have only seen present start/stop events so should not
+    // have a known PresentMode, etc. yet.
     auto presentsByThisProcess = &mOrderedPresentsByProcessId[hdr.ProcessId];
-    for (auto const& tuple : *presentsByThisProcess) {
-        auto presentEvent = tuple.second;
-        if (presentEvent->PresentMode == PresentMode::Unknown) {
-            assert(presentEvent->DriverThreadId == 0);
-            DebugModifyPresent(presentEvent.get());
-            presentEvent->DriverThreadId = hdr.ThreadId;
-            mPresentByThreadId.emplace(hdr.ThreadId, presentEvent);
-            return presentEvent;
+    for (auto const& pr : *presentsByThisProcess) {
+        present = pr.second;
+        if (present->PresentMode == PresentMode::Unknown) {
+            assert(present->DriverThreadId == 0);
+            DebugModifyPresent(present.get());
+            present->DriverThreadId = hdr.ThreadId;
+
+            // Set this present as the one the driver thread is working on.  We
+            // leave it assigned to the one the application thread is working
+            // on as well, in case we haven't yet seen application events such
+            // as Present::Stop.
+            SetThreadPresent(hdr.ThreadId, present);
+
+            return present;
         }
     }
 
     // If we couldn't find an in-progress present on the same thread/process,
     // then we create a new one and start tracking it from here (unless the
+    // user is filtering this process out).
     //
     // This can happen if there was a lost event, or if the present didn't
     // originate from a runtime whose events we're tracking (i.e., DXGI or
     // D3D9) in which case a DxgKrnl event will be the first present-related
     // event we ever see.
     if (IsProcessTrackedForFiltering(hdr.ProcessId)) {
-        auto present = std::make_shared<PresentEvent>();
+        present = std::make_shared<PresentEvent>();
 
         DebugModifyPresent(present.get());
         present->QpcTime = *(uint64_t*) &hdr.TimeStamp;
@@ -1735,25 +1754,20 @@ void PMTraceConsumer::TrackPresent(
         RemoveLostPresent(mAllPresents[mAllPresentsNextIndex]);
     }
 
+    // Add the present into the initial tracking data structures
     DebugModifyPresent(present.get());
     present->mAllPresentsTrackingIndex = mAllPresentsNextIndex;
     mAllPresents[mAllPresentsNextIndex] = present;
     mAllPresentsNextIndex = (mAllPresentsNextIndex + 1) % PRESENTEVENT_CIRCULAR_BUFFER_SIZE;
 
     presentsByThisProcess->emplace(present->QpcTime, present);
-    mPresentByThreadId.emplace(present->ThreadId, present);
+
+    SetThreadPresent(present->ThreadId, present);
 }
 
 void PMTraceConsumer::RuntimePresentStart(Runtime runtime, EVENT_HEADER const& hdr, uint64_t swapchainAddr,
                                           uint32_t dxgiPresentFlags, int32_t syncInterval)
 {
-    // If there is an in-flight present on this thread already, then something
-    // has gone wrong with it's tracking so consider it lost.
-    auto iter = mPresentByThreadId.find(hdr.ThreadId);
-    if (iter != mPresentByThreadId.end()) {
-        RemoveLostPresent(iter->second);
-    }
-
     // Ignore PRESENT_TEST as it doesn't present, it's used to check if you're
     // fullscreen.
     if (dxgiPresentFlags & DXGI_PRESENT_TEST) {
@@ -1781,15 +1795,12 @@ void PMTraceConsumer::RuntimePresentStart(Runtime runtime, EVENT_HEADER const& h
 // for any completed present.
 void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hdr, uint32_t result)
 {
-    // If the Present() call failed, lookup the PresentEvent as the one
-    // most-recently operated on by the same thread.  If not found, ignore the
-    // Present() stop event.  If found, we throw it away (i.e., it isn't
-    // returned as either a completed nor lost present).
+    // If the Present() call failed, we lookup the present most-recently
+    // operated on by the same thread and, if found, throw it away (i.e., it
+    // won't be treated as either a completed nor lost present).
     if (FAILED(result)) {
-        auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
-        if (eventIter != mPresentByThreadId.end()) {
-            auto present = eventIter->second;
-
+        auto present = FindThreadPresent(hdr.ThreadId);
+        if (present != nullptr) {
             // Check expected state (a new Present() that has only been started).
             assert(present->TimeTaken                   == 0);
             assert(present->IsCompleted                 == false);
