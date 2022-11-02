@@ -119,12 +119,12 @@ struct ProcessEvent {
 };
 
 struct PresentEvent {
-    uint64_t QpcTime;       // QPC value of the first event related to the Present (D3D9, DXGI, or DXGK Present_Start)
-    uint32_t ProcessId;     // ID of the process that presented
-    uint32_t ThreadId;      // ID of the thread that presented
-    uint64_t TimeTaken;     // QPC duration between runtime present start and end
-    uint64_t ReadyTime;     // QPC value when the last GPU commands completed prior to presentation
-    uint64_t ScreenTime;    // QPC value when the present was displayed on screen
+    uint64_t PresentStartTime;  // QPC value of the first event related to the Present (D3D9, DXGI, or DXGK Present_Start)
+    uint32_t ProcessId;         // ID of the process that presented
+    uint32_t ThreadId;          // ID of the thread that presented
+    uint64_t PresentStopTime;   // QPC value when the application's present call completed
+    uint64_t ReadyTime;         // QPC value when the last GPU commands completed prior to presentation
+    uint64_t ScreenTime;        // QPC value when the present was displayed on screen
 
     // Extra present parameters obtained through DXGI or D3D9 present
     uint64_t SwapChainAddress;
@@ -323,7 +323,7 @@ struct PMTraceConsumer
     std::vector<std::shared_ptr<PresentEvent>> mAllPresents;
 
     std::unordered_map<uint32_t, std::shared_ptr<PresentEvent>> mPresentByThreadId;                     // ThreadId -> PresentEvent
-    std::unordered_map<uint32_t, OrderedPresents>               mOrderedPresentsByProcessId;            // ProcessId -> ordered QpcTime -> PresentEvent
+    std::unordered_map<uint32_t, OrderedPresents>               mOrderedPresentsByProcessId;            // ProcessId -> ordered PresentStartTime -> PresentEvent
     std::unordered_map<uint32_t, std::shared_ptr<PresentEvent>> mPresentBySubmitSequence;               // SubmitSequenceId -> PresentEvent
     std::unordered_map<Win32KPresentHistoryToken, std::shared_ptr<PresentEvent>,
                        Win32KPresentHistoryTokenHash>           mPresentByWin32KPresentHistoryToken;    // Win32KPresentHistoryToken -> PresentEvent

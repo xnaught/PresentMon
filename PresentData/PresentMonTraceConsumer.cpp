@@ -30,7 +30,7 @@ uint32_t GetDeferredCompletionWaitCount(PresentEvent const& p)
 {
     // If the present was displayed or discarded before Present_Stop, defer
     // completion for for one Present_Stop.
-    if (p.Runtime != Runtime::Other && p.TimeTaken == 0) {
+    if (p.Runtime != Runtime::Other && p.PresentStopTime == 0) {
         return 1;
     }
 
@@ -67,10 +67,10 @@ uint32_t GetDeferredCompletionWaitCount(PresentEvent const& p)
 #endif
 
 PresentEvent::PresentEvent()
-    : QpcTime(0)
+    : PresentStartTime(0)
     , ProcessId(0)
     , ThreadId(0)
-    , TimeTaken(0)
+    , PresentStopTime(0)
     , ReadyTime(0)
     , ScreenTime(0)
 
@@ -1381,7 +1381,7 @@ void PMTraceConsumer::RemovePresentFromTemporaryTrackingCollections(std::shared_
     }
 
     // mOrderedPresentsByProcessId
-    mOrderedPresentsByProcessId[p->ProcessId].erase(p->QpcTime);
+    mOrderedPresentsByProcessId[p->ProcessId].erase(p->PresentStartTime);
 
     // mPresentBySubmitSequence
     if (p->QueueSubmitSequence != 0) {
@@ -1480,7 +1480,7 @@ void PMTraceConsumer::CompletePresentHelper(std::shared_ptr<PresentEvent> const&
     // Complete the present.
     DebugModifyPresent(p.get());
     p->IsCompleted = true;
-    mDeferredCompletions[p->ProcessId][p->SwapChainAddress].mOrderedPresents.emplace(p->QpcTime, p);
+    mDeferredCompletions[p->ProcessId][p->SwapChainAddress].mOrderedPresents.emplace(p->PresentStartTime, p);
 
     // If the present is still missing some expected events, defer it's
     // enqueuing for some number of presents for cases where the event may
@@ -1538,7 +1538,7 @@ void PMTraceConsumer::CompletePresentHelper(std::shared_ptr<PresentEvent> const&
             auto p2 = ii->second;
             ++ii; // increment iterator first as CompletePresentHelper() will remove it
             if (p2->SwapChainAddress == p->SwapChainAddress) {
-                if (p2->QpcTime >= p->QpcTime) break;
+                if (p2->PresentStartTime >= p->PresentStartTime) break;
                 CompletePresentHelper(p2);
             }
         }
@@ -1554,7 +1554,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
     // created but not properly tracked due to missed events.  This is
     // especially prevalent in ETLs that start runtime providers before backend
     // providers and/or start capturing while an intensive graphics application
-    // is already running.  When that happens, QpcTime/TimeTaken and
+    // is already running.  When that happens, PresentStartTime/PresentStopTime and
     // ReadyTime/ScreenTime times can become mis-matched, and that offset can
     // persist for the full capture.
     //
@@ -1633,14 +1633,14 @@ void PMTraceConsumer::EnqueueDeferredCompletions(DeferredCompletions* deferredCo
 
         // If later presents have already be enqueued for the user, mark this
         // present as lost.
-        if (deferredCompletions->mLastEnqueuedQpcTime > present->QpcTime) {
+        if (deferredCompletions->mLastEnqueuedQpcTime > present->PresentStartTime) {
             present->IsLost = true;
         }
 
         if (present->IsLost) {
             lostCount += 1;
         } else {
-            deferredCompletions->mLastEnqueuedQpcTime = present->QpcTime;
+            deferredCompletions->mLastEnqueuedQpcTime = present->PresentStartTime;
             completedCount += 1;
         }
     }
@@ -1734,7 +1734,7 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
         present = std::make_shared<PresentEvent>();
 
         DebugModifyPresent(present.get());
-        present->QpcTime = *(uint64_t*) &hdr.TimeStamp;
+        present->PresentStartTime = *(uint64_t*) &hdr.TimeStamp;
         present->ProcessId = hdr.ProcessId;
         present->ThreadId = hdr.ThreadId;
 
@@ -1762,7 +1762,7 @@ void PMTraceConsumer::TrackPresent(
     mAllPresents[mAllPresentsNextIndex] = present;
     mAllPresentsNextIndex = (mAllPresentsNextIndex + 1) % PRESENTEVENT_CIRCULAR_BUFFER_SIZE;
 
-    presentsByThisProcess->emplace(present->QpcTime, present);
+    presentsByThisProcess->emplace(present->PresentStartTime, present);
 
     SetThreadPresent(present->ThreadId, present);
 }
@@ -1779,7 +1779,7 @@ void PMTraceConsumer::RuntimePresentStart(Runtime runtime, EVENT_HEADER const& h
     auto present = std::make_shared<PresentEvent>();
 
     DebugModifyPresent(present.get());
-    present->QpcTime = *(uint64_t*) &hdr.TimeStamp;
+    present->PresentStartTime = *(uint64_t*) &hdr.TimeStamp;
     present->ProcessId = hdr.ProcessId;
     present->ThreadId = hdr.ThreadId;
     present->Runtime = runtime;
@@ -1804,7 +1804,7 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
         auto present = FindThreadPresent(hdr.ThreadId);
         if (present != nullptr) {
             // Check expected state (a new Present() that has only been started).
-            assert(present->TimeTaken                   == 0);
+            assert(present->PresentStopTime             == 0);
             assert(present->IsCompleted                 == false);
             assert(present->IsLost                      == false);
             assert(present->DeferredCompletionWaitCount == 0);
@@ -1841,8 +1841,8 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
                         DebugModifyPresent(present.get());
                         present->DeferredCompletionWaitCount -= 1;
 
-                        if (!presentStopUsed && present->TimeTaken == 0) {
-                            present->TimeTaken = *(uint64_t*) &hdr.TimeStamp - present->QpcTime;
+                        if (!presentStopUsed && present->PresentStopTime == 0) {
+                            present->PresentStopTime = *(uint64_t*) &hdr.TimeStamp;
                             if (GetDeferredCompletionWaitCount(*present) == 0) {
                                 present->DeferredCompletionWaitCount = 0;
                             }
@@ -1873,8 +1873,8 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
         auto present = eventIter->second;
 
         DebugModifyPresent(present.get());
-        present->Runtime   = runtime;
-        present->TimeTaken = *(uint64_t*) &hdr.TimeStamp - present->QpcTime;
+        present->Runtime = runtime;
+        present->PresentStopTime = *(uint64_t*) &hdr.TimeStamp;
 
         bool allowBatching = false;
         switch (runtime) {

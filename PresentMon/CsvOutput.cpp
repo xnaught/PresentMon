@@ -101,26 +101,21 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
     auto lastPresented = chain.mPresentHistory[(chain.mNextPresentIndex - 1) % SwapChainData::PRESENT_HISTORY_MAX_COUNT].get();
 
     // Compute frame statistics.
-    double msBetweenPresents      = 1000.0 * QpcDeltaToSeconds(p.QpcTime - lastPresented->QpcTime);
-    double msInPresentApi         = 1000.0 * QpcDeltaToSeconds(p.TimeTaken);
+    double msBetweenPresents      = 1000.0 * PositiveQpcDeltaToSeconds(lastPresented->PresentStartTime, p.PresentStartTime);
+    double msInPresentApi         = 1000.0 * PositiveQpcDeltaToSeconds(p.PresentStartTime, p.PresentStopTime);
     double msUntilRenderComplete  = 0.0;
     double msUntilDisplayed       = 0.0;
     double msBetweenDisplayChange = 0.0;
 
     if (args.mTrackDisplay) {
-        if (p.ReadyTime != 0) {
-            if (p.ReadyTime < p.QpcTime) {
-                msUntilRenderComplete = -1000.0 * QpcDeltaToSeconds(p.QpcTime - p.ReadyTime);
-            } else {
-                msUntilRenderComplete = 1000.0 * QpcDeltaToSeconds(p.ReadyTime - p.QpcTime);
-            }
-        }
+        msUntilRenderComplete = 1000.0 * QpcDeltaToSeconds(p.PresentStartTime, p.ReadyTime);
+
         if (presented) {
-            msUntilDisplayed = 1000.0 * QpcDeltaToSeconds(p.ScreenTime - p.QpcTime);
+            msUntilDisplayed = 1000.0 * PositiveQpcDeltaToSeconds(p.PresentStartTime, p.ScreenTime);
 
             if (chain.mLastDisplayedPresentIndex > 0) {
                 auto lastDisplayed = chain.mPresentHistory[chain.mLastDisplayedPresentIndex % SwapChainData::PRESENT_HISTORY_MAX_COUNT].get();
-                msBetweenDisplayChange = 1000.0 * QpcDeltaToSeconds(p.ScreenTime - lastDisplayed->ScreenTime);
+                msBetweenDisplayChange = 1000.0 * PositiveQpcDeltaToSeconds(lastDisplayed->ScreenTime, p.ScreenTime);
             }
         }
     }
@@ -134,7 +129,7 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
         p.SyncInterval,
         p.PresentFlags,
         FinalStateToDroppedString(p.FinalState),
-        DBL_DIG - 1, QpcToSeconds(p.QpcTime),
+        DBL_DIG - 1, QpcToSeconds(p.PresentStartTime),
         DBL_DIG - 1, msInPresentApi,
         DBL_DIG - 1, msBetweenPresents);
     if (args.mTrackDisplay) {
@@ -152,9 +147,9 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
     }
     if (args.mOutputQpcTime) {
         if (args.mOutputQpcTimeInSeconds) {
-            fprintf(fp, ",%.*lf", DBL_DIG - 1, QpcDeltaToSeconds(p.QpcTime));
+            fprintf(fp, ",%.*lf", DBL_DIG - 1, QpcDeltaToSeconds(p.PresentStartTime));
         } else {
-            fprintf(fp, ",%llu", p.QpcTime);
+            fprintf(fp, ",%llu", p.PresentStartTime);
         }
     }
     fprintf(fp, "\n");

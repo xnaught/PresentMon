@@ -243,7 +243,7 @@ static void AddPresents(std::vector<std::shared_ptr<PresentEvent>> const& presen
         assert(presentEvent->IsCompleted);
 
         // Stop processing events if we hit the next stop time.
-        if (checkStopQpc && presentEvent->QpcTime >= stopQpc) {
+        if (checkStopQpc && presentEvent->PresentStartTime >= stopQpc) {
             *hitStopQpc = true;
             break;
         }
@@ -336,7 +336,7 @@ static void PruneHistory(
 
     auto latestQpc = max(max(
         processEvents.empty() ? 0ull : processEvents.back().QpcTime,
-        presentEvents.empty() ? 0ull : presentEvents.back()->QpcTime),
+        presentEvents.empty() ? 0ull : presentEvents.back()->PresentStartTime),
         lsrEvents.empty()     ? 0ull : lsrEvents.back()->QpcTime);
 
     auto minQpc = latestQpc - SecondsDeltaToQpc(2.0);
@@ -350,7 +350,7 @@ static void PruneHistory(
             for (; count > 0; --count) {
                 auto index = swapChain->mNextPresentIndex - count;
                 auto const& presentEvent = swapChain->mPresentHistory[index % SwapChainData::PRESENT_HISTORY_MAX_COUNT];
-                if (presentEvent->QpcTime >= minQpc) {
+                if (presentEvent->PresentStartTime >= minQpc) {
                     break;
                 }
                 if (index == swapChain->mLastDisplayedPresentIndex) {
