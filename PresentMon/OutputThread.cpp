@@ -258,8 +258,8 @@ static void AddPresents(std::vector<std::shared_ptr<PresentEvent>> const& presen
         auto chain = &result.first->second;
         if (result.second) {
             chain->mPresentHistoryCount = 0;
-            chain->mNextPresentIndex = 1; // Start at 1 so that mLastDisplayedPresentIndex starts out invalid.
-            chain->mLastDisplayedPresentIndex = 0;
+            chain->mNextPresentIndex = 0;
+            chain->mLastDisplayedPresentIndex = UINT32_MAX;
         }
 
         // Output CSV row if recording (need to do this before updating chain).
@@ -272,8 +272,6 @@ static void AddPresents(std::vector<std::shared_ptr<PresentEvent>> const& presen
 
         if (presentEvent->FinalState == PresentResult::Presented) {
             chain->mLastDisplayedPresentIndex = chain->mNextPresentIndex;
-        } else if (chain->mLastDisplayedPresentIndex == chain->mNextPresentIndex) {
-            chain->mLastDisplayedPresentIndex = 0;
         }
 
         chain->mNextPresentIndex += 1;
@@ -354,7 +352,7 @@ static void PruneHistory(
                     break;
                 }
                 if (index == swapChain->mLastDisplayedPresentIndex) {
-                    swapChain->mLastDisplayedPresentIndex = 0;
+                    swapChain->mLastDisplayedPresentIndex = UINT32_MAX;
                 }
             }
 

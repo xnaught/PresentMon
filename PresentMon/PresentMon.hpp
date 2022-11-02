@@ -81,7 +81,7 @@ struct SwapChainData {
     std::shared_ptr<PresentEvent> mPresentHistory[PRESENT_HISTORY_MAX_COUNT];
     uint32_t mPresentHistoryCount;
     uint32_t mNextPresentIndex;
-    uint32_t mLastDisplayedPresentIndex;
+    uint32_t mLastDisplayedPresentIndex; // UINT32_MAX if none displayed
 };
 
 struct OutputCsv {
