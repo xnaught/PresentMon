@@ -556,7 +556,7 @@ ULONG TraceSession::Start(
         break;
     }
 
-    if (!saveFirstTimestamp) {
+    if (etlPath == nullptr) {
         QueryPerformanceCounter(&mStartQpc);
     }
 

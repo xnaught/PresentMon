@@ -9,7 +9,7 @@ set only_x64_platform=0
 set use_debug_config=1
 set use_release_config=1
 set do_build=1
-set do_live_tests=1
+set do_realtime_tests=1
 set do_default_gtests=1
 set errorcount=0
 :args_begin
@@ -18,7 +18,7 @@ set errorcount=0
     if "%~1"=="debug" ( set use_release_config=0 ) else (
     if "%~1"=="release" ( set use_debug_config=0 ) else (
     if "%~1"=="nobuild" ( set do_build=0 ) else (
-    if "%~1"=="nolivetests" ( set do_live_tests=0 ) else (
+    if "%~1"=="norealtime" ( set do_realtime_tests=0 ) else (
     if "%~1"=="nogtests" ( set do_default_gtests=0 ) else (
         echo usage: run_tests.cmd [options]
         echo options:
@@ -26,7 +26,7 @@ set errorcount=0
         echo     debug        Only test the debug build
         echo     release      Only test the release build
         echo     nobuild      Don't build any configurations
-        echo     nolivetests  Don't run tests involving live collection
+        echo     norealtime   Don't run tests for realtime collection
         echo     nogtests     Don't run default test suite
         exit /b 1
     ))))))
@@ -41,7 +41,7 @@ set need_tempdir=0
 
 if %do_default_gtests% EQU 1 set need_presentbench=1
 
-if %do_live_tests% EQU 1 (
+if %do_realtime_tests% EQU 1 (
     set need_presentbench=1
     set need_tempdir=1
 )
@@ -140,14 +140,14 @@ if %use_release_config% EQU 1 (
     set test_config=Debug
 )
 
-if %do_live_tests% EQU 1 (
-    echo [90mLive collection tests...[0m
+if %do_realtime_tests% EQU 1 (
+    echo [90mRealtime collection tests...[0m
 
-    call :live_presentbench_test "DX12" "DXGI"
-    call :live_presentbench_test "DX9"  "D3D9"
-    call :live_presentbench_test "VK"   "Other"
+    call :realtime_presentbench_test "DX12" "DXGI"
+    call :realtime_presentbench_test "DX9"  "D3D9"
+    call :realtime_presentbench_test "VK"   "Other"
 
-    call :live_multicsv_test
+    call :realtime_multicsv_test
 
     echo.
 )
@@ -282,13 +282,13 @@ exit /b 0
     exit /b 0
 
 :: -----------------------------------------------------------------------------
-:live_presentbench_test
+:realtime_presentbench_test
     set test_api=%~1
     set expected_runtime=%~2
 
     call :start_target_app /width=320 /height=240 /api=%test_api%
     if %errorlevel% NEQ 0 (
-        echo [31merror: live PresentBench tests cannot run with a process named PresentBench.exe already running[0m
+        echo [31merror: realtime PresentBench tests cannot run with a process named PresentBench.exe already running[0m
         set /a errorcount=%errorcount%+1
         exit /b 0
     )
@@ -318,7 +318,7 @@ exit /b 0
         exit /b 0
     )
     if %saw_row% EQU 0 (
-        echo [31merror: live PresentBench test did not record any presents[0m
+        echo [31merror: realtime PresentBench test did not record any presents[0m
         set /a errorcount=%errorcount%+1
         exit /b 0
     )
@@ -327,7 +327,7 @@ exit /b 0
     exit /b 0
 
 :: -----------------------------------------------------------------------------
-:live_multicsv_test
+:realtime_multicsv_test
     set target_app_pid_1=0
     set target_app_pid_2=0
 

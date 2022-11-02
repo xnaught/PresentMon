@@ -29,11 +29,14 @@ void DebugEvent(PMTraceConsumer* pmConsumer, _EVENT_RECORD* eventRecord, EventMe
 // Call before modifying any PresentEvent member
 void DebugModifyPresent(PresentEvent const* p);
 
+#define DebugAssert(condition) while (!(condition)) { printf("ASSERTION FAILED: %s(%d): %s\n", __FILE__, __LINE__, #condition); break; }
+
 #else
 
 #define DebugInitialize(firstTimestamp, timestampFrequency) (void) firstTimestamp, timestampFrequency
 #define DebugDone()                                         false
 #define DebugEvent(pmConsumer, eventRecord, metadata)       (void) pmConsumer, eventRecord, metadata
 #define DebugModifyPresent(p)                               (void) p
+#define DebugAssert(condition)                              assert(condition)
 
 #endif
