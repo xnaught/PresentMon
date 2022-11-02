@@ -204,27 +204,28 @@ void PMTraceConsumer::HandleDXGIEvent(EVENT_RECORD* pEventRecord)
 
 void PMTraceConsumer::HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool redirectedPresent)
 {
-    // Lookup the in-progress present.
-    auto presentEvent = FindOrCreatePresent(hdr);
-    if (presentEvent == nullptr) {
-        return;
-    }
-
-    // The looked-up present should not have a known present mode yet.  If it
-    // does, we looked up a present whose tracking was lost for some reason.
-    if (presentEvent->PresentMode != PresentMode::Unknown) {
-        RemoveLostPresent(presentEvent);
+    // Lookup the in-progress present.  It should not have a known present mode
+    // yet, so if it does we assume we looked up a present whose tracking was
+    // lost.
+    std::shared_ptr<PresentEvent> presentEvent;
+    for (;;) {
         presentEvent = FindOrCreatePresent(hdr);
         if (presentEvent == nullptr) {
             return;
         }
-        assert(presentEvent->PresentMode == PresentMode::Unknown);
+
+        if (presentEvent->PresentMode == PresentMode::Unknown) {
+            break;
+        }
+
+        RemoveLostPresent(presentEvent);
     }
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(presentEvent);
 
     // This could be one of several types of presents. Further events will clarify.
     // For now, assume that this is a blt straight into a surface which is already on-screen.
+    DebugModifyPresent(presentEvent.get());
     presentEvent->Hwnd = hwnd;
     if (redirectedPresent) {
         TRACK_PRESENT_PATH(presentEvent);
@@ -252,27 +253,27 @@ void PMTraceConsumer::HandleDxgkBltCancel(EVENT_HEADER const& hdr)
     }
 }
 
+// A flip event is emitted during fullscreen present submission.  The only
+// events that we expect before a Flip/FlipMPO are a runtime present start, or
+// a previous FlipMPO.  Afterwards, we expect an MMIOFlip packet on the same
+// thread used to trace the flip to screen.
 void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterval, bool mmio)
 {
-    // A flip event is emitted during fullscreen present submission.
-    // Afterwards, expect an MMIOFlip packet on the same thread, used to trace
-    // the flip to screen.
-
-    // Lookup the in-progress present.
-    auto presentEvent = FindOrCreatePresent(hdr);
-    if (presentEvent == nullptr) {
-        return;
-    }
-
-    // The only events that we expect before a Flip/FlipMPO are a runtime
-    // present start, or a previous FlipMPO.  If that's not the case, we assume
-    // that correct tracking has been lost.
-    while (presentEvent->QueueSubmitSequence != 0 || presentEvent->SeenDxgkPresent) {
-        RemoveLostPresent(presentEvent);
+    // Lookup the in-progress present. It should not have a known
+    // QueueSubmitSequence nor seen a DxgkPresent yet, so if it has we assume
+    // we looked up a present whose tracking was lost.
+    std::shared_ptr<PresentEvent> presentEvent;
+    for (;;) {
         presentEvent = FindOrCreatePresent(hdr);
         if (presentEvent == nullptr) {
             return;
         }
+
+        if (presentEvent->QueueSubmitSequence == 0 && !presentEvent->SeenDxgkPresent) {
+            break;
+        }
+
+        RemoveLostPresent(presentEvent);
     }
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(presentEvent);
@@ -542,22 +543,21 @@ void PMTraceConsumer::HandleDxgkPresentHistory(
     // These events are emitted during submission of all types of windowed presents while DWM is on.
     // It gives us up to two different types of keys to correlate further.
 
-    // Lookup the in-progress present.  It should not have a known DxgkPresentHistoryToken
-    // yet, so DxgkPresentHistoryToken!=0 implies we looked up a 'stuck' present whose
-    // tracking was lost for some reason.
-    auto presentEvent = FindOrCreatePresent(hdr);
-    if (presentEvent == nullptr) {
-        return;
-    }
-
-    if (presentEvent->DxgkPresentHistoryToken != 0) {
-        RemoveLostPresent(presentEvent);
+    // Lookup the in-progress present.  It should not have a known
+    // DxgkPresentHistoryToken yet, so if it does we assume we looked up a
+    // present whose tracking was lost.
+    std::shared_ptr<PresentEvent> presentEvent;
+    for (;;) {
         presentEvent = FindOrCreatePresent(hdr);
         if (presentEvent == nullptr) {
             return;
         }
 
-        assert(presentEvent->DxgkPresentHistoryToken == 0);
+        if (presentEvent->DxgkPresentHistoryToken == 0) {
+            break;
+        }
+
+        RemoveLostPresent(presentEvent);
     }
 
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(presentEvent);
@@ -1125,39 +1125,38 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
         auto BindId                 = desc[2].GetData<uint64_t>();
 
         // Lookup the in-progress present.  It should not have seen any Win32K
-        // events yet, so SeenWin32KEvents==true implies we looked up a 'stuck'
-        // present whose tracking was lost for some reason.
-        auto PresentEvent = FindOrCreatePresent(hdr);
-        if (PresentEvent == nullptr) {
-            return;
-        }
-
-        if (PresentEvent->SeenWin32KEvents) {
-            RemoveLostPresent(PresentEvent);
-            PresentEvent = FindOrCreatePresent(hdr);
-            if (PresentEvent == nullptr) {
+        // events yet, so if it has we assume we looked up a present whose
+        // tracking was lost.
+        std::shared_ptr<PresentEvent> present;
+        for (;;) {
+            present = FindOrCreatePresent(hdr);
+            if (present == nullptr) {
                 return;
             }
 
-            assert(!PresentEvent->SeenWin32KEvents);
+            if (!present->SeenWin32KEvents) {
+                break;
+            }
+
+            RemoveLostPresent(present);
         }
 
-        TRACK_PRESENT_PATH(PresentEvent);
+        TRACK_PRESENT_PATH(present);
 
-        PresentEvent->PresentMode = PresentMode::Composed_Flip;
-        PresentEvent->SeenWin32KEvents = true;
+        present->PresentMode = PresentMode::Composed_Flip;
+        present->SeenWin32KEvents = true;
 
         if (hdr.EventDescriptor.Version >= 1) {
-            PresentEvent->DestWidth  = desc[3].GetData<uint32_t>();
-            PresentEvent->DestHeight = desc[4].GetData<uint32_t>();
+            present->DestWidth  = desc[3].GetData<uint32_t>();
+            present->DestHeight = desc[4].GetData<uint32_t>();
         }
 
         Win32KPresentHistoryToken key(CompositionSurfaceLuid, PresentCount, BindId);
         assert(mPresentByWin32KPresentHistoryToken.find(key) == mPresentByWin32KPresentHistoryToken.end());
-        mPresentByWin32KPresentHistoryToken[key] = PresentEvent;
-        PresentEvent->CompositionSurfaceLuid = CompositionSurfaceLuid;
-        PresentEvent->Win32KPresentCount = PresentCount;
-        PresentEvent->Win32KBindId = BindId;
+        mPresentByWin32KPresentHistoryToken[key] = present;
+        present->CompositionSurfaceLuid = CompositionSurfaceLuid;
+        present->Win32KPresentCount = PresentCount;
+        present->Win32KBindId = BindId;
         break;
     }
 
@@ -1705,7 +1704,10 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
     auto presentsByThisProcess = &mOrderedPresentsByProcessId[hdr.ProcessId];
     for (auto const& pr : *presentsByThisProcess) {
         present = pr.second;
-        if (present->PresentMode == PresentMode::Unknown) {
+        if (present->DriverThreadId == 0 &&
+            present->SeenDxgkPresent == false &&
+            present->SeenWin32KEvents == false &&
+            present->PresentMode == PresentMode::Unknown) {
             assert(present->DriverThreadId == 0);
             DebugModifyPresent(present.get());
             present->DriverThreadId = hdr.ThreadId;
