@@ -352,6 +352,11 @@ bool ParseCommandLine(int argc, char** argv)
     bool DEPRECATED_simple = false;
     bool DEPRECATED_verbose = false;
     bool DEPRECATED_wmr = false;
+
+    #ifndef NDEBUG
+    bool verboseTrace = false;
+    #endif
+
     for (int i = 1; i < argc; ++i) {
         // Capture target options:
              if (ParseArg(argv[i], "captureall"))   { SetCaptureAll(args);                                         continue; }
@@ -392,6 +397,11 @@ bool ParseCommandLine(int argc, char** argv)
         // Beta options:
         else if (ParseArg(argv[i], "track_mixed_reality"))   { args->mTrackWMR = true; continue; }
         else if (ParseArg(argv[i], "include_mixed_reality")) { DEPRECATED_wmr  = true; continue; }
+
+        // Hidden options:
+        #ifndef NDEBUG
+        else if (ParseArg(argv[i], "debug_verbose_trace")) { verboseTrace = true; continue; }
+        #endif
 
         // Provided argument wasn't recognized
         else if (!(ParseArg(argv[i], "?") || ParseArg(argv[i], "h") || ParseArg(argv[i], "help"))) {
@@ -470,11 +480,6 @@ bool ParseCommandLine(int argc, char** argv)
         }
     }
 
-    // Disable top/stats console output if we're in DEBUG_VERBOSE
-    #if DEBUG_VERBOSE
-    args->mConsoleOutputType = ConsoleOutput::None;
-    #endif
-
     // If we're outputing CSV to stdout, we can't use it for console output.
     //
     // Further, we're currently limited to outputing CSV to either file(s) or
@@ -501,9 +506,17 @@ bool ParseCommandLine(int argc, char** argv)
         }
     }
 
+    // Enable verbose trace if requested, and disable Full or Simple console output
+    #ifndef NDEBUG
+    if (verboseTrace) {
+        EnableVerboseTrace(true);
+        args->mConsoleOutputType = ConsoleOutput::None;
+    }
+    #endif
+
     // Try to initialize the console, and warn if we're not going to be able to
     // do the advanced display as requested.
-    if (args->mConsoleOutputType == ConsoleOutput::Full && !args->mOutputCsvToStdout && !IsConsoleInitialized()) {
+    if (args->mConsoleOutputType == ConsoleOutput::Full && !IsConsoleInitialized()) {
         PrintWarning("warning: could not initialize console display; continuing with -no_top.\n");
         args->mConsoleOutputType = ConsoleOutput::Simple;
     }

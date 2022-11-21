@@ -324,6 +324,10 @@ void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
         }
     }
 
+    if (IsVerboseTraceEnabled()) {
+        VerboseTraceEvent(session->mPMConsumer, pEventRecord, &session->mPMConsumer->mMetadata);
+    }
+
     if (hdr.ProviderId == Microsoft_Windows_DxgKrnl::GUID) {
         session->mPMConsumer->HandleDXGKEvent(pEventRecord);
         return;
@@ -560,7 +564,9 @@ ULONG TraceSession::Start(
         QueryPerformanceCounter(&mStartQpc);
     }
 
-    DebugInitialize(&mStartQpc, mQpcFrequency);
+    if (IsVerboseTraceEnabled()) {
+        InitializeVerboseTrace(&mStartQpc, mQpcFrequency);
+    }
 
     return ERROR_SUCCESS;
 }

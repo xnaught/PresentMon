@@ -3,8 +3,6 @@
 
 #include "Debug.hpp"
 
-#if DEBUG_VERBOSE
-
 #include "PresentMonTraceConsumer.hpp"
 
 #include "ETW/Microsoft_Windows_D3D9.h"
@@ -15,15 +13,14 @@
 
 #include <assert.h>
 #include <dxgi.h>
-#include <initializer_list>
 
 namespace {
+
+bool gVerboseTraceEnabled = false;
 
 PresentEvent const* gModifiedPresent = nullptr;
 PresentEvent gOriginalPresentValues;
 
-bool gDebugDone = false;
-bool gDebugTrace = false;
 LARGE_INTEGER* gFirstTimestamp = nullptr;
 LARGE_INTEGER gTimestampFrequency = {};
 
@@ -60,8 +57,6 @@ char* AddCommas(uint64_t t)
 void PrintU32(uint32_t value) { printf("%u", value); }
 void PrintU64(uint64_t value) { printf("%llu", value); }
 void PrintU64x(uint64_t value) { printf("0x%llx", value); }
-void PrintTime(uint64_t value) { printf("%s", value == 0 ? "0" : AddCommas(ConvertTimestampToNs(value))); }
-void PrintTimeDelta(uint64_t value) { printf("%s", value == 0 ? "0" : AddCommas(ConvertTimestampDeltaToNs(value))); }
 void PrintBool(bool value) { printf("%s", value ? "true" : "false"); }
 void PrintRuntime(Runtime value)
 {
@@ -170,19 +165,23 @@ void PrintEventHeader(EVENT_RECORD* eventRecord, EventMetadata* metadata, char c
     printf("\n");
 }
 
-void PrintUpdateHeader(uint64_t id, int indent=0)
-{
-    printf("%*sp%llu", 17 + 6 + 6 + indent*4, "", id);
-}
-
 void FlushModifiedPresent()
 {
     if (gModifiedPresent == nullptr) return;
 
     uint32_t changedCount = 0;
+
+#ifdef NDEBUG
+#define PRINT_PRESENT_ID(_P)
+#else
+#define PRINT_PRESENT_ID(_P) printf("p%llu", gModifiedPresent->Id)
+#endif
 #define FLUSH_MEMBER(_Fn, _Name) \
     if (gModifiedPresent->_Name != gOriginalPresentValues._Name) { \
-        if (changedCount++ == 0) PrintUpdateHeader(gModifiedPresent->Id); \
+        if (changedCount++ == 0) { \
+            printf("%*s", 17 + 6 + 6, ""); \
+            PRINT_PRESENT_ID(gModifiedPresent); \
+        } \
         printf(" " #_Name "="); \
         _Fn(gOriginalPresentValues._Name); \
         printf("->"); \
@@ -209,6 +208,7 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintBool,          IsLost)
     FLUSH_MEMBER(PrintU32,           DeferredCompletionWaitCount)
 #undef FLUSH_MEMBER
+
     if (changedCount > 0) {
         printf("\n");
     }
@@ -218,40 +218,57 @@ void FlushModifiedPresent()
 
 }
 
-void DebugInitialize(LARGE_INTEGER* firstTimestamp, LARGE_INTEGER const& timestampFrequency)
+int PrintTime(uint64_t value)
 {
-    gDebugDone = false;
+    return value == 0
+        ? printf("0")
+        : value < (uint64_t) gFirstTimestamp->QuadPart
+            ? printf("-%s", AddCommas(ConvertTimestampDeltaToNs((uint64_t) gFirstTimestamp->QuadPart - value)))
+            : printf("%s", AddCommas(ConvertTimestampToNs(value)));
+}
+
+int PrintTimeDelta(uint64_t value)
+{
+    return printf("%s", value == 0 ? "0" : AddCommas(ConvertTimestampDeltaToNs(value)));
+}
+
+#ifndef NDEBUG
+void EnableVerboseTrace(bool enable)
+{
+    gVerboseTraceEnabled = enable;
+}
+
+bool IsVerboseTraceEnabled()
+{
+    return gVerboseTraceEnabled;
+}
+#endif
+
+void DebugAssertImpl(wchar_t const* msg, wchar_t const* file, int line)
+{
+    if (IsVerboseTraceEnabled()) {
+        printf("ASSERTION FAILED: %ls(%d): %ls\n", file, line, msg);
+    } else {
+        #ifndef NDEBUG
+        _wassert(msg, file, line);
+        #endif
+    }
+}
+
+void InitializeVerboseTrace(LARGE_INTEGER* firstTimestamp, LARGE_INTEGER const& timestampFrequency)
+{
     gFirstTimestamp = firstTimestamp;
     gTimestampFrequency = timestampFrequency;
 
     printf("       Time (ns)   PID   TID EVENT\n");
 }
 
-bool DebugDone()
-{
-    return gDebugDone;
-}
-
-void DebugEvent(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecord, EventMetadata* metadata)
+void VerboseTraceEvent(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecord, EventMetadata* metadata)
 {
     auto const& hdr = eventRecord->EventHeader;
     auto id = hdr.EventDescriptor.Id;
 
     FlushModifiedPresent();
-
-    auto t = ConvertTimestampToNs(hdr.TimeStamp.QuadPart);
-    if (t >= DEBUG_START_TIME_NS) {
-        gDebugTrace = true;
-    }
-
-    if (t >= DEBUG_STOP_TIME_NS) {
-        gDebugTrace = false;
-        gDebugDone = true;
-    }
-
-    if (!gDebugTrace) {
-        return;
-    }
 
     if (hdr.ProviderId == Microsoft_Windows_D3D9::GUID) {
         using namespace Microsoft_Windows_D3D9;
@@ -365,8 +382,11 @@ void DebugEvent(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecord, EventMet
             if (eventIter == pmConsumer->mPresentByWin32KPresentHistoryToken.end()) {
                 printf(" (unknown present)");
             } else {
-                auto present = eventIter->second;
-                printf(" p%llu", present->Id);
+                #ifdef NDEBUG
+                printf(" (unknown present)");
+                #else
+                printf(" p%llu", eventIter->second->Id);
+                #endif
             }
 
             switch (NewState) {
@@ -383,13 +403,10 @@ void DebugEvent(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecord, EventMet
         }
         return;
     }
-
-    assert(false);
 }
 
-void DebugModifyPresent(PresentEvent const* p)
+void VerboseTraceBeforeModifyingPresentImpl(PresentEvent const* p)
 {
-    if (!gDebugTrace) return;
     if (gModifiedPresent != p) {
         FlushModifiedPresent();
         gModifiedPresent = p;
@@ -398,5 +415,3 @@ void DebugModifyPresent(PresentEvent const* p)
         }
     }
 }
-
-#endif // if DEBUG_VERBOSE

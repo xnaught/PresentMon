@@ -179,7 +179,7 @@ struct PresentEvent {
     #endif
 
     // Give every present a unique id for debugging.
-    #if DEBUG_VERBOSE
+    #ifndef NDEBUG
     uint64_t Id;
     #endif
 
