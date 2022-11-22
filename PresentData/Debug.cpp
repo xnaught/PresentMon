@@ -200,7 +200,8 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintPresentMode,   PresentMode)
     FLUSH_MEMBER(PrintPresentResult, FinalState)
     FLUSH_MEMBER(PrintBool,          SupportsTearing)
-    FLUSH_MEMBER(PrintBool,          MMIO)
+    FLUSH_MEMBER(PrintBool,          WaitForFlipEvent)
+    FLUSH_MEMBER(PrintBool,          WaitForMPOFlipEvent)
     FLUSH_MEMBER(PrintBool,          SeenDxgkPresent)
     FLUSH_MEMBER(PrintBool,          SeenWin32KEvents)
     FLUSH_MEMBER(PrintBool,          DwmNotified)
@@ -214,6 +215,25 @@ void FlushModifiedPresent()
     }
 
     gModifiedPresent = nullptr;
+}
+
+uint64_t LookupPresentId(
+    PMTraceConsumer* pmConsumer,
+    uint64_t CompositionSurfaceLuid,
+    uint64_t PresentCount,
+    uint64_t BindId)
+{
+#ifdef NDEBUG
+    (void) pmConsumer, CompositionSurfaceLuid, PresentCount, BindId;
+#else
+    PMTraceConsumer::Win32KPresentHistoryToken key(CompositionSurfaceLuid, PresentCount, BindId);
+    auto ii = pmConsumer->mPresentByWin32KPresentHistoryToken.find(key);
+    if (ii != pmConsumer->mPresentByWin32KPresentHistoryToken.end()) {
+        return ii->second->Id;
+    }
+#endif
+
+    return 0;
 }
 
 }
@@ -303,11 +323,9 @@ void VerboseTraceEvent(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecord, E
         case Blit_Info::Id:                     PrintEventHeader(hdr, "Blit_Info"); break;
         case BlitCancel_Info::Id:               PrintEventHeader(hdr, "BlitCancel_Info"); break;
         case FlipMultiPlaneOverlay_Info::Id:    PrintEventHeader(hdr, "FlipMultiPlaneOverlay_Info"); break;
-        case HSyncDPCMultiPlane_Info::Id:       PrintEventHeader(hdr, "HSyncDPCMultiPlane_Info"); break;
-        case VSyncDPCMultiPlane_Info::Id:       PrintEventHeader(hdr, "VSyncDPCMultiPlane_Info"); break;
-        case MMIOFlip_Info::Id:                 PrintEventHeader(hdr, "MMIOFlip_Info"); break;
         case Present_Info::Id:                  PrintEventHeader(hdr, "DxgKrnl_Present_Info"); break;
 
+        case MMIOFlip_Info::Id:                 PrintEventHeader(eventRecord, metadata, "MMIOFlip_Info",                { L"FlipSubmitSequence", PrintU64, }); break;
         case Flip_Info::Id:                     PrintEventHeader(eventRecord, metadata, "Flip_Info",                    { L"FlipInterval",   PrintU32,
                                                                                                                           L"MMIOFlip",       PrintBool, }); break;
         case IndependentFlip_Info::Id:          PrintEventHeader(eventRecord, metadata, "IndependentFlip_Info",         { L"SubmitSequence", PrintU32,
@@ -324,11 +342,43 @@ void VerboseTraceEvent(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecord, E
                                                                                                                           L"bPresent",       PrintU32, }); break;
         case QueuePacket_Stop::Id:              PrintEventHeader(eventRecord, metadata, "QueuePacket_Stop",             { L"hContext",       PrintU64x,
                                                                                                                           L"SubmitSequence", PrintU32, }); break;
-        case VSyncDPC_Info::Id:                 PrintEventHeader(eventRecord, metadata, "VSyncDPC_Info",                { L"FlipFenceId",    PrintU64x, }); break;
 
-        case MMIOFlipMultiPlaneOverlay_Info::Id:
+        case VSyncDPC_Info::Id: {
+            auto FlipFenceId = metadata->GetEventData<uint64_t>(eventRecord, L"FlipFenceId");
             PrintEventHeader(hdr);
-            printf("DXGKrnl_MMIOFlipMultiPlaneOverlay_Info FlipSubmitSequence=%llx", metadata->GetEventData<uint64_t>(eventRecord, L"FlipSubmitSequence"));
+            printf("VSyncDPC_Info SubmitSequence=%llu FlipId=0x%llx\n",
+                FlipFenceId >> 32,
+                FlipFenceId & 0xffffffffll);
+            break;
+        }
+        case HSyncDPCMultiPlane_Info::Id:
+        case VSyncDPCMultiPlane_Info::Id: {
+            EventDataDesc desc[] = {
+                { L"FlipEntryCount" },
+                { L"FlipSubmitSequence" },
+            };
+
+            metadata->GetEventData(eventRecord, desc, _countof(desc));
+            auto FlipEntryCount     = desc[0].GetData<uint32_t>();
+            auto FlipSubmitSequence = desc[1].GetArray<uint64_t>(FlipEntryCount);
+
+            PrintEventHeader(hdr);
+            printf("%s", id == HSyncDPCMultiPlane_Info::Id ? "HSyncDPCMultiPlane_Info" : "VSyncDPCMultiPlane_Info");
+            for (uint32_t i = 0; i < FlipEntryCount; ++i) {
+                if (i > 0) printf("\n                                                    ");
+                printf(" SubmitSequence[%u]=%llu FlipId[%u]=0x%llx",
+                    i, FlipSubmitSequence[i] >> 32,
+                    i, FlipSubmitSequence[i] & 0xffffffffll);
+            }
+            printf("\n");
+            break;
+        }
+        case MMIOFlipMultiPlaneOverlay_Info::Id: {
+            auto FlipSubmitSequence = metadata->GetEventData<uint64_t>(eventRecord, L"FlipSubmitSequence");
+            PrintEventHeader(hdr);
+            printf("DXGKrnl_MMIOFlipMultiPlaneOverlay_Info SubmitSequence=%llu FlipId=0x%llx",
+                FlipSubmitSequence >> 32,
+                FlipSubmitSequence & 0xffffffffll);
             if (hdr.EventDescriptor.Version >= 2) {
                 switch (metadata->GetEventData<uint32_t>(eventRecord, L"FlipEntryStatusAfterFlip")) {
                 case FlipEntryStatus::FlipWaitVSync:    printf(" FlipWaitVSync"); break;
@@ -338,6 +388,7 @@ void VerboseTraceEvent(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecord, E
             }
             printf("\n");
             break;
+        }
         }
         return;
     }
@@ -377,16 +428,11 @@ void VerboseTraceEvent(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecord, E
             PrintEventHeader(hdr);
             printf("Win32K_TokenStateChanged");
 
-            PMTraceConsumer::Win32KPresentHistoryToken key(CompositionSurfaceLuid, PresentCount, BindId);
-            auto eventIter = pmConsumer->mPresentByWin32KPresentHistoryToken.find(key);
-            if (eventIter == pmConsumer->mPresentByWin32KPresentHistoryToken.end()) {
+            auto presentId = LookupPresentId(pmConsumer, CompositionSurfaceLuid, PresentCount, BindId);
+            if (presentId == 0) {
                 printf(" (unknown present)");
             } else {
-                #ifdef NDEBUG
-                printf(" (unknown present)");
-                #else
-                printf(" p%llu", eventIter->second->Id);
-                #endif
+                printf(" p%llu", presentId);
             }
 
             switch (NewState) {
