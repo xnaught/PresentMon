@@ -1,16 +1,10 @@
 // Copyright (C) 2020-2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 
-#include <assert.h>
-#include <stddef.h>
-#include <windows.h>
-#include <evntcons.h> // must include after windows.h
-
-#include "TraceSession.hpp"
-
 #include "Debug.hpp"
 #include "PresentMonTraceConsumer.hpp"
 #include "MixedRealityTraceConsumer.hpp"
+#include "TraceSession.hpp"
 
 #include "ETW/Microsoft_Windows_D3D9.h"
 #include "ETW/Microsoft_Windows_Dwm_Core.h"
@@ -112,7 +106,7 @@ struct FilteredProvider {
             AddKeyword((uint64_t) T::Keyword);
         }
 
-        maxLevel_ = max(maxLevel_, T::Level);
+        maxLevel_ = std::max(maxLevel_, T::Level);
     }
 
     ULONG Enable(

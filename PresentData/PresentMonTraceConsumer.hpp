@@ -1,9 +1,10 @@
 // Copyright (C) 2017-2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-
 #pragma once
 
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 
 #include <deque>
 #include <map>

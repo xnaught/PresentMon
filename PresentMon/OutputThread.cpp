@@ -332,7 +332,7 @@ static void PruneHistory(
 {
     assert(processEvents.size() + presentEvents.size() + lsrEvents.size() > 0);
 
-    auto latestQpc = max(max(
+    auto latestQpc = std::max(std::max(
         processEvents.empty() ? 0ull : processEvents.back().QpcTime,
         presentEvents.empty() ? 0ull : presentEvents.back()->PresentStartTime),
         lsrEvents.empty()     ? 0ull : lsrEvents.back()->QpcTime);
