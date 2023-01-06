@@ -527,5 +527,20 @@ bool ParseCommandLine(int argc, char** argv)
                      "         output, and recording arguments.\n");
     }
 
+    // Prune any directory and ".exe" off of the provided process names.  This
+    // is primarily because the ProcessStart event typically has a full path
+    // including "\\Device\\..." and ProcessStop event sometimes is missing
+    // part of the extension.
+    for (auto& name : args->mTargetProcessNames) {
+        auto pr = GetProcessNameComparisonRange(name, strlen(name));
+        name += pr.first;
+        ((char*) name)[pr.second] = '\0';
+    }
+    for (auto& name : args->mExcludeProcessNames) {
+        auto pr = GetProcessNameComparisonRange(name, strlen(name));
+        name += pr.first;
+        ((char*) name)[pr.second] = '\0';
+    }
+
     return true;
 }

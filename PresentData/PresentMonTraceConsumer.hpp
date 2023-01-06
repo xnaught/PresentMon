@@ -382,7 +382,7 @@ struct PMTraceConsumer
     void RuntimePresentStart(Runtime runtime, EVENT_HEADER const& hdr, uint64_t swapchainAddr, uint32_t dxgiPresentFlags, int32_t syncInterval);
     void RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hdr, uint32_t result);
 
-    void HandleNTProcessEvent(EVENT_RECORD* pEventRecord);
+    void HandleProcessEvent(EVENT_RECORD* pEventRecord);
     void HandleDXGIEvent(EVENT_RECORD* pEventRecord);
     void HandleD3D9Event(EVENT_RECORD* pEventRecord);
     void HandleDXGKEvent(EVENT_RECORD* pEventRecord);

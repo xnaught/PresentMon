@@ -132,7 +132,7 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
     auto const& args = GetCommandLineArgs();
 
     // Don't display non-target or empty processes
-    if (!processInfo.mTargetProcess ||
+    if (!processInfo.mIsTargetProcess ||
         processInfo.mModuleName.empty() ||
         processInfo.mSwapChain.empty()) {
         return;
