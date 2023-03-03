@@ -330,6 +330,8 @@ bool ParseCommandLine(int argc, char** argv)
     args->mHotkeyVirtualKeyCode = 0;
     args->mTrackDisplay = true;
     args->mTrackDebug = false;
+    args->mTrackGPU = false;
+    args->mTrackGPUVideo = false;
     args->mTrackWMR = false;
     args->mOutputCsvToFile = true;
     args->mOutputCsvToStdout = false;
@@ -394,8 +396,10 @@ bool ParseCommandLine(int argc, char** argv)
         else if (ParseArg(argv[i], "terminate_after_timed"))  { args->mTerminateAfterTimer = true; continue; }
 
         // Beta options:
-        else if (ParseArg(argv[i], "track_mixed_reality"))   { args->mTrackWMR = true; continue; }
-        else if (ParseArg(argv[i], "include_mixed_reality")) { DEPRECATED_wmr  = true; continue; }
+        else if (ParseArg(argv[i], "track_gpu"))              { args->mTrackGPU             = true; continue; }
+        else if (ParseArg(argv[i], "track_gpu_video"))        { args->mTrackGPUVideo        = true; continue; }
+        else if (ParseArg(argv[i], "track_mixed_reality"))    { args->mTrackWMR             = true; continue; }
+        else if (ParseArg(argv[i], "include_mixed_reality"))  { DEPRECATED_wmr              = true; continue; }
 
         // Hidden options:
         #ifndef NDEBUG
@@ -431,6 +435,14 @@ bool ParseCommandLine(int argc, char** argv)
     // Ignore -no_track_display if required for other requested tracking
     if (args->mTrackDebug && !args->mTrackDisplay) {
         PrintWarning("warning: -track_debug requires display tracking; ignoring -no_track_display.\n");
+        args->mTrackDisplay = true;
+    }
+    if (args->mTrackGPU && !args->mTrackDisplay) {
+        PrintWarning("warning: -track_gpu requires display tracking; ignoring -no_track_display.\n");
+        args->mTrackDisplay = true;
+    }
+    if (args->mTrackGPUVideo && !args->mTrackDisplay) {
+        PrintWarning("warning: -track_gpu_video requires display tracking; ignoring -no_track_display.\n");
         args->mTrackDisplay = true;
     }
 

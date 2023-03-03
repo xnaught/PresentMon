@@ -73,9 +73,11 @@ See [CONTRIBUTING](https://github.com/GameTechDev/PresentMon/blob/main/CONTRIBUT
 | `-terminate_on_proc_exit` | Terminate PresentMon when all the target processes have exited.                                                                                                                                                                                                                                                   |
 | `-terminate_after_timed`  | When using `-timed`, terminate PresentMon after the timed capture completes.                                                                                                                                                                                                                                      |
 
-| Beta Options           |                                                                      |
-| ---------------------- | -------------------------------------------------------------------- |
-| `-track_mixed_reality` | Capture Windows Mixed Reality data to a CSV file with "_WMR" suffix. |
+| Beta Options              |                                                                                                         |
+| ------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `-track_gpu`              | Tracks the duration of each process' GPU work performed between presents.  Not supported on Win7.       |
+| `-track_gpu_video`        | Track the video encode/decode portion of GPU work separately from other engines. Not supported on Win7. |
+| `-track_mixed_reality`    | Capture Windows Mixed Reality data to a CSV file with "_WMR" suffix.                                    |
 
 ## Comma-separated value (CSV) file output
 
@@ -102,13 +104,20 @@ If `-hotkey` is used, then one CSV is created for each time recording is started
 | *TimeInSeconds*          | The time of the Present() call, in seconds, relative to when the PresentMon started recording.                                                                                                                                                                                                                                                           |
 | *QPCTime*                | The time of the Present() call, as a [performance counter value](https://docs.microsoft.com/en-us/windows/win32/api/profileapi/nf-profileapi-queryperformancecounter).<br>This column is only available when `-qpc_time` or `-qpc_time_s` are used.  When `-qpc_time_s` is used, the value is converted to seconds by dividing by the counter frequency. |
 | *msInPresentAPI*         | The time spent inside the Present() call, in milliseconds.                                                                                                                                                                                                                                                                                               |
-| *msUntilRenderComplete*  | The time between the Present() call and when the GPU work completed, in milliseconds.<br>This column is not available when `-no_track_display` is used.                                                                                                                                                                                                  |
+| *msUntilRenderComplete*  | The time between the Present() call and when GPU work for this frame completed, in milliseconds.<br>This column is not available when `-no_track_display` is used. |
 | *msUntilDisplayed*       | The time between the Present() call and when the frame was displayed, in milliseconds.<br>This column is not available when `-no_track_display` is used.                                                                                                                                                                                                 |
 | *Dropped*                | Whether the frame was dropped (1) or displayed (0).  Note, if dropped, *msUntilDisplayed* will be 0.                                                                                                                                                                                                                                                     |
 | *msBetweenPresents*      | The time between this Present() call and the previous one, in milliseconds.                                                                                                                                                                                                                                                                              |
 | *msBetweenDisplayChange* | How long the previous frame was displayed before this Present() was displayed, in milliseconds.<br>This column is not available when `-no_track_display` is used.                                                                                                                                                                                        |
 | *WasBatched*             | Whether the frame was submitted by the driver on a different thread than the app (1) or not (0).<br>This column is only available when `-track_debug` is used.                                                                                                                                                                                           |
 | *DwmNotified*            | Whether the desktop compositor was notified about the frame (1) or not (0).<br>This column is only available when `-track_debug` is used.                                                                                                                                                                                                                |
+
+Using `-track_gpu` or `-track_gpu_video` will add the following columns:
+
+| Column Header                     | Data Description                                                                            |
+| --------------------------------- | ------------------------------------------------------------------------------------------- |
+| *msUntilRenderStart*              | The time between the Present() call and when GPU work for this frame started, in milliseconds.  Note that rendering for a frame can start before the Present() call, so this value can be negative. |
+| *msGPUActive*, *msGPUVideoActive* | The total duration the GPU was working on this frame, in milliseconds.  Time is counted whenever at least one engine is executing work from the target process. When `-track_gpu_video` is used, then the *msGPUVideoActive* column is added showing the duration of work on the GPU's video encode and/or decode engines and, in this case, the video encode/decode work is not included in *msGPUActive*. |
 
 The following values are used in the PresentMode column:
 
@@ -206,6 +215,18 @@ This is a subset of the true input-to-display latency and doesn't include:
 - any time that input events are queued before being used by the target application (which varies, potentially up to one frame longer),
 - time spent processing the output in the display hardware or drivers (typically a fixed additional overhead), and
 - a combination of display blanking interval and scan time (which varies, depending on timing and tearing).
+
+### Tracking GPU work with Hardware-Accelerated GPU Scheduling enabled
+
+When using `-track_gpu` on a system that uses Hardware-Accelerated GPU
+Scheduling (HWS), the GPU execution metrics are less accurate than when HWS is
+disabled resulting in *msUntilRenderStart*, *msUntilRenderComplete*,
+*msGPUActive*, and *msGPUVideoActive* measurements that are later/larger than
+they should be.  For example, in a GPU-bound scenario the frame's *msGPUActive*
+may be reported ~0.5ms larger than the true GPU work duration, though the
+specific amount of the inaccuracy will be workload- and GPU-dependent.
+
+An improved solution is WIP.
 
 ### Shutting down PresentMon on Windows 7
 

@@ -49,6 +49,13 @@ set providers=%providers%+%dxgi%
 %xperf% -capturestate CaptureState %providers%
 if %errorlevel% neq 0 goto error
 
+set providers=%dxgkrnl%:0x04000000:5
+%xperf% -start SchedulingLog -on %providers% -BufferSize 1024 -MinBuffers 30 -MaxBuffers 120 -f SchedulingLog.etl
+if %errorlevel% neq 0 goto error
+
+%xperf% -capturestate SchedulingLog %providers%
+if %errorlevel% neq 0 goto error
+
 set providers=%dxgkrnl%:0x208041:5
 set providers=%providers%+%dwm%
 set providers=%providers%+%dwm_win7%

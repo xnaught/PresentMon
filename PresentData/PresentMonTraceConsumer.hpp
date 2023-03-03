@@ -21,9 +21,8 @@
 #include <evntcons.h> // must include after windows.h
 
 #include "Debug.hpp"
+#include "GpuTrace.hpp"
 #include "TraceConsumer.hpp"
-
-#include "ETW/Microsoft_Windows_DxgKrnl.h"
 
 // PresentMode represents the different paths a present can take on windows.
 //
@@ -124,7 +123,11 @@ struct PresentEvent {
     uint32_t ProcessId;         // ID of the process that presented
     uint32_t ThreadId;          // ID of the thread that presented
     uint64_t PresentStopTime;   // QPC value when the application's present call completed
-    uint64_t ReadyTime;         // QPC value when the last GPU commands completed prior to presentation
+    uint64_t GPUStartTime;      // QPC value when the frame's first DMA packet started
+    uint64_t ReadyTime;         // QPC value when the frame's last DMA packet completed
+    uint64_t GPUDuration;       // QPC duration during which a frame's DMA packet was running on
+                                // ... any node (if mTrackGPUVideo==false) or non-video nodes (if mTrackGPUVideo==true)
+    uint64_t GPUVideoDuration;  // QPC duration during which a frame's DMA packet was running on a video node (if mTrackGPUVideo==true)
     uint64_t ScreenTime;        // QPC value when the present was displayed on screen
 
     // Extra present parameters obtained through DXGI or D3D9 present
@@ -166,6 +169,7 @@ struct PresentEvent {
     bool SeenWin32KEvents;
     bool DwmNotified;
     bool SeenInFrameEvent;      // This present has gotten a Win32k TokenStateChanged event into InFrame state
+    bool GpuFrameCompleted;     // This present has already seen an event that caused GpuTrace::CompleteFrame() to be called.
     bool IsCompleted;           // All expected events have been observed
     bool IsLost;                // This PresentEvent was found in an unexpected state or is too old
 
@@ -200,6 +204,8 @@ struct PMTraceConsumer
     bool mFilteredEvents = false;       // Whether the trace session was configured to filter non-PresentMon events
     bool mFilteredProcessIds = false;   // Whether to filter presents to specific processes
     bool mTrackDisplay = true;          // Whether the analysis should track presents to display
+    bool mTrackGPU = false;             // Whether the analysis should track GPU work
+    bool mTrackGPUVideo = false;        // Whether the analysis should track GPU video work separately
 
     // Whether we've completed any presents yet.  This is used to indicate that
     // all the necessary providers have started and it's safe to start tracking
@@ -360,6 +366,10 @@ struct PMTraceConsumer
 
     std::unordered_map<uint32_t, std::unordered_map<uint64_t,
                                         DeferredCompletions>> mDeferredCompletions;   // ProcessId -> SwapChainAddress -> DeferredCompletions
+
+
+    // mGpuTrace tracks work executed on the GPU.
+    GpuTrace mGpuTrace;
 
 
     void HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool redirectedPresent);

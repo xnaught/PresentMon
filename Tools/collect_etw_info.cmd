@@ -49,6 +49,9 @@ set events=%events% --event=PresentMultiplaneOverlay::Stop
 call :etw_list "Microsoft-Windows-DXGI" "%out_dir%\Microsoft_Windows_DXGI.h"
 
 set events=
+set events=%events% --event=AdapterAllocation::Start
+set events=%events% --event=AdapterAllocation::Stop
+set events=%events% --event=AdapterAllocation::DCStart
 set events=%events% --event=Blit::Info
 set events=%events% --event=BlitCancel::Info
 set events=%events% --event=Flip::Info
@@ -63,8 +66,20 @@ set events=%events% --event=PresentHistory::Start
 set events=%events% --event=PresentHistory::Info
 set events=%events% --event=PresentHistoryDetailed::Start
 set events=%events% --event=QueuePacket::Start
+set events=%events% --event=QueuePacket::Start_2
 set events=%events% --event=QueuePacket::Stop
 set events=%events% --event=VSyncDPC::Info
+set events=%events% --event=Context::DCStart
+set events=%events% --event=Context::Start
+set events=%events% --event=Context::Stop
+set events=%events% --event=HwQueue::DCStart
+set events=%events% --event=HwQueue::Start
+set events=%events% --event=NodeMetadata::Info
+set events=%events% --event=Device::DCStart
+set events=%events% --event=Device::Start
+set events=%events% --event=Device::Stop
+set events=%events% --event=DmaPacket::Start
+set events=%events% --event=DmaPacket::Info
 call :etw_list "Microsoft-Windows-DxgKrnl" "%out_dir%\Microsoft_Windows_DxgKrnl.h"
 
 set events=

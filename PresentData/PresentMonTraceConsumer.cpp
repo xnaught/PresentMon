@@ -77,7 +77,10 @@ PresentEvent::PresentEvent()
     , ProcessId(0)
     , ThreadId(0)
     , PresentStopTime(0)
+    , GPUStartTime(0)
     , ReadyTime(0)
+    , GPUDuration(0)
+    , GPUVideoDuration(0)
     , ScreenTime(0)
 
     , SwapChainAddress(0)
@@ -111,6 +114,7 @@ PresentEvent::PresentEvent()
     , SeenWin32KEvents(false)
     , DwmNotified(false)
     , SeenInFrameEvent(false)
+    , GpuFrameCompleted(false)
     , IsCompleted(false)
     , IsLost(false)
     , PresentInDwmWaitingStruct(false)
@@ -125,6 +129,7 @@ PresentEvent::PresentEvent()
 
 PMTraceConsumer::PMTraceConsumer()
     : mAllPresents(PRESENTEVENT_CIRCULAR_BUFFER_SIZE)
+    , mGpuTrace(this)
 {
 }
 
@@ -302,6 +307,12 @@ void PMTraceConsumer::HandleDxgkQueueSubmit(
     bool isPresentPacket,
     bool isWin7)
 {
+    // Track GPU execution
+    if (mTrackGPU) {
+        bool isWaitPacket = packetType == (uint32_t) Microsoft_Windows_DxgKrnl::QueuePacketType::DXGKETW_WAIT_COMMAND_BUFFER;
+        mGpuTrace.EnqueueQueuePacket(hContext, submitSequence, hdr.ProcessId, hdr.TimeStamp.QuadPart, isWaitPacket);
+    }
+
     // For blt presents on Win7, the only way to distinguish between DWM-off
     // fullscreen blts and the DWM-on blt to redirection bitmaps is to track
     // whether a PHT was submitted before submitting anything else to the same
@@ -361,6 +372,11 @@ void PMTraceConsumer::HandleDxgkQueueSubmit(
 
 void PMTraceConsumer::HandleDxgkQueueComplete(uint64_t timestamp, uint64_t hContext, uint32_t submitSequence)
 {
+    // Track GPU execution of the packet
+    if (mTrackGPU) {
+        mGpuTrace.CompleteQueuePacket(hContext, submitSequence, timestamp);
+    }
+
     // If this packet was a present packet being tracked...
     auto ii = mPresentBySubmitSequence.find(submitSequence);
     if (ii != mPresentBySubmitSequence.end()) {
@@ -370,6 +386,18 @@ void PMTraceConsumer::HandleDxgkQueueComplete(uint64_t timestamp, uint64_t hCont
             auto pEvent = jj->second;
 
             TRACK_PRESENT_PATH_SAVE_GENERATED_ID(pEvent);
+
+            // Stop tracking GPU work for this present.
+            //
+            // Note: there is a potential race here because QueuePacket_Stop
+            // occurs sometime after DmaPacket_Info it's possible that some
+            // small portion of the next frame's GPU work has started before
+            // QueuePacket_Stop and will be attributed to this frame.  However,
+            // this is necessarily a small amount of work, and we can't use DMA
+            // packets as not all present types create them.
+            if (mTrackGPU) {
+                mGpuTrace.CompleteFrame(pEvent.get(), timestamp);
+            }
 
             // We use present packet completion as the screen time for
             // Hardware_Legacy_Copy_To_Front_Buffer and Hardware_Legacy_Flip
@@ -625,7 +653,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
 
         TRACK_PRESENT_PATH_GENERATE_ID();
         HandleDxgkFlip(hdr, FlipInterval, MMIOFlip, false);
-        break;
+        return;
     }
     case Microsoft_Windows_DxgKrnl::IndependentFlip_Info::Id:
     {
@@ -647,12 +675,15 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
             pEvent->PresentMode = PresentMode::Hardware_Independent_Flip;
             pEvent->SyncInterval = FlipInterval;
         }
-        break;
+        return;
     }
     case Microsoft_Windows_DxgKrnl::FlipMultiPlaneOverlay_Info::Id:
         TRACK_PRESENT_PATH_GENERATE_ID();
         HandleDxgkFlip(hdr, -1, true, true);
-        break;
+        return;
+    // QueuPacket_Start are used for render queue packets
+    // QueuPacket_Start_2 are used for monitor wait packets
+    // QueuPacket_Start_3 are used for monitor signal packets
     case Microsoft_Windows_DxgKrnl::QueuePacket_Start::Id:
     {
         EventDataDesc desc[] = {
@@ -668,7 +699,22 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
         auto bPresent       = desc[3].GetData<BOOL>() != 0;
 
         HandleDxgkQueueSubmit(hdr, hContext, SubmitSequence, PacketType, bPresent, false);
-        break;
+        return;
+    }
+    case Microsoft_Windows_DxgKrnl::QueuePacket_Start_2::Id:
+    {
+        EventDataDesc desc[] = {
+            { L"hContext" },
+            { L"SubmitSequence" },
+        };
+        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+        auto hContext       = desc[0].GetData<uint64_t>();
+        auto SubmitSequence = desc[1].GetData<uint32_t>();
+
+        uint32_t PacketType = (uint32_t) Microsoft_Windows_DxgKrnl::QueuePacketType::DXGKETW_WAIT_COMMAND_BUFFER;
+        bool bPresent = false;
+        HandleDxgkQueueSubmit(hdr, hContext, SubmitSequence, PacketType, bPresent, false);
+        return;
     }
     case Microsoft_Windows_DxgKrnl::QueuePacket_Stop::Id:
     {
@@ -682,7 +728,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
 
         TRACK_PRESENT_PATH_GENERATE_ID();
         HandleDxgkQueueComplete(hdr.TimeStamp.QuadPart, hContext, SubmitSequence);
-        break;
+        return;
     }
     case Microsoft_Windows_DxgKrnl::MMIOFlip_Info::Id:
     {
@@ -696,7 +742,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
 
         TRACK_PRESENT_PATH_GENERATE_ID();
         HandleDxgkMMIOFlip(hdr.TimeStamp.QuadPart, FlipSubmitSequence, Flags);
-        break;
+        return;
     }
     case Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay_Info::Id:
     {
@@ -714,12 +760,11 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
 
             TRACK_PRESENT_PATH(present);
 
+            // Complete the GPU tracking for this frame.
+            //
             // For some present modes (e.g., Hardware_Legacy_Flip) this may be
             // the first event telling us the present is ready.
-            if (present->ReadyTime == 0) {
-                VerboseTraceBeforeModifyingPresent(present.get());
-                present->ReadyTime = hdr.TimeStamp.QuadPart;
-            }
+            mGpuTrace.CompleteFrame(present.get(), hdr.TimeStamp.QuadPart);
 
             // Check and handle the post-flip status if available.
             if (flipEntryStatusAfterFlipValid) {
@@ -754,7 +799,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
                 }
             }
         }
-        break;
+        return;
     }
 
     // VSyncDPC_Info only includes the FlipSubmitSequence for one layer.
@@ -774,7 +819,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
         if (FlipFenceId != 0) {
             HandleDxgkSyncDPC(hdr.TimeStamp.QuadPart, (uint32_t)(FlipFenceId >> 32u));
         }
-        break;
+        return;
     }
     case Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id:
     case Microsoft_Windows_DxgKrnl::HSyncDPCMultiPlane_Info::Id:
@@ -843,7 +888,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
                 }
             }
         }
-        break;
+        return;
     }
     case Microsoft_Windows_DxgKrnl::Present_Info::Id:
     {
@@ -880,7 +925,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
                 CompletePresent(present);
             }
         }
-        break;
+        return;
     }
     case Microsoft_Windows_DxgKrnl::PresentHistoryDetailed_Start::Id:
     case Microsoft_Windows_DxgKrnl::PresentHistory_Start::Id:
@@ -899,12 +944,12 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
             TRACK_PRESENT_PATH_GENERATE_ID();
             HandleDxgkPresentHistory(hdr, Token, TokenData, Model);
         }
-        break;
+        return;
     }
     case Microsoft_Windows_DxgKrnl::PresentHistory_Info::Id:
         TRACK_PRESENT_PATH_GENERATE_ID();
         HandleDxgkPresentHistoryInfo(hdr, mMetadata.GetEventData<uint64_t>(pEventRecord, L"Token"));
-        break;
+        return;
     case Microsoft_Windows_DxgKrnl::Blit_Info::Id:
     {
         EventDataDesc desc[] = {
@@ -917,7 +962,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
 
         TRACK_PRESENT_PATH_GENERATE_ID();
         HandleDxgkBlt(hdr, hwnd, bRedirectedPresent);
-        break;
+        return;
     }
 
     // BlitCancel_Info indicates that DxgKrnl optimized a present blt away, and
@@ -933,12 +978,165 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
 
             CompletePresent(present);
         }
-        break;
+        return;
     }
-    default:
-        assert(!mFilteredEvents); // Assert that filtering is working if expected
-        break;
     }
+
+    if (mTrackGPU) {
+        switch (hdr.EventDescriptor.Id) {
+
+        // We need a mapping from hContext to GPU node.
+        //
+        // There's two ways I've tried to get this. One is to use
+        // Microsoft_Windows_DxgKrnl::SelectContext2_Info events which include
+        // all the required info (hContext, pDxgAdapter, and NodeOrdinal) but
+        // that event fires often leading to significant overhead.
+        //
+        // The current implementaiton requires a CAPTURE_STATE on start up to
+        // get all existing context/device events but after that the event
+        // overhead should be minimal.
+        case Microsoft_Windows_DxgKrnl::Device_DCStart::Id:
+        case Microsoft_Windows_DxgKrnl::Device_Start::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"pDxgAdapter" },
+                { L"hDevice" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto pDxgAdapter = desc[0].GetData<uint64_t>();
+            auto hDevice     = desc[1].GetData<uint64_t>();
+
+            mGpuTrace.RegisterDevice(hDevice, pDxgAdapter);
+            return;
+        }
+        // Sometimes a trace will miss a Device_Start, so we also check
+        // AdapterAllocation events (which also provide the pDxgAdapter-hDevice
+        // mapping).  These are not currently enabled for realtime collection.
+        case Microsoft_Windows_DxgKrnl::AdapterAllocation_Start::Id:
+        case Microsoft_Windows_DxgKrnl::AdapterAllocation_DCStart::Id:
+        case Microsoft_Windows_DxgKrnl::AdapterAllocation_Stop::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"pDxgAdapter" },
+                { L"hDevice" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto pDxgAdapter = desc[0].GetData<uint64_t>();
+            auto hDevice     = desc[1].GetData<uint64_t>();
+
+            if (hDevice != 0) {
+                mGpuTrace.RegisterDevice(hDevice, pDxgAdapter);
+            }
+            return;
+        }
+        case Microsoft_Windows_DxgKrnl::Device_Stop::Id:
+        {
+            auto hDevice = mMetadata.GetEventData<uint64_t>(pEventRecord, L"hDevice");
+
+            mGpuTrace.UnregisterDevice(hDevice);
+            return;
+        }
+        case Microsoft_Windows_DxgKrnl::Context_DCStart::Id:
+        case Microsoft_Windows_DxgKrnl::Context_Start::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"hContext" },
+                { L"hDevice" },
+                { L"NodeOrdinal" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto hContext    = desc[0].GetData<uint64_t>();
+            auto hDevice     = desc[1].GetData<uint64_t>();
+            auto NodeOrdinal = desc[2].GetData<uint32_t>();
+
+            // If this is a DCStart, then it was generated by xperf instead of
+            // the context's process.
+            uint32_t processId = hdr.EventDescriptor.Id == Microsoft_Windows_DxgKrnl::Context_DCStart::Id
+                ? 0
+                : hdr.ProcessId;
+
+            mGpuTrace.RegisterContext(hContext, hDevice, NodeOrdinal, processId);
+            return;
+        }
+        case Microsoft_Windows_DxgKrnl::Context_Stop::Id:
+            mGpuTrace.UnregisterContext(mMetadata.GetEventData<uint64_t>(pEventRecord, L"hContext"));
+            return;
+
+        case Microsoft_Windows_DxgKrnl::HwQueue_DCStart::Id:
+        case Microsoft_Windows_DxgKrnl::HwQueue_Start::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"hContext" },
+                { L"ParentDxgHwQueue" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto hContext        = desc[0].GetData<uint64_t>();
+            auto hHwQueueContext = desc[1].GetData<uint64_t>();
+
+            mGpuTrace.RegisterHwQueueContext(hContext, hHwQueueContext);
+            return;
+        }
+
+        case Microsoft_Windows_DxgKrnl::NodeMetadata_Info::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"pDxgAdapter" },
+                { L"NodeOrdinal" },
+                { L"EngineType" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto pDxgAdapter = desc[0].GetData<uint64_t>();
+            auto NodeOrdinal = desc[1].GetData<uint32_t>();
+            auto EngineType  = desc[2].GetData<Microsoft_Windows_DxgKrnl::DXGK_ENGINE>();
+
+            mGpuTrace.SetEngineType(pDxgAdapter, NodeOrdinal, EngineType);
+            return;
+        }
+
+        // DmaPacket_Start occurs when a packet is enqueued onto a node.
+        // 
+        // There are certain DMA packets that don't result in GPU work.
+        // Examples are preemption packets or notifications for
+        // VIDSCH_QUANTUM_EXPIRED.  These will have a sequence id of zero (also
+        // DmaBuffer will be null).
+        case Microsoft_Windows_DxgKrnl::DmaPacket_Start::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"hContext" },
+                { L"ulQueueSubmitSequence" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto hContext   = desc[0].GetData<uint64_t>();
+            auto SequenceId = desc[1].GetData<uint32_t>();
+
+            if (SequenceId != 0) {
+                mGpuTrace.EnqueueDmaPacket(hContext, SequenceId, hdr.TimeStamp.QuadPart);
+            }
+            return;
+        }
+
+        // DmaPacket_Info occurs on packet-related interrupts.  We could use
+        // DmaPacket_Stop here, but the DMA_COMPLETED interrupt is a tighter
+        // bound.
+        case Microsoft_Windows_DxgKrnl::DmaPacket_Info::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"hContext" },
+                { L"ulQueueSubmitSequence" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto hContext   = desc[0].GetData<uint64_t>();
+            auto SequenceId = desc[1].GetData<uint32_t>();
+
+            if (SequenceId != 0) {
+                mGpuTrace.CompleteDmaPacket(hContext, SequenceId, hdr.TimeStamp.QuadPart);
+            }
+            return;
+        }
+        }
+    }
+
+    assert(!mFilteredEvents); // Assert that filtering is working if expected
 }
 
 void PMTraceConsumer::HandleWin7DxgkBlt(EVENT_RECORD* pEventRecord)

@@ -39,6 +39,13 @@ struct PresentMonCsv
         Header_WasBatched,
         Header_DwmNotified,
 
+        // Required headers when -track_gpu is used:
+        Header_msUntilRenderStart,
+        Header_msGPUActive,
+
+        // Required headers when -track_gpu_video is used:
+        Header_msGPUVideoActive,
+
         // Special values:
         KnownHeaderCount,
         UnknownHeader,
@@ -65,6 +72,9 @@ struct PresentMonCsv
         case Header_msUntilDisplayed:       return "msUntilDisplayed";
         case Header_WasBatched:             return "WasBatched";
         case Header_DwmNotified:            return "DwmNotified";
+        case Header_msUntilRenderStart:     return "msUntilRenderStart";
+        case Header_msGPUActive:            return "msGPUActive";
+        case Header_msGPUVideoActive:       return "msGPUVideoActive";
         }
         return "<unknown>";
     }

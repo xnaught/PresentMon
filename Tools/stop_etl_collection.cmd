@@ -20,7 +20,10 @@ if "%~2" neq "" goto usage
 
 set error=0
 
-%xperf% -stop CaptureState NoCaptureState
+%xperf% -capturestate SchedulingLog 802ec45a-1e99-4b83-9920-87c98277ba9d:0x04000000:5
+if %errorlevel% neq 0 set error=1
+
+%xperf% -stop CaptureState NoCaptureState SchedulingLog
 if %errorlevel% neq 0 set error=1
 
 %xperf% -stop
@@ -28,8 +31,9 @@ if %errorlevel% neq 0 set error=1
 
 if %error% neq 0 exit /b 1
 
-%xperf% -merge Kernel.etl NoCaptureState.etl CaptureState.etl trace.etl -compress -suppresspii
+%xperf% -merge Kernel.etl NoCaptureState.etl CaptureState.etl SchedulingLog.etl trace.etl -compress -suppresspii
 
 if exist Kernel.etl         del Kernel.etl
 if exist NoCaptureState.etl del NoCaptureState.etl
 if exist CaptureState.etl   del CaptureState.etl
+if exist SchedulingLog.etl  del SchedulingLog.etl

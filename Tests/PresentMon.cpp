@@ -95,6 +95,11 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
 
         HeaderCollection(L"-track_debug", { Header_WasBatched,
                                             Header_DwmNotified }),
+
+        HeaderCollection(L"-track_gpu", { Header_msUntilRenderStart,
+                                          Header_msGPUActive }),
+
+        HeaderCollection(L"-track_gpu_video", { Header_msGPUVideoActive }),
     };
 
     // Load the CSV

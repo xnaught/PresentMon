@@ -126,6 +126,17 @@ void PrintQueuePacketType(uint32_t type)
     default:                                               printf("Unknown (%u)", type); assert(false); break;
     }
 }
+void PrintDmaPacketType(uint32_t type)
+{
+    using namespace Microsoft_Windows_DxgKrnl;
+    switch (type) {
+    case DmaPacketType::DXGKETW_CLIENT_RENDER_BUFFER:    printf("CLIENT_RENDER"); break;
+    case DmaPacketType::DXGKETW_CLIENT_PAGING_BUFFER:    printf("CLIENT_PAGING"); break;
+    case DmaPacketType::DXGKETW_SYSTEM_PAGING_BUFFER:    printf("SYSTEM_PAGING"); break;
+    case DmaPacketType::DXGKETW_SYSTEM_PREEMTION_BUFFER: printf("SYSTEM_PREEMTION"); break;
+    default:                                             printf("Unknown (%u)", type); assert(false); break;
+    }
+}
 void PrintPresentFlags(uint32_t flags)
 {
     if (flags & DXGI_PRESENT_TEST) printf("TEST");
@@ -163,6 +174,7 @@ void PrintEventHeader(EVENT_RECORD* eventRecord, EventMetadata* metadata, char c
         else if (propFunc == PrintTime)                 PrintTime(metadata->GetEventData<uint64_t>(eventRecord, propName));
         else if (propFunc == PrintTimeDelta)            PrintTimeDelta(metadata->GetEventData<uint64_t>(eventRecord, propName));
         else if (propFunc == PrintQueuePacketType)      PrintQueuePacketType(metadata->GetEventData<uint32_t>(eventRecord, propName));
+        else if (propFunc == PrintDmaPacketType)        PrintDmaPacketType(metadata->GetEventData<uint32_t>(eventRecord, propName));
         else if (propFunc == PrintPresentFlags)         PrintPresentFlags(metadata->GetEventData<uint32_t>(eventRecord, propName));
         else if (propFunc == PrintPresentHistoryModel)  PrintPresentHistoryModel(metadata->GetEventData<uint32_t>(eventRecord, propName));
         else assert(false);
@@ -195,6 +207,9 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintTime,          PresentStopTime)
     FLUSH_MEMBER(PrintTime,          ReadyTime)
     FLUSH_MEMBER(PrintTime,          ScreenTime)
+    FLUSH_MEMBER(PrintTime,          GPUStartTime)
+    FLUSH_MEMBER(PrintTimeDelta,     GPUDuration)
+    FLUSH_MEMBER(PrintTimeDelta,     GPUVideoDuration)
     FLUSH_MEMBER(PrintU64x,          SwapChainAddress)
     FLUSH_MEMBER(PrintU32,           SyncInterval)
     FLUSH_MEMBER(PrintU32,           PresentFlags)
@@ -231,10 +246,25 @@ uint64_t LookupPresentId(
 #ifdef NDEBUG
     (void) pmConsumer, CompositionSurfaceLuid, PresentCount, BindId;
 #else
+    // pmConsumer can complete presents before they've seen all of
+    // their TokenStateChanged_Info events, so we keep a copy of the
+    // token->present id map here simply so we can print what present
+    // the event refers to.
+    static std::unordered_map<
+        PMTraceConsumer::Win32KPresentHistoryToken,
+        uint64_t,
+        PMTraceConsumer::Win32KPresentHistoryTokenHash> tokenToIdMap;
+
     PMTraceConsumer::Win32KPresentHistoryToken key(CompositionSurfaceLuid, PresentCount, BindId);
     auto ii = pmConsumer->mPresentByWin32KPresentHistoryToken.find(key);
     if (ii != pmConsumer->mPresentByWin32KPresentHistoryToken.end()) {
+        tokenToIdMap[key] = ii->second->Id;
         return ii->second->Id;
+    }
+
+    auto jj = tokenToIdMap.find(key);
+    if (jj != tokenToIdMap.end()) {
+        return jj->second;
     }
 #endif
 
@@ -344,9 +374,28 @@ void VerboseTraceEvent(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecord, E
                                                                                                                           L"SubmitSequence", PrintU32,
                                                                                                                           L"PacketType",     PrintQueuePacketType,
                                                                                                                           L"bPresent",       PrintU32, }); break;
+        case QueuePacket_Start_2::Id:           PrintEventHeader(eventRecord, metadata, "QueuePacket_Start WAIT",       { L"hContext",       PrintU64x,
+                                                                                                                          L"SubmitSequence", PrintU32, }); break;
         case QueuePacket_Stop::Id:              PrintEventHeader(eventRecord, metadata, "QueuePacket_Stop",             { L"hContext",       PrintU64x,
                                                                                                                           L"SubmitSequence", PrintU32, }); break;
-
+        case Context_DCStart::Id:
+        case Context_Start::Id:                 PrintEventHeader(eventRecord, metadata, "Context_Start",                { L"hContext",       PrintU64x,
+                                                                                                                          L"hDevice",        PrintU64x,
+                                                                                                                          L"NodeOrdinal",    PrintU32, }); break;
+        case Context_Stop::Id:                  PrintEventHeader(eventRecord, metadata, "Context_Stop",                 { L"hContext",       PrintU64x, }); break;
+        case Device_DCStart::Id:
+        case Device_Start::Id:                  PrintEventHeader(eventRecord, metadata, "Device_Start",                 { L"hDevice",        PrintU64x,
+                                                                                                                          L"pDxgAdapter",    PrintU64x, }); break;
+        case Device_Stop::Id:                   PrintEventHeader(eventRecord, metadata, "Device_Stop",                  { L"hDevice",        PrintU64x, }); break;
+        case HwQueue_DCStart::Id:
+        case HwQueue_Start::Id:                 PrintEventHeader(eventRecord, metadata, "HwQueue_Start",                { L"hContext", PrintU64x,
+                                                                                                                          L"hHwQueue", PrintU64x,
+                                                                                                                          L"ParentDxgHwQueue", PrintU64x, }); break;
+        case DmaPacket_Info::Id:                PrintEventHeader(eventRecord, metadata, "DmaPacket_Info",               { L"hContext",       PrintU64x,
+                                                                                                                          L"ulQueueSubmitSequence", PrintU32,
+                                                                                                                          L"PacketType",     PrintDmaPacketType, }); break;
+        case DmaPacket_Start::Id:               PrintEventHeader(eventRecord, metadata, "DmaPacket_Start",              { L"hContext",       PrintU64x,
+                                                                                                                          L"ulQueueSubmitSequence", PrintU32, }); break;
         case VSyncDPC_Info::Id: {
             auto FlipFenceId = metadata->GetEventData<uint64_t>(eventRecord, L"FlipFenceId");
             PrintEventHeader(hdr);

@@ -153,16 +153,21 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
         auto const& present0 = *chain.mPresentHistory[(chain.mNextPresentIndex - chain.mPresentHistoryCount) % SwapChainData::PRESENT_HISTORY_MAX_COUNT];
         auto const& presentN = *chain.mPresentHistory[(chain.mNextPresentIndex - 1) % SwapChainData::PRESENT_HISTORY_MAX_COUNT];
         auto cpuAvg = QpcDeltaToSeconds(presentN.PresentStartTime - present0.PresentStartTime) / (chain.mPresentHistoryCount - 1);
+        auto gpuAvg = 0.0;
         auto dspAvg = 0.0;
         auto latAvg = 0.0;
 
         PresentEvent* displayN = nullptr;
         if (args.mTrackDisplay) {
             uint64_t display0ScreenTime = 0;
+            uint64_t gpuSum = 0;
             uint64_t latSum = 0;
             uint32_t displayCount = 0;
             for (uint32_t i = 0; i < chain.mPresentHistoryCount; ++i) {
                 auto const& p = chain.mPresentHistory[(chain.mNextPresentIndex - chain.mPresentHistoryCount + i) % SwapChainData::PRESENT_HISTORY_MAX_COUNT];
+
+                gpuSum += p->GPUDuration;
+
                 if (p->FinalState == PresentResult::Presented) {
                     if (displayCount == 0) {
                         display0ScreenTime = p->ScreenTime;
@@ -172,6 +177,8 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
                     displayCount += 1;
                 }
             }
+
+            gpuAvg = QpcDeltaToSeconds(gpuSum) / (chain.mPresentHistoryCount - 1);
 
             if (displayCount >= 2) {
                 dspAvg = QpcDeltaToSeconds(displayN->ScreenTime - display0ScreenTime) / (displayCount - 1);
@@ -187,17 +194,20 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
             ConsolePrintLn("%s[%d]:", processInfo.mModuleName.c_str(), processId);
         }
 
-        ConsolePrint("    %016llX (%s): SyncInterval=%d Flags=%d CPU%s=%.2lf",
+        ConsolePrint("    %016llX (%s): SyncInterval=%d Flags=%d CPU%s%s=%.2lf",
             address,
             RuntimeToString(presentN.Runtime),
             presentN.SyncInterval,
             presentN.PresentFlags,
+            gpuAvg > 0.0 ? "/GPU" : "",
             dspAvg > 0.0 ? "/Display" : "",
             1000.0 * cpuAvg);
 
+        if (gpuAvg > 0.0) ConsolePrint("/%.2lf", 1000.0 * gpuAvg);
         if (dspAvg > 0.0) ConsolePrint("/%.2lf", 1000.0 * dspAvg);
 
         ConsolePrint("ms (%.1lf", 1.0 / cpuAvg);
+        if (gpuAvg > 0.0) ConsolePrint("/%.1lf", 1.0 / gpuAvg);
         if (dspAvg > 0.0) ConsolePrint("/%.1lf", 1.0 / dspAvg);
         ConsolePrint(" fps)");
 

@@ -70,6 +70,14 @@ static void WriteCsvHeader(FILE* fp)
             ",WasBatched"
             ",DwmNotified");
     }
+    if (args.mTrackGPU) {
+        fprintf(fp,
+            ",msUntilRenderStart"
+            ",msGPUActive");
+    }
+    if (args.mTrackGPUVideo) {
+        fprintf(fp, ",msGPUVideoActive");
+    }
     if (args.mOutputQpcTime) {
         fprintf(fp, ",QPCTime");
     }
@@ -120,6 +128,11 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
         }
     }
 
+    double msUntilRenderStart = 0.0;
+    if (args.mTrackGPU) {
+        msUntilRenderStart = 1000.0 * QpcDeltaToSeconds(p.PresentStartTime, p.GPUStartTime);
+    }
+
     // Output in CSV format
     fprintf(fp, "%s,%d,0x%016llX,%s,%d,%d,%s,%.*lf,%.*lf,%.*lf",
         processInfo->mModuleName.c_str(),
@@ -144,6 +157,15 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
         fprintf(fp, ",%d,%d",
             p.DriverThreadId != 0,
             p.DwmNotified);
+    }
+    if (args.mTrackGPU) {
+        fprintf(fp, ",%.*lf,%.*lf",
+            DBL_DIG - 1, msUntilRenderStart,
+            DBL_DIG - 1, 1000.0 * QpcDeltaToSeconds(p.GPUDuration));
+    }
+    if (args.mTrackGPUVideo) {
+        fprintf(fp, ",%.*lf",
+            DBL_DIG - 1, 1000.0 * QpcDeltaToSeconds(p.GPUVideoDuration));
     }
     if (args.mOutputQpcTime) {
         if (args.mOutputQpcTimeInSeconds) {

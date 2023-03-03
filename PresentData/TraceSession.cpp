@@ -112,7 +112,8 @@ struct FilteredProvider {
 
     ULONG Enable(
         TRACEHANDLE sessionHandle,
-        GUID const& providerGuid)
+        GUID const& providerGuid,
+        ULONG controlCode = EVENT_CONTROL_CODE_ENABLE_PROVIDER)
     {
         ENABLE_TRACE_PARAMETERS* pparams = nullptr;
         if (filterDesc_.Ptr != 0) {
@@ -124,7 +125,7 @@ struct FilteredProvider {
         }
 
         ULONG timeout = 0;
-        return EnableTraceEx2(sessionHandle, &providerGuid, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
+        return EnableTraceEx2(sessionHandle, &providerGuid, controlCode,
                               maxLevel_, anyKeywordMask_, allKeywordMask_, timeout, pparams);
     }
 };
@@ -187,8 +188,24 @@ ULONG EnableProviders(
         provider.AddEvent<Microsoft_Windows_DxgKrnl::PresentHistory_Info>();
         provider.AddEvent<Microsoft_Windows_DxgKrnl::PresentHistoryDetailed_Start>();
         provider.AddEvent<Microsoft_Windows_DxgKrnl::QueuePacket_Start>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::QueuePacket_Start_2>();
         provider.AddEvent<Microsoft_Windows_DxgKrnl::QueuePacket_Stop>();
         provider.AddEvent<Microsoft_Windows_DxgKrnl::VSyncDPC_Info>();
+    }
+    if (pmConsumer->mTrackGPU) {
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Context_DCStart>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Context_Start>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Context_Stop>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Device_DCStart>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Device_Start>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Device_Stop>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::HwQueue_DCStart>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::HwQueue_Start>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::DmaPacket_Info>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::DmaPacket_Start>();
+    }
+    if (pmConsumer->mTrackGPUVideo) {
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::NodeMetadata_Info>();
     }
     // BEGIN WORKAROUND: Windows11 adds a "Present" keyword to:
     //     BlitCancel_Info
@@ -217,6 +234,14 @@ ULONG EnableProviders(
     // END WORKAROUND
     status = provider.Enable(sessionHandle, Microsoft_Windows_DxgKrnl::GUID);
     if (status != ERROR_SUCCESS) return status;
+
+    if (pmConsumer->mTrackGPU) {
+        provider.ClearFilter();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Context_DCStart>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Device_DCStart>();
+        status = provider.Enable(sessionHandle, Microsoft_Windows_DxgKrnl::GUID, EVENT_CONTROL_CODE_CAPTURE_STATE);
+        if (status != ERROR_SUCCESS) return status;
+    }
 
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_DxgKrnl::Win7::GUID, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
                             TRACE_LEVEL_INFORMATION, 0, 0, 0, nullptr);
@@ -416,13 +441,6 @@ PEVENT_RECORD_CALLBACK GetEventRecordCallback(bool trackWMR)
 {
     return trackWMR ? &EventRecordCallback<SAVE_FIRST_TIMESTAMP, TRACK_DISPLAY, true>
                     : &EventRecordCallback<SAVE_FIRST_TIMESTAMP, TRACK_DISPLAY, false>;
-}
-
-template<bool SAVE_FIRST_TIMESTAMP, bool TRACK_DISPLAY>
-PEVENT_RECORD_CALLBACK GetEventRecordCallback(bool trackInput, bool trackWMR, bool trackINTC, bool trackPower)
-{
-    return trackInput ? GetEventRecordCallback<SAVE_FIRST_TIMESTAMP, TRACK_DISPLAY, true>(trackWMR, trackINTC, trackPower)
-                      : GetEventRecordCallback<SAVE_FIRST_TIMESTAMP, TRACK_DISPLAY, false>(trackWMR, trackINTC, trackPower);
 }
 
 template<bool SAVE_FIRST_TIMESTAMP>

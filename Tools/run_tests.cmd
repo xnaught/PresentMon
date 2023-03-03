@@ -11,6 +11,7 @@ set use_release_config=1
 set do_build=1
 set do_realtime_tests=1
 set do_default_gtests=1
+set do_full_csv_tests=0
 set errorcount=0
 :args_begin
     if "%~1"=="" goto args_end
@@ -20,6 +21,7 @@ set errorcount=0
     if "%~1"=="nobuild" ( set do_build=0 ) else (
     if "%~1"=="norealtime" ( set do_realtime_tests=0 ) else (
     if "%~1"=="nogtests" ( set do_default_gtests=0 ) else (
+    if "%~1"=="fullcsvs" ( set do_full_csv_tests=1 ) else (
         echo usage: run_tests.cmd [options]
         echo options:
         echo     x64          Only test the x64 build
@@ -28,8 +30,9 @@ set errorcount=0
         echo     nobuild      Don't build any configurations
         echo     norealtime   Don't run tests for realtime collection
         echo     nogtests     Don't run default test suite
+        echo     fullcsvs     Test Full\ CSV test suite
         exit /b 1
-    ))))))
+    )))))))
     shift
     goto args_begin
 :args_end
@@ -161,6 +164,8 @@ if %do_default_gtests% EQU 1 (
 
     call :stop_target_app
 )
+
+if %do_full_csv_tests% EQU 1 call :gtests --golddir="%pmdir%\Tests\Full" --gtest_filter=GoldEtlCsvTests.*
 
 :: -----------------------------------------------------------------------------
 if %errorcount% neq 0 (
