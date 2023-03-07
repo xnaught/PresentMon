@@ -337,6 +337,7 @@ bool ParseCommandLine(int argc, char** argv)
     args->mOutputCsvToStdout = false;
     args->mOutputQpcTime = false;
     args->mOutputQpcTimeInSeconds = false;
+    args->mOutputDateTime = false;
     args->mScrollLockIndicator = false;
     args->mExcludeDropped = false;
     args->mConsoleOutputType = ConsoleOutput::Full;
@@ -396,6 +397,7 @@ bool ParseCommandLine(int argc, char** argv)
         else if (ParseArg(argv[i], "terminate_after_timed"))  { args->mTerminateAfterTimer = true; continue; }
 
         // Beta options:
+        else if (ParseArg(argv[i], "date_time"))              { args->mOutputDateTime       = true; continue; }
         else if (ParseArg(argv[i], "track_gpu"))              { args->mTrackGPU             = true; continue; }
         else if (ParseArg(argv[i], "track_gpu_video"))        { args->mTrackGPUVideo        = true; continue; }
         else if (ParseArg(argv[i], "track_mixed_reality"))    { args->mTrackWMR             = true; continue; }
@@ -452,6 +454,13 @@ bool ParseCommandLine(int argc, char** argv)
         args->mOutputQpcTime = true;
     }
 
+    // -date_time is mutually exclusive to -qpc_time and -qpc_time_s
+    if (args->mOutputDateTime && (args->mOutputQpcTime || args->mOutputQpcTimeInSeconds)) {
+        PrintError("error: -date_time and -qpc_time or -qpc_time_s cannot be used at the same time.\n");
+        PrintHelp();
+        return false;
+    }
+
     // Disallow hotkey of CTRL+C, CTRL+SCROLL, and F12
     if (args->mHotkeySupport) {
         if ((args->mHotkeyModifiers & MOD_CONTROL) != 0 && (
@@ -469,13 +478,17 @@ bool ParseCommandLine(int argc, char** argv)
         }
     }
 
-    // If -no_csv is used, ignore -qpc_time, -qpc_time_s, -multi_csv,
+    // If -no_csv is used, ignore -date_time, -qpc_time, -qpc_time_s, -multi_csv,
     // -output_file, or -output_stdout if they are also used.
     if (!args->mOutputCsvToFile) {
         if (args->mOutputQpcTime) {
             PrintWarning("warning: -qpc_time and -qpc_time_s are only relevant for CSV output; ignoring due to -no_csv.\n");
             args->mOutputQpcTime = false;
             args->mOutputQpcTimeInSeconds = false;
+        }
+        if (args->mOutputDateTime) {
+            PrintWarning("warning: -date_time is only relevant for CSV output; ignoring due to -no_csv.\n");
+            args->mOutputDateTime = false;
         }
         if (args->mMultiCsv) {
             PrintWarning("warning: -multi_csv and -no_csv arguments are not compatible; ignoring -multi_csv.\n");

@@ -75,6 +75,7 @@ See [CONTRIBUTING](https://github.com/GameTechDev/PresentMon/blob/main/CONTRIBUT
 
 | Beta Options              |                                                                                                         |
 | ------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `-date_time`              | Output present time as a date and time with nanosecond precision.                                       |
 | `-track_gpu`              | Tracks the duration of each process' GPU work performed between presents.  Not supported on Win7.       |
 | `-track_gpu_video`        | Track the video encode/decode portion of GPU work separately from other engines. Not supported on Win7. |
 | `-track_mixed_reality`    | Capture Windows Mixed Reality data to a CSV file with "_WMR" suffix.                                    |

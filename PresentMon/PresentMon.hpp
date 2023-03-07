@@ -62,6 +62,7 @@ struct CommandLineArgs {
     bool mOutputCsvToStdout;
     bool mOutputQpcTime;
     bool mOutputQpcTimeInSeconds;
+    bool mOutputDateTime;
     bool mScrollLockIndicator;
     bool mExcludeDropped;
     bool mTerminateExisting;
@@ -156,3 +157,4 @@ double QpcDeltaToSeconds(uint64_t qpcFrom, uint64_t qpcTo);
 double PositiveQpcDeltaToSeconds(uint64_t qpcFrom, uint64_t qpcTo);
 uint64_t SecondsDeltaToQpc(double secondsDelta);
 double QpcToSeconds(uint64_t qpc);
+void QpcToLocalSystemTime(uint64_t qpc, SYSTEMTIME* st, uint64_t* ns);

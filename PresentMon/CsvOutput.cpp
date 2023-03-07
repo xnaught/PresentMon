@@ -134,15 +134,30 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
     }
 
     // Output in CSV format
-    fprintf(fp, "%s,%d,0x%016llX,%s,%d,%d,%s,%.*lf,%.*lf,%.*lf",
+    fprintf(fp, "%s,%d,0x%016llX,%s,%d,%d,%s,",
         processInfo->mModuleName.c_str(),
         p.ProcessId,
         p.SwapChainAddress,
         RuntimeToString(p.Runtime),
         p.SyncInterval,
         p.PresentFlags,
-        FinalStateToDroppedString(p.FinalState),
-        DBL_DIG - 1, QpcToSeconds(p.PresentStartTime),
+        FinalStateToDroppedString(p.FinalState));
+    if (args.mOutputDateTime) {
+        SYSTEMTIME st = {};
+        uint64_t ns = 0;
+        QpcToLocalSystemTime(p.PresentStartTime, &st, &ns);
+        fprintf(fp, "%u-%u-%u %u:%02u:%02u.%09llu",
+            st.wYear,
+            st.wMonth,
+            st.wDay,
+            st.wHour,
+            st.wMinute,
+            st.wSecond,
+            ns);
+    } else {
+        fprintf(fp, "%.*lf", DBL_DIG - 1, QpcToSeconds(p.PresentStartTime));
+    }
+    fprintf(fp, ",%.*lf,%.*lf",
         DBL_DIG - 1, msInPresentApi,
         DBL_DIG - 1, msBetweenPresents);
     if (args.mTrackDisplay) {
