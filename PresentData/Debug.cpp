@@ -207,6 +207,7 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintTime,          PresentStopTime)
     FLUSH_MEMBER(PrintTime,          ReadyTime)
     FLUSH_MEMBER(PrintTime,          ScreenTime)
+    FLUSH_MEMBER(PrintTime,          InputTime)
     FLUSH_MEMBER(PrintTime,          GPUStartTime)
     FLUSH_MEMBER(PrintTimeDelta,     GPUDuration)
     FLUSH_MEMBER(PrintTimeDelta,     GPUVideoDuration)
@@ -474,6 +475,8 @@ void VerboseTraceEvent(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecord, E
         using namespace Microsoft_Windows_Win32k;
         switch (hdr.EventDescriptor.Id) {
         case TokenCompositionSurfaceObject_Info::Id: PrintEventHeader(hdr, "Win32k_TokenCompositionSurfaceObject"); break;
+        case InputDeviceRead_Stop::Id:               PrintEventHeader(eventRecord, metadata, "Win32k_InputDeviceRead_Stop", { L"DeviceType", PrintU32, }); break;
+        case RetrieveInputMessage_Info::Id:          PrintEventHeader(eventRecord, metadata, "Win32k_RetrieveInputMessage", { L"flags",      PrintU32, }); break;
         case TokenStateChanged_Info::Id: {
             EventDataDesc desc[] = {
                 { L"CompositionSurfaceLuid" },

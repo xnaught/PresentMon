@@ -330,6 +330,7 @@ bool ParseCommandLine(int argc, char** argv)
     args->mHotkeyVirtualKeyCode = 0;
     args->mTrackDisplay = true;
     args->mTrackDebug = false;
+    args->mTrackInput = false;
     args->mTrackGPU = false;
     args->mTrackGPUVideo = false;
     args->mTrackWMR = false;
@@ -400,6 +401,7 @@ bool ParseCommandLine(int argc, char** argv)
         else if (ParseArg(argv[i], "date_time"))              { args->mOutputDateTime       = true; continue; }
         else if (ParseArg(argv[i], "track_gpu"))              { args->mTrackGPU             = true; continue; }
         else if (ParseArg(argv[i], "track_gpu_video"))        { args->mTrackGPUVideo        = true; continue; }
+        else if (ParseArg(argv[i], "track_input"))            { args->mTrackInput           = true; continue; }
         else if (ParseArg(argv[i], "track_mixed_reality"))    { args->mTrackWMR             = true; continue; }
         else if (ParseArg(argv[i], "include_mixed_reality"))  { DEPRECATED_wmr              = true; continue; }
 

@@ -110,6 +110,18 @@ enum class Runtime {
     D3D9 = 2,
 };
 
+enum class InputDeviceType {
+    None = 0,
+    Unknown = 1,
+    Mouse = 2,
+    Keyboard = 3,
+};
+
+struct InputEvent {
+    uint64_t Time;
+    InputDeviceType Type;
+};
+
 // A ProcessEvent occurs whenever a Process starts or stops.
 struct ProcessEvent {
     std::string ImageFileName;
@@ -129,6 +141,7 @@ struct PresentEvent {
                                 // ... any node (if mTrackGPUVideo==false) or non-video nodes (if mTrackGPUVideo==true)
     uint64_t GPUVideoDuration;  // QPC duration during which a frame's DMA packet was running on a video node (if mTrackGPUVideo==true)
     uint64_t ScreenTime;        // QPC value when the present was displayed on screen
+    uint64_t InputTime;         // Earliest QPC value when the keyboard/mouse was clicked and used by this frame
 
     // Extra present parameters obtained through DXGI or D3D9 present
     uint64_t SwapChainAddress;
@@ -162,6 +175,7 @@ struct PresentEvent {
     Runtime Runtime;
     PresentMode PresentMode;
     PresentResult FinalState;
+    InputDeviceType InputType;
     bool SupportsTearing;
     bool WaitForFlipEvent;
     bool WaitForMPOFlipEvent;
@@ -206,6 +220,7 @@ struct PMTraceConsumer
     bool mTrackDisplay = true;          // Whether the analysis should track presents to display
     bool mTrackGPU = false;             // Whether the analysis should track GPU work
     bool mTrackGPUVideo = false;        // Whether the analysis should track GPU video work separately
+    bool mTrackInput = false;           // Whether to track keyboard/mouse click times
 
     // Whether we've completed any presents yet.  This is used to indicate that
     // all the necessary providers have started and it's safe to start tracking
@@ -370,6 +385,24 @@ struct PMTraceConsumer
 
     // mGpuTrace tracks work executed on the GPU.
     GpuTrace mGpuTrace;
+
+
+    // State for tracking keyboard/mouse click times
+    //
+    // mLastInputDeviceReadTime and mLastInputDeviceType are the time/type of
+    // the most-recent input event.  This is global and if multiple input
+    // events are observed, but not retrieved by any window, then older ones
+    // are lost.
+    //
+    // mRetrievedInput stores the time/type of the most-recent input event that
+    // has been retrieved by each process's window(s).  Once that data is
+    // applied to a present, the InputDeviceType is set to None, but the time
+    // is not changed so that we know whether mLastInputDeviceReadTime has
+    // already been retrieved or not.
+    uint64_t mLastInputDeviceReadTime;
+    InputDeviceType mLastInputDeviceType;
+
+    std::unordered_map<uint32_t, std::pair<uint64_t, InputDeviceType>> mRetrievedInput; // ProcessID -> <InputTime, InputType>
 
 
     void HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool redirectedPresent);

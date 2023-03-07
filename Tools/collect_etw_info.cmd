@@ -90,6 +90,8 @@ call :etw_list "Microsoft-Windows-Kernel-Process" "%out_dir%\Microsoft_Windows_K
 set events=
 set events=%events% --event=TokenCompositionSurfaceObject::Info
 set events=%events% --event=TokenStateChanged::Info
+set events=%events% --event=InputDeviceRead::Stop
+set events=%events% --event=RetrieveInputMessage::Info
 call :etw_list "Microsoft-Windows-Win32k" "%out_dir%\Microsoft_Windows_Win32k.h"
 
 echo %out_dir%\NT_Process.h

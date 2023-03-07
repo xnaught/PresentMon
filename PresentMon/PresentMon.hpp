@@ -55,6 +55,7 @@ struct CommandLineArgs {
     ConsoleOutput mConsoleOutputType;
     bool mTrackDisplay;
     bool mTrackDebug;
+    bool mTrackInput;
     bool mTrackGPU;
     bool mTrackGPUVideo;
     bool mTrackWMR;

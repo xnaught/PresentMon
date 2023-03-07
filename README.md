@@ -78,6 +78,7 @@ See [CONTRIBUTING](https://github.com/GameTechDev/PresentMon/blob/main/CONTRIBUT
 | `-date_time`              | Output present time as a date and time with nanosecond precision.                                       |
 | `-track_gpu`              | Tracks the duration of each process' GPU work performed between presents.  Not supported on Win7.       |
 | `-track_gpu_video`        | Track the video encode/decode portion of GPU work separately from other engines. Not supported on Win7. |
+| `-track_input`            | Tracks the time of keyboard/mouse clicks that were used by each frame.                                  |
 | `-track_mixed_reality`    | Capture Windows Mixed Reality data to a CSV file with "_WMR" suffix.                                    |
 
 ## Comma-separated value (CSV) file output
@@ -119,6 +120,12 @@ Using `-track_gpu` or `-track_gpu_video` will add the following columns:
 | --------------------------------- | ------------------------------------------------------------------------------------------- |
 | *msUntilRenderStart*              | The time between the Present() call and when GPU work for this frame started, in milliseconds.  Note that rendering for a frame can start before the Present() call, so this value can be negative. |
 | *msGPUActive*, *msGPUVideoActive* | The total duration the GPU was working on this frame, in milliseconds.  Time is counted whenever at least one engine is executing work from the target process. When `-track_gpu_video` is used, then the *msGPUVideoActive* column is added showing the duration of work on the GPU's video encode and/or decode engines and, in this case, the video encode/decode work is not included in *msGPUActive*. |
+
+Using `-track_input` will add the following columns:
+
+| Column Header  | Data Description                                                                            |
+| -------------- | ------------------------------------------------------------------------------------------- |
+| *msSinceInput* | The time between the Present() call and the earliest keyboard or mouse interaction that contributed to this frame.  For frames where *msSinceInput* is non-zero, `msSinceInput + msUntilDisplayed` can be used as a measure of the latency between user input and the display of the resulting rendered frame.  Note, however, that this is just the software-visible subset of the full input-to-photon latency and doesn't include:<br>&bull; time spent processing input in the keyboard/controller hardware or drivers (typically a fixed additional overhead),<br>&bull; time spent processing the output in the display hardware or drivers (typically a fixed additional overhead), and<br>&bull; a combination of display blanking interval and scan time (which varies, depending on timing and tearing). |
 
 The following values are used in the PresentMode column:
 
@@ -203,19 +210,6 @@ Applications that do not use D3D9 or DXGI APIs for presenting frames (e.g., as i
 - *msInPresentAPI* = 0
 
 In this case, *TimeInSeconds* will represent the first time the present is observed in the kernel, as opposed to the runtime, and therefore will be sometime after the application presented the frame (typically ~0.5ms).  Since *msUntilRenderComplete* and *msUntilDisplayed* are deltas from *TimeInSeconds*, they will be correspondingly smaller then they would have been if measured from application present.  *msBetweenDisplayChange* will still be correct, and *msBetweenPresents* should be correct on average.
-
-### Measuring application latency
-
-PresentMon doesn't collect metrics for user input, so there is no direct measure for input-to-display latency in the CSV.  However, if you assume the application collects user input immediately after presenting the previous frame, then a subset of the latency can be computed by finding the previous CSV row that uses the same swap chain and then computing:
-
-```msInputLatency = msBetweenPresents + msUntilDisplayed - previous(msInPresentAPI)```
-
-This is a subset of the true input-to-display latency and doesn't include:
-
-- time spent processing input in the keyboard/controller hardware or drivers (typically a fixed additional overhead),
-- any time that input events are queued before being used by the target application (which varies, potentially up to one frame longer),
-- time spent processing the output in the display hardware or drivers (typically a fixed additional overhead), and
-- a combination of display blanking interval and scan time (which varies, depending on timing and tearing).
 
 ### Tracking GPU work with Hardware-Accelerated GPU Scheduling enabled
 

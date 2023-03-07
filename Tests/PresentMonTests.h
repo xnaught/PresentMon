@@ -46,6 +46,9 @@ struct PresentMonCsv
         // Required headers when -track_gpu_video is used:
         Header_msGPUVideoActive,
 
+        // Required headers when -track_input is used:
+        Header_msSinceInput,
+
         // Special values:
         KnownHeaderCount,
         UnknownHeader,
@@ -75,6 +78,7 @@ struct PresentMonCsv
         case Header_msUntilRenderStart:     return "msUntilRenderStart";
         case Header_msGPUActive:            return "msGPUActive";
         case Header_msGPUVideoActive:       return "msGPUVideoActive";
+        case Header_msSinceInput:           return "msSinceInput";
         }
         return "<unknown>";
     }

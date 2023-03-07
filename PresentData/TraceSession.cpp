@@ -252,6 +252,10 @@ ULONG EnableProviders(
         provider.ClearFilter();
         provider.AddEvent<Microsoft_Windows_Win32k::TokenCompositionSurfaceObject_Info>();
         provider.AddEvent<Microsoft_Windows_Win32k::TokenStateChanged_Info>();
+        if (pmConsumer->mTrackInput) {
+            provider.AddEvent<Microsoft_Windows_Win32k::InputDeviceRead_Stop>();
+            provider.AddEvent<Microsoft_Windows_Win32k::RetrieveInputMessage_Info>();
+        }
         status = provider.Enable(sessionHandle, Microsoft_Windows_Win32k::GUID);
         if (status != ERROR_SUCCESS) return status;
 
@@ -337,6 +341,7 @@ void DisableProviders(TRACEHANDLE sessionHandle)
 template<
     bool SAVE_FIRST_TIMESTAMP,
     bool TRACK_DISPLAY,
+    bool TRACK_INPUT,
     bool TRACK_WMR>
 void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
 {
@@ -364,11 +369,13 @@ void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
         session->mPMConsumer->HandleDXGIEvent(pEventRecord);
         return;
     }
-    if constexpr (TRACK_DISPLAY) {
+    if constexpr (TRACK_DISPLAY || TRACK_INPUT) {
         if (hdr.ProviderId == Microsoft_Windows_Win32k::GUID) {
             session->mPMConsumer->HandleWin32kEvent(pEventRecord);
             return;
         }
+    }
+    if constexpr (TRACK_DISPLAY) {
         if (hdr.ProviderId == Microsoft_Windows_Dwm_Core::GUID) {
             session->mPMConsumer->HandleDWMEvent(pEventRecord);
             return;
@@ -436,24 +443,32 @@ void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
     #pragma warning(pop)
 }
 
-template<bool SAVE_FIRST_TIMESTAMP, bool TRACK_DISPLAY>
-PEVENT_RECORD_CALLBACK GetEventRecordCallback(bool trackWMR)
+template<bool... Ts>
+PEVENT_RECORD_CALLBACK GetEventRecordCallback(bool t1)
 {
-    return trackWMR ? &EventRecordCallback<SAVE_FIRST_TIMESTAMP, TRACK_DISPLAY, true>
-                    : &EventRecordCallback<SAVE_FIRST_TIMESTAMP, TRACK_DISPLAY, false>;
+    return t1 ? &EventRecordCallback<Ts..., true>
+              : &EventRecordCallback<Ts..., false>;
 }
 
-template<bool SAVE_FIRST_TIMESTAMP>
-PEVENT_RECORD_CALLBACK GetEventRecordCallback(bool trackDisplay, bool trackWMR)
+template<bool... Ts>
+PEVENT_RECORD_CALLBACK GetEventRecordCallback(bool t1, bool t2)
 {
-    return trackDisplay ? GetEventRecordCallback<SAVE_FIRST_TIMESTAMP, true>(trackWMR)
-                        : GetEventRecordCallback<SAVE_FIRST_TIMESTAMP, false>(trackWMR);
+    return t1 ? GetEventRecordCallback<Ts..., true>(t2)
+              : GetEventRecordCallback<Ts..., false>(t2);
 }
 
-PEVENT_RECORD_CALLBACK GetEventRecordCallback(bool saveFirstTimestamp, bool trackDisplay, bool trackWMR)
+template<bool... Ts>
+PEVENT_RECORD_CALLBACK GetEventRecordCallback(bool t1, bool t2, bool t3)
 {
-    return saveFirstTimestamp ? GetEventRecordCallback<true>(trackDisplay, trackWMR)
-                              : GetEventRecordCallback<false>(trackDisplay, trackWMR);
+    return t1 ? GetEventRecordCallback<Ts..., true>(t2, t3)
+              : GetEventRecordCallback<Ts..., false>(t2, t3);
+}
+
+template<bool... Ts>
+PEVENT_RECORD_CALLBACK GetEventRecordCallback(bool t1, bool t2, bool t3, bool t4)
+{
+    return t1 ? GetEventRecordCallback<Ts..., true>(t2, t3, t4)
+              : GetEventRecordCallback<Ts..., false>(t2, t3, t4);
 }
 
 ULONG CALLBACK BufferCallback(EVENT_TRACE_LOGFILEA* pLogFile)
@@ -498,6 +513,7 @@ ULONG TraceSession::Start(
     traceProps.EventRecordCallback = GetEventRecordCallback(
         saveFirstTimestamp,
         pmConsumer->mTrackDisplay,
+        pmConsumer->mTrackInput,
         mrConsumer != nullptr);
 
     // When processing log files, we need to use the buffer callback in case

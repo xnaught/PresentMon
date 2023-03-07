@@ -100,6 +100,8 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
                                           Header_msGPUActive }),
 
         HeaderCollection(L"-track_gpu_video", { Header_msGPUVideoActive }),
+
+        HeaderCollection(L"-track_input", { Header_msSinceInput }),
     };
 
     // Load the CSV

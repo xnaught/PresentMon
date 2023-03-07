@@ -78,6 +78,9 @@ static void WriteCsvHeader(FILE* fp)
     if (args.mTrackGPUVideo) {
         fprintf(fp, ",msGPUVideoActive");
     }
+    if (args.mTrackInput) {
+        fprintf(fp, ",msSinceInput");
+    }
     if (args.mOutputQpcTime) {
         fprintf(fp, ",QPCTime");
     }
@@ -133,6 +136,13 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
         msUntilRenderStart = 1000.0 * QpcDeltaToSeconds(p.PresentStartTime, p.GPUStartTime);
     }
 
+    double msSinceInput = 0.0;
+    if (args.mTrackInput) {
+        if (p.InputTime != 0) {
+            msSinceInput = 1000.0 * QpcDeltaToSeconds(p.PresentStartTime - p.InputTime);
+        }
+    }
+
     // Output in CSV format
     fprintf(fp, "%s,%d,0x%016llX,%s,%d,%d,%s,",
         processInfo->mModuleName.c_str(),
@@ -181,6 +191,9 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
     if (args.mTrackGPUVideo) {
         fprintf(fp, ",%.*lf",
             DBL_DIG - 1, 1000.0 * QpcDeltaToSeconds(p.GPUVideoDuration));
+    }
+    if (args.mTrackInput) {
+        fprintf(fp, ",%.*lf", DBL_DIG - 1, msSinceInput);
     }
     if (args.mOutputQpcTime) {
         if (args.mOutputQpcTimeInSeconds) {
