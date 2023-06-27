@@ -1,4 +1,4 @@
-// Copyright (C) 2019 Intel Corporation
+// Copyright (C) 2019,2023 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #pragma once
@@ -62,6 +62,7 @@ struct LateStageReprojectionRuntimeStats {
 };
 
 struct LateStageReprojectionData {
+    PMTraceSession const* mpSession = nullptr;
     size_t mLifetimeLsrMissedFrames = 0;
     size_t mLifetimeAppMissedFrames = 0;
     std::deque<LateStageReprojectionEvent> mLSRHistory;

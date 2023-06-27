@@ -1,7 +1,8 @@
-// Copyright (C) 2019-2021 Intel Corporation
+// Copyright (C) 2019-2021,2023 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "PresentMon.hpp"
+#include "LateStageReprojectionData.hpp"
 
 static OutputCsv gSingleOutputCsv = {};
 static uint32_t gRecordingCount = 1;
@@ -87,7 +88,7 @@ static void WriteCsvHeader(FILE* fp)
     fwprintf(fp, L"\n");
 }
 
-void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEvent const& p)
+void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, SwapChainData const& chain, PresentEvent const& p)
 {
     auto const& args = GetCommandLineArgs();
 
@@ -112,34 +113,34 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
     auto lastPresented = chain.mPresentHistory[(chain.mNextPresentIndex - 1) % SwapChainData::PRESENT_HISTORY_MAX_COUNT].get();
 
     // Compute frame statistics.
-    double msBetweenPresents      = 1000.0 * PositiveQpcDeltaToSeconds(lastPresented->PresentStartTime, p.PresentStartTime);
-    double msInPresentApi         = 1000.0 * PositiveQpcDeltaToSeconds(p.PresentStartTime, p.PresentStopTime);
+    double msBetweenPresents      = pmSession.QpcDeltaToUnsignedMilliSeconds(lastPresented->PresentStartTime, p.PresentStartTime);
+    double msInPresentApi         = pmSession.QpcDeltaToUnsignedMilliSeconds(p.PresentStartTime, p.PresentStopTime);
     double msUntilRenderComplete  = 0.0;
     double msUntilDisplayed       = 0.0;
     double msBetweenDisplayChange = 0.0;
 
     if (args.mTrackDisplay) {
-        msUntilRenderComplete = 1000.0 * QpcDeltaToSeconds(p.PresentStartTime, p.ReadyTime);
+        msUntilRenderComplete = pmSession.QpcDeltaToMilliSeconds(p.PresentStartTime, p.ReadyTime);
 
         if (presented) {
-            msUntilDisplayed = 1000.0 * PositiveQpcDeltaToSeconds(p.PresentStartTime, p.ScreenTime);
+            msUntilDisplayed = pmSession.QpcDeltaToUnsignedMilliSeconds(p.PresentStartTime, p.ScreenTime);
 
             if (chain.mLastDisplayedPresentIndex != UINT32_MAX) {
                 auto lastDisplayed = chain.mPresentHistory[chain.mLastDisplayedPresentIndex % SwapChainData::PRESENT_HISTORY_MAX_COUNT].get();
-                msBetweenDisplayChange = 1000.0 * PositiveQpcDeltaToSeconds(lastDisplayed->ScreenTime, p.ScreenTime);
+                msBetweenDisplayChange = pmSession.QpcDeltaToUnsignedMilliSeconds(lastDisplayed->ScreenTime, p.ScreenTime);
             }
         }
     }
 
     double msUntilRenderStart = 0.0;
     if (args.mTrackGPU) {
-        msUntilRenderStart = 1000.0 * QpcDeltaToSeconds(p.PresentStartTime, p.GPUStartTime);
+        msUntilRenderStart = pmSession.QpcDeltaToMilliSeconds(p.PresentStartTime, p.GPUStartTime);
     }
 
     double msSinceInput = 0.0;
     if (args.mTrackInput) {
         if (p.InputTime != 0) {
-            msSinceInput = 1000.0 * QpcDeltaToSeconds(p.PresentStartTime - p.InputTime);
+            msSinceInput = pmSession.QpcDeltaToMilliSeconds(p.PresentStartTime - p.InputTime);
         }
     }
 
@@ -155,7 +156,7 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
     if (args.mOutputDateTime) {
         SYSTEMTIME st = {};
         uint64_t ns = 0;
-        QpcToLocalSystemTime(p.PresentStartTime, &st, &ns);
+        pmSession.QpcToLocalSystemTime(p.PresentStartTime, &st, &ns);
         fwprintf(fp, L"%u-%u-%u %u:%02u:%02u.%09llu",
             st.wYear,
             st.wMonth,
@@ -165,7 +166,7 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
             st.wSecond,
             ns);
     } else {
-        fwprintf(fp, L"%.*lf", DBL_DIG - 1, QpcToSeconds(p.PresentStartTime));
+        fwprintf(fp, L"%.*lf", DBL_DIG - 1, 0.001 * pmSession.QpcToMilliSeconds(p.PresentStartTime));
     }
     fwprintf(fp, L",%.*lf,%.*lf",
         DBL_DIG - 1, msInPresentApi,
@@ -186,18 +187,18 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
     if (args.mTrackGPU) {
         fwprintf(fp, L",%.*lf,%.*lf",
             DBL_DIG - 1, msUntilRenderStart,
-            DBL_DIG - 1, 1000.0 * QpcDeltaToSeconds(p.GPUDuration));
+            DBL_DIG - 1, pmSession.QpcDeltaToMilliSeconds(p.GPUDuration));
     }
     if (args.mTrackGPUVideo) {
         fwprintf(fp, L",%.*lf",
-            DBL_DIG - 1, 1000.0 * QpcDeltaToSeconds(p.GPUVideoDuration));
+            DBL_DIG - 1, pmSession.QpcDeltaToMilliSeconds(p.GPUVideoDuration));
     }
     if (args.mTrackInput) {
         fwprintf(fp, L",%.*lf", DBL_DIG - 1, msSinceInput);
     }
     if (args.mOutputQpcTime) {
         if (args.mOutputQpcTimeInSeconds) {
-            fwprintf(fp, L",%.*lf", DBL_DIG - 1, QpcDeltaToSeconds(p.PresentStartTime));
+            fwprintf(fp, L",%.*lf", DBL_DIG - 1, 0.001 * pmSession.QpcDeltaToMilliSeconds(p.PresentStartTime));
         } else {
             fwprintf(fp, L",%llu", p.PresentStartTime);
         }

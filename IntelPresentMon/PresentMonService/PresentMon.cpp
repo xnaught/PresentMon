@@ -58,14 +58,13 @@ PM_STATUS PresentMonSession::StartTraceSession() {
   // Start the session. If a session with this name is already running, we stop
   // it and start a new session. This is useful if a previous process failed to
   // properly shut down the session for some reason.
-  auto status = trace_session_.Start(pm_consumer_.get(), nullptr, etl_file_name,
-                                     pm_session_name_.c_str());
+  trace_session_.mPMConsumer = pm_consumer_.get();
+  auto status = trace_session_.Start(etl_file_name, pm_session_name_.c_str());
 
   if (status == ERROR_ALREADY_EXISTS) {
-    status = TraceSession::StopNamedSession(pm_session_name_.c_str());
+    status = StopNamedTraceSession(pm_session_name_.c_str());
     if (status == ERROR_SUCCESS) {
-      status = trace_session_.Start(pm_consumer_.get(), nullptr, etl_file_name,
-                                    pm_session_name_.c_str());
+      status = trace_session_.Start(etl_file_name, pm_session_name_.c_str());
     }
   }
 
@@ -513,20 +512,6 @@ void PresentMonSession::Output() {
     // Sleep to reduce overhead.
     Sleep(100);
     
-  }
-
-  // Output warning if events were lost.
-  ULONG eventsLost = 0;
-  ULONG buffersLost = 0;
-  trace_session_.CheckLostReports(&eventsLost, &buffersLost);
-
-  if (buffersLost > 0) {
-    // TODO(megalvan): Need to add this to the debug service output
-    // fprintf(stderr, "warning: %lu ETW buffers were lost.\n", buffersLost);
-  }
-  if (eventsLost > 0) {
-    // TODO(megalvan): Need to add this to the debug service output
-    // fprintf(stderr, "warning: %lu ETW events were lost.\n", eventsLost);
   }
 
   // Process handles

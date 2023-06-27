@@ -241,7 +241,7 @@ void EndConsoleUpdate()
     delete[] buffer;
 }
 
-void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
+void UpdateConsole(PMTraceSession const& pmSession, uint32_t processId, ProcessInfo const& processInfo)
 {
     auto const& args = GetCommandLineArgs();
 
@@ -266,7 +266,7 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
 
         auto const& present0 = *chain.mPresentHistory[(chain.mNextPresentIndex - chain.mPresentHistoryCount) % SwapChainData::PRESENT_HISTORY_MAX_COUNT];
         auto const& presentN = *chain.mPresentHistory[(chain.mNextPresentIndex - 1) % SwapChainData::PRESENT_HISTORY_MAX_COUNT];
-        auto cpuAvg = QpcDeltaToSeconds(presentN.PresentStartTime - present0.PresentStartTime) / (chain.mPresentHistoryCount - 1);
+        auto cpuAvg = pmSession.QpcDeltaToMilliSeconds(presentN.PresentStartTime - present0.PresentStartTime) / (chain.mPresentHistoryCount - 1);
         auto gpuAvg = 0.0;
         auto dspAvg = 0.0;
         auto latAvg = 0.0;
@@ -292,14 +292,14 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
                 }
             }
 
-            gpuAvg = QpcDeltaToSeconds(gpuSum) / (chain.mPresentHistoryCount - 1);
+            gpuAvg = pmSession.QpcDeltaToMilliSeconds(gpuSum) / (chain.mPresentHistoryCount - 1);
 
             if (displayCount >= 2) {
-                dspAvg = QpcDeltaToSeconds(displayN->ScreenTime - display0ScreenTime) / (displayCount - 1);
+                dspAvg = pmSession.QpcDeltaToMilliSeconds(displayN->ScreenTime - display0ScreenTime) / (displayCount - 1);
             }
 
             if (displayCount >= 1) {
-                latAvg = QpcDeltaToSeconds(latSum) / displayCount;
+                latAvg = pmSession.QpcDeltaToMilliSeconds(latSum) / displayCount;
             }
         }
 
@@ -315,18 +315,18 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
             presentN.PresentFlags,
             gpuAvg > 0.0 ? "/GPU" : "",
             dspAvg > 0.0 ? "/Display" : "",
-            1000.0 * cpuAvg);
+            cpuAvg);
 
-        if (gpuAvg > 0.0) ConsolePrint(L"/%.2lf", 1000.0 * gpuAvg);
-        if (dspAvg > 0.0) ConsolePrint(L"/%.2lf", 1000.0 * dspAvg);
+        if (gpuAvg > 0.0) ConsolePrint(L"/%.2lf", gpuAvg);
+        if (dspAvg > 0.0) ConsolePrint(L"/%.2lf", dspAvg);
 
-        ConsolePrint(L"ms (%.1lf", 1.0 / cpuAvg);
-        if (gpuAvg > 0.0) ConsolePrint(L"/%.1lf", 1.0 / gpuAvg);
-        if (dspAvg > 0.0) ConsolePrint(L"/%.1lf", 1.0 / dspAvg);
+        ConsolePrint(L"ms (%.1lf", 1000.0 / cpuAvg);
+        if (gpuAvg > 0.0) ConsolePrint(L"/%.1lf", 1000.0 / gpuAvg);
+        if (dspAvg > 0.0) ConsolePrint(L"/%.1lf", 1000.0 / dspAvg);
         ConsolePrint(L" fps)");
 
         if (latAvg > 0.0) {
-            ConsolePrint(L" latency=%.2lfms", 1000.0 * latAvg);
+            ConsolePrint(L" latency=%.2lfms", latAvg);
         }
 
         if (displayN != nullptr) {

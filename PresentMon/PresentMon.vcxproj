@@ -126,7 +126,6 @@
     <ClCompile Include="MainThread.cpp" />
     <ClCompile Include="OutputThread.cpp" />
     <ClCompile Include="Privilege.cpp" />
-    <ClCompile Include="TraceSession.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\build\obj\generated\command_line_options.inl" />

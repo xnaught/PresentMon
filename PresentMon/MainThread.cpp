@@ -1,8 +1,7 @@
-// Copyright (C) 2019-2022 Intel Corporation
+// Copyright (C) 2019-2023 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "PresentMon.hpp"
-#include "../PresentData/TraceSession.hpp"
 
 enum {
     HOTKEY_ID = 0x80,
@@ -193,7 +192,7 @@ int wmain(int argc, wchar_t** argv)
 
     // Special case handling for -terminate_existing
     if (args.mTerminateExisting) {
-        auto status = TraceSession::StopNamedSession(args.mSessionName);
+        auto status = StopNamedTraceSession(args.mSessionName);
         switch (status) {
         case ERROR_SUCCESS:                return 0;
         case ERROR_WMI_INSTANCE_NOT_FOUND: PrintError(L"error: no existing sessions found: %s\n", args.mSessionName); break;
@@ -253,13 +252,90 @@ int wmain(int argc, wchar_t** argv)
     // Set CTRL handler (note: must set gWnd before setting the handler).
     SetConsoleCtrlHandler(HandleCtrlEvent, TRUE);
 
-    // Start the ETW trace session (including consumer and output threads).
-    if (!StartTraceSession()) {
+    // Create event consumers
+    PMTraceConsumer pmConsumer;
+    pmConsumer.mTrackDisplay  = args.mTrackDisplay;
+    pmConsumer.mTrackGPU      = args.mTrackGPU;
+    pmConsumer.mTrackGPUVideo = args.mTrackGPUVideo;
+    pmConsumer.mTrackInput    = args.mTrackInput;
+
+    if (args.mTargetPid != 0) {
+        pmConsumer.mFilteredProcessIds = true;
+        pmConsumer.AddTrackedProcessForFiltering(args.mTargetPid);
+    }
+
+    MRTraceConsumer* mrConsumer = nullptr;
+    if (args.mTrackWMR) {
+        mrConsumer = new MRTraceConsumer(args.mTrackDisplay);
+    }
+
+    // Start the ETW trace session.
+    PMTraceSession pmSession;
+    pmSession.mPMConsumer = &pmConsumer;
+    pmSession.mMRConsumer = mrConsumer;
+    auto status = pmSession.Start(args.mEtlFileName, args.mSessionName);
+
+    // If a session with this same name is already running, we either exit or
+    // stop it and start a new session.  This is useful if a previous process
+    // failed to properly shut down the session for some reason.
+    if (status == ERROR_ALREADY_EXISTS) {
+        if (args.mStopExistingSession) {
+            PrintWarning(
+                L"warning: a trace session named \"%s\" is already running and it will be stopped.\n"
+                L"         Use -session_name with a different name to start a new session.\n",
+                args.mSessionName);
+        } else {
+            PrintError(
+                L"error: a trace session named \"%s\" is already running. Use -stop_existing_session\n"
+                L"       to stop the existing session, or use -session_name with a different name to\n"
+                L"       start a new session.\n",
+                args.mSessionName);
+
+            delete mrConsumer;
+            mrConsumer = nullptr;
+
+            SetConsoleCtrlHandler(HandleCtrlEvent, FALSE);
+            DestroyWindow(gWnd);
+            UnregisterClass(wndClass.lpszClassName, NULL);
+            return 6;
+        }
+
+        status = StopNamedTraceSession(args.mSessionName);
+        if (status == ERROR_SUCCESS) {
+            status = pmSession.Start(args.mEtlFileName, args.mSessionName);
+        }
+    }
+
+    // Exit with an error if we failed to start a new session
+    if (status != ERROR_SUCCESS) {
+        PrintError(L"error: failed to start trace session: ");
+        switch (status) {
+        case ERROR_FILE_NOT_FOUND: PrintError(L"file not found.\n"); break;
+        case ERROR_PATH_NOT_FOUND: PrintError(L"path not found.\n"); break;
+        case ERROR_BAD_PATHNAME:   PrintError(L"invalid --session_name.\n"); break;
+        case ERROR_ACCESS_DENIED:  PrintError(L"access denied.\n"); break;
+        case ERROR_FILE_CORRUPT:   PrintError(L"invalid --etl_file.\n"); break;
+        default:                   PrintError(L"error code %lu.\n", status); break;
+        }
+
+        if (status == ERROR_ACCESS_DENIED && !InPerfLogUsersGroup()) {
+            PrintError(
+                L"       PresentMon requires either administrative privileges or to be run by a user in the\n"
+                L"       \"Performance Log Users\" user group.  View the readme for more details.\n");
+        }
+
+        delete mrConsumer;
+        mrConsumer = nullptr;
+
         SetConsoleCtrlHandler(HandleCtrlEvent, FALSE);
         DestroyWindow(gWnd);
         UnregisterClass(wndClass.lpszClassName, NULL);
         return 6;
     }
+
+    // Start the consumer and output threads
+    StartConsumerThread(pmSession.mTraceHandle);
+    StartOutputThread(pmSession);
 
     // If the user wants to use the scroll lock key as an indicator of when
     // PresentMon is recording events, save the original state and set scroll
@@ -291,11 +367,30 @@ int wmain(int argc, wchar_t** argv)
         DispatchMessageW(&message);
     }
 
-    // Shut everything down.
+    // Stop the trace session.
     if (args.mScrollLockIndicator) {
         EnableScrollLock(originalScrollLockEnabled);
     }
-    StopTraceSession();
+
+    pmSession.Stop();
+
+    // Wait for the consumer and output threads to end (which are using the
+    // consumers).
+    WaitForConsumerThreadToExit();
+    StopOutputThread();
+
+    // Output warning if events were lost.
+    if (pmSession.mNumBuffersLost > 0) {
+        PrintWarning(L"warning: %lu ETW buffers were lost.\n", pmSession.mNumBuffersLost);
+    }
+    if (pmSession.mNumEventsLost > 0) {
+        PrintWarning(L"warning: %lu ETW events were lost.\n", pmSession.mNumEventsLost);
+    }
+
+    // Deallocate the consumers
+    delete mrConsumer;
+    mrConsumer = nullptr;
+
     /* We cannot remove the Ctrl handler because it is in an infinite sleep so
      * this call will never return, either hanging the application or having
      * the threshold timer trigger and force terminate (depending on what Ctrl

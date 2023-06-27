@@ -28,6 +28,7 @@ which is controlled from MainThread based on user input or timer.
 
 #include "../PresentData/MixedRealityTraceConsumer.hpp"
 #include "../PresentData/PresentMonTraceConsumer.hpp"
+#include "../PresentData/PresentMonTraceSession.hpp"
 
 #include <unordered_map>
 
@@ -101,8 +102,6 @@ struct ProcessInfo {
     bool mIsTargetProcess;
 };
 
-#include "LateStageReprojectionData.hpp"
-
 // CommandLine.cpp:
 bool ParseCommandLine(int argc, wchar_t** argv);
 CommandLineArgs const& GetCommandLineArgs();
@@ -115,7 +114,7 @@ bool BeginConsoleUpdate();
 void EndConsoleUpdate();
 void ConsolePrint(wchar_t const* format, ...);
 void ConsolePrintLn(wchar_t const* format, ...);
-void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo);
+void UpdateConsole(PMTraceSession const& pmSession, uint32_t processId, ProcessInfo const& processInfo);
 int PrintWarning(wchar_t const* format, ...);
 int PrintError(wchar_t const* format, ...);
 
@@ -127,7 +126,7 @@ void WaitForConsumerThreadToExit();
 void IncrementRecordingCount();
 OutputCsv GetOutputCsv(ProcessInfo* processInfo, uint32_t processId);
 void CloseOutputCsv(ProcessInfo* processInfo);
-void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEvent const& p);
+void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, SwapChainData const& chain, PresentEvent const& p);
 const char* FinalStateToDroppedString(PresentResult res);
 const char* PresentModeToString(PresentMode mode);
 const char* RuntimeToString(Runtime rt);
@@ -136,7 +135,7 @@ const char* RuntimeToString(Runtime rt);
 void ExitMainThread();
 
 // OutputThread.cpp:
-void StartOutputThread();
+void StartOutputThread(PMTraceSession const& pmSession);
 void StopOutputThread();
 void SetOutputRecordingState(bool record);
 void CanonicalizeProcessName(std::wstring* path);
@@ -146,18 +145,3 @@ bool InPerfLogUsersGroup();
 bool EnableDebugPrivilege();
 int RestartAsAdministrator(int argc, wchar_t** argv);
 
-// TraceSession.cpp:
-bool StartTraceSession();
-void StopTraceSession();
-void CheckLostReports(ULONG* eventsLost, ULONG* buffersLost);
-void DequeueAnalyzedInfo(
-    std::vector<ProcessEvent>* processEvents,
-    std::vector<std::shared_ptr<PresentEvent>>* presentEvents,
-    std::vector<std::shared_ptr<PresentEvent>>* lostPresentEvents,
-    std::vector<std::shared_ptr<LateStageReprojectionEvent>>* lsrs);
-double QpcDeltaToSeconds(uint64_t qpcDelta);
-double QpcDeltaToSeconds(uint64_t qpcFrom, uint64_t qpcTo);
-double PositiveQpcDeltaToSeconds(uint64_t qpcFrom, uint64_t qpcTo);
-uint64_t SecondsDeltaToQpc(double secondsDelta);
-double QpcToSeconds(uint64_t qpc);
-void QpcToLocalSystemTime(uint64_t qpc, SYSTEMTIME* st, uint64_t* ns);
