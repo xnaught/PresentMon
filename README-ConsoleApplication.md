@@ -2,7 +2,7 @@
 
 The PresentMon/ directory contains source for a standalone console application that uses the *PresentMon SDK* to capture and analyze graphics applications, outputting data to the console and/or CSV file(s).
 
-A binary of the console application is provided in the release, e.g.: [PresentMon-1.8.0-x64.exe](releases/download/v1.8.0/PresentMon-1.8.0-x64.exe).
+A binary of the console application is provided in the release, e.g.: [PresentMon-1.9.0-x64.exe](releases/download/v1.9.0/PresentMon-1.9.0-x64.exe).
 
 ## Command line options
 
