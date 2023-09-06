@@ -4,6 +4,7 @@
 #include <generated/version.h>
 
 #include "PresentMon.hpp"
+#include "../PresentData/Debug.hpp"
 #include <algorithm>
 
 namespace {
@@ -356,7 +357,7 @@ bool ParseCommandLine(int argc, char** argv)
     bool DEPRECATED_verbose = false;
     bool DEPRECATED_wmr = false;
 
-    #ifndef NDEBUG
+    #if PRESENTMON_ENABLE_DEBUG_TRACE
     bool verboseTrace = false;
     #endif
 
@@ -406,7 +407,7 @@ bool ParseCommandLine(int argc, char** argv)
         else if (ParseArg(argv[i], "include_mixed_reality"))  { DEPRECATED_wmr              = true; continue; }
 
         // Hidden options:
-        #ifndef NDEBUG
+        #if PRESENTMON_ENABLE_DEBUG_TRACE
         else if (ParseArg(argv[i], "debug_verbose_trace")) { verboseTrace = true; continue; }
         #endif
 
@@ -533,7 +534,7 @@ bool ParseCommandLine(int argc, char** argv)
     }
 
     // Enable verbose trace if requested, and disable Full or Simple console output
-    #ifndef NDEBUG
+    #if PRESENTMON_ENABLE_DEBUG_TRACE
     if (verboseTrace) {
         EnableVerboseTrace(true);
         args->mConsoleOutputType = ConsoleOutput::None;
