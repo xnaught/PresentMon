@@ -12,8 +12,8 @@
 #include "CpuTelemetryInfo.h"
 #include "..\PresentMonUtils\StringUtils.h"
 
-namespace pwr::cpu
-{
+namespace pwr::cpu {
+
 class CpuTelemetry {
  public:
   virtual ~CpuTelemetry() = default;

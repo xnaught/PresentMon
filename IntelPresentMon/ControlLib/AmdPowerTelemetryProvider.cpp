@@ -53,7 +53,7 @@ AmdPowerTelemetryProvider::AmdPowerTelemetryProvider() {
       }
 
       // If it's not a version of overdrive we support, bail out.
-      if ((overdrive_version < 5) && (overdrive_version > 8)) {
+      if ((overdrive_version < 5) || (overdrive_version > 8)) {
         throw std::runtime_error{
             std::format(
                 "Overdrive version is not supported. Version reported: {}",

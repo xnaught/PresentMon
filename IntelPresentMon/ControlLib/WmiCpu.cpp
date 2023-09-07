@@ -20,33 +20,37 @@ WmiCpu::WmiCpu() {
   }
   query_.reset(temp_query);
 
-  if (const auto result = PdhAddCounter(query_.get(), kProcessorFrequency.c_str(), 0,
+  if (const auto result =
+          PdhAddEnglishCounterW(query_.get(), kProcessorFrequency.c_str(), 0,
                                         &processor_frequency_counter_);
       result != ERROR_SUCCESS) {
     throw std::runtime_error{
-        std::format("PdhAddCounter failed when adding processor frequency "
+        std::format("PdhAddEnglishCounter failed when adding processor frequency "
                     "counter. Result: {}",
                     result)
             .c_str()};
   }
 
-  if (const auto result = PdhAddCounter(query_.get(), kProcessorPerformance.c_str(),
+  if (const auto result =
+          PdhAddEnglishCounterW(query_.get(), kProcessorPerformance.c_str(),
                                         0, &processor_performance_counter_);
       result != ERROR_SUCCESS) {
     throw std::runtime_error{
-        std::format("PdhAddCounter failed when adding processor performance "
+        std::format("PdhAddEnglishCounter failed when adding processor performance "
                     "counter. Result: {}",
                     result)
             .c_str()};
   }
 
-  if (const auto result = PdhAddCounter(query_.get(), kProcessorTime.c_str(), 0,
+  if (const auto result = PdhAddEnglishCounterW(
+          query_.get(), kProcessorTime.c_str(), 0,
                                         &processor_time_counter_);
       result != ERROR_SUCCESS) {
-    throw std::runtime_error{std::format("PdhAddCounter failed when adding "
-                                         "processor time counter. Result: {}",
-                                         result)
-                                 .c_str()};
+    throw std::runtime_error{
+        std::format("PdhAddEnglishCounter failed when adding "
+                    "processor time counter. Result: {}",
+                    result)
+            .c_str()};
   }
 
   // Most counters require two sample values to display a formatted value.

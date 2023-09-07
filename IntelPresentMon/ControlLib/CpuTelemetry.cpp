@@ -57,6 +57,7 @@ bool CpuTelemetry::ExecuteWQLProcessorNameQuery(
 
     std::wstring query(L"SELECT Name FROM Win32_Processor");
     std::wstring server_name(L"ROOT\\CIMV2");
+    std::wstring locale(L"MS_409");
 
     Microsoft::WRL::ComPtr<IWbemLocator> locator;
     HRESULT result =
@@ -69,9 +70,9 @@ bool CpuTelemetry::ExecuteWQLProcessorNameQuery(
     }
 
     Microsoft::WRL::ComPtr<IWbemServices> services;
-    result =
-        locator->ConnectServer(_bstr_t(server_name.c_str()), nullptr, nullptr,
-                               nullptr, NULL, nullptr, nullptr, &services);
+    result = locator->ConnectServer(_bstr_t(server_name.c_str()), nullptr,
+                                    nullptr, _bstr_t(locale.c_str()), NULL,
+                                    nullptr, nullptr, &services);
 
     if (FAILED(result)) {
       LOG(INFO) << "Failed ConnectServer: " << result << std::endl;
@@ -128,7 +129,7 @@ bool CpuTelemetry::ExecuteWQLProcessorNameQuery(
     LOG(INFO) << e.what() << std::endl;
     return false;
   } catch (...) {
-    LOG(INFO) << "Unknown WQL Error" << std::endl;
+    LOG(INFO) << "Unknown COM Initialize Error" << std::endl;
     return false;
   }
 }
