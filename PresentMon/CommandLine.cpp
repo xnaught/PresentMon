@@ -1,4 +1,4 @@
-// Copyright (C) 2017,2019-2022 Intel Corporation
+// Copyright (C) 2017,2019-2023 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include <generated/version.h>
@@ -245,7 +245,7 @@ bool ParseValue(char** argv, int argc, int* i, char const** value)
     return true;
 }
 
-bool ParseValue(char** argv, int argc, int* i, std::vector<char const*>* value)
+bool ParseValue(char** argv, int argc, int* i, std::vector<std::string>* value)
 {
     char const* v = nullptr;
     if (!ParseValue(argv, argc, i, &v)) return false;
@@ -555,19 +555,19 @@ bool ParseCommandLine(int argc, char** argv)
                      "         output, and recording arguments.\n");
     }
 
-    // Prune any directory and ".exe" off of the provided process names.  This
-    // is primarily because the ProcessStart event typically has a full path
-    // including "\\Device\\..." and ProcessStop event sometimes is missing
-    // part of the extension.
+    // Convert the provided process names into a canonical form used for comparison.
+    // The comparison is not case-sensitive, and does not include any directory nor
+    // extension.
+    //
+    // This is because the different paths for obtaining process information return
+    // different image name strings.  e.g., the ProcessStart event typically has a
+    // full path including "\\Device\\..." and ProcessStop event sometimes is
+    // missing part of the extension.
     for (auto& name : args->mTargetProcessNames) {
-        auto pr = GetProcessNameComparisonRange(name, strlen(name));
-        name += pr.first;
-        ((char*) name)[pr.second] = '\0';
+        CanonicalizeProcessName(&name);
     }
     for (auto& name : args->mExcludeProcessNames) {
-        auto pr = GetProcessNameComparisonRange(name, strlen(name));
-        name += pr.first;
-        ((char*) name)[pr.second] = '\0';
+        CanonicalizeProcessName(&name);
     }
 
     return true;
