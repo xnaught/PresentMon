@@ -46,17 +46,18 @@ void GpuTrace::PrintRunningContexts() const
             printf("                             hContext=0x%llx [", hContext);
 
             for (uint32_t i = 0; i < node.mQueueCount; ++i) {
-                auto queueIdx = (node.mQueueIndex + i) % Node::MAX_QUEUE_SIZE;
+                auto queueIdx = (node.mQueueIndex + i) % (uint32_t) node.mQueue.size();
+                auto const& entry = node.mQueue[queueIdx];
 
                 if (i > 0) {
                     printf("\n                                                          ");
                 }
 
-                printf(" SequenceId=%u", node.mSequenceId[queueIdx]);
-                if (node.mPacketTrace[queueIdx] == nullptr) {
+                printf(" SequenceId=%u", entry.mSequenceId);
+                if (entry.mPacketTrace == nullptr) {
                     printf(" WAIT");
                 } else {
-                    printf(" ProcessId=%u", LookupPacketTraceProcessId(node.mPacketTrace[queueIdx]));
+                    printf(" ProcessId=%u", LookupPacketTraceProcessId(entry.mPacketTrace));
                 }
             }
 
@@ -258,11 +259,26 @@ void GpuTrace::EnqueueWork(Context* context, uint32_t sequenceId, uint64_t times
         return;
     }
 
-    if (node->mQueueCount == Node::MAX_QUEUE_SIZE) {
-        // mPacketTrace/mSequenceId arrays are too small (or, DmaPacket_Info
-        // events didn't fire for some reason).  This seems to always hit when
-        // an application closes...
-        return;
+    uint32_t queueSize = (uint32_t) node->mQueue.size();
+    if (node->mQueueCount == queueSize) {
+        // If the queue is too small, enlarge it by 16 entries at a time.  I only expect this to
+        // happen for the first packet observed on this node, which will result in sizing the queue
+        // from 0 to 16.
+        //
+        // However, there are other cases where the queue entries seem to grow unexpectedly.  e.g.,
+        // this seems to always happen when an application closes.  So, we place a reasonable
+        // maximum limit on this to prevent unexpectedly growing the queues arbitrarily.
+        if (node->mQueueCount >= 16*10) {
+            return;
+        }
+
+        auto queueIndex = queueSize == 0
+            ? 0
+            : (node->mQueueIndex + node->mQueueCount) % queueSize;
+
+        Node::EnqueuedPacket empty{};
+        node->mQueue.insert(node->mQueue.begin() + queueIndex, 16, empty);
+        queueSize += 16;
     }
 
     // Enqueue the packet.
@@ -275,9 +291,10 @@ void GpuTrace::EnqueueWork(Context* context, uint32_t sequenceId, uint64_t times
         packetTrace = nullptr;
     }
 
-    auto queueIndex = (node->mQueueIndex + node->mQueueCount) % Node::MAX_QUEUE_SIZE;
-    node->mPacketTrace[queueIndex] = packetTrace;
-    node->mSequenceId[queueIndex] = sequenceId;
+    auto queueIndex = (node->mQueueIndex + node->mQueueCount) % queueSize;
+    auto entry = &node->mQueue[queueIndex];
+    entry->mPacketTrace = packetTrace;
+    entry->mSequenceId = sequenceId;
     node->mQueueCount += 1;
 
     // If the queue was empty, the packet starts running right away, otherwise
@@ -312,8 +329,12 @@ bool GpuTrace::CompleteWork(Context* context, uint32_t sequenceId, uint64_t time
     // actual:   [-----]  [-----]  [-----]     [-----]-----]-------]
     //           ^     ^  x     ^  ^     ^        x  ^   ^
     //           s1    i1 s2    i2 s3    i3       s2 i1  s3
-    auto runningSequenceId = node->mSequenceId[node->mQueueIndex];
-    if (packetTrace == nullptr || node->mQueueCount == 0 || sequenceId < runningSequenceId) {
+    if (node->mQueueCount == 0) {
+        return false;
+    }
+
+    auto runningSequenceId = node->mQueue[node->mQueueIndex].mSequenceId;
+    if (packetTrace == nullptr || sequenceId < runningSequenceId) {
         return false;
     }
 
@@ -344,11 +365,10 @@ bool GpuTrace::CompleteWork(Context* context, uint32_t sequenceId, uint64_t time
                 return false;
             }
 
-            uint32_t queueIndex = (node->mQueueIndex + missingCount) % Node::MAX_QUEUE_SIZE;
-            if (node->mSequenceId[queueIndex] == sequenceId) {
+            uint32_t queueIndex = (node->mQueueIndex + missingCount) % (uint32_t) node->mQueue.size();
+            if (node->mQueue[queueIndex].mSequenceId == sequenceId) {
                 // Move current packet into this slot
-                node->mPacketTrace[queueIndex] = node->mPacketTrace[node->mQueueIndex];
-                node->mSequenceId[queueIndex] = node->mSequenceId[node->mQueueIndex];
+                node->mQueue[queueIndex] = node->mQueue[node->mQueueIndex];
                 node->mQueueIndex = queueIndex;
                 node->mQueueCount -= missingCount;
                 break;
@@ -362,7 +382,7 @@ bool GpuTrace::CompleteWork(Context* context, uint32_t sequenceId, uint64_t time
     // duration into the process' count.
     node->mQueueCount -= 1;
 
-    packetTrace = node->mPacketTrace[node->mQueueIndex];
+    packetTrace = node->mQueue[node->mQueueIndex].mPacketTrace;
     if (packetTrace != nullptr) {
         packetTrace->mRunningPacketCount -= 1;
         if (packetTrace->mRunningPacketCount == 0) {
@@ -372,9 +392,9 @@ bool GpuTrace::CompleteWork(Context* context, uint32_t sequenceId, uint64_t time
 
     // If there was another queued packet, start it
     if (node->mQueueCount > 0) {
-        node->mQueueIndex = (node->mQueueIndex + 1) % Node::MAX_QUEUE_SIZE;
+        node->mQueueIndex = (node->mQueueIndex + 1) % (uint32_t) node->mQueue.size();
 
-        packetTrace = node->mPacketTrace[node->mQueueIndex];
+        packetTrace = node->mQueue[node->mQueueIndex].mPacketTrace;
         if (packetTrace != nullptr) {
             StartPacket(packetTrace, timestamp);
         }

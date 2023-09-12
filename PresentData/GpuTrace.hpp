@@ -25,11 +25,13 @@ class GpuTrace {
     // hardware scheduling enabled, there is one node per HWQueue many of which
     // may map to the same device engine.
     struct Node {
-        enum { MAX_QUEUE_SIZE = 15 };
-        PacketTrace* mPacketTrace[MAX_QUEUE_SIZE]; // Frame trace for enqueued packets
-        uint32_t mSequenceId[MAX_QUEUE_SIZE];      // Sequence IDs for enqueued packets
-        uint32_t mQueueIndex;                      // Index into mPacketTrace and mSequenceId for currently-running packet
-        uint32_t mQueueCount;                      // Number of enqueued packets
+        struct EnqueuedPacket {
+            PacketTrace* mPacketTrace;      // Frame trace for this packet
+            uint32_t mSequenceId;           // Sequence ID for this packet
+        };
+        std::vector<EnqueuedPacket> mQueue; // Ring buffer of current enqueued packets
+        uint32_t mQueueIndex;               // Index into mQueue for currently-running packet
+        uint32_t mQueueCount;               // Number of enqueued packets
         bool mIsVideo;
     };
 
