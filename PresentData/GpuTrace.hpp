@@ -28,6 +28,7 @@ class GpuTrace {
         struct EnqueuedPacket {
             PacketTrace* mPacketTrace;      // Frame trace for this packet
             uint32_t mSequenceId;           // Sequence ID for this packet
+            bool mCompleted;                // Flag to signal that the packet completed out-of-order
         };
         std::vector<EnqueuedPacket> mQueue; // Ring buffer of current enqueued packets
         uint32_t mQueueIndex;               // Index into mQueue for currently-running packet
