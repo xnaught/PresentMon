@@ -54,7 +54,7 @@ namespace p2c::client::util::async
             };
 
             pBrowser->GetHost()->RunFileDialog(
-                CefBrowserHost::FileDialogMode::FILE_DIALOG_OPEN, "Load Configuration",
+                CefBrowserHost::FileDialogMode::FILE_DIALOG_OPEN, "Load Loadout",
                 {}, { ".json" }, new ReadSpecDialogCallback{ uid, pBrowser }
             );
 		}

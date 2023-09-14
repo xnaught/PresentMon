@@ -155,7 +155,7 @@ namespace p2c::kern
                         auto pMetric = dynamic_cast<pmon::NumericMetric*>(pm->GetMetricByIndex(metric.index));
                         // TODO: silent fail this by inserting "empty" data pack and logging 
                         assert(pMetric);
-                        const auto [i, inserted] = graphPacks.emplace(metric.index,
+                        auto [i, inserted] = graphPacks.emplace(metric.index,
                             GraphDataPack{ pMetric, pSpec->graphDataWindowSize }
                         );
                         // if pack already existed, resize it

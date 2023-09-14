@@ -60,7 +60,7 @@ namespace p2c::client::util::async
             };
 
             pBrowser->GetHost()->RunFileDialog(
-                CefBrowserHost::FileDialogMode::FILE_DIALOG_SAVE, "Save Configuration", {}, { ".json" },
+                CefBrowserHost::FileDialogMode::FILE_DIALOG_SAVE, "Save Loadout", {}, { ".json" },
                 new BrowseStoreSpecDialogCallback{ pBrowser, uid, pArgObj->GetDictionary()->GetString("payload").ToWString() }
             );
 		}
