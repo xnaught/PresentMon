@@ -74,9 +74,6 @@ export class Api {
         }
         return adapters;
     }
-    static async browseFolder(): Promise<{path: string}> {
-        return await this.invokeEndpointFuture('browseFolder', {});
-    }
     static async bindHotkey(binding: Binding): Promise<void> {
         await this.invokeEndpointFuture('bindHotkey', binding);
     }

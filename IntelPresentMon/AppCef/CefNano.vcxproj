@@ -55,7 +55,6 @@
     <ClInclude Include="source\util\async\LoadFile.h" />
     <ClInclude Include="source\util\async\StoreFile.h" />
     <ClInclude Include="source\util\async\BrowseReadSpec.h" />
-    <ClInclude Include="source\util\async\BrowseFolder.h" />
     <ClInclude Include="source\util\async\BrowseStoreSpec.h" />
     <ClInclude Include="source\util\async\BindHotkey.h" />
     <ClInclude Include="source\util\async\ClearHotkey.h" />
