@@ -24,7 +24,7 @@ There are also several other programs that build on this functionality and/or he
 - [Microsoft PIX on Windows System Monitor](https://devblogs.microsoft.com/pix/system-monitor/)
 - [NVIDIA FrameView](https://www.nvidia.com/en-us/geforce/technologies/frameview/)
 
-Binaries for the main releases of PresentMon are provided on [intel.com](game.intel.com/story/intel-presentmon/) or [github.com](https://github.com/GameTechDev/PresentMon/releases/latest) ([list of all releases](https://github.com/GameTechDev/PresentMon/releases)).
+Binaries for the main releases of PresentMon are provided on [intel.com](https://game.intel.com/story/intel-presentmon/) or [github.com](https://github.com/GameTechDev/PresentMon/releases/latest) ([list of all releases](https://github.com/GameTechDev/PresentMon/releases)).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for information on how to request features, report issues, or contribute code changes.
 
