@@ -56,7 +56,8 @@ namespace p2c::kern
         }
         else
         {
-            p2clog.warn(L"spec-specified pid not in process map").ex(TargetLostException{}).commit();
+            p2clog.warn(L"spec-specified pid not in process map").commit();
+            throw TargetLostException{};
         }
     }
     void OverlayContainer::RebuildDocument(std::shared_ptr<OverlaySpec> pSpec_)

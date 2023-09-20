@@ -140,4 +140,7 @@ export class Api {
     static registerTargetLostHandler(callback: (pid: number) => void) {
         this.core.registerSignalHandler('targetLost', callback);
     }
+    static registerStalePidHandler(callback: () => void) {
+        this.core.registerSignalHandler('stalePid', callback);
+    }
 }

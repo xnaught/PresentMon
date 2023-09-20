@@ -161,11 +161,13 @@ namespace p2c::kern
                 }
                 catch (const TargetLostException&)
                 {
-                    if (pOverlayContainer)
-                    {
+                    if (pOverlayContainer) {
                         pHandler->OnTargetLost(pOverlayContainer->GetProcess().pid);
                         pOverlayContainer.reset();
                         pPushedSpec.reset();
+                    }
+                    else {
+                        pHandler->OnStalePidSelected();
                     }
                 }
                 catch (...)

@@ -127,6 +127,7 @@ export default Vue.extend({
   async created() {
     Api.registerPresentmonInitFailedHandler(this.handlePresentmonInitFailed);
     Api.registerOverlayDiedHandler(this.handleOverlayDied);
+    Api.registerStalePidHandler(this.handleStalePid);
     await Api.launchKernel();
     await Metrics.load();
     await Hotkey.refreshOptions();
@@ -177,6 +178,11 @@ export default Vue.extend({
     },
     handleTargetLost(pid: number) {
       PrefStore.setPid(null);
+    },
+    handleStalePid() {
+      PrefStore.setPid(null);
+      Notifications.notify({text: 'Selected process has already exited.'});
+      console.warn('selected pid was stale');
     },
     async handleHotkeyFired(action: Action) {
       if (action === Action.ToggleCapture) {
