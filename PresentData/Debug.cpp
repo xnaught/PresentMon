@@ -465,8 +465,8 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
     if (hdr.ProviderId == Microsoft_Windows_Kernel_Process::GUID) {
         using namespace Microsoft_Windows_Kernel_Process;
         switch (hdr.EventDescriptor.Id) {
-        case ProcessStart_Start::Id: PrintEventHeader(eventRecord, metadata, "ProcessStart", { L"ImageName", PrintWString }); break;
-        case ProcessStop_Stop::Id:   PrintEventHeader(eventRecord, metadata, "ProcessStop",  { L"ImageName", PrintString }); break;
+        case ProcessStart_Start::Id: PrintEventHeader(eventRecord, metadata, "ProcessStart", { L"ProcessID", PrintU32, L"ImageName", PrintWString }); break;
+        case ProcessStop_Stop::Id:   PrintEventHeader(eventRecord, metadata, "ProcessStop",  { L"ProcessID", PrintU32, L"ImageName", PrintString }); break;
         }
         return;
     }
