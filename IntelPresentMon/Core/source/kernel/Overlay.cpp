@@ -460,6 +460,11 @@ namespace p2c::kern
         return ret != WAIT_OBJECT_0;
     }
 
+    bool Overlay::IsStandardWindow() const
+    {
+        return pWindow->Standard();
+    }
+
     const win::Process& Overlay::GetProcess() const
     {
         return proc;
