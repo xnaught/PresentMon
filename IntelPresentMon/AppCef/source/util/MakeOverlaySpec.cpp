@@ -216,7 +216,7 @@ namespace p2c::client::util
                 sheets.back()->InsertRaw<at::paddingBottom>(padding);
                 sheets.back()->InsertRaw<at::flexDirection>(at::make::Enum(gfx::lay::FlexDirection::Column));
                 sheets.back()->InsertRaw<at::flexAlignment>(at::make::Enum(gfx::lay::FlexAlignment::Stretch));
-                sheets.back()->InsertRaw<at::backgroundColor>(backgroundColor);
+                sheets.back()->InsertRaw<at::backgroundColor>(at::make::Color(gfx::Color::FromBytes(0, 0, 0, 0)));
                 sheets.back()->InsertRaw<at::textColor>(textColor);
                 sheets.back()->InsertRaw<at::textSize>(textSize);
             }
@@ -397,10 +397,18 @@ namespace p2c::client::util
 
                     const double fontSize = Traverse(vReadout)["fontSize"];
 
+
+                    sheets.push_back(Stylesheet::Make({ {}, { "$readout", tag } }));
+                    sheets.back()->InsertRaw<at::backgroundColor>(at::make::Color(ColorFromV8(Traverse(vReadout)["backgroundColor"])));
+
                     if (!Traverse(vReadout)["showLabel"]) {
                         sheets.push_back(Stylesheet::Make({ { "$readout", tag }, { "$label" } }));
                         sheets.back()->InsertRaw<at::display>(at::make::Enum(Display::None));
                     }
+
+                    sheets.push_back(Stylesheet::Make({ { "$readout", tag }, { "$text-large" } }));
+                    sheets.back()->InsertRaw<at::textColor>(at::make::Color(ColorFromV8(Traverse(vReadout)["fontColor"])));
+                    sheets.back()->InsertRaw<at::textSize>(fontSize);
 
                     sheets.push_back(Stylesheet::Make({ { "$readout", tag }, { "$text-large" } }));
                     sheets.back()->InsertRaw<at::textColor>(at::make::Color(ColorFromV8(Traverse(vReadout)["fontColor"])));

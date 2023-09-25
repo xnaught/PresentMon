@@ -8,6 +8,7 @@ export interface Readout extends Widget {
     showLabel: boolean,
     fontSize: number,
     fontColor: RgbaColor,
+    backgroundColor: RgbaColor,
 }
 
 export function makeDefaultReadout(metricId: number): Readout {
@@ -22,6 +23,12 @@ export function makeDefaultReadout(metricId: number): Readout {
             g: 211,
             b: 233,
             a: 1
+        },
+        backgroundColor: {
+            r: 45,
+            g: 50,
+            b: 96,
+            a: 0.4
         },
     };
 }
