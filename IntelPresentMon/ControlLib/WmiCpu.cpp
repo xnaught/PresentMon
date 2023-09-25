@@ -42,9 +42,8 @@ WmiCpu::WmiCpu() {
             .c_str()};
   }
 
-  if (const auto result = PdhAddEnglishCounterW(
-          query_.get(), kProcessorTime.c_str(), 0,
-                                        &processor_time_counter_);
+  if (const auto result = PdhAddEnglishCounterW(query_.get(), kProcessorIdleTime.c_str(), 0,
+                                &processor_idle_time_counter_);
       result != ERROR_SUCCESS) {
     throw std::runtime_error{
         std::format("PdhAddEnglishCounter failed when adding "
