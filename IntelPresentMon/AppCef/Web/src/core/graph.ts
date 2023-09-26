@@ -70,3 +70,6 @@ export function makeDefaultGraph(metricId: number): Graph {
         },
     };
 }
+
+export function migrateGraph(graph: Graph, sourceVersion: string): void {
+}
