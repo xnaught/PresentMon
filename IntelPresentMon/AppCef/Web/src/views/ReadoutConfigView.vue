@@ -12,6 +12,22 @@
   <v-card class="page-card my-7">
     <v-subheader class="mt-0">Style Settings</v-subheader>
     <v-divider class="ma-0"></v-divider>
+    
+    <v-row class="mt-8">       
+      <v-col cols="3">
+        Font Size
+        <p class="text--secondary text-sm-caption mb-0">Size of text in this readout widget</p>
+      </v-col>
+      <v-col cols="9">
+        <v-slider
+          v-model="fontSize"
+          :min="5"
+          :max="80"
+          :step="0.5"
+          thumb-label="always"
+        ></v-slider>
+      </v-col>
+    </v-row>
   
     <v-row class="mt-8">       
       <v-col cols="3">
