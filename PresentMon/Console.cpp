@@ -258,10 +258,30 @@ int PrintWarning(char const* format, ...)
     va_start(val, format);
     int c = PrintColor(FOREGROUND_RED | FOREGROUND_GREEN, format, val);
     va_end(val);
+    c += fprintf(stderr, "\n");
     return c;
 }
 
 int PrintError(char const* format, ...)
+{
+    va_list val;
+    va_start(val, format);
+    int c = PrintColor(FOREGROUND_RED, format, val);
+    va_end(val);
+    c += fprintf(stderr, "\n");
+    return c;
+}
+
+int PrintWarningNoNewLine(char const* format, ...)
+{
+    va_list val;
+    va_start(val, format);
+    int c = PrintColor(FOREGROUND_RED | FOREGROUND_GREEN, format, val);
+    va_end(val);
+    return c;
+}
+
+int PrintErrorNoNewLine(char const* format, ...)
 {
     va_list val;
     va_start(val, format);

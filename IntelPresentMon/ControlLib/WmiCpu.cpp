@@ -1,5 +1,6 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
+#include <format>
 #include "WmiCpu.h"
 
 namespace pwr::cpu::wmi {
@@ -8,35 +9,47 @@ std::wstring kProcessorFrequency =
     L"\\Processor Information(_Total)\\Processor Frequency";
 std::wstring kProcessorPerformance =
     L"\\Processor Information(_Total)\\% Processor Performance";
-std::wstring kProcessorTime = L"\\Processor(_Total)\\% Processor Time";
+std::wstring kProcessorIdleTime = L"\\Processor(_Total)\\% Idle Time";
 
 WmiCpu::WmiCpu() {
   HQUERY temp_query = nullptr;
   if (const auto result = PdhOpenQuery(NULL, NULL, &temp_query);
       result != ERROR_SUCCESS) {
-    throw std::runtime_error{"PdhOpenQuery failed"};
+    throw std::runtime_error{
+        std::format("PdhOpenQuery failed. Result:{}", result).c_str()};
   }
   query_.reset(temp_query);
 
-  if (const auto result = PdhAddCounter(query_.get(), kProcessorFrequency.c_str(), 0,
+  if (const auto result =
+          PdhAddEnglishCounterW(query_.get(), kProcessorFrequency.c_str(), 0,
                                         &processor_frequency_counter_);
       result != ERROR_SUCCESS) {
     throw std::runtime_error{
-        "PdhAddCounter failed when adding processor frequency counter"};
+        std::format("PdhAddEnglishCounter failed when adding processor frequency "
+                    "counter. Result: {}",
+                    result)
+            .c_str()};
   }
 
-  if (const auto result = PdhAddCounter(query_.get(), kProcessorPerformance.c_str(),
+  if (const auto result =
+          PdhAddEnglishCounterW(query_.get(), kProcessorPerformance.c_str(),
                                         0, &processor_performance_counter_);
       result != ERROR_SUCCESS) {
     throw std::runtime_error{
-        "PdhAddCounter failed when adding processor performance counter"};
+        std::format("PdhAddEnglishCounter failed when adding processor performance "
+                    "counter. Result: {}",
+                    result)
+            .c_str()};
   }
 
-  if (const auto result = PdhAddCounter(query_.get(), kProcessorTime.c_str(), 0,
-                                        &processor_time_counter_);
+  if (const auto result = PdhAddEnglishCounterW(query_.get(), kProcessorIdleTime.c_str(), 0,
+                                &processor_idle_time_counter_);
       result != ERROR_SUCCESS) {
     throw std::runtime_error{
-        "PdhAddCounter failed when adding processor time counter"};
+        std::format("PdhAddEnglishCounter failed when adding "
+                    "processor time counter. Result: {}",
+                    result)
+            .c_str()};
   }
 
   // Most counters require two sample values to display a formatted value.
@@ -46,7 +59,7 @@ WmiCpu::WmiCpu() {
   if (const auto result = PdhCollectQueryData(query_.get());
       result != ERROR_SUCCESS) {
     throw std::runtime_error{
-        "PdhAddCounter failed when adding processor time counter"};
+        std::format("PdhCollectQueryData failed. Result: {}", result).c_str()};
   }
 
   // WMI specifies that it should not be sampled faster than once every
@@ -105,13 +118,24 @@ bool WmiCpu::Sample() noexcept {
     }
   }
 
-  // Sample cpu utilization
+  // Sample cpu idle time, and compute cpu utilization using it (Windows 11 Fix)
+  //
+  // Beginning with Windows 11 22H2, the performance counters for CPU idle time
+  // in SystemProcessorPerformanceInformation are broken and statistics derived
+  // from those counters will always indicate single-digit cpu utilization %.
+  //
+  // Idle time reported in SystemProcessorIdleInformation is still consistent on
+  // all versions of Windows, as well as WMI provisioned "Processor\% Idle Time".
+  //
+  // To measure CPU utilization accurately on all systems, it must be calculated:
+  // 
+  //    100.0 - "Processor(_Total)\% Idle Time"
   {
     if (const auto result =
-            PdhGetFormattedCounterValue(processor_time_counter_, PDH_FMT_DOUBLE,
+            PdhGetFormattedCounterValue(processor_idle_time_counter_, PDH_FMT_DOUBLE,
                                         &counter_type, &counter_value);
         result == ERROR_SUCCESS) {
-      info.cpu_utilization = counter_value.doubleValue;
+      info.cpu_utilization = 100.0 - counter_value.doubleValue;
       SetTelemetryCapBit(CpuTelemetryCapBits::cpu_utilization);
     }
   }
