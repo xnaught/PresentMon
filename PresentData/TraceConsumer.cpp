@@ -127,8 +127,9 @@ PropertyInfo GetPropertyInfo(TRACE_EVENT_INFO const& tei, EVENT_RECORD const& ev
         }
     }
 
-    assert(info.size_ > 0);
-    // Note: count can be 0 for array properties.
+    // Note:
+    // - info.size_ can be 0 for SIDs
+    // - info.count_ can be 0 for array properties.
 
     return info;
 }

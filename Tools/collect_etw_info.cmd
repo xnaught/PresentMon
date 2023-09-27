@@ -1,4 +1,4 @@
-:: Copyright (C) 2020-2022 Intel Corporation
+:: Copyright (C) 2020-2024 Intel Corporation
 :: SPDX-License-Identifier: MIT
 @echo off
 setlocal
@@ -61,6 +61,7 @@ set events=%events% --event=HSyncDPCMultiPlane::Info
 set events=%events% --event=VSyncDPCMultiPlane::Info
 set events=%events% --event=MMIOFlip::Info
 set events=%events% --event=MMIOFlipMultiPlaneOverlay::Info
+set events=%events% --event=MMIOFlipMultiPlaneOverlay3::Info
 set events=%events% --event=Present::Info
 set events=%events% --event=PresentHistory::Start
 set events=%events% --event=PresentHistory::Info
@@ -93,6 +94,9 @@ set events=%events% --event=TokenStateChanged::Info
 set events=%events% --event=InputDeviceRead::Stop
 set events=%events% --event=RetrieveInputMessage::Info
 call :etw_list "Microsoft-Windows-Win32k" "%out_dir%\Microsoft_Windows_Win32k.h"
+
+set events=
+call :etw_list "Intel-PresentMon" "%out_dir%\Intel_PresentMon.h"
 
 echo %out_dir%\NT_Process.h
 echo // Copyright ^(C^) 2020-2022 Intel Corporation> "%out_dir%\NT_Process.h"

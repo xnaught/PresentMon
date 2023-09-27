@@ -335,6 +335,7 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     args->mTrackGPU = false;
     args->mTrackGPUVideo = false;
     args->mTrackWMR = false;
+    args->mTrackFrameType = false;
     args->mOutputCsvToFile = true;
     args->mOutputCsvToStdout = false;
     args->mOutputQpcTime = false;
@@ -401,12 +402,13 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         else if (ParseArg(argv[i], L"terminate_after_timed"))  { args->mTerminateAfterTimer = true; continue; }
 
         // Beta options:
-        else if (ParseArg(argv[i], L"date_time"))              { args->mOutputDateTime       = true; continue; }
-        else if (ParseArg(argv[i], L"track_gpu"))              { args->mTrackGPU             = true; continue; }
-        else if (ParseArg(argv[i], L"track_gpu_video"))        { args->mTrackGPUVideo        = true; continue; }
-        else if (ParseArg(argv[i], L"track_input"))            { args->mTrackInput           = true; continue; }
-        else if (ParseArg(argv[i], L"track_mixed_reality"))    { args->mTrackWMR             = true; continue; }
-        else if (ParseArg(argv[i], L"include_mixed_reality"))  { DEPRECATED_wmr              = true; continue; }
+        else if (ParseArg(argv[i], L"date_time"))             { args->mOutputDateTime = true; continue; }
+        else if (ParseArg(argv[i], L"track_gpu"))             { args->mTrackGPU       = true; continue; }
+        else if (ParseArg(argv[i], L"track_gpu_video"))       { args->mTrackGPUVideo  = true; continue; }
+        else if (ParseArg(argv[i], L"track_input"))           { args->mTrackInput     = true; continue; }
+        else if (ParseArg(argv[i], L"track_mixed_reality"))   { args->mTrackWMR       = true; continue; }
+        else if (ParseArg(argv[i], L"include_mixed_reality")) { DEPRECATED_wmr        = true; continue; }
+        else if (ParseArg(argv[i], L"track_frame_type"))      { args->mTrackFrameType = true; continue; }
 
         // Hidden options:
         #if PRESENTMON_ENABLE_DEBUG_TRACE

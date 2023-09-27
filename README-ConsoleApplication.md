@@ -50,6 +50,7 @@ A binary of the console application is provided in the release, e.g.: [PresentMo
 | `-track_gpu_video`        | Track the video encode/decode portion of GPU work separately from other engines. Not supported on Win7. |
 | `-track_input`            | Tracks the time of keyboard/mouse clicks that were used by each frame.                                  |
 | `-track_mixed_reality`    | Capture Windows Mixed Reality data to a CSV file with "_WMR" suffix.                                    |
+| `-track_frame_type`       | Track the type of each displayed frame (requires driver/implementation using Intel-PresentMon provider). |
 
 ## Comma-separated value (CSV) file output
 

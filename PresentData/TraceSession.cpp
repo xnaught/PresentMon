@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2020-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "Debug.hpp"
@@ -14,6 +14,7 @@
 #include "ETW/Microsoft_Windows_Kernel_Process.h"
 #include "ETW/Microsoft_Windows_Win32k.h"
 #include "ETW/NT_Process.h"
+#include "ETW/Intel_PresentMon.h"
 
 namespace {
 
@@ -207,6 +208,9 @@ ULONG EnableProviders(
     if (pmConsumer->mTrackGPUVideo) {
         provider.AddEvent<Microsoft_Windows_DxgKrnl::NodeMetadata_Info>();
     }
+    if (pmConsumer->mTrackFrameType) {
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay3_Info>();
+    }
     // BEGIN WORKAROUND: Windows11 adds a "Present" keyword to:
     //     BlitCancel_Info
     //     Blit_Info
@@ -247,19 +251,23 @@ ULONG EnableProviders(
                             TRACE_LEVEL_INFORMATION, 0, 0, 0, nullptr);
     if (status != ERROR_SUCCESS) return status;
 
-    if (pmConsumer->mTrackDisplay) {
+    if (pmConsumer->mTrackDisplay || pmConsumer->mTrackInput) {
         // Microsoft_Windows_Win32k
         provider.ClearFilter();
-        provider.AddEvent<Microsoft_Windows_Win32k::TokenCompositionSurfaceObject_Info>();
-        provider.AddEvent<Microsoft_Windows_Win32k::TokenStateChanged_Info>();
+        if (pmConsumer->mTrackDisplay) {
+            provider.AddEvent<Microsoft_Windows_Win32k::TokenCompositionSurfaceObject_Info>();
+            provider.AddEvent<Microsoft_Windows_Win32k::TokenStateChanged_Info>();
+        }
         if (pmConsumer->mTrackInput) {
             provider.AddEvent<Microsoft_Windows_Win32k::InputDeviceRead_Stop>();
             provider.AddEvent<Microsoft_Windows_Win32k::RetrieveInputMessage_Info>();
         }
         status = provider.Enable(sessionHandle, Microsoft_Windows_Win32k::GUID);
         if (status != ERROR_SUCCESS) return status;
+    }
 
         // Microsoft_Windows_Dwm_Core
+    if (pmConsumer->mTrackDisplay) {
         provider.ClearFilter();
         provider.AddEvent<Microsoft_Windows_Dwm_Core::MILEVENT_MEDIA_UCE_PROCESSPRESENTHISTORY_GetPresentHistory_Info>();
         provider.AddEvent<Microsoft_Windows_Dwm_Core::SCHEDULE_PRESENT_Start>();
@@ -320,6 +328,15 @@ ULONG EnableProviders(
         }
     }
 
+    if (pmConsumer->mTrackFrameType) {
+        // Intel_PresentMon
+        provider.ClearFilter();
+        provider.AddEvent<Intel_PresentMon::PresentFrameType_Info>();
+        provider.AddEvent<Intel_PresentMon::FlipFrameType_Info>();
+        status = provider.Enable(sessionHandle, Intel_PresentMon::GUID);
+        if (status != ERROR_SUCCESS) return status;
+    }
+
     return ERROR_SUCCESS;
 }
 
@@ -327,6 +344,7 @@ void DisableProviders(TRACEHANDLE sessionHandle)
 {
     ULONG status = 0;
     status = EnableTraceEx2(sessionHandle, &DHD_PROVIDER_GUID,                      EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
+    status = EnableTraceEx2(sessionHandle, &Intel_PresentMon::GUID,                 EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_D3D9::GUID,           EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_DXGI::GUID,           EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_Dwm_Core::GUID,       EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
@@ -342,7 +360,8 @@ template<
     bool SAVE_FIRST_TIMESTAMP,
     bool TRACK_DISPLAY,
     bool TRACK_INPUT,
-    bool TRACK_WMR>
+    bool TRACK_WMR,
+    bool TRACK_PRESENTMON>
 void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
 {
     auto session = (TraceSession*) pEventRecord->UserContext;
@@ -438,6 +457,13 @@ void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
         }
     }
 
+    if constexpr (TRACK_PRESENTMON) {
+        if (hdr.ProviderId == Intel_PresentMon::GUID) {
+            session->mPMConsumer->HandleIntelPresentMonEvent(pEventRecord);
+            return;
+        }
+    }
+
     #pragma warning(pop)
 }
 
@@ -467,6 +493,13 @@ PEVENT_RECORD_CALLBACK GetEventRecordCallback(bool t1, bool t2, bool t3, bool t4
 {
     return t1 ? GetEventRecordCallback<Ts..., true>(t2, t3, t4)
               : GetEventRecordCallback<Ts..., false>(t2, t3, t4);
+}
+
+template<bool... Ts>
+PEVENT_RECORD_CALLBACK GetEventRecordCallback(bool t1, bool t2, bool t3, bool t4, bool t5)
+{
+    return t1 ? GetEventRecordCallback<Ts..., true>(t2, t3, t4, t5)
+              : GetEventRecordCallback<Ts..., false>(t2, t3, t4, t5);
 }
 
 ULONG CALLBACK BufferCallback(EVENT_TRACE_LOGFILE* pLogFile)
@@ -512,7 +545,8 @@ ULONG TraceSession::Start(
         saveFirstTimestamp,
         pmConsumer->mTrackDisplay,
         pmConsumer->mTrackInput,
-        mrConsumer != nullptr);
+        mrConsumer != nullptr,
+        pmConsumer->mTrackFrameType);
 
     // When processing log files, we need to use the buffer callback in case
     // the user wants to stop processing before the entire log has been parsed.

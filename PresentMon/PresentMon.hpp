@@ -1,4 +1,4 @@
-// Copyright (C) 2017,2019-2023 Intel Corporation
+// Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #pragma once
@@ -59,6 +59,7 @@ struct CommandLineArgs {
     bool mTrackGPU;
     bool mTrackGPUVideo;
     bool mTrackWMR;
+    bool mTrackFrameType;
     bool mOutputCsvToFile;
     bool mOutputCsvToStdout;
     bool mOutputQpcTime;

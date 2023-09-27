@@ -5,6 +5,7 @@
 
 #include "PresentMonTraceConsumer.hpp"
 
+#include "ETW/Intel_PresentMon.h"
 #include "ETW/Microsoft_Windows_D3D9.h"
 #include "ETW/Microsoft_Windows_Dwm_Core.h"
 #include "ETW/Microsoft_Windows_DXGI.h"
@@ -124,9 +125,10 @@ void PrintPresentResult(PresentResult value)
 void PrintDeferredReason(uint32_t value)
 {
     switch (value) {
-    case DeferredReason_None:                  wprintf(L"None"); break;
-    case DeferredReason_WaitingForPresentStop: wprintf(L"WaitingForPresentStop"); break;
-    default:                                   wprintf(L"Unknown (%u)", value); assert(false); break;
+    case DeferredReason_None:                    wprintf(L"None"); break;
+    case DeferredReason_WaitingForPresentStop:   wprintf(L"WaitingForPresentStop"); break;
+    case DeferredReason_WaitingForFlipFrameType: wprintf(L"WaitingForFlipFrameType"); break;
+    default:                                     wprintf(L"Unknown (%u)", value); assert(false); break;
     }
 }
 void PrintPresentHistoryModel(uint32_t model)
@@ -177,6 +179,27 @@ void PrintPresentFlags(uint32_t flags)
 {
     if (flags & DXGI_PRESENT_TEST) wprintf(L"TEST");
 }
+void PrintPMPFrameType(uint8_t type)
+{
+    switch (type) {
+    case Intel_PresentMon::FrameType::Unspecified: wprintf(L"Unspecified"); break;
+    case Intel_PresentMon::FrameType::Original:    wprintf(L"Original"); break;
+    case Intel_PresentMon::FrameType::Repeated:    wprintf(L"Repeated"); break;
+    case Intel_PresentMon::FrameType::AMD_AFMF:    wprintf(L"AMD_AFMF"); break;
+    default:                                       wprintf(L"Unknown (%u)", type); assert(false); break;
+    }
+}
+void PrintFrameType(FrameType type)
+{
+    switch (type) {
+    case FrameType::NotSet:      wprintf(L"NotSet"); break;
+    case FrameType::Unspecified: wprintf(L"Unspecified"); break;
+    case FrameType::Application: wprintf(L"Application"); break;
+    case FrameType::Repeated:    wprintf(L"Repeated"); break;
+    case FrameType::AMD_AFMF:    wprintf(L"AMD_AFMF"); break;
+    default:                     wprintf(L"Unknown (%u)", type); assert(false); break;
+    }
+}
 
 void PrintEventHeader(EVENT_HEADER const& hdr)
 {
@@ -213,6 +236,7 @@ void PrintEventHeader(EVENT_RECORD* eventRecord, EventMetadata* metadata, char c
         else if (propFunc == PrintDmaPacketType)        PrintDmaPacketType(metadata->GetEventData<uint32_t>(eventRecord, propName));
         else if (propFunc == PrintPresentFlags)         PrintPresentFlags(metadata->GetEventData<uint32_t>(eventRecord, propName));
         else if (propFunc == PrintPresentHistoryModel)  PrintPresentHistoryModel(metadata->GetEventData<uint32_t>(eventRecord, propName));
+        else if (propFunc == PrintPMPFrameType)         PrintPMPFrameType(metadata->GetEventData<uint8_t>(eventRecord, propName));
         else assert(false);
     }
     wprintf(L"\n");
@@ -234,6 +258,36 @@ void FlushModifiedPresent()
         wprintf(L"->"); \
         _Fn(gModifiedPresent->_Name); \
     }
+#define FLUSH_MEMBER_ARRAY(_Fn, _Name) \
+    { \
+        bool changed = false; \
+        if (gModifiedPresent->_Name.size() != gOriginalPresentValues._Name.size()) { \
+            changed = true; \
+        } else { \
+            for (size_t i = 0; i < gModifiedPresent->_Name.size(); ++i) { \
+                if (gModifiedPresent->_Name[i] != gOriginalPresentValues._Name[i]) { \
+                    changed = true; \
+                    break; \
+                } \
+            } \
+        } \
+        if (changed) { \
+            if (changedCount++ == 0) { \
+                wprintf(L"%*hsp%llu", 17 + 6 + 6, "", gModifiedPresent->Id); \
+            } \
+            wprintf(L" " L#_Name L"=["); \
+            for (size_t i = 0; i < gOriginalPresentValues._Name.size(); ++i) { \
+                if (i > 0) wprintf(L","); \
+                _Fn(gOriginalPresentValues._Name[i]); \
+            } \
+            wprintf(L"]->["); \
+            for (size_t i = 0; i < gModifiedPresent->_Name.size(); ++i) { \
+                if (i > 0) wprintf(L","); \
+                _Fn(gModifiedPresent->_Name[i]); \
+            } \
+            wprintf(L"]"); \
+        } \
+    }
     FLUSH_MEMBER(PrintTime,           PresentStopTime)
     FLUSH_MEMBER(PrintTime,           GPUStartTime)
     FLUSH_MEMBER(PrintTime,           ReadyTime)
@@ -250,10 +304,12 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintU64x,           Hwnd)
     FLUSH_MEMBER(PrintU32,            QueueSubmitSequence)
 
+    FLUSH_MEMBER_ARRAY(PrintU64,      PresentIds)
     FLUSH_MEMBER(PrintU32,            DriverThreadId)
 
     FLUSH_MEMBER(PrintPresentMode,    PresentMode)
     FLUSH_MEMBER(PrintPresentResult,  FinalState)
+    FLUSH_MEMBER(PrintFrameType,      FrameType)
     FLUSH_MEMBER(PrintBool,           SupportsTearing)
     FLUSH_MEMBER(PrintBool,           WaitForFlipEvent)
     FLUSH_MEMBER(PrintBool,           WaitForMPOFlipEvent)
@@ -266,6 +322,7 @@ void FlushModifiedPresent()
 
     FLUSH_MEMBER(PrintDeferredReason, DeferredReason)
 #undef FLUSH_MEMBER
+#undef FLUSH_MEMBER_ARRAY
 
     if (changedCount > 0) {
         wprintf(L"\n");
@@ -464,6 +521,29 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
                                                                                                    L"ulQueueSubmitSequence", PrintU32, }); break;
             }
         }
+        if (pmConsumer->mTrackFrameType) {
+            switch (hdr.EventDescriptor.Id) {
+            case MMIOFlipMultiPlaneOverlay3_Info::Id: {
+                EventDataDesc desc[] = {
+                    { L"PlaneCount" },
+                    { L"PresentId" },
+                    { L"FlipSubmitSequence" },
+                };
+                metadata->GetEventData(eventRecord, desc, _countof(desc));
+                auto PlaneCount         = desc[0].GetData<uint32_t>();
+                auto PresentId          = desc[1].GetArray<uint64_t>(PlaneCount);
+                auto FlipSubmitSequence = desc[2].GetData<uint32_t>();
+
+                PrintEventHeader(hdr);
+                wprintf(L"DXGKrnl_MMIOFlipMultiPlaneOverlay3_Info SubmitSequence=%u PresentId=[", FlipSubmitSequence);
+                for (uint32_t i = 0; i < PlaneCount; ++i) {
+                    wprintf(L" %llu", PresentId[i]);
+                }
+                wprintf(L" ]\n");
+                break;
+            }
+            }
+        }
         return;
     }
 
@@ -538,6 +618,19 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
             switch (hdr.EventDescriptor.Id) {
             case InputDeviceRead_Stop::Id:      PrintEventHeader(eventRecord, metadata, "Win32k_InputDeviceRead_Stop", { L"DeviceType", PrintU32, }); break;
             case RetrieveInputMessage_Info::Id: PrintEventHeader(eventRecord, metadata, "Win32k_RetrieveInputMessage", { L"flags",      PrintU32, }); break;
+            }
+        }
+        return;
+    }
+
+    if (hdr.ProviderId == Intel_PresentMon::GUID) {
+        using namespace Intel_PresentMon;
+        if (pmConsumer->mTrackFrameType) {
+            switch (hdr.EventDescriptor.Id) {
+            case FlipFrameType_Info::Id:    PrintEventHeader(eventRecord, metadata, "PM_FlipFrameType",    { L"PresentID", PrintU64,
+                                                                                                             L"FrameType", PrintPMPFrameType }); break;
+            case PresentFrameType_Info::Id: PrintEventHeader(eventRecord, metadata, "PM_PresentFrameType", { L"PresentID", PrintU64,
+                                                                                                             L"FrameType", PrintPMPFrameType }); break;
             }
         }
         return;

@@ -34,6 +34,22 @@ const char* RuntimeToString(Runtime rt)
     }
 }
 
+const char* FrameTypeToString(FrameType ft)
+{
+    switch (ft) {
+    #ifdef _DEBUG
+    case FrameType::NotSet:      return "NotSet";
+    #else
+    case FrameType::NotSet:      return "Application";
+    #endif
+    case FrameType::Unspecified: return "Unspecified";
+    case FrameType::Application: return "Application";
+    case FrameType::Repeated:    return "Repeated";
+    case FrameType::AMD_AFMF:    return "AMD_AFMF";
+    default: return "Unknown";
+    }
+}
+
 const char* FinalStateToDroppedString(PresentResult res)
 {
     switch (res) {
@@ -53,7 +69,12 @@ static void WriteCsvHeader(FILE* fp)
         L",Runtime"
         L",SyncInterval"
         L",PresentFlags"
-        L",Dropped"
+        L",Dropped");
+    if (args.mTrackFrameType) {
+        fwprintf(fp,
+            L",FrameType");
+    }
+    fwprintf(fp,
         L",TimeInSeconds"
         L",msInPresentAPI"
         L",msBetweenPresents");
@@ -84,6 +105,9 @@ static void WriteCsvHeader(FILE* fp)
     if (args.mOutputQpcTime) {
         fwprintf(fp, L",QPCTime");
     }
+    #if PRESENTMON_ENABLE_DEBUG_TRACE
+    fwprintf(fp, L",DebugId");
+    #endif
     fwprintf(fp, L"\n");
 }
 
@@ -152,6 +176,10 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
         p.SyncInterval,
         p.PresentFlags,
         FinalStateToDroppedString(p.FinalState));
+    if (args.mTrackFrameType) {
+        fwprintf(fp, L"%hs,",
+            FrameTypeToString(p.FrameType));
+    }
     if (args.mOutputDateTime) {
         SYSTEMTIME st = {};
         uint64_t ns = 0;
@@ -202,6 +230,9 @@ void UpdateCsv(ProcessInfo* processInfo, SwapChainData const& chain, PresentEven
             fwprintf(fp, L",%llu", p.PresentStartTime);
         }
     }
+    #if PRESENTMON_ENABLE_DEBUG_TRACE
+    fwprintf(fp, L",%llu", p.Id);
+    #endif
     fwprintf(fp, L"\n");
 
     if (args.mOutputCsvToStdout) {

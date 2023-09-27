@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2020-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #ifndef NOMINMAX
@@ -27,6 +27,7 @@ struct PresentMonCsv
 
         // Optional headers:
         Header_QPCTime,
+        Header_DebugId,
 
         // Required headers when -track_display is used:
         Header_AllowsTearing,
@@ -68,6 +69,7 @@ struct PresentMonCsv
         case Header_msBetweenPresents:      return "msBetweenPresents";
         case Header_msInPresentAPI:         return "msInPresentAPI";
         case Header_QPCTime:                return "QPCTime";
+        case Header_DebugId:                return "DebugId";
         case Header_AllowsTearing:          return "AllowsTearing";
         case Header_PresentMode:            return "PresentMode";
         case Header_msBetweenDisplayChange: return "msBetweenDisplayChange";

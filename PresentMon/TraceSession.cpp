@@ -23,6 +23,7 @@ bool StartTraceSession()
     gPMConsumer->mTrackGPU = args.mTrackGPU;
     gPMConsumer->mTrackGPUVideo = args.mTrackGPUVideo;
     gPMConsumer->mTrackInput = args.mTrackInput;
+    gPMConsumer->mTrackFrameType = args.mTrackFrameType;
 
     if (args.mTargetPid != 0) {
         gPMConsumer->AddTrackedProcessForFiltering(args.mTargetPid);
