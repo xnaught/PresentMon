@@ -132,18 +132,24 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
 
     for (size_t i = 0, n = cols_.size(); i < n; ++i) {
         auto h = FindHeader(cols_[i]);
-        if (h == UnknownHeader) {
+        switch (h) {
+        case KnownHeaderCount:
+        case UnknownHeader:
             AddTestFailure(Convert(path_).c_str(), (int) line_, "Unrecognised column: %s", cols_[i]);
-        } else if (headerColumnIndex_[(size_t) h] != SIZE_MAX) {
-            AddTestFailure(Convert(path_).c_str(), (int) line_, "Duplicate column: %s", cols_[i]);
-        } else {
-            headerColumnIndex_[(size_t) h] = i;
+            break;
+        default:
+            if (headerColumnIndex_[(size_t) h] != SIZE_MAX) {
+                AddTestFailure(Convert(path_).c_str(), (int) line_, "Duplicate column: %s", cols_[i]);
+            } else {
+                headerColumnIndex_[(size_t) h] = i;
 
-            for (auto& hg : headerGroups) {
-                if (hg.Check(h)) {
-                    break;
+                for (auto& hg : headerGroups) {
+                    if (hg.Check(h)) {
+                        break;
+                    }
                 }
             }
+            break;
         }
     }
 

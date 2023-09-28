@@ -330,7 +330,7 @@ void UpdateConsole(std::unordered_map<uint32_t, ProcessInfo> const& activeProces
                 ConsolePrint("        %.2lf ms/frame (%.1lf fps", 1000.0 / fps, fps);
             }
 
-            ConsolePrintLn(", %.1lf%% of Compositor frame rate)", double(historySize - runtimeStats.mAppMissedFrames) / (historySize) * 100.0f);
+            ConsolePrintLn(", %.1lf%% of Compositor frame rate)", historySize == 0 ? 0.0 : double(historySize - runtimeStats.mAppMissedFrames) / (historySize) * 100.0);
 
             ConsolePrintLn("        Missed Present: %Iu total in last %.1lf seconds (%Iu total observed)",
                 runtimeStats.mAppMissedFrames,

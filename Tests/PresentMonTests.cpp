@@ -8,20 +8,22 @@
 
 bool EnsureDirectoryCreated(std::wstring path)
 {
-    auto dir = path.c_str();
     for (auto i = path.find(L'\\');; i = path.find(L'\\', i + 1)) {
-        if (i != std::wstring::npos) {
-            path[i] = L'\0';
+        std::wstring dir;
+        if (i == std::wstring::npos) {
+            dir = path;
+        } else {
+            dir = path.substr(0, i);
         }
 
-        auto attr = GetFileAttributes(dir);
+        auto attr = GetFileAttributes(dir.c_str());
         if (attr == INVALID_FILE_ATTRIBUTES) {
-            if (!CreateDirectory(dir, NULL)) {
-                fprintf(stderr, "error: failed to create directory: %ls\n", dir);
+            if (!CreateDirectory(dir.c_str(), NULL)) {
+                fprintf(stderr, "error: failed to create directory: %ls\n", dir.c_str());
                 return false;
             }
         } else if ((attr & FILE_ATTRIBUTE_DIRECTORY) == 0) {
-            fprintf(stderr, "error: existing path is not a directory: %ls\n", dir);
+            fprintf(stderr, "error: existing path is not a directory: %ls\n", dir.c_str());
             return false;
         }
 
