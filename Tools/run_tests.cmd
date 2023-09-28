@@ -1,4 +1,4 @@
-:: Copyright (C) 2020-2022 Intel Corporation
+:: Copyright (C) 2020-2024 Intel Corporation
 :: SPDX-License-Identifier: MIT
 
 @echo off
@@ -77,9 +77,36 @@ if "%version%"=="" (
     echo [31merror: version not found in PresentMon.props[0m
     set /a errorcount=%errorcount%+1
 ) else (
-    echo [90m%version%[0m
+    echo [90mcli:     %version%[0m
 )
-:version_end
+
+set version2=
+set version3=
+if exist "%toolsdir%\..\IntelPresentMon\PMInstaller\PresentMon.wxs" (
+    for /f "tokens=1,2 delims==" %%a in ('type "%toolsdir%\..\IntelPresentMon\PMInstaller\PresentMon.wxs" ^| findstr "Version="') do (
+        if "%%a"=="        Version" set version2=%%b
+    )
+    for /f "tokens=1,2 delims==" %%a in ('type "%toolsdir%\..\IntelPresentMon\PMInstaller\PresentMon.wxs" ^| findstr "console_app_ver"') do (
+        if "%%a"=="        <?define console_app_ver " set version3=%%b
+    )
+)
+set version2=%version2:~1,-1%
+set version3=%version3:~1,-3%
+if "%version2%"=="" (
+    echo [31merror: Version not found in PresentMon.wxs[0m
+    set /a errorcount=%errorcount%+1
+) else (
+    echo [90minstall: %version2%[0m
+)
+if "%version3%"=="" (
+    echo [31merror: console_app_ver not found in PresentMon.wxs[0m
+    set /a errorcount=%errorcount%+1
+) else if not "%version%"=="%version3%" (
+    echo [31merror: not installing current cli version: installing %version3%[0m
+    set /a errorcount=%errorcount%+1
+)
+
+call :check_dll_version "%version2%" "%toolsdir%\..\Provider\Version.rc"
 
 :: -----------------------------------------------------------------------------
 set build_configs=
@@ -122,6 +149,21 @@ if "%version%"=="" (
                 set version=%%d
             )
         )
+    )
+)
+
+:: -----------------------------------------------------------------------------
+:: Make sure the installer is using the latest CLI version
+if exist "%toolsdir%\..\IntelPresentMon\PMInstaller\PresentMon.wxs" (
+    for /f "tokens=1,2 delims==" %%a in ('type "%toolsdir%\..\IntelPresentMon\PMInstaller\PresentMon.wxs" ^| findstr "console_app_ver"') do (
+        if "%%a"=="        Version" set version2=%%b
+    )
+)
+
+set version2=
+if exist "%toolsdir%\..\IntelPresentMon\PMInstaller\PresentMon.wxs" (
+    for /f "tokens=1,2 delims==" %%a in ('type "%toolsdir%\..\IntelPresentMon\PMInstaller\PresentMon.wxs" ^| findstr "Version="') do (
+        if "%%a"=="        Version" set version2=%%b
     )
 )
 
@@ -195,6 +237,24 @@ exit /b 0
         echo [90m%~1[0m
     ) else (
         echo [31merror: expected build output missing: %~1[0m
+        set /a errorcount=%errorcount%+1
+    )
+    exit /b 0
+
+:: -----------------------------------------------------------------------------
+:check_dll_version
+    if not exist %2 (
+        echo [31merror: missing file: %~2[0m
+        set /a errorcount=%errorcount%+1
+        exit /b 1
+    )
+
+    set dllversion=
+    for /f "tokens=3 delims= " %%a in ('type %2 ^| findstr "ProductVersion"') do set dllversion=%%a
+
+    set dllversion=%dllversion:~1,-1%
+    if not %1=="%dllversion%" (
+        echo [31merror: DLL ProductVersion mismatch: %~f2 ^(%dllversion%^)[0m
         set /a errorcount=%errorcount%+1
     )
     exit /b 0

@@ -1,5 +1,3 @@
-:: Copyright (C) 2022-2023 Intel Corporation
-:: SPDX-License-Identifier: MIT
 @echo off
 setlocal
 set xperf="%ProgramFiles(x86)%\Windows Kits\10\Windows Performance Toolkit\xperf.exe"
@@ -31,6 +29,7 @@ set  dxgkrnl=802ec45a-1e99-4b83-9920-87c98277ba9d
 set      dwm=9e9bba3c-2e38-40cb-99f4-9e8281425164:0xffff:6
 set dwm_win7=8c9dd1ad-e6e5-4b07-b455-684a9d879900:0xffff:6
 set   win32k=8c416c79-d49b-4f01-a467-e56d3aa8234c:0x8400000440c01000:4
+set      pmp=ecaa4712-4644-442f-b94c-a32f6cf8a499
 
 set providers=LOADER
 set providers=%providers%+PROC_THREAD
@@ -60,10 +59,12 @@ if %errorlevel% neq 0 goto error
 set providers=%dxgkrnl%:0x208041:5
 set providers=%providers%+%dwm%
 set providers=%providers%+%dwm_win7%
+set providers=%providers%+%pmp%
 set providers=%providers%+%win32k%
 %xperf% -start NoCaptureState -on %providers% -BufferSize 1024 -MinBuffers 30 -MaxBuffers 120 -f NoCaptureState.etl
 if %errorlevel% neq 0 goto error
 
+echo STARTED
 exit /b 0
 
 :error
