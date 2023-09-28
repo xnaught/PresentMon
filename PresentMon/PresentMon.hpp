@@ -112,6 +112,8 @@ bool InitializeConsole();
 bool IsConsoleInitialized();
 int PrintWarning(char const* format, ...);
 int PrintError(char const* format, ...);
+int PrintWarningNoNewLine(char const* format, ...);
+int PrintErrorNoNewLine(char const* format, ...);
 void ConsolePrint(char const* format, ...);
 void ConsolePrintLn(char const* format, ...);
 void CommitConsole();

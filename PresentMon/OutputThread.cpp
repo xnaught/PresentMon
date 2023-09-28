@@ -571,10 +571,10 @@ void Output()
     ULONG buffersLost = 0;
     CheckLostReports(&eventsLost, &buffersLost);
     if (buffersLost > 0) {
-        PrintWarning("warning: %lu ETW buffers were lost.\n", buffersLost);
+        PrintWarning("warning: %lu ETW buffers were lost.", buffersLost);
     }
     if (eventsLost > 0) {
-        PrintWarning("warning: %lu ETW events were lost.\n", eventsLost);
+        PrintWarning("warning: %lu ETW events were lost.", eventsLost);
     }
 
     // Close all CSV and process handles
