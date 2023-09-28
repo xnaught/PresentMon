@@ -190,6 +190,8 @@ bool IsValid(
 }
 }
 
+}
+
 PresentMonProvider* PresentMonProvider_Initialize()
 {
     auto ctxt = new PresentMonProvider;

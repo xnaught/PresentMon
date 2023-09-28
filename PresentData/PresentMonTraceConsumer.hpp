@@ -261,11 +261,12 @@ struct PMTraceConsumer
     bool mFilteredProcessIds = false;   // Whether to filter presents to specific processes
 
     // Whether the analysis should track...
-    bool mTrackDisplay = true;    // ... presents to the display.
-    bool mTrackGPU = false;       // ... GPU work.
-    bool mTrackGPUVideo = false;  // ... GPU video work (separately from non-video GPU work).
-    bool mTrackInput = false;     // ... keyboard/mouse latency.
-    bool mTrackFrameType = false; // ... the frame type communicated through the Intel-PresentMon provider.
+    bool mTrackDisplay = true;         // ... presents to the display.
+    bool mTrackGPU = false;            // ... GPU work.
+    bool mTrackGPUVideo = false;       // ... GPU video work (separately from non-video GPU work).
+    bool mTrackInput = false;          // ... keyboard/mouse latency.
+    bool mTrackFrameType = false;      // ... the frame type communicated through the Intel-PresentMon provider.
+    bool mTrackPMMeasurements = false; // ... external measurements provided through the Intel-PresentMon provider
 
     // When PresentEvents are missing data that may still arrive later, they get put into a deferred
     // state until the data arrives.  This time limit specifies how long a PresentEvent can be

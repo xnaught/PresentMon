@@ -49,6 +49,7 @@ CSV file(s).
 | Beta Options                   |     |
 | ------------------------------ | --- |
 | `--track_frame_type`           | Track the type of each displayed frame; requires application and/or driver instrumentation using Intel-PresentMon provider. |
+| `--track_hw_measurements`      | Tracks HW-measured latency and/or power data coming from a LMT and/or PCAT device. |
 
 ## Comma-separated value (CSV) file output
 

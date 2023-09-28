@@ -11,7 +11,8 @@ struct __declspec(uuid("{ECAA4712-4644-442F-B94C-A32F6CF8A499}")) GUID_STRUCT;
 static const auto GUID = __uuidof(GUID_STRUCT);
 
 enum class Keyword : uint64_t {
-    FrameTypes = 0x1,
+    FrameTypes   = 0x1,
+    Measurements = 0x2,
 };
 
 enum class Level : uint8_t {
@@ -51,6 +52,12 @@ enum class FrameType : uint8_t {
     Repeated = 2,
     Intel_XEFG = 50,
     AMD_AFMF = 100,
+};
+
+enum class InputType : uint32_t {
+    Unspecified = 0,
+    MouseClick = 1,
+    KeyboardClick = 2,
 };
 
 #pragma pack(push, 1)
