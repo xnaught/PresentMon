@@ -40,7 +40,7 @@ namespace p2c::client::util::async
             };
 
             std::wstring payload;
-            if (GetOpenFileNameW(&ofn) && wcsnlen_s(pathBuffer, sizeof(pathBuffer)) > 0) {
+            if (GetOpenFileNameW(&ofn) && wcsnlen_s(pathBuffer, std::size(pathBuffer)) > 0) {
                 std::wifstream file{ pathBuffer };
                 payload = std::wstring(
                     std::istreambuf_iterator<wchar_t>{ file },
