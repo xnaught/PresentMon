@@ -32,26 +32,21 @@ void SetOutputRecordingState(bool record)
 {
     auto const& args = GetCommandLineArgs();
 
-    if (gIsRecording == record) {
-        return;
-    }
-
-    // When capturing from an ETL file, just use the current recording state.
-    // It's not clear how best to map realtime to ETL QPC time, and there
-    // aren't any realtime cues in this case.
-    if (args.mEtlFileName != nullptr) {
-        EnterCriticalSection(&gRecordingToggleCS);
-        gIsRecording = record;
-        LeaveCriticalSection(&gRecordingToggleCS);
-        return;
-    }
-
-    uint64_t qpc = 0;
-    QueryPerformanceCounter((LARGE_INTEGER*) &qpc);
-
     EnterCriticalSection(&gRecordingToggleCS);
-    gRecordingToggleHistory.emplace_back(qpc);
-    gIsRecording = record;
+
+    if (gIsRecording != record) {
+        gIsRecording = record;
+
+        // When capturing from an ETL file, just use the current recording state.
+        // It's not clear how best to map realtime to ETL QPC time, and there
+        // aren't any realtime cues in this case.
+        if (args.mEtlFileName == nullptr) {
+            uint64_t qpc = 0;
+            QueryPerformanceCounter((LARGE_INTEGER*) &qpc);
+            gRecordingToggleHistory.emplace_back(qpc);
+        }
+    }
+
     LeaveCriticalSection(&gRecordingToggleCS);
 }
 
@@ -233,7 +228,7 @@ static void HandleTerminatedProcess(uint32_t processId)
         }
     }
 
-    gProcesses.erase(iter);
+    gProcesses.erase(std::move(iter));
 }
 
 static void UpdateProcesses(std::vector<ProcessEvent> const& processEvents, std::vector<std::pair<uint32_t, uint64_t>>* terminatedProcesses)
