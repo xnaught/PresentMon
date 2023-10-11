@@ -43,7 +43,7 @@ namespace p2c::client::util::async
             bool failed = false;
 
             // try to write the file to disk
-            if (confirmed && wcsnlen_s(pathBuffer, sizeof(pathBuffer)) > 0) {
+            if (confirmed && wcsnlen_s(pathBuffer, std::size(pathBuffer)) > 0) {
                 std::wofstream file{ pathBuffer };
                 file << pArgObj->GetDictionary()->GetString("payload").ToWString();
                 failed = !file.good();
