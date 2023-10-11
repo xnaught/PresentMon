@@ -70,7 +70,7 @@ namespace p2c::infra::util
 		}
 		else
 		{
-			appPath = std::filesystem::current_path().wstring();
+			docPath = std::filesystem::current_path().wstring();
 		}
 
 		// TODO: this really doesn't belong here, but here it stays until time for something saner
