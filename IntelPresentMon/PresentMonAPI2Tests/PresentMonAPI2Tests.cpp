@@ -1,18 +1,25 @@
 #include "CppUnitTest.h"
 #include "../PresentMonAPI2/source/PresentMonAPI.h"
+#include <cstring>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace PresentMonAPI2Tests
+namespace PresentMonAPI2
 {
-	TEST_CLASS(PresentMonAPI2Tests)
+	TEST_CLASS(TrialTests)
 	{
-	public:
-		
-		TEST_METHOD(TestMethod1)
+	public:		
+		TEST_METHOD(InterfaceVirtualization)
 		{
-			Assert::AreEqual(420, pmTest(69));
-			Assert::AreEqual(-10, pmTest(10));
+			char buffer[256]{};
+
+			pmSetMiddlewareAsMock(true);
+			pmMiddlewareSpeak(buffer);
+			Assert::AreEqual(0, strcmp("mock-middle", buffer));
+
+			pmSetMiddlewareAsMock(false);
+			pmMiddlewareSpeak(buffer);
+			Assert::AreEqual(0, strcmp("concrete-middle", buffer));
 		}
 	};
 }

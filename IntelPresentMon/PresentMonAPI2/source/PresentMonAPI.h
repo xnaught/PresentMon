@@ -8,24 +8,14 @@
 #endif
 
 #ifdef __cplusplus
-#define PM_ENUM enum class
 extern "C" {
-#else
-#define PM_ENUM enum
 #endif
 
 
-PM_ENUM PM_TEST_ENUM
-{
-    PM_TEST_ENUM_1,
-    PM_TEST_ENUM_2,
-};
-     
-PRESENTMON_API_EXPORT int pmTest(int input);
+PRESENTMON_API_EXPORT void pmSetMiddlewareAsMock(bool mocked);     
+PRESENTMON_API_EXPORT void pmMiddlewareSpeak(char* buffer);
 
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
-
-#undef PM_ENUM
