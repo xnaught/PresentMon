@@ -7,20 +7,55 @@
 using namespace pmid;
 
 // global state
-std::unique_ptr<Middleware> pMiddleware;
+bool useMockedMiddleware_ = false;
+std::unique_ptr<Middleware> pMiddleware_;
 
 
-PRESENTMON_API_EXPORT void pmSetMiddlewareAsMock(bool mocked)
+PRESENTMON_API_EXPORT void pmSetMiddlewareAsMock_(bool mocked)
 {
-	if (mocked) {
-		pMiddleware = std::make_unique<MockMiddleware>();
+	useMockedMiddleware_ = mocked;
+}
+
+PRESENTMON_API_EXPORT PM_STATUS pmMiddlewareSpeak_(char* buffer)
+{
+	try {
+		if (!pMiddleware_) {
+			return PM_STATUS_SESSION_NOT_OPEN;
+		}
+		pMiddleware_->Speak(buffer);
+		return PM_STATUS_SUCCESS;
 	}
-	else {
-		pMiddleware = std::make_unique<ConcreteMiddleware>();
+	catch (...) {
+		return PM_STATUS_FAILURE;
 	}
 }
 
-PRESENTMON_API_EXPORT void pmMiddlewareSpeak(char* buffer)
+PRESENTMON_API_EXPORT PM_STATUS pmOpenSession()
 {
-	pMiddleware->Speak(buffer);
+	try {
+		if (useMockedMiddleware_) {
+			pMiddleware_ = std::make_unique<MockMiddleware>();
+		}
+		else {
+			pMiddleware_ = std::make_unique<ConcreteMiddleware>();
+		}
+		return PM_STATUS_SUCCESS;
+	}
+	catch (...) {
+		return PM_STATUS_FAILURE;
+	}
+}
+
+PRESENTMON_API_EXPORT PM_STATUS pmCloseSession()
+{
+	try {
+		if (!pMiddleware_) {
+			return PM_STATUS_SESSION_NOT_OPEN;
+		}
+		pMiddleware_.reset();
+		return PM_STATUS_SUCCESS;
+	}
+	catch (...) {
+		return PM_STATUS_FAILURE;
+	}
 }

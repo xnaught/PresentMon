@@ -11,9 +11,16 @@
 extern "C" {
 #endif
 
+	enum PM_STATUS
+	{
+		PM_STATUS_SUCCESS = 0,
+		PM_STATUS_FAILURE,
+		PM_STATUS_SESSION_NOT_OPEN,
+	};
 
-PRESENTMON_API_EXPORT void pmSetMiddlewareAsMock(bool mocked);     
-PRESENTMON_API_EXPORT void pmMiddlewareSpeak(char* buffer);
+
+	PRESENTMON_API_EXPORT PM_STATUS pmOpenSession();
+	PRESENTMON_API_EXPORT PM_STATUS pmCloseSession();
 
 
 #ifdef __cplusplus
