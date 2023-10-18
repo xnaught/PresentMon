@@ -421,11 +421,6 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
         LARGE_INTEGER temp_large{.QuadPart = qpc_frequency.QuadPart};
         swap_chain->gpu_sum_ms.push_back(QpcDeltaToSeconds(
             frame_data->present_event.GPUDuration, temp_large) * 1000.);
-        swap_chain->sync_interval = frame_data->present_event.SyncInterval;
-        swap_chain->present_mode =
-            TranslatePresentMode(frame_data->present_event.PresentMode);
-        swap_chain->allows_tearing =
-            static_cast<int32_t>(frame_data->present_event.SupportsTearing);
         swap_chain->num_presents++;
       } else {
         last_checked_qpc = frame_data->present_event.PresentStartTime;
