@@ -461,8 +461,8 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
     auto chain = pair.second;
 
     // Calculate the display fps metrics.
-    CalculateMetricDoubleData(chain.displayed_fps,
-                              current_fps_data->displayed_fps);
+    CalculateMetricDoubleDataNoAvg(chain.displayed_fps,
+                                   current_fps_data->displayed_fps);
     // Calculate the average using the screen times
     if (chain.display_count > 1) {
       current_fps_data->displayed_fps.avg = QpcDeltaToMs(
@@ -476,8 +476,8 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
     }
 
     // Calculate the presented fps metrics
-    CalculateMetricDoubleData(chain.presented_fps,
-                              current_fps_data->presented_fps);
+    CalculateMetricDoubleDataNoAvg(chain.presented_fps,
+                                   current_fps_data->presented_fps);
     // Calculate the average using the present times
     if (chain.num_presents > 1) {
       current_fps_data->presented_fps.avg =
@@ -942,10 +942,21 @@ PM_STATUS PresentMonClient::GetCpuData(uint32_t process_id,
 void PresentMonClient::CalculateMetricDoubleData(
     std::vector<double>& in_data, PM_METRIC_DOUBLE_DATA& metric_double_data,
     bool valid) {
+  CalculateMetricDoubleDataNoAvg(in_data, metric_double_data, valid);
+
+  if (in_data.size() > 0) {
+    for (auto& element : in_data) {
+      metric_double_data.avg += element;
+    }
+    metric_double_data.avg /= in_data.size();
+  }
+}
+
+void PresentMonClient::CalculateMetricDoubleDataNoAvg(
+    std::vector<double>& in_data, PM_METRIC_DOUBLE_DATA& metric_double_data,
+    bool valid) {
   metric_double_data.avg = 0.0;
   if (in_data.size() > 1) {
-    // Before we sort the data pull out the last element from the vector
-    // for raw data
     size_t middle_index = in_data.size() / 2;
     metric_double_data.raw = in_data[middle_index];
     std::sort(in_data.begin(), in_data.end());
@@ -954,10 +965,6 @@ void PresentMonClient::CalculateMetricDoubleData(
     metric_double_data.percentile_99 = GetPercentile(in_data, 0.01);
     metric_double_data.percentile_95 = GetPercentile(in_data, 0.05);
     metric_double_data.percentile_90 = GetPercentile(in_data, 0.1);
-    for (auto& element : in_data) {
-      metric_double_data.avg += element;
-    }
-    metric_double_data.avg /= in_data.size();
   } else if (in_data.size() == 1) {
     metric_double_data.raw = in_data[0];
     metric_double_data.low = in_data[0];
@@ -965,7 +972,6 @@ void PresentMonClient::CalculateMetricDoubleData(
     metric_double_data.percentile_99 = in_data[0];
     metric_double_data.percentile_95 = in_data[0];
     metric_double_data.percentile_90 = in_data[0];
-    metric_double_data.avg = in_data[0];
   } else {
     metric_double_data.raw = 0.;
     metric_double_data.low = 0.;
@@ -973,7 +979,6 @@ void PresentMonClient::CalculateMetricDoubleData(
     metric_double_data.percentile_99 = 0.;
     metric_double_data.percentile_95 = 0.;
     metric_double_data.percentile_90 = 0.;
-    metric_double_data.avg = 0.;
   }
   metric_double_data.valid = valid;
 }

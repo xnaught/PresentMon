@@ -84,6 +84,9 @@ class PresentMonClient {
   void CalculateMetricDoubleData(std::vector<double>& in_data,
                                  PM_METRIC_DOUBLE_DATA& metric_double_data,
                                  bool valid=true);
+  void CalculateMetricDoubleDataNoAvg(std::vector<double>& in_data,
+                                      PM_METRIC_DOUBLE_DATA& metric_double_data,
+                                      bool valid=true);
   static PM_STATUS TranslateGetLastErrorToPmStatus(DWORD last_error) {
     return PM_STATUS::PM_STATUS_ERROR;
   }
