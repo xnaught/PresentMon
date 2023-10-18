@@ -176,7 +176,6 @@ struct fps_swap_chain_data {
         sync_interval(0),
         present_mode(PM_PRESENT_MODE_UNKNOWN),
         allows_tearing(0) {}
-  std::vector<double> presented_fps;
   std::vector<double> displayed_fps;
   std::vector<double> render_latency_ms;
   std::vector<double> display_latency_ms;

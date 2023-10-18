@@ -382,7 +382,6 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
       } else {
         swap_chain->dropped.push_back(1);
       }
-      swap_chain->presented_fps.clear();
       swap_chain->displayed_fps.clear();
     } else {
       // Calculate the amount of time passed between the current and previous
@@ -392,8 +391,6 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
           qpc_frequency);
       if (frame_data->present_event.PresentStartTime > end_qpc) {
         // Save off the cpu fps
-        double fps_data = 1000.0f / time_in_ms;
-        swap_chain->presented_fps.push_back(fps_data);
         swap_chain->frame_times_ms.push_back(time_in_ms);
         if (frame_data->present_event.FinalState == PresentResult::Presented) {
           if (swap_chain->display_0_screen_time != 0) {
@@ -402,7 +399,7 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
               // TODO(megalvan): displayBusy > 0 because observed cases with the
               // same screen time for back to back frames.
               time_in_ms = QpcDeltaToMs(displayBusy, qpc_frequency);
-              fps_data = 1000.0f / time_in_ms;
+              double fps_data = 1000.0f / time_in_ms;
               swap_chain->displayed_fps.push_back(fps_data);
             }
           }
@@ -470,21 +467,6 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
               : 0.0;
     }
 
-    // Calculate the presented fps metrics
-    CalculateMetricDoubleDataNoAvg(chain.presented_fps,
-                                   current_fps_data->presented_fps);
-    // Calculate the average using the present times
-    if (chain.num_presents > 1) {
-      current_fps_data->presented_fps.avg =
-          QpcDeltaToMs(chain.cpu_n_time - chain.cpu_0_time, qpc_frequency);
-      current_fps_data->presented_fps.avg =
-          current_fps_data->presented_fps.avg / chain.num_presents;
-      current_fps_data->presented_fps.avg = 
-          (current_fps_data->presented_fps.avg > 0.0)
-              ? 1000.0 / current_fps_data->presented_fps.avg
-              : 0.0;
-    }
-
     // Calculate stats for frametimes
     CalculateMetricDoubleDataNoAvg(chain.frame_times_ms,
                                    current_fps_data->frame_time_ms);
@@ -493,7 +475,28 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
           QpcDeltaToMs(chain.cpu_n_time - chain.cpu_0_time, qpc_frequency);
       current_fps_data->frame_time_ms.avg =
           current_fps_data->frame_time_ms.avg / chain.num_presents;
+
+      // TODO: The below percentiles should be 0.01,0.05,0.10 but I'm leaving it wrong so that it
+      // matches the current CalculateMetricDoubleData() implementation.
+
+      auto MillisecondsToFPS = [](double ms) { return ms == 0. ? 0. : 1000. / ms; };
+      current_fps_data->presented_fps.avg           = MillisecondsToFPS(current_fps_data->presented_fps.avg);
+      current_fps_data->presented_fps.raw           = MillisecondsToFPS(current_fps_data->presented_fps.raw);
+      current_fps_data->presented_fps.low           = MillisecondsToFPS(current_fps_data->presented_fps.high);
+      current_fps_data->presented_fps.high          = MillisecondsToFPS(current_fps_data->presented_fps.low);
+      current_fps_data->presented_fps.percentile_99 = MillisecondsToFPS(GetPercentile(chain.frame_times_ms, 0.99));
+      current_fps_data->presented_fps.percentile_95 = MillisecondsToFPS(GetPercentile(chain.frame_times_ms, 0.95));
+      current_fps_data->presented_fps.percentile_90 = MillisecondsToFPS(GetPercentile(chain.frame_times_ms, 0.90));
+    } else {
+      current_fps_data->presented_fps.avg = 0.;
+      current_fps_data->presented_fps.raw = 0.;
+      current_fps_data->presented_fps.low = 0.;
+      current_fps_data->presented_fps.high = 0.;
+      current_fps_data->presented_fps.percentile_99 = 0.;
+      current_fps_data->presented_fps.percentile_95 = 0.;
+      current_fps_data->presented_fps.percentile_90 = 0.;
     }
+    current_fps_data->presented_fps.valid = true;
 
     // Calculate stats for gpu busy
     CalculateMetricDoubleData(chain.gpu_sum_ms, current_fps_data->gpu_busy);
@@ -538,7 +541,7 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
                 << "," << last_checked_qpc << "," << chain.display_n_screen_time
                 << "," << chain.display_0_screen_time << ","
                 << adjusted_window_size_in_ms << ","
-                << current_fps_data->presented_fps.avg << ","
+                << current_fps_data->frame_time_ms.avg << ","
                 << current_fps_data->frame_time_ms.raw << ","
                 << current_fps_data->displayed_fps.raw << ","
                 << data_gathering_complete << "," << decrement_failed << ","
