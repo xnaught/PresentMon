@@ -491,8 +491,15 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
     }
 
     // Calculate stats for frametimes
-    CalculateMetricDoubleData(chain.frame_times_ms,
-                              current_fps_data->frame_time_ms);
+    CalculateMetricDoubleDataNoAvg(chain.frame_times_ms,
+                                   current_fps_data->frame_time_ms);
+    if (chain.num_presents > 1) {
+      current_fps_data->frame_time_ms.avg =
+          QpcDeltaToMs(chain.cpu_n_time - chain.cpu_0_time, qpc_frequency);
+      current_fps_data->frame_time_ms.avg =
+          current_fps_data->frame_time_ms.avg / chain.num_presents;
+    }
+
     // Calculate stats for gpu busy
     CalculateMetricDoubleData(chain.gpu_sum_ms, current_fps_data->gpu_busy);
     // Calculate stats for dropped frames and then adjust the the avg
