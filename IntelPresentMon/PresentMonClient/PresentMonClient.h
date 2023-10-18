@@ -170,6 +170,7 @@ struct fps_swap_chain_data {
   std::vector<double> dropped;
   uint64_t cpu_n_time = 0;                  // The last frame's PresentStartTime (qpc)
   uint64_t cpu_0_time = 0;                  // The first frame's PresentStartTime (qpc)
+  uint64_t present_stop_0 = 0;              // The first frame's PresentStopTime (qpc)
   uint64_t gpu_duration_0 = 0;              // The first frame's GPUDuration (qpc)
   uint64_t display_n_screen_time = 0;       // The last presented frame's ScreenTime (qpc)
   uint64_t display_0_screen_time = 0;       // The first presented frame's ScreenTime (qpc)

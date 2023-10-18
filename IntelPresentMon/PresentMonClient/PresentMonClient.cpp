@@ -359,6 +359,7 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
 
     // Copy swap_chain data for the previous first frame needed for calculations below
     auto nextFramePresentStartTime     = swap_chain->cpu_0_time;
+    auto nextFramePresentStopTime      = swap_chain->present_stop_0;
     auto nextFrameGPUDuration          = swap_chain->gpu_duration_0;
     auto nextFrameDisplayDuration      = swap_chain->display_1_screen_time - swap_chain->display_0_screen_time;
     auto nextFrameDisplayDurationValid = swap_chain->displayed_0 && swap_chain->display_count >= 2;
@@ -366,6 +367,7 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
     // Save current frame's properties into swap_chain (the new first frame)
     swap_chain->displayed_0    = frame_data->present_event.FinalState == PresentResult::Presented;
     swap_chain->cpu_0_time     = frame_data->present_event.PresentStartTime;
+    swap_chain->present_stop_0 = frame_data->present_event.PresentStopTime;
     swap_chain->gpu_duration_0 = frame_data->present_event.GPUDuration;
     swap_chain->num_presents   += 1;
 
@@ -403,15 +405,18 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
     // frame_data:      PresentStart--PresentStop--GPUDuration--ScreenTime
     // nextFrame:                                   PresentStart--PresentStop--GPUDuration--ScreenTime
     // nextNextFrame:                                                           PresentStart--PresentStop--GPUDuration--ScreenTime
-    //                  FrameTime------------------>                           GPUBusy--->  DisplayBusy---------------->
+    //                                CPUStart
+    //                                CPUBusy------>CPUWait----------------->  GPUBusy--->  DisplayBusy---------------->
     if (swap_chain->num_presents > 1) {
-      auto frameTime   = nextFramePresentStartTime - frame_data->present_event.PresentStartTime;
+      auto cpuStart    = frame_data->present_event.PresentStopTime;
+      auto cpuBusy     = nextFramePresentStartTime - cpuStart;
+      auto cpuWait     = nextFramePresentStopTime - nextFramePresentStartTime;
       auto gpuBusy     = nextFrameGPUDuration;
       auto displayBusy = nextFrameDisplayDuration;
 
-      auto frameTime_ms   = QpcDeltaToMs(frameTime,   qpc_frequency);
-      auto gpuBusy_ms     = QpcDeltaToMs(gpuBusy,     qpc_frequency);
-      auto displayBusy_ms = QpcDeltaToMs(displayBusy, qpc_frequency);
+      auto frameTime_ms   = QpcDeltaToMs(cpuBusy + cpuWait, qpc_frequency);
+      auto gpuBusy_ms     = QpcDeltaToMs(gpuBusy,           qpc_frequency);
+      auto displayBusy_ms = QpcDeltaToMs(displayBusy,       qpc_frequency);
 
       swap_chain->frame_times_ms.push_back(frameTime_ms);
       swap_chain->gpu_sum_ms.push_back(gpuBusy_ms);
