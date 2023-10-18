@@ -54,10 +54,9 @@ namespace pmid
 			Sync_();
 			return *this;
 		}
-		// uptr here
-		void PushBack(T* pObj)
+		void PushBack(std::unique_ptr<T> pObj)
 		{
-			buffer_.push_back(pObj);
+			buffer_.push_back(pObj.release());
 			Sync_();
 		}
 	private:
@@ -90,7 +89,7 @@ namespace pmid
 	{
 		Enum(PM_ENUM id_, std::string symbol, std::string description)
 		{
-			this->id = id;
+			id = id_;
 			pSymbol = new String{ std::move(symbol) };
 			pDescription = new String{ std::move(description) };
 			pKeys = new ObjArray<EnumKey>();
@@ -103,7 +102,7 @@ namespace pmid
 		}
 		void AddKey(std::unique_ptr<EnumKey> pKey)
 		{
-			Keys_().PushBack(pKey.release());
+			Keys_().PushBack(std::move(pKey));
 		}
 	private:
 		ObjArray<EnumKey>& Keys_()
@@ -124,7 +123,7 @@ namespace pmid
 		}
 		void AddEnum(std::unique_ptr<Enum> pEnum)
 		{
-			Enums_().PushBack(pEnum.release());
+			Enums_().PushBack(std::move(pEnum));
 		}
 	private:
 		ObjArray<Enum>& Enums_()
