@@ -10,7 +10,10 @@ using namespace pmid;
 bool useMockedMiddleware_ = false;
 std::unique_ptr<Middleware> pMiddleware_;
 
+// private implementation functions
 
+
+// private endpoints
 PRESENTMON_API_EXPORT void pmSetMiddlewareAsMock_(bool mocked)
 {
 	useMockedMiddleware_ = mocked;
@@ -30,6 +33,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmMiddlewareSpeak_(char* buffer)
 	}
 }
 
+// public endpoints
 PRESENTMON_API_EXPORT PM_STATUS pmOpenSession()
 {
 	try {
@@ -53,6 +57,23 @@ PRESENTMON_API_EXPORT PM_STATUS pmCloseSession()
 			return PM_STATUS_SESSION_NOT_OPEN;
 		}
 		pMiddleware_.reset();
+		return PM_STATUS_SUCCESS;
+	}
+	catch (...) {
+		return PM_STATUS_FAILURE;
+	}
+}
+
+PRESENTMON_API_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROOT** ppInterface)
+{
+	try {
+		if (!pMiddleware_) {
+			return PM_STATUS_SESSION_NOT_OPEN;
+		}
+		if (!ppInterface) {
+			return PM_STATUS_FAILURE;
+		}
+		*ppInterface = pMiddleware_->GetIntrospectionData();
 		return PM_STATUS_SUCCESS;
 	}
 	catch (...) {

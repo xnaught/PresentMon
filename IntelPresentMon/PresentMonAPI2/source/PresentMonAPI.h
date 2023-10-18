@@ -7,6 +7,8 @@
 #define PRESENTMON_API_EXPORT __declspec(dllimport)
 #endif
 
+#include <cstdint>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -18,10 +20,101 @@ extern "C" {
 		PM_STATUS_SESSION_NOT_OPEN,
 	};
 
+	enum PM_METRIC
+	{
+		PM_METRIC_DISPLAYED_FPS,
+		PM_METRIC_PRESENTED_FPS,
+		PM_METRIC_FRAME_TIME,
+		PM_METRIC_GPU_POWER,
+		PM_METRIC_CPU_UTILIZATION,
+	};
+
+	enum PM_UNIT
+	{
+		PM_UNIT_NONE,
+		PM_UNIT_FPS,
+		PM_UNIT_MILLISECONDS,
+		PM_UNIT_WATTS,
+		PM_UNIT_PERCENT,
+	};
+
+	enum PM_STAT
+	{
+		PM_STAT_AVG,
+		PM_STAT_MIN,
+		PM_STAT_MAX,
+		PM_STAT_RAW,
+	};
+
+	enum PM_DATA_TYPE
+	{
+		PM_DATA_TYPE_DOUBLE,
+		PM_DATA_TYPE_INT32,
+		PM_DATA_TYPE_UINT32,
+		PM_DATA_TYPE_ENUM,
+	};
+
+	enum PM_ENUM
+	{
+		PM_ENUM_ENUM,
+		PM_ENUM_STATUS,
+		PM_ENUM_METRIC,
+		PM_ENUM_UNIT,
+		PM_ENUM_STAT,
+		PM_ENUM_DATA_TYPE,
+	};
+
+	struct PM_INTROSPECTION_STRING
+	{
+		const char* pData;
+	};
+
+	struct PM_INTROSPECTION_OBJARRAY
+	{
+		const void** pData;
+		size_t size;
+	};
+
+	struct PM_INTROSPECTION_ENUM_KEY
+	{
+		PM_ENUM enumId;
+		int value;
+		PM_INTROSPECTION_STRING* pSymbol;
+		PM_INTROSPECTION_STRING* pName;
+		PM_INTROSPECTION_STRING* pDescription;
+	};
+
+	struct PM_INTROSPECTION_ENUM
+	{
+		PM_ENUM id;
+		PM_INTROSPECTION_STRING* pSymbol;
+		PM_INTROSPECTION_STRING* pDescription;
+		PM_INTROSPECTION_OBJARRAY* pKeys;
+	};
+
+	struct PM_INTROSPECTION_DATA_TYPE_INFO
+	{
+		PM_DATA_TYPE type;
+		PM_ENUM enumId;
+	};
+
+	struct PM_INTROSPECTION_METRIC
+	{
+		PM_METRIC id;
+		PM_UNIT unit;
+		PM_INTROSPECTION_DATA_TYPE_INFO typeInfo;
+		PM_INTROSPECTION_OBJARRAY* pStats;
+	};
+
+	struct PM_INTROSPECTION_ROOT
+	{
+		PM_INTROSPECTION_OBJARRAY* pMetrics;
+		PM_INTROSPECTION_OBJARRAY* pEnums;
+	};
 
 	PRESENTMON_API_EXPORT PM_STATUS pmOpenSession();
 	PRESENTMON_API_EXPORT PM_STATUS pmCloseSession();
-
+	PRESENTMON_API_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROOT** ppInterface);
 
 #ifdef __cplusplus
 } // extern "C"

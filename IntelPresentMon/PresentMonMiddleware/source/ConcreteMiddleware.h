@@ -8,5 +8,6 @@ namespace pmid
 	public:
 		ConcreteMiddleware();
 		void Speak(char* buffer) const override;
+		const PM_INTROSPECTION_ROOT* GetIntrospectionData() const override { return nullptr; }
 	};
 }
