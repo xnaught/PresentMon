@@ -339,102 +339,89 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
     }
   }
 
-  // Calculate the end qpc based on the current frame's qpc and
-  // requested window size coverted to a qpc
-  uint64_t end_qpc =
+  // Calculate the qpc at the beginning of the window
+  uint64_t start_qpc =
       frame_data->present_event.PresentStartTime -
       ContvertMsToQpcTicks(adjusted_window_size_in_ms, qpc_frequency.QuadPart);
-  uint64_t last_checked_qpc = frame_data->present_event.PresentStartTime;
 
+  // These are only used for logging:
+  uint64_t last_checked_qpc = frame_data->present_event.PresentStartTime;
   bool data_gathering_complete = false;
   bool decrement_failed = false;
   bool read_frame_failed = false;
+
   // Loop from the most recent frame data until we either run out of data or
   // we meet the window size requirements sent in by the client
   for (;;) {
     auto result = swap_chain_data.emplace(
         frame_data->present_event.SwapChainAddress, fps_swap_chain_data());
     auto swap_chain = &result.first->second;
-    if (result.second) {
-      // Save off the QPCTime of the latest present event
-      swap_chain->cpu_n_time = frame_data->present_event.PresentStartTime;
-      swap_chain->cpu_0_time = frame_data->present_event.PresentStartTime;
-      LARGE_INTEGER temp_large{.QuadPart = qpc_frequency.QuadPart};
-      swap_chain->gpu_sum_ms.push_back(
-          QpcDeltaToSeconds(frame_data->present_event.GPUDuration, temp_large) *
-          1000.);
-      // Initialize num_presents to 1 as we have just determined that the
-      // present event is valid
-      swap_chain->num_presents = 1;
-      swap_chain->sync_interval = frame_data->present_event.SyncInterval;
-      swap_chain->present_mode =
-          TranslatePresentMode(frame_data->present_event.PresentMode);
-      swap_chain->allows_tearing =
-          static_cast<int32_t>(frame_data->present_event.SupportsTearing);
 
-      if (frame_data->present_event.FinalState == PresentResult::Presented) {
-        swap_chain->display_n_screen_time =
-            frame_data->present_event.ScreenTime;
-        swap_chain->display_0_screen_time =
-            frame_data->present_event.ScreenTime;
-        swap_chain->display_count = 1;
-        swap_chain->dropped.push_back(0);
-      } else {
-        swap_chain->dropped.push_back(1);
-      }
-      swap_chain->displayed_fps.clear();
-    } else {
-      // Calculate the amount of time passed between the current and previous
-      // events and add it to our cumulative window size
-      double time_in_ms = QpcDeltaToMs(
-          swap_chain->cpu_0_time - frame_data->present_event.PresentStartTime,
-          qpc_frequency);
-      if (frame_data->present_event.PresentStartTime > end_qpc) {
-        // Save off the cpu fps
-        swap_chain->frame_times_ms.push_back(time_in_ms);
-        if (frame_data->present_event.FinalState == PresentResult::Presented) {
-          if (swap_chain->display_0_screen_time != 0) {
-            auto displayBusy = swap_chain->display_0_screen_time - frame_data->present_event.ScreenTime;
-            if (displayBusy > 0) {
-              // TODO(megalvan): displayBusy > 0 because observed cases with the
-              // same screen time for back to back frames.
-              time_in_ms = QpcDeltaToMs(displayBusy, qpc_frequency);
-              double fps_data = 1000.0f / time_in_ms;
-              swap_chain->displayed_fps.push_back(fps_data);
-            }
-          }
-          if (swap_chain->display_count == 0) {
-            swap_chain->display_n_screen_time =
-                frame_data->present_event.ScreenTime;
-          }
-          swap_chain->display_0_screen_time =
-              frame_data->present_event.ScreenTime;
-          swap_chain->display_count++;
-          swap_chain->dropped.push_back(0);
-        } else {
-          swap_chain->dropped.push_back(1);
-        }
-        swap_chain->cpu_0_time = frame_data->present_event.PresentStartTime;
-        LARGE_INTEGER temp_large{.QuadPart = qpc_frequency.QuadPart};
-        swap_chain->gpu_sum_ms.push_back(QpcDeltaToSeconds(
-            frame_data->present_event.GPUDuration, temp_large) * 1000.);
-        swap_chain->num_presents++;
-      } else {
-        last_checked_qpc = frame_data->present_event.PresentStartTime;
-        data_gathering_complete = true;
+    // Copy swap_chain data for the previous first frame needed for calculations below
+    auto nextFramePresentStartTime    = swap_chain->cpu_0_time;
+    auto nextDisplayedScreenTime      = swap_chain->display_0_screen_time; // only vlaid if display_count >= 1
+    auto nextDisplayedScreenTimeValid = swap_chain->display_count >= 1;
+
+    // Save current frame's properties into swap_chain (the new first frame)
+    auto frameDisplayed        = frame_data->present_event.FinalState == PresentResult::Presented;
+    swap_chain->cpu_0_time     = frame_data->present_event.PresentStartTime;
+    swap_chain->num_presents   += 1;
+
+    if (frameDisplayed) {
+      swap_chain->display_0_screen_time = frame_data->present_event.ScreenTime;
+      swap_chain->display_count         += 1;
+      if (swap_chain->display_count == 1) {
+        swap_chain->display_n_screen_time = frame_data->present_event.ScreenTime;
       }
     }
 
-    if (data_gathering_complete) {
+    // These are only saved for the last frame:
+    if (swap_chain->num_presents == 1) {
+      swap_chain->cpu_n_time     = frame_data->present_event.PresentStartTime;
+      swap_chain->sync_interval  = frame_data->present_event.SyncInterval;
+      swap_chain->present_mode   = TranslatePresentMode(frame_data->present_event.PresentMode);
+      swap_chain->allows_tearing = static_cast<int32_t>(frame_data->present_event.SupportsTearing);
+    }
+
+    // TODO: leaving this alone for now, but why is this the exit condition?
+    //
+    // e.g., we could just use "while (frame_data->present_event.PresentStartTime > start_qpc)" in
+    // the outer loop. This version will always add at least one frame_data, even if it is outside
+    // of the requested window.
+    if (swap_chain->num_presents > 1 && frame_data->present_event.PresentStartTime <= start_qpc) {
+      last_checked_qpc = frame_data->present_event.PresentStartTime;
+      data_gathering_complete = true;
       break;
+    }
+
+    // Compute metrics for this frame if we've seen enough subsequent frames to have all the
+    // required data
+    if (swap_chain->num_presents > 1) {
+      auto frameTime   = nextFramePresentStartTime - frame_data->present_event.PresentStartTime;
+      auto gpuBusy     = frame_data->present_event.GPUDuration;
+      auto displayBusy = nextDisplayedScreenTime - frame_data->present_event.ScreenTime;
+
+      auto frameTime_ms   = QpcDeltaToMs(frameTime,   qpc_frequency);
+      auto gpuBusy_ms     = QpcDeltaToMs(gpuBusy,     qpc_frequency);
+      auto displayBusy_ms = QpcDeltaToMs(displayBusy, qpc_frequency);
+
+      swap_chain->frame_times_ms.push_back(frameTime_ms);
+      swap_chain->gpu_sum_ms.push_back(gpuBusy_ms);
+      swap_chain->dropped.push_back(frameDisplayed ? 0. : 1.);
+
+      if (frameDisplayed && nextDisplayedScreenTimeValid && displayBusy > 0) {
+        // TODO(megalvan): displayBusy > 0 because observed cases with the same screen time for
+        // back to back frames.
+        swap_chain->displayed_fps.push_back(1000. / displayBusy_ms);
+      }
     }
 
     // Get the index of the next frame
     if (DecrementIndex(nsm_view, index) == false) {
-      // We have run out of data to process, time to go
       decrement_failed = true;
       break;
     }
+
     frame_data = client->ReadFrameByIdx(index);
     if (frame_data == nullptr) {
       read_frame_failed = true;
@@ -537,7 +524,7 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
     if (enable_file_logging_) {
       LOG(INFO) << api_qpc.QuadPart << "," << pair.first << ","
                 << chain.num_presents << "," << chain.display_count << ","
-                << chain.cpu_n_time << "," << chain.cpu_0_time << "," << end_qpc
+                << chain.cpu_n_time << "," << chain.cpu_0_time << "," << start_qpc
                 << "," << last_checked_qpc << "," << chain.display_n_screen_time
                 << "," << chain.display_0_screen_time << ","
                 << adjusted_window_size_in_ms << ","
