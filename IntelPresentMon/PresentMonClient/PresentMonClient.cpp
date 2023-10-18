@@ -397,16 +397,14 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
         swap_chain->frame_times_ms.push_back(time_in_ms);
         if (frame_data->present_event.FinalState == PresentResult::Presented) {
           if (swap_chain->display_0_screen_time != 0) {
-            time_in_ms = QpcDeltaToMs(swap_chain->display_0_screen_time -
-                                          frame_data->present_event.ScreenTime,
-                                      qpc_frequency);
-            // TODO(megalvan): PresentMon can return the same screen time for
-            // back to back frames. This is curious. Debug into PresentData
-            // and determine if this is accurate. For now only allow a
-            // max FPS of 5000
-            time_in_ms = std::fmax(time_in_ms, 0.2);
-            fps_data = 1000.0f / time_in_ms;
-            swap_chain->displayed_fps.push_back(fps_data);
+            auto displayBusy = swap_chain->display_0_screen_time - frame_data->present_event.ScreenTime;
+            if (displayBusy > 0) {
+              // TODO(megalvan): displayBusy > 0 because observed cases with the
+              // same screen time for back to back frames.
+              time_in_ms = QpcDeltaToMs(displayBusy, qpc_frequency);
+              fps_data = 1000.0f / time_in_ms;
+              swap_chain->displayed_fps.push_back(fps_data);
+            }
           }
           if (swap_chain->display_count == 0) {
             swap_chain->display_n_screen_time =
