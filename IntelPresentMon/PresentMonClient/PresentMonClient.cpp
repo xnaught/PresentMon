@@ -358,16 +358,19 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
     auto swap_chain = &result.first->second;
 
     // Copy swap_chain data for the previous first frame needed for calculations below
-    auto nextFramePresentStartTime    = swap_chain->cpu_0_time;
-    auto nextDisplayedScreenTime      = swap_chain->display_0_screen_time; // only vlaid if display_count >= 1
-    auto nextDisplayedScreenTimeValid = swap_chain->display_count >= 1;
+    auto nextFramePresentStartTime     = swap_chain->cpu_0_time;
+    auto nextFrameGPUDuration          = swap_chain->gpu_duration_0;
+    auto nextFrameDisplayDuration      = swap_chain->display_1_screen_time - swap_chain->display_0_screen_time;
+    auto nextFrameDisplayDurationValid = swap_chain->displayed_0 && swap_chain->display_count >= 2;
 
     // Save current frame's properties into swap_chain (the new first frame)
-    auto frameDisplayed        = frame_data->present_event.FinalState == PresentResult::Presented;
+    swap_chain->displayed_0    = frame_data->present_event.FinalState == PresentResult::Presented;
     swap_chain->cpu_0_time     = frame_data->present_event.PresentStartTime;
+    swap_chain->gpu_duration_0 = frame_data->present_event.GPUDuration;
     swap_chain->num_presents   += 1;
 
-    if (frameDisplayed) {
+    if (swap_chain->displayed_0) {
+      swap_chain->display_1_screen_time = swap_chain->display_0_screen_time;
       swap_chain->display_0_screen_time = frame_data->present_event.ScreenTime;
       swap_chain->display_count         += 1;
       if (swap_chain->display_count == 1) {
@@ -396,10 +399,15 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
 
     // Compute metrics for this frame if we've seen enough subsequent frames to have all the
     // required data
+    //
+    // frame_data:      PresentStart--PresentStop--GPUDuration--ScreenTime
+    // nextFrame:                                   PresentStart--PresentStop--GPUDuration--ScreenTime
+    // nextNextFrame:                                                           PresentStart--PresentStop--GPUDuration--ScreenTime
+    //                  FrameTime------------------>                           GPUBusy--->  DisplayBusy---------------->
     if (swap_chain->num_presents > 1) {
       auto frameTime   = nextFramePresentStartTime - frame_data->present_event.PresentStartTime;
-      auto gpuBusy     = frame_data->present_event.GPUDuration;
-      auto displayBusy = nextDisplayedScreenTime - frame_data->present_event.ScreenTime;
+      auto gpuBusy     = nextFrameGPUDuration;
+      auto displayBusy = nextFrameDisplayDuration;
 
       auto frameTime_ms   = QpcDeltaToMs(frameTime,   qpc_frequency);
       auto gpuBusy_ms     = QpcDeltaToMs(gpuBusy,     qpc_frequency);
@@ -407,9 +415,9 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
 
       swap_chain->frame_times_ms.push_back(frameTime_ms);
       swap_chain->gpu_sum_ms.push_back(gpuBusy_ms);
-      swap_chain->dropped.push_back(frameDisplayed ? 0. : 1.);
+      swap_chain->dropped.push_back(swap_chain->displayed_0 ? 0. : 1.);
 
-      if (frameDisplayed && nextDisplayedScreenTimeValid && displayBusy > 0) {
+      if (nextFrameDisplayDurationValid && displayBusy > 0) {
         // TODO(megalvan): displayBusy > 0 because observed cases with the same screen time for
         // back to back frames.
         swap_chain->displayed_fps.push_back(1000. / displayBusy_ms);
