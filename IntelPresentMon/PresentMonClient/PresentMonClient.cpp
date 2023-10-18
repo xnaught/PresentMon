@@ -468,7 +468,7 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
       current_fps_data->displayed_fps.avg = QpcDeltaToMs(
           chain.display_n_screen_time - chain.display_0_screen_time,
           qpc_frequency);
-      current_fps_data->displayed_fps.avg /= (chain.display_count - 1);
+      current_fps_data->displayed_fps.avg /= chain.display_count;
       current_fps_data->displayed_fps.avg =
           (current_fps_data->displayed_fps.avg > 0.0)
               ? 1000.0 / current_fps_data->displayed_fps.avg
@@ -483,7 +483,7 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
       current_fps_data->presented_fps.avg =
           QpcDeltaToMs(chain.cpu_n_time - chain.cpu_0_time, qpc_frequency);
       current_fps_data->presented_fps.avg =
-          current_fps_data->presented_fps.avg / (chain.num_presents - 1);
+          current_fps_data->presented_fps.avg / chain.num_presents;
       current_fps_data->presented_fps.avg = 
           (current_fps_data->presented_fps.avg > 0.0)
               ? 1000.0 / current_fps_data->presented_fps.avg
