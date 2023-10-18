@@ -369,6 +369,8 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
       swap_chain->sync_interval = frame_data->present_event.SyncInterval;
       swap_chain->present_mode =
           TranslatePresentMode(frame_data->present_event.PresentMode);
+      swap_chain->allows_tearing =
+          static_cast<int32_t>(frame_data->present_event.SupportsTearing);
 
       if (frame_data->present_event.FinalState == PresentResult::Presented) {
         swap_chain->display_n_screen_time =
