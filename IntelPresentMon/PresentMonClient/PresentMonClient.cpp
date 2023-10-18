@@ -98,27 +98,23 @@ PresentMonClient::~PresentMonClient() {
 }
 
 // Calculate percentile using linear interpolation between the closet ranks
-// method
+// data must be pre-sorted
 double PresentMonClient::GetPercentile(std::vector<double>& data,
                                        double percentile) {
+
+  percentile = max(percentile, 0.);
+
   double integral_part_as_double;
   double fractpart =
-      modf(((percentile * (static_cast<double>(data.size() - 1))) + 1),
+      modf(percentile * static_cast<double>(data.size()),
            &integral_part_as_double);
 
-  // Subtract off one from the integral_part as we are zero based and the
-  // calculation above is based one based
-  uint32_t integral_part = static_cast<uint32_t>(integral_part_as_double) - 1;
-  uint32_t next_idx = integral_part + 1;
-  // Before we access the vector data ensure that our calculated index values
-  // are not out of range
-  if (integral_part < data.size() || next_idx < data.size()) {
-    return data[integral_part] +
-           (fractpart * (data[next_idx] - data[integral_part]));
-  } else {
-    LOG(INFO) << "Invalid percentile calculation inputs detected.";
-    return 0.0f;
+  uint32_t idx = static_cast<uint32_t>(integral_part_as_double);
+  if (idx >= data.size() - 1) {
+    return data[data.size() - 1];
   }
+
+  return data[idx] + (fractpart * (data[idx + 1] - data[idx]));
 }
 
 PM_STATUS PresentMonClient::GetGfxLatencyData(
