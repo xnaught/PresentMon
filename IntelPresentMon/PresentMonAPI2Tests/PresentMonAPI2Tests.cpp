@@ -21,9 +21,9 @@ namespace PresentMonAPI2
 		return false;
 	}
 
-	TEST_CLASS(CAPITests)
+	TEST_CLASS(CAPISessionTests)
 	{
-	public:    
+	public:
 		TEST_METHOD_CLEANUP(AfterEachTestMethod)
 		{
 			pmCloseSession();
@@ -89,12 +89,22 @@ namespace PresentMonAPI2
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
 		}
+	};
+
+	TEST_CLASS(CAPIMainTests)
+	{
+	public:
+		TEST_METHOD_INITIALIZE(BeforeEachTestMethod)
+		{
+			pmSetMiddlewareAsMock_(true, true);
+			pmOpenSession();
+		}
+		TEST_METHOD_CLEANUP(AfterEachTestMethod)
+		{
+			pmCloseSession();
+		}
 		TEST_METHOD(Introspect)
 		{
-			// initialization
-			pmSetMiddlewareAsMock_(true);
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
-
 			// introspection query
 			const PM_INTROSPECTION_ROOT* pRoot{};
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
@@ -160,14 +170,9 @@ namespace PresentMonAPI2
 					Assert::AreEqual((int)PM_STAT::PM_STAT_MIN, pKey->value);
 				}
 			}
-
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
 		}
 		TEST_METHOD(FreeIntrospectionTree)
 		{
-			pmSetMiddlewareAsMock_(true, true);
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
-
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
 			const PM_INTROSPECTION_ROOT* pRoot{};
@@ -178,14 +183,9 @@ namespace PresentMonAPI2
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
-
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
 		}
 		TEST_METHOD(LeakIntrospectionTree)
 		{
-			pmSetMiddlewareAsMock_(true, true);
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
-
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
 			const PM_INTROSPECTION_ROOT* pRoot{};
@@ -197,8 +197,6 @@ namespace PresentMonAPI2
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsTrue(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
-
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
 		}
 	};
 }
