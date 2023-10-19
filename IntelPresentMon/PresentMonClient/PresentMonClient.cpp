@@ -170,10 +170,9 @@ PM_STATUS PresentMonClient::GetGfxLatencyData(
       frame_data->present_event.PresentStartTime -
       ContvertMsToQpcTicks(window_size_in_ms, qpc_frequency.QuadPart);
 
-  bool data_gathering_complete = false;
   // Loop from the most recent frame data until we either run out of data or we
   // meet the window size requirements sent in by the client
-  for (;;) {
+  while (frame_data->present_event.PresentStartTime > end_qpc) {
     auto result = swap_chain_data.emplace(
         frame_data->present_event.SwapChainAddress, fps_swap_chain_data());
     auto swap_chain = &result.first->second;
@@ -184,8 +183,7 @@ PM_STATUS PresentMonClient::GetGfxLatencyData(
       swap_chain->render_latency_ms.clear();
       swap_chain->num_presents = 1;
     } else {
-      if (frame_data->present_event.PresentStartTime > end_qpc) {
-        if (frame_data->present_event.FinalState == PresentResult::Presented) {
+      if (frame_data->present_event.FinalState == PresentResult::Presented) {
           double current_render_latency_ms = 0.0;
           double current_display_latency_ms = 0.0;
 
@@ -218,16 +216,9 @@ PM_STATUS PresentMonClient::GetGfxLatencyData(
               frame_data->present_event.ScreenTime -
               frame_data->present_event.PresentStartTime;
           swap_chain->display_count++;
-        }
-        swap_chain->cpu_0_time = frame_data->present_event.PresentStartTime;
-        swap_chain->num_presents++;
-      } else {
-        data_gathering_complete = true;
       }
-    }
-
-    if (data_gathering_complete) {
-      break;
+      swap_chain->cpu_0_time = frame_data->present_event.PresentStartTime;
+      swap_chain->num_presents++;
     }
 
     // Get the index of the next frame
@@ -339,20 +330,20 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
     }
   }
 
-  // Calculate the qpc at the beginning of the window
-  uint64_t start_qpc =
+  // Calculate the end qpc based on the current frame's qpc and
+  // requested window size coverted to a qpc
+  uint64_t end_qpc =
       frame_data->present_event.PresentStartTime -
       ContvertMsToQpcTicks(adjusted_window_size_in_ms, qpc_frequency.QuadPart);
 
   // These are only used for logging:
   uint64_t last_checked_qpc = frame_data->present_event.PresentStartTime;
-  bool data_gathering_complete = false;
   bool decrement_failed = false;
   bool read_frame_failed = false;
 
   // Loop from the most recent frame data until we either run out of data or
   // we meet the window size requirements sent in by the client
-  for (;;) {
+  while (frame_data->present_event.PresentStartTime > end_qpc) {
     auto result = swap_chain_data.emplace(
         frame_data->present_event.SwapChainAddress, fps_swap_chain_data());
     auto swap_chain = &result.first->second;
@@ -388,17 +379,6 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
       swap_chain->allows_tearing = static_cast<int32_t>(frame_data->present_event.SupportsTearing);
     }
 
-    // TODO: leaving this alone for now, but why is this the exit condition?
-    //
-    // e.g., we could just use "while (frame_data->present_event.PresentStartTime > start_qpc)" in
-    // the outer loop. This version will always add at least one frame_data, even if it is outside
-    // of the requested window.
-    if (swap_chain->num_presents > 1 && frame_data->present_event.PresentStartTime <= start_qpc) {
-      last_checked_qpc = frame_data->present_event.PresentStartTime;
-      data_gathering_complete = true;
-      break;
-    }
-
     // Compute metrics for this frame if we've seen enough subsequent frames to have all the
     // required data
     //
@@ -431,10 +411,10 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
 
     // Get the index of the next frame
     if (DecrementIndex(nsm_view, index) == false) {
+      // We have run out of data to process, time to go
       decrement_failed = true;
       break;
     }
-
     frame_data = client->ReadFrameByIdx(index);
     if (frame_data == nullptr) {
       read_frame_failed = true;
@@ -537,14 +517,14 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
     if (enable_file_logging_) {
       LOG(INFO) << api_qpc.QuadPart << "," << pair.first << ","
                 << chain.num_presents << "," << chain.display_count << ","
-                << chain.cpu_n_time << "," << chain.cpu_0_time << "," << start_qpc
+                << chain.cpu_n_time << "," << chain.cpu_0_time << "," << end_qpc
                 << "," << last_checked_qpc << "," << chain.display_n_screen_time
                 << "," << chain.display_0_screen_time << ","
                 << adjusted_window_size_in_ms << ","
-                << current_fps_data->frame_time_ms.avg << ","
+                << (1000. / current_fps_data->frame_time_ms.avg) << ","
                 << current_fps_data->frame_time_ms.raw << ","
                 << current_fps_data->displayed_fps.raw << ","
-                << data_gathering_complete << "," << decrement_failed << ","
+                << decrement_failed << ","
                 << read_frame_failed << "," << using_cache;
     }
 
