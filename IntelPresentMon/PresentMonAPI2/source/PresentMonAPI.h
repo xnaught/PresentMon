@@ -115,6 +115,7 @@ extern "C" {
 	PRESENTMON_API_EXPORT PM_STATUS pmOpenSession();
 	PRESENTMON_API_EXPORT PM_STATUS pmCloseSession();
 	PRESENTMON_API_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROOT** ppInterface);
+	PRESENTMON_API_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pInterface);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -1,18 +1,34 @@
 #include "CppUnitTest.h"
 #include "../PresentMonAPI2/source/PresentMonAPI.h"
 #include <cstring>
+#include <crtdbg.h>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-PRESENTMON_API_EXPORT void pmSetMiddlewareAsMock_(bool mocked);
+PRESENTMON_API_EXPORT void pmSetMiddlewareAsMock_(bool mocked, bool useCrtHeapDebug = false);
+PRESENTMON_API_EXPORT _CrtMemState pmCreateHeapCheckpoint_();
 PRESENTMON_API_EXPORT PM_STATUS pmMiddlewareSpeak_(char* buffer);
 
 namespace PresentMonAPI2
 {
+	bool CrtDiffHasMemoryLeaks(const _CrtMemState& before, const _CrtMemState& after) {
+		_CrtMemState difference;
+		if (_CrtMemDifference(&difference, &before, &after)) {
+			if (difference.lCounts[_NORMAL_BLOCK] > 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	TEST_CLASS(CAPITests)
 	{
-	public:		
-		TEST_METHOD(OpenMockSession)
+	public:    
+		TEST_METHOD_CLEANUP(AfterEachTestMethod)
+		{
+			pmCloseSession();
+		}
+		TEST_METHOD(OpenAndCloseMockSession)
 		{
 			char buffer[256]{};
 
@@ -23,7 +39,7 @@ namespace PresentMonAPI2
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
 			Assert::AreEqual((int)PM_STATUS_SESSION_NOT_OPEN, (int)pmMiddlewareSpeak_(buffer));
 		}
-		TEST_METHOD(OpenConcreteSession)
+		TEST_METHOD(OpenAndCloseConcreteSession)
 		{
 			char buffer[256]{};
 
@@ -37,9 +53,41 @@ namespace PresentMonAPI2
 		{
 			char buffer[256]{};
 
+			pmSetMiddlewareAsMock_(true);
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
 			Assert::AreEqual((int)PM_STATUS_SESSION_NOT_OPEN, (int)pmMiddlewareSpeak_(buffer));
+		}
+		TEST_METHOD(OpenAndCloseWithoutLeak)
+		{
+			pmSetMiddlewareAsMock_(true, true);
+			const auto heapBefore = pmCreateHeapCheckpoint_();
+
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
+
+			const auto heapAfter = pmCreateHeapCheckpoint_();
+			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
+		}
+		TEST_METHOD(OpenWithoutCloseCausesLeak)
+		{
+			pmSetMiddlewareAsMock_(true, true);
+			const auto heapBefore = pmCreateHeapCheckpoint_();
+
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
+
+			const auto heapAfter = pmCreateHeapCheckpoint_();
+			Assert::IsTrue(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
+		}
+		TEST_METHOD(LeaksArentDetectedWithoutMockSetting)
+		{
+			pmSetMiddlewareAsMock_(true, false);
+			const auto heapBefore = pmCreateHeapCheckpoint_();
+
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
+
+			const auto heapAfter = pmCreateHeapCheckpoint_();
+			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
 		}
 		TEST_METHOD(Introspect)
 		{
@@ -112,6 +160,43 @@ namespace PresentMonAPI2
 					Assert::AreEqual((int)PM_STAT::PM_STAT_MIN, pKey->value);
 				}
 			}
+
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
+		}
+		TEST_METHOD(FreeIntrospectionTree)
+		{
+			pmSetMiddlewareAsMock_(true, true);
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
+
+			const auto heapBefore = pmCreateHeapCheckpoint_();
+
+			const PM_INTROSPECTION_ROOT* pRoot{};
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
+			Assert::IsNotNull(pRoot);
+
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
+
+			const auto heapAfter = pmCreateHeapCheckpoint_();
+			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
+
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
+		}
+		TEST_METHOD(LeakIntrospectionTree)
+		{
+			pmSetMiddlewareAsMock_(true, true);
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
+
+			const auto heapBefore = pmCreateHeapCheckpoint_();
+
+			const PM_INTROSPECTION_ROOT* pRoot{};
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
+			Assert::IsNotNull(pRoot);
+
+			// normally we would free the linked structure here via its root
+			// Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
+
+			const auto heapAfter = pmCreateHeapCheckpoint_();
+			Assert::IsTrue(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
 
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
 		}

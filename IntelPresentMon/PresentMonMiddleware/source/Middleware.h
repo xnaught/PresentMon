@@ -9,5 +9,6 @@ namespace pmid
 		virtual ~Middleware() = default;
 		virtual void Speak(char* buffer) const = 0;
 		virtual const PM_INTROSPECTION_ROOT* GetIntrospectionData() const = 0;
+		virtual void FreeIntrospectionData(const PM_INTROSPECTION_ROOT* pRoot) const = 0;
 	};
 }

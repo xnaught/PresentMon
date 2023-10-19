@@ -148,5 +148,10 @@ namespace pmid
 		pEnum2->AddKey(std::make_unique<EnumKey>(PM_ENUM::PM_ENUM_STAT, PM_STAT::PM_STAT_MIN, "PM_STAT_MIN", "Minimum", "Minimum value of metric samples within a sliding window."));
 		pRoot->AddEnum(std::move(pEnum2));
 		return pRoot.release();
+	}	
+
+	void MockMiddleware::FreeIntrospectionData(const PM_INTROSPECTION_ROOT* pRoot) const
+	{
+		delete static_cast<const IntrospectionRoot*>(pRoot);
 	}
 }
