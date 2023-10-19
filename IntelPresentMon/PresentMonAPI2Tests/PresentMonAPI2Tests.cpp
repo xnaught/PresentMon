@@ -43,21 +43,46 @@ namespace PresentMonAPI2
 		}
 		TEST_METHOD(Introspect)
 		{
+			// initialization
 			pmSetMiddlewareAsMock_(true);
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
+
+			// introspection query
 			const PM_INTROSPECTION_ROOT* pRoot{};
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
 			Assert::IsNotNull(pRoot);
-			Assert::AreEqual(1ull, pRoot->pEnums->size);
-			auto pEnum = static_cast<const PM_INTROSPECTION_ENUM*>(pRoot->pEnums->pData[0]);
-			Assert::IsNotNull(pEnum);
-			Assert::IsNotNull(pEnum->pSymbol);
-			Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
-			Assert::AreEqual(1ull, pEnum->pKeys->size);
-			auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
-			Assert::IsNotNull(pKey);
-			Assert::IsNotNull(pKey->pSymbol);
-			Assert::AreEqual("PM_UNIT_FPS", pKey->pSymbol->pData);
+			Assert::AreEqual(2ull, pRoot->pEnums->size);
+
+			// checking 1st enum
+			{
+				auto pEnum = static_cast<const PM_INTROSPECTION_ENUM*>(pRoot->pEnums->pData[0]);
+				Assert::IsNotNull(pEnum);
+				Assert::IsNotNull(pEnum->pSymbol);
+				Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
+				Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
+				Assert::AreEqual(2ull, pEnum->pKeys->size);
+				// 1st key
+				{
+					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
+					Assert::IsNotNull(pKey);
+					Assert::IsNotNull(pKey->pSymbol);
+					Assert::AreEqual("PM_UNIT_FPS", pKey->pSymbol->pData);
+					Assert::AreEqual("FPS", pKey->pName->pData);
+					Assert::AreEqual((int)PM_ENUM_UNIT, (int)pKey->enumId);
+					Assert::AreEqual((int)PM_UNIT::PM_UNIT_FPS, pKey->value);
+				}
+				// 2nd key
+				{
+					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[1]);
+					Assert::IsNotNull(pKey);
+					Assert::IsNotNull(pKey->pSymbol);
+					Assert::AreEqual("PM_UNIT_WATTS", pKey->pSymbol->pData);
+					Assert::AreEqual("Watts", pKey->pName->pData);
+					Assert::AreEqual((int)PM_ENUM_UNIT, (int)pKey->enumId);
+					Assert::AreEqual((int)PM_UNIT::PM_UNIT_WATTS, pKey->value);
+				}
+			}
+
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
 		}
 	};

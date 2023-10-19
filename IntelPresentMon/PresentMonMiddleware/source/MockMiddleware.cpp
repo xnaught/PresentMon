@@ -140,8 +140,13 @@ namespace pmid
 	{
 		auto pRoot = std::make_unique<IntrospectionRoot>();
 		auto pEnum1 = std::make_unique<Enum>(PM_ENUM::PM_ENUM_UNIT, "PM_UNIT", "Units of measurement for metrics");
-		pEnum1->AddKey(std::make_unique<EnumKey>(PM_ENUM::PM_ENUM_UNIT, PM_UNIT::PM_UNIT_FPS, "PM_UNIT_FPS", "Frames Per Second", "Rate of application frames being presented per unit time"));
+		pEnum1->AddKey(std::make_unique<EnumKey>(PM_ENUM::PM_ENUM_UNIT, PM_UNIT::PM_UNIT_FPS, "PM_UNIT_FPS", "FPS", "Rate of application frames being presented per unit time"));
+		pEnum1->AddKey(std::make_unique<EnumKey>(PM_ENUM::PM_ENUM_UNIT, PM_UNIT::PM_UNIT_WATTS, "PM_UNIT_WATTS", "Watts", "Power in watts (Joules per second)"));
 		pRoot->AddEnum(std::move(pEnum1));
+		auto pEnum2 = std::make_unique<Enum>(PM_ENUM::PM_ENUM_STAT, "PM_STAT", "Statistical derivatives of metrics, as well as the raw unprocessed metric.");
+		pEnum2->AddKey(std::make_unique<EnumKey>(PM_ENUM::PM_ENUM_STAT, PM_STAT::PM_STAT_AVG, "PM_STAT_AVG", "Average", "Average (mean) value of metric samples as calculated over a sliding window."));
+		pEnum2->AddKey(std::make_unique<EnumKey>(PM_ENUM::PM_ENUM_STAT, PM_STAT::PM_STAT_MIN, "PM_STAT_MIN", "Minimum", "Minimum value of metric samples within a sliding window."));
+		pRoot->AddEnum(std::move(pEnum2));
 		return pRoot.release();
 	}
 }
