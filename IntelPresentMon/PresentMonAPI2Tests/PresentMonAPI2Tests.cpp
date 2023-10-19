@@ -19,7 +19,7 @@ namespace PresentMonAPI2
 			pmSetMiddlewareAsMock_(true);
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmMiddlewareSpeak_(buffer));
-			Assert::AreEqual(0, strcmp("mock-middle", buffer));
+			Assert::AreEqual("mock-middle", buffer);
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
 			Assert::AreEqual((int)PM_STATUS_SESSION_NOT_OPEN, (int)pmMiddlewareSpeak_(buffer));
 		}
@@ -30,7 +30,7 @@ namespace PresentMonAPI2
 			pmSetMiddlewareAsMock_(false);
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmMiddlewareSpeak_(buffer));
-			Assert::AreEqual(0, strcmp("concrete-middle", buffer));
+			Assert::AreEqual("concrete-middle", buffer);
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
 		}
 		TEST_METHOD(FailUsingClosedSession)
@@ -52,12 +52,12 @@ namespace PresentMonAPI2
 			auto pEnum = static_cast<const PM_INTROSPECTION_ENUM*>(pRoot->pEnums->pData[0]);
 			Assert::IsNotNull(pEnum);
 			Assert::IsNotNull(pEnum->pSymbol);
-			Assert::AreEqual(0, strcmp("PM_UNIT", pEnum->pSymbol->pData));
+			Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
 			Assert::AreEqual(1ull, pEnum->pKeys->size);
 			auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
 			Assert::IsNotNull(pKey);
 			Assert::IsNotNull(pKey->pSymbol);
-			Assert::AreEqual(0, strcmp("PM_UNIT_FPS", pKey->pSymbol->pData));
+			Assert::AreEqual("PM_UNIT_FPS", pKey->pSymbol->pData);
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
 		}
 	};
