@@ -30,7 +30,8 @@ namespace pmid
 		std::string buffer_;
 	};
 	// implement intro objarr
-	template<class T> struct ObjArray : PM_INTROSPECTION_OBJARRAY
+	template<class T>
+	struct ObjArray : PM_INTROSPECTION_OBJARRAY
 	{
 		ObjArray()
 			:

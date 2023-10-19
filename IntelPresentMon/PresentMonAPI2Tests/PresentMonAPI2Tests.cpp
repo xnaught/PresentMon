@@ -11,7 +11,8 @@ PRESENTMON_API_EXPORT PM_STATUS pmMiddlewareSpeak_(char* buffer);
 
 namespace PresentMonAPI2
 {
-	bool CrtDiffHasMemoryLeaks(const _CrtMemState& before, const _CrtMemState& after) {
+	bool CrtDiffHasMemoryLeaks(const _CrtMemState& before, const _CrtMemState& after)
+	{
 		_CrtMemState difference;
 		if (_CrtMemDifference(&difference, &before, &after)) {
 			if (difference.lCounts[_NORMAL_BLOCK] > 0) {
@@ -103,6 +104,33 @@ namespace PresentMonAPI2
 		{
 			pmCloseSession();
 		}
+		TEST_METHOD(FreeIntrospectionTree)
+		{
+			const auto heapBefore = pmCreateHeapCheckpoint_();
+
+			const PM_INTROSPECTION_ROOT* pRoot{};
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
+			Assert::IsNotNull(pRoot);
+
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
+
+			const auto heapAfter = pmCreateHeapCheckpoint_();
+			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
+		}
+		TEST_METHOD(LeakIntrospectionTree)
+		{
+			const auto heapBefore = pmCreateHeapCheckpoint_();
+
+			const PM_INTROSPECTION_ROOT* pRoot{};
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
+			Assert::IsNotNull(pRoot);
+
+			// normally we would free the linked structure here via its root
+			// Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
+
+			const auto heapAfter = pmCreateHeapCheckpoint_();
+			Assert::IsTrue(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
+		}
 		TEST_METHOD(Introspect)
 		{
 			// introspection query
@@ -170,33 +198,8 @@ namespace PresentMonAPI2
 					Assert::AreEqual((int)PM_STAT::PM_STAT_MIN, pKey->value);
 				}
 			}
-		}
-		TEST_METHOD(FreeIntrospectionTree)
-		{
-			const auto heapBefore = pmCreateHeapCheckpoint_();
-
-			const PM_INTROSPECTION_ROOT* pRoot{};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
-			Assert::IsNotNull(pRoot);
 
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
-
-			const auto heapAfter = pmCreateHeapCheckpoint_();
-			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
-		}
-		TEST_METHOD(LeakIntrospectionTree)
-		{
-			const auto heapBefore = pmCreateHeapCheckpoint_();
-
-			const PM_INTROSPECTION_ROOT* pRoot{};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
-			Assert::IsNotNull(pRoot);
-
-			// normally we would free the linked structure here via its root
-			// Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
-
-			const auto heapAfter = pmCreateHeapCheckpoint_();
-			Assert::IsTrue(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
 		}
 	};
 }
