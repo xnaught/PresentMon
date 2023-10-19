@@ -480,10 +480,10 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
       // matches the current CalculateMetricDoubleData() implementation.
 
       auto MillisecondsToFPS = [](double ms) { return ms == 0. ? 0. : 1000. / ms; };
-      current_fps_data->presented_fps.avg           = MillisecondsToFPS(current_fps_data->presented_fps.avg);
-      current_fps_data->presented_fps.raw           = MillisecondsToFPS(current_fps_data->presented_fps.raw);
-      current_fps_data->presented_fps.low           = MillisecondsToFPS(current_fps_data->presented_fps.high);
-      current_fps_data->presented_fps.high          = MillisecondsToFPS(current_fps_data->presented_fps.low);
+      current_fps_data->presented_fps.avg           = MillisecondsToFPS(current_fps_data->frame_time_ms.avg);
+      current_fps_data->presented_fps.raw           = MillisecondsToFPS(current_fps_data->frame_time_ms.raw);
+      current_fps_data->presented_fps.low           = MillisecondsToFPS(current_fps_data->frame_time_ms.high);
+      current_fps_data->presented_fps.high          = MillisecondsToFPS(current_fps_data->frame_time_ms.low);
       current_fps_data->presented_fps.percentile_99 = MillisecondsToFPS(GetPercentile(chain.frame_times_ms, 0.99));
       current_fps_data->presented_fps.percentile_95 = MillisecondsToFPS(GetPercentile(chain.frame_times_ms, 0.95));
       current_fps_data->presented_fps.percentile_90 = MillisecondsToFPS(GetPercentile(chain.frame_times_ms, 0.90));
