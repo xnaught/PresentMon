@@ -133,9 +133,26 @@ namespace pmid
 		}
 	};
 	// implement enum annotation mechanics
+	#define ENUM_KEY_LIST_PM_UNIT \
+		X_(PM_UNIT_DIMENSIONLESS, "", "Dimensionless metric") \
+		X_(PM_UNIT_FPS, "FPS", "Rate of application frames being presented per unit time") \
+		X_(PM_UNIT_MILLISECONDS, "ms", "Time duration in milliseconds") \
+		X_(PM_UNIT_WATTS, "Watts", "Power in watts (Joules per second)") \
+		X_(PM_UNIT_PERCENT, "%", "Proportion or ratio represented as a fraction of 100")
+
+	// invoke key list by concatenating with symbol from x macro list of master enum
+	// switch on master will tell us whether all enums are registered
+
 	// warning when not all enum keys are used in a switch
-
-
+	std::unique_ptr<EnumKey> GetKeyMetadata(PM_UNIT key)
+	{
+		switch (key) {
+#define X_(key, name, description) case key: return std::make_unique<EnumKey>(PM_ENUM_UNIT, key, #key, name, description);
+		ENUM_KEY_LIST_PM_UNIT
+#undef X_
+		}
+		return {};
+	}
 
 	const PM_INTROSPECTION_ROOT* MockMiddleware::GetIntrospectionData() const
 	{
