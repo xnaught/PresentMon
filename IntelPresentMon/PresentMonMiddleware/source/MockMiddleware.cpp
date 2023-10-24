@@ -134,19 +134,19 @@ namespace pmid
 	};
 
 	// implement enum annotation mechanics
-	#define ENUM_KEY_LIST_PM_UNIT(X_) \
-		X_(PM_UNIT_DIMENSIONLESS, "", "Dimensionless metric") \
-		X_(PM_UNIT_FPS, "FPS", "Rate of application frames being presented per unit time") \
-		X_(PM_UNIT_MILLISECONDS, "ms", "Time duration in milliseconds") \
-		X_(PM_UNIT_WATTS, "Watts", "Power in watts (Joules per second)") \
-		X_(PM_UNIT_PERCENT, "%", "Proportion or ratio represented as a fraction of 100")
-	#define ENUM_KEY_LIST_PM_STATUS(X_) \
-		X_(PM_STATUS_SUCCESS, "Success", "Operation succeeded") \
-		X_(PM_STATUS_FAILURE, "Failure", "Operation failed") \
-		X_(PM_STATUS_SESSION_NOT_OPEN, "Session Not Open", "Operation failed because session was not open")
-	#define ENUM_KEY_LIST_PM_ENUM(X_) \
-		X_(PM_ENUM_STATUS, "Statuses", "List of all status/error codes returned by API functions") \
-		X_(PM_ENUM_UNIT, "Units", "List of all units of measure used for metrics")
+	#define ENUM_KEY_LIST_UNIT(X_) \
+		X_(UNIT, DIMENSIONLESS, "", "Dimensionless metric") \
+		X_(UNIT, FPS, "FPS", "Rate of application frames being presented per unit time") \
+		X_(UNIT, MILLISECONDS, "ms", "Time duration in milliseconds") \
+		X_(UNIT, WATTS, "Watts", "Power in watts (Joules per second)") \
+		X_(UNIT, PERCENT, "%", "Proportion or ratio represented as a fraction of 100")
+	#define ENUM_KEY_LIST_STATUS(X_) \
+		X_(STATUS, SUCCESS, "Success", "Operation succeeded") \
+		X_(STATUS, FAILURE, "Failure", "Operation failed") \
+		X_(STATUS, SESSION_NOT_OPEN, "Session Not Open", "Operation failed because session was not open")
+	#define ENUM_KEY_LIST_ENUM(X_) \
+		X_(ENUM, STATUS, "Statuses", "List of all status/error codes returned by API functions") \
+		X_(ENUM, UNIT, "Units", "List of all units of measure used for metrics")
 	
 	// invoke key list by concatenating with symbol from x macro list of master enum
 	// switch on master will tell us whether all enums are registered
@@ -154,9 +154,9 @@ namespace pmid
 	// function not reference or called, but compiling this allows compiler to check if all enums/enum keys have coverage
 	bool ValidateEnumCompleteness()
 	{
-		switch (PM_UNIT::PM_UNIT_DIMENSIONLESS) {
-#define X(key, name, description) case key: return false;
-		ENUM_KEY_LIST_PM_UNIT(X)
+		switch (PM_UNIT_DIMENSIONLESS) {
+#define X(enum_frag, key_frag, name, description) case PM_##enum_frag##_##key_frag: return false;
+		ENUM_KEY_LIST_UNIT(X)
 #undef X
 		}
 		return true;
@@ -164,17 +164,14 @@ namespace pmid
 
 #define XSTR_(macro) #macro
 #define STRINGIFY_MACRO_CALL(macro) XSTR_(macro)
-#define MAKE_MASTER_SYMBOL(base_symbol) PM_ENUM_ ## base_symbol
-#define MAKE_ENUM_SYMBOL(base_symbol) PM_ ## base_symbol
-#define CREATE_INTROSPECTION_ENUM(base_symbol, description) \
-	[=]() { \
-		auto pEnum = std::make_unique<Enum>(MAKE_MASTER_SYMBOL(base_symbol), STRINGIFY_MACRO_CALL(MAKE_ENUM_SYMBOL(base_symbol)), description); \
-		return pEnum; \
-	}()
-#define MAKE_LIST_SYMBOL(base_symbol) ENUM_KEY_LIST_PM_ ## base_symbol
-#define REGISTER_ENUM_KEY(p_enum_obj, base_symbol, key_symbol, name, description) p_enum_obj->AddKey(std::make_unique<EnumKey>(MAKE_MASTER_SYMBOL(base_symbol), key_symbol, #key_symbol, name, description))
+#define MAKE_MASTER_SYMBOL(enum_frag) PM_ENUM_##enum_frag
+#define MAKE_ENUM_SYMBOL(enum_frag) PM_##enum_frag
+#define CREATE_INTROSPECTION_ENUM(enum_frag, description) \
+	std::make_unique<Enum>(MAKE_MASTER_SYMBOL(enum_frag), STRINGIFY_MACRO_CALL(MAKE_ENUM_SYMBOL(enum_frag)), description)
+#define MAKE_LIST_SYMBOL(enum_frag) ENUM_KEY_LIST_##enum_frag
+#define MAKE_KEY_SYMBOL(enum_frag, key_frag) PM_##enum_frag##_##key_frag
+#define REGISTER_ENUM_KEY(p_enum_obj, enum_frag, key_frag, name, description) p_enum_obj->AddKey(std::make_unique<EnumKey>(MAKE_MASTER_SYMBOL(enum_frag), MAKE_KEY_SYMBOL(enum_frag, key_frag), STRINGIFY_MACRO_CALL(MAKE_KEY_SYMBOL(enum_frag, key_frag)), name, description))
 
-	// todo: x-macro invocation register all keys
 	// todo: x-macro invocation register all enums
 
 	const PM_INTROSPECTION_ROOT* MockMiddleware::GetIntrospectionData() const
@@ -190,9 +187,9 @@ namespace pmid
 		pRoot->AddEnum(std::move(pEnum2));
 
 		auto pEnum3 = CREATE_INTROSPECTION_ENUM(UNIT, "units of measure");
-#define X(key, name, description) REGISTER_ENUM_KEY(pEnum3, UNIT, key, name, description);
-		ENUM_KEY_LIST_PM_UNIT(X)
-#undef X
+#define X_REG_KEYS(enum_frag, key_frag, name, description) REGISTER_ENUM_KEY(pEnum3, enum_frag, key_frag, name, description);
+		ENUM_KEY_LIST_UNIT(X_REG_KEYS)
+#undef X_REG_KEYS
 		pRoot->AddEnum(std::move(pEnum3));
 		return pRoot.release();
 	}	
