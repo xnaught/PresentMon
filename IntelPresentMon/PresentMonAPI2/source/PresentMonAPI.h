@@ -56,7 +56,6 @@ extern "C" {
 
 	enum PM_ENUM
 	{
-		PM_ENUM_ENUM,
 		PM_ENUM_STATUS,
 		PM_ENUM_METRIC,
 		PM_ENUM_UNIT,

@@ -151,17 +151,6 @@ namespace pmid
 	// invoke key list by concatenating with symbol from x macro list of master enum
 	// switch on master will tell us whether all enums are registered
 
-	// function not reference or called, but compiling this allows compiler to check if all enums/enum keys have coverage
-	bool ValidateEnumCompleteness()
-	{
-		switch (PM_UNIT_DIMENSIONLESS) {
-#define X(enum_frag, key_frag, name, description) case PM_##enum_frag##_##key_frag: return false;
-		ENUM_KEY_LIST_UNIT(X)
-#undef X
-		}
-		return true;
-	}
-
 #define XSTR_(macro) #macro
 #define STRINGIFY_MACRO_CALL(macro) XSTR_(macro)
 #define MAKE_MASTER_SYMBOL(enum_frag) PM_ENUM_##enum_frag
@@ -172,19 +161,32 @@ namespace pmid
 #define MAKE_KEY_SYMBOL(enum_frag, key_frag) PM_##enum_frag##_##key_frag
 #define REGISTER_ENUM_KEY(p_enum_obj, enum_frag, key_frag, name, description) p_enum_obj->AddKey(std::make_unique<EnumKey>(MAKE_MASTER_SYMBOL(enum_frag), MAKE_KEY_SYMBOL(enum_frag, key_frag), STRINGIFY_MACRO_CALL(MAKE_KEY_SYMBOL(enum_frag, key_frag)), name, description))
 
-	// todo: x-macro invocation register all enums
+	// function not reference or called, but compiling this allows compiler to check if all enums/enum keys have coverage
+	bool ValidateEnumCompleteness()
+	{
+		// validate each registered enum's keys
+#define X_REG_KEYS(enum_frag, key_frag, name, description) case MAKE_KEY_SYMBOL(enum_frag, key_frag): return false;
+#define X_REG_ENUMS(master_frag, enum_frag, name, description) \
+		switch (MAKE_ENUM_SYMBOL(enum_frag)(0)) { \
+			MAKE_LIST_SYMBOL(enum_frag)(X_REG_KEYS) \
+		}
+
+		ENUM_KEY_LIST_ENUM(X_REG_ENUMS)
+
+#undef X_REG_ENUMS
+#undef X_REG_KEYS
+		// validate the enumeration that records introspectable enums
+#define X_REG_KEYS(enum_frag, key_frag, name, description) case MAKE_KEY_SYMBOL(enum_frag, key_frag): return false;
+		switch (PM_ENUM(0)) {
+			ENUM_KEY_LIST_ENUM(X_REG_KEYS)
+		}
+#undef X_REG_KEYS
+		return true;
+	}
 
 	const PM_INTROSPECTION_ROOT* MockMiddleware::GetIntrospectionData() const
 	{		
 		auto pRoot = std::make_unique<IntrospectionRoot>();
-		auto pEnum1 = std::make_unique<Enum>(PM_ENUM::PM_ENUM_UNIT, "PM_UNIT", "Units of measurement for metrics");
-		pEnum1->AddKey(std::make_unique<EnumKey>(PM_ENUM::PM_ENUM_UNIT, PM_UNIT::PM_UNIT_FPS, "PM_UNIT_FPS", "FPS", "Rate of application frames being presented per unit time"));
-		pEnum1->AddKey(std::make_unique<EnumKey>(PM_ENUM::PM_ENUM_UNIT, PM_UNIT::PM_UNIT_WATTS, "PM_UNIT_WATTS", "Watts", "Power in watts (Joules per second)"));
-		pRoot->AddEnum(std::move(pEnum1));
-		auto pEnum2 = std::make_unique<Enum>(PM_ENUM::PM_ENUM_STAT, "PM_STAT", "Statistical derivatives of metrics, as well as the raw unprocessed metric.");
-		pEnum2->AddKey(std::make_unique<EnumKey>(PM_ENUM::PM_ENUM_STAT, PM_STAT::PM_STAT_AVG, "PM_STAT_AVG", "Average", "Average (mean) value of metric samples as calculated over a sliding window."));
-		pEnum2->AddKey(std::make_unique<EnumKey>(PM_ENUM::PM_ENUM_STAT, PM_STAT::PM_STAT_MIN, "PM_STAT_MIN", "Minimum", "Minimum value of metric samples within a sliding window."));
-		pRoot->AddEnum(std::move(pEnum2));
 
 #define X_REG_KEYS(enum_frag, key_frag, name, description) REGISTER_ENUM_KEY(pEnum, enum_frag, key_frag, name, description);
 #define X_REG_ENUMS(master_frag, enum_frag, name, description) { \
