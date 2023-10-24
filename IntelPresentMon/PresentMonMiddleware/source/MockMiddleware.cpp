@@ -132,6 +132,7 @@ namespace pmid
 			return *static_cast<ObjArray<Enum>*>(pEnums);
 		}
 	};
+
 	// implement enum annotation mechanics
 	#define ENUM_KEY_LIST_PM_UNIT \
 		X_(PM_UNIT_DIMENSIONLESS, "", "Dimensionless metric") \
@@ -139,23 +140,39 @@ namespace pmid
 		X_(PM_UNIT_MILLISECONDS, "ms", "Time duration in milliseconds") \
 		X_(PM_UNIT_WATTS, "Watts", "Power in watts (Joules per second)") \
 		X_(PM_UNIT_PERCENT, "%", "Proportion or ratio represented as a fraction of 100")
+	#define ENUM_KEY_LIST_PM_STATUS \
+		X_(PM_STATUS_SUCCESS, "Success", "Operation succeeded") \
+		X_(PM_STATUS_FAILURE, "Failure", "Operation failed") \
+		X_(PM_STATUS_SESSION_NOT_OPEN, "Session Not Open", "Operation failed because session was not open")
 
 	// invoke key list by concatenating with symbol from x macro list of master enum
 	// switch on master will tell us whether all enums are registered
 
-	// warning when not all enum keys are used in a switch
-	std::unique_ptr<EnumKey> GetKeyMetadata(PM_UNIT key)
+	// function not reference or called, but compiling this allows compiler to check if all enums/enum keys have coverage
+	bool ValidateEnumCompleteness()
 	{
-		switch (key) {
-#define X_(key, name, description) case key: return std::make_unique<EnumKey>(PM_ENUM_UNIT, key, #key, name, description);
+		switch (PM_UNIT::PM_UNIT_DIMENSIONLESS) {
+#define X_(key, name, description) case key: return false;
 		ENUM_KEY_LIST_PM_UNIT
 #undef X_
 		}
-		return {};
+		return true;
 	}
 
+#define XSTR_(macro) #macro
+#define STRINGIFY_MACRO_CALL(macro) XSTR_(macro)
+#define MAKE_MASTER_SYMBOL(base_symbol) PM_ENUM_ ## base_symbol
+#define MAKE_ENUM_SYMBOL(base_symbol) PM_ ## base_symbol
+#define CREATE_INTROSPECTION_ENUM(base_symbol, description) \
+	[=]() { \
+		auto pEnum = std::make_unique<Enum>(MAKE_MASTER_SYMBOL(base_symbol), STRINGIFY_MACRO_CALL(MAKE_ENUM_SYMBOL(base_symbol)), description); \
+		return pEnum; \
+	}()
+#define MAKE_LIST_SYMBOL(base_symbol) ENUM_KEY_LIST_PM_ ## base_symbol
+#define REGISTER_ENUM_KEY(p_enum_obj, base_symbol, key_symbol, name, description) p_enum_obj->AddKey(std::make_unique<EnumKey>(MAKE_MASTER_SYMBOL(base_symbol), key_symbol, #key_symbol, name, description))
+
 	const PM_INTROSPECTION_ROOT* MockMiddleware::GetIntrospectionData() const
-	{
+	{		
 		auto pRoot = std::make_unique<IntrospectionRoot>();
 		auto pEnum1 = std::make_unique<Enum>(PM_ENUM::PM_ENUM_UNIT, "PM_UNIT", "Units of measurement for metrics");
 		pEnum1->AddKey(std::make_unique<EnumKey>(PM_ENUM::PM_ENUM_UNIT, PM_UNIT::PM_UNIT_FPS, "PM_UNIT_FPS", "FPS", "Rate of application frames being presented per unit time"));
@@ -165,6 +182,9 @@ namespace pmid
 		pEnum2->AddKey(std::make_unique<EnumKey>(PM_ENUM::PM_ENUM_STAT, PM_STAT::PM_STAT_AVG, "PM_STAT_AVG", "Average", "Average (mean) value of metric samples as calculated over a sliding window."));
 		pEnum2->AddKey(std::make_unique<EnumKey>(PM_ENUM::PM_ENUM_STAT, PM_STAT::PM_STAT_MIN, "PM_STAT_MIN", "Minimum", "Minimum value of metric samples within a sliding window."));
 		pRoot->AddEnum(std::move(pEnum2));
+		auto pEnum3 = CREATE_INTROSPECTION_ENUM(UNIT, "units of measure");
+		REGISTER_ENUM_KEY(pEnum3, UNIT, PM_UNIT_FPS, "FPS", "Frames per second");
+		pRoot->AddEnum(std::move(pEnum3));
 		return pRoot.release();
 	}	
 

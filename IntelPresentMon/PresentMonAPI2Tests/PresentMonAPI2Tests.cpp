@@ -137,7 +137,7 @@ namespace PresentMonAPI2
 			const PM_INTROSPECTION_ROOT* pRoot{};
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
 			Assert::IsNotNull(pRoot);
-			Assert::AreEqual(2ull, pRoot->pEnums->size);
+			Assert::AreEqual(3ull, pRoot->pEnums->size);
 
 			// checking 1st enum
 			{
@@ -196,6 +196,26 @@ namespace PresentMonAPI2
 					Assert::AreEqual("Minimum", pKey->pName->pData);
 					Assert::AreEqual((int)PM_ENUM_STAT, (int)pKey->enumId);
 					Assert::AreEqual((int)PM_STAT::PM_STAT_MIN, pKey->value);
+				}
+			}
+
+			// checking 3rd enum
+			{
+				auto pEnum = static_cast<const PM_INTROSPECTION_ENUM*>(pRoot->pEnums->pData[2]);
+				Assert::IsNotNull(pEnum);
+				Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
+				Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
+				Assert::AreEqual("units of measure", pEnum->pDescription->pData);
+				Assert::AreEqual(1ull, pEnum->pKeys->size);
+				// 1st key
+				{
+					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
+					Assert::IsNotNull(pKey);
+					Assert::IsNotNull(pKey->pSymbol);
+					Assert::AreEqual("PM_UNIT_FPS", pKey->pSymbol->pData);
+					Assert::AreEqual("FPS", pKey->pName->pData);
+					Assert::AreEqual((int)PM_ENUM_UNIT, (int)pKey->enumId);
+					Assert::AreEqual((int)PM_UNIT_FPS, pKey->value);
 				}
 			}
 
