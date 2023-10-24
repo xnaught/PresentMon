@@ -137,7 +137,7 @@ namespace PresentMonAPI2
 			const PM_INTROSPECTION_ROOT* pRoot{};
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
 			Assert::IsNotNull(pRoot);
-			Assert::AreEqual(3ull, pRoot->pEnums->size);
+			Assert::AreEqual(4ull, pRoot->pEnums->size);
 
 			// checking 1st enum
 			{
@@ -205,7 +205,7 @@ namespace PresentMonAPI2
 				Assert::IsNotNull(pEnum);
 				Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
 				Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
-				Assert::AreEqual("units of measure", pEnum->pDescription->pData);
+				Assert::AreEqual("List of all units of measure used for metrics", pEnum->pDescription->pData);
 				Assert::AreEqual(5ull, pEnum->pKeys->size);
 				// 1st key
 				{

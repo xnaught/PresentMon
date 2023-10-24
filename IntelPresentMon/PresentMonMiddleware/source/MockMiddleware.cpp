@@ -145,8 +145,8 @@ namespace pmid
 		X_(STATUS, FAILURE, "Failure", "Operation failed") \
 		X_(STATUS, SESSION_NOT_OPEN, "Session Not Open", "Operation failed because session was not open")
 	#define ENUM_KEY_LIST_ENUM(X_) \
-		X_(ENUM, STATUS, "Statuses", "List of all status/error codes returned by API functions") \
-		X_(ENUM, UNIT, "Units", "List of all units of measure used for metrics")
+		X_(ENUM, UNIT, "Units", "List of all units of measure used for metrics") \
+		X_(ENUM, STATUS, "Statuses", "List of all status/error codes returned by API functions")
 	
 	// invoke key list by concatenating with symbol from x macro list of master enum
 	// switch on master will tell us whether all enums are registered
@@ -186,13 +186,19 @@ namespace pmid
 		pEnum2->AddKey(std::make_unique<EnumKey>(PM_ENUM::PM_ENUM_STAT, PM_STAT::PM_STAT_MIN, "PM_STAT_MIN", "Minimum", "Minimum value of metric samples within a sliding window."));
 		pRoot->AddEnum(std::move(pEnum2));
 
-		auto pEnum3 = CREATE_INTROSPECTION_ENUM(UNIT, "units of measure");
-#define X_REG_KEYS(enum_frag, key_frag, name, description) REGISTER_ENUM_KEY(pEnum3, enum_frag, key_frag, name, description);
-		ENUM_KEY_LIST_UNIT(X_REG_KEYS)
+#define X_REG_KEYS(enum_frag, key_frag, name, description) REGISTER_ENUM_KEY(pEnum, enum_frag, key_frag, name, description);
+#define X_REG_ENUMS(master_frag, enum_frag, name, description) { \
+		auto pEnum = CREATE_INTROSPECTION_ENUM(enum_frag, description); \
+		MAKE_LIST_SYMBOL(enum_frag)(X_REG_KEYS) \
+		pRoot->AddEnum(std::move(pEnum)); }
+
+		ENUM_KEY_LIST_ENUM(X_REG_ENUMS)
+
+#undef X_REG_ENUMS
 #undef X_REG_KEYS
-		pRoot->AddEnum(std::move(pEnum3));
+
 		return pRoot.release();
-	}	
+	}
 
 	void MockMiddleware::FreeIntrospectionData(const PM_INTROSPECTION_ROOT* pRoot) const
 	{
