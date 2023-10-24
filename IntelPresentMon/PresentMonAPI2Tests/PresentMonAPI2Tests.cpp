@@ -206,16 +206,26 @@ namespace PresentMonAPI2
 				Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
 				Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
 				Assert::AreEqual("units of measure", pEnum->pDescription->pData);
-				Assert::AreEqual(1ull, pEnum->pKeys->size);
+				Assert::AreEqual(5ull, pEnum->pKeys->size);
 				// 1st key
 				{
 					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
 					Assert::IsNotNull(pKey);
 					Assert::IsNotNull(pKey->pSymbol);
-					Assert::AreEqual("PM_UNIT_FPS", pKey->pSymbol->pData);
-					Assert::AreEqual("FPS", pKey->pName->pData);
+					Assert::AreEqual("PM_UNIT_DIMENSIONLESS", pKey->pSymbol->pData);
+					Assert::AreEqual("", pKey->pName->pData);
 					Assert::AreEqual((int)PM_ENUM_UNIT, (int)pKey->enumId);
-					Assert::AreEqual((int)PM_UNIT_FPS, pKey->value);
+					Assert::AreEqual((int)PM_UNIT_DIMENSIONLESS, pKey->value);
+				}
+				// 5th key
+				{
+					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[4]);
+					Assert::IsNotNull(pKey);
+					Assert::IsNotNull(pKey->pSymbol);
+					Assert::AreEqual("PM_UNIT_PERCENT", pKey->pSymbol->pData);
+					Assert::AreEqual("%", pKey->pName->pData);
+					Assert::AreEqual((int)PM_ENUM_UNIT, (int)pKey->enumId);
+					Assert::AreEqual((int)PM_UNIT_PERCENT, pKey->value);
 				}
 			}
 
