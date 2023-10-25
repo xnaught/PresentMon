@@ -137,23 +137,23 @@ namespace PresentMonAPI2
 			const PM_INTROSPECTION_ROOT* pRoot{};
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
 			Assert::IsNotNull(pRoot);
-			Assert::AreEqual(2ull, pRoot->pEnums->size);
+			Assert::AreEqual(8ull, pRoot->pEnums->size);
 
-			// checking 1st enum
+			// checking 2nd enum (unit)
 			{
-				auto pEnum = static_cast<const PM_INTROSPECTION_ENUM*>(pRoot->pEnums->pData[0]);
+				auto pEnum = static_cast<const PM_INTROSPECTION_ENUM*>(pRoot->pEnums->pData[5]);
 				Assert::IsNotNull(pEnum);
 				Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
 				Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
 				Assert::AreEqual("List of all units of measure used for metrics", pEnum->pDescription->pData);
-				Assert::AreEqual(5ull, pEnum->pKeys->size);
+				Assert::AreEqual(13ull, pEnum->pKeys->size);
 				// 1st key
 				{
 					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
 					Assert::IsNotNull(pKey);
 					Assert::IsNotNull(pKey->pSymbol);
 					Assert::AreEqual("PM_UNIT_DIMENSIONLESS", pKey->pSymbol->pData);
-					Assert::AreEqual("", pKey->pName->pData);
+					Assert::AreEqual("Dimensionless", pKey->pName->pData);
 					Assert::AreEqual((int)PM_ENUM_UNIT, (int)pKey->enumId);
 					Assert::AreEqual((int)PM_UNIT_DIMENSIONLESS, pKey->value);
 				}
@@ -163,7 +163,7 @@ namespace PresentMonAPI2
 					Assert::IsNotNull(pKey);
 					Assert::IsNotNull(pKey->pSymbol);
 					Assert::AreEqual("PM_UNIT_PERCENT", pKey->pSymbol->pData);
-					Assert::AreEqual("%", pKey->pName->pData);
+					Assert::AreEqual("Percent", pKey->pName->pData);
 					Assert::AreEqual((int)PM_ENUM_UNIT, (int)pKey->enumId);
 					Assert::AreEqual((int)PM_UNIT_PERCENT, pKey->value);
 				}
