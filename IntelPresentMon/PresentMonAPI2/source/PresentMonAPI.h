@@ -123,6 +123,8 @@ extern "C" {
 		int value;
 		PM_INTROSPECTION_STRING* pSymbol;
 		PM_INTROSPECTION_STRING* pName;
+		PM_INTROSPECTION_STRING* pShortName;
+		PM_INTROSPECTION_STRING* pAbbreviation;
 		PM_INTROSPECTION_STRING* pDescription;
 	};
 

@@ -71,18 +71,22 @@ namespace pmid
 	// implement intro enum structs
 	struct EnumKey : PM_INTROSPECTION_ENUM_KEY
 	{
-		EnumKey(PM_ENUM enumId_, int value_, std::string symbol, std::string name, std::string description)
+		EnumKey(PM_ENUM enumId_, int value_, std::string symbol, std::string name, std::string shortName, std::string abbreviation, std::string description)
 		{
 			enumId = enumId_;
 			value = value_;
 			pSymbol = new String{ std::move(symbol) };
 			pName = new String{ std::move(name) };
+			pShortName = new String{ std::move(shortName) };
+			pAbbreviation = new String{ std::move(abbreviation) };
 			pDescription = new String{ std::move(description) };
 		}
 		~EnumKey()
 		{
 			delete static_cast<String*>(pSymbol);
 			delete static_cast<String*>(pName);
+			delete static_cast<String*>(pShortName);
+			delete static_cast<String*>(pAbbreviation);
 			delete static_cast<String*>(pDescription);
 		}
 	};
@@ -213,7 +217,7 @@ namespace pmid
 	std::make_unique<Enum>(MAKE_MASTER_SYMBOL(enum_frag), STRINGIFY_MACRO_CALL(MAKE_ENUM_SYMBOL(enum_frag)), description)
 #define MAKE_LIST_SYMBOL(enum_frag) ENUM_KEY_LIST_##enum_frag
 #define MAKE_KEY_SYMBOL(enum_frag, key_frag) PM_##enum_frag##_##key_frag
-#define REGISTER_ENUM_KEY(p_enum_obj, enum_frag, key_frag, name, description) p_enum_obj->AddKey(std::make_unique<EnumKey>(MAKE_MASTER_SYMBOL(enum_frag), MAKE_KEY_SYMBOL(enum_frag, key_frag), STRINGIFY_MACRO_CALL(MAKE_KEY_SYMBOL(enum_frag, key_frag)), name, description))
+#define REGISTER_ENUM_KEY(p_enum_obj, enum_frag, key_frag, name, short_name, abbreviation, description) p_enum_obj->AddKey(std::make_unique<EnumKey>(MAKE_MASTER_SYMBOL(enum_frag), MAKE_KEY_SYMBOL(enum_frag, key_frag), STRINGIFY_MACRO_CALL(MAKE_KEY_SYMBOL(enum_frag, key_frag)), name, short_name, abbreviation, description))
 
 	// function not reference or called, but compiling this allows compiler to check if all enums/enum keys have coverage
 	bool ValidateEnumCompleteness()
@@ -242,7 +246,7 @@ namespace pmid
 	{		
 		auto pRoot = std::make_unique<IntrospectionRoot>();
 
-#define X_REG_KEYS(enum_frag, key_frag, name, short_name, abbreviation, description) REGISTER_ENUM_KEY(pEnum, enum_frag, key_frag, name, description);
+#define X_REG_KEYS(enum_frag, key_frag, name, short_name, abbreviation, description) REGISTER_ENUM_KEY(pEnum, enum_frag, key_frag, name, short_name, abbreviation, description);
 #define X_REG_ENUMS(master_frag, enum_frag, name, short_name, abbreviation, description) { \
 		auto pEnum = CREATE_INTROSPECTION_ENUM(enum_frag, description); \
 		MAKE_LIST_SYMBOL(enum_frag)(X_REG_KEYS) \

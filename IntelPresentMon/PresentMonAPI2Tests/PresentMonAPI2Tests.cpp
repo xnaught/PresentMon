@@ -154,6 +154,7 @@ namespace PresentMonAPI2
 					Assert::IsNotNull(pKey->pSymbol);
 					Assert::AreEqual("PM_UNIT_DIMENSIONLESS", pKey->pSymbol->pData);
 					Assert::AreEqual("Dimensionless", pKey->pName->pData);
+					Assert::AreEqual("", pKey->pAbbreviation->pData);
 					Assert::AreEqual((int)PM_ENUM_UNIT, (int)pKey->enumId);
 					Assert::AreEqual((int)PM_UNIT_DIMENSIONLESS, pKey->value);
 				}
@@ -164,6 +165,7 @@ namespace PresentMonAPI2
 					Assert::IsNotNull(pKey->pSymbol);
 					Assert::AreEqual("PM_UNIT_PERCENT", pKey->pSymbol->pData);
 					Assert::AreEqual("Percent", pKey->pName->pData);
+					Assert::AreEqual("%", pKey->pAbbreviation->pData);
 					Assert::AreEqual((int)PM_ENUM_UNIT, (int)pKey->enumId);
 					Assert::AreEqual((int)PM_UNIT_PERCENT, pKey->value);
 				}
