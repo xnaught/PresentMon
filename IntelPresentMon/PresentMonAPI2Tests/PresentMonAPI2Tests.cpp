@@ -138,8 +138,9 @@ namespace PresentMonAPI2
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(8ull, pRoot->pEnums->size);
+			Assert::AreEqual(1ull, pRoot->pMetrics->size);
 
-			// checking 2nd enum (unit)
+			// checking 6th enum (unit)
 			{
 				auto pEnum = static_cast<const PM_INTROSPECTION_ENUM*>(pRoot->pEnums->pData[5]);
 				Assert::IsNotNull(pEnum);
@@ -169,6 +170,16 @@ namespace PresentMonAPI2
 					Assert::AreEqual((int)PM_ENUM_UNIT, (int)pKey->enumId);
 					Assert::AreEqual((int)PM_UNIT_PERCENT, pKey->value);
 				}
+			}
+
+			// check metric
+			{
+				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[0]);
+				Assert::IsNotNull(pMetric);
+				Assert::AreEqual((int)PM_METRIC_DISPLAYED_FPS, (int)pMetric->id);
+				Assert::AreEqual((int)PM_UNIT_FPS, (int)pMetric->unit);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->typeInfo.type);
+				Assert::AreEqual(2ull, pMetric->pStats->size);
 			}
 
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));

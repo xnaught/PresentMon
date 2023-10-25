@@ -14,13 +14,13 @@ namespace pmid
 	}
 
 	// implement intro string
-	struct String : PM_INTROSPECTION_STRING
+	struct IntrospectionString : PM_INTROSPECTION_STRING
 	{
-		String(std::string s) : buffer_{ std::move(s) }
+		IntrospectionString(std::string s) : buffer_{ std::move(s) }
 		{
 			pData = buffer_.data();
 		}
-		String& operator=(std::string rhs)
+		IntrospectionString& operator=(std::string rhs)
 		{
 			buffer_ = std::move(rhs);
 			pData = buffer_.data();
@@ -31,25 +31,25 @@ namespace pmid
 	};
 	// implement intro objarr
 	template<class T>
-	struct ObjArray : PM_INTROSPECTION_OBJARRAY
+	struct IntrospectionObjArray : PM_INTROSPECTION_OBJARRAY
 	{
-		ObjArray()
+		IntrospectionObjArray()
 			:
 			PM_INTROSPECTION_OBJARRAY{ nullptr, 0 }
 		{}
-		ObjArray(std::vector<T*> v)
+		IntrospectionObjArray(std::vector<T*> v)
 			:
 			buffer_{ std::move(v) }
 		{
 			Sync_();
 		}
-		~ObjArray()
+		~IntrospectionObjArray()
 		{
 			for (auto pObj : buffer_) {
 				delete pObj;
 			}
 		}
-		ObjArray& operator=(std::vector<T*> rhs)
+		IntrospectionObjArray& operator=(std::vector<T*> rhs)
 		{
 			buffer_ = std::move(rhs);
 			Sync_();
@@ -69,71 +69,109 @@ namespace pmid
 		std::vector<T*> buffer_;
 	};
 	// implement intro enum structs
-	struct EnumKey : PM_INTROSPECTION_ENUM_KEY
+	struct IntrospectionEnumKey : PM_INTROSPECTION_ENUM_KEY
 	{
-		EnumKey(PM_ENUM enumId_, int value_, std::string symbol, std::string name, std::string shortName, std::string abbreviation, std::string description)
+		IntrospectionEnumKey(PM_ENUM enumId_, int value_, std::string symbol, std::string name, std::string shortName, std::string abbreviation, std::string description)
 		{
 			enumId = enumId_;
 			value = value_;
-			pSymbol = new String{ std::move(symbol) };
-			pName = new String{ std::move(name) };
-			pShortName = new String{ std::move(shortName) };
-			pAbbreviation = new String{ std::move(abbreviation) };
-			pDescription = new String{ std::move(description) };
+			pSymbol = new IntrospectionString{ std::move(symbol) };
+			pName = new IntrospectionString{ std::move(name) };
+			pShortName = new IntrospectionString{ std::move(shortName) };
+			pAbbreviation = new IntrospectionString{ std::move(abbreviation) };
+			pDescription = new IntrospectionString{ std::move(description) };
 		}
-		~EnumKey()
+		~IntrospectionEnumKey()
 		{
-			delete static_cast<String*>(pSymbol);
-			delete static_cast<String*>(pName);
-			delete static_cast<String*>(pShortName);
-			delete static_cast<String*>(pAbbreviation);
-			delete static_cast<String*>(pDescription);
+			delete static_cast<IntrospectionString*>(pSymbol);
+			delete static_cast<IntrospectionString*>(pName);
+			delete static_cast<IntrospectionString*>(pShortName);
+			delete static_cast<IntrospectionString*>(pAbbreviation);
+			delete static_cast<IntrospectionString*>(pDescription);
 		}
 	};
-	struct Enum : PM_INTROSPECTION_ENUM
+	struct IntrospectionEnum : PM_INTROSPECTION_ENUM
 	{
-		Enum(PM_ENUM id_, std::string symbol, std::string description)
+		IntrospectionEnum(PM_ENUM id_, std::string symbol, std::string description)
 		{
 			id = id_;
-			pSymbol = new String{ std::move(symbol) };
-			pDescription = new String{ std::move(description) };
-			pKeys = new ObjArray<EnumKey>();
+			pSymbol = new IntrospectionString{ std::move(symbol) };
+			pDescription = new IntrospectionString{ std::move(description) };
+			pKeys = new IntrospectionObjArray<IntrospectionEnumKey>();
 		}
-		~Enum()
+		~IntrospectionEnum()
 		{
-			delete static_cast<String*>(pSymbol);
-			delete static_cast<String*>(pDescription);
+			delete static_cast<IntrospectionString*>(pSymbol);
+			delete static_cast<IntrospectionString*>(pDescription);
 			delete &Keys_();
 		}
-		void AddKey(std::unique_ptr<EnumKey> pKey)
+		void AddKey(std::unique_ptr<IntrospectionEnumKey> pKey)
 		{
 			Keys_().PushBack(std::move(pKey));
 		}
 	private:
-		ObjArray<EnumKey>& Keys_()
+		IntrospectionObjArray<IntrospectionEnumKey>& Keys_()
 		{
-			return *static_cast<ObjArray<EnumKey>*>(pKeys);
+			return *static_cast<IntrospectionObjArray<IntrospectionEnumKey>*>(pKeys);
+		}
+	};
+	struct IntrospectionDataTypeInfo : PM_INTROSPECTION_DATA_TYPE_INFO {};
+	struct IntrospectionMetric : PM_INTROSPECTION_METRIC
+	{
+		IntrospectionMetric(PM_METRIC id_, PM_UNIT unit_, PM_INTROSPECTION_DATA_TYPE_INFO typeInfo_, std::vector<PM_STAT> stats_ = {})
+			:
+			PM_INTROSPECTION_METRIC{ id_, unit_, typeInfo_, new IntrospectionObjArray<PM_STAT> }
+		{
+			AddStats(std::move(stats_));
+		}
+		~IntrospectionMetric()
+		{
+			delete &Stats_();
+		}
+		void AddStat(PM_STAT stat)
+		{
+			Stats_().PushBack(std::make_unique<PM_STAT>(stat));
+		}
+		void AddStats(std::vector<PM_STAT> stats)
+		{
+			for (auto stat : stats) {
+				Stats_().PushBack(std::make_unique<PM_STAT>(stat));
+			}
+		}
+	private:
+		IntrospectionObjArray<PM_STAT>& Stats_()
+		{
+			return *static_cast<IntrospectionObjArray<PM_STAT>*>(pStats);
 		}
 	};
 	struct IntrospectionRoot : PM_INTROSPECTION_ROOT
 	{
 		IntrospectionRoot()
 		{
-			pMetrics = nullptr;
-			pEnums = new ObjArray<Enum>();
+			pMetrics = new IntrospectionObjArray<IntrospectionMetric>();
+			pEnums = new IntrospectionObjArray<IntrospectionEnum>();
 		}
 		~IntrospectionRoot()
 		{
 			delete &Enums_();
+			delete &Metrics_();
 		}
-		void AddEnum(std::unique_ptr<Enum> pEnum)
+		void AddEnum(std::unique_ptr<IntrospectionEnum> pEnum)
 		{
 			Enums_().PushBack(std::move(pEnum));
 		}
-	private:
-		ObjArray<Enum>& Enums_()
+		void AddMetric(std::unique_ptr<IntrospectionMetric> pMetric)
 		{
-			return *static_cast<ObjArray<Enum>*>(pEnums);
+			Metrics_().PushBack(std::move(pMetric));
+		}
+	private:
+		IntrospectionObjArray<IntrospectionEnum>& Enums_()
+		{
+			return *static_cast<IntrospectionObjArray<IntrospectionEnum>*>(pEnums);
+		}
+		IntrospectionObjArray<IntrospectionMetric>& Metrics_()
+		{
+			return *static_cast<IntrospectionObjArray<IntrospectionMetric>*>(pMetrics);
 		}
 	};
 
@@ -214,10 +252,10 @@ namespace pmid
 #define MAKE_MASTER_SYMBOL(enum_frag) PM_ENUM_##enum_frag
 #define MAKE_ENUM_SYMBOL(enum_frag) PM_##enum_frag
 #define CREATE_INTROSPECTION_ENUM(enum_frag, description) \
-	std::make_unique<Enum>(MAKE_MASTER_SYMBOL(enum_frag), STRINGIFY_MACRO_CALL(MAKE_ENUM_SYMBOL(enum_frag)), description)
+	std::make_unique<IntrospectionEnum>(MAKE_MASTER_SYMBOL(enum_frag), STRINGIFY_MACRO_CALL(MAKE_ENUM_SYMBOL(enum_frag)), description)
 #define MAKE_LIST_SYMBOL(enum_frag) ENUM_KEY_LIST_##enum_frag
 #define MAKE_KEY_SYMBOL(enum_frag, key_frag) PM_##enum_frag##_##key_frag
-#define REGISTER_ENUM_KEY(p_enum_obj, enum_frag, key_frag, name, short_name, abbreviation, description) p_enum_obj->AddKey(std::make_unique<EnumKey>(MAKE_MASTER_SYMBOL(enum_frag), MAKE_KEY_SYMBOL(enum_frag, key_frag), STRINGIFY_MACRO_CALL(MAKE_KEY_SYMBOL(enum_frag, key_frag)), name, short_name, abbreviation, description))
+#define REGISTER_ENUM_KEY(p_enum_obj, enum_frag, key_frag, name, short_name, abbreviation, description) p_enum_obj->AddKey(std::make_unique<IntrospectionEnumKey>(MAKE_MASTER_SYMBOL(enum_frag), MAKE_KEY_SYMBOL(enum_frag, key_frag), STRINGIFY_MACRO_CALL(MAKE_KEY_SYMBOL(enum_frag, key_frag)), name, short_name, abbreviation, description))
 
 	// function not reference or called, but compiling this allows compiler to check if all enums/enum keys have coverage
 	bool ValidateEnumCompleteness()
@@ -246,6 +284,7 @@ namespace pmid
 	{		
 		auto pRoot = std::make_unique<IntrospectionRoot>();
 
+		// do enum population
 #define X_REG_KEYS(enum_frag, key_frag, name, short_name, abbreviation, description) REGISTER_ENUM_KEY(pEnum, enum_frag, key_frag, name, short_name, abbreviation, description);
 #define X_REG_ENUMS(master_frag, enum_frag, name, short_name, abbreviation, description) { \
 		auto pEnum = CREATE_INTROSPECTION_ENUM(enum_frag, description); \
@@ -256,6 +295,14 @@ namespace pmid
 
 #undef X_REG_ENUMS
 #undef X_REG_KEYS
+
+		// do metric population
+		pRoot->AddMetric(std::make_unique<IntrospectionMetric>(
+			PM_METRIC_DISPLAYED_FPS,
+			PM_UNIT_FPS,
+			IntrospectionDataTypeInfo{ PM_DATA_TYPE_DOUBLE },
+			std::vector{ PM_STAT_AVG, PM_STAT_RAW }
+		));
 
 		return pRoot.release();
 	}
