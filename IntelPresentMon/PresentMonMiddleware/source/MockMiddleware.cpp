@@ -186,11 +186,11 @@ namespace pmid
 		X_(METRIC, FRAME_TIME, "Frame Time", "", "", "Time taken to generate a frame") \
 		X_(METRIC, GPU_POWER, "GPU Power", "", "", "Power consumed by the graphics adapter") \
 		X_(METRIC, CPU_UTILIZATION, "CPU Utilization", "", "", "Amount of CPU processing capacity being used")
-	#define ENUM_KEY_LIST_GPU_VENDOR(X_) \
-		X_(GPU_VENDOR, INTEL, "Intel", "", "", "GPU vendor Intel") \
-		X_(GPU_VENDOR, NVIDIA, "NVIDIA", "", "", "VPU vendor NVIDIA") \
-		X_(GPU_VENDOR, AMD, "AMD", "", "", "GPU vendor AMD") \
-		X_(GPU_VENDOR, UNKNOWN, "Unknown", "", "", "Unknown GPU vendor")
+	#define ENUM_KEY_LIST_DEVICE_VENDOR(X_) \
+		X_(DEVICE_VENDOR, INTEL, "Intel", "", "", "Device vendor Intel") \
+		X_(DEVICE_VENDOR, NVIDIA, "NVIDIA", "", "", "Device vendor NVIDIA") \
+		X_(DEVICE_VENDOR, AMD, "AMD", "", "", "Device vendor AMD") \
+		X_(DEVICE_VENDOR, UNKNOWN, "Unknown", "", "", "Unknown device vendor")
 	#define ENUM_KEY_LIST_PRESENT_MODE(X_) \
 		X_(PRESENT_MODE, HARDWARE_LEGACY_FLIP, "Hardware Legacy Flip", "", "", "Legacy flip present with direct control of hardware scanout frame buffer (fullscreen exclusive)") \
 		X_(PRESENT_MODE, HARDWARE_LEGACY_COPY_TO_FRONT_BUFFER, "Hardware Legacy Copy to Front Buffer", "", "", "Legacy bitblt model present copying from backbuffer to scanout frame buffer (fullscreen exclusive)") \
@@ -241,7 +241,7 @@ namespace pmid
 	#define ENUM_KEY_LIST_ENUM(X_) \
 		X_(ENUM, STATUS, "Statuses", "", "", "List of all status/error codes returned by API functions") \
 		X_(ENUM, METRIC, "Metrics", "", "", "List of all metrics that are pollable via the API") \
-		X_(ENUM, GPU_VENDOR, "Vendors", "", "", "List of all known GPU hardware vendors (IHVs)") \
+		X_(ENUM, DEVICE_VENDOR, "Vendors", "", "", "List of all known hardware vendors (IHVs) for GPUs and other hardware") \
 		X_(ENUM, PRESENT_MODE, "Present Modes", "", "", "List of all known modes of frame presentation") \
 		X_(ENUM, PSU_TYPE, "PSU Types", "", "", "Type of power supply used by GPUs") \
 		X_(ENUM, UNIT, "Units", "", "", "List of all units of measure used for metrics") \
