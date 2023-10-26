@@ -94,6 +94,13 @@ extern "C" {
 		PM_DATA_TYPE_STRING,
 	};
 
+	enum PM_GRAPHICS_RUNTIME
+	{
+		PM_GRAPHICS_RUNTIME_UNKNOWN,
+		PM_GRAPHICS_RUNTIME_DXGI,
+		PM_GRAPHICS_RUNTIME_D3D9,
+	};
+
 	enum PM_ENUM
 	{
 		PM_ENUM_STATUS,
@@ -104,6 +111,7 @@ extern "C" {
 		PM_ENUM_UNIT,
 		PM_ENUM_STAT,
 		PM_ENUM_DATA_TYPE,
+		PM_ENUM_GRAPHICS_RUNTIME,
 	};
 
 	struct PM_INTROSPECTION_STRING
@@ -147,7 +155,9 @@ extern "C" {
 		PM_METRIC id;
 		PM_UNIT unit;
 		PM_INTROSPECTION_DATA_TYPE_INFO typeInfo;
+		uint32_t arraySize;
 		PM_INTROSPECTION_OBJARRAY* pStats;
+		bool available;
 	};
 
 	struct PM_INTROSPECTION_ROOT

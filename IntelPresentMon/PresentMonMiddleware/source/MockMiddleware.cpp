@@ -118,9 +118,9 @@ namespace pmid
 	struct IntrospectionDataTypeInfo : PM_INTROSPECTION_DATA_TYPE_INFO {};
 	struct IntrospectionMetric : PM_INTROSPECTION_METRIC
 	{
-		IntrospectionMetric(PM_METRIC id_, PM_UNIT unit_, PM_INTROSPECTION_DATA_TYPE_INFO typeInfo_, std::vector<PM_STAT> stats_ = {})
+		IntrospectionMetric(PM_METRIC id_, PM_UNIT unit_, PM_INTROSPECTION_DATA_TYPE_INFO typeInfo_, uint32_t arraySize_, std::vector<PM_STAT> stats_ = {})
 			:
-			PM_INTROSPECTION_METRIC{ id_, unit_, typeInfo_, new IntrospectionObjArray<PM_STAT> }
+			PM_INTROSPECTION_METRIC{ id_, unit_, typeInfo_, arraySize_, new IntrospectionObjArray<PM_STAT> }
 		{
 			AddStats(std::move(stats_));
 		}
@@ -233,6 +233,10 @@ namespace pmid
 		X_(DATA_TYPE, UINT32, "32-bit Unsigned Integer", "uint32_t", "", "32-bit unsigned integer") \
 		X_(DATA_TYPE, ENUM, "Enumeration", "enum", "", "Integral value of an enum key, guaranteed to fit within a 32-bit signed integer") \
 		X_(DATA_TYPE, STRING, "String", "const char*", "", "Textual value, typically for non-numeric data")
+	#define ENUM_KEY_LIST_GRAPHICS_RUNTIME(X_) \
+		X_(GRAPHICS_RUNTIME, UNKNOWN, "Unknown", "", "", "Unknown graphics runtime") \
+		X_(GRAPHICS_RUNTIME, DXGI, "DXGI", "", "", "DirectX Graphics Infrastructure runtime") \
+		X_(GRAPHICS_RUNTIME, D3D9, "Direct3D 9", "", "", "Direct3D 9 runtime")
 	// master list of enums as an enum giving each enum a unique id
 	#define ENUM_KEY_LIST_ENUM(X_) \
 		X_(ENUM, STATUS, "Statuses", "", "", "List of all status/error codes returned by API functions") \
@@ -242,7 +246,8 @@ namespace pmid
 		X_(ENUM, PSU_TYPE, "PSU Types", "", "", "Type of power supply used by GPUs") \
 		X_(ENUM, UNIT, "Units", "", "", "List of all units of measure used for metrics") \
 		X_(ENUM, STAT, "Statistics", "", "", "List of all statistical variations of the data (average, 99th percentile, etc.)") \
-		X_(ENUM, DATA_TYPE, "Data Types", "", "", "List of all C++ language data types used for metrics")
+		X_(ENUM, DATA_TYPE, "Data Types", "", "", "List of all C++ language data types used for metrics") \
+		X_(ENUM, GRAPHICS_RUNTIME, "Graphics Runtime", "", "", "Graphics runtime subsystem used to make the present call")
 	
 	// invoke key list by concatenating with symbol from x macro list of master enum
 	// switch on master will tell us whether all enums are registered
@@ -301,6 +306,7 @@ namespace pmid
 			PM_METRIC_DISPLAYED_FPS,
 			PM_UNIT_FPS,
 			IntrospectionDataTypeInfo{ PM_DATA_TYPE_DOUBLE },
+			1,
 			std::vector{ PM_STAT_AVG, PM_STAT_RAW }
 		));
 
