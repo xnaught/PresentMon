@@ -137,7 +137,7 @@ namespace PresentMonAPI2
 			const PM_INTROSPECTION_ROOT* pRoot{};
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
 			Assert::IsNotNull(pRoot);
-			Assert::AreEqual(8ull, pRoot->pEnums->size);
+			Assert::AreEqual(9ull, pRoot->pEnums->size);
 			Assert::AreEqual(1ull, pRoot->pMetrics->size);
 
 			// checking 6th enum (unit)

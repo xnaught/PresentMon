@@ -118,9 +118,9 @@ namespace pmid
 	struct IntrospectionDataTypeInfo : PM_INTROSPECTION_DATA_TYPE_INFO {};
 	struct IntrospectionMetric : PM_INTROSPECTION_METRIC
 	{
-		IntrospectionMetric(PM_METRIC id_, PM_UNIT unit_, PM_INTROSPECTION_DATA_TYPE_INFO typeInfo_, uint32_t arraySize_, std::vector<PM_STAT> stats_ = {})
+		IntrospectionMetric(PM_METRIC id_, PM_UNIT unit_, PM_INTROSPECTION_DATA_TYPE_INFO typeInfo_, std::vector<PM_STAT> stats_ = {})
 			:
-			PM_INTROSPECTION_METRIC{ id_, unit_, typeInfo_, arraySize_, new IntrospectionObjArray<PM_STAT> }
+			PM_INTROSPECTION_METRIC{ id_, unit_, typeInfo_, new IntrospectionObjArray<PM_STAT> }
 		{
 			AddStats(std::move(stats_));
 		}
@@ -306,7 +306,6 @@ namespace pmid
 			PM_METRIC_DISPLAYED_FPS,
 			PM_UNIT_FPS,
 			IntrospectionDataTypeInfo{ PM_DATA_TYPE_DOUBLE },
-			1,
 			std::vector{ PM_STAT_AVG, PM_STAT_RAW }
 		));
 

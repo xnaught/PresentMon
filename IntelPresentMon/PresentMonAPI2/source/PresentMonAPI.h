@@ -155,9 +155,7 @@ extern "C" {
 		PM_METRIC id;
 		PM_UNIT unit;
 		PM_INTROSPECTION_DATA_TYPE_INFO typeInfo;
-		uint32_t arraySize;
 		PM_INTROSPECTION_OBJARRAY* pStats;
-		bool available;
 	};
 
 	struct PM_INTROSPECTION_ROOT
