@@ -115,18 +115,34 @@ namespace pmid
 			return *static_cast<IntrospectionObjArray<IntrospectionEnumKey>*>(pKeys);
 		}
 	};
+	struct IntrospectionDevice : PM_INTROSPECTION_DEVICE
+	{
+		IntrospectionDevice(uint32_t id_, PM_DEVICE_TYPE type_, PM_DEVICE_VENDOR vendor_, std::string name_)
+		{
+			id = id_;
+			type = type_;
+			vendor = vendor_;
+			pName = new IntrospectionString{ std::move(name_) };
+		}
+		~IntrospectionDevice()
+		{
+			delete static_cast<IntrospectionString*>(pName);
+		}
+	};
+	struct IntrospectionDeviceMetricInfo : PM_INTROSPECTION_DEVICE_METRIC_INFO {};
 	struct IntrospectionDataTypeInfo : PM_INTROSPECTION_DATA_TYPE_INFO {};
 	struct IntrospectionMetric : PM_INTROSPECTION_METRIC
 	{
 		IntrospectionMetric(PM_METRIC id_, PM_UNIT unit_, PM_INTROSPECTION_DATA_TYPE_INFO typeInfo_, std::vector<PM_STAT> stats_ = {})
 			:
-			PM_INTROSPECTION_METRIC{ id_, unit_, typeInfo_, new IntrospectionObjArray<PM_STAT> }
+			PM_INTROSPECTION_METRIC{ id_, unit_, typeInfo_, new IntrospectionObjArray<PM_STAT>, new IntrospectionObjArray<IntrospectionDeviceMetricInfo> }
 		{
 			AddStats(std::move(stats_));
 		}
 		~IntrospectionMetric()
 		{
 			delete &Stats_();
+			delete &DeviceMetricInfo_();
 		}
 		void AddStat(PM_STAT stat)
 		{
@@ -138,10 +154,18 @@ namespace pmid
 				Stats_().PushBack(std::make_unique<PM_STAT>(stat));
 			}
 		}
+		void AddDeviceMetricInfo(IntrospectionDeviceMetricInfo info)
+		{
+			DeviceMetricInfo_().PushBack(std::make_unique<IntrospectionDeviceMetricInfo>(info));
+		}
 	private:
 		IntrospectionObjArray<PM_STAT>& Stats_()
 		{
 			return *static_cast<IntrospectionObjArray<PM_STAT>*>(pStats);
+		}
+		IntrospectionObjArray<IntrospectionDeviceMetricInfo>& DeviceMetricInfo_()
+		{
+			return *static_cast<IntrospectionObjArray<IntrospectionDeviceMetricInfo>*>(pDeviceMetricInfo);
 		}
 	};
 	struct IntrospectionRoot : PM_INTROSPECTION_ROOT
@@ -150,11 +174,13 @@ namespace pmid
 		{
 			pMetrics = new IntrospectionObjArray<IntrospectionMetric>();
 			pEnums = new IntrospectionObjArray<IntrospectionEnum>();
+			pDevices = new IntrospectionObjArray<IntrospectionDevice>();
 		}
 		~IntrospectionRoot()
 		{
 			delete &Enums_();
 			delete &Metrics_();
+			delete &Devices_();
 		}
 		void AddEnum(std::unique_ptr<IntrospectionEnum> pEnum)
 		{
@@ -164,6 +190,10 @@ namespace pmid
 		{
 			Metrics_().PushBack(std::move(pMetric));
 		}
+		void AddDevice(std::unique_ptr<IntrospectionDevice> pDevice)
+		{
+			Devices_().PushBack(std::move(pDevice));
+		}
 	private:
 		IntrospectionObjArray<IntrospectionEnum>& Enums_()
 		{
@@ -172,6 +202,10 @@ namespace pmid
 		IntrospectionObjArray<IntrospectionMetric>& Metrics_()
 		{
 			return *static_cast<IntrospectionObjArray<IntrospectionMetric>*>(pMetrics);
+		}
+		IntrospectionObjArray<IntrospectionDevice>& Devices_()
+		{
+			return *static_cast<IntrospectionObjArray<IntrospectionDevice>*>(pDevices);
 		}
 	};
 
@@ -237,6 +271,12 @@ namespace pmid
 		X_(GRAPHICS_RUNTIME, UNKNOWN, "Unknown", "", "", "Unknown graphics runtime") \
 		X_(GRAPHICS_RUNTIME, DXGI, "DXGI", "", "", "DirectX Graphics Infrastructure runtime") \
 		X_(GRAPHICS_RUNTIME, D3D9, "Direct3D 9", "", "", "Direct3D 9 runtime")
+	#define ENUM_KEY_LIST_DEVICE_TYPE(X_) \
+		X_(DEVICE_TYPE, INDEPENDENT, "Device Independent", "", "", "This device type is used for special device ID 0 which is reserved for metrics independent of any specific hardware device (e.g. FPS metrics)") \
+		X_(DEVICE_TYPE, GRAPHICS_ADAPTER, "Graphics Adapter", "", "", "Graphics adapter or GPU device")
+	#define ENUM_KEY_LIST_METRIC_AVAILABILITY(X_) \
+		X_(METRIC_AVAILABILITY, AVAILABLE, "Available", "", "", "Metric is available on the indicated device") \
+		X_(METRIC_AVAILABILITY, UNAVAILABLE, "Unavailable", "", "", "Metric is unavailable on the indicated device")
 	// master list of enums as an enum giving each enum a unique id
 	#define ENUM_KEY_LIST_ENUM(X_) \
 		X_(ENUM, STATUS, "Statuses", "", "", "List of all status/error codes returned by API functions") \
@@ -247,7 +287,9 @@ namespace pmid
 		X_(ENUM, UNIT, "Units", "", "", "List of all units of measure used for metrics") \
 		X_(ENUM, STAT, "Statistics", "", "", "List of all statistical variations of the data (average, 99th percentile, etc.)") \
 		X_(ENUM, DATA_TYPE, "Data Types", "", "", "List of all C++ language data types used for metrics") \
-		X_(ENUM, GRAPHICS_RUNTIME, "Graphics Runtime", "", "", "Graphics runtime subsystem used to make the present call")
+		X_(ENUM, GRAPHICS_RUNTIME, "Graphics Runtime", "", "", "Graphics runtime subsystem used to make the present call") \
+		X_(ENUM, DEVICE_TYPE, "Device Type", "", "", "Type of device in the list of devices associated with metrics") \
+		X_(ENUM, METRIC_AVAILABILITY, "Metric Availability", "", "", "Availability status of a metric with respect to a given device")
 	
 	// invoke key list by concatenating with symbol from x macro list of master enum
 	// switch on master will tell us whether all enums are registered
@@ -301,13 +343,18 @@ namespace pmid
 #undef X_REG_ENUMS
 #undef X_REG_KEYS
 
+		// do device population
+		pRoot->AddDevice(std::make_unique<IntrospectionDevice>(0, PM_DEVICE_TYPE_INDEPENDENT, PM_DEVICE_VENDOR_UNKNOWN, "Device-independent"));
+
 		// do metric population
-		pRoot->AddMetric(std::make_unique<IntrospectionMetric>(
+		auto pMetric = std::make_unique<IntrospectionMetric>(
 			PM_METRIC_DISPLAYED_FPS,
 			PM_UNIT_FPS,
 			IntrospectionDataTypeInfo{ PM_DATA_TYPE_DOUBLE },
 			std::vector{ PM_STAT_AVG, PM_STAT_RAW }
-		));
+		);
+		pMetric->AddDeviceMetricInfo({ 0, PM_METRIC_AVAILABILITY_AVAILABLE, 1 });
+		pRoot->AddMetric(std::move(pMetric));
 
 		return pRoot.release();
 	}

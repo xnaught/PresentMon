@@ -137,8 +137,9 @@ namespace PresentMonAPI2
 			const PM_INTROSPECTION_ROOT* pRoot{};
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
 			Assert::IsNotNull(pRoot);
-			Assert::AreEqual(9ull, pRoot->pEnums->size);
+			Assert::AreEqual(11ull, pRoot->pEnums->size);
 			Assert::AreEqual(1ull, pRoot->pMetrics->size);
+			Assert::AreEqual(1ull, pRoot->pDevices->size);
 
 			// checking 6th enum (unit)
 			{
@@ -172,6 +173,16 @@ namespace PresentMonAPI2
 				}
 			}
 
+			// check device
+			{
+				auto pDevice = static_cast<const PM_INTROSPECTION_DEVICE*>(pRoot->pDevices->pData[0]);
+				Assert::IsNotNull(pDevice);
+				Assert::AreEqual(0, (int)pDevice->id);
+				Assert::AreEqual((int)PM_DEVICE_TYPE_INDEPENDENT, (int)pDevice->type);
+				Assert::AreEqual((int)PM_DEVICE_VENDOR_UNKNOWN, (int)pDevice->vendor);
+				Assert::AreEqual("Device-independent", pDevice->pName->pData);
+			}
+
 			// check metric
 			{
 				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[0]);
@@ -180,6 +191,19 @@ namespace PresentMonAPI2
 				Assert::AreEqual((int)PM_UNIT_FPS, (int)pMetric->unit);
 				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->typeInfo.type);
 				Assert::AreEqual(2ull, pMetric->pStats->size);
+				// check 1st stat
+				{
+					auto pStat = static_cast<const PM_STAT*>(pMetric->pStats->pData[0]);
+					Assert::AreEqual((int)PM_STAT_AVG, (int)*pStat);
+				}
+				// check device info
+				Assert::AreEqual(1ull, pMetric->pDeviceMetricInfo->size);
+				{
+					auto pInfo = static_cast<const PM_INTROSPECTION_DEVICE_METRIC_INFO*>(pMetric->pDeviceMetricInfo->pData[0]);
+					Assert::AreEqual(0u, pInfo->deviceId);
+					Assert::AreEqual(1u, pInfo->arraySize);
+					Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)pInfo->avalability);
+				}
 			}
 
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
