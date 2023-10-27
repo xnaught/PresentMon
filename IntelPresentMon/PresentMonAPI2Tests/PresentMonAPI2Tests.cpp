@@ -190,7 +190,7 @@ namespace PresentMonAPI2
 				Assert::AreEqual((int)PM_METRIC_DISPLAYED_FPS, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_FPS, (int)pMetric->unit);
 				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->typeInfo.type);
-				Assert::AreEqual(2ull, pMetric->pStats->size);
+				Assert::AreEqual(7ull, pMetric->pStats->size);
 				// check 1st stat
 				{
 					auto pStat = static_cast<const PM_STAT*>(pMetric->pStats->pData[0]);
@@ -213,11 +213,11 @@ namespace PresentMonAPI2
 				Assert::AreEqual((int)PM_METRIC_GPU_FAN_SPEED, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_RPM, (int)pMetric->unit);
 				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->typeInfo.type);
-				Assert::AreEqual(2ull, pMetric->pStats->size);
-				// check 1st stat
+				Assert::AreEqual(7ull, pMetric->pStats->size);
+				// check 7th stat
 				{
-					auto pStat = static_cast<const PM_STAT*>(pMetric->pStats->pData[0]);
-					Assert::AreEqual((int)PM_STAT_AVG, (int)*pStat);
+					auto pStat = static_cast<const PM_STAT*>(pMetric->pStats->pData[6]);
+					Assert::AreEqual((int)PM_STAT_RAW, (int)*pStat);
 				}
 				// check device infos
 				Assert::AreEqual(2ull, pMetric->pDeviceMetricInfo->size);
