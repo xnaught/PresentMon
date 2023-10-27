@@ -133,7 +133,7 @@ namespace pmid
 	struct IntrospectionDataTypeInfo : PM_INTROSPECTION_DATA_TYPE_INFO {};
 	struct IntrospectionMetric : PM_INTROSPECTION_METRIC
 	{
-		IntrospectionMetric(PM_METRIC id_, PM_UNIT unit_, PM_INTROSPECTION_DATA_TYPE_INFO typeInfo_, std::vector<PM_STAT> stats_ = {})
+		IntrospectionMetric(PM_METRIC id_, PM_UNIT unit_, IntrospectionDataTypeInfo typeInfo_, std::vector<PM_STAT> stats_ = {})
 			:
 			PM_INTROSPECTION_METRIC{ id_, unit_, typeInfo_, new IntrospectionObjArray<PM_STAT>, new IntrospectionObjArray<IntrospectionDeviceMetricInfo> }
 		{
@@ -290,9 +290,9 @@ namespace pmid
 		X_(ENUM, GRAPHICS_RUNTIME, "Graphics Runtime", "", "", "Graphics runtime subsystem used to make the present call") \
 		X_(ENUM, DEVICE_TYPE, "Device Type", "", "", "Type of device in the list of devices associated with metrics") \
 		X_(ENUM, METRIC_AVAILABILITY, "Metric Availability", "", "", "Availability status of a metric with respect to a given device")
-	
-	// invoke key list by concatenating with symbol from x macro list of master enum
-	// switch on master will tell us whether all enums are registered
+	// list of metrics
+	#define METRIC_LIST(X_) \
+		X_(PM_METRIC_DISPLAYED_FPS, PM_UNIT_FPS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_AVG, PM_STAT_MAX)
 
 #define XSTR_(macro) #macro
 #define STRINGIFY_MACRO_CALL(macro) XSTR_(macro)
@@ -303,7 +303,7 @@ namespace pmid
 #define MAKE_LIST_SYMBOL(enum_frag) ENUM_KEY_LIST_##enum_frag
 #define MAKE_KEY_SYMBOL(enum_frag, key_frag) PM_##enum_frag##_##key_frag
 #define REGISTER_ENUM_KEY(p_enum_obj, enum_frag, key_frag, name, short_name, abbreviation, description) p_enum_obj->AddKey(std::make_unique<IntrospectionEnumKey>(MAKE_MASTER_SYMBOL(enum_frag), MAKE_KEY_SYMBOL(enum_frag, key_frag), STRINGIFY_MACRO_CALL(MAKE_KEY_SYMBOL(enum_frag, key_frag)), name, short_name, abbreviation, description))
-
+	
 	// function not reference or called, but compiling this allows compiler to check if all enums/enum keys have coverage
 	bool ValidateEnumCompleteness()
 	{
@@ -353,8 +353,18 @@ namespace pmid
 			IntrospectionDataTypeInfo{ PM_DATA_TYPE_DOUBLE },
 			std::vector{ PM_STAT_AVG, PM_STAT_RAW }
 		);
+
+#define X_REG_METRIC(metric, unit, data_type, enum_id, device_type, ...) { \
+		auto pMetric = std::make_unique<IntrospectionMetric>( \
+			metric, unit, IntrospectionDataTypeInfo{ data_type }, std::vector{ __VA_ARGS__ }); \
+		if (device_type == PM_DEVICE_TYPE_INDEPENDENT) pMetric->AddDeviceMetricInfo({ 0, PM_METRIC_AVAILABILITY_AVAILABLE, 1 }); \
+		pRoot->AddMetric(std::move(pMetric)); }
+
+		METRIC_LIST(X_REG_METRIC)
+
+#undef X_REG_METRIC
+
 		pMetric->AddDeviceMetricInfo({ 0, PM_METRIC_AVAILABILITY_AVAILABLE, 1 });
-		pRoot->AddMetric(std::move(pMetric));
 
 		return pRoot.release();
 	}
