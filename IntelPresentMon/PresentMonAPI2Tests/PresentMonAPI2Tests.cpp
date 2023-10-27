@@ -138,8 +138,8 @@ namespace PresentMonAPI2
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(11ull, pRoot->pEnums->size);
-			Assert::AreEqual(1ull, pRoot->pMetrics->size);
-			Assert::AreEqual(1ull, pRoot->pDevices->size);
+			Assert::AreEqual(6ull, pRoot->pMetrics->size);
+			Assert::AreEqual(2ull, pRoot->pDevices->size);
 
 			// checking 6th enum (unit)
 			{

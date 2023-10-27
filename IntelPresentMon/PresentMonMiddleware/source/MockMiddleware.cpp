@@ -219,7 +219,8 @@ namespace pmid
 		X_(METRIC, PRESENTED_FPS, "Presented FPS", "", "", "Rate of application calls to a Present() function") \
 		X_(METRIC, FRAME_TIME, "Frame Time", "", "", "Time taken to generate a frame") \
 		X_(METRIC, GPU_POWER, "GPU Power", "", "", "Power consumed by the graphics adapter") \
-		X_(METRIC, CPU_UTILIZATION, "CPU Utilization", "", "", "Amount of CPU processing capacity being used")
+		X_(METRIC, CPU_UTILIZATION, "CPU Utilization", "", "", "Amount of CPU processing capacity being used") \
+		X_(METRIC, GPU_FAN_SPEED, "GPU Fan Speed", "", "", "Rate at which a GPU cooler fan is rotating")
 	#define ENUM_KEY_LIST_DEVICE_VENDOR(X_) \
 		X_(DEVICE_VENDOR, INTEL, "Intel", "", "", "Device vendor Intel") \
 		X_(DEVICE_VENDOR, NVIDIA, "NVIDIA", "", "", "Device vendor NVIDIA") \
@@ -292,7 +293,12 @@ namespace pmid
 		X_(ENUM, METRIC_AVAILABILITY, "Metric Availability", "", "", "Availability status of a metric with respect to a given device")
 	// list of metrics
 	#define METRIC_LIST(X_) \
-		X_(PM_METRIC_DISPLAYED_FPS, PM_UNIT_FPS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_AVG, PM_STAT_MAX)
+		X_(PM_METRIC_DISPLAYED_FPS, PM_UNIT_FPS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_AVG, PM_STAT_MAX) \
+		X_(PM_METRIC_PRESENTED_FPS, PM_UNIT_FPS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_AVG, PM_STAT_MAX) \
+		X_(PM_METRIC_FRAME_TIME, PM_UNIT_MILLISECONDS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_AVG, PM_STAT_MAX) \
+		X_(PM_METRIC_GPU_POWER, PM_UNIT_WATTS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_STAT_AVG, PM_STAT_MAX) \
+		X_(PM_METRIC_CPU_UTILIZATION, PM_UNIT_PERCENT, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_AVG, PM_STAT_MAX) \
+		X_(PM_METRIC_GPU_FAN_SPEED, PM_UNIT_RPM, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_STAT_AVG, PM_STAT_MAX)
 
 #define XSTR_(macro) #macro
 #define STRINGIFY_MACRO_CALL(macro) XSTR_(macro)
@@ -345,26 +351,31 @@ namespace pmid
 
 		// do device population
 		pRoot->AddDevice(std::make_unique<IntrospectionDevice>(0, PM_DEVICE_TYPE_INDEPENDENT, PM_DEVICE_VENDOR_UNKNOWN, "Device-independent"));
+		pRoot->AddDevice(std::make_unique<IntrospectionDevice>(1, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_DEVICE_VENDOR_INTEL, "Arc 750"));
+
+		// helper to generate device-metric info for metrics (simulating runtime population of availability and dimensions)
+		const auto PopulateDeviceMetricInfo = [](IntrospectionMetric& metric, PM_DEVICE_TYPE deviceType) {
+			if (deviceType == PM_DEVICE_TYPE_INDEPENDENT) {
+				metric.AddDeviceMetricInfo({ 0, PM_METRIC_AVAILABILITY_AVAILABLE, 1 });
+			}
+			else if (metric.id == PM_METRIC_GPU_FAN_SPEED) {
+				metric.AddDeviceMetricInfo({ 1, PM_METRIC_AVAILABILITY_AVAILABLE, 2 });
+			}
+			else {
+				metric.AddDeviceMetricInfo({ 1, PM_METRIC_AVAILABILITY_AVAILABLE, 1 });
+			}
+		};
 
 		// do metric population
-		auto pMetric = std::make_unique<IntrospectionMetric>(
-			PM_METRIC_DISPLAYED_FPS,
-			PM_UNIT_FPS,
-			IntrospectionDataTypeInfo{ PM_DATA_TYPE_DOUBLE },
-			std::vector{ PM_STAT_AVG, PM_STAT_RAW }
-		);
-
 #define X_REG_METRIC(metric, unit, data_type, enum_id, device_type, ...) { \
 		auto pMetric = std::make_unique<IntrospectionMetric>( \
-			metric, unit, IntrospectionDataTypeInfo{ data_type }, std::vector{ __VA_ARGS__ }); \
-		if (device_type == PM_DEVICE_TYPE_INDEPENDENT) pMetric->AddDeviceMetricInfo({ 0, PM_METRIC_AVAILABILITY_AVAILABLE, 1 }); \
+			metric, unit, IntrospectionDataTypeInfo{ data_type, (PM_ENUM)enum_id }, std::vector{ __VA_ARGS__ }); \
+		PopulateDeviceMetricInfo(*pMetric, device_type); \
 		pRoot->AddMetric(std::move(pMetric)); }
 
 		METRIC_LIST(X_REG_METRIC)
 
 #undef X_REG_METRIC
-
-		pMetric->AddDeviceMetricInfo({ 0, PM_METRIC_AVAILABILITY_AVAILABLE, 1 });
 
 		return pRoot.release();
 	}
