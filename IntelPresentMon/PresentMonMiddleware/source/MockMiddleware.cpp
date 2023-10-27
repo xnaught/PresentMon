@@ -324,12 +324,21 @@ namespace pmid
 
 #undef X_REG_ENUMS
 #undef X_REG_KEYS
+
 		// validate the enumeration that records introspectable enums
 #define X_REG_KEYS(enum_frag, key_frag, name, short_name, abbreviation, description) case MAKE_KEY_SYMBOL(enum_frag, key_frag): return false;
 		switch (PM_ENUM(0)) {
 			ENUM_KEY_LIST_ENUM(X_REG_KEYS)
 		}
 #undef X_REG_KEYS
+
+		// validate the list of metrics against the metrics enum
+#define X_REG_METRICS(metric, ...) case metric: return false;
+		switch (PM_METRIC(0)) {
+			METRIC_LIST(X_REG_METRICS)
+		}
+#undef X_REG_METRICS
+
 		return true;
 	}
 
