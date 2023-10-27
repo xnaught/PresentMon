@@ -139,7 +139,7 @@ namespace PresentMonAPI2
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(11ull, pRoot->pEnums->size);
 			Assert::AreEqual(6ull, pRoot->pMetrics->size);
-			Assert::AreEqual(2ull, pRoot->pDevices->size);
+			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 6th enum (unit)
 			{
@@ -183,7 +183,7 @@ namespace PresentMonAPI2
 				Assert::AreEqual("Device-independent", pDevice->pName->pData);
 			}
 
-			// check metric
+			// check metric 1st
 			{
 				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[0]);
 				Assert::IsNotNull(pMetric);
@@ -202,6 +202,35 @@ namespace PresentMonAPI2
 					auto pInfo = static_cast<const PM_INTROSPECTION_DEVICE_METRIC_INFO*>(pMetric->pDeviceMetricInfo->pData[0]);
 					Assert::AreEqual(0u, pInfo->deviceId);
 					Assert::AreEqual(1u, pInfo->arraySize);
+					Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)pInfo->avalability);
+				}
+			}
+
+			// check metric gpu array 2 device (fan)
+			{
+				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[5]);
+				Assert::IsNotNull(pMetric);
+				Assert::AreEqual((int)PM_METRIC_GPU_FAN_SPEED, (int)pMetric->id);
+				Assert::AreEqual((int)PM_UNIT_RPM, (int)pMetric->unit);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->typeInfo.type);
+				Assert::AreEqual(2ull, pMetric->pStats->size);
+				// check 1st stat
+				{
+					auto pStat = static_cast<const PM_STAT*>(pMetric->pStats->pData[0]);
+					Assert::AreEqual((int)PM_STAT_AVG, (int)*pStat);
+				}
+				// check device infos
+				Assert::AreEqual(2ull, pMetric->pDeviceMetricInfo->size);
+				{
+					auto pInfo = static_cast<const PM_INTROSPECTION_DEVICE_METRIC_INFO*>(pMetric->pDeviceMetricInfo->pData[0]);
+					Assert::AreEqual(1u, pInfo->deviceId);
+					Assert::AreEqual(1u, pInfo->arraySize);
+					Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)pInfo->avalability);
+				}
+				{
+					auto pInfo = static_cast<const PM_INTROSPECTION_DEVICE_METRIC_INFO*>(pMetric->pDeviceMetricInfo->pData[1]);
+					Assert::AreEqual(2u, pInfo->deviceId);
+					Assert::AreEqual(2u, pInfo->arraySize);
 					Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)pInfo->avalability);
 				}
 			}

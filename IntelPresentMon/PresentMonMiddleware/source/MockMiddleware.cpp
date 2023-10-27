@@ -352,6 +352,7 @@ namespace pmid
 		// do device population
 		pRoot->AddDevice(std::make_unique<IntrospectionDevice>(0, PM_DEVICE_TYPE_INDEPENDENT, PM_DEVICE_VENDOR_UNKNOWN, "Device-independent"));
 		pRoot->AddDevice(std::make_unique<IntrospectionDevice>(1, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_DEVICE_VENDOR_INTEL, "Arc 750"));
+		pRoot->AddDevice(std::make_unique<IntrospectionDevice>(2, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_DEVICE_VENDOR_NVIDIA, "GeForce RTX 2080 ti"));
 
 		// helper to generate device-metric info for metrics (simulating runtime population of availability and dimensions)
 		const auto PopulateDeviceMetricInfo = [](IntrospectionMetric& metric, PM_DEVICE_TYPE deviceType) {
@@ -359,10 +360,12 @@ namespace pmid
 				metric.AddDeviceMetricInfo({ 0, PM_METRIC_AVAILABILITY_AVAILABLE, 1 });
 			}
 			else if (metric.id == PM_METRIC_GPU_FAN_SPEED) {
-				metric.AddDeviceMetricInfo({ 1, PM_METRIC_AVAILABILITY_AVAILABLE, 2 });
+				metric.AddDeviceMetricInfo({ 1, PM_METRIC_AVAILABILITY_AVAILABLE, 1 });
+				metric.AddDeviceMetricInfo({ 2, PM_METRIC_AVAILABILITY_AVAILABLE, 2 });
 			}
 			else {
 				metric.AddDeviceMetricInfo({ 1, PM_METRIC_AVAILABILITY_AVAILABLE, 1 });
+				metric.AddDeviceMetricInfo({ 2, PM_METRIC_AVAILABILITY_AVAILABLE, 1 });
 			}
 		};
 
