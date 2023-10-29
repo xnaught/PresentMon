@@ -261,7 +261,7 @@ namespace PresentMonAPI2
 			const auto pData = std::make_shared<pmapi::intro::Dataset>(pRoot);
 			auto e = expected.begin();
 			for (auto i = pData->GetEnumsBegin(); i != pData->GetEnumsEnd(); i++, e++) {
-				Assert::AreEqual(*e, (*i).GetSymbol());
+				Assert::AreEqual(*e, i->GetSymbol());
 			}
 
 			// free structure

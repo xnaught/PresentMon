@@ -45,15 +45,15 @@ namespace pmapi
                 pArray -= rhs;
                 return *this;
             }
-            const value_type operator*() const noexcept
+            value_type operator*() const noexcept
             {
                 return value_type{ pDataset, *pArray };
             }
-            //const value_type* operator->() const noexcept
-            //{
-            //    return &**this;
-            //}
-            const value_type operator[](size_t idx) const noexcept
+            value_type operator->() const noexcept
+            {
+                return **this;
+            }
+            value_type operator[](size_t idx) const noexcept
             {
                 return value_type{ pDataset, pArray[idx] };
             }
@@ -131,6 +131,10 @@ namespace pmapi
             std::string GetSymbol() const
             {
                 return pBase->pSymbol->pData;
+            }
+            const EnumView* operator->() const
+            {
+                return this;
             }
         private:
             // functions
