@@ -2,6 +2,9 @@
 #include "../PresentMonAPI2/source/PresentMonAPI.h"
 #include <cstring>
 #include <crtdbg.h>
+#include <vector>
+
+#include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -235,6 +238,33 @@ namespace PresentMonAPI2
 				}
 			}
 
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
+		}
+
+
+		TEST_METHOD(WrapperIntrospect)
+		{
+			using namespace std::string_literals;
+
+			// introspection query
+			const PM_INTROSPECTION_ROOT* pRoot{};
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
+			Assert::IsNotNull(pRoot);
+			Assert::AreEqual(11ull, pRoot->pEnums->size);
+			Assert::AreEqual(6ull, pRoot->pMetrics->size);
+			Assert::AreEqual(3ull, pRoot->pDevices->size);
+
+			const std::vector expected{
+				"PM_STATUS"s, "PM_METRIC"s, "PM_DEVICE_VENDOR"s, "PM_PRESENT_MODE"s, "PM_PSU_TYPE"s,
+				"PM_UNIT"s, "PM_STAT"s, "PM_DATA_TYPE"s, "PM_GRAPHICS_RUNTIME"s, "PM_DEVICE_TYPE"s, "PM_METRIC_AVAILABILITY"s
+			};
+			const auto pData = std::make_shared<pmapi::intro::Dataset>(pRoot);
+			auto e = expected.begin();
+			for (auto i = pData->GetEnumsBegin(); i != pData->GetEnumsEnd(); i++, e++) {
+				Assert::AreEqual(*e, (*i).GetSymbol());
+			}
+
+			// free structure
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
 		}
 	};

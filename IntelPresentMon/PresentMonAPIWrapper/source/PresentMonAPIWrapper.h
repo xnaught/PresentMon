@@ -1,0 +1,171 @@
+#pragma once
+#include "../../PresentMonAPI2/source/PresentMonAPI.h"
+#include <iterator>
+#include <string>
+#include <ranges>
+#include <memory>
+
+namespace pmapi
+{
+	namespace intro
+	{
+        template<class T>
+        class ObjArrayViewIterator
+        {
+        public:
+            using iterator_category = std::random_access_iterator_tag;
+            using value_type = T;
+            using base_type = typename T::BaseType;
+            using reference = value_type&;
+            using pointer = value_type*;
+            using difference_type = ptrdiff_t;
+
+            ObjArrayViewIterator() = delete;
+            ObjArrayViewIterator(std::shared_ptr<const class Dataset> pDataset_, const PM_INTROSPECTION_OBJARRAY* pObjArray, difference_type offset = 0u) noexcept
+                :
+                pDataset{ std::move(pDataset_) },
+                pArray{ (const base_type* const*)pObjArray->pData + offset }
+            {}
+            ObjArrayViewIterator(const ObjArrayViewIterator& rhs) noexcept : pArray{ rhs.pArray } {}
+            ObjArrayViewIterator& operator=(const ObjArrayViewIterator& rhs) noexcept
+            {
+                // Self-assignment check
+                if (this != &rhs) {
+                    pArray = rhs.pArray;
+                }
+                return *this;
+            }
+            ObjArrayViewIterator& operator+=(difference_type rhs) noexcept
+            {
+                pArray += rhs;
+                return *this;
+            }
+            ObjArrayViewIterator& operator-=(difference_type rhs) noexcept
+            {
+                pArray -= rhs;
+                return *this;
+            }
+            const value_type operator*() const noexcept
+            {
+                return value_type{ pDataset, *pArray };
+            }
+            //const value_type* operator->() const noexcept
+            //{
+            //    return &**this;
+            //}
+            const value_type operator[](size_t idx) const noexcept
+            {
+                return value_type{ pDataset, pArray[idx] };
+            }
+
+            ObjArrayViewIterator& operator++() noexcept
+            {
+                ++pArray;
+                return *this;
+            }
+            ObjArrayViewIterator& operator--() noexcept
+            {
+                --pArray;
+                return *this;
+            }
+            ObjArrayViewIterator operator++(int) noexcept { ObjArrayViewIterator tmp(*this); ++(*this); return tmp; }
+            ObjArrayViewIterator operator--(int) noexcept { ObjArrayViewIterator tmp(*this); --(*this); return tmp; }
+            difference_type operator-(const ObjArrayViewIterator& rhs) const noexcept
+            {
+                return difference_type(pArray - rhs.pArray);
+            }
+            ObjArrayViewIterator operator+(difference_type rhs) const noexcept
+            {
+                auto dup = *this;
+                return dup += rhs;
+            }
+            ObjArrayViewIterator operator-(difference_type rhs) const noexcept
+            {
+                auto dup = *this;
+                return dup -= rhs;
+            }
+
+            bool operator==(const ObjArrayViewIterator& rhs) const noexcept { return pArray == rhs.pArray; }
+            bool operator!=(const ObjArrayViewIterator& rhs) const noexcept { return pArray != rhs.pArray; }
+            bool operator>(const ObjArrayViewIterator& rhs) const noexcept { return pArray > rhs.pArray; }
+            bool operator<(const ObjArrayViewIterator& rhs) const noexcept { return pArray < rhs.pArray; }
+            bool operator>=(const ObjArrayViewIterator& rhs) const noexcept { return pArray >= rhs.pArray; }
+            bool operator<=(const ObjArrayViewIterator& rhs) const noexcept { return pArray <= rhs.pArray; }
+        private:
+            // data
+            const base_type* const* pArray;
+            std::shared_ptr<const class Dataset> pDataset;
+        };
+
+		class MetricView
+		{
+
+		};
+
+		class DataTypeInfoView
+		{
+
+		};
+
+		class DeviceMetricInfoView
+		{
+
+		};
+
+		class DeviceView
+		{
+
+		};
+
+		class EnumKeyView
+		{
+
+		};
+
+		class EnumView
+		{
+            friend class ObjArrayViewIterator<EnumView>;
+            friend class Dataset;
+        public:
+            using BaseType = PM_INTROSPECTION_ENUM;
+            std::string GetSymbol() const
+            {
+                return pBase->pSymbol->pData;
+            }
+        private:
+            // functions
+            EnumView(std::shared_ptr<const class Dataset> pDataset_, const PM_INTROSPECTION_ENUM* pBase_)
+                :
+                pDataset{ pDataset },
+                pBase{ pBase_ }
+            {}
+            // data
+            std::shared_ptr<const class Dataset> pDataset;
+            const PM_INTROSPECTION_ENUM* pBase = nullptr;
+		};
+
+		class Dataset : public std::enable_shared_from_this<Dataset>
+		{
+		public:
+            Dataset(const PM_INTROSPECTION_ROOT* pRoot_) : pRoot{ pRoot_ } {}
+            ObjArrayViewIterator<EnumView> GetEnumsBegin() const
+            {
+                return ObjArrayViewIterator<EnumView>{ shared_from_this(), pRoot->pEnums };
+            }
+            ObjArrayViewIterator<EnumView> GetEnumsEnd() const
+            {
+                return ObjArrayViewIterator<EnumView>{ shared_from_this(), pRoot->pEnums, (int64_t)pRoot->pEnums->size };
+            }
+			//virtual EnumView FindEnum(int id) const = 0;
+			//virtual DeviceView FindDevice(int id) const = 0;
+			//virtual MetricView FindMetric(int id) const = 0;
+        private:
+            const PM_INTROSPECTION_ROOT* pRoot = nullptr;
+		};
+	}
+
+	class Session
+	{
+
+	};
+}
