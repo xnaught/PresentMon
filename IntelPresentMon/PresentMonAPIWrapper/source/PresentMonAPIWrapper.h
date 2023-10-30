@@ -20,7 +20,7 @@ namespace pmapi
             using pointer = value_type*;
             using difference_type = ptrdiff_t;
 
-            ObjArrayViewIterator() = delete;
+            ObjArrayViewIterator() = default;
             ObjArrayViewIterator(std::shared_ptr<const class Dataset> pDataset_, const PM_INTROSPECTION_OBJARRAY* pObjArray, difference_type offset = 0u) noexcept
                 :
                 pDataset{ std::move(pDataset_) },
@@ -93,7 +93,7 @@ namespace pmapi
             bool operator<=(const ObjArrayViewIterator& rhs) const noexcept { return pArray <= rhs.pArray; }
         private:
             // data
-            const base_type* const* pArray;
+            const base_type* const* pArray = nullptr;
             std::shared_ptr<const class Dataset> pDataset;
         };
 
@@ -152,6 +152,11 @@ namespace pmapi
 		{
 		public:
             Dataset(const PM_INTROSPECTION_ROOT* pRoot_) : pRoot{ pRoot_ } {}
+            auto GetEnums() const
+            {
+                using It = ObjArrayViewIterator<EnumView>;
+                return std::ranges::subrange<It, It>(GetEnumsBegin(), GetEnumsEnd());
+            }
             ObjArrayViewIterator<EnumView> GetEnumsBegin() const
             {
                 return ObjArrayViewIterator<EnumView>{ shared_from_this(), pRoot->pEnums };
