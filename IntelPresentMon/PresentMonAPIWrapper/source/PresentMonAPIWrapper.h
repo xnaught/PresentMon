@@ -239,16 +239,32 @@ namespace pmapi
             const BaseType* pBase = nullptr;
         };
 
+
+
 		class Dataset
 		{
 		public:
-            Dataset(const PM_INTROSPECTION_ROOT* pRoot_) : pRoot{ pRoot_ } 
+            Dataset(const PM_INTROSPECTION_ROOT* pRoot_) : pRoot{ pRoot_ }
             {
                 for (auto e : GetEnums()) {
                     for (auto k : e.GetKeys()) {
                         enumKeyMap[MakeEnumKeyMapKey_(e.GetID(), k.GetValue())] = k.GetBasePtr();
                     }
                 }
+            }
+            Dataset(Dataset&& rhs) noexcept
+                :
+                pRoot{ rhs.pRoot },
+                enumKeyMap{ std::move(rhs.enumKeyMap) }
+            {
+                rhs.pRoot = nullptr;
+            }
+            Dataset& operator=(Dataset&& rhs) noexcept
+            {
+                pRoot = rhs.pRoot;
+                rhs.pRoot = nullptr;
+                enumKeyMap = std::move(rhs.enumKeyMap);
+                return *this;
             }
             ~Dataset()
             {
@@ -305,6 +321,38 @@ namespace pmapi
 
 	class Session
 	{
-
+    public:
+        Session()
+        {
+            // throw exception on error
+            pmOpenSession();
+        }
+        Session(Session&& rhs) noexcept
+            :
+            token{ rhs.token }
+        {
+            rhs.token = false;
+        }
+        Session& operator=(Session&& rhs) noexcept
+        {
+            token = rhs.token;
+            rhs.token = false;
+            return *this;
+        }
+        ~Session()
+        {
+            if (token) {
+                pmCloseSession();
+            }
+        }
+        intro::Dataset GetIntrospectionDataset() const
+        {
+            // throw an exception on error or non-token
+            const PM_INTROSPECTION_ROOT* pRoot{};
+            pmEnumerateInterface(&pRoot);
+            return { pRoot };
+        }
+    private:
+        bool token = true;
 	};
 }

@@ -3,6 +3,7 @@
 #include <cstring>
 #include <crtdbg.h>
 #include <vector>
+#include <optional>
 
 #include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
 
@@ -241,50 +242,51 @@ namespace PresentMonAPI2
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
 		}
 	};
-	TEST_CLASS(WrapperMainTests)
+
+	TEST_CLASS(WrapperSessionTests)
 	{
 	public:
 		TEST_METHOD_INITIALIZE(BeforeEachTestMethod)
 		{
 			pmSetMiddlewareAsMock_(true, true);
-			pmOpenSession();
 		}
-		TEST_METHOD_CLEANUP(AfterEachTestMethod)
+		TEST_METHOD(SessionRountripWithDatasetNoLeaks)
 		{
-			pmCloseSession();
-		}
-		TEST_METHOD(DatasetFreeNoLeaks)
-		{
-			using namespace std::string_literals;
-
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
-			// introspection query
 			{
-				const PM_INTROSPECTION_ROOT* pRoot{};
-				Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
-				pmapi::intro::Dataset data{ pRoot };
-			}
+				pmapi::Session session;
+				auto data = session.GetIntrospectionDataset();
+			}			
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
+		}
+	};
+	TEST_CLASS(WrapperDatasetTests)
+	{
+	public:
+		TEST_METHOD_INITIALIZE(BeforeEachTestMethod)
+		{
+			pmSetMiddlewareAsMock_(true, true);
+			session.emplace();
+			data = session->GetIntrospectionDataset();
+		}
+		TEST_METHOD_CLEANUP(AfterEachTestMethod)
+		{
+			data.reset();
+			session.reset();
 		}
 		TEST_METHOD(IntrospectRootRange)
 		{
 			using namespace std::string_literals;
 
-			// introspection query
-			const PM_INTROSPECTION_ROOT* pRoot{};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
-			Assert::IsNotNull(pRoot);
-
 			const std::vector expected{
 				"PM_STATUS"s, "PM_METRIC"s, "PM_DEVICE_VENDOR"s, "PM_PRESENT_MODE"s, "PM_PSU_TYPE"s,
 				"PM_UNIT"s, "PM_STAT"s, "PM_DATA_TYPE"s, "PM_GRAPHICS_RUNTIME"s, "PM_DEVICE_TYPE"s, "PM_METRIC_AVAILABILITY"s
 			};
-			pmapi::intro::Dataset data{ pRoot };
 			auto e = expected.begin();
-			for (auto ev : data.GetEnums()) {
+			for (auto ev : data->GetEnums()) {
 				Assert::AreEqual(*e, ev.GetSymbol());
 				e++;
 			}
@@ -293,19 +295,13 @@ namespace PresentMonAPI2
 		{
 			using namespace std::string_literals;
 
-			// introspection query
-			const PM_INTROSPECTION_ROOT* pRoot{};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
-			Assert::IsNotNull(pRoot);
-
 			const std::vector expected{
 				"PM_STATUS_SUCCESS"s,
 				"PM_STATUS_FAILURE"s,
 				"PM_STATUS_SESSION_NOT_OPEN"s,
 			};
-			const pmapi::intro::Dataset data{ pRoot };
 			auto e = expected.begin();
-			for (auto kv : data.GetEnums().begin()->GetKeys()) {
+			for (auto kv : data->GetEnums().begin()->GetKeys()) {
 				Assert::AreEqual(*e, kv.GetSymbol());
 				e++;
 			}
@@ -313,14 +309,10 @@ namespace PresentMonAPI2
 		TEST_METHOD(IntrospectMetricToEnumKey)
 		{
 			using namespace std::string_literals;
-
-			// introspection query
-			const PM_INTROSPECTION_ROOT* pRoot{};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
-			Assert::IsNotNull(pRoot);
-
-			pmapi::intro::Dataset data{ pRoot };
-			Assert::AreEqual("Displayed FPS"s, data.GetMetrics().begin()->GetMetricKey().GetName());
+			Assert::AreEqual("Displayed FPS"s, data->GetMetrics().begin()->GetMetricKey().GetName());
 		}
+	private:
+		std::optional<pmapi::Session> session;
+		std::optional<pmapi::intro::Dataset> data;
 	};
 }
