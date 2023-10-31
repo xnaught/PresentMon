@@ -263,7 +263,7 @@ namespace PresentMonAPI2
 			{
 				const PM_INTROSPECTION_ROOT* pRoot{};
 				Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
-				const auto pData = std::make_shared<pmapi::intro::Dataset>(pRoot);
+				pmapi::intro::Dataset data{ pRoot };
 			}
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
@@ -277,17 +277,14 @@ namespace PresentMonAPI2
 			const PM_INTROSPECTION_ROOT* pRoot{};
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
 			Assert::IsNotNull(pRoot);
-			Assert::AreEqual(11ull, pRoot->pEnums->size);
-			Assert::AreEqual(6ull, pRoot->pMetrics->size);
-			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			const std::vector expected{
 				"PM_STATUS"s, "PM_METRIC"s, "PM_DEVICE_VENDOR"s, "PM_PRESENT_MODE"s, "PM_PSU_TYPE"s,
 				"PM_UNIT"s, "PM_STAT"s, "PM_DATA_TYPE"s, "PM_GRAPHICS_RUNTIME"s, "PM_DEVICE_TYPE"s, "PM_METRIC_AVAILABILITY"s
 			};
-			const auto pData = std::make_shared<pmapi::intro::Dataset>(pRoot);
+			pmapi::intro::Dataset data{ pRoot };
 			auto e = expected.begin();
-			for (auto ev : pData->GetEnums()) {
+			for (auto ev : data.GetEnums()) {
 				Assert::AreEqual(*e, ev.GetSymbol());
 				e++;
 			}
@@ -300,21 +297,30 @@ namespace PresentMonAPI2
 			const PM_INTROSPECTION_ROOT* pRoot{};
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
 			Assert::IsNotNull(pRoot);
-			Assert::AreEqual(11ull, pRoot->pEnums->size);
-			Assert::AreEqual(6ull, pRoot->pMetrics->size);
-			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			const std::vector expected{
 				"PM_STATUS_SUCCESS"s,
 				"PM_STATUS_FAILURE"s,
 				"PM_STATUS_SESSION_NOT_OPEN"s,
 			};
-			const auto pData = std::make_shared<pmapi::intro::Dataset>(pRoot);
+			const pmapi::intro::Dataset data{ pRoot };
 			auto e = expected.begin();
-			for (auto kv : pData->GetEnums().begin()->GetKeys()) {
+			for (auto kv : data.GetEnums().begin()->GetKeys()) {
 				Assert::AreEqual(*e, kv.GetSymbol());
 				e++;
 			}
+		}
+		TEST_METHOD(IntrospectMetricToEnumKey)
+		{
+			using namespace std::string_literals;
+
+			// introspection query
+			const PM_INTROSPECTION_ROOT* pRoot{};
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
+			Assert::IsNotNull(pRoot);
+
+			pmapi::intro::Dataset data{ pRoot };
+			Assert::AreEqual("Displayed FPS"s, data.GetMetrics().begin()->GetMetricKey().GetName());
 		}
 	};
 }

@@ -3,7 +3,7 @@
 
 namespace pmapi::intro
 {
-    EnumKeyView intro::MetricView::GetMetricKeyView() const
+    EnumKeyView MetricView::GetMetricKey() const
     {
         return pDataset->FindEnumKey(PM_ENUM_METRIC, (int)pBase->id);
     }

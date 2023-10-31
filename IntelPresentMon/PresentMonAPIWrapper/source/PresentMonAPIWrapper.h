@@ -28,11 +28,12 @@ namespace pmapi
                 pDataset{ pDataset_ },
                 pArray{ (const base_type* const*)pObjArray->pData + offset }
             {}
-            ObjArrayViewIterator(const ObjArrayViewIterator& rhs) noexcept : pArray{ rhs.pArray } {}
+            ObjArrayViewIterator(const ObjArrayViewIterator& rhs) noexcept : pDataset{ rhs.pDataset }, pArray{ rhs.pArray } {}
             ObjArrayViewIterator& operator=(const ObjArrayViewIterator& rhs) noexcept
             {
                 // Self-assignment check
                 if (this != &rhs) {
+                    pDataset = rhs.pDataset;
                     pArray = rhs.pArray;
                 }
                 return *this;
@@ -96,7 +97,7 @@ namespace pmapi
         private:
             // data
             const base_type* const* pArray = nullptr;
-            const class Dataset* pDataset;
+            const class Dataset* pDataset = nullptr;
         };
 
         template<class V>
@@ -135,11 +136,11 @@ namespace pmapi
             }
             std::string GetName() const
             {
-                return pBase->pDescription->pData;
+                return pBase->pName->pData;
             }
             std::string GetShortName() const
             {
-                return pBase->pDescription->pData;
+                return pBase->pShortName->pData;
             }
             std::string GetDescription() const
             {
@@ -157,7 +158,7 @@ namespace pmapi
             // functions
             EnumKeyView(const class Dataset* pDataset_, const BaseType* pBase_)
                 :
-                pDataset{ pDataset },
+                pDataset{ pDataset_ },
                 pBase{ pBase_ }
             {}
             // data
@@ -196,9 +197,9 @@ namespace pmapi
             }
         private:
             // functions
-            EnumView(const class Dataset*, const BaseType* pBase_)
+            EnumView(const class Dataset* pDataset_, const BaseType* pBase_)
                 :
-                pDataset{ pDataset },
+                pDataset{ pDataset_ },
                 pBase{ pBase_ }
             {}
             ObjArrayViewIterator<EnumKeyView> GetKeysBegin_() const
@@ -221,16 +222,16 @@ namespace pmapi
             friend class ObjArrayViewIterator<SelfType>;
             friend class Dataset;
         public:
-            EnumKeyView GetMetricKeyView() const;
+            EnumKeyView GetMetricKey() const;
             const SelfType* operator->() const
             {
                 return this;
             }
         private:
             // functions
-            MetricView(const class Dataset*, const BaseType* pBase_)
+            MetricView(const class Dataset* pDataset_, const BaseType* pBase_)
                 :
-                pDataset{ pDataset },
+                pDataset{ pDataset_ },
                 pBase{ pBase_ }
             {}
             // data
