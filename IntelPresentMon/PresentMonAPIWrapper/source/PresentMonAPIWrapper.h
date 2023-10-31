@@ -4,11 +4,13 @@
 #include <string>
 #include <ranges>
 #include <memory>
+#include <unordered_map>
 
 namespace pmapi
 {
 	namespace intro
 	{
+
         template<class T>
         class ObjArrayViewIterator
         {
@@ -21,9 +23,9 @@ namespace pmapi
             using difference_type = ptrdiff_t;
 
             ObjArrayViewIterator() = default;
-            ObjArrayViewIterator(std::shared_ptr<const class Dataset> pDataset_, const PM_INTROSPECTION_OBJARRAY* pObjArray, difference_type offset = 0u) noexcept
+            ObjArrayViewIterator(const class Dataset* pDataset_, const PM_INTROSPECTION_OBJARRAY* pObjArray, difference_type offset = 0u) noexcept
                 :
-                pDataset{ std::move(pDataset_) },
+                pDataset{ pDataset_ },
                 pArray{ (const base_type* const*)pObjArray->pData + offset }
             {}
             ObjArrayViewIterator(const ObjArrayViewIterator& rhs) noexcept : pArray{ rhs.pArray } {}
@@ -94,16 +96,12 @@ namespace pmapi
         private:
             // data
             const base_type* const* pArray = nullptr;
-            std::shared_ptr<const class Dataset> pDataset;
+            const class Dataset* pDataset;
         };
 
         template<class V>
         using ViewRange = std::ranges::subrange<ObjArrayViewIterator<V>, ObjArrayViewIterator<V>>;
 
-		class MetricView
-		{
-
-		};
 
 		class DataTypeInfoView
 		{
@@ -127,9 +125,21 @@ namespace pmapi
             friend class ObjArrayViewIterator<SelfType>;
             friend class Dataset;
         public:
+            int GetValue() const
+            {
+                return pBase->value;
+            }
             std::string GetSymbol() const
             {
                 return pBase->pSymbol->pData;
+            }
+            std::string GetName() const
+            {
+                return pBase->pDescription->pData;
+            }
+            std::string GetShortName() const
+            {
+                return pBase->pDescription->pData;
             }
             std::string GetDescription() const
             {
@@ -139,15 +149,19 @@ namespace pmapi
             {
                 return this;
             }
+            const BaseType* GetBasePtr() const
+            {
+                return pBase;
+            }
         private:
             // functions
-            EnumKeyView(std::shared_ptr<const class Dataset> pDataset_, const BaseType* pBase_)
+            EnumKeyView(const class Dataset* pDataset_, const BaseType* pBase_)
                 :
                 pDataset{ pDataset },
                 pBase{ pBase_ }
             {}
             // data
-            std::shared_ptr<const class Dataset> pDataset;
+            const class Dataset* pDataset = nullptr;
             const BaseType* pBase = nullptr;
 		};
 
@@ -182,7 +196,7 @@ namespace pmapi
             }
         private:
             // functions
-            EnumView(std::shared_ptr<const class Dataset> pDataset_, const BaseType* pBase_)
+            EnumView(const class Dataset*, const BaseType* pBase_)
                 :
                 pDataset{ pDataset },
                 pBase{ pBase_ }
@@ -196,14 +210,45 @@ namespace pmapi
                 return ObjArrayViewIterator<EnumKeyView>{ pDataset, pBase->pKeys, (int64_t)pBase->pKeys->size };
             }
             // data
-            std::shared_ptr<const class Dataset> pDataset;
+            const class Dataset* pDataset;
             const BaseType* pBase = nullptr;
 		};
 
-		class Dataset : public std::enable_shared_from_this<Dataset>
+        class MetricView
+        {
+            using BaseType = PM_INTROSPECTION_METRIC;
+            using SelfType = MetricView;
+            friend class ObjArrayViewIterator<SelfType>;
+            friend class Dataset;
+        public:
+            EnumKeyView GetMetricKeyView() const;
+            const SelfType* operator->() const
+            {
+                return this;
+            }
+        private:
+            // functions
+            MetricView(const class Dataset*, const BaseType* pBase_)
+                :
+                pDataset{ pDataset },
+                pBase{ pBase_ }
+            {}
+            // data
+            const class Dataset* pDataset;
+            const BaseType* pBase = nullptr;
+        };
+
+		class Dataset
 		{
 		public:
-            Dataset(const PM_INTROSPECTION_ROOT* pRoot_) : pRoot{ pRoot_ } {}
+            Dataset(const PM_INTROSPECTION_ROOT* pRoot_) : pRoot{ pRoot_ } 
+            {
+                for (auto e : GetEnums()) {
+                    for (auto k : e.GetKeys()) {
+                        enumKeyMap[MakeEnumKeyMapKey_(e.GetID(), k.GetValue())] = k.GetBasePtr();
+                    }
+                }
+            }
             ~Dataset()
             {
                 pmFreeInterface(pRoot);
@@ -214,21 +259,46 @@ namespace pmapi
                 // workaround this by providing them explicitly as the return type (normally would use auto)
                 return { GetEnumsBegin_(), GetEnumsEnd_() };
             }
-			//virtual EnumView FindEnum(int id) const = 0;
+            ViewRange<MetricView> GetMetrics() const
+            {
+                // trying to deduce the template params for subrange causes intellisense to crash
+                // workaround this by providing them explicitly as the return type (normally would use auto)
+                return { GetMetricsBegin_(), GetMetricsEnd_() };
+            }
+            EnumKeyView FindEnumKey(PM_ENUM enumId, int keyValue) const
+            {
+                // TODO: exception for bad lookup
+                auto i = enumKeyMap.find(MakeEnumKeyMapKey_(enumId, keyValue));
+                return { this, i->second };
+            }
 			//virtual DeviceView FindDevice(int id) const = 0;
 			//virtual MetricView FindMetric(int id) const = 0;
         private:
             // functions
+            static uint64_t MakeEnumKeyMapKey_(PM_ENUM enumId, int keyValue)
+            {
+                // pack 64-bit hash key as upper and lower 32-bit values
+                return (uint64_t(enumId) << 32) | uint64_t(keyValue);
+            }
             ObjArrayViewIterator<EnumView> GetEnumsBegin_() const
             {
-                return ObjArrayViewIterator<EnumView>{ shared_from_this(), pRoot->pEnums };
+                return ObjArrayViewIterator<EnumView>{ this, pRoot->pEnums };
             }
             ObjArrayViewIterator<EnumView> GetEnumsEnd_() const
             {
-                return ObjArrayViewIterator<EnumView>{ shared_from_this(), pRoot->pEnums, (int64_t)pRoot->pEnums->size };
+                return ObjArrayViewIterator<EnumView>{ this, pRoot->pEnums, (int64_t)pRoot->pEnums->size };
+            }
+            ObjArrayViewIterator<MetricView> GetMetricsBegin_() const
+            {
+                return ObjArrayViewIterator<MetricView>{ this, pRoot->pMetrics };
+            }
+            ObjArrayViewIterator<MetricView> GetMetricsEnd_() const
+            {
+                return ObjArrayViewIterator<MetricView>{ this, pRoot->pMetrics, (int64_t)pRoot->pMetrics->size };
             }
             // data
             const PM_INTROSPECTION_ROOT* pRoot = nullptr;
+            std::unordered_map<uint64_t, const PM_INTROSPECTION_ENUM_KEY*> enumKeyMap;
 		};
 	}
 
