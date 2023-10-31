@@ -154,6 +154,10 @@ namespace pmapi
             using ViewRange = std::ranges::subrange<ObjArrayViewIterator<V>, ObjArrayViewIterator<V>>;
 		public:
             Dataset(const PM_INTROSPECTION_ROOT* pRoot_) : pRoot{ pRoot_ } {}
+            ~Dataset()
+            {
+                pmFreeInterface(pRoot);
+            }
             ViewRange<EnumView> GetEnums() const
             {
                 // trying to deduce the template params for subrange causes intellisense to crash

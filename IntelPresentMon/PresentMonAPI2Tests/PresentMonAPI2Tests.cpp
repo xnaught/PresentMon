@@ -253,6 +253,22 @@ namespace PresentMonAPI2
 		{
 			pmCloseSession();
 		}
+		TEST_METHOD(DatasetFreeNoLeaks)
+		{
+			using namespace std::string_literals;
+
+			const auto heapBefore = pmCreateHeapCheckpoint_();
+
+			// introspection query
+			{
+				const PM_INTROSPECTION_ROOT* pRoot{};
+				Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
+				const auto pData = std::make_shared<pmapi::intro::Dataset>(pRoot);
+			}
+
+			const auto heapAfter = pmCreateHeapCheckpoint_();
+			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
+		}
 		TEST_METHOD(Introspect)
 		{
 			using namespace std::string_literals;
@@ -275,9 +291,6 @@ namespace PresentMonAPI2
 				Assert::AreEqual(*e, ev.GetSymbol());
 				e++;
 			}
-
-			// free structure
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
 		}
 	};
 }
