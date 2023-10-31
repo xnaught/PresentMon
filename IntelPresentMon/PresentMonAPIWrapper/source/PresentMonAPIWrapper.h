@@ -116,6 +116,8 @@ namespace pmapi
 
 		class DeviceView
 		{
+        public:
+        private:
 
 		};
 
@@ -223,6 +225,7 @@ namespace pmapi
             friend class Dataset;
         public:
             EnumKeyView GetMetricKey() const;
+            EnumKeyView GetUnit() const;
             const SelfType* operator->() const
             {
                 return this;
@@ -238,7 +241,6 @@ namespace pmapi
             const class Dataset* pDataset;
             const BaseType* pBase = nullptr;
         };
-
 
 
 		class Dataset

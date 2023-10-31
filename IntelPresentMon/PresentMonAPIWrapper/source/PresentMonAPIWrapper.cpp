@@ -7,4 +7,9 @@ namespace pmapi::intro
     {
         return pDataset->FindEnumKey(PM_ENUM_METRIC, (int)pBase->id);
     }
+
+    EnumKeyView MetricView::GetUnit() const
+    {
+        return pDataset->FindEnumKey(PM_ENUM_UNIT, (int)pBase->unit);
+    }
 }
