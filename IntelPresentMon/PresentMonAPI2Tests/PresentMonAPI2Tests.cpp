@@ -240,9 +240,20 @@ namespace PresentMonAPI2
 
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
 		}
-
-
-		TEST_METHOD(WrapperIntrospect)
+	};
+	TEST_CLASS(WrapperMainTests)
+	{
+	public:
+		TEST_METHOD_INITIALIZE(BeforeEachTestMethod)
+		{
+			pmSetMiddlewareAsMock_(true, true);
+			pmOpenSession();
+		}
+		TEST_METHOD_CLEANUP(AfterEachTestMethod)
+		{
+			pmCloseSession();
+		}
+		TEST_METHOD(Introspect)
 		{
 			using namespace std::string_literals;
 
