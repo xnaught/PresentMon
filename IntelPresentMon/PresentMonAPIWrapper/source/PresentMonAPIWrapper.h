@@ -150,25 +150,30 @@ namespace pmapi
 
 		class Dataset : public std::enable_shared_from_this<Dataset>
 		{
+            template<class V>
+            using ViewRange = std::ranges::subrange<ObjArrayViewIterator<V>, ObjArrayViewIterator<V>>;
 		public:
             Dataset(const PM_INTROSPECTION_ROOT* pRoot_) : pRoot{ pRoot_ } {}
-            auto GetEnums() const
+            ViewRange<EnumView> GetEnums() const
             {
-                using It = ObjArrayViewIterator<EnumView>;
-                return std::ranges::subrange<It, It>(GetEnumsBegin(), GetEnumsEnd());
-            }
-            ObjArrayViewIterator<EnumView> GetEnumsBegin() const
-            {
-                return ObjArrayViewIterator<EnumView>{ shared_from_this(), pRoot->pEnums };
-            }
-            ObjArrayViewIterator<EnumView> GetEnumsEnd() const
-            {
-                return ObjArrayViewIterator<EnumView>{ shared_from_this(), pRoot->pEnums, (int64_t)pRoot->pEnums->size };
+                // trying to deduce the template params for subrange causes intellisense to crash
+                // workaround this by providing them explicitly as the return type (normally would use auto)
+                return { GetEnumsBegin_(), GetEnumsEnd_() };
             }
 			//virtual EnumView FindEnum(int id) const = 0;
 			//virtual DeviceView FindDevice(int id) const = 0;
 			//virtual MetricView FindMetric(int id) const = 0;
         private:
+            // functions
+            ObjArrayViewIterator<EnumView> GetEnumsBegin_() const
+            {
+                return ObjArrayViewIterator<EnumView>{ shared_from_this(), pRoot->pEnums };
+            }
+            ObjArrayViewIterator<EnumView> GetEnumsEnd_() const
+            {
+                return ObjArrayViewIterator<EnumView>{ shared_from_this(), pRoot->pEnums, (int64_t)pRoot->pEnums->size };
+            }
+            // data
             const PM_INTROSPECTION_ROOT* pRoot = nullptr;
 		};
 	}
