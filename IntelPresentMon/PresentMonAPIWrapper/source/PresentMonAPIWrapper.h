@@ -97,6 +97,9 @@ namespace pmapi
             std::shared_ptr<const class Dataset> pDataset;
         };
 
+        template<class V>
+        using ViewRange = std::ranges::subrange<ObjArrayViewIterator<V>, ObjArrayViewIterator<V>>;
+
 		class MetricView
 		{
 
@@ -119,39 +122,86 @@ namespace pmapi
 
 		class EnumKeyView
 		{
-
-		};
-
-		class EnumView
-		{
-            friend class ObjArrayViewIterator<EnumView>;
+            using BaseType = PM_INTROSPECTION_ENUM_KEY;
+            using SelfType = EnumKeyView;
+            friend class ObjArrayViewIterator<SelfType>;
             friend class Dataset;
         public:
-            using BaseType = PM_INTROSPECTION_ENUM;
             std::string GetSymbol() const
             {
                 return pBase->pSymbol->pData;
             }
-            const EnumView* operator->() const
+            std::string GetDescription() const
+            {
+                return pBase->pDescription->pData;
+            }
+            const SelfType* operator->() const
             {
                 return this;
             }
         private:
             // functions
-            EnumView(std::shared_ptr<const class Dataset> pDataset_, const PM_INTROSPECTION_ENUM* pBase_)
+            EnumKeyView(std::shared_ptr<const class Dataset> pDataset_, const BaseType* pBase_)
                 :
                 pDataset{ pDataset },
                 pBase{ pBase_ }
             {}
             // data
             std::shared_ptr<const class Dataset> pDataset;
-            const PM_INTROSPECTION_ENUM* pBase = nullptr;
+            const BaseType* pBase = nullptr;
+		};
+
+		class EnumView
+		{
+            using BaseType = PM_INTROSPECTION_ENUM;
+            using SelfType = EnumView;
+            friend class ObjArrayViewIterator<SelfType>;
+            friend class Dataset;
+        public:
+            PM_ENUM GetID() const
+            {
+                return pBase->id;
+            }
+            std::string GetSymbol() const
+            {
+                return pBase->pSymbol->pData;
+            }
+            std::string GetDescription() const
+            {
+                return pBase->pDescription->pData;
+            }
+            ViewRange<EnumKeyView> GetKeys() const
+            {
+                // trying to deduce the template params for subrange causes intellisense to crash
+                // workaround this by providing them explicitly as the return type (normally would use auto)
+                return { GetKeysBegin_(), GetKeysEnd_() };
+            }
+            const SelfType* operator->() const
+            {
+                return this;
+            }
+        private:
+            // functions
+            EnumView(std::shared_ptr<const class Dataset> pDataset_, const BaseType* pBase_)
+                :
+                pDataset{ pDataset },
+                pBase{ pBase_ }
+            {}
+            ObjArrayViewIterator<EnumKeyView> GetKeysBegin_() const
+            {
+                return ObjArrayViewIterator<EnumKeyView>{ pDataset, pBase->pKeys };
+            }
+            ObjArrayViewIterator<EnumKeyView> GetKeysEnd_() const
+            {
+                return ObjArrayViewIterator<EnumKeyView>{ pDataset, pBase->pKeys, (int64_t)pBase->pKeys->size };
+            }
+            // data
+            std::shared_ptr<const class Dataset> pDataset;
+            const BaseType* pBase = nullptr;
 		};
 
 		class Dataset : public std::enable_shared_from_this<Dataset>
 		{
-            template<class V>
-            using ViewRange = std::ranges::subrange<ObjArrayViewIterator<V>, ObjArrayViewIterator<V>>;
 		public:
             Dataset(const PM_INTROSPECTION_ROOT* pRoot_) : pRoot{ pRoot_ } {}
             ~Dataset()

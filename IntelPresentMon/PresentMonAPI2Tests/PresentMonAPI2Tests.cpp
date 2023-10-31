@@ -269,7 +269,7 @@ namespace PresentMonAPI2
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
 		}
-		TEST_METHOD(Introspect)
+		TEST_METHOD(IntrospectRootRange)
 		{
 			using namespace std::string_literals;
 
@@ -289,6 +289,30 @@ namespace PresentMonAPI2
 			auto e = expected.begin();
 			for (auto ev : pData->GetEnums()) {
 				Assert::AreEqual(*e, ev.GetSymbol());
+				e++;
+			}
+		}
+		TEST_METHOD(IntrospectViewRange)
+		{
+			using namespace std::string_literals;
+
+			// introspection query
+			const PM_INTROSPECTION_ROOT* pRoot{};
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
+			Assert::IsNotNull(pRoot);
+			Assert::AreEqual(11ull, pRoot->pEnums->size);
+			Assert::AreEqual(6ull, pRoot->pMetrics->size);
+			Assert::AreEqual(3ull, pRoot->pDevices->size);
+
+			const std::vector expected{
+				"PM_STATUS_SUCCESS"s,
+				"PM_STATUS_FAILURE"s,
+				"PM_STATUS_SESSION_NOT_OPEN"s,
+			};
+			const auto pData = std::make_shared<pmapi::intro::Dataset>(pRoot);
+			auto e = expected.begin();
+			for (auto kv : pData->GetEnums().begin()->GetKeys()) {
+				Assert::AreEqual(*e, kv.GetSymbol());
 				e++;
 			}
 		}
