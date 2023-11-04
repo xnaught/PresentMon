@@ -322,6 +322,12 @@ namespace PresentMonAPI2
 			Assert::AreEqual((int)PM_STAT::PM_STAT_AVG, (int)*data->GetMetrics().begin()->GetStats().begin());
 			Assert::AreEqual(7ull, data->GetMetrics().begin()->GetStats().size());
 		}
+		TEST_METHOD(IntrospectMetricStatsWithLookup)
+		{
+			using namespace std::string_literals;
+			const auto val = (int)*data->GetMetrics().begin()->GetStats().begin();
+			Assert::AreEqual("avg"s, data->FindEnumKey(PM_ENUM_STAT, val).GetShortName());
+		}
 	private:
 		std::optional<pmapi::Session> session;
 		std::optional<pmapi::intro::Dataset> data;
