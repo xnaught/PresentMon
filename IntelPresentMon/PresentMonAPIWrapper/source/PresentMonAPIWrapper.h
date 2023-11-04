@@ -10,9 +10,96 @@ namespace pmapi
 {
 	namespace intro
 	{
+        template<class T>
+        class BasicIterator
+        {
+        public:
+            using iterator_category = std::random_access_iterator_tag;
+            using value_type = T;
+            using reference = const value_type&;
+            using pointer = const value_type*;
+            using difference_type = ptrdiff_t;
+
+            BasicIterator() = default;
+            BasicIterator(const PM_INTROSPECTION_OBJARRAY* pObjArray, difference_type offset = 0u) noexcept
+                :
+                pArray{ (const value_type* const*)pObjArray->pData + offset }
+            {}
+            BasicIterator(const BasicIterator& rhs) noexcept : pArray{ rhs.pArray } {}
+            BasicIterator& operator=(const BasicIterator& rhs) noexcept
+            {
+                // Self-assignment check
+                if (this != &rhs) {
+                    pArray = rhs.pArray;
+                }
+                return *this;
+            }
+            BasicIterator& operator+=(difference_type rhs) noexcept
+            {
+                pArray += rhs;
+                return *this;
+            }
+            BasicIterator& operator-=(difference_type rhs) noexcept
+            {
+                pArray -= rhs;
+                return *this;
+            }
+            reference operator*() const noexcept
+            {
+                return **pArray;
+            }
+            pointer operator->() const noexcept
+            {
+                return *pArray;
+            }
+            reference operator[](size_t idx) const noexcept
+            {
+                return *pArray[idx];
+            }
+
+            BasicIterator& operator++() noexcept
+            {
+                ++pArray;
+                return *this;
+            }
+            BasicIterator& operator--() noexcept
+            {
+                --pArray;
+                return *this;
+            }
+            BasicIterator operator++(int) noexcept { BasicIterator tmp(*this); ++(*this); return tmp; }
+            BasicIterator operator--(int) noexcept { BasicIterator tmp(*this); --(*this); return tmp; }
+            difference_type operator-(const BasicIterator& rhs) const noexcept
+            {
+                return difference_type(pArray - rhs.pArray);
+            }
+            BasicIterator operator+(difference_type rhs) const noexcept
+            {
+                auto dup = *this;
+                return dup += rhs;
+            }
+            BasicIterator operator-(difference_type rhs) const noexcept
+            {
+                auto dup = *this;
+                return dup -= rhs;
+            }
+
+            bool operator==(const BasicIterator& rhs) const noexcept { return pArray == rhs.pArray; }
+            bool operator!=(const BasicIterator& rhs) const noexcept { return pArray != rhs.pArray; }
+            bool operator>(const BasicIterator& rhs) const noexcept { return pArray > rhs.pArray; }
+            bool operator<(const BasicIterator& rhs) const noexcept { return pArray < rhs.pArray; }
+            bool operator>=(const BasicIterator& rhs) const noexcept { return pArray >= rhs.pArray; }
+            bool operator<=(const BasicIterator& rhs) const noexcept { return pArray <= rhs.pArray; }
+        private:
+            // data
+            const value_type* const* pArray = nullptr;
+        };
 
         template<class T>
-        class ObjArrayViewIterator
+        using BasicRange = std::ranges::subrange<BasicIterator<T>, BasicIterator<T>>;
+
+        template<class T>
+        class ViewIterator
         {
         public:
             using iterator_category = std::random_access_iterator_tag;
@@ -22,14 +109,14 @@ namespace pmapi
             using pointer = value_type*;
             using difference_type = ptrdiff_t;
 
-            ObjArrayViewIterator() = default;
-            ObjArrayViewIterator(const class Dataset* pDataset_, const PM_INTROSPECTION_OBJARRAY* pObjArray, difference_type offset = 0u) noexcept
+            ViewIterator() = default;
+            ViewIterator(const class Dataset* pDataset_, const PM_INTROSPECTION_OBJARRAY* pObjArray, difference_type offset = 0u) noexcept
                 :
                 pDataset{ pDataset_ },
                 pArray{ (const base_type* const*)pObjArray->pData + offset }
             {}
-            ObjArrayViewIterator(const ObjArrayViewIterator& rhs) noexcept : pDataset{ rhs.pDataset }, pArray{ rhs.pArray } {}
-            ObjArrayViewIterator& operator=(const ObjArrayViewIterator& rhs) noexcept
+            ViewIterator(const ViewIterator& rhs) noexcept : pDataset{ rhs.pDataset }, pArray{ rhs.pArray } {}
+            ViewIterator& operator=(const ViewIterator& rhs) noexcept
             {
                 // Self-assignment check
                 if (this != &rhs) {
@@ -38,12 +125,12 @@ namespace pmapi
                 }
                 return *this;
             }
-            ObjArrayViewIterator& operator+=(difference_type rhs) noexcept
+            ViewIterator& operator+=(difference_type rhs) noexcept
             {
                 pArray += rhs;
                 return *this;
             }
-            ObjArrayViewIterator& operator-=(difference_type rhs) noexcept
+            ViewIterator& operator-=(difference_type rhs) noexcept
             {
                 pArray -= rhs;
                 return *this;
@@ -61,39 +148,39 @@ namespace pmapi
                 return value_type{ pDataset, pArray[idx] };
             }
 
-            ObjArrayViewIterator& operator++() noexcept
+            ViewIterator& operator++() noexcept
             {
                 ++pArray;
                 return *this;
             }
-            ObjArrayViewIterator& operator--() noexcept
+            ViewIterator& operator--() noexcept
             {
                 --pArray;
                 return *this;
             }
-            ObjArrayViewIterator operator++(int) noexcept { ObjArrayViewIterator tmp(*this); ++(*this); return tmp; }
-            ObjArrayViewIterator operator--(int) noexcept { ObjArrayViewIterator tmp(*this); --(*this); return tmp; }
-            difference_type operator-(const ObjArrayViewIterator& rhs) const noexcept
+            ViewIterator operator++(int) noexcept { ViewIterator tmp(*this); ++(*this); return tmp; }
+            ViewIterator operator--(int) noexcept { ViewIterator tmp(*this); --(*this); return tmp; }
+            difference_type operator-(const ViewIterator& rhs) const noexcept
             {
                 return difference_type(pArray - rhs.pArray);
             }
-            ObjArrayViewIterator operator+(difference_type rhs) const noexcept
+            ViewIterator operator+(difference_type rhs) const noexcept
             {
                 auto dup = *this;
                 return dup += rhs;
             }
-            ObjArrayViewIterator operator-(difference_type rhs) const noexcept
+            ViewIterator operator-(difference_type rhs) const noexcept
             {
                 auto dup = *this;
                 return dup -= rhs;
             }
 
-            bool operator==(const ObjArrayViewIterator& rhs) const noexcept { return pArray == rhs.pArray; }
-            bool operator!=(const ObjArrayViewIterator& rhs) const noexcept { return pArray != rhs.pArray; }
-            bool operator>(const ObjArrayViewIterator& rhs) const noexcept { return pArray > rhs.pArray; }
-            bool operator<(const ObjArrayViewIterator& rhs) const noexcept { return pArray < rhs.pArray; }
-            bool operator>=(const ObjArrayViewIterator& rhs) const noexcept { return pArray >= rhs.pArray; }
-            bool operator<=(const ObjArrayViewIterator& rhs) const noexcept { return pArray <= rhs.pArray; }
+            bool operator==(const ViewIterator& rhs) const noexcept { return pArray == rhs.pArray; }
+            bool operator!=(const ViewIterator& rhs) const noexcept { return pArray != rhs.pArray; }
+            bool operator>(const ViewIterator& rhs) const noexcept { return pArray > rhs.pArray; }
+            bool operator<(const ViewIterator& rhs) const noexcept { return pArray < rhs.pArray; }
+            bool operator>=(const ViewIterator& rhs) const noexcept { return pArray >= rhs.pArray; }
+            bool operator<=(const ViewIterator& rhs) const noexcept { return pArray <= rhs.pArray; }
         private:
             // data
             const base_type* const* pArray = nullptr;
@@ -101,7 +188,7 @@ namespace pmapi
         };
 
         template<class V>
-        using ViewRange = std::ranges::subrange<ObjArrayViewIterator<V>, ObjArrayViewIterator<V>>;
+        using ViewRange = std::ranges::subrange<ViewIterator<V>, ViewIterator<V>>;
 
 
 		class DataTypeInfoView
@@ -125,7 +212,7 @@ namespace pmapi
 		{
             using BaseType = PM_INTROSPECTION_ENUM_KEY;
             using SelfType = EnumKeyView;
-            friend class ObjArrayViewIterator<SelfType>;
+            friend class ViewIterator<SelfType>;
             friend class Dataset;
         public:
             int GetValue() const
@@ -172,7 +259,7 @@ namespace pmapi
 		{
             using BaseType = PM_INTROSPECTION_ENUM;
             using SelfType = EnumView;
-            friend class ObjArrayViewIterator<SelfType>;
+            friend class ViewIterator<SelfType>;
             friend class Dataset;
         public:
             PM_ENUM GetID() const
@@ -204,13 +291,13 @@ namespace pmapi
                 pDataset{ pDataset_ },
                 pBase{ pBase_ }
             {}
-            ObjArrayViewIterator<EnumKeyView> GetKeysBegin_() const
+            ViewIterator<EnumKeyView> GetKeysBegin_() const
             {
-                return ObjArrayViewIterator<EnumKeyView>{ pDataset, pBase->pKeys };
+                return ViewIterator<EnumKeyView>{ pDataset, pBase->pKeys };
             }
-            ObjArrayViewIterator<EnumKeyView> GetKeysEnd_() const
+            ViewIterator<EnumKeyView> GetKeysEnd_() const
             {
-                return ObjArrayViewIterator<EnumKeyView>{ pDataset, pBase->pKeys, (int64_t)pBase->pKeys->size };
+                return ViewIterator<EnumKeyView>{ pDataset, pBase->pKeys, (int64_t)pBase->pKeys->size };
             }
             // data
             const class Dataset* pDataset;
@@ -221,17 +308,31 @@ namespace pmapi
         {
             using BaseType = PM_INTROSPECTION_METRIC;
             using SelfType = MetricView;
-            friend class ObjArrayViewIterator<SelfType>;
+            friend class ViewIterator<SelfType>;
             friend class Dataset;
         public:
             EnumKeyView GetMetricKey() const;
             EnumKeyView GetUnit() const;
+            BasicRange<PM_STAT> GetStats() const
+            {
+                // trying to deduce the template params for subrange causes intellisense to crash
+                // workaround this by providing them explicitly as the return type (normally would use auto)
+                return { GetStatsBegin_(), GetStatsEnd_() };
+            }
             const SelfType* operator->() const
             {
                 return this;
             }
         private:
             // functions
+            BasicIterator<PM_STAT> GetStatsBegin_() const
+            {
+                return BasicIterator<PM_STAT>{ pBase->pStats };
+            }
+            BasicIterator<PM_STAT> GetStatsEnd_() const
+            {
+                return BasicIterator<PM_STAT>{ pBase->pStats, (int64_t)pBase->pStats->size };
+            }
             MetricView(const class Dataset* pDataset_, const BaseType* pBase_)
                 :
                 pDataset{ pDataset_ },
@@ -299,21 +400,21 @@ namespace pmapi
                 // pack 64-bit hash key as upper and lower 32-bit values
                 return (uint64_t(enumId) << 32) | uint64_t(keyValue);
             }
-            ObjArrayViewIterator<EnumView> GetEnumsBegin_() const
+            ViewIterator<EnumView> GetEnumsBegin_() const
             {
-                return ObjArrayViewIterator<EnumView>{ this, pRoot->pEnums };
+                return ViewIterator<EnumView>{ this, pRoot->pEnums };
             }
-            ObjArrayViewIterator<EnumView> GetEnumsEnd_() const
+            ViewIterator<EnumView> GetEnumsEnd_() const
             {
-                return ObjArrayViewIterator<EnumView>{ this, pRoot->pEnums, (int64_t)pRoot->pEnums->size };
+                return ViewIterator<EnumView>{ this, pRoot->pEnums, (int64_t)pRoot->pEnums->size };
             }
-            ObjArrayViewIterator<MetricView> GetMetricsBegin_() const
+            ViewIterator<MetricView> GetMetricsBegin_() const
             {
-                return ObjArrayViewIterator<MetricView>{ this, pRoot->pMetrics };
+                return ViewIterator<MetricView>{ this, pRoot->pMetrics };
             }
-            ObjArrayViewIterator<MetricView> GetMetricsEnd_() const
+            ViewIterator<MetricView> GetMetricsEnd_() const
             {
-                return ObjArrayViewIterator<MetricView>{ this, pRoot->pMetrics, (int64_t)pRoot->pMetrics->size };
+                return ViewIterator<MetricView>{ this, pRoot->pMetrics, (int64_t)pRoot->pMetrics->size };
             }
             // data
             const PM_INTROSPECTION_ROOT* pRoot = nullptr;

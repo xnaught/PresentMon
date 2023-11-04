@@ -316,6 +316,12 @@ namespace PresentMonAPI2
 			using namespace std::string_literals;
 			Assert::AreEqual("fps"s, data->GetMetrics().begin()->GetUnit().GetShortName());
 		}
+		TEST_METHOD(IntrospectMetricStats)
+		{
+			using namespace std::string_literals;
+			Assert::AreEqual((int)PM_STAT::PM_STAT_AVG, (int)*data->GetMetrics().begin()->GetStats().begin());
+			Assert::AreEqual(7ull, data->GetMetrics().begin()->GetStats().size());
+		}
 	private:
 		std::optional<pmapi::Session> session;
 		std::optional<pmapi::intro::Dataset> data;
