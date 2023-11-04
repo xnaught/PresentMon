@@ -191,11 +191,6 @@ namespace pmapi
         using ViewRange = std::ranges::subrange<ViewIterator<V>, ViewIterator<V>>;
 
 
-		class DataTypeInfoView
-		{
-
-		};
-
 		class DeviceMetricInfoView
 		{
 
@@ -284,6 +279,10 @@ namespace pmapi
             {
                 return this;
             }
+            const BaseType* GetBasePtr() const
+            {
+                return pBase;
+            }
         private:
             // functions
             EnumView(const class Dataset* pDataset_, const BaseType* pBase_)
@@ -303,6 +302,35 @@ namespace pmapi
             const class Dataset* pDataset;
             const BaseType* pBase = nullptr;
 		};
+
+        class DataTypeInfoView
+        {
+            using BaseType = PM_INTROSPECTION_DATA_TYPE_INFO;
+            using SelfType = DataTypeInfoView;
+            friend class ViewIterator<SelfType>;
+            friend class Dataset;
+        public:
+            EnumKeyView GetType() const;
+            EnumView GetEnum() const;
+            const SelfType* operator->() const
+            {
+                return this;
+            }
+            const BaseType* GetBasePtr() const
+            {
+                return pBase;
+            }
+        private:
+            // functions
+            DataTypeInfoView(const class Dataset* pDataset_, const BaseType* pBase_)
+                :
+                pDataset{ pDataset_ },
+                pBase{ pBase_ }
+            {}
+            // data
+            const class Dataset* pDataset = nullptr;
+            const BaseType* pBase = nullptr;
+        };
 
         class MetricView
         {
@@ -349,10 +377,12 @@ namespace pmapi
 		public:
             Dataset(const PM_INTROSPECTION_ROOT* pRoot_) : pRoot{ pRoot_ }
             {
+                // building lookup tables for enum/key
                 for (auto e : GetEnums()) {
                     for (auto k : e.GetKeys()) {
                         enumKeyMap[MakeEnumKeyMapKey_(e.GetID(), k.GetValue())] = k.GetBasePtr();
                     }
+                    enumMap[e.GetID()] = e.GetBasePtr();
                 }
             }
             Dataset(Dataset&& rhs) noexcept
@@ -391,6 +421,12 @@ namespace pmapi
                 auto i = enumKeyMap.find(MakeEnumKeyMapKey_(enumId, keyValue));
                 return { this, i->second };
             }
+            EnumView FindEnum(PM_ENUM enumId) const
+            {
+                // TODO: exception for bad lookup
+                auto i = enumMap.find(enumId);
+                return { this, i->second };
+            }
 			//virtual DeviceView FindDevice(int id) const = 0;
 			//virtual MetricView FindMetric(int id) const = 0;
         private:
@@ -419,6 +455,7 @@ namespace pmapi
             // data
             const PM_INTROSPECTION_ROOT* pRoot = nullptr;
             std::unordered_map<uint64_t, const PM_INTROSPECTION_ENUM_KEY*> enumKeyMap;
+            std::unordered_map<PM_ENUM, const PM_INTROSPECTION_ENUM*> enumMap;
 		};
 	}
 

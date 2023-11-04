@@ -12,4 +12,15 @@ namespace pmapi::intro
     {
         return pDataset->FindEnumKey(PM_ENUM_UNIT, (int)pBase->unit);
     }
+
+    EnumKeyView DataTypeInfoView::GetType() const
+    {
+        return pDataset->FindEnumKey(PM_ENUM_DATA_TYPE, (int)pBase->type);
+    }
+
+    EnumView DataTypeInfoView::GetEnum() const
+    {
+        // TODO: throw exception if datatype is not an enum
+        return pDataset->FindEnum(pBase->enumId);
+    }
 }
