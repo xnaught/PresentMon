@@ -391,6 +391,20 @@ namespace PresentMonAPI2
 				Assert::AreEqual(1u, device.GetId());
 			}
 		}
+		TEST_METHOD(IntrospectMetricDeviceMetricInfoLookupDevice)
+		{
+			using namespace std::string_literals;
+			auto metric = data->FindMetric(PM_METRIC_GPU_FAN_SPEED);
+			auto deviceInfos = metric.GetDeviceMetricInfo();
+			Assert::AreEqual(2ull, deviceInfos.size());
+			{
+				auto deviceInfo = deviceInfos.begin()[1];
+				Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, deviceInfo.GetAvailablity().GetValue());
+				Assert::IsTrue(deviceInfo.IsAvailable());
+				Assert::AreEqual(2u, deviceInfo.GetArraySize());
+				Assert::AreEqual("NVIDIA"s, deviceInfo.GetDevice().GetVendor().GetName());
+			}
+		}
 	private:
 		std::optional<pmapi::Session> session;
 		std::optional<pmapi::intro::Dataset> data;
