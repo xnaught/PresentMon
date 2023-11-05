@@ -206,7 +206,7 @@ namespace PresentMonAPI2
 					auto pInfo = static_cast<const PM_INTROSPECTION_DEVICE_METRIC_INFO*>(pMetric->pDeviceMetricInfo->pData[0]);
 					Assert::AreEqual(0u, pInfo->deviceId);
 					Assert::AreEqual(1u, pInfo->arraySize);
-					Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)pInfo->avalability);
+					Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)pInfo->availability);
 				}
 			}
 
@@ -229,13 +229,13 @@ namespace PresentMonAPI2
 					auto pInfo = static_cast<const PM_INTROSPECTION_DEVICE_METRIC_INFO*>(pMetric->pDeviceMetricInfo->pData[0]);
 					Assert::AreEqual(1u, pInfo->deviceId);
 					Assert::AreEqual(1u, pInfo->arraySize);
-					Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)pInfo->avalability);
+					Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)pInfo->availability);
 				}
 				{
 					auto pInfo = static_cast<const PM_INTROSPECTION_DEVICE_METRIC_INFO*>(pMetric->pDeviceMetricInfo->pData[1]);
 					Assert::AreEqual(2u, pInfo->deviceId);
 					Assert::AreEqual(2u, pInfo->arraySize);
-					Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)pInfo->avalability);
+					Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)pInfo->availability);
 				}
 			}
 
@@ -344,13 +344,13 @@ namespace PresentMonAPI2
 			Assert::AreEqual(2ull, deviceInfos.size());
 			{
 				auto deviceInfo = deviceInfos.begin()[0];
-				Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)deviceInfo.avalability);
-				Assert::AreEqual(1u, deviceInfo.arraySize);
+				Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, deviceInfo.GetAvailablity().GetValue());
+				Assert::AreEqual(1u, deviceInfo.GetArraySize());
 			}
 			{
 				auto deviceInfo = deviceInfos.begin()[1];
-				Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)deviceInfo.avalability);
-				Assert::AreEqual(2u, deviceInfo.arraySize);
+				Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, deviceInfo.GetAvailablity().GetValue());
+				Assert::AreEqual(2u, deviceInfo.GetArraySize());
 			}
 		}
 		TEST_METHOD(IntrospectDevices)

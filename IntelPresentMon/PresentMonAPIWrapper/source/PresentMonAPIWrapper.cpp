@@ -33,4 +33,14 @@ namespace pmapi::intro
     {
         return pDataset->FindEnumKey(PM_ENUM_DEVICE_VENDOR, (int)pBase->vendor);
     }
+
+    DeviceView DeviceMetricInfoView::GetDevice() const
+    {
+        return pDataset->FindDevice(pBase->deviceId);
+    }
+
+    EnumKeyView DeviceMetricInfoView::GetAvailablity() const
+    {
+        return pDataset->FindEnumKey(PM_ENUM_METRIC_AVAILABILITY, (int)pBase->availability);
+    }
 }

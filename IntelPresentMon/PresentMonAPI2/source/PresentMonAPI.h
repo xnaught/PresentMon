@@ -170,7 +170,7 @@ extern "C" {
 	struct PM_INTROSPECTION_DEVICE_METRIC_INFO
 	{
 		uint32_t deviceId;
-		PM_METRIC_AVAILABILITY avalability;
+		PM_METRIC_AVAILABILITY availability;
 		uint32_t arraySize;
 	};
 

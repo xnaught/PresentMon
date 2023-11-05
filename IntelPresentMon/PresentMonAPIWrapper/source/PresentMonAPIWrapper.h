@@ -331,7 +331,39 @@ namespace pmapi
 
 		class DeviceMetricInfoView
 		{
-
+            using BaseType = PM_INTROSPECTION_DEVICE_METRIC_INFO;
+            using SelfType = DeviceMetricInfoView;
+            friend class ViewIterator<SelfType>;
+            friend class Dataset;
+        public:
+            DeviceView GetDevice() const;
+            EnumKeyView GetAvailablity() const;
+            uint32_t GetArraySize() const
+            {
+                return pBase->arraySize;
+            }
+            bool IsAvailable() const
+            {
+                return pBase->availability == PM_METRIC_AVAILABILITY_AVAILABLE;
+            }
+            const SelfType* operator->() const
+            {
+                return this;
+            }
+            const BaseType* GetBasePtr() const
+            {
+                return pBase;
+            }
+        private:
+            // functions
+            DeviceMetricInfoView(const class Dataset* pDataset_, const BaseType* pBase_)
+                :
+                pDataset{ pDataset_ },
+                pBase{ pBase_ }
+            {}
+            // data
+            const class Dataset* pDataset;
+            const BaseType* pBase = nullptr;
 		};
 
         class DataTypeInfoView
@@ -385,7 +417,7 @@ namespace pmapi
                 // workaround this by providing them explicitly as the return type (normally would use auto)
                 return { GetStatsBegin_(), GetStatsEnd_() };
             }
-            BasicRange<PM_INTROSPECTION_DEVICE_METRIC_INFO> GetDeviceMetricInfo() const
+            ViewRange<DeviceMetricInfoView> GetDeviceMetricInfo() const
             {
                 // trying to deduce the template params for subrange causes intellisense to crash
                 // workaround this by providing them explicitly as the return type (normally would use auto)
@@ -409,13 +441,13 @@ namespace pmapi
             {
                 return BasicIterator<PM_STAT>{ pBase->pStats, (int64_t)pBase->pStats->size };
             }
-            BasicIterator<PM_INTROSPECTION_DEVICE_METRIC_INFO> GetDeviceMetricInfoBegin_() const
+            ViewIterator<DeviceMetricInfoView> GetDeviceMetricInfoBegin_() const
             {
-                return BasicIterator<PM_INTROSPECTION_DEVICE_METRIC_INFO>{ pBase->pDeviceMetricInfo };
+                return ViewIterator<DeviceMetricInfoView>{ pDataset, pBase->pDeviceMetricInfo };
             }
-            BasicIterator<PM_INTROSPECTION_DEVICE_METRIC_INFO> GetDeviceMetricInfoEnd_() const
+            ViewIterator<DeviceMetricInfoView> GetDeviceMetricInfoEnd_() const
             {
-                return BasicIterator<PM_INTROSPECTION_DEVICE_METRIC_INFO>{ pBase->pDeviceMetricInfo, (int64_t)pBase->pDeviceMetricInfo->size };
+                return ViewIterator<DeviceMetricInfoView>{ pDataset, pBase->pDeviceMetricInfo, (int64_t)pBase->pDeviceMetricInfo->size };
             }
             MetricView(const class Dataset* pDataset_, const BaseType* pBase_)
                 :
