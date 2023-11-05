@@ -395,6 +395,10 @@ namespace pmapi
             {
                 return this;
             }
+            const BaseType* GetBasePtr() const
+            {
+                return pBase;
+            }
         private:
             // functions
             BasicIterator<PM_STAT> GetStatsBegin_() const
@@ -440,13 +444,18 @@ namespace pmapi
                 for (auto d : GetDevices()) {
                     deviceMap[d.GetId()] = d.GetBasePtr();
                 }
+                // building lookup table for metrics
+                for (auto m : GetMetrics()) {
+                    metricMap[m.GetMetricId()] = m.GetBasePtr();
+                }
             }
             Dataset(Dataset&& rhs) noexcept
                 :
                 pRoot{ rhs.pRoot },
                 enumKeyMap{ std::move(rhs.enumKeyMap) },
                 enumMap{ std::move(rhs.enumMap) },
-                deviceMap{ std::move(rhs.deviceMap) }
+                deviceMap{ std::move(rhs.deviceMap) },
+                metricMap{ std::move(rhs.metricMap) }
             {
                 rhs.pRoot = nullptr;
             }
@@ -457,6 +466,7 @@ namespace pmapi
                 enumKeyMap = std::move(rhs.enumKeyMap);
                 enumMap = std::move(rhs.enumMap);
                 deviceMap = std::move(rhs.deviceMap);
+                metricMap = std::move(rhs.metricMap);
                 return *this;
             }
             ~Dataset()
@@ -501,7 +511,12 @@ namespace pmapi
                 auto i = deviceMap.find(deviceId);
                 return { this, i->second };
             }
-			//virtual MetricView FindMetric(int id) const = 0;
+            MetricView FindMetric(PM_METRIC metricId) const
+            {
+                // TODO: exception for bad lookup
+                auto i = metricMap.find(metricId);
+                return { this, i->second };
+            }
         private:
             // functions
             static uint64_t MakeEnumKeyMapKey_(PM_ENUM enumId, int keyValue)
@@ -538,6 +553,7 @@ namespace pmapi
             std::unordered_map<uint64_t, const PM_INTROSPECTION_ENUM_KEY*> enumKeyMap;
             std::unordered_map<PM_ENUM, const PM_INTROSPECTION_ENUM*> enumMap;
             std::unordered_map<uint32_t, const PM_INTROSPECTION_DEVICE*> deviceMap;
+            std::unordered_map<PM_METRIC, const PM_INTROSPECTION_METRIC*> metricMap;
 		};
 	}
 
