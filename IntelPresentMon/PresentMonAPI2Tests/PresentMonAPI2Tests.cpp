@@ -380,6 +380,17 @@ namespace PresentMonAPI2
 				Assert::AreEqual(2u, device.GetId());
 			}
 		}
+		TEST_METHOD(IntrospectLookupDevice)
+		{
+			using namespace std::string_literals;
+			{
+				auto device = data->FindDevice(1);
+				Assert::AreEqual("Intel"s, device.GetVendor().GetName());
+				Assert::AreEqual("Arc 750"s, device.GetName());
+				Assert::AreEqual("Graphics Adapter"s, device.GetType().GetName());
+				Assert::AreEqual(1u, device.GetId());
+			}
+		}
 	private:
 		pmapi::intro::MetricView FindMetric(PM_METRIC metricId) const
 		{
