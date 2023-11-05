@@ -331,12 +331,36 @@ namespace PresentMonAPI2
 		TEST_METHOD(IntrospectMetricDataType)
 		{
 			using namespace std::string_literals;
-			auto metric = data->GetMetrics().begin()[3];
+			auto metric = FindMetric(PM_METRIC_PRESENT_MODE);
 			auto type = metric.GetDataTypeInfo();
 			Assert::AreEqual("Present Mode"s, metric.GetMetricKey().GetName());
 			Assert::AreEqual("PM_PRESENT_MODE"s, type.GetEnum().GetSymbol());
 		}
+		TEST_METHOD(IntrospectMetricDeviceMetricInfo)
+		{
+			using namespace std::string_literals;
+			auto metric = FindMetric(PM_METRIC_GPU_FAN_SPEED);
+			auto deviceInfos = metric.GetDeviceMetricInfo();
+			Assert::AreEqual(2ull, deviceInfos.size());
+			{
+				auto deviceInfo = deviceInfos.begin()[0];
+				Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)deviceInfo.avalability);
+				Assert::AreEqual(1u, deviceInfo.arraySize);
+			}
+			{
+				auto deviceInfo = deviceInfos.begin()[1];
+				Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)deviceInfo.avalability);
+				Assert::AreEqual(2u, deviceInfo.arraySize);
+			}
+		}
 	private:
+		pmapi::intro::MetricView FindMetric(PM_METRIC metricId) const
+		{
+			using namespace pmapi::intro;
+			// TODO: check if metric was found / assert
+			auto i = std::ranges::find(data->GetMetrics(), metricId, &MetricView::GetMetricId);
+			return *i;
+		}
 		std::optional<pmapi::Session> session;
 		std::optional<pmapi::intro::Dataset> data;
 	};

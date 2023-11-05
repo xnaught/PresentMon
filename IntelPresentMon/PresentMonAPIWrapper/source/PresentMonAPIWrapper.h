@@ -200,7 +200,6 @@ namespace pmapi
 		{
         public:
         private:
-
 		};
 
 		class EnumKeyView
@@ -339,6 +338,10 @@ namespace pmapi
             friend class Dataset;
         public:
             EnumKeyView GetMetricKey() const;
+            PM_METRIC GetMetricId() const
+            {
+                return pBase->id;
+            }
             EnumKeyView GetUnit() const;
             DataTypeInfoView GetDataTypeInfo() const
             {
@@ -349,6 +352,12 @@ namespace pmapi
                 // trying to deduce the template params for subrange causes intellisense to crash
                 // workaround this by providing them explicitly as the return type (normally would use auto)
                 return { GetStatsBegin_(), GetStatsEnd_() };
+            }
+            BasicRange<PM_INTROSPECTION_DEVICE_METRIC_INFO> GetDeviceMetricInfo() const
+            {
+                // trying to deduce the template params for subrange causes intellisense to crash
+                // workaround this by providing them explicitly as the return type (normally would use auto)
+                return { GetDeviceMetricInfoBegin_(), GetDeviceMetricInfoEnd_() };
             }
             const SelfType* operator->() const
             {
@@ -363,6 +372,14 @@ namespace pmapi
             BasicIterator<PM_STAT> GetStatsEnd_() const
             {
                 return BasicIterator<PM_STAT>{ pBase->pStats, (int64_t)pBase->pStats->size };
+            }
+            BasicIterator<PM_INTROSPECTION_DEVICE_METRIC_INFO> GetDeviceMetricInfoBegin_() const
+            {
+                return BasicIterator<PM_INTROSPECTION_DEVICE_METRIC_INFO>{ pBase->pDeviceMetricInfo };
+            }
+            BasicIterator<PM_INTROSPECTION_DEVICE_METRIC_INFO> GetDeviceMetricInfoEnd_() const
+            {
+                return BasicIterator<PM_INTROSPECTION_DEVICE_METRIC_INFO>{ pBase->pDeviceMetricInfo, (int64_t)pBase->pDeviceMetricInfo->size };
             }
             MetricView(const class Dataset* pDataset_, const BaseType* pBase_)
                 :
