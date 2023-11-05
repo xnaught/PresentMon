@@ -262,6 +262,15 @@ namespace PresentMonAPI2
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
 		}
+		TEST_METHOD(IntrospectSessionError)
+		{
+			using namespace std::string_literals;
+
+			pmapi::Session session1;
+			Assert::ExpectException<pmapi::SessionException>([] {
+				pmapi::Session session2;
+			});
+		}
 	};
 	TEST_CLASS(WrapperDatasetTests)
 	{
@@ -403,6 +412,20 @@ namespace PresentMonAPI2
 				Assert::AreEqual(2u, deviceInfo.GetArraySize());
 				Assert::AreEqual("NVIDIA"s, deviceInfo.GetDevice().GetVendor().GetName());
 			}
+		}
+		TEST_METHOD(IntrospectMetricLookupError)
+		{
+			using namespace std::string_literals;
+			Assert::ExpectException<pmapi::LookupException>([this] {
+				data->FindMetric((PM_METRIC)420);
+			});
+		}
+		TEST_METHOD(IntrospectDatatypeError)
+		{
+			using namespace std::string_literals;
+			Assert::ExpectException<pmapi::DatatypeException>([this] {
+				data->FindMetric(PM_METRIC_FRAME_TIME).GetDataTypeInfo().GetEnum();
+			});
 		}
 	private:
 		std::optional<pmapi::Session> session;

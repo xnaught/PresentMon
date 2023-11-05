@@ -52,6 +52,9 @@ PRESENTMON_API_EXPORT PM_STATUS pmMiddlewareSpeak_(char* buffer)
 // public endpoints
 PRESENTMON_API_EXPORT PM_STATUS pmOpenSession()
 {
+	if (pMiddleware_) {
+		return PM_STATUS_FAILURE;
+	}
 	try {
 		if (useMockedMiddleware_) {
 			pMiddleware_ = std::make_unique<MockMiddleware>();

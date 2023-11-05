@@ -5,9 +5,16 @@
 #include <ranges>
 #include <memory>
 #include <unordered_map>
+#include <stdexcept>
+#include <format>
 
 namespace pmapi
 {
+    class Exception : public std::runtime_error { using runtime_error::runtime_error; };
+    class SessionException : public Exception { using Exception::Exception; };
+    class DatatypeException : public Exception { using Exception::Exception; };
+    class LookupException : public Exception { using Exception::Exception; };
+
 	namespace intro
 	{
         template<class T>
@@ -191,11 +198,11 @@ namespace pmapi
             {}
             ViewIterator<EnumKeyView> GetKeysBegin_() const
             {
-                return ViewIterator<EnumKeyView>{ pDataset, pBase->pKeys };
+                return { pDataset, pBase->pKeys };
             }
             ViewIterator<EnumKeyView> GetKeysEnd_() const
             {
-                return ViewIterator<EnumKeyView>{ pDataset, pBase->pKeys, (int64_t)pBase->pKeys->size };
+                return { pDataset, pBase->pKeys, (int64_t)pBase->pKeys->size };
             }
             // data
             const class Dataset* pDataset;
@@ -239,15 +246,15 @@ namespace pmapi
                 pArray -= rhs;
                 return *this;
             }
-            value_type operator*() const noexcept
+            value_type operator*() const
             {
                 return pDataset->FindEnumKey(EnumId, **pArray);
             }
-            value_type operator->() const noexcept
+            value_type operator->() const
             {
                 return **this;
             }
-            value_type operator[](size_t idx) const noexcept
+            value_type operator[](size_t idx) const
             {
                 return pDataset->FindEnumKey(EnumId, *pArray[idx]);
             }
@@ -438,19 +445,19 @@ namespace pmapi
             // functions
             EnumKeyLookupIterator<PM_STAT, PM_ENUM_STAT> GetStatsBegin_() const
             {
-                return EnumKeyLookupIterator<PM_STAT, PM_ENUM_STAT>{ pDataset, pBase->pStats };
+                return { pDataset, pBase->pStats };
             }
             EnumKeyLookupIterator<PM_STAT, PM_ENUM_STAT> GetStatsEnd_() const
             {
-                return EnumKeyLookupIterator<PM_STAT, PM_ENUM_STAT>{ pDataset, pBase->pStats, (int64_t)pBase->pStats->size };
+                return { pDataset, pBase->pStats, (int64_t)pBase->pStats->size };
             }
             ViewIterator<DeviceMetricInfoView> GetDeviceMetricInfoBegin_() const
             {
-                return ViewIterator<DeviceMetricInfoView>{ pDataset, pBase->pDeviceMetricInfo };
+                return { pDataset, pBase->pDeviceMetricInfo };
             }
             ViewIterator<DeviceMetricInfoView> GetDeviceMetricInfoEnd_() const
             {
-                return ViewIterator<DeviceMetricInfoView>{ pDataset, pBase->pDeviceMetricInfo, (int64_t)pBase->pDeviceMetricInfo->size };
+                return { pDataset, pBase->pDeviceMetricInfo, (int64_t)pBase->pDeviceMetricInfo->size };
             }
             MetricView(const class Dataset* pDataset_, const BaseType* pBase_)
                 :
@@ -530,27 +537,39 @@ namespace pmapi
             }
             EnumKeyView FindEnumKey(PM_ENUM enumId, int keyValue) const
             {
-                // TODO: exception for bad lookup
-                auto i = enumKeyMap.find(MakeEnumKeyMapKey_(enumId, keyValue));
-                return { this, i->second };
+                if (auto i = enumKeyMap.find(MakeEnumKeyMapKey_(enumId, keyValue)); i == enumKeyMap.end()) {
+                    throw LookupException{ std::format("unable to find key value={} for enum ID={}", keyValue, (int)enumId) };
+                }
+                else {
+                    return { this, i->second };
+                }
             }
             EnumView FindEnum(PM_ENUM enumId) const
             {
-                // TODO: exception for bad lookup
-                auto i = enumMap.find(enumId);
-                return { this, i->second };
+                if (auto i = enumMap.find(enumId); i == enumMap.end()) {
+                    throw LookupException{ std::format("unable to find enum ID={}", (int)enumId) };
+                }
+                else {
+                    return { this, i->second };
+                }
             }
             DeviceView FindDevice(uint32_t deviceId) const
             {
-                // TODO: exception for bad lookup
-                auto i = deviceMap.find(deviceId);
-                return { this, i->second };
+                if (auto i = deviceMap.find(deviceId); i == deviceMap.end()) {
+                    throw LookupException{ std::format("unable to find device ID={}", deviceId) };
+                }
+                else {
+                    return { this, i->second };
+                }
             }
             MetricView FindMetric(PM_METRIC metricId) const
             {
-                // TODO: exception for bad lookup
-                auto i = metricMap.find(metricId);
-                return { this, i->second };
+                if (auto i = metricMap.find(metricId); i == metricMap.end()) {
+                    throw LookupException{ std::format("unable to find metric ID={}", (int)metricId) };
+                }
+                else {
+                    return { this, i->second };
+                }
             }
         private:
             // functions
@@ -595,11 +614,7 @@ namespace pmapi
 	class Session
 	{
     public:
-        Session()
-        {
-            // throw exception on error
-            pmOpenSession();
-        }
+        Session();
         Session(Session&& rhs) noexcept
             :
             token{ rhs.token }
@@ -621,8 +636,13 @@ namespace pmapi
         intro::Dataset GetIntrospectionDataset() const
         {
             // throw an exception on error or non-token
+            if (!token) {
+                throw SessionException{ "introspection call failed due to empty session object" };
+            }
             const PM_INTROSPECTION_ROOT* pRoot{};
-            pmEnumerateInterface(&pRoot);
+            if (auto sta = pmEnumerateInterface(&pRoot); sta != PM_STATUS_SUCCESS) {
+                throw SessionException{ std::format("introspection call failed with error id={}", (int)sta) };
+            }
             return { pRoot };
         }
     private:
