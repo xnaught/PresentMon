@@ -23,4 +23,14 @@ namespace pmapi::intro
         // TODO: throw exception if datatype is not an enum
         return pDataset->FindEnum(pBase->enumId);
     }
+
+    EnumKeyView DeviceView::GetType() const
+    {
+        return pDataset->FindEnumKey(PM_ENUM_DEVICE_TYPE, (int)pBase->type);
+    }
+
+    EnumKeyView DeviceView::GetVendor() const
+    {
+        return pDataset->FindEnumKey(PM_ENUM_DEVICE_VENDOR, (int)pBase->vendor);
+    }
 }

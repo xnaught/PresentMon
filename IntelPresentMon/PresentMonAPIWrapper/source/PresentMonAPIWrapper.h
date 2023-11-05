@@ -191,17 +191,6 @@ namespace pmapi
         using ViewRange = std::ranges::subrange<ViewIterator<V>, ViewIterator<V>>;
 
 
-		class DeviceMetricInfoView
-		{
-
-		};
-
-		class DeviceView
-		{
-        public:
-        private:
-		};
-
 		class EnumKeyView
 		{
             using BaseType = PM_INTROSPECTION_ENUM_KEY;
@@ -300,6 +289,49 @@ namespace pmapi
             // data
             const class Dataset* pDataset;
             const BaseType* pBase = nullptr;
+		};
+
+		class DeviceView
+		{
+            using BaseType = PM_INTROSPECTION_DEVICE;
+            using SelfType = DeviceView;
+            friend class ViewIterator<SelfType>;
+            friend class Dataset;
+            friend class DeviceMetricInfoView;
+        public:
+            EnumKeyView GetType() const;
+            EnumKeyView GetVendor() const;
+            uint32_t GetId() const
+            {
+                return pBase->id;
+            }
+            std::string GetName() const
+            {
+                return pBase->pName->pData;
+            }
+            const SelfType* operator->() const
+            {
+                return this;
+            }
+            const BaseType* GetBasePtr() const
+            {
+                return pBase;
+            }
+        private:
+            // functions
+            DeviceView(const class Dataset* pDataset_, const BaseType* pBase_)
+                :
+                pDataset{ pDataset_ },
+                pBase{ pBase_ }
+            {}
+            // data
+            const class Dataset* pDataset = nullptr;
+            const BaseType* pBase = nullptr;
+		};
+
+		class DeviceMetricInfoView
+		{
+
 		};
 
         class DataTypeInfoView
@@ -436,6 +468,12 @@ namespace pmapi
                 // workaround this by providing them explicitly as the return type (normally would use auto)
                 return { GetMetricsBegin_(), GetMetricsEnd_() };
             }
+            ViewRange<DeviceView> GetDevices() const
+            {
+                // trying to deduce the template params for subrange causes intellisense to crash
+                // workaround this by providing them explicitly as the return type (normally would use auto)
+                return { GetDevicesBegin_(), GetDevicesEnd_() };
+            }
             EnumKeyView FindEnumKey(PM_ENUM enumId, int keyValue) const
             {
                 // TODO: exception for bad lookup
@@ -472,6 +510,14 @@ namespace pmapi
             ViewIterator<MetricView> GetMetricsEnd_() const
             {
                 return ViewIterator<MetricView>{ this, pRoot->pMetrics, (int64_t)pRoot->pMetrics->size };
+            }
+            ViewIterator<DeviceView> GetDevicesBegin_() const
+            {
+                return ViewIterator<DeviceView>{ this, pRoot->pDevices };
+            }
+            ViewIterator<DeviceView> GetDevicesEnd_() const
+            {
+                return ViewIterator<DeviceView>{ this, pRoot->pDevices, (int64_t)pRoot->pDevices->size };
             }
             // data
             const PM_INTROSPECTION_ROOT* pRoot = nullptr;

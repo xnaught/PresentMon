@@ -353,6 +353,33 @@ namespace PresentMonAPI2
 				Assert::AreEqual(2u, deviceInfo.arraySize);
 			}
 		}
+		TEST_METHOD(IntrospectDevices)
+		{
+			using namespace std::string_literals;
+			auto devices = data->GetDevices();
+			Assert::AreEqual(3ull, devices.size());
+			{
+				auto device = devices.begin()[0];
+				Assert::AreEqual("Unknown"s, device.GetVendor().GetName());
+				Assert::AreEqual("Device-independent"s, device.GetName());
+				Assert::AreEqual("Device Independent"s, device.GetType().GetName());
+				Assert::AreEqual(0u, device.GetId());
+			}
+			{
+				auto device = devices.begin()[1];
+				Assert::AreEqual("Intel"s, device.GetVendor().GetName());
+				Assert::AreEqual("Arc 750"s, device.GetName());
+				Assert::AreEqual("Graphics Adapter"s, device.GetType().GetName());
+				Assert::AreEqual(1u, device.GetId());
+			}
+			{
+				auto device = devices.begin()[2];
+				Assert::AreEqual("NVIDIA"s, device.GetVendor().GetName());
+				Assert::AreEqual("GeForce RTX 2080 ti"s, device.GetName());
+				Assert::AreEqual("Graphics Adapter"s, device.GetType().GetName());
+				Assert::AreEqual(2u, device.GetId());
+			}
+		}
 	private:
 		pmapi::intro::MetricView FindMetric(PM_METRIC metricId) const
 		{
