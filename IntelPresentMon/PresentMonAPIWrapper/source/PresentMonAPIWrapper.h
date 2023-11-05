@@ -307,8 +307,7 @@ namespace pmapi
         {
             using BaseType = PM_INTROSPECTION_DATA_TYPE_INFO;
             using SelfType = DataTypeInfoView;
-            friend class ViewIterator<SelfType>;
-            friend class Dataset;
+            friend class MetricView;
         public:
             EnumKeyView GetType() const;
             EnumView GetEnum() const;
@@ -341,6 +340,10 @@ namespace pmapi
         public:
             EnumKeyView GetMetricKey() const;
             EnumKeyView GetUnit() const;
+            DataTypeInfoView GetDataTypeInfo() const
+            {
+                return { pDataset, &pBase->typeInfo };
+            }
             BasicRange<PM_STAT> GetStats() const
             {
                 // trying to deduce the template params for subrange causes intellisense to crash
@@ -388,7 +391,8 @@ namespace pmapi
             Dataset(Dataset&& rhs) noexcept
                 :
                 pRoot{ rhs.pRoot },
-                enumKeyMap{ std::move(rhs.enumKeyMap) }
+                enumKeyMap{ std::move(rhs.enumKeyMap) },
+                enumMap{ std::move(rhs.enumMap) }
             {
                 rhs.pRoot = nullptr;
             }

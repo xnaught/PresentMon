@@ -142,7 +142,7 @@ namespace PresentMonAPI2
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(11ull, pRoot->pEnums->size);
-			Assert::AreEqual(6ull, pRoot->pMetrics->size);
+			Assert::AreEqual(7ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 6th enum (unit)
@@ -212,7 +212,7 @@ namespace PresentMonAPI2
 
 			// check metric gpu array 2 device (fan)
 			{
-				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[5]);
+				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[6]);
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_GPU_FAN_SPEED, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_RPM, (int)pMetric->unit);
@@ -327,6 +327,14 @@ namespace PresentMonAPI2
 			using namespace std::string_literals;
 			const auto val = (int)*data->GetMetrics().begin()->GetStats().begin();
 			Assert::AreEqual("avg"s, data->FindEnumKey(PM_ENUM_STAT, val).GetShortName());
+		}
+		TEST_METHOD(IntrospectMetricDataType)
+		{
+			using namespace std::string_literals;
+			auto metric = data->GetMetrics().begin()[3];
+			auto type = metric.GetDataTypeInfo();
+			Assert::AreEqual("Present Mode"s, metric.GetMetricKey().GetName());
+			Assert::AreEqual("PM_PRESENT_MODE"s, type.GetEnum().GetSymbol());
 		}
 	private:
 		std::optional<pmapi::Session> session;
