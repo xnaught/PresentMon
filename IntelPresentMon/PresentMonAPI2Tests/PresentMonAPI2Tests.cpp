@@ -319,14 +319,13 @@ namespace PresentMonAPI2
 		TEST_METHOD(IntrospectMetricStats)
 		{
 			using namespace std::string_literals;
-			Assert::AreEqual((int)PM_STAT::PM_STAT_AVG, (int)*data->GetMetrics().begin()->GetStats().begin());
+			Assert::AreEqual("Average"s, data->GetMetrics().begin()->GetStats().begin()->GetName());
 			Assert::AreEqual(7ull, data->GetMetrics().begin()->GetStats().size());
 		}
 		TEST_METHOD(IntrospectMetricStatsWithLookup)
 		{
 			using namespace std::string_literals;
-			const auto val = (int)*data->GetMetrics().begin()->GetStats().begin();
-			Assert::AreEqual("avg"s, data->FindEnumKey(PM_ENUM_STAT, val).GetShortName());
+			Assert::AreEqual("avg"s, data->GetMetrics().begin()->GetStats().begin()->GetShortName());
 		}
 		TEST_METHOD(IntrospectMetricDataType)
 		{
