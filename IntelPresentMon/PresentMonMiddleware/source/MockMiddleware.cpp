@@ -131,9 +131,9 @@ namespace pmid
 	struct IntrospectionDataTypeInfo : PM_INTROSPECTION_DATA_TYPE_INFO {};
 	struct IntrospectionMetric : PM_INTROSPECTION_METRIC
 	{
-		IntrospectionMetric(PM_METRIC id_, PM_UNIT unit_, IntrospectionDataTypeInfo typeInfo_, std::vector<PM_STAT> stats_ = {})
+		IntrospectionMetric(PM_METRIC id_, PM_METRIC_TYPE type_, PM_UNIT unit_, IntrospectionDataTypeInfo typeInfo_, std::vector<PM_STAT> stats_ = {})
 			:
-			PM_INTROSPECTION_METRIC{ id_, unit_, typeInfo_, new IntrospectionObjArray<PM_STAT>, new IntrospectionObjArray<IntrospectionDeviceMetricInfo> }
+			PM_INTROSPECTION_METRIC{ id_, type_, unit_, typeInfo_, new IntrospectionObjArray<PM_STAT>, new IntrospectionObjArray<IntrospectionDeviceMetricInfo> }
 		{
 			AddStats(std::move(stats_));
 		}
@@ -220,6 +220,9 @@ namespace pmid
 		X_(METRIC, GPU_POWER, "GPU Power", "", "Power consumed by the graphics adapter") \
 		X_(METRIC, CPU_UTILIZATION, "CPU Utilization", "", "Amount of CPU processing capacity being used") \
 		X_(METRIC, GPU_FAN_SPEED, "GPU Fan Speed", "", "Rate at which a GPU cooler fan is rotating")
+	#define ENUM_KEY_LIST_METRIC_TYPE(X_) \
+		X_(METRIC_TYPE, DYNAMIC, "Dynamic Metric", "", "Metric that changes over time and requires polling using a registered query") \
+		X_(METRIC_TYPE, STATIC, "Static Metric", "", "Metric that never changes and can be polled without registering a query")
 	#define ENUM_KEY_LIST_DEVICE_VENDOR(X_) \
 		X_(DEVICE_VENDOR, INTEL, "Intel", "", "Device vendor Intel") \
 		X_(DEVICE_VENDOR, NVIDIA, "NVIDIA", "", "Device vendor NVIDIA") \
@@ -281,6 +284,7 @@ namespace pmid
 	#define ENUM_KEY_LIST_ENUM(X_) \
 		X_(ENUM, STATUS, "Statuses", "", "List of all status/error codes returned by API functions") \
 		X_(ENUM, METRIC, "Metrics", "", "List of all metrics that are pollable via the API") \
+		X_(ENUM, METRIC_TYPE, "Metric Types", "", "List of all metric types (dynamic polled, static, etc.)") \
 		X_(ENUM, DEVICE_VENDOR, "Vendors", "", "List of all known hardware vendors (IHVs) for GPUs and other hardware") \
 		X_(ENUM, PRESENT_MODE, "Present Modes", "", "List of all known modes of frame presentation") \
 		X_(ENUM, PSU_TYPE, "PSU Types", "", "Type of power supply used by GPUs") \
@@ -293,13 +297,13 @@ namespace pmid
 	// list of metrics
 	#define FULL_STATS PM_STAT_AVG, PM_STAT_PERCENTILE_99, PM_STAT_PERCENTILE_95, PM_STAT_PERCENTILE_90, PM_STAT_MAX, PM_STAT_MIN, PM_STAT_RAW
 	#define METRIC_LIST(X_) \
-		X_(PM_METRIC_DISPLAYED_FPS, PM_UNIT_FPS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, FULL_STATS) \
-		X_(PM_METRIC_PRESENTED_FPS, PM_UNIT_FPS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, FULL_STATS) \
-		X_(PM_METRIC_FRAME_TIME, PM_UNIT_MILLISECONDS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, FULL_STATS) \
-		X_(PM_METRIC_PRESENT_MODE, PM_UNIT_DIMENSIONLESS, PM_DATA_TYPE_ENUM, PM_ENUM_PRESENT_MODE, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_RAW) \
-		X_(PM_METRIC_GPU_POWER, PM_UNIT_WATTS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
-		X_(PM_METRIC_CPU_UTILIZATION, PM_UNIT_PERCENT, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, FULL_STATS) \
-		X_(PM_METRIC_GPU_FAN_SPEED, PM_UNIT_RPM, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS)
+		X_(PM_METRIC_DISPLAYED_FPS, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_FPS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, FULL_STATS) \
+		X_(PM_METRIC_PRESENTED_FPS, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_FPS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, FULL_STATS) \
+		X_(PM_METRIC_FRAME_TIME, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_MILLISECONDS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, FULL_STATS) \
+		X_(PM_METRIC_PRESENT_MODE, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_DIMENSIONLESS, PM_DATA_TYPE_ENUM, PM_ENUM_PRESENT_MODE, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_RAW) \
+		X_(PM_METRIC_GPU_POWER, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_WATTS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
+		X_(PM_METRIC_CPU_UTILIZATION, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_PERCENT, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, FULL_STATS) \
+		X_(PM_METRIC_GPU_FAN_SPEED, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_RPM, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS)
 
 #define XSTR_(macro) #macro
 #define STRINGIFY_MACRO_CALL(macro) XSTR_(macro)
@@ -381,9 +385,9 @@ namespace pmid
 		};
 
 		// do metric population
-#define X_REG_METRIC(metric, unit, data_type, enum_id, device_type, ...) { \
+#define X_REG_METRIC(metric, metric_type, unit, data_type, enum_id, device_type, ...) { \
 		auto pMetric = std::make_unique<IntrospectionMetric>( \
-			metric, unit, IntrospectionDataTypeInfo{ data_type, (PM_ENUM)enum_id }, std::vector{ __VA_ARGS__ }); \
+			metric, metric_type, unit, IntrospectionDataTypeInfo{ data_type, (PM_ENUM)enum_id }, std::vector{ __VA_ARGS__ }); \
 		PopulateDeviceMetricInfo(*pMetric, device_type); \
 		pRoot->AddMetric(std::move(pMetric)); }
 

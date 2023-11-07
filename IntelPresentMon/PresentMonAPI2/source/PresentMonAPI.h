@@ -31,6 +31,12 @@ extern "C" {
 		PM_METRIC_GPU_FAN_SPEED,
 	};
 
+	enum PM_METRIC_TYPE
+	{
+		PM_METRIC_TYPE_DYNAMIC,
+		PM_METRIC_TYPE_STATIC,
+	};
+
 	enum PM_DEVICE_VENDOR
 	{
 		PM_DEVICE_VENDOR_INTEL,
@@ -119,6 +125,7 @@ extern "C" {
 	{
 		PM_ENUM_STATUS,
 		PM_ENUM_METRIC,
+		PM_ENUM_METRIC_TYPE,
 		PM_ENUM_DEVICE_VENDOR,
 		PM_ENUM_PRESENT_MODE,
 		PM_ENUM_PSU_TYPE,
@@ -183,6 +190,7 @@ extern "C" {
 	struct PM_INTROSPECTION_METRIC
 	{
 		PM_METRIC id;
+		PM_METRIC_TYPE type;
 		PM_UNIT unit;
 		PM_INTROSPECTION_DATA_TYPE_INFO typeInfo;
 		PM_INTROSPECTION_OBJARRAY* pStats;
@@ -196,10 +204,24 @@ extern "C" {
 		PM_INTROSPECTION_OBJARRAY* pDevices;
 	};
 
+	struct PM_QUERY_ELEMENT
+	{
+		PM_METRIC metric;
+		uint32_t deviceId;
+		uint32_t arrayIndex;
+		uint64_t dataOffset;
+	};
+
+	typedef struct PM_POLLED_QUERY* PM_POLLED_QUERY_HANDLE;
+
 	PRESENTMON_API_EXPORT PM_STATUS pmOpenSession();
 	PRESENTMON_API_EXPORT PM_STATUS pmCloseSession();
 	PRESENTMON_API_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROOT** ppInterface);
 	PRESENTMON_API_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pInterface);
+	PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_POLLED_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint64_t* pPollingBlobSize);
+	PRESENTMON_API_EXPORT PM_STATUS pmFreeDynamicQuery(PM_POLLED_QUERY_HANDLE pHandle);
+	PRESENTMON_API_EXPORT PM_STATUS pmPollDynamicQuery(PM_POLLED_QUERY_HANDLE pHandle, uint8_t* pBlob);
+	PRESENTMON_API_EXPORT PM_STATUS pmPollStaticQuery(const PM_QUERY_ELEMENT* pElement, uint8_t* pBlob);
 
 #ifdef __cplusplus
 } // extern "C"

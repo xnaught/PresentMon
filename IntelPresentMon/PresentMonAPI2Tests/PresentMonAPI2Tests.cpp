@@ -141,13 +141,13 @@ namespace PresentMonAPI2
 			const PM_INTROSPECTION_ROOT* pRoot{};
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
 			Assert::IsNotNull(pRoot);
-			Assert::AreEqual(11ull, pRoot->pEnums->size);
+			Assert::AreEqual(12ull, pRoot->pEnums->size);
 			Assert::AreEqual(7ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
-			// checking 6th enum (unit)
+			// checking 7th enum (unit)
 			{
-				auto pEnum = static_cast<const PM_INTROSPECTION_ENUM*>(pRoot->pEnums->pData[5]);
+				auto pEnum = static_cast<const PM_INTROSPECTION_ENUM*>(pRoot->pEnums->pData[6]);
 				Assert::IsNotNull(pEnum);
 				Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
 				Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
@@ -291,7 +291,7 @@ namespace PresentMonAPI2
 			using namespace std::string_literals;
 
 			const std::vector expected{
-				"PM_STATUS"s, "PM_METRIC"s, "PM_DEVICE_VENDOR"s, "PM_PRESENT_MODE"s, "PM_PSU_TYPE"s,
+				"PM_STATUS"s, "PM_METRIC"s, "PM_METRIC_TYPE"s, "PM_DEVICE_VENDOR"s, "PM_PRESENT_MODE"s, "PM_PSU_TYPE"s,
 				"PM_UNIT"s, "PM_STAT"s, "PM_DATA_TYPE"s, "PM_GRAPHICS_RUNTIME"s, "PM_DEVICE_TYPE"s, "PM_METRIC_AVAILABILITY"s
 			};
 			auto e = expected.begin();
