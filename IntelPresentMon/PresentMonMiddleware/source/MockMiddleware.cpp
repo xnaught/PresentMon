@@ -226,7 +226,8 @@ namespace pmid
 		X_(METRIC, PRESENT_MODE, "Present Mode", "", "Method used to present the frame") \
 		X_(METRIC, GPU_POWER, "GPU Power", "", "Power consumed by the graphics adapter") \
 		X_(METRIC, CPU_UTILIZATION, "CPU Utilization", "", "Amount of CPU processing capacity being used") \
-		X_(METRIC, GPU_FAN_SPEED, "GPU Fan Speed", "", "Rate at which a GPU cooler fan is rotating")
+		X_(METRIC, GPU_FAN_SPEED, "GPU Fan Speed", "", "Rate at which a GPU cooler fan is rotating") \
+		X_(METRIC, PROCESS_NAME, "Process Name", "", "Name of the process being targetted")
 	#define ENUM_KEY_LIST_METRIC_TYPE(X_) \
 		X_(METRIC_TYPE, DYNAMIC, "Dynamic Metric", "", "Metric that changes over time and requires polling using a registered query") \
 		X_(METRIC_TYPE, STATIC, "Static Metric", "", "Metric that never changes and can be polled without registering a query")
@@ -310,7 +311,8 @@ namespace pmid
 		X_(PM_METRIC_PRESENT_MODE, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_DIMENSIONLESS, PM_DATA_TYPE_ENUM, PM_ENUM_PRESENT_MODE, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_RAW) \
 		X_(PM_METRIC_GPU_POWER, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_WATTS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
 		X_(PM_METRIC_CPU_UTILIZATION, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_PERCENT, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, FULL_STATS) \
-		X_(PM_METRIC_GPU_FAN_SPEED, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_RPM, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS)
+		X_(PM_METRIC_GPU_FAN_SPEED, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_RPM, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
+		X_(PM_METRIC_PROCESS_NAME, PM_METRIC_TYPE_STATIC, PM_UNIT_DIMENSIONLESS, PM_DATA_TYPE_STRING, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_RAW)
 
 #define XSTR_(macro) #macro
 #define STRINGIFY_MACRO_CALL(macro) XSTR_(macro)
@@ -494,5 +496,6 @@ namespace pmid
 
 	void MockMiddleware::PollStaticQuery(const PM_QUERY_ELEMENT& element, uint8_t* pBlob) const
 	{
+
 	}
 }

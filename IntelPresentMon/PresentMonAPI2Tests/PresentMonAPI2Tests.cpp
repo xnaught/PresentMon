@@ -293,6 +293,15 @@ namespace PresentMonAPI2
 
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeDynamicQuery(q));
 		}
+		TEST_METHOD(FailToRegisterStaticQuery)
+		{
+			PM_DYNAMIC_QUERY_HANDLE q = nullptr;
+			PM_QUERY_ELEMENT elements[]{
+				PM_QUERY_ELEMENT{.metric = PM_METRIC_PROCESS_NAME, .deviceId = 0, .arrayIndex = 0},
+			};
+			Assert::AreEqual((int)PM_STATUS_FAILURE, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements)));
+			Assert::IsNull(q);
+		}
 		TEST_METHOD(PollValuesTimeZero)
 		{
 			PM_DYNAMIC_QUERY_HANDLE q = nullptr;
