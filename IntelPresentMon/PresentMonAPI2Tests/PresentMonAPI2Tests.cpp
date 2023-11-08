@@ -569,6 +569,13 @@ namespace PresentMonAPI2
 				data->FindMetric(PM_METRIC_FRAME_TIME).GetDataTypeInfo().GetEnum();
 			});
 		}
+		TEST_METHOD(IntrospectMetricType)
+		{
+			using namespace std::string_literals;
+
+			Assert::AreEqual("Dynamic Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).GetType().GetName());
+			Assert::AreEqual("Static Metric"s, data->FindMetric(PM_METRIC_PROCESS_NAME).GetType().GetName());
+		}
 	private:
 		std::optional<pmapi::Session> session;
 		std::optional<pmapi::intro::Dataset> data;
