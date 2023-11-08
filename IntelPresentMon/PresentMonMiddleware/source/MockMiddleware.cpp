@@ -496,6 +496,20 @@ namespace pmid
 
 	void MockMiddleware::PollStaticQuery(const PM_QUERY_ELEMENT& element, uint8_t* pBlob) const
 	{
+		// get introspection data for reference
+		// TODO: cache this data so it's not required to be generated every time
+		pmapi::intro::Dataset ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
 
+		auto metricView = ispec.FindMetric(element.metric);
+		if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_STATIC)) {
+			// TODO: more specific exception
+			throw std::runtime_error{ "dynamic metric in static query poll" };
+		}
+		if (element.metric == PM_METRIC_PROCESS_NAME) {
+			strcpy_s(reinterpret_cast<char*>(pBlob), 260, "dota2.exe");
+		}
+		else {
+			throw std::runtime_error{ "unknown metric in static poll" };
+		}
 	}
 }
