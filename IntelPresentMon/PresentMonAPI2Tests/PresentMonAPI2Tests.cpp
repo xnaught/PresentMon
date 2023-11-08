@@ -12,6 +12,7 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 PRESENTMON_API_EXPORT void pmSetMiddlewareAsMock_(bool mocked, bool useCrtHeapDebug = false);
 PRESENTMON_API_EXPORT _CrtMemState pmCreateHeapCheckpoint_();
 PRESENTMON_API_EXPORT PM_STATUS pmMiddlewareSpeak_(char* buffer);
+PRESENTMON_API_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(uint32_t milliseconds);
 
 namespace PresentMonAPI2
 {
@@ -304,6 +305,40 @@ namespace PresentMonAPI2
 			Assert::IsNotNull(q);
 
 			auto pBlob = std::make_unique<uint8_t[]>(elements[2].dataOffset + elements[2].dataSize);
+
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, pBlob.get()));
+			Assert::AreEqual((double)PM_METRIC_CPU_UTILIZATION, reinterpret_cast<double&>(pBlob[elements[0].dataOffset]));
+			Assert::AreEqual((int)PM_PRESENT_MODE_HARDWARE_LEGACY_FLIP, reinterpret_cast<int&>(pBlob[elements[1].dataOffset]));
+			Assert::AreEqual((double)PM_METRIC_GPU_POWER, reinterpret_cast<double&>(pBlob[elements[2].dataOffset]));
+
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeDynamicQuery(q));
+		}
+		TEST_METHOD(PollValuesOverTime)
+		{
+			PM_DYNAMIC_QUERY_HANDLE q = nullptr;
+			PM_QUERY_ELEMENT elements[]{
+				PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_UTILIZATION, .deviceId = 0, .arrayIndex = 0},
+				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_MODE, .deviceId = 0, .arrayIndex = 0},
+				PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_POWER, .deviceId = 1, .arrayIndex = 0},
+			};
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements)));
+			Assert::IsNotNull(q);
+
+			auto pBlob = std::make_unique<uint8_t[]>(elements[2].dataOffset + elements[2].dataSize);
+
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, pBlob.get()));
+			Assert::AreEqual((double)PM_METRIC_CPU_UTILIZATION, reinterpret_cast<double&>(pBlob[elements[0].dataOffset]));
+			Assert::AreEqual((int)PM_PRESENT_MODE_HARDWARE_LEGACY_FLIP, reinterpret_cast<int&>(pBlob[elements[1].dataOffset]));
+			Assert::AreEqual((double)PM_METRIC_GPU_POWER, reinterpret_cast<double&>(pBlob[elements[2].dataOffset]));
+
+			pmMiddlewareAdvanceTime_(1);
+
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, pBlob.get()));
+			Assert::AreEqual(0., reinterpret_cast<double&>(pBlob[elements[0].dataOffset]));
+			Assert::AreEqual((int)PM_PRESENT_MODE_HARDWARE_INDEPENDENT_FLIP, reinterpret_cast<int&>(pBlob[elements[1].dataOffset]));
+			Assert::AreEqual(0., reinterpret_cast<double&>(pBlob[elements[2].dataOffset]));
+
+			pmMiddlewareAdvanceTime_(1);
 
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, pBlob.get()));
 			Assert::AreEqual((double)PM_METRIC_CPU_UTILIZATION, reinterpret_cast<double&>(pBlob[elements[0].dataOffset]));
