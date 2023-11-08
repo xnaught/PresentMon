@@ -12,6 +12,11 @@ namespace pmapi::intro
         return pDataset->FindEnumKey(PM_ENUM_UNIT, (int)pBase->unit);
     }
 
+    EnumKeyView MetricView::GetType() const
+    {
+        return pDataset->FindEnumKey(PM_ENUM_METRIC_TYPE, (int)pBase->type);
+    }
+
     EnumKeyView DataTypeInfoView::GetType() const
     {
         return pDataset->FindEnumKey(PM_ENUM_DATA_TYPE, (int)pBase->type);

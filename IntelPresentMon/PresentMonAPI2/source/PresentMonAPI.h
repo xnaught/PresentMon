@@ -219,7 +219,7 @@ extern "C" {
 	PRESENTMON_API_EXPORT PM_STATUS pmCloseSession();
 	PRESENTMON_API_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROOT** ppInterface);
 	PRESENTMON_API_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pInterface);
-	PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint64_t* pPollingBlobSize);
+	PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements);
 	PRESENTMON_API_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle);
 	PRESENTMON_API_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint8_t* pBlob);
 	PRESENTMON_API_EXPORT PM_STATUS pmPollStaticQuery(const PM_QUERY_ELEMENT* pElement, uint8_t* pBlob);

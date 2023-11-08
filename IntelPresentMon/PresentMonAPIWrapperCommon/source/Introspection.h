@@ -417,6 +417,7 @@ namespace pmapi
                 return pBase->id;
             }
             EnumKeyView GetUnit() const;
+            EnumKeyView GetType() const;
             DataTypeInfoView GetDataTypeInfo() const
             {
                 return { pDataset, &pBase->typeInfo };

@@ -137,17 +137,16 @@ PRESENTMON_API_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pIn
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint64_t* pPollingBlobSize)
+PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements)
 {
 	try {
 		if (!pMiddleware_) {
 			return PM_STATUS_SESSION_NOT_OPEN;
 		}
-		if (!pHandle || !pElements || !numElements || !pPollingBlobSize) {
+		if (!pHandle || !pElements || !numElements) {
 			return PM_STATUS_FAILURE;
 		}
 		*pHandle = pMiddleware_->RegisterDynamicQuery({pElements, numElements});
-		*pPollingBlobSize = (*pHandle)->GetBlobSize();
 		return PM_STATUS_SUCCESS;
 	}
 	catch (...) {

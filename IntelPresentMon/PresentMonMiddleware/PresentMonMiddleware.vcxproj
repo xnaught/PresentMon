@@ -19,6 +19,11 @@
     <ClCompile Include="source\ConcreteMiddleware.cpp" />
     <ClCompile Include="source\MockMiddleware.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\PresentMonAPIWrapperCommon\PresentMonAPIWrapperCommon.vcxproj">
+      <Project>{2b343210-86ab-4153-9a6c-945e4af54c7c}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>

@@ -4,7 +4,7 @@
 #include <vector>
 #include <memory>
 #include "../../PresentMonAPI2/source/Internal.h"
-#include "../../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
+#include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
 
 namespace pmid
 {
@@ -439,15 +439,24 @@ namespace pmid
 	{
 		// get introspection data for reference
 		// TODO: cache this data so it's not required to be generated every time
-		GetIntrospectionData();
+		pmapi::intro::Dataset ispec{ GetIntrospectionData(), [this](auto p){FreeIntrospectionData(p);} };
 
 		// make the query object that will be managed by the handle
 		auto pQuery = std::make_unique<PM_DYNAMIC_QUERY>();
 
-		//uint64_t offset = 0u;
-		//for (auto& qe : queryElements) {
-		//	const auto size = GetDataTypeSize(pIntro->)
-		//}
+		uint64_t offset = 0u;
+		for (auto& qe : queryElements) {
+			auto metricView = ispec.FindMetric(qe.metric);
+			if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_DYNAMIC)) {
+				// TODO: specific exception here
+				throw std::runtime_error{ "Static metric in dynamic metric query specification" };
+			}
+			// TODO: validate device id
+			// TODO: validate array index
+			qe.dataOffset = offset;
+			qe.dataSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetBasePtr()->type);
+			offset += qe.dataSize;
+		}
 
 		pQuery->elements = std::vector<PM_QUERY_ELEMENT>{ queryElements.begin(), queryElements.end() };
 
@@ -456,10 +465,31 @@ namespace pmid
 
 	void MockMiddleware::FreeDynamicQuery(const PM_DYNAMIC_QUERY* pQuery) const
 	{
+		delete pQuery;
 	}
 
 	void MockMiddleware::PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob) const
 	{
+		for (auto& qe : pQuery->elements) {
+			if (qe.metric == PM_METRIC_PRESENT_MODE) {
+				auto& output = reinterpret_cast<int&>(pBlob[qe.dataOffset]);
+				if (t % 2 == 0) {
+					output = (int)PM_PRESENT_MODE_HARDWARE_LEGACY_FLIP;
+				}
+				else {
+					output = (int)PM_PRESENT_MODE_HARDWARE_INDEPENDENT_FLIP;
+				}
+			}
+			else {
+				auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
+				if (t % 2 == 0) {
+					output = (double)qe.metric;
+				}
+				else {
+					output = 0.;
+				}
+			}
+		}
 	}
 
 	void MockMiddleware::PollStaticQuery(const PM_QUERY_ELEMENT& element, uint8_t* pBlob) const
