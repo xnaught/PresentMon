@@ -210,6 +210,7 @@ extern "C" {
 		uint32_t deviceId;
 		uint32_t arrayIndex;
 		uint64_t dataOffset;
+		uint64_t dataSize;
 	};
 
 	typedef struct PM_DYNAMIC_QUERY* PM_DYNAMIC_QUERY_HANDLE;

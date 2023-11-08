@@ -88,6 +88,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ApiNext", "ApiNext", "{53E2
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PresentMonAPIWrapper", "IntelPresentMon\PresentMonAPIWrapper\PresentMonAPIWrapper.vcxproj", "{CEE032ED-B0D3-47F8-BDAE-D46757B0061B}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PresentMonAPIWrapperCommon", "IntelPresentMon\PresentMonAPIWrapperCommon\PresentMonAPIWrapperCommon.vcxproj", "{2B343210-86AB-4153-9A6C-945E4AF54C7C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -360,6 +362,18 @@ Global
 		{CEE032ED-B0D3-47F8-BDAE-D46757B0061B}.Release-EDSS|x64.Build.0 = Release|x64
 		{CEE032ED-B0D3-47F8-BDAE-D46757B0061B}.Release-EDSS|x86.ActiveCfg = Release|Win32
 		{CEE032ED-B0D3-47F8-BDAE-D46757B0061B}.Release-EDSS|x86.Build.0 = Release|Win32
+		{2B343210-86AB-4153-9A6C-945E4AF54C7C}.Debug|x64.ActiveCfg = Debug|x64
+		{2B343210-86AB-4153-9A6C-945E4AF54C7C}.Debug|x64.Build.0 = Debug|x64
+		{2B343210-86AB-4153-9A6C-945E4AF54C7C}.Debug|x86.ActiveCfg = Debug|Win32
+		{2B343210-86AB-4153-9A6C-945E4AF54C7C}.Debug|x86.Build.0 = Debug|Win32
+		{2B343210-86AB-4153-9A6C-945E4AF54C7C}.Release|x64.ActiveCfg = Release|x64
+		{2B343210-86AB-4153-9A6C-945E4AF54C7C}.Release|x64.Build.0 = Release|x64
+		{2B343210-86AB-4153-9A6C-945E4AF54C7C}.Release|x86.ActiveCfg = Release|Win32
+		{2B343210-86AB-4153-9A6C-945E4AF54C7C}.Release|x86.Build.0 = Release|Win32
+		{2B343210-86AB-4153-9A6C-945E4AF54C7C}.Release-EDSS|x64.ActiveCfg = Release|x64
+		{2B343210-86AB-4153-9A6C-945E4AF54C7C}.Release-EDSS|x64.Build.0 = Release|x64
+		{2B343210-86AB-4153-9A6C-945E4AF54C7C}.Release-EDSS|x86.ActiveCfg = Release|Win32
+		{2B343210-86AB-4153-9A6C-945E4AF54C7C}.Release-EDSS|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -391,6 +405,7 @@ Global
 		{34B60AAC-4646-4AA8-A267-9A5DD7C097D5} = {53E20071-60E7-491C-A85D-95E87179AF1D}
 		{53E20071-60E7-491C-A85D-95E87179AF1D} = {6DCB803B-9FCE-456C-87B9-1365F59BD190}
 		{CEE032ED-B0D3-47F8-BDAE-D46757B0061B} = {53E20071-60E7-491C-A85D-95E87179AF1D}
+		{2B343210-86AB-4153-9A6C-945E4AF54C7C} = {53E20071-60E7-491C-A85D-95E87179AF1D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {485BBDCE-E37E-4C3F-A336-A96029B45E1B}

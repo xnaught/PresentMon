@@ -19,24 +19,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\PresentMonAPIWrapper.cpp" />
+    <ClCompile Include="source\Introspection.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\PresentMonAPIWrapper.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\PresentMonAPI2\PresentMonAPI2.vcxproj">
-      <Project>{5ddba061-53a0-4835-8aaf-943f403f924f}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\PresentMonAPIWrapperCommon\PresentMonAPIWrapperCommon.vcxproj">
-      <Project>{2b343210-86ab-4153-9a6c-945e4af54c7c}</Project>
-    </ProjectReference>
+    <ClInclude Include="source\Introspection.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{cee032ed-b0d3-47f8-bdae-d46757b0061b}</ProjectGuid>
-    <RootNamespace>PresentMonAPIWrapper</RootNamespace>
+    <ProjectGuid>{2b343210-86ab-4153-9a6c-945e4af54c7c}</ProjectGuid>
+    <RootNamespace>PresentMonAPIWrapperCommon</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

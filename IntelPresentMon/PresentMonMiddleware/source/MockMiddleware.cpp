@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include "../../PresentMonAPI2/source/Internal.h"
+#include "../../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
 
 namespace pmid
 {
@@ -419,8 +420,7 @@ namespace pmid
 	template<PM_DATA_TYPE T>
 	constexpr size_t EnumToStaticType_sz = sizeof(EnumToStaticType_t<T>);
 
-	// validate that static mapping of datatype enum to static type is complete
-	size_t ValidateStaticDatatypeMappingCompleteness(PM_DATA_TYPE v)
+	size_t GetDataTypeSize(PM_DATA_TYPE v)
 	{
 #define X_REG_KEYS(enum_frag, key_frag, name, short_name, description) case MAKE_KEY_SYMBOL(enum_frag, key_frag): return EnumToStaticType_sz<MAKE_KEY_SYMBOL(enum_frag, key_frag)>;
 		switch (v) {
@@ -437,7 +437,17 @@ namespace pmid
 
 	PM_DYNAMIC_QUERY* MockMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements) const
 	{
+		// get introspection data for reference
+		// TODO: cache this data so it's not required to be generated every time
+		GetIntrospectionData();
+
+		// make the query object that will be managed by the handle
 		auto pQuery = std::make_unique<PM_DYNAMIC_QUERY>();
+
+		//uint64_t offset = 0u;
+		//for (auto& qe : queryElements) {
+		//	const auto size = GetDataTypeSize(pIntro->)
+		//}
 
 		pQuery->elements = std::vector<PM_QUERY_ELEMENT>{ queryElements.begin(), queryElements.end() };
 

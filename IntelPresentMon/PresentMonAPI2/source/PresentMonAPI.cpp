@@ -147,7 +147,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* 
 			return PM_STATUS_FAILURE;
 		}
 		*pHandle = pMiddleware_->RegisterDynamicQuery({pElements, numElements});
-		*pPollingBlobSize = (*pHandle)->blobSize;
+		*pPollingBlobSize = (*pHandle)->GetBlobSize();
 		return PM_STATUS_SUCCESS;
 	}
 	catch (...) {
