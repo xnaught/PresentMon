@@ -3,10 +3,16 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include "../../PresentMonAPI2/source/Internal.h"
 
 namespace pmid
 {
 	MockMiddleware::MockMiddleware() = default;
+
+	void MockMiddleware::AdvanceTime(uint32_t milliseconds)
+	{
+		t += milliseconds;
+	}
 
 	void MockMiddleware::Speak(char* buffer) const
 	{
@@ -268,8 +274,8 @@ namespace pmid
 		X_(DATA_TYPE, DOUBLE, "Double Precision Floating Point", "double", "64-bit double precision floating point number in IEEE 754 format") \
 		X_(DATA_TYPE, INT32, "32-bit Signed Integer", "int32_t", "32-bit signed integer") \
 		X_(DATA_TYPE, UINT32, "32-bit Unsigned Integer", "uint32_t", "32-bit unsigned integer") \
-		X_(DATA_TYPE, ENUM, "Enumeration", "enum", "Integral value of an enum key, guaranteed to fit within a 32-bit signed integer") \
-		X_(DATA_TYPE, STRING, "String", "char*", "Textual value, typically for non-numeric data")
+		X_(DATA_TYPE, ENUM, "Enumeration", "int", "Integral value of an enum key, guaranteed to fit within a 32-bit signed integer") \
+		X_(DATA_TYPE, STRING, "String", "char[260]", "Textual value, typically for non-numeric data")
 	#define ENUM_KEY_LIST_GRAPHICS_RUNTIME(X_) \
 		X_(GRAPHICS_RUNTIME, UNKNOWN, "Unknown", "", "Unknown graphics runtime") \
 		X_(GRAPHICS_RUNTIME, DXGI, "DXGI", "", "DirectX Graphics Infrastructure runtime") \
@@ -398,8 +404,55 @@ namespace pmid
 		return pRoot.release();
 	}
 
+	// static mapping of datatype enum to static type
+	template<PM_DATA_TYPE T>
+	struct EnumToStaticType;
+
+	template<> struct EnumToStaticType<PM_DATA_TYPE::PM_DATA_TYPE_DOUBLE> { using type = double; };
+	template<> struct EnumToStaticType<PM_DATA_TYPE::PM_DATA_TYPE_INT32> { using type = int32_t; };
+	template<> struct EnumToStaticType<PM_DATA_TYPE::PM_DATA_TYPE_UINT32> { using type = uint32_t; };
+	template<> struct EnumToStaticType<PM_DATA_TYPE::PM_DATA_TYPE_ENUM> { using type = int; };
+	template<> struct EnumToStaticType<PM_DATA_TYPE::PM_DATA_TYPE_STRING> { using type = char[260]; };
+
+	template<PM_DATA_TYPE T>
+	using EnumToStaticType_t = typename EnumToStaticType<T>::type;
+	template<PM_DATA_TYPE T>
+	constexpr size_t EnumToStaticType_sz = sizeof(EnumToStaticType_t<T>);
+
+	// validate that static mapping of datatype enum to static type is complete
+	size_t ValidateStaticDatatypeMappingCompleteness(PM_DATA_TYPE v)
+	{
+#define X_REG_KEYS(enum_frag, key_frag, name, short_name, description) case MAKE_KEY_SYMBOL(enum_frag, key_frag): return EnumToStaticType_sz<MAKE_KEY_SYMBOL(enum_frag, key_frag)>;
+		switch (v) {
+			ENUM_KEY_LIST_DATA_TYPE(X_REG_KEYS)
+		}
+#undef X_REG_KEYS
+		return 0;
+	}
+
 	void MockMiddleware::FreeIntrospectionData(const PM_INTROSPECTION_ROOT* pRoot) const
 	{
 		delete static_cast<const IntrospectionRoot*>(pRoot);
+	}
+
+	PM_DYNAMIC_QUERY* MockMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements) const
+	{
+		auto pQuery = std::make_unique<PM_DYNAMIC_QUERY>();
+
+		pQuery->elements = std::vector<PM_QUERY_ELEMENT>{ queryElements.begin(), queryElements.end() };
+
+		return pQuery.release();
+	}
+
+	void MockMiddleware::FreeDynamicQuery(const PM_DYNAMIC_QUERY* pQuery) const
+	{
+	}
+
+	void MockMiddleware::PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob) const
+	{
+	}
+
+	void MockMiddleware::PollStaticQuery(const PM_QUERY_ELEMENT& element, uint8_t* pBlob) const
+	{
 	}
 }

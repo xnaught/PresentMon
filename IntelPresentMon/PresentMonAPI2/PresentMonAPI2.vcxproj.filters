@@ -26,5 +26,8 @@
     <ClInclude Include="source\PresentMonAPI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\Internal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

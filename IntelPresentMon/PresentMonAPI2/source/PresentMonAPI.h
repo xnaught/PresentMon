@@ -212,15 +212,15 @@ extern "C" {
 		uint64_t dataOffset;
 	};
 
-	typedef struct PM_POLLED_QUERY* PM_POLLED_QUERY_HANDLE;
+	typedef struct PM_DYNAMIC_QUERY* PM_DYNAMIC_QUERY_HANDLE;
 
 	PRESENTMON_API_EXPORT PM_STATUS pmOpenSession();
 	PRESENTMON_API_EXPORT PM_STATUS pmCloseSession();
 	PRESENTMON_API_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROOT** ppInterface);
 	PRESENTMON_API_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pInterface);
-	PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_POLLED_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint64_t* pPollingBlobSize);
-	PRESENTMON_API_EXPORT PM_STATUS pmFreeDynamicQuery(PM_POLLED_QUERY_HANDLE pHandle);
-	PRESENTMON_API_EXPORT PM_STATUS pmPollDynamicQuery(PM_POLLED_QUERY_HANDLE pHandle, uint8_t* pBlob);
+	PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint64_t* pPollingBlobSize);
+	PRESENTMON_API_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle);
+	PRESENTMON_API_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint8_t* pBlob);
 	PRESENTMON_API_EXPORT PM_STATUS pmPollStaticQuery(const PM_QUERY_ELEMENT* pElement, uint8_t* pBlob);
 
 #ifdef __cplusplus
