@@ -4,6 +4,7 @@
 #include <crtdbg.h>
 #include <vector>
 #include <optional>
+#include <boost/process.hpp>
 
 #include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
 
@@ -143,7 +144,7 @@ namespace PresentMonAPI2
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(7ull, pRoot->pMetrics->size);
+			Assert::AreEqual(8ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)
@@ -579,5 +580,27 @@ namespace PresentMonAPI2
 	private:
 		std::optional<pmapi::Session> session;
 		std::optional<pmapi::intro::Dataset> data;
+	};
+
+	TEST_CLASS(ProcessTests)
+	{
+	public:
+		TEST_METHOD(LaunchAndRead)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			bp::child process("InterprocessMock.exe", bp::std_out > out, bp::std_in < in);
+
+			std::string output;
+			out >> output;
+
+			process.wait();
+
+			Assert::AreEqual("inter-process-stub"s, output);
+		}
 	};
 }
