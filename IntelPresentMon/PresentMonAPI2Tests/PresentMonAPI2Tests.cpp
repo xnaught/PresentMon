@@ -585,7 +585,7 @@ namespace PresentMonAPI2
 	TEST_CLASS(ProcessTests)
 	{
 	public:
-		TEST_METHOD(LaunchAndRead)
+		TEST_METHOD(LaunchAndReadStdout)
 		{
 			namespace bp = boost::process;
 			using namespace std::string_literals;
@@ -593,7 +593,24 @@ namespace PresentMonAPI2
 			bp::ipstream out; // Stream for reading the process's output
 			bp::opstream in;  // Stream for writing to the process's input
 
-			bp::child process("InterprocessMock.exe", bp::std_out > out, bp::std_in < in);
+			bp::child process("InterprocessMock.exe"s, bp::std_out > out, bp::std_in < in);
+
+			std::string output;
+			out >> output;
+
+			process.wait();
+
+			Assert::AreEqual("default-output"s, output);
+		}
+		TEST_METHOD(LaunchAndReadStdoutWithCLI)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			bp::child process("InterprocessMock.exe"s, "--test-f"s, bp::std_out > out, bp::std_in < in);
 
 			std::string output;
 			out >> output;

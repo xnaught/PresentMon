@@ -140,9 +140,15 @@
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Core\Core.vcxproj">
+      <Project>{808f5ea9-ea09-4d72-87b4-5397d43cba54}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\Interprocess\Interprocess.vcxproj">
       <Project>{ca23d648-daef-4f06-81d5-fe619bd31f0b}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Options.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
