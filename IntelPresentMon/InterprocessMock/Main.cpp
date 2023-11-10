@@ -3,6 +3,6 @@
 
 int main()
 {
-	std::cout << f() << std::endl;
+	std::cout << pmon::ipc::f() << std::endl;
 	return 0;
 }
