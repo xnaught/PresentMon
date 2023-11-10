@@ -4,6 +4,7 @@
 
 int main(int argc, char** argv)
 {
+	using namespace pmon::ipc;
 	using namespace pmon::ipc::mock;
 
 	// parse command line options
@@ -21,7 +22,16 @@ int main(int argc, char** argv)
 		std::cout << pmon::ipc::f() << std::endl;
 	}
 	else if (opts.basicMessage) {
+		std::string buffer;
+		std::cin >> buffer;
 
+		auto pServer = IServer::Make(std::move(buffer));
+
+		// send goahead signal to client
+		std::cout << "go" << std::endl;
+		
+		// wait until client has finished receiving
+		std::cin >> buffer;
 	}
 	else {
 		std::cout << "default-output" << std::endl;

@@ -95,6 +95,9 @@
     <ClCompile Include="PresentMonAPI2Tests.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Interprocess\Interprocess.vcxproj">
+      <Project>{ca23d648-daef-4f06-81d5-fe619bd31f0b}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\PresentMonAPI2\PresentMonAPI2.vcxproj">
       <Project>{5ddba061-53a0-4835-8aaf-943f403f924f}</Project>
     </ProjectReference>

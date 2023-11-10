@@ -15,14 +15,20 @@ namespace pmon::ipc
 	class Server : public IServer
 	{
 	public:
-		Server()
+		Server(std::string code)
 		{
-			shm.construct<MyShmString>(MessageStringName)(strAlloc);
+			auto pMessage = shm.construct<MyShmString>(MessageStringName)(strAlloc);
+			*pMessage = (code + "-served").c_str();
 		}
 	private:
 		bip::managed_windows_shared_memory shm{ bip::create_only, SharedMemoryName, 0x10'0000 };
 		StringAllocator strAlloc{ shm.get_segment_manager() };
 	};
+
+	std::unique_ptr<IServer> IServer::Make(std::string code)
+	{
+		return std::make_unique<Server>(std::move(code));
+	}
 
 	class Client : public IClient
 	{
@@ -39,11 +45,6 @@ namespace pmon::ipc
 		bip::managed_windows_shared_memory shm{ bip::open_only, IServer::SharedMemoryName };
 		const MyShmString* pMessage = nullptr;
 	};
-
-	std::unique_ptr<IServer> IServer::Make()
-	{
-		return std::make_unique<Server>();
-	}
 
 	std::unique_ptr<IClient> IClient::Make()
 	{

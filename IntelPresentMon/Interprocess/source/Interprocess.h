@@ -10,7 +10,7 @@ namespace pmon::ipc
 		virtual ~IServer() = default;
 		static constexpr const char* SharedMemoryName = "MySharedMemory-42069";
 		static constexpr const char* MessageStringName = "message-string-777";
-		static std::unique_ptr<IServer> Make();
+		static std::unique_ptr<IServer> Make(std::string code);
 	};
 
 	class IClient
