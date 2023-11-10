@@ -6,7 +6,8 @@
     "gtest",
     "gflags",
     "glog",
-    "cli11"
+    "cli11",
+    "boost-interprocess"
   ],
   "builtin-baseline": "5269f4f4f6b3970ad21f6956f6bb2322c024910c"
 }
