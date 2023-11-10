@@ -224,6 +224,28 @@ extern "C" {
 	PRESENTMON_API_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle);
 	PRESENTMON_API_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint8_t* pBlob);
 	PRESENTMON_API_EXPORT PM_STATUS pmPollStaticQuery(const PM_QUERY_ELEMENT* pElement, uint8_t* pBlob);
+	
+
+	/////// draft functions ///////
+	
+	//// process tracking (start "streaming" frame events) function
+	// start streaming
+	// stop streaming
+	
+	//// consuming frame events
+	// read frames
+	
+	//// setting global middleware settings
+	// offset (could this be per call? or set in the dynamic query registration?)
+	
+	//// setting global service settings
+	// rate of polling telemetry (set per device?)
+	
+	//// offline etl streaming session
+	// input the file
+	// 
+
+
 
 #ifdef __cplusplus
 } // extern "C"
