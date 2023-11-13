@@ -17,8 +17,11 @@ namespace pmon::ipc::experimental
 	public:
 		Server(std::string code)
 		{
+			// construct string in shm
 			auto pMessage = shm.construct<MyShmString>(MessageStringName)(strAlloc);
 			*pMessage = (code + "-served").c_str();
+			// construct ptr to string in shm
+			shm.construct<bip::offset_ptr<MyShmString>>(MessagePtrName)(pMessage);
 		}
 	private:
 		bip::managed_windows_shared_memory shm{ bip::create_only, SharedMemoryName, 0x10'0000 };
@@ -36,14 +39,20 @@ namespace pmon::ipc::experimental
 		Client()
 		{
 			pMessage = shm.find<MyShmString>(IServer::MessageStringName).first;
+			ppMessage = shm.find<bip::offset_ptr<MyShmString>>(IServer::MessagePtrName).first;
 		}
 		std::string Read() override
 		{
 			return pMessage->c_str();
 		}
+		std::string ReadWithPointer() override
+		{
+			return ppMessage->get()->c_str();
+		}
 	private:
 		bip::managed_windows_shared_memory shm{ bip::open_only, IServer::SharedMemoryName };
 		const MyShmString* pMessage = nullptr;
+		const bip::offset_ptr<MyShmString>* ppMessage = nullptr;
 	};
 
 	std::unique_ptr<IClient> IClient::Make()
