@@ -5,7 +5,7 @@
 #include <vector>
 #include <optional>
 #include <boost/process.hpp>
-#include "../Interprocess/source/Interprocess.h"
+#include "../Interprocess/source/ExperimentalInterprocess.h"
 
 #include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
 
@@ -638,7 +638,7 @@ namespace PresentMonAPI2
 			out >> go;
 
 			// connect client
-			auto pClient = pmon::ipc::IClient::Make();
+			auto pClient = pmon::ipc::experimental::IClient::Make();
 
 			// read string via shared memory
 			Assert::AreEqual("scooby-dooby-served"s, pClient->Read());

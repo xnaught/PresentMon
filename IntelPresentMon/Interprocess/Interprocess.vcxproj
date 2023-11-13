@@ -19,10 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\Interprocess.cpp" />
+    <ClCompile Include="source\ExperimentalInterprocess.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\Interprocess.h" />
+    <ClInclude Include="source\ExperimentalInterprocess.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

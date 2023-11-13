@@ -1,9 +1,9 @@
-#include "Interprocess.h"
+#include "ExperimentalInterprocess.h"
 #include <boost/interprocess/managed_windows_shared_memory.hpp>
 #include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
 
-namespace pmon::ipc
+namespace pmon::ipc::experimental
 {
 	namespace bip = boost::interprocess;
 

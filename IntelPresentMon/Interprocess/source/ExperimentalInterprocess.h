@@ -2,7 +2,7 @@
 #include <string>
 #include <memory>
 
-namespace pmon::ipc
+namespace pmon::ipc::experimental
 {
 	class IServer
 	{
