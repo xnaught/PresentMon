@@ -2,6 +2,7 @@
 #include <boost/interprocess/managed_windows_shared_memory.hpp>
 #include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
+#include <boost/interprocess/smart_ptr/unique_ptr.hpp>
 
 namespace pmon::ipc::experimental
 {
@@ -10,6 +11,8 @@ namespace pmon::ipc::experimental
 	using ShmSegment = bip::managed_windows_shared_memory;
 	using ShmSegmentManager = ShmSegment::segment_manager;
 	using ShmString = bip::basic_string<char, std::char_traits<char>, ShmSegment::allocator<char>::type>;
+	using UptrDeleter = bip::deleter<ShmString, ShmSegmentManager>;
+	using Uptr = bip::unique_ptr<ShmString, UptrDeleter>;
 
 	class Server : public IServer
 	{
@@ -21,6 +24,12 @@ namespace pmon::ipc::experimental
 			*pMessage = (code + "-served").c_str();
 			// construct ptr to string in shm
 			shm.construct<bip::offset_ptr<ShmString>>(MessagePtrName)(pMessage);
+			// construct named uptr to anonymous string
+			auto pupMessage = shm.construct<Uptr>(MessageUptrName)(
+				shm.construct<ShmString>(bip::anonymous_instance)(shm.get_segment_manager()),
+				UptrDeleter{ shm.get_segment_manager() }
+			);
+			**pupMessage = (code + "-u-served").c_str();
 		}
 	private:
 		ShmSegment shm{ bip::create_only, SharedMemoryName, 0x10'0000 };
@@ -38,6 +47,7 @@ namespace pmon::ipc::experimental
 		{
 			pMessage = shm.find<ShmString>(IServer::MessageStringName).first;
 			ppMessage = shm.find<bip::offset_ptr<ShmString>>(IServer::MessagePtrName).first;
+			pupMessage = shm.find<Uptr>(IServer::MessageUptrName).first;
 		}
 		std::string Read() override
 		{
@@ -47,10 +57,15 @@ namespace pmon::ipc::experimental
 		{
 			return ppMessage->get()->c_str();
 		}
+		std::string ReadWithUptr() override
+		{
+			return pupMessage->get()->c_str();
+		}
 	private:
 		bip::managed_windows_shared_memory shm{ bip::open_only, IServer::SharedMemoryName };
 		const ShmString* pMessage = nullptr;
 		const bip::offset_ptr<ShmString>* ppMessage = nullptr;
+		const Uptr* pupMessage = nullptr;
 	};
 
 	std::unique_ptr<IClient> IClient::Make()
