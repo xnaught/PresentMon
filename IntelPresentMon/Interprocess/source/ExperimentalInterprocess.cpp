@@ -25,14 +25,19 @@ namespace pmon::ipc::experimental
 			// construct ptr to string in shm
 			shm.construct<bip::offset_ptr<ShmString>>(MessagePtrName)(pMessage);
 			// construct named uptr to anonymous string
-			auto pupMessage = shm.construct<Uptr>(MessageUptrName)(
+			pupMessage = shm.construct<Uptr>(MessageUptrName)(
 				shm.construct<ShmString>(bip::anonymous_instance)(shm.get_segment_manager()),
 				UptrDeleter{ shm.get_segment_manager() }
 			);
 			**pupMessage = (code + "-u-served").c_str();
 		}
+		void FreeUptrToMessage() override
+		{
+			shm.destroy<Uptr>(MessageUptrName);
+		}
 	private:
 		ShmSegment shm{ bip::create_only, SharedMemoryName, 0x10'0000 };
+		Uptr* pupMessage = nullptr;
 	};
 
 	std::unique_ptr<IServer> IServer::Make(std::string code)
@@ -49,17 +54,21 @@ namespace pmon::ipc::experimental
 			ppMessage = shm.find<bip::offset_ptr<ShmString>>(IServer::MessagePtrName).first;
 			pupMessage = shm.find<Uptr>(IServer::MessageUptrName).first;
 		}
-		std::string Read() override
+		std::string Read() const override
 		{
 			return pMessage->c_str();
 		}
-		std::string ReadWithPointer() override
+		std::string ReadWithPointer() const override
 		{
 			return ppMessage->get()->c_str();
 		}
-		std::string ReadWithUptr() override
+		std::string ReadWithUptr() const override
 		{
 			return pupMessage->get()->c_str();
+		}
+		size_t GetFreeMemory() const override
+		{
+			return shm.get_free_memory();
 		}
 	private:
 		bip::managed_windows_shared_memory shm{ bip::open_only, IServer::SharedMemoryName };

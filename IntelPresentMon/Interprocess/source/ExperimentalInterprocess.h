@@ -12,6 +12,7 @@ namespace pmon::ipc::experimental
 		static constexpr const char* MessageStringName = "message-string-777";
 		static constexpr const char* MessagePtrName = "message-ptr-787";
 		static constexpr const char* MessageUptrName = "message-uptr-57";
+		virtual void FreeUptrToMessage() = 0;
 		static std::unique_ptr<IServer> Make(std::string code);
 	};
 
@@ -19,9 +20,10 @@ namespace pmon::ipc::experimental
 	{
 	public:
 		virtual ~IClient() = default;
-		virtual std::string Read() = 0;
-		virtual std::string ReadWithPointer() = 0;
-		virtual std::string ReadWithUptr() = 0;
+		virtual size_t GetFreeMemory() const = 0;
+		virtual std::string Read() const = 0;
+		virtual std::string ReadWithPointer() const = 0;
+		virtual std::string ReadWithUptr() const = 0;
 		static std::unique_ptr<IClient> Make();
 	};
 

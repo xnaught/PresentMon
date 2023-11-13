@@ -33,6 +33,28 @@ int main(int argc, char** argv)
 		// wait until client has finished receiving
 		std::cin >> buffer;
 	}
+	else if (opts.destroyUptr) {
+		std::string buffer;
+
+		// waiting for client that contains input code
+		std::cin >> buffer;
+
+		auto pServer = experimental::IServer::Make(std::move(buffer));
+
+		// send goahead signal to client, checks the free memory
+		std::cout << "go" << std::endl;
+
+		// wait until client has finishing checking free memory
+		std::cin >> buffer;
+
+		pServer->FreeUptrToMessage();
+
+		// send goahead signal to client to check free memory again
+		std::cout << "go" << std::endl;
+
+		// wait until client has finishing checking free memory
+		std::cin >> buffer;
+	}
 	else {
 		std::cout << "default-output" << std::endl;
 	}

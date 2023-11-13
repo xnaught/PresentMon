@@ -14,6 +14,8 @@ namespace pmon::ipc::mock::opt
 			Flag testF{ "--test-f", "Output test string from test function f() in ipc lib" };
 			Flag basicMessage{ "--basic-message", "Do minimal IPC test transferring string across shared memory", [this](CLI::Option* p) {
 				p->excludes(testF.opt()); } };
+			Flag destroyUptr{ "--destroy-uptr", "Test which destroys the uptr that is constructed by default", [this](CLI::Option* p) {
+				p->excludes(testF.opt(), basicMessage.opt()); } };
 
 		protected:
 			// edit application name and description here
