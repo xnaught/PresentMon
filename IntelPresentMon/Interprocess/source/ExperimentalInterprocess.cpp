@@ -7,10 +7,9 @@ namespace pmon::ipc::experimental
 {
 	namespace bip = boost::interprocess;
 
-	using SegmentManager = bip::managed_windows_shared_memory::segment_manager;
-	using CharAllocator = bip::allocator<char, SegmentManager>;
-	using MyShmString = bip::basic_string<char, std::char_traits<char>, CharAllocator>;
-	using StringAllocator = bip::allocator<MyShmString, SegmentManager>;
+	using ShmSegment = bip::managed_windows_shared_memory;
+	using ShmSegmentManager = ShmSegment::segment_manager;
+	using ShmString = bip::basic_string<char, std::char_traits<char>, ShmSegment::allocator<char>::type>;
 
 	class Server : public IServer
 	{
@@ -18,14 +17,13 @@ namespace pmon::ipc::experimental
 		Server(std::string code)
 		{
 			// construct string in shm
-			auto pMessage = shm.construct<MyShmString>(MessageStringName)(strAlloc);
+			auto pMessage = shm.construct<ShmString>(MessageStringName)(shm.get_segment_manager());
 			*pMessage = (code + "-served").c_str();
 			// construct ptr to string in shm
-			shm.construct<bip::offset_ptr<MyShmString>>(MessagePtrName)(pMessage);
+			shm.construct<bip::offset_ptr<ShmString>>(MessagePtrName)(pMessage);
 		}
 	private:
-		bip::managed_windows_shared_memory shm{ bip::create_only, SharedMemoryName, 0x10'0000 };
-		StringAllocator strAlloc{ shm.get_segment_manager() };
+		ShmSegment shm{ bip::create_only, SharedMemoryName, 0x10'0000 };
 	};
 
 	std::unique_ptr<IServer> IServer::Make(std::string code)
@@ -38,8 +36,8 @@ namespace pmon::ipc::experimental
 	public:
 		Client()
 		{
-			pMessage = shm.find<MyShmString>(IServer::MessageStringName).first;
-			ppMessage = shm.find<bip::offset_ptr<MyShmString>>(IServer::MessagePtrName).first;
+			pMessage = shm.find<ShmString>(IServer::MessageStringName).first;
+			ppMessage = shm.find<bip::offset_ptr<ShmString>>(IServer::MessagePtrName).first;
 		}
 		std::string Read() override
 		{
@@ -51,8 +49,8 @@ namespace pmon::ipc::experimental
 		}
 	private:
 		bip::managed_windows_shared_memory shm{ bip::open_only, IServer::SharedMemoryName };
-		const MyShmString* pMessage = nullptr;
-		const bip::offset_ptr<MyShmString>* ppMessage = nullptr;
+		const ShmString* pMessage = nullptr;
+		const bip::offset_ptr<ShmString>* ppMessage = nullptr;
 	};
 
 	std::unique_ptr<IClient> IClient::Make()
