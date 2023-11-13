@@ -12,6 +12,7 @@ namespace pmon::ipc::experimental
 		static constexpr const char* MessageStringName = "message-string-777";
 		static constexpr const char* MessagePtrName = "message-ptr-787";
 		static constexpr const char* MessageUptrName = "message-uptr-57";
+		virtual void MakeUptrToMessage(std::string code) = 0;
 		virtual void FreeUptrToMessage() = 0;
 		static std::unique_ptr<IServer> Make(std::string code);
 	};

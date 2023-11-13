@@ -25,7 +25,8 @@ int main(int argc, char** argv)
 		std::string buffer;
 		std::cin >> buffer;
 
-		auto pServer = experimental::IServer::Make(std::move(buffer));
+		auto pServer = experimental::IServer::Make(buffer);
+		pServer->MakeUptrToMessage(buffer);
 
 		// send goahead signal to client
 		std::cout << "go" << std::endl;
@@ -39,7 +40,8 @@ int main(int argc, char** argv)
 		// waiting for client that contains input code
 		std::cin >> buffer;
 
-		auto pServer = experimental::IServer::Make(std::move(buffer));
+		auto pServer = experimental::IServer::Make(buffer);
+		pServer->MakeUptrToMessage(buffer);
 
 		// send goahead signal to client, checks the free memory
 		std::cout << "go" << std::endl;

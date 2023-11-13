@@ -26,16 +26,19 @@ namespace pmon::ipc::experimental
 			*pMessage = (code + "-served").c_str();
 			// construct ptr to string in shm
 			shm.construct<bip::offset_ptr<ShmString>>(MessagePtrName)(pMessage);
-			// construct named uptr to anonymous string
+		}
+		void FreeUptrToMessage() override
+		{
+			pupMessage.reset();
+		}
+		void MakeUptrToMessage(std::string code) override
+		{
+			// construct named uptr in shm to anonymous string in shm, and own shm uptr via uptr in heap
 			pupMessage = Uptr<Uptr<ShmString>>{ shm.construct<Uptr<ShmString>>(MessageUptrName)(
 				shm.construct<ShmString>(bip::anonymous_instance)(shm.get_segment_manager()),
 				UptrDeleter<ShmString>{ shm.get_segment_manager() }
 			), UptrDeleter<Uptr<ShmString>>{ shm.get_segment_manager() } };
 			**pupMessage = (code + "-u-served").c_str();
-		}
-		void FreeUptrToMessage() override
-		{
-			pupMessage.reset();
 		}
 	private:
 		ShmSegment shm{ bip::create_only, SharedMemoryName, 0x10'0000 };
