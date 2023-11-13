@@ -57,7 +57,6 @@ namespace pmon::ipc::experimental
 		{
 			pMessage = shm.find<ShmString>(IServer::MessageStringName).first;
 			ppMessage = shm.find<bip::offset_ptr<ShmString>>(IServer::MessagePtrName).first;
-			pupMessage = shm.find<Uptr<ShmString>>(IServer::MessageUptrName).first;
 		}
 		std::string Read() const override
 		{
@@ -67,9 +66,9 @@ namespace pmon::ipc::experimental
 		{
 			return ppMessage->get()->c_str();
 		}
-		std::string ReadWithUptr() const override
+		std::string ReadWithUptr() override
 		{
-			return pupMessage->get()->c_str();
+			return shm.find<Uptr<ShmString>>(IServer::MessageUptrName).first->get()->c_str();
 		}
 		size_t GetFreeMemory() const override
 		{
@@ -79,7 +78,6 @@ namespace pmon::ipc::experimental
 		bip::managed_windows_shared_memory shm{ bip::open_only, IServer::SharedMemoryName };
 		const ShmString* pMessage = nullptr;
 		const bip::offset_ptr<ShmString>* ppMessage = nullptr;
-		const Uptr<ShmString>* pupMessage = nullptr;
 	};
 
 	std::unique_ptr<IClient> IClient::Make()

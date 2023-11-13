@@ -24,7 +24,7 @@ namespace pmon::ipc::experimental
 		virtual size_t GetFreeMemory() const = 0;
 		virtual std::string Read() const = 0;
 		virtual std::string ReadWithPointer() const = 0;
-		virtual std::string ReadWithUptr() const = 0;
+		virtual std::string ReadWithUptr() = 0;
 		static std::unique_ptr<IClient> Make();
 	};
 

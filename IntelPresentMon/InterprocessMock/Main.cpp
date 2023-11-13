@@ -57,6 +57,34 @@ int main(int argc, char** argv)
 		// wait until client has finishing checking free memory
 		std::cin >> buffer;
 	}
+	else if (opts.makeDestroyUptr) {
+		std::string buffer;
+
+		auto pServer = experimental::IServer::Make("dummy");
+
+		// signal to client that shm has been created
+		std::cout << "go" << std::endl;
+
+		// wait for client signal that free memory has been checked, contains code string
+		std::cin >> buffer;
+
+		// create the uptr and string in memory
+		pServer->MakeUptrToMessage(buffer);
+
+		// send goahead signal to client, checks the free memory
+		std::cout << "go" << std::endl;
+
+		// wait until client has finishing checking free memory
+		std::cin >> buffer;
+
+		pServer->FreeUptrToMessage();
+
+		// send goahead signal to client to check free memory again
+		std::cout << "go" << std::endl;
+
+		// wait until client has finishing checking free memory
+		std::cin >> buffer;
+	}
 	else {
 		std::cout << "default-output" << std::endl;
 	}

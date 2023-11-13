@@ -16,6 +16,8 @@ namespace pmon::ipc::mock::opt
 				p->excludes(testF.opt()); } };
 			Flag destroyUptr{ "--destroy-uptr", "Test which destroys the uptr that is constructed by default", [this](CLI::Option* p) {
 				p->excludes(testF.opt(), basicMessage.opt()); } };
+			Flag makeDestroyUptr{ "--make-destroy-uptr", "Test which makes and destroys the uptr such that leaks can be detected", [this](CLI::Option* p) {
+				p->excludes(testF.opt(), basicMessage.opt(), destroyUptr.opt()); } };
 
 		protected:
 			// edit application name and description here
