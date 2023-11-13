@@ -11,8 +11,10 @@ namespace pmon::ipc::experimental
 	using ShmSegment = bip::managed_windows_shared_memory;
 	using ShmSegmentManager = ShmSegment::segment_manager;
 	using ShmString = bip::basic_string<char, std::char_traits<char>, ShmSegment::allocator<char>::type>;
-	using UptrDeleter = bip::deleter<ShmString, ShmSegmentManager>;
-	using Uptr = bip::unique_ptr<ShmString, UptrDeleter>;
+	template<typename T>
+	using UptrDeleter = bip::deleter<T, ShmSegmentManager>;
+	template<typename T>
+	using Uptr = bip::unique_ptr<T, UptrDeleter<T>>;
 
 	class Server : public IServer
 	{
@@ -25,19 +27,19 @@ namespace pmon::ipc::experimental
 			// construct ptr to string in shm
 			shm.construct<bip::offset_ptr<ShmString>>(MessagePtrName)(pMessage);
 			// construct named uptr to anonymous string
-			pupMessage = shm.construct<Uptr>(MessageUptrName)(
+			pupMessage = shm.construct<Uptr<ShmString>>(MessageUptrName)(
 				shm.construct<ShmString>(bip::anonymous_instance)(shm.get_segment_manager()),
-				UptrDeleter{ shm.get_segment_manager() }
+				UptrDeleter<ShmString>{ shm.get_segment_manager() }
 			);
 			**pupMessage = (code + "-u-served").c_str();
 		}
 		void FreeUptrToMessage() override
 		{
-			shm.destroy<Uptr>(MessageUptrName);
+			shm.destroy<Uptr<ShmString>>(MessageUptrName);
 		}
 	private:
 		ShmSegment shm{ bip::create_only, SharedMemoryName, 0x10'0000 };
-		Uptr* pupMessage = nullptr;
+		Uptr<ShmString>* pupMessage;
 	};
 
 	std::unique_ptr<IServer> IServer::Make(std::string code)
@@ -52,7 +54,7 @@ namespace pmon::ipc::experimental
 		{
 			pMessage = shm.find<ShmString>(IServer::MessageStringName).first;
 			ppMessage = shm.find<bip::offset_ptr<ShmString>>(IServer::MessagePtrName).first;
-			pupMessage = shm.find<Uptr>(IServer::MessageUptrName).first;
+			pupMessage = shm.find<Uptr<ShmString>>(IServer::MessageUptrName).first;
 		}
 		std::string Read() const override
 		{
@@ -74,7 +76,7 @@ namespace pmon::ipc::experimental
 		bip::managed_windows_shared_memory shm{ bip::open_only, IServer::SharedMemoryName };
 		const ShmString* pMessage = nullptr;
 		const bip::offset_ptr<ShmString>* ppMessage = nullptr;
-		const Uptr* pupMessage = nullptr;
+		const Uptr<ShmString>* pupMessage = nullptr;
 	};
 
 	std::unique_ptr<IClient> IClient::Make()
