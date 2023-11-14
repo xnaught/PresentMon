@@ -14,6 +14,7 @@ namespace pmon::ipc::experimental
 		static constexpr const char* MessageUptrName = "message-uptr-57";
 		virtual void MakeUptrToMessage(std::string code) = 0;
 		virtual void FreeUptrToMessage() = 0;
+		virtual int RoundtripRootInShared() = 0;
 		static std::unique_ptr<IServer> Make(std::string code);
 	};
 

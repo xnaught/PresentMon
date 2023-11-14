@@ -808,7 +808,7 @@ namespace PresentMonAPI2
 			// wait for mock process to exit
 			process.wait();
 		}
-		TEST_METHOD(AllocatorStaticPolyFirst)
+		TEST_METHOD(AllocatorStaticPolyHeapClient)
 		{
 			namespace bp = boost::process;
 			using namespace std::string_literals;
@@ -833,6 +833,38 @@ namespace PresentMonAPI2
 
 			// do target test of allocator code
 			Assert::AreEqual(420, pClient->RoundtripRootInHeap());
+
+			// ack to server that read is complete via stdio
+			in << "ack" << std::endl;
+
+			// wait for mock process to exit
+			process.wait();
+		}
+		TEST_METHOD(AllocatorStaticPolySharedServer)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			bp::child process("InterprocessMock.exe"s, "--shared-root-basic"s, bp::std_out > out, bp::std_in < in);
+
+			// write the code string to server via stdio
+			in << "scooby-dooby" << std::endl;
+
+			// read result of allocator test
+			std::string result;
+			out >> result;
+
+			// verify allocator test result
+			Assert::AreEqual("69"s, result);
+
+			// connect client
+			auto pClient = pmon::ipc::experimental::IClient::Make();
+
+			// read string via shared memory
+			Assert::AreEqual("scooby-dooby-served"s, pClient->ReadWithPointer());
 
 			// ack to server that read is complete via stdio
 			in << "ack" << std::endl;

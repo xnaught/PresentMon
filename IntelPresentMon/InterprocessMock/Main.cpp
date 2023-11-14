@@ -35,6 +35,19 @@ int main(int argc, char** argv)
 		// wait until client has finished receiving
 		std::cin >> buffer;
 	}
+	else if (opts.sharedRootBasic) {
+		std::string buffer;
+		std::cin >> buffer;
+
+		auto pServer = experimental::IServer::Make(buffer);
+		pServer->MakeUptrToMessage(buffer);
+
+		// send result of allocator aware test to client
+		std::cout << pServer->RoundtripRootInShared() << std::endl;
+
+		// wait until client has finished receiving
+		std::cin >> buffer;
+	}
 	else if (opts.destroyUptr) {
 		std::string buffer;
 

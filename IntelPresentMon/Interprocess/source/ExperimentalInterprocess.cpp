@@ -51,10 +51,18 @@ namespace pmon::ipc::experimental
 		Allocator allocator(std::move(allocator_in));
 		// allocate memory for managed object (uninitialized)
 		auto ptr = allocator.allocate(1);
-		// construct object in allocated memory
-		std::allocator_traits<Allocator>::construct(allocator, ptr, 420);
-		// construct uptr and deleter
-		return UptrT<T, A>{ ptr, Deleter{ std::move(allocator) } };
+		if constexpr (std::same_as<decltype(ptr), T<A>*>) {
+			// construct object in allocated memory
+			std::allocator_traits<Allocator>::construct(allocator, ptr, 420);
+			// construct uptr and deleter
+			return UptrT<T, A>(ptr, Deleter(allocator));
+		}
+		else { // pointer is an offset pointer if not a raw pointer
+			// construct object in allocated memory
+			std::allocator_traits<Allocator>::construct(allocator, ptr.get(), 69);
+			// construct uptr and deleter
+			return UptrT<T, A>(ptr.get(), Deleter(allocator));
+		}
 	}
 
 	template<class A>
@@ -81,7 +89,6 @@ namespace pmon::ipc::experimental
 		UptrT<Branch, A> pBranch;
 	};
 
-
 	class Server : public IServer
 	{
 	public:
@@ -106,6 +113,11 @@ namespace pmon::ipc::experimental
 				UptrDeleter<ShmString>{ shm.get_segment_manager() }
 			), UptrDeleter<Uptr<ShmString>>{ shm.get_segment_manager() } };
 			**pupMessage = (code + "-u-served").c_str();
+		}
+		int RoundtripRootInShared() override
+		{
+			const Root r{ 17, shm.get_allocator<char>() };
+			return r.Get();
 		}
 	private:
 		ShmSegment shm{ bip::create_only, SharedMemoryName, 0x10'0000 };
