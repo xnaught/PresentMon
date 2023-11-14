@@ -3,6 +3,7 @@
 #include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/allocators/allocator.hpp>
 #include <boost/interprocess/smart_ptr/unique_ptr.hpp>
+#include <memory>
 
 namespace pmon::ipc::experimental
 {
@@ -10,11 +11,76 @@ namespace pmon::ipc::experimental
 
 	using ShmSegment = bip::managed_windows_shared_memory;
 	using ShmSegmentManager = ShmSegment::segment_manager;
-	using ShmString = bip::basic_string<char, std::char_traits<char>, ShmSegment::allocator<char>::type>;
+	template<typename T>
+	using ShmAllocator = ShmSegment::allocator<T>::type;
+	using ShmString = bip::basic_string<char, std::char_traits<char>, ShmAllocator<char>>;
 	template<typename T>
 	using UptrDeleter = bip::deleter<T, ShmSegmentManager>;
 	template<typename T>
 	using Uptr = bip::unique_ptr<T, UptrDeleter<T>>;
+
+	template<class A>
+	struct AllocatorDeleter
+	{
+		using T = typename A::value_type;
+		A allocator;
+		AllocatorDeleter(A allocator_) : allocator{ std::move(allocator_) } {}
+		void operator()(T* ptr) { allocator.deallocate(ptr, 1u); }
+	};
+
+	template<template <class> typename T, class A>
+	using UptrT = bip::unique_ptr<T<A>, AllocatorDeleter<typename T<A>::Allocator>>;
+
+
+	//template<class A>
+	//class Leaf
+	//{
+	//	using Allocator = std::allocator_traits<A>::template rebind_alloc<Leaf>;
+	//private:
+
+	//};
+
+	template<template <class> typename T, class A>
+	auto MakeUnique(A allocator_in)
+	{
+		// allocator type for creating the object to be managed by the uptr
+		using Allocator = typename T<A>::Allocator;
+		// deleter type for the uptr (derived from the allocator of the managed object)
+		using Deleter = typename UptrT<T, A>::deleter_type;
+		// create allocator for managed object
+		Allocator allocator(std::move(allocator_in));
+		// allocate memory for managed object (uninitialized)
+		auto ptr = allocator.allocate(1);
+		// construct object in allocated memory
+		std::allocator_traits<Allocator>::construct(allocator, ptr, 420);
+		// construct uptr and deleter
+		return UptrT<T, A>{ ptr, Deleter{ std::move(allocator) } };
+	}
+
+	template<class A>
+	class Branch
+	{
+	public:
+		using Allocator = std::allocator_traits<A>::template rebind_alloc<Branch>;
+		Branch(int x_) : x{ x_ } {}
+		int Get() const { return x; }
+	private:
+		int x;
+	};
+
+	template<class A>
+	class Root
+	{
+	public:
+		Root(int x, A allocator)
+			:
+			pBranch{ MakeUnique<Branch, A>(allocator) }
+		{}
+		int Get() const { return pBranch->Get(); }
+	private:
+		UptrT<Branch, A> pBranch;
+	};
+
 
 	class Server : public IServer
 	{
@@ -22,7 +88,8 @@ namespace pmon::ipc::experimental
 		Server(std::string code)
 		{
 			// construct string in shm
-			auto pMessage = shm.construct<ShmString>(MessageStringName)(shm.get_segment_manager());
+			auto allocator = shm.get_allocator<char>();
+			auto pMessage = shm.construct<ShmString>(MessageStringName)(allocator);
 			*pMessage = (code + "-served").c_str();
 			// construct ptr to string in shm
 			shm.construct<bip::offset_ptr<ShmString>>(MessagePtrName)(pMessage);
@@ -73,6 +140,11 @@ namespace pmon::ipc::experimental
 		size_t GetFreeMemory() const override
 		{
 			return shm.get_free_memory();
+		}
+		int RoundtripRootInHeap() const override
+		{
+			const Root r{ 69, std::allocator<char>{} };
+			return r.Get();
 		}
 	private:
 		bip::managed_windows_shared_memory shm{ bip::open_only, IServer::SharedMemoryName };

@@ -808,5 +808,37 @@ namespace PresentMonAPI2
 			// wait for mock process to exit
 			process.wait();
 		}
+		TEST_METHOD(AllocatorStaticPolyFirst)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			bp::child process("InterprocessMock.exe"s, "--basic-message"s, bp::std_out > out, bp::std_in < in);
+
+			// write the code string to server via stdio
+			in << "scooby-dooby" << std::endl;
+
+			// wait for goahead from server via stdio
+			std::string go;
+			out >> go;
+
+			// connect client
+			auto pClient = pmon::ipc::experimental::IClient::Make();
+
+			// read string via shared memory
+			Assert::AreEqual("scooby-dooby-served"s, pClient->ReadWithPointer());
+
+			// do target test of allocator code
+			Assert::AreEqual(420, pClient->RoundtripRootInHeap());
+
+			// ack to server that read is complete via stdio
+			in << "ack" << std::endl;
+
+			// wait for mock process to exit
+			process.wait();
+		}
 	};
 }

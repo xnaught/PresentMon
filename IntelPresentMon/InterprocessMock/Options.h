@@ -12,12 +12,9 @@ namespace pmon::ipc::mock::opt
 		{
 			// add options and switches here to augment the CLI
 			Flag testF{ "--test-f", "Output test string from test function f() in ipc lib" };
-			Flag basicMessage{ "--basic-message", "Do minimal IPC test transferring string across shared memory", [this](CLI::Option* p) {
-				p->excludes(testF.opt()); } };
-			Flag destroyUptr{ "--destroy-uptr", "Test which destroys the uptr that is constructed by default", [this](CLI::Option* p) {
-				p->excludes(testF.opt(), basicMessage.opt()); } };
-			Flag makeDestroyUptr{ "--make-destroy-uptr", "Test which makes and destroys the uptr such that leaks can be detected", [this](CLI::Option* p) {
-				p->excludes(testF.opt(), basicMessage.opt(), destroyUptr.opt()); } };
+			Flag basicMessage{ "--basic-message", "Do minimal IPC test transferring string across shared memory" };
+			Flag destroyUptr{ "--destroy-uptr", "Test which destroys the uptr that is constructed by default" };
+			Flag makeDestroyUptr{ "--make-destroy-uptr", "Test which makes and destroys the uptr such that leaks can be detected" };
 
 		protected:
 			// edit application name and description here

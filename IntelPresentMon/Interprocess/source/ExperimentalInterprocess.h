@@ -25,6 +25,7 @@ namespace pmon::ipc::experimental
 		virtual std::string Read() const = 0;
 		virtual std::string ReadWithPointer() const = 0;
 		virtual std::string ReadWithUptr() = 0;
+		virtual int RoundtripRootInHeap() const = 0;
 		static std::unique_ptr<IClient> Make();
 	};
 
