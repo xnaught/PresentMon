@@ -116,8 +116,11 @@ namespace pmon::ipc::experimental
 		}
 		int RoundtripRootInShared() override
 		{
-			const Root r{ 69, shm.get_allocator<char>() };
-			return r.Get();
+			auto allocator = shm.get_allocator<void>();
+			const auto pRoot = shm.construct<Root<decltype(allocator)>>(bip::anonymous_instance)(69, std::move(allocator));
+			const auto ret = pRoot->Get();
+			shm.destroy_ptr(pRoot);
+			return ret;
 		}
 	private:
 		ShmSegment shm{ bip::create_only, SharedMemoryName, 0x10'0000 };
