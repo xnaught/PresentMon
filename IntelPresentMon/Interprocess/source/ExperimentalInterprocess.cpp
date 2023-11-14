@@ -40,8 +40,8 @@ namespace pmon::ipc::experimental
 
 	//};
 
-	template<template <class> typename T, class A>
-	auto MakeUnique(A allocator_in)
+	template<template <class> typename T, class A, typename...P>
+	auto MakeUnique(A allocator_in, P&&...args)
 	{
 		// allocator type for creating the object to be managed by the uptr
 		using Allocator = typename T<A>::Allocator;
@@ -53,13 +53,13 @@ namespace pmon::ipc::experimental
 		auto ptr = allocator.allocate(1);
 		if constexpr (std::same_as<decltype(ptr), T<A>*>) {
 			// construct object in allocated memory
-			std::allocator_traits<Allocator>::construct(allocator, ptr, 420);
+			std::allocator_traits<Allocator>::construct(allocator, ptr, std::forward<P>(args)...);
 			// construct uptr and deleter
 			return UptrT<T, A>(ptr, Deleter(allocator));
 		}
 		else { // pointer is an offset pointer if not a raw pointer
 			// construct object in allocated memory
-			std::allocator_traits<Allocator>::construct(allocator, ptr.get(), 69);
+			std::allocator_traits<Allocator>::construct(allocator, ptr.get(), std::forward<P>(args)...);
 			// construct uptr and deleter
 			return UptrT<T, A>(ptr.get(), Deleter(allocator));
 		}
@@ -82,7 +82,7 @@ namespace pmon::ipc::experimental
 	public:
 		Root(int x, A allocator)
 			:
-			pBranch{ MakeUnique<Branch, A>(allocator) }
+			pBranch{ MakeUnique<Branch, A>(allocator, x) }
 		{}
 		int Get() const { return pBranch->Get(); }
 	private:
@@ -116,7 +116,7 @@ namespace pmon::ipc::experimental
 		}
 		int RoundtripRootInShared() override
 		{
-			const Root r{ 17, shm.get_allocator<char>() };
+			const Root r{ 69, shm.get_allocator<char>() };
 			return r.Get();
 		}
 	private:
@@ -155,7 +155,7 @@ namespace pmon::ipc::experimental
 		}
 		int RoundtripRootInHeap() const override
 		{
-			const Root r{ 69, std::allocator<char>{} };
+			const Root r{ 420, std::allocator<char>{} };
 			return r.Get();
 		}
 	private:
