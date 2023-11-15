@@ -29,9 +29,8 @@ namespace pmon::ipc::experimental
 			**pupMessage = (code + "-u-served").c_str();
 		}
 		int RoundtripRootInShared() override
-		{
-			
-			auto allocator = shm.get_allocator<void>();
+		{			
+			auto allocator = shm.get_allocator<std::string>();
 			const auto pRoot = shm.construct<Root<decltype(allocator)>>(bip::anonymous_instance)(69, std::move(allocator));
 			const auto ret = pRoot->Get();
 			shm.destroy_ptr(pRoot);

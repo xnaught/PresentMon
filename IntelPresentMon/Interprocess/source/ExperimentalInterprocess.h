@@ -15,12 +15,14 @@ namespace pmon::ipc::experimental
 	using ShmSegment = bip::managed_windows_shared_memory;
 	using ShmSegmentManager = ShmSegment::segment_manager;
 	template<typename T>
-	using ShmAllocator = ShmSegment::allocator<T>::type;
+	using ShmAllocator = ShmSegmentManager::allocator<T>::type;
 	using ShmString = bip::basic_string<char, std::char_traits<char>, ShmAllocator<char>>;
 	template<typename T>
 	using UptrDeleter = bip::deleter<T, ShmSegmentManager>;
 	template<typename T>
 	using Uptr = bip::unique_ptr<T, UptrDeleter<T>>;
+	template<class A>
+	using AllocString = bip::basic_string<char, std::char_traits<char>, A>;
 
 
 	// <A> is allocator already adapted to handling the type T its meant to handle
@@ -30,7 +32,11 @@ namespace pmon::ipc::experimental
 		using T = typename A::value_type;
 		using pointer = std::allocator_traits<A>::pointer;
 		AllocatorDeleter(A allocator_) : allocator{ std::move(allocator_) } {}
-		void operator()(pointer ptr) { allocator.deallocate(to_raw_pointer(ptr), 1u); }
+		void operator()(pointer ptr)
+		{
+			std::allocator_traits<A>::destroy(allocator, to_raw_pointer(ptr));
+			allocator.deallocate(to_raw_pointer(ptr), 1u);
+		}
 	private:
 		A allocator;
 	};
@@ -62,10 +68,17 @@ namespace pmon::ipc::experimental
 	public:
 		// allocator type for this instance, based on the allocator type used to template
 		using Allocator = std::allocator_traits<A>::template rebind_alloc<Branch>;
-		Branch(int x_) : x{ x_ } {}
+		Branch(int x_, A allocator) : x{ x_ }, str{ allocator }
+		{
+			str = "very-long-string-forcing-text-allocate-block-";
+			str.append(std::to_string(x).c_str());
+		}
 		int Get() const { return x; }
+		std::string GetString() const { return str.c_str(); }
 	private:
+		using CharAllocator = std::allocator_traits<A>::template rebind_alloc<char>;
 		int x;
+		AllocString<CharAllocator> str;
 	};
 
 	// <A> is any allocator
@@ -75,9 +88,10 @@ namespace pmon::ipc::experimental
 	public:
 		Root(int x, A allocator)
 			:
-			pBranch{ MakeUnique<Branch, A>(allocator, x) }
+			pBranch{ MakeUnique<Branch, A>(allocator, x, allocator) }
 		{}
 		int Get() const { return pBranch->Get(); }
+		std::string GetString() const { return pBranch->GetString(); }
 	private:
 		UptrT<Branch, A> pBranch;
 	};

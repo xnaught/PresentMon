@@ -1013,6 +1013,7 @@ namespace PresentMonAPI2
 
 			// access and check shared objects
 			Assert::AreEqual(777, pClient->GetRoot().Get());
+			Assert::AreEqual("very-long-string-forcing-text-allocate-block-777"s, pClient->GetRoot().GetString());
 
 			// ack to server that read is complete via stdio
 			in << "ack" << std::endl;
