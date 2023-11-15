@@ -3,17 +3,6 @@
 
 namespace pmon::ipc::experimental
 {
-	using ShmSegment = bip::managed_windows_shared_memory;
-	using ShmSegmentManager = ShmSegment::segment_manager;
-	template<typename T>
-	using ShmAllocator = ShmSegment::allocator<T>::type;
-	using ShmString = bip::basic_string<char, std::char_traits<char>, ShmAllocator<char>>;
-	template<typename T>
-	using UptrDeleter = bip::deleter<T, ShmSegmentManager>;
-	template<typename T>
-	using Uptr = bip::unique_ptr<T, UptrDeleter<T>>;
-
-
 	class Server : public IServer
 	{
 	public:
@@ -124,6 +113,10 @@ namespace pmon::ipc::experimental
 		{
 			shm.destroy<Root<ShmAllocator<void>>>(IServer::ClientFreeRoot);
 			shm.destroy<Uptr<ShmString>>(IServer::ClientFreeUptrString);
+		}
+		Root<ShmAllocator<void>>& GetRoot() override
+		{
+			return *shm.find<Root<ShmAllocator<void>>>(IServer::ClientFreeRoot).first;
 		}
 	private:
 		bip::managed_windows_shared_memory shm{ bip::open_only, IServer::SharedMemoryName };

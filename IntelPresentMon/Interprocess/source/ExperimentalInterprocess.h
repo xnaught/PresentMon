@@ -11,6 +11,18 @@ namespace pmon::ipc::experimental
 	namespace bip = boost::interprocess;
 	using bip::ipcdetail::to_raw_pointer;
 
+
+	using ShmSegment = bip::managed_windows_shared_memory;
+	using ShmSegmentManager = ShmSegment::segment_manager;
+	template<typename T>
+	using ShmAllocator = ShmSegment::allocator<T>::type;
+	using ShmString = bip::basic_string<char, std::char_traits<char>, ShmAllocator<char>>;
+	template<typename T>
+	using UptrDeleter = bip::deleter<T, ShmSegmentManager>;
+	template<typename T>
+	using Uptr = bip::unique_ptr<T, UptrDeleter<T>>;
+
+
 	// <A> is allocator already adapted to handling the type T its meant to handle
 	template<class A>
 	struct AllocatorDeleter
@@ -102,6 +114,7 @@ namespace pmon::ipc::experimental
 		virtual int RoundtripRootInHeap() const = 0;
 		virtual std::string ReadForClientFree() = 0;
 		virtual void ClientFree() = 0;
+		virtual Root<ShmAllocator<void>>& GetRoot() = 0;
 		static std::unique_ptr<IClient> Make();
 	};
 

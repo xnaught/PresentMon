@@ -979,7 +979,42 @@ namespace PresentMonAPI2
 			Assert::IsTrue(free3 > free2);
 			Assert::AreEqual(free1, free3);
 
-			// ack to server that read is complete via stdio, server frees root
+			// ack to server that read is complete via stdio
+			in << "ack" << std::endl;
+
+			// wait for mock process to exit
+			process.wait();
+		}
+		TEST_METHOD(ClientFreeDirectAccess)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			bp::child process("InterprocessMock.exe"s, "--client-free"s, bp::std_out > out, bp::std_in < in);
+
+			// read goahead to connect and check mem
+			std::string go;
+			out >> go;
+
+			Assert::AreEqual("go"s, go);
+
+			// connect client
+			auto pClient = pmon::ipc::experimental::IClient::Make();
+
+			// write the code string to server via stdio
+			in << "client-free" << std::endl;
+
+			// wait for goahead signal
+			out >> go;
+			Assert::AreEqual("go"s, go);
+
+			// access and check shared objects
+			Assert::AreEqual(777, pClient->GetRoot().Get());
+
+			// ack to server that read is complete via stdio
 			in << "ack" << std::endl;
 
 			// wait for mock process to exit
