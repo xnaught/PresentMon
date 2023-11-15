@@ -19,26 +19,20 @@ namespace pmon::ipc::experimental
 	template<typename T>
 	using Uptr = bip::unique_ptr<T, UptrDeleter<T>>;
 
+
 	template<class A>
 	struct AllocatorDeleter
 	{
 		using T = typename A::value_type;
-		A allocator;
+		using pointer = std::allocator_traits<A>::pointer;
 		AllocatorDeleter(A allocator_) : allocator{ std::move(allocator_) } {}
-		void operator()(T* ptr) { allocator.deallocate(ptr, 1u); }
+		void operator()(pointer ptr) { allocator.deallocate(bip::ipcdetail::to_raw_pointer(ptr), 1u); }
+	private:
+		A allocator;
 	};
 
 	template<template <class> typename T, class A>
 	using UptrT = bip::unique_ptr<T<A>, AllocatorDeleter<typename T<A>::Allocator>>;
-
-
-	//template<class A>
-	//class Leaf
-	//{
-	//	using Allocator = std::allocator_traits<A>::template rebind_alloc<Leaf>;
-	//private:
-
-	//};
 
 	template<template <class> typename T, class A, typename...P>
 	auto MakeUnique(A allocator_in, P&&...args)
@@ -116,15 +110,28 @@ namespace pmon::ipc::experimental
 		}
 		int RoundtripRootInShared() override
 		{
+			
 			auto allocator = shm.get_allocator<void>();
 			const auto pRoot = shm.construct<Root<decltype(allocator)>>(bip::anonymous_instance)(69, std::move(allocator));
 			const auto ret = pRoot->Get();
 			shm.destroy_ptr(pRoot);
 			return ret;
 		}
+		void MakeRoot(int x) override
+		{
+			pRoot = Uptr<Root<ShmAllocator<void>>>{ 
+				shm.construct<Root<ShmAllocator<void>>>(RootPtrName)(x, shm.get_allocator<void>()),
+				UptrDeleter<Root<ShmAllocator<void>>>{ shm.get_segment_manager() }
+			};
+		}
+		void FreeRoot() override
+		{
+			pRoot.reset();
+		}
 	private:
 		ShmSegment shm{ bip::create_only, SharedMemoryName, 0x10'0000 };
 		Uptr<Uptr<ShmString>> pupMessage{ nullptr, UptrDeleter<Uptr<ShmString>>{ nullptr } };
+		Uptr<Root<ShmAllocator<void>>> pRoot{ nullptr, UptrDeleter<Root<ShmAllocator<void>>>{ nullptr } };
 	};
 
 	std::unique_ptr<IServer> IServer::Make(std::string code)
@@ -150,7 +157,8 @@ namespace pmon::ipc::experimental
 		}
 		std::string ReadWithUptr() override
 		{
-			return shm.find<Uptr<ShmString>>(IServer::MessageUptrName).first->get()->c_str();
+			auto pup = shm.find<Uptr<ShmString>>(IServer::MessageUptrName).first;
+			return pup->get()->c_str();
 		}
 		size_t GetFreeMemory() const override
 		{
@@ -160,6 +168,12 @@ namespace pmon::ipc::experimental
 		{
 			const Root r{ 420, std::allocator<char>{} };
 			return r.Get();
+		}
+		int ReadRoot() override
+		{
+			auto pair = shm.find<Root<ShmAllocator<void>>>(IServer::RootPtrName);
+			auto ptr = pair.first;
+			return ptr->Get();
 		}
 	private:
 		bip::managed_windows_shared_memory shm{ bip::open_only, IServer::SharedMemoryName };
