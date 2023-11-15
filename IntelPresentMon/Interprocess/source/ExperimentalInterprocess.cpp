@@ -19,14 +19,16 @@ namespace pmon::ipc::experimental
 	template<typename T>
 	using Uptr = bip::unique_ptr<T, UptrDeleter<T>>;
 
+	using bip::ipcdetail::to_raw_pointer;
 
+	// <A> is allocator already adapted to handling the type T its meant to handle
 	template<class A>
 	struct AllocatorDeleter
 	{
 		using T = typename A::value_type;
 		using pointer = std::allocator_traits<A>::pointer;
 		AllocatorDeleter(A allocator_) : allocator{ std::move(allocator_) } {}
-		void operator()(pointer ptr) { allocator.deallocate(bip::ipcdetail::to_raw_pointer(ptr), 1u); }
+		void operator()(pointer ptr) { allocator.deallocate(to_raw_pointer(ptr), 1u); }
 	private:
 		A allocator;
 	};
@@ -45,24 +47,17 @@ namespace pmon::ipc::experimental
 		Allocator allocator(std::move(allocator_in));
 		// allocate memory for managed object (uninitialized)
 		auto ptr = allocator.allocate(1);
-		if constexpr (std::same_as<decltype(ptr), T<A>*>) {
-			// construct object in allocated memory
-			std::allocator_traits<Allocator>::construct(allocator, ptr, std::forward<P>(args)...);
-			// construct uptr and deleter
-			return UptrT<T, A>(ptr, Deleter(allocator));
-		}
-		else { // pointer is an offset pointer if not a raw pointer
-			// construct object in allocated memory
-			std::allocator_traits<Allocator>::construct(allocator, ptr.get(), std::forward<P>(args)...);
-			// construct uptr and deleter
-			return UptrT<T, A>(ptr.get(), Deleter(allocator));
-		}
+		// construct object in allocated memory
+		std::allocator_traits<Allocator>::construct(allocator, to_raw_pointer(ptr), std::forward<P>(args)...);
+		// construct uptr and deleter
+		return UptrT<T, A>(to_raw_pointer(ptr), Deleter(allocator));
 	}
 
 	template<class A>
 	class Branch
 	{
 	public:
+		// allocator type for this instance, based on the allocator type used to template
 		using Allocator = std::allocator_traits<A>::template rebind_alloc<Branch>;
 		Branch(int x_) : x{ x_ } {}
 		int Get() const { return x; }
@@ -128,6 +123,15 @@ namespace pmon::ipc::experimental
 		{
 			pRoot.reset();
 		}
+		void CreateForClientFree(int x, std::string s) override
+		{
+			auto allo = shm.get_allocator<void>();
+			shm.construct<Root<ShmAllocator<void>>>(ClientFreeRoot)(x, allo);
+			**shm.construct<Uptr<ShmString>>(ClientFreeUptrString)(
+				shm.construct<ShmString>(bip::anonymous_instance)(allo),
+				UptrDeleter<ShmString>{ shm.get_segment_manager() }
+			) = s.c_str();
+		}
 	private:
 		ShmSegment shm{ bip::create_only, SharedMemoryName, 0x10'0000 };
 		Uptr<Uptr<ShmString>> pupMessage{ nullptr, UptrDeleter<Uptr<ShmString>>{ nullptr } };
@@ -174,6 +178,16 @@ namespace pmon::ipc::experimental
 			auto pair = shm.find<Root<ShmAllocator<void>>>(IServer::RootPtrName);
 			auto ptr = pair.first;
 			return ptr->Get();
+		}
+		std::string ReadForClientFree() override
+		{
+			std::string s = shm.find<Uptr<ShmString>>(IServer::ClientFreeUptrString).first->get()->c_str();
+			return s + "#" + std::to_string(shm.find<Root<ShmAllocator<void>>>(IServer::ClientFreeRoot).first->Get());
+		}
+		void ClientFree() override
+		{
+			shm.destroy<Root<ShmAllocator<void>>>(IServer::ClientFreeRoot);
+			shm.destroy<Uptr<ShmString>>(IServer::ClientFreeUptrString);
 		}
 	private:
 		bip::managed_windows_shared_memory shm{ bip::open_only, IServer::SharedMemoryName };

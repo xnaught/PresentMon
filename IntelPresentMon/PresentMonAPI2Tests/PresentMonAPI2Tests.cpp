@@ -930,5 +930,60 @@ namespace PresentMonAPI2
 			// wait for mock process to exit
 			process.wait();
 		}
+		TEST_METHOD(ClientFree)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			bp::child process("InterprocessMock.exe"s, "--client-free"s, bp::std_out > out, bp::std_in < in);
+
+			// read goahead to connect and check mem
+			std::string go;
+			out >> go;
+
+			Assert::AreEqual("go"s, go);
+
+			// connect client
+			auto pClient = pmon::ipc::experimental::IClient::Make();
+
+			// read string via shared memory
+			Assert::AreEqual("dummy-served"s, pClient->ReadWithPointer());
+
+			const auto free1 = pClient->GetFreeMemory();
+			Logger::WriteMessage(std::format("Free memory before make: {}\n", free1).c_str());
+
+			// write the code string to server via stdio
+			in << "client-free" << std::endl;
+
+			// wait for goahead signal
+			out >> go;
+			Assert::AreEqual("go"s, go);
+
+			// read free memory
+			const auto free2 = pClient->GetFreeMemory();
+			Logger::WriteMessage(std::format("Free memory after make: {}\n", free2).c_str());
+			Assert::IsTrue(free1 > free2);
+
+			// access and check shared objects
+			Assert::AreEqual("client-free#777"s, pClient->ReadForClientFree());
+
+			// free the object
+			pClient->ClientFree();
+
+			// read free memory again, should be restored to original state
+			const auto free3 = pClient->GetFreeMemory();
+			Logger::WriteMessage(std::format("Free memory after destroy: {}\n", free3).c_str());
+			Assert::IsTrue(free3 > free2);
+			Assert::AreEqual(free1, free3);
+
+			// ack to server that read is complete via stdio, server frees root
+			in << "ack" << std::endl;
+
+			// wait for mock process to exit
+			process.wait();
+		}
 	};
 }

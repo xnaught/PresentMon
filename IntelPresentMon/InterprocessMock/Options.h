@@ -17,6 +17,7 @@ namespace pmon::ipc::mock::opt
 			Flag makeDestroyUptr{ "--make-destroy-uptr", "Test which makes and destroys the uptr such that leaks can be detected" };
 			Flag sharedRootBasic{ "--shared-root-basic", "Basic test of creating root in shared memory" };
 			Flag sharedRootRetained{ "--shared-root-retained", "Test retaining root in shared memory until ack" };
+			Flag clientFree{ "--client-free", "Allocated in shm in server and free from client" };
 
 		protected:
 			// edit application name and description here
