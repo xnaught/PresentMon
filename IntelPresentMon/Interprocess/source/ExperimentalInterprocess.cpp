@@ -125,6 +125,10 @@ namespace pmon::ipc::experimental
 		{
 			return *shm.find<Root<ShmAllocator<void>>>(IServer::ClientFreeRoot).first;
 		}
+		Root<ShmAllocator<void>>& GetRootRetained() override
+		{
+			return *shm.find<Root<ShmAllocator<void>>>(IServer::RootPtrName).first;
+		}
 		Root2<ShmAllocator<void>>& GetDeep()
 		{
 			return *shm.find<Root2<ShmAllocator<void>>>(IServer::DeepRoot).first;

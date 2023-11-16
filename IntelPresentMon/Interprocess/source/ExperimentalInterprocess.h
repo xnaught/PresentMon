@@ -78,6 +78,7 @@ namespace pmon::ipc::experimental
 	template<class A>
 	class Branch
 	{
+		template<typename A2> friend class Branch;
 	public:
 		// allocator type for this instance, based on the allocator type used to template
 		using Allocator = std::allocator_traits<A>::template rebind_alloc<Branch>;
@@ -86,6 +87,11 @@ namespace pmon::ipc::experimental
 			str = "very-long-string-forcing-text-allocate-block-";
 			str.append(std::to_string(x).c_str());
 		}
+		template<class A2>
+		Branch(const Branch<A2>& other, A allocator)
+			:
+			Branch{ other.x, std::move(allocator) }
+		{}
 		int Get() const { return x; }
 		std::string GetString() const { return str.c_str(); }
 	private:
@@ -97,10 +103,17 @@ namespace pmon::ipc::experimental
 	template<class A>
 	class Root
 	{
+		template<typename A2>
+		friend class Root;
 	public:
 		Root(int x, A allocator)
 			:
-			pBranch{ MakeUnique<Branch, A>(allocator, x) }
+			pBranch{ MakeUnique<Branch>(allocator, x) }
+		{}
+		template<class A2>
+		Root(const Root<A2>& other, A allocator)
+			:
+			pBranch{ MakeUnique<Branch>(allocator, *other.pBranch) }
 		{}
 		int Get() const { return pBranch->Get(); }
 		std::string GetString() const { return pBranch->GetString(); }
@@ -157,8 +170,8 @@ namespace pmon::ipc::experimental
 	public:
 		Root2(int n1, int n2, A allocator)
 			:
-			pBranch1{ MakeUnique<Branch2, A>(allocator, n1) },
-			pBranch2{ MakeUnique<Branch2, A>(allocator, n2) }
+			pBranch1{ MakeUnique<Branch2>(allocator, n1) },
+			pBranch2{ MakeUnique<Branch2>(allocator, n2) }
 		{}
 		std::string GetString() const
 		{
@@ -206,6 +219,7 @@ namespace pmon::ipc::experimental
 		virtual std::string ReadForClientFree() = 0;
 		virtual void ClientFree() = 0;
 		virtual Root<ShmAllocator<void>>& GetRoot() = 0;
+		virtual Root<ShmAllocator<void>>& GetRootRetained() = 0;
 		virtual Root2<ShmAllocator<void>>& GetDeep() = 0;
 		static std::unique_ptr<IClient> Make();
 	};

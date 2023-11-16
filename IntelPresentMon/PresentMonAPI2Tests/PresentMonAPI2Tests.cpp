@@ -911,6 +911,7 @@ namespace PresentMonAPI2
 
 			// access and check shared object
 			Assert::AreEqual(33, pClient->ReadRoot());
+			Assert::AreEqual("qq"s, pClient->GetRoot().GetString());
 
 			// ack to server that read is complete via stdio, server frees root
 			in << "ack" << std::endl;
@@ -1078,6 +1079,73 @@ namespace PresentMonAPI2
 			Assert::AreEqual(free1, free3);
 
 			// ack to server that read is complete via stdio
+			in << "ack" << std::endl;
+
+			// wait for mock process to exit
+			process.wait();
+		}
+		TEST_METHOD(RootClone)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			bp::child process("InterprocessMock.exe"s, "--shared-root-retained"s, bp::std_out > out, bp::std_in < in);
+
+			// read goahead to connect and check mem
+			std::string go;
+			out >> go;
+
+			Assert::AreEqual("go"s, go);
+
+			// connect client
+			auto pClient = pmon::ipc::experimental::IClient::Make();
+
+			const auto free1 = pClient->GetFreeMemory();
+			Logger::WriteMessage(std::format("Free memory before make root: {}\n", free1).c_str());
+
+			// write the code string to server via stdio
+			in << "77" << std::endl;
+
+			// wait for goahead signal
+			out >> go;
+			Assert::AreEqual("go"s, go);
+
+			// read free memory
+			const auto free2 = pClient->GetFreeMemory();
+			Logger::WriteMessage(std::format("Free memory after make root: {}\n", free2).c_str());
+			Assert::IsTrue(free1 > free2);
+
+			// access and check shared object
+			Assert::AreEqual(77, pClient->ReadRoot());
+			Assert::AreEqual("very-long-string-forcing-text-allocate-block-77"s, pClient->GetRootRetained().GetString());
+
+			// clone the shared object in local heap
+			using Root = pmon::ipc::experimental::Root<std::allocator<void>>;
+			auto pRoot = std::make_unique<Root>(pClient->GetRootRetained(), std::allocator<void>{});
+
+			// ack to server that read is complete via stdio, server frees root
+			in << "ack" << std::endl;
+
+			// wait for goahead from server via stdio
+			out >> go;
+
+			// check cloned object operation
+			Assert::AreEqual(77, pRoot->Get());
+			Assert::AreEqual("very-long-string-forcing-text-allocate-block-77"s, pRoot->GetString());
+
+			// read free memory again, should be restored
+			const auto free3 = pClient->GetFreeMemory();
+			Logger::WriteMessage(std::format("Free memory after destroy root: {}\n", free3).c_str());
+			Assert::IsTrue(free3 > free2);
+			Assert::AreEqual(free1, free3);
+
+			// free heap structure
+			pRoot.reset();
+
+			// ack to server that all done, ok to exit
 			in << "ack" << std::endl;
 
 			// wait for mock process to exit
