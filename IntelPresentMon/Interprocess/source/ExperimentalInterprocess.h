@@ -124,6 +124,8 @@ namespace pmon::ipc::experimental
 	template<class A>
 	class Leaf2
 	{
+		template<typename A2>
+		friend class Leaf2;
 	public:
 		// allocator type for this instance, based on the allocator type used to template
 		using Allocator = std::allocator_traits<A>::template rebind_alloc<Leaf2>;
@@ -132,6 +134,11 @@ namespace pmon::ipc::experimental
 			str = "very-long-string-forcing-text-allocate-block-";
 			str.append(std::to_string(x).c_str());
 		}
+		template<class A2>
+		Leaf2(const Leaf2<A2>& other, A allocator)
+			:
+			str{ other.str.begin(), other.str.end(), allocator }
+		{}
 		std::string GetString() const { return str.c_str(); }
 	private:
 		using CharAllocator = std::allocator_traits<A>::template rebind_alloc<char>;
@@ -141,6 +148,8 @@ namespace pmon::ipc::experimental
 	template<class A>
 	class Branch2
 	{
+		template<typename A2>
+		friend class Branch2;
 	public:
 		// allocator type for this instance, based on the allocator type used to template
 		using Allocator = std::allocator_traits<A>::template rebind_alloc<Branch2>;
@@ -149,6 +158,16 @@ namespace pmon::ipc::experimental
 			leafPtrs.reserve(n);
 			for (int i = 0; i < n; i++) {
 				leafPtrs.push_back(MakeUnique<Leaf2, A>(allocator, i));
+			}
+		}
+		template<class A2>
+		Branch2(const Branch2<A2>& other, A allocator)
+			:
+			leafPtrs{ allocator }
+		{
+			leafPtrs.reserve(other.leafPtrs.size());
+			for (auto& pLeaf : other.leafPtrs) {
+				leafPtrs.push_back(MakeUnique<Leaf2>(allocator, *pLeaf));
 			}
 		}
 		std::string GetString() const
@@ -167,11 +186,19 @@ namespace pmon::ipc::experimental
 	template<class A>
 	class Root2
 	{
+		template<typename A2>
+		friend class Root2;
 	public:
 		Root2(int n1, int n2, A allocator)
 			:
 			pBranch1{ MakeUnique<Branch2>(allocator, n1) },
 			pBranch2{ MakeUnique<Branch2>(allocator, n2) }
+		{}
+		template<class A2>
+		Root2(const Root2<A2>&other, A allocator)
+			:
+			pBranch1{ MakeUnique<Branch2>(allocator, *other.pBranch1) },
+			pBranch2{ MakeUnique<Branch2>(allocator, *other.pBranch2) }
 		{}
 		std::string GetString() const
 		{
@@ -204,6 +231,7 @@ namespace pmon::ipc::experimental
 		virtual void CreateForClientFree(int x, std::string s) = 0;
 		virtual void MakeDeep(int n1, int n2) = 0;
 		virtual void FreeDeep() = 0;
+		virtual void MakeDeepCloneHeap(int n1, int n2) = 0;
 		static std::unique_ptr<IServer> Make(std::string code);
 	};
 

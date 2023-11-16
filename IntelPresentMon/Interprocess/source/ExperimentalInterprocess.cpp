@@ -70,6 +70,14 @@ namespace pmon::ipc::experimental
 		{
 			shm.construct<Root2<ShmAllocator<void>>>(DeepRoot)(n1, n2, shm.get_allocator<void>());
 		}
+		void MakeDeepCloneHeap(int n1, int n2) override
+		{
+			using A = std::allocator<void>;
+			// why MakeUnique isn't working here?
+			auto pRoot2Heap = std::make_unique<Root2<A>>(n1, n2, A{});
+			auto s = pRoot2Heap->GetString();
+			shm.construct<Root2<ShmAllocator<void>>>(DeepRoot)(*pRoot2Heap, shm.get_allocator<void>());
+		}
 		void FreeDeep() override
 		{
 			shm.destroy<Root2<ShmAllocator<void>>>(DeepRoot);
