@@ -198,6 +198,7 @@ namespace pmon::ipc::experimental
 		virtual void MakeUptrToMessage(std::string code) = 0;
 		virtual void FreeUptrToMessage() = 0;
 		virtual void MakeRoot(int x) = 0;
+		virtual void MakeRootCloneHeap(int x) = 0;
 		virtual void FreeRoot() = 0;
 		virtual int RoundtripRootInShared() = 0;
 		virtual void CreateForClientFree(int x, std::string s) = 0;

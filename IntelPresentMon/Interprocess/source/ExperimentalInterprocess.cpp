@@ -38,8 +38,18 @@ namespace pmon::ipc::experimental
 		}
 		void MakeRoot(int x) override
 		{
-			pRoot = Uptr<Root<ShmAllocator<void>>>{ 
+			pRoot = { 
 				shm.construct<Root<ShmAllocator<void>>>(RootPtrName)(x, shm.get_allocator<void>()),
+				UptrDeleter<Root<ShmAllocator<void>>>{ shm.get_segment_manager() }
+			};
+		}
+		void MakeRootCloneHeap(int x) override
+		{
+			using A = std::allocator<void>;
+			// why MakeUnique isn't working here?
+			auto pRootHeap = std::make_unique<Root<A>>(x, A{});
+			pRoot = {
+				shm.construct<Root<ShmAllocator<void>>>(RootPtrName)(*pRootHeap, shm.get_allocator<void>()),
 				UptrDeleter<Root<ShmAllocator<void>>>{ shm.get_segment_manager() }
 			};
 		}
