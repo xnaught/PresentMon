@@ -56,6 +56,14 @@ namespace pmon::ipc::experimental
 				UptrDeleter<ShmString>{ shm.get_segment_manager() }
 			) = s.c_str();
 		}
+		void MakeDeep(int n1, int n2) override
+		{
+			shm.construct<Root2<ShmAllocator<void>>>(DeepRoot)(n1, n2, shm.get_allocator<void>());
+		}
+		void FreeDeep() override
+		{
+			shm.destroy<Root2<ShmAllocator<void>>>(DeepRoot);
+		}
 	private:
 		ShmSegment shm{ bip::create_only, SharedMemoryName, 0x10'0000 };
 		Uptr<Uptr<ShmString>> pupMessage{ nullptr, UptrDeleter<Uptr<ShmString>>{ nullptr } };
@@ -116,6 +124,10 @@ namespace pmon::ipc::experimental
 		Root<ShmAllocator<void>>& GetRoot() override
 		{
 			return *shm.find<Root<ShmAllocator<void>>>(IServer::ClientFreeRoot).first;
+		}
+		Root2<ShmAllocator<void>>& GetDeep()
+		{
+			return *shm.find<Root2<ShmAllocator<void>>>(IServer::DeepRoot).first;
 		}
 	private:
 		bip::managed_windows_shared_memory shm{ bip::open_only, IServer::SharedMemoryName };

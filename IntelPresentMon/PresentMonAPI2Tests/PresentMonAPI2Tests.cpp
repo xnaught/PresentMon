@@ -1021,5 +1021,67 @@ namespace PresentMonAPI2
 			// wait for mock process to exit
 			process.wait();
 		}
+		TEST_METHOD(DeepStructureSequence)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			bp::child process("InterprocessMock.exe"s, "--deep"s, bp::std_out > out, bp::std_in < in);
+
+			// read goahead to connect and check mem
+			std::string go;
+			out >> go;
+
+			Assert::AreEqual("go"s, go);
+
+			// connect client
+			auto pClient = pmon::ipc::experimental::IClient::Make();
+
+			const auto free1 = pClient->GetFreeMemory();
+			Logger::WriteMessage(std::format("Free memory before make: {}\n", free1).c_str());
+
+			// write the code values to server
+			in << "1" << std::endl;
+			in << "3" << std::endl;
+
+			// wait for goahead signal
+			out >> go;
+			Assert::AreEqual("go"s, go);
+
+			// read free memory
+			const auto free2 = pClient->GetFreeMemory();
+			Logger::WriteMessage(std::format("Free memory after make: {}\n", free2).c_str());
+			Assert::IsTrue(free1 > free2);
+
+			// access and check shared object
+			const auto expected =
+				"very-long-string-forcing-text-allocate-block-0| - $$ - "s
+				"very-long-string-forcing-text-allocate-block-0|"s
+				"very-long-string-forcing-text-allocate-block-1|"s
+				"very-long-string-forcing-text-allocate-block-2|"s;
+			Assert::AreEqual(expected, pClient->GetDeep().GetString());
+
+			// ack server
+			in << "ack" << std::endl;
+
+			// wait for goahead signal
+			out >> go;
+			Assert::AreEqual("go"s, go);
+
+			// read free memory again, should be restored to original state
+			const auto free3 = pClient->GetFreeMemory();
+			Logger::WriteMessage(std::format("Free memory after destroy: {}\n", free3).c_str());
+			Assert::IsTrue(free3 > free2);
+			Assert::AreEqual(free1, free3);
+
+			// ack to server that read is complete via stdio
+			in << "ack" << std::endl;
+
+			// wait for mock process to exit
+			process.wait();
+		}
 	};
 }

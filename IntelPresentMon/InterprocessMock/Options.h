@@ -18,6 +18,7 @@ namespace pmon::ipc::mock::opt
 			Flag sharedRootBasic{ "--shared-root-basic", "Basic test of creating root in shared memory" };
 			Flag sharedRootRetained{ "--shared-root-retained", "Test retaining root in shared memory until ack" };
 			Flag clientFree{ "--client-free", "Allocated in shm in server and free from client" };
+			Flag deep{ "--deep", "Testing sequence for deeply nested structure with multiple container layers" };
 
 		protected:
 			// edit application name and description here

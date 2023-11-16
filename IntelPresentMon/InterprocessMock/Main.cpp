@@ -146,7 +146,38 @@ int main(int argc, char** argv)
 
 		// wait until client has finished work
 		std::cin >> buffer;
-		}
+	}
+	else if (opts.deep) {
+		std::string buffer;
+
+		auto pServer = experimental::IServer::Make("dummy");
+
+		// signal to client that shm has been created
+		std::cout << "go" << std::endl;
+
+		// wait for client signal that free memory has been checked, client sends 2 ints
+		int n1, n2;
+		std::cin >> n1;
+		std::cin >> n2;
+
+		// create object in shm
+		pServer->MakeDeep(n1, n2);
+
+		// send goahead signal to client, checks memory and values
+		std::cout << "go" << std::endl;
+
+		// wait for client ack
+		std::cin >> buffer;
+
+		// free data
+		pServer->FreeDeep();
+
+		// send goahead signal to client, checks memory
+		std::cout << "go" << std::endl;
+
+		// wait until client has finished work
+		std::cin >> buffer;
+	}
 	else {
 		std::cout << "default-output" << std::endl;
 	}
