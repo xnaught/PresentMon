@@ -3,6 +3,12 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <boost/interprocess/managed_windows_shared_memory.hpp>
+#include <boost/interprocess/containers/string.hpp>
+#include <boost/interprocess/containers/vector.hpp>
+#include <boost/interprocess/allocators/allocator.hpp>
+#include <boost/interprocess/smart_ptr/unique_ptr.hpp>
+#include <boost/swap.hpp>
 #include "../../PresentMonAPI2/source/Internal.h"
 #include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
 
@@ -78,140 +84,117 @@ namespace pmid
 	// implement intro enum structs
 	struct IntrospectionEnumKey : PM_INTROSPECTION_ENUM_KEY
 	{
-		IntrospectionEnumKey(PM_ENUM enumId_, int value_, std::string symbol, std::string name, std::string shortName, std::string description)
+		IntrospectionEnumKey(PM_ENUM enumId_in, int value_in, std::string symbol_in, std::string name_in, std::string shortName_in, std::string description_in)
+			:
+			symbol_{ std::move(symbol_in) },
+			name_{ std::move(name_in) },
+			shortName_{ std::move(shortName_in) },
+			description_{ std::move(description_in) }
 		{
-			enumId = enumId_;
-			value = value_;
-			pSymbol = new IntrospectionString{ std::move(symbol) };
-			pName = new IntrospectionString{ std::move(name) };
-			pShortName = new IntrospectionString{ std::move(shortName) };
-			pDescription = new IntrospectionString{ std::move(description) };
+			enumId = enumId_in;
+			value = value_in;
+			pSymbol = &symbol_;
+			pName = &name_;
+			pShortName = &shortName_;
+			pDescription = &description_;
 		}
-		~IntrospectionEnumKey()
-		{
-			delete static_cast<IntrospectionString*>(pSymbol);
-			delete static_cast<IntrospectionString*>(pName);
-			delete static_cast<IntrospectionString*>(pShortName);
-			delete static_cast<IntrospectionString*>(pDescription);
-		}
+	private:
+		IntrospectionString symbol_;
+		IntrospectionString name_;
+		IntrospectionString shortName_;
+		IntrospectionString description_;
 	};
 	struct IntrospectionEnum : PM_INTROSPECTION_ENUM
 	{
-		IntrospectionEnum(PM_ENUM id_, std::string symbol, std::string description)
+		IntrospectionEnum(PM_ENUM id_in, std::string symbol_in, std::string description_in)
+			:
+			symbol_{ std::move(symbol_in) },
+			description_{ std::move(description_in) }
 		{
-			id = id_;
-			pSymbol = new IntrospectionString{ std::move(symbol) };
-			pDescription = new IntrospectionString{ std::move(description) };
-			pKeys = new IntrospectionObjArray<IntrospectionEnumKey>();
-		}
-		~IntrospectionEnum()
-		{
-			delete static_cast<IntrospectionString*>(pSymbol);
-			delete static_cast<IntrospectionString*>(pDescription);
-			delete &Keys_();
+			id = id_in;
+			pSymbol = &symbol_;
+			pDescription = &description_;
+			pKeys = &keys_;
 		}
 		void AddKey(std::unique_ptr<IntrospectionEnumKey> pKey)
 		{
-			Keys_().PushBack(std::move(pKey));
+			keys_.PushBack(std::move(pKey));
 		}
 	private:
-		IntrospectionObjArray<IntrospectionEnumKey>& Keys_()
-		{
-			return *static_cast<IntrospectionObjArray<IntrospectionEnumKey>*>(pKeys);
-		}
+		IntrospectionString symbol_;
+		IntrospectionString description_;
+		IntrospectionObjArray<IntrospectionEnumKey> keys_;
 	};
 	struct IntrospectionDevice : PM_INTROSPECTION_DEVICE
 	{
-		IntrospectionDevice(uint32_t id_, PM_DEVICE_TYPE type_, PM_DEVICE_VENDOR vendor_, std::string name_)
+		IntrospectionDevice(uint32_t id_in, PM_DEVICE_TYPE type_in, PM_DEVICE_VENDOR vendor_in, std::string name_in)
+			:
+			name_{ std::move(name_in) }
 		{
-			id = id_;
-			type = type_;
-			vendor = vendor_;
-			pName = new IntrospectionString{ std::move(name_) };
+			id = id_in;
+			type = type_in;
+			vendor = vendor_in;
+			pName = &name_;
 		}
-		~IntrospectionDevice()
-		{
-			delete static_cast<IntrospectionString*>(pName);
-		}
+	private:
+		IntrospectionString name_;
 	};
 	struct IntrospectionDeviceMetricInfo : PM_INTROSPECTION_DEVICE_METRIC_INFO {};
 	struct IntrospectionDataTypeInfo : PM_INTROSPECTION_DATA_TYPE_INFO {};
 	struct IntrospectionMetric : PM_INTROSPECTION_METRIC
 	{
-		IntrospectionMetric(PM_METRIC id_, PM_METRIC_TYPE type_, PM_UNIT unit_, IntrospectionDataTypeInfo typeInfo_, std::vector<PM_STAT> stats_ = {})
-			:
-			PM_INTROSPECTION_METRIC{ id_, type_, unit_, typeInfo_, new IntrospectionObjArray<PM_STAT>, new IntrospectionObjArray<IntrospectionDeviceMetricInfo> }
+		IntrospectionMetric(PM_METRIC id_in, PM_METRIC_TYPE type_in, PM_UNIT unit_in, const IntrospectionDataTypeInfo& typeInfo_in, std::vector<PM_STAT> stats_in = {})
 		{
-			AddStats(std::move(stats_));
-		}
-		~IntrospectionMetric()
-		{
-			delete &Stats_();
-			delete &DeviceMetricInfo_();
+			id = id_in;
+			type = type_in;
+			unit = unit_in;
+			typeInfo = typeInfo_in;
+			AddStats(std::move(stats_in));
+			pStats = &stats_;
+			pDeviceMetricInfo = &deviceMetricInfo_;
 		}
 		void AddStat(PM_STAT stat)
 		{
-			Stats_().PushBack(std::make_unique<PM_STAT>(stat));
+			stats_.PushBack(std::make_unique<PM_STAT>(stat));
 		}
 		void AddStats(std::vector<PM_STAT> stats)
 		{
 			for (auto stat : stats) {
-				Stats_().PushBack(std::make_unique<PM_STAT>(stat));
+				stats_.PushBack(std::make_unique<PM_STAT>(stat));
 			}
 		}
 		void AddDeviceMetricInfo(IntrospectionDeviceMetricInfo info)
 		{
-			DeviceMetricInfo_().PushBack(std::make_unique<IntrospectionDeviceMetricInfo>(info));
+			deviceMetricInfo_.PushBack(std::make_unique<IntrospectionDeviceMetricInfo>(info));
 		}
 	private:
-		IntrospectionObjArray<PM_STAT>& Stats_()
-		{
-			return *static_cast<IntrospectionObjArray<PM_STAT>*>(pStats);
-		}
-		IntrospectionObjArray<IntrospectionDeviceMetricInfo>& DeviceMetricInfo_()
-		{
-			return *static_cast<IntrospectionObjArray<IntrospectionDeviceMetricInfo>*>(pDeviceMetricInfo);
-		}
+		IntrospectionObjArray<PM_STAT> stats_;
+		IntrospectionObjArray<IntrospectionDeviceMetricInfo> deviceMetricInfo_;
 	};
 	struct IntrospectionRoot : PM_INTROSPECTION_ROOT
 	{
 		IntrospectionRoot()
 		{
-			pMetrics = new IntrospectionObjArray<IntrospectionMetric>();
-			pEnums = new IntrospectionObjArray<IntrospectionEnum>();
-			pDevices = new IntrospectionObjArray<IntrospectionDevice>();
-		}
-		~IntrospectionRoot()
-		{
-			delete &Enums_();
-			delete &Metrics_();
-			delete &Devices_();
+			pMetrics = &metrics_;
+			pEnums = &enums_;
+			pDevices = &devices_;
 		}
 		void AddEnum(std::unique_ptr<IntrospectionEnum> pEnum)
 		{
-			Enums_().PushBack(std::move(pEnum));
+			enums_.PushBack(std::move(pEnum));
 		}
 		void AddMetric(std::unique_ptr<IntrospectionMetric> pMetric)
 		{
-			Metrics_().PushBack(std::move(pMetric));
+			metrics_.PushBack(std::move(pMetric));
 		}
 		void AddDevice(std::unique_ptr<IntrospectionDevice> pDevice)
 		{
-			Devices_().PushBack(std::move(pDevice));
+			devices_.PushBack(std::move(pDevice));
 		}
 	private:
-		IntrospectionObjArray<IntrospectionEnum>& Enums_()
-		{
-			return *static_cast<IntrospectionObjArray<IntrospectionEnum>*>(pEnums);
-		}
-		IntrospectionObjArray<IntrospectionMetric>& Metrics_()
-		{
-			return *static_cast<IntrospectionObjArray<IntrospectionMetric>*>(pMetrics);
-		}
-		IntrospectionObjArray<IntrospectionDevice>& Devices_()
-		{
-			return *static_cast<IntrospectionObjArray<IntrospectionDevice>*>(pDevices);
-		}
+		IntrospectionObjArray<IntrospectionMetric> metrics_;
+		IntrospectionObjArray<IntrospectionEnum> enums_;
+		IntrospectionObjArray<IntrospectionDevice> devices_;
 	};
 
 	// enum annotations (enum_name_fragment, key_name_fragment, name, short_name, description)
