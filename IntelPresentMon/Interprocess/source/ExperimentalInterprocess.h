@@ -210,6 +210,69 @@ namespace pmon::ipc::experimental
 		UptrT<Branch2, A> pBranch2;
 	};
 
+	template<class A>
+	class Branch3
+	{
+		template<typename A2>
+		friend class Branch3;
+	public:
+		// allocator type for this instance, based on the allocator type used to template
+		using Allocator = std::allocator_traits<A>::template rebind_alloc<Branch3>;
+		Branch3(int n, A allocator) : leafs{ allocator }
+		{
+			leafs.reserve(n);
+			for (int i = 0; i < n; i++) {
+				leafs.emplace_back(i, allocator);
+			}
+		}
+		template<class A2>
+		Branch3(const Branch3<A2>& other, A allocator) : leafs{ allocator }
+		{
+			leafs.reserve(other.leafs.size());
+			for (auto& l : other.leafs) {
+				leafs.emplace_back(l, allocator);
+			}
+		}
+		std::string GetString() const
+		{
+			std::string s;
+			for (auto& l : leafs) {
+				s += l.GetString() + "|";
+			}
+			return s;
+		}
+	private:
+		using LeafAllocator = std::allocator_traits<A>::template rebind_alloc<Leaf2<A>>;
+		AllocVector<Leaf2<A>, LeafAllocator> leafs;
+	};
+
+	template<class A>
+	class Root3
+	{
+		template<typename A2>
+		friend class Root3;
+	public:
+		Root3(int n1, int n2, A allocator)
+			:
+			pBranch1{ MakeUnique<Branch3>(allocator, n1) },
+			pBranch2{ MakeUnique<Branch3>(allocator, n2) }
+		{}
+		template<class A2>
+		Root3(const Root3<A2>& other, A allocator)
+			:
+			pBranch1{ MakeUnique<Branch3>(allocator, *other.pBranch1) },
+			pBranch2{ MakeUnique<Branch3>(allocator, *other.pBranch2) }
+		{}
+		std::string GetString() const
+		{
+			return pBranch1->GetString() + " - $$ - " + pBranch2->GetString();
+		}
+
+	private:
+		UptrT<Branch3, A> pBranch1;
+		UptrT<Branch3, A> pBranch2;
+	};
+
 	class IServer
 	{
 	public:
@@ -222,6 +285,7 @@ namespace pmon::ipc::experimental
 		static constexpr const char* ClientFreeUptrString = "client-free-string-11";
 		static constexpr const char* ClientFreeRoot = "client-free-root-22";
 		static constexpr const char* DeepRoot = "deep-root-13";
+		static constexpr const char* DeepRoot2 = "deep-root-343";
 		virtual void MakeUptrToMessage(std::string code) = 0;
 		virtual void FreeUptrToMessage() = 0;
 		virtual void MakeRoot(int x) = 0;
@@ -232,6 +296,8 @@ namespace pmon::ipc::experimental
 		virtual void MakeDeep(int n1, int n2) = 0;
 		virtual void FreeDeep() = 0;
 		virtual void MakeDeepCloneHeap(int n1, int n2) = 0;
+		virtual void MakeDeepCloneHeap2(int n1, int n2) = 0;
+		virtual void FreeDeep2() = 0;
 		static std::unique_ptr<IServer> Make(std::string code);
 	};
 
@@ -250,6 +316,7 @@ namespace pmon::ipc::experimental
 		virtual Root<ShmAllocator<void>>& GetRoot() = 0;
 		virtual Root<ShmAllocator<void>>& GetRootRetained() = 0;
 		virtual Root2<ShmAllocator<void>>& GetDeep() = 0;
+		virtual Root3<ShmAllocator<void>>& GetDeep2() = 0;
 		static std::unique_ptr<IClient> Make();
 	};
 

@@ -1227,7 +1227,6 @@ namespace PresentMonAPI2
 			bp::opstream in;  // Stream for writing to the process's input
 
 			bp::child process("InterprocessMock.exe"s, "--clone-heap-deep-to-shm"s, bp::std_out > out, bp::std_in < in);
-			Logger::WriteMessage(std::format("Server pid: {}\n", process.id()).c_str());
 
 			// read goahead to connect and check mem
 			std::string go;
@@ -1282,6 +1281,76 @@ namespace PresentMonAPI2
 
 			// free heap structure
 			pRoot2.reset();
+
+			// ack to server that all done, ok to exit
+			in << "ack" << std::endl;
+
+			// wait for mock process to exit
+			process.wait();
+		}
+		TEST_METHOD(DeepHeapRoot2CloneRoundtrip)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			bp::child process("InterprocessMock.exe"s, "--clone-heap-deep-to-shm-2"s, bp::std_out > out, bp::std_in < in);
+
+			// read goahead to connect and check mem
+			std::string go;
+			out >> go;
+
+			Assert::AreEqual("go"s, go);
+
+			// connect client
+			auto pClient = pmon::ipc::experimental::IClient::Make();
+
+			const auto free1 = pClient->GetFreeMemory();
+			Logger::WriteMessage(std::format("Free memory before make root: {}\n", free1).c_str());
+
+			// write the code values to server via stdio
+			in << "1" << std::endl << "3" << std::endl;
+
+			// wait for goahead signal
+			out >> go;
+			Assert::AreEqual("go"s, go);
+
+			// read free memory
+			const auto free2 = pClient->GetFreeMemory();
+			Logger::WriteMessage(std::format("Free memory after make root: {}\n", free2).c_str());
+			Assert::IsTrue(free1 > free2);
+
+			// access and check shared object
+			const auto expected =
+				"very-long-string-forcing-text-allocate-block-0| - $$ - "s
+				"very-long-string-forcing-text-allocate-block-0|"s
+				"very-long-string-forcing-text-allocate-block-1|"s
+				"very-long-string-forcing-text-allocate-block-2|"s;
+			Assert::AreEqual(expected, pClient->GetDeep2().GetString());
+
+			// clone the shared object in local heap
+			using Root3 = pmon::ipc::experimental::Root3<std::allocator<void>>;
+			auto pRoot3 = std::make_unique<Root3>(pClient->GetDeep2(), std::allocator<void>{});
+
+			// ack to server that read is complete via stdio, server frees root
+			in << "ack" << std::endl;
+
+			// wait for goahead from server via stdio
+			out >> go;
+
+			// check cloned object operation
+			Assert::AreEqual(expected, pRoot3->GetString());
+
+			// read free memory again, should be restored
+			const auto free3 = pClient->GetFreeMemory();
+			Logger::WriteMessage(std::format("Free memory after destroy root: {}\n", free3).c_str());
+			Assert::IsTrue(free3 > free2);
+			Assert::AreEqual(free1, free3);
+
+			// free heap structure
+			pRoot3.reset();
 
 			// ack to server that all done, ok to exit
 			in << "ack" << std::endl;

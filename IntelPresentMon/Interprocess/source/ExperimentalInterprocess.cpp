@@ -82,6 +82,18 @@ namespace pmon::ipc::experimental
 		{
 			shm.destroy<Root2<ShmAllocator<void>>>(DeepRoot);
 		}
+		void MakeDeepCloneHeap2(int n1, int n2) override
+		{
+			using A = std::allocator<void>;
+			// why MakeUnique isn't working here?
+			auto pRoot3Heap = std::make_unique<Root3<A>>(n1, n2, A{});
+			auto s = pRoot3Heap->GetString();
+			shm.construct<Root3<ShmAllocator<void>>>(DeepRoot2)(*pRoot3Heap, shm.get_allocator<void>());
+		}
+		void FreeDeep2() override
+		{
+			shm.destroy<Root3<ShmAllocator<void>>>(DeepRoot2);
+		}
 	private:
 		ShmSegment shm{ bip::create_only, SharedMemoryName, 0x10'0000 };
 		Uptr<Uptr<ShmString>> pupMessage{ nullptr, UptrDeleter<Uptr<ShmString>>{ nullptr } };
@@ -150,6 +162,10 @@ namespace pmon::ipc::experimental
 		Root2<ShmAllocator<void>>& GetDeep()
 		{
 			return *shm.find<Root2<ShmAllocator<void>>>(IServer::DeepRoot).first;
+		}
+		Root3<ShmAllocator<void>>& GetDeep2()
+		{
+			return *shm.find<Root3<ShmAllocator<void>>>(IServer::DeepRoot2).first;
 		}
 	private:
 		bip::managed_windows_shared_memory shm{ bip::open_only, IServer::SharedMemoryName };
