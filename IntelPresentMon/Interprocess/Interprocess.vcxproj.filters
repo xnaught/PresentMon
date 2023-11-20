@@ -23,5 +23,11 @@
     <ClInclude Include="source\ExperimentalInterprocess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\Types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\Interprocess.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

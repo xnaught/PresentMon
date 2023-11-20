@@ -3,14 +3,9 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <boost/interprocess/managed_windows_shared_memory.hpp>
-#include <boost/interprocess/containers/string.hpp>
-#include <boost/interprocess/containers/vector.hpp>
-#include <boost/interprocess/allocators/allocator.hpp>
-#include <boost/interprocess/smart_ptr/unique_ptr.hpp>
-#include <boost/swap.hpp>
 #include "../../PresentMonAPI2/source/Internal.h"
 #include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
+#include "../../Interprocess/source/Types.h"
 
 namespace pmid
 {

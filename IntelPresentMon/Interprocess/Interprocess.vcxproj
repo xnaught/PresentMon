@@ -23,6 +23,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\ExperimentalInterprocess.h" />
+    <ClInclude Include="source\Interprocess.h" />
+    <ClInclude Include="source\Types.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
