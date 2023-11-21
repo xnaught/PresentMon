@@ -20,10 +20,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\ExperimentalInterprocess.cpp" />
+    <ClCompile Include="source\Introspection.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\ExperimentalInterprocess.h" />
     <ClInclude Include="source\Interprocess.h" />
+    <ClInclude Include="source\Introspection.h" />
     <ClInclude Include="source\Types.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -6,7 +6,7 @@
 #include "Internal.h"
 
 
-using namespace pmid;
+using namespace pmon::mid;
 
 // global state
 bool useMockedMiddleware_ = false;

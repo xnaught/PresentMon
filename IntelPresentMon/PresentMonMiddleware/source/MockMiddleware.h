@@ -1,7 +1,7 @@
 #pragma once
 #include "Middleware.h"
 
-namespace pmid
+namespace pmon::mid
 {
 	class MockMiddleware : public Middleware
 	{

@@ -2,7 +2,7 @@
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
 #include <span>
 
-namespace pmid
+namespace pmon::mid
 {
 	class Middleware
 	{

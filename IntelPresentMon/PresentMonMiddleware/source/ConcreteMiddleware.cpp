@@ -1,7 +1,7 @@
 #include "ConcreteMiddleware.h"
 #include <cstring>
 
-namespace pmid
+namespace pmon::mid
 {
 	ConcreteMiddleware::ConcreteMiddleware() = default;
 
