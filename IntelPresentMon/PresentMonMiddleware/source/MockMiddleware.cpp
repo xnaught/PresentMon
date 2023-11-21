@@ -6,12 +6,16 @@
 #include "../../PresentMonAPI2/source/Internal.h"
 #include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
 #include "../../Interprocess/source/Introspection.h"
+#include "../../Interprocess/source/Interprocess.h"
 
 namespace pmon::mid
 {
 	using namespace ipc::intro;
 
-	MockMiddleware::MockMiddleware() = default;
+	MockMiddleware::MockMiddleware()
+	{
+		pIpcView = ipc::MakeMiddlewareView();
+	}
 
 	void MockMiddleware::AdvanceTime(uint32_t milliseconds)
 	{
@@ -166,9 +170,11 @@ namespace pmon::mid
 		return true;
 	}
 
+	// TODO: right now pointer is owned by ipc bridge
 	const PM_INTROSPECTION_ROOT* MockMiddleware::GetIntrospectionData() const
 	{		
-		auto pRoot = std::make_unique<IntrospectionRoot>();
+		auto& root = pIpcView->GetIntrospectionRoot();
+		auto pRoot = &root;
 
 		// do enum population
 #define X_REG_KEYS(enum_frag, key_frag, name, short_name, description) REGISTER_ENUM_KEY(pEnum, enum_frag, key_frag, name, short_name, description);
@@ -213,7 +219,7 @@ namespace pmon::mid
 
 #undef X_REG_METRIC
 
-		return pRoot.release();
+		return pRoot;
 	}
 
 	// static mapping of datatype enum to static type
@@ -243,7 +249,8 @@ namespace pmon::mid
 
 	void MockMiddleware::FreeIntrospectionData(const PM_INTROSPECTION_ROOT* pRoot) const
 	{
-		delete static_cast<const IntrospectionRoot*>(pRoot);
+		// TODO: re-implement this when cloning to API struct is implemented
+		// delete static_cast<const IntrospectionRoot*>(pRoot);
 	}
 
 	PM_DYNAMIC_QUERY* MockMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements) const

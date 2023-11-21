@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\ExperimentalInterprocess.cpp" />
+    <ClCompile Include="source\Interprocess.cpp" />
     <ClCompile Include="source\Introspection.cpp" />
   </ItemGroup>
   <ItemGroup>

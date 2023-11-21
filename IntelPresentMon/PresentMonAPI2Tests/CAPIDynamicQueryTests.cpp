@@ -37,6 +37,7 @@ namespace PresentMonAPI2
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeDynamicQuery(q));
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
+			// not sure why moving introspection root creation causes this leak
 			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
 		}
 		TEST_METHOD(VerifyOffsetsAndSizes)

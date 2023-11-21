@@ -1,5 +1,6 @@
 #pragma once
 #include "Middleware.h"
+#include "../../Interprocess/source/Interprocess.h"
 
 namespace pmon::mid
 {
@@ -17,5 +18,6 @@ namespace pmon::mid
 		void PollStaticQuery(const PM_QUERY_ELEMENT& element, uint8_t* pBlob) const override;
 	private:
 		uint32_t t = 0;
+		std::unique_ptr<ipc::MiddlewareView> pIpcView;
 	};
 }
