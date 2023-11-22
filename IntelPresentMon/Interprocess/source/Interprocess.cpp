@@ -1,5 +1,5 @@
 #include "Interprocess.h"
-#include "Introspection.h"
+#include "IntrospectionTransfer.h"
 #include <boost/interprocess/managed_windows_shared_memory.hpp>
 
 namespace pmon::ipc

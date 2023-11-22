@@ -21,13 +21,18 @@
   <ItemGroup>
     <ClCompile Include="source\ExperimentalInterprocess.cpp" />
     <ClCompile Include="source\Interprocess.cpp" />
-    <ClCompile Include="source\Introspection.cpp" />
+    <ClCompile Include="source\IntrospectionHelpers.cpp" />
+    <ClCompile Include="source\IntrospectionTransfer.cpp" />
+    <ClCompile Include="source\IntrospectionMacroHelpers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\ExperimentalInterprocess.h" />
     <ClInclude Include="source\Interprocess.h" />
-    <ClInclude Include="source\Introspection.h" />
-    <ClInclude Include="source\Types.h" />
+    <ClInclude Include="source\IntrospectionHelpers.h" />
+    <ClInclude Include="source\IntrospectionTransfer.h" />
+    <ClInclude Include="source\IntrospectionMacroHelpers.h" />
+    <ClInclude Include="source\IntrospectionMetadata.h" />
+    <ClInclude Include="source\InterprocessTypes.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

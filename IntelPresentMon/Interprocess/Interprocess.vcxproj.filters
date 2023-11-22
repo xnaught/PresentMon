@@ -18,10 +18,16 @@
     <ClCompile Include="source\ExperimentalInterprocess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\Introspection.cpp">
+    <ClCompile Include="source\IntrospectionTransfer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\Interprocess.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\IntrospectionMacroHelpers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\IntrospectionHelpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -29,13 +35,22 @@
     <ClInclude Include="source\ExperimentalInterprocess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\Types.h">
+    <ClInclude Include="source\InterprocessTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\Interprocess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\Introspection.h">
+    <ClInclude Include="source\IntrospectionTransfer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\IntrospectionMacroHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\IntrospectionMetadata.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\IntrospectionHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
