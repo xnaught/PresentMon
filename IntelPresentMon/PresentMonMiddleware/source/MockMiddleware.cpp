@@ -13,6 +13,7 @@
 #include "../../Interprocess/source/IntrospectionHelpers.h"
 #include "../../Interprocess/source/Interprocess.h"
 #include "ApiHelpers.h"
+#include "../../Interprocess/source/IntrospectionCloneAllocators.h"
 
 namespace pmon::mid
 {

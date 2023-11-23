@@ -18,9 +18,6 @@
     <ClCompile Include="source\ExperimentalInterprocess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\IntrospectionTransfer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\Interprocess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -51,6 +48,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\IntrospectionHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\IntrospectionCloneAllocators.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

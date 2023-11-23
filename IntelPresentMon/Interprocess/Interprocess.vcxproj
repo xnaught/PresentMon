@@ -22,12 +22,12 @@
     <ClCompile Include="source\ExperimentalInterprocess.cpp" />
     <ClCompile Include="source\Interprocess.cpp" />
     <ClCompile Include="source\IntrospectionHelpers.cpp" />
-    <ClCompile Include="source\IntrospectionTransfer.cpp" />
     <ClCompile Include="source\IntrospectionMacroHelpers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\ExperimentalInterprocess.h" />
     <ClInclude Include="source\Interprocess.h" />
+    <ClInclude Include="source\IntrospectionCloneAllocators.h" />
     <ClInclude Include="source\IntrospectionHelpers.h" />
     <ClInclude Include="source\IntrospectionTransfer.h" />
     <ClInclude Include="source\IntrospectionMacroHelpers.h" />

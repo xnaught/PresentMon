@@ -5,6 +5,7 @@
 #include "Utilities.h"
 #include "../Interprocess/source/Interprocess.h"
 #include "../Interprocess/source/IntrospectionTransfer.h"
+#include "../Interprocess/source/IntrospectionCloneAllocators.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
