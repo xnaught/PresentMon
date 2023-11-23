@@ -420,7 +420,7 @@ namespace pmapi
             EnumKeyView GetType() const;
             DataTypeInfoView GetDataTypeInfo() const
             {
-                return { pDataset, &pBase->typeInfo };
+                return { pDataset, pBase->pTypeInfo };
             }
             EnumKeyLookupRange<PM_STAT, PM_ENUM_STAT> GetStats() const
             {

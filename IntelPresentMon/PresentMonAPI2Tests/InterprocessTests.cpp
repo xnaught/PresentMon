@@ -20,7 +20,7 @@ namespace PresentMonAPI2
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> alloc;
 			auto pClone = root.ApiClone(alloc);
-			Assert::AreEqual(14748ull, alloc.GetTotalSize());
+			Assert::AreEqual(14812ull, alloc.GetTotalSize());
 			Assert::IsNull(pClone.get());
 		}
 		TEST_METHOD(Padding)
@@ -35,7 +35,7 @@ namespace PresentMonAPI2
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> probeAlloc;
 			auto pNullClone = root.ApiClone(probeAlloc);
-			Assert::AreEqual(14748ull, probeAlloc.GetTotalSize());
+			Assert::AreEqual(14812ull, probeAlloc.GetTotalSize());
 			Assert::IsNull(pNullClone.get());
 
 			ipc::intro::BlockAllocator<void> blockAlloc{ probeAlloc.GetTotalSize() };
@@ -94,7 +94,7 @@ namespace PresentMonAPI2
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_DISPLAYED_FPS, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_FPS, (int)pMetric->unit);
-				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->typeInfo.type);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
 				Assert::AreEqual(7ull, pMetric->pStats->size);
 				// check 1st stat
 				{
@@ -117,7 +117,7 @@ namespace PresentMonAPI2
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_GPU_FAN_SPEED, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_RPM, (int)pMetric->unit);
-				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->typeInfo.type);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
 				Assert::AreEqual(7ull, pMetric->pStats->size);
 				// check 7th stat
 				{

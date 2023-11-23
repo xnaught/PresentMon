@@ -78,16 +78,12 @@ namespace pmon::ipc::intro
 		char* pBytes = nullptr;
 	};
 
-	struct IntrospectionString : PM_INTROSPECTION_STRING
+	struct IntrospectionString
 	{
-		IntrospectionString(std::string s) : buffer_{ std::move(s) }
-		{
-			pData = buffer_.data();
-		}
+		IntrospectionString(std::string s) : buffer_{ std::move(s) } {}
 		IntrospectionString& operator=(std::string rhs)
 		{
 			buffer_ = std::move(rhs);
-			pData = buffer_.data();
 			return *this;
 		}
 		using ApiType = PM_INTROSPECTION_STRING;
@@ -119,34 +115,18 @@ namespace pmon::ipc::intro
 	};
 
 	template<typename T>
-	struct IntrospectionObjArray : PM_INTROSPECTION_OBJARRAY
+	struct IntrospectionObjArray
 	{
-		IntrospectionObjArray()
-			:
-			PM_INTROSPECTION_OBJARRAY{ nullptr, 0 }
-		{}
-		IntrospectionObjArray(std::vector<T*> v)
-			:
-			buffer_{ std::move(v) }
-		{
-			Sync_();
-		}
+		IntrospectionObjArray() = default;
 		~IntrospectionObjArray()
 		{
 			for (auto pObj : buffer_) {
 				delete pObj;
 			}
 		}
-		IntrospectionObjArray& operator=(std::vector<T*> rhs)
-		{
-			buffer_ = std::move(rhs);
-			Sync_();
-			return *this;
-		}
 		void PushBack(std::unique_ptr<T> pObj)
 		{
 			buffer_.push_back(pObj.release());
-			Sync_();
 		}
 		using ApiType = PM_INTROSPECTION_OBJARRAY;
 		template<class V>
@@ -191,15 +171,10 @@ namespace pmon::ipc::intro
 			return pSelf;
 		}
 	private:
-		void Sync_()
-		{
-			pData = (const void**)buffer_.data();
-			size = buffer_.size();
-		}
 		std::vector<T*> buffer_;
 	};
 
-	struct IntrospectionEnumKey : PM_INTROSPECTION_ENUM_KEY
+	struct IntrospectionEnumKey
 	{
 		IntrospectionEnumKey(PM_ENUM enumId_in, int value_in, std::string symbol_in, std::string name_in, std::string shortName_in, std::string description_in)
 			:
@@ -209,14 +184,7 @@ namespace pmon::ipc::intro
 			name_{ std::move(name_in) },
 			shortName_{ std::move(shortName_in) },
 			description_{ std::move(description_in) }
-		{
-			enumId = enumId_in;
-			value = value_in;
-			pSymbol = &symbol_;
-			pName = &name_;
-			pShortName = &shortName_;
-			pDescription = &description_;
-		}
+		{}
 		using ApiType = PM_INTROSPECTION_ENUM_KEY;
 		template<class V>
 		ApiType* ApiClone(V voidAlloc) const
@@ -249,19 +217,14 @@ namespace pmon::ipc::intro
 		IntrospectionString description_;
 	};
 
-	struct IntrospectionEnum : PM_INTROSPECTION_ENUM
+	struct IntrospectionEnum
 	{
 		IntrospectionEnum(PM_ENUM id_in, std::string symbol_in, std::string description_in)
 			:
 			id_{ id_in },
 			symbol_{ std::move(symbol_in) },
 			description_{ std::move(description_in) }
-		{
-			id = id_in;
-			pSymbol = &symbol_;
-			pDescription = &description_;
-			pKeys = &keys_;
-		}
+		{}
 		void AddKey(std::unique_ptr<IntrospectionEnumKey> pKey)
 		{
 			keys_.PushBack(std::move(pKey));
@@ -294,7 +257,7 @@ namespace pmon::ipc::intro
 		IntrospectionObjArray<IntrospectionEnumKey> keys_;
 	};
 
-	struct IntrospectionDevice : PM_INTROSPECTION_DEVICE
+	struct IntrospectionDevice
 	{
 		IntrospectionDevice(uint32_t id_in, PM_DEVICE_TYPE type_in, PM_DEVICE_VENDOR vendor_in, std::string name_in)
 			:
@@ -302,12 +265,7 @@ namespace pmon::ipc::intro
 			type_{ type_in },
 			vendor_{ vendor_in },
 			name_{ std::move(name_in) }
-		{
-			id = id_in;
-			type = type_in;
-			vendor = vendor_in;
-			pName = &name_;
-		}
+		{}
 		using ApiType = PM_INTROSPECTION_DEVICE;
 		template<class V>
 		ApiType* ApiClone(V voidAlloc) const
@@ -336,18 +294,14 @@ namespace pmon::ipc::intro
 		IntrospectionString name_;
 	};
 
-	struct IntrospectionDeviceMetricInfo : PM_INTROSPECTION_DEVICE_METRIC_INFO
+	struct IntrospectionDeviceMetricInfo
 	{
 		IntrospectionDeviceMetricInfo(uint32_t deviceId_in, PM_METRIC_AVAILABILITY availability_in, uint32_t arraySize_in)
 			:
 			deviceId_{ deviceId_in },
 			availability_{ availability_in },
 			arraySize_{ arraySize_in }
-		{
-			this->deviceId = deviceId_;
-			this->availability = availability_;
-			this->arraySize = arraySize_;
-		}
+		{}
 		using ApiType = PM_INTROSPECTION_DEVICE_METRIC_INFO;
 		template<class V>
 		ApiType* ApiClone(V voidAlloc) const
@@ -374,16 +328,13 @@ namespace pmon::ipc::intro
 		uint32_t arraySize_;
 	};
 
-	struct IntrospectionDataTypeInfo : PM_INTROSPECTION_DATA_TYPE_INFO
+	struct IntrospectionDataTypeInfo
 	{
 		IntrospectionDataTypeInfo(PM_DATA_TYPE type_in, PM_ENUM enumId_in)
 			:
 			type_{ type_in },
 			enumId_{ enumId_in }
-		{
-			this->type = type_in;
-			this->enumId = enumId_in;
-		}
+		{}
 		using ApiType = PM_INTROSPECTION_DATA_TYPE_INFO;
 		template<class V>
 		ApiType* ApiClone(V voidAlloc) const
@@ -408,22 +359,16 @@ namespace pmon::ipc::intro
 		PM_ENUM enumId_;
 	};
 
-	struct IntrospectionMetric : PM_INTROSPECTION_METRIC
+	struct IntrospectionMetric
 	{
 		IntrospectionMetric(PM_METRIC id_in, PM_METRIC_TYPE type_in, PM_UNIT unit_in, const IntrospectionDataTypeInfo& typeInfo_in, std::vector<PM_STAT> stats_in = {})
 			:
 			id_{ id_in },
 			type_{ type_in },
 			unit_{ unit_in },
-			typeInfo_{ typeInfo_in }
+			pTypeInfo_{ std::make_unique<IntrospectionDataTypeInfo>(typeInfo_in) }
 		{
-			this->id = id_in;
-			this->type = type_in;
-			this->unit = unit_in;
-			this->typeInfo = static_cast<const PM_INTROSPECTION_DATA_TYPE_INFO&>(typeInfo_in);
 			AddStats(std::move(stats_in));
-			pStats = &stats_;
-			pDeviceMetricInfo = &deviceMetricInfo_;
 		}
 		void AddStat(PM_STAT stat)
 		{
@@ -453,7 +398,7 @@ namespace pmon::ipc::intro
 			content.id = id_;
 			content.type = type_;
 			content.unit = unit_;
-			content.typeInfo = static_cast<const PM_INTROSPECTION_DATA_TYPE_INFO&>(typeInfo_);
+			content.pTypeInfo = pTypeInfo_->ApiClone(voidAlloc);
 			content.pStats = stats_.ApiClone(voidAlloc);
 			content.pDeviceMetricInfo = deviceMetricInfo_.ApiClone(voidAlloc);
 			// emplace to allocated self
@@ -462,23 +407,21 @@ namespace pmon::ipc::intro
 			}
 			return pSelf;
 		}
+		PM_METRIC GetId() const
+		{
+			return id_;
+		}
 	private:
 		PM_METRIC id_;
 		PM_METRIC_TYPE type_;
 		PM_UNIT unit_;
-		IntrospectionDataTypeInfo typeInfo_;
+		std::unique_ptr<IntrospectionDataTypeInfo> pTypeInfo_;
 		IntrospectionObjArray<PM_STAT> stats_;
 		IntrospectionObjArray<IntrospectionDeviceMetricInfo> deviceMetricInfo_;
 	};
 
 	struct IntrospectionRoot : PM_INTROSPECTION_ROOT
 	{
-		IntrospectionRoot()
-		{
-			pMetrics = &metrics_;
-			pEnums = &enums_;
-			pDevices = &devices_;
-		}
 		void AddEnum(std::unique_ptr<IntrospectionEnum> pEnum)
 		{
 			enums_.PushBack(std::move(pEnum));

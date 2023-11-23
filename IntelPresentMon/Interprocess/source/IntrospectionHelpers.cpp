@@ -43,7 +43,7 @@ namespace pmon::ipc::intro
 			if (deviceType == PM_DEVICE_TYPE_INDEPENDENT) {
 				metric.AddDeviceMetricInfo({ 0, PM_METRIC_AVAILABILITY_AVAILABLE, 1 });
 			}
-			else if (metric.id == PM_METRIC_GPU_FAN_SPEED) {
+			else if (metric.GetId() == PM_METRIC_GPU_FAN_SPEED) {
 				metric.AddDeviceMetricInfo({ 1, PM_METRIC_AVAILABILITY_AVAILABLE, 1 });
 				metric.AddDeviceMetricInfo({ 2, PM_METRIC_AVAILABILITY_AVAILABLE, 2 });
 			}

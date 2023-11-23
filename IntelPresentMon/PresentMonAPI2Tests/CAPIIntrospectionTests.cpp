@@ -107,7 +107,7 @@ namespace PresentMonAPI2
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_DISPLAYED_FPS, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_FPS, (int)pMetric->unit);
-				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->typeInfo.type);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
 				Assert::AreEqual(7ull, pMetric->pStats->size);
 				// check 1st stat
 				{
@@ -130,7 +130,7 @@ namespace PresentMonAPI2
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_GPU_FAN_SPEED, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_RPM, (int)pMetric->unit);
-				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->typeInfo.type);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
 				Assert::AreEqual(7ull, pMetric->pStats->size);
 				// check 7th stat
 				{
