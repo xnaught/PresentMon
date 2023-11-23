@@ -21,7 +21,7 @@ namespace pmon::ipc::intro
 	{
 		constexpr auto alignment = alignof(T);
 		const auto partialBytes = byteIndex % alignment;
-		const auto padding = alignment - partialBytes;
+		const auto padding = (alignment - partialBytes) % alignment;
 		return padding;
 	}
 
@@ -50,6 +50,40 @@ namespace pmon::ipc::intro
 	private:
 		std::shared_ptr<size_t> pTotalSize = std::make_shared<size_t>();
 	};
+
+	template<typename T>
+	class BlockAllocator
+	{
+		template<typename T2>
+		friend class BlockAllocator;
+	public:
+		using value_type = T;
+		BlockAllocator(size_t nBytes) : pBytes{ reinterpret_cast<char*>(malloc(nBytes)) } {}
+		BlockAllocator(const BlockAllocator<void>& other)
+			:
+			pTotalSize(other.pTotalSize),
+			pBytes{ other.pBytes }
+		{}
+		T* allocate(size_t count)
+		{
+			*pTotalSize += GetPadding<T>(*pTotalSize);
+			const auto pStart = reinterpret_cast<T*>(pBytes + *pTotalSize);
+			*pTotalSize += sizeof(T) * count;
+			return pStart;
+		}
+		void deallocate(T*);
+	private:
+		std::shared_ptr<size_t> pTotalSize = std::make_shared<size_t>();
+		char* pBytes = nullptr;
+	};
+
+	struct ApiBlockDeleter
+	{
+		template<typename T>
+		void operator()(T* p) const { free(p); }
+	};
+
+	using UniqueApiRootPtr = std::unique_ptr<PM_INTROSPECTION_ROOT, ApiBlockDeleter>;
 
 	struct IntrospectionString : PM_INTROSPECTION_STRING
 	{
@@ -153,8 +187,8 @@ namespace pmon::ipc::intro
 					}
 					pElement = pNonApiClonableElement;
 				}
-				if (pData) {
-					pData[i] = pElement;
+				if (content.pData) {
+					content.pData[i] = pElement;
 				}
 			}
 			// emplace to allocated self
@@ -466,7 +500,7 @@ namespace pmon::ipc::intro
 		}
 		using ApiType = PM_INTROSPECTION_ROOT;
 		template<class V>
-		std::unique_ptr<ApiType> ApiClone(V voidAlloc) const
+		UniqueApiRootPtr ApiClone(V voidAlloc) const
 		{
 			// local to hold structure contents being built up
 			ApiType content;
@@ -475,14 +509,14 @@ namespace pmon::ipc::intro
 			A alloc{ voidAlloc };
 			auto pSelf = alloc.allocate(1);
 			// TODO: prepare contents
-			content.pDevices = metrics_.ApiClone(voidAlloc);
+			content.pMetrics = metrics_.ApiClone(voidAlloc);
 			content.pEnums = enums_.ApiClone(voidAlloc);
-			content.pMetrics = devices_.ApiClone(voidAlloc);
+			content.pDevices = devices_.ApiClone(voidAlloc);
 			// emplace to allocated self
 			if (pSelf) {
 				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
-			return std::unique_ptr<ApiType>(pSelf);
+			return UniqueApiRootPtr(pSelf);
 		}
 	private:
 		IntrospectionObjArray<IntrospectionMetric> metrics_;
