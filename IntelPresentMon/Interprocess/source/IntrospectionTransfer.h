@@ -19,9 +19,15 @@ namespace pmon::ipc::intro
 	template<typename T>
 	class ProbeAllocator
 	{
+		template<typename T2>
+		friend class ProbeAllocator;
 	public:
 		using ProbeTag = std::true_type;
 		using value_type = T;
+		ProbeAllocator() = default;
+		ProbeAllocator(const ProbeAllocator<void>& other)
+			: pTotalSize(other.pTotalSize)
+		{}
 		T* allocate(size_t count)
 		{
 			*pTotalSize += sizeof(T) * count;
@@ -68,7 +74,7 @@ namespace pmon::ipc::intro
 			}
 			// emplace to allocated self
 			if (pSelf) {
-				std::allocator_traits<V>::construct(alloc, pSelf, content);
+				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
 			return pSelf;
 		}
@@ -76,7 +82,7 @@ namespace pmon::ipc::intro
 		std::string buffer_;
 	};
 
-	template<class T>
+	template<typename T>
 	struct IntrospectionObjArray : PM_INTROSPECTION_OBJARRAY
 	{
 		IntrospectionObjArray()
@@ -118,24 +124,25 @@ namespace pmon::ipc::intro
 			auto pSelf = alloc.allocate(1);
 			// prepare contents
 			// allocator to construct pointers inside this container
-			using TPA = std::allocator_traits<V>::template rebind_alloc<T*>;
-			TPA tPtrAlloc{ voidAlloc };
+			using VPA = std::allocator_traits<V>::template rebind_alloc<void*>;
+			VPA voidPtrAlloc{ voidAlloc };
 			// allocator to construct objects to be pointed to (if not ApiClonable)
 			using TA = std::allocator_traits<V>::template rebind_alloc<T>;
 			TA tAlloc{ voidAlloc };
 			content.size = buffer_.size();
-			content.pData = tPtrAlloc.allocate(content.size);
+			content.pData = const_cast<const void**>(voidPtrAlloc.allocate(content.size));
 			// clone each element from shm to Api struct in heap
 			for (size_t i = 0; i < content.size; i++) {
-				T* pElement = nullptr;
+				void* pElement = nullptr;
 				if constexpr (IsApiClonable<T>) {
 					pElement = buffer_[i]->ApiClone(voidAlloc);
 				}
 				else {
-					pElement = tAlloc.allocate(1);
-					if (pElement) {
-						std::allocator_traits<TA>::construct(tAlloc, pElement, buffer_[i]);
+					auto pNonApiClonableElement = tAlloc.allocate(1);
+					if (pNonApiClonableElement) {
+						std::allocator_traits<TA>::construct(tAlloc, pNonApiClonableElement, *buffer_[i]);
 					}
+					pElement = pNonApiClonableElement;
 				}
 				if (pData) {
 					pData[i] = pElement;
@@ -143,7 +150,7 @@ namespace pmon::ipc::intro
 			}
 			// emplace to allocated self
 			if (pSelf) {
-				std::allocator_traits<V>::construct(alloc, pSelf, content);
+				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
 			return pSelf;
 		}
@@ -193,7 +200,7 @@ namespace pmon::ipc::intro
 			content.pDescription = description_.ApiClone(voidAlloc);
 			// emplace to allocated self
 			if (pSelf) {
-				std::allocator_traits<V>::construct(alloc, pSelf, content);
+				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
 			return pSelf;
 		}
@@ -240,7 +247,7 @@ namespace pmon::ipc::intro
 			content.pKeys = keys_.ApiClone(voidAlloc);
 			// emplace to allocated self
 			if (pSelf) {
-				std::allocator_traits<V>::construct(alloc, pSelf, content);
+				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
 			return pSelf;
 		}
@@ -282,7 +289,7 @@ namespace pmon::ipc::intro
 			content.pName = name_.ApiClone(voidAlloc);
 			// emplace to allocated self
 			if (pSelf) {
-				std::allocator_traits<V>::construct(alloc, pSelf, content);
+				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
 			return pSelf;
 		}
@@ -321,7 +328,7 @@ namespace pmon::ipc::intro
 			content.arraySize = arraySize_;
 			// emplace to allocated self
 			if (pSelf) {
-				std::allocator_traits<V>::construct(alloc, pSelf, content);
+				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
 			return pSelf;
 		}
@@ -356,7 +363,7 @@ namespace pmon::ipc::intro
 			content.enumId = enumId_;
 			// emplace to allocated self
 			if (pSelf) {
-				std::allocator_traits<V>::construct(alloc, pSelf, content);
+				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
 			return pSelf;
 		}
@@ -415,7 +422,7 @@ namespace pmon::ipc::intro
 			content.pDeviceMetricInfo = deviceMetricInfo_.ApiClone(voidAlloc);
 			// emplace to allocated self
 			if (pSelf) {
-				std::allocator_traits<V>::construct(alloc, pSelf, content);
+				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
 			return pSelf;
 		}
@@ -464,9 +471,9 @@ namespace pmon::ipc::intro
 			content.pMetrics = devices_.ApiClone(voidAlloc);
 			// emplace to allocated self
 			if (pSelf) {
-				std::allocator_traits<V>::construct(alloc, pSelf, content);
+				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
-			return { pSelf };
+			return std::unique_ptr<ApiType>(pSelf);
 		}
 	private:
 		IntrospectionObjArray<IntrospectionMetric> metrics_;
