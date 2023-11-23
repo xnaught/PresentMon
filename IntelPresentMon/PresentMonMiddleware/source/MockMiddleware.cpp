@@ -35,12 +35,6 @@ namespace pmon::mid
 	{		
 		auto& root = pIpcView->GetIntrospectionRoot();
 		auto pRoot = &root;
-
-		// populate introspection data structures
-		ipc::intro::PopulateEnums(root);
-		ipc::intro::PopulateDevices(root);
-		ipc::intro::PopulateMetrics(root);
-
 		return pRoot;
 	}
 

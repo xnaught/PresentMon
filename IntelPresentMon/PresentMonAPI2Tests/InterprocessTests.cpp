@@ -14,13 +14,13 @@ namespace PresentMonAPI2
 	TEST_CLASS(InterprocessTests)
 	{
 	public:
-		TEST_METHOD(IntrospectionApiClone)
+		TEST_METHOD(IntrospectionApiProbeCloneSize)
 		{
 			auto pComm = ipc::MakeMiddlewareView();
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> alloc;
 			auto pClone = root.ApiClone(alloc);
-			Assert::AreEqual(69ull, alloc.GetTotalSize());
+			Assert::AreEqual(13665ull, alloc.GetTotalSize());
 			Assert::IsNull(pClone.get());
 		}
 	};

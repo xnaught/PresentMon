@@ -1,5 +1,6 @@
 #include "Interprocess.h"
 #include "IntrospectionTransfer.h"
+#include "IntrospectionHelpers.h"
 #include <boost/interprocess/managed_windows_shared_memory.hpp>
 
 namespace pmon::ipc
@@ -12,6 +13,10 @@ namespace pmon::ipc
 		CommunicationBridge()
 		{
 			pRoot = std::make_unique<intro::IntrospectionRoot>();
+			// populate introspection data structures
+			intro::PopulateEnums(*pRoot);
+			intro::PopulateDevices(*pRoot);
+			intro::PopulateMetrics(*pRoot);
 		}
 		intro::IntrospectionRoot& GetIntrospectionRoot() override
 		{
