@@ -6,6 +6,7 @@
 #include <ranges>
 #include <cstring>
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
+#include "../../PresentMonMiddleware/source/ApiHelpers.h"
 
 namespace pmon::ipc::intro
 {
@@ -76,14 +77,6 @@ namespace pmon::ipc::intro
 		std::shared_ptr<size_t> pTotalSize = std::make_shared<size_t>();
 		char* pBytes = nullptr;
 	};
-
-	struct ApiBlockDeleter
-	{
-		template<typename T>
-		void operator()(T* p) const { free(p); }
-	};
-
-	using UniqueApiRootPtr = std::unique_ptr<PM_INTROSPECTION_ROOT, ApiBlockDeleter>;
 
 	struct IntrospectionString : PM_INTROSPECTION_STRING
 	{
@@ -500,7 +493,7 @@ namespace pmon::ipc::intro
 		}
 		using ApiType = PM_INTROSPECTION_ROOT;
 		template<class V>
-		UniqueApiRootPtr ApiClone(V voidAlloc) const
+		mid::UniqueApiRootPtr ApiClone(V voidAlloc) const
 		{
 			// local to hold structure contents being built up
 			ApiType content;
@@ -516,7 +509,7 @@ namespace pmon::ipc::intro
 			if (pSelf) {
 				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
-			return UniqueApiRootPtr(pSelf);
+			return mid::UniqueApiRootPtr(pSelf);
 		}
 	private:
 		IntrospectionObjArray<IntrospectionMetric> metrics_;

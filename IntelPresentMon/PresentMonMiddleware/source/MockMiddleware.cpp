@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <cassert>
+#include <cstdlib>
 #include "../../PresentMonAPI2/source/Internal.h"
 #include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
 // TODO: don't need transfer if we can somehow get the PM_ struct generation working without inheritance
@@ -10,6 +12,7 @@
 #include "../../Interprocess/source/IntrospectionTransfer.h"
 #include "../../Interprocess/source/IntrospectionHelpers.h"
 #include "../../Interprocess/source/Interprocess.h"
+#include "ApiHelpers.h"
 
 namespace pmon::mid
 {
@@ -30,21 +33,29 @@ namespace pmon::mid
 		strcpy_s(buffer, 256, "mock-middle");
 	}
 
-	// TODO: right now pointer is owned by ipc bridge
-	const PM_INTROSPECTION_ROOT* MockMiddleware::GetIntrospectionData() const
-	{		
-		auto& root = pIpcView->GetIntrospectionRoot();
-		auto pRoot = &root;
-		return pRoot;
-	}
-
-	void MockMiddleware::FreeIntrospectionData(const PM_INTROSPECTION_ROOT* pRoot) const
+	const PM_INTROSPECTION_ROOT* MockMiddleware::GetIntrospectionData()
 	{
-		// TODO: re-implement this when cloning to API struct is implemented
-		// delete static_cast<const IntrospectionRoot*>(pRoot);
+		UniqueApiRootPtr pApiIntrospectionRoot;
+		// get reference to underlying instrospection data root in shm
+		auto& root = pIpcView->GetIntrospectionRoot();
+		// probe allocator used to determine size of memory block required to hold the CAPI instrospection structure
+		ipc::intro::ProbeAllocator<void> probeAllocator;
+		// this call to clone doesn't allocate of initialize any memory, the probe just determines required memory
+		root.ApiClone(probeAllocator);
+		// create actual allocator based on required size
+		ipc::intro::BlockAllocator<void> blockAllocator{ probeAllocator.GetTotalSize() };
+		// create the CAPI introspection struct on the heap
+		pApiIntrospectionRoot = root.ApiClone(blockAllocator);
+		// it is now the caller's responsibility to track this resource
+		return pApiIntrospectionRoot.release();
 	}
 
-	PM_DYNAMIC_QUERY* MockMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements) const
+	void MockMiddleware::FreeIntrospectionData(const PM_INTROSPECTION_ROOT* pRoot)
+	{
+		free(const_cast<PM_INTROSPECTION_ROOT*>(pRoot));
+	}
+
+	PM_DYNAMIC_QUERY* MockMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements)
 	{
 		// get introspection data for reference
 		// TODO: cache this data so it's not required to be generated every time
@@ -72,12 +83,12 @@ namespace pmon::mid
 		return pQuery.release();
 	}
 
-	void MockMiddleware::FreeDynamicQuery(const PM_DYNAMIC_QUERY* pQuery) const
+	void MockMiddleware::FreeDynamicQuery(const PM_DYNAMIC_QUERY* pQuery)
 	{
 		delete pQuery;
 	}
 
-	void MockMiddleware::PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob) const
+	void MockMiddleware::PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob)
 	{
 		for (auto& qe : pQuery->elements) {
 			if (qe.metric == PM_METRIC_PRESENT_MODE) {
@@ -101,7 +112,7 @@ namespace pmon::mid
 		}
 	}
 
-	void MockMiddleware::PollStaticQuery(const PM_QUERY_ELEMENT& element, uint8_t* pBlob) const
+	void MockMiddleware::PollStaticQuery(const PM_QUERY_ELEMENT& element, uint8_t* pBlob)
 	{
 		// get introspection data for reference
 		// TODO: cache this data so it's not required to be generated every time

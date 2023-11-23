@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="source\ApiHelpers.h" />
     <ClInclude Include="source\ConcreteMiddleware.h" />
     <ClInclude Include="source\Middleware.h" />
     <ClInclude Include="source\MockMiddleware.h" />

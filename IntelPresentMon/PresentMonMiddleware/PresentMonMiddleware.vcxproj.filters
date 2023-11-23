@@ -24,6 +24,9 @@
     <ClInclude Include="source\ConcreteMiddleware.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\ApiHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\MockMiddleware.cpp">
