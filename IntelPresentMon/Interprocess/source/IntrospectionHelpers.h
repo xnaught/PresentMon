@@ -5,7 +5,7 @@
 namespace pmon::ipc::intro
 {
 	size_t GetDataTypeSize(PM_DATA_TYPE v);
-	void PopulateEnums(class IntrospectionRoot& root);
-	void PopulateDevices(class IntrospectionRoot& root);
-	void PopulateMetrics(class IntrospectionRoot& root);
+	void PopulateEnums(struct IntrospectionRoot& root);
+	void PopulateDevices(struct IntrospectionRoot& root);
+	void PopulateMetrics(struct IntrospectionRoot& root);
 }
