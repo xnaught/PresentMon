@@ -17,6 +17,15 @@ namespace pmon::ipc::intro
 	};
 
 	template<typename T>
+	size_t GetPadding(size_t byteIndex)
+	{
+		constexpr auto alignment = alignof(T);
+		const auto partialBytes = byteIndex % alignment;
+		const auto padding = alignment - partialBytes;
+		return padding;
+	}
+
+	template<typename T>
 	class ProbeAllocator
 	{
 		template<typename T2>
@@ -30,7 +39,7 @@ namespace pmon::ipc::intro
 		{}
 		T* allocate(size_t count)
 		{
-			*pTotalSize += sizeof(T) * count;
+			*pTotalSize += sizeof(T) * count + GetPadding<T>(*pTotalSize);
 			return nullptr;
 		}
 		void deallocate(T*);
