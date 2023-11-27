@@ -17,7 +17,7 @@ namespace PresentMonAPI2
 	public:
 		TEST_METHOD(ApiProbeCloneSize)
 		{
-			auto pComm = ipc::MakeMiddlewareView();
+			auto pComm = ipc::MakeServiceComms();
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> alloc;
 			auto pClone = root.ApiClone(alloc);
@@ -32,7 +32,7 @@ namespace PresentMonAPI2
 		}
 		TEST_METHOD(ApiBlockClone)
 		{
-			auto pComm = ipc::MakeMiddlewareView();
+			auto pComm = ipc::MakeServiceComms();
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> probeAlloc;
 			auto pNullClone = root.ApiClone(probeAlloc);

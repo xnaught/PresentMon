@@ -10,23 +10,20 @@ namespace pmon::ipc
 		struct IntrospectionRoot;
 	}
 
-	class Base
+	class ServiceComms
 	{
 	public:
-		virtual ~Base();
-	};
-
-	class ServiceView : public Base
-	{
-	public:
-	};
-
-	class MiddlewareView : public Base
-	{
-	public:
+		virtual ~ServiceComms() = default;
 		virtual intro::IntrospectionRoot& GetIntrospectionRoot() = 0;
 	};
 
-	std::unique_ptr<ServiceView> MakeServiceView(std::optional<std::string> sharedMemoryName = {});
-	std::unique_ptr<MiddlewareView> MakeMiddlewareView(std::optional<std::string> sharedMemoryName = {});
+	class MiddlewareComms
+	{
+	public:
+		virtual ~MiddlewareComms() = default;
+		virtual intro::IntrospectionRoot& GetIntrospectionRoot() = 0;
+	};
+
+	std::unique_ptr<ServiceComms> MakeServiceComms(std::optional<std::string> sharedMemoryName = {});
+	std::unique_ptr<MiddlewareComms> MakeMiddlewareComms(std::optional<std::string> sharedMemoryName = {});
 }

@@ -21,7 +21,8 @@ namespace pmon::mid
 
 	MockMiddleware::MockMiddleware()
 	{
-		pIpcView = ipc::MakeMiddlewareView();
+		pServiceComms = ipc::MakeServiceComms();
+		pMiddlewareComms = ipc::MakeMiddlewareComms();
 	}
 
 	void MockMiddleware::AdvanceTime(uint32_t milliseconds)
@@ -38,7 +39,7 @@ namespace pmon::mid
 	{
 		UniqueApiRootPtr pApiIntrospectionRoot;
 		// get reference to underlying instrospection data root in shm
-		auto& root = pIpcView->GetIntrospectionRoot();
+		auto& root = pMiddlewareComms->GetIntrospectionRoot();
 		// probe allocator used to determine size of memory block required to hold the CAPI instrospection structure
 		ipc::intro::ProbeAllocator<void> probeAllocator;
 		// this call to clone doesn't allocate of initialize any memory, the probe just determines required memory
