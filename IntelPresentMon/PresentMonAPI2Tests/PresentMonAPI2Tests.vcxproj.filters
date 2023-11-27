@@ -33,7 +33,7 @@
     <ClCompile Include="WrapperDatasetTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ProcessTests.cpp">
+    <ClCompile Include="InterprocessExperimentTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="InterprocessTests.cpp">

@@ -10,7 +10,7 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace PresentMonAPI2
 {
-	TEST_CLASS(InterprocessExperiments)
+	TEST_CLASS(InterprocessExperimentTests)
 	{
 	public:
 		TEST_METHOD(SingleProcessMakeUnique)

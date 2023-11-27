@@ -1,5 +1,6 @@
 #include <iostream>
 #include "../Interprocess/source/ExperimentalInterprocess.h"
+#include "../Interprocess/source/Interprocess.h"
 #include "Options.h"
 #include <thread>
 
@@ -264,6 +265,17 @@ int main(int argc, char** argv)
 		std::cout << "go" << std::endl;
 
 		// wait until client has finishing checking free memory
+		std::cin >> buffer;
+	}
+	else if (opts.basicIntro) {
+		std::string buffer;
+
+		auto pServiceComms = pmon::ipc::MakeServiceComms();
+
+		// signal to client that shm has been created
+		std::cout << "ready" << std::endl;
+
+		// wait for client signal that work is done
 		std::cin >> buffer;
 	}
 	else {

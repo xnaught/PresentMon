@@ -22,6 +22,7 @@ namespace pmon::ipc::mock::opt
 			Flag cloneHeap{ "--clone-heap-to-shm", "Create simple root on heap, clone to shm" };
 			Flag cloneHeapDeep{ "--clone-heap-deep-to-shm", "Create deep root on heap, clone to shm" };
 			Flag cloneHeapDeep2{ "--clone-heap-deep-to-shm-2", "Create deep root on heap, clone to shm (vector of <obj> instead of <uptr>)" };
+			Flag basicIntro{ "--basic-intro", "Create introspection root so middleware code can access it" };
 
 		protected:
 			// edit application name and description here
