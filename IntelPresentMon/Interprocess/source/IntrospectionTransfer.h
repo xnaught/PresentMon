@@ -12,11 +12,6 @@ namespace pmon::ipc::intro
 {
 	namespace vi = std::views;
 
-	template<typename T>
-	concept IsApiClonable = requires {
-		typename T::ApiType;
-	};
-
 	struct IntrospectionString
 	{
 		IntrospectionString(std::string s) : buffer_{ std::move(s) } {}
@@ -81,24 +76,12 @@ namespace pmon::ipc::intro
 			// allocator to construct pointers inside this container
 			using VPA = std::allocator_traits<V>::template rebind_alloc<void*>;
 			VPA voidPtrAlloc{ voidAlloc };
-			// allocator to construct objects to be pointed to (if not ApiClonable)
-			using TA = std::allocator_traits<V>::template rebind_alloc<T>;
-			TA tAlloc{ voidAlloc };
 			content.size = buffer_.size();
 			content.pData = const_cast<const void**>(voidPtrAlloc.allocate(content.size));
 			// clone each element from shm to Api struct in heap
 			for (size_t i = 0; i < content.size; i++) {
 				void* pElement = nullptr;
-				if constexpr (IsApiClonable<T>) {
-					pElement = buffer_[i]->ApiClone(voidAlloc);
-				}
-				else {
-					auto pNonApiClonableElement = tAlloc.allocate(1);
-					if (pNonApiClonableElement) {
-						std::allocator_traits<TA>::construct(tAlloc, pNonApiClonableElement, *buffer_[i]);
-					}
-					pElement = pNonApiClonableElement;
-				}
+				pElement = buffer_[i]->ApiClone(voidAlloc);
 				if (content.pData) {
 					content.pData[i] = pElement;
 				}

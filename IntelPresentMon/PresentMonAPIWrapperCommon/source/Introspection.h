@@ -209,98 +209,6 @@ namespace pmapi
             const BaseType* pBase = nullptr;
         };
 
-        template<typename E, PM_ENUM EnumId>
-        class EnumKeyLookupIterator
-        {
-        public:
-            using iterator_category = std::random_access_iterator_tag;
-            using value_type = EnumKeyView;
-            using base_type = E;
-            using reference = value_type&;
-            using pointer = value_type*;
-            using difference_type = ptrdiff_t;
-
-            EnumKeyLookupIterator() = default;
-            EnumKeyLookupIterator(const class Dataset* pDataset_, const PM_INTROSPECTION_OBJARRAY* pObjArray, difference_type offset = 0u) noexcept
-                :
-                pDataset{ pDataset_ },
-                pArray{ (const base_type* const*)pObjArray->pData + offset }
-            {}
-            EnumKeyLookupIterator(const EnumKeyLookupIterator& rhs) noexcept : pDataset{ rhs.pDataset }, pArray{ rhs.pArray } {}
-            EnumKeyLookupIterator& operator=(const EnumKeyLookupIterator& rhs) noexcept
-            {
-                // Self-assignment check
-                if (this != &rhs) {
-                    pDataset = rhs.pDataset;
-                    pArray = rhs.pArray;
-                }
-                return *this;
-            }
-            EnumKeyLookupIterator& operator+=(difference_type rhs) noexcept
-            {
-                pArray += rhs;
-                return *this;
-            }
-            EnumKeyLookupIterator& operator-=(difference_type rhs) noexcept
-            {
-                pArray -= rhs;
-                return *this;
-            }
-            value_type operator*() const
-            {
-                return pDataset->FindEnumKey(EnumId, **pArray);
-            }
-            value_type operator->() const
-            {
-                return **this;
-            }
-            value_type operator[](size_t idx) const
-            {
-                return pDataset->FindEnumKey(EnumId, *pArray[idx]);
-            }
-
-            EnumKeyLookupIterator& operator++() noexcept
-            {
-                ++pArray;
-                return *this;
-            }
-            EnumKeyLookupIterator& operator--() noexcept
-            {
-                --pArray;
-                return *this;
-            }
-            EnumKeyLookupIterator operator++(int) noexcept { EnumKeyLookupIterator tmp(*this); ++(*this); return tmp; }
-            EnumKeyLookupIterator operator--(int) noexcept { EnumKeyLookupIterator tmp(*this); --(*this); return tmp; }
-            difference_type operator-(const EnumKeyLookupIterator& rhs) const noexcept
-            {
-                return difference_type(pArray - rhs.pArray);
-            }
-            EnumKeyLookupIterator operator+(difference_type rhs) const noexcept
-            {
-                auto dup = *this;
-                return dup += rhs;
-            }
-            EnumKeyLookupIterator operator-(difference_type rhs) const noexcept
-            {
-                auto dup = *this;
-                return dup -= rhs;
-            }
-
-            bool operator==(const EnumKeyLookupIterator& rhs) const noexcept { return pArray == rhs.pArray; }
-            bool operator!=(const EnumKeyLookupIterator& rhs) const noexcept { return pArray != rhs.pArray; }
-            bool operator>(const EnumKeyLookupIterator& rhs) const noexcept { return pArray > rhs.pArray; }
-            bool operator<(const EnumKeyLookupIterator& rhs) const noexcept { return pArray < rhs.pArray; }
-            bool operator>=(const EnumKeyLookupIterator& rhs) const noexcept { return pArray >= rhs.pArray; }
-            bool operator<=(const EnumKeyLookupIterator& rhs) const noexcept { return pArray <= rhs.pArray; }
-        private:
-            // data
-            const base_type* const* pArray = nullptr;
-            const class Dataset* pDataset = nullptr;
-        };
-
-        template<typename E, PM_ENUM EnumId>
-        using EnumKeyLookupRange = std::ranges::subrange<EnumKeyLookupIterator<E, EnumId>, EnumKeyLookupIterator<E, EnumId>>;
-
         class DeviceView
         {
             using BaseType = PM_INTROSPECTION_DEVICE;
@@ -454,13 +362,6 @@ namespace pmapi
             {
                 return { GetStatInfoBegin_(), GetStatInfoEnd_() };
             }
-            // TODO: ELIMINATE
-            //EnumKeyLookupRange<PM_STAT, PM_ENUM_STAT> GetStats() const
-            //{
-            //    // trying to deduce the template params for subrange causes intellisense to crash
-            //    // workaround this by providing them explicitly as the return type (normally would use auto)
-            //    return { GetStatsBegin_(), GetStatsEnd_() };
-            //}
             ViewRange<DeviceMetricInfoView> GetDeviceMetricInfo() const
             {
                 // trying to deduce the template params for subrange causes intellisense to crash
@@ -477,15 +378,6 @@ namespace pmapi
             }
         private:
             // functions
-            // TODO: ELIMINATE
-            //EnumKeyLookupIterator<PM_STAT, PM_ENUM_STAT> GetStatsBegin_() const
-            //{
-            //    return { pDataset, pBase->pStats };
-            //}
-            //EnumKeyLookupIterator<PM_STAT, PM_ENUM_STAT> GetStatsEnd_() const
-            //{
-            //    return { pDataset, pBase->pStats, (int64_t)pBase->pStats->size };
-            //}
             ViewIterator<StatInfoView> GetStatInfoBegin_() const
             {
                 return { pDataset, pBase->pStatInfo };
