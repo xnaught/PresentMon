@@ -32,7 +32,7 @@
     <ClInclude Include="source\IntrospectionTransfer.h" />
     <ClInclude Include="source\IntrospectionMacroHelpers.h" />
     <ClInclude Include="source\IntrospectionMetadata.h" />
-    <ClInclude Include="source\InterprocessTypes.h" />
+    <ClInclude Include="source\SharedMemoryTypes.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

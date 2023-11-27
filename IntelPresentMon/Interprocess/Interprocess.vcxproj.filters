@@ -32,9 +32,6 @@
     <ClInclude Include="source\ExperimentalInterprocess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\InterprocessTypes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="source\Interprocess.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -51,6 +48,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\IntrospectionCloneAllocators.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\SharedMemoryTypes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

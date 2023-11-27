@@ -7,6 +7,7 @@
 #include <cstring>
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
 #include "../../PresentMonMiddleware/source/ApiHelpers.h"
+#include "SharedMemoryTypes.h"
 
 namespace pmon::ipc::intro
 {
@@ -14,8 +15,12 @@ namespace pmon::ipc::intro
 
 	struct IntrospectionString
 	{
-		IntrospectionString(std::string s) : buffer_{ std::move(s) } {}
-		IntrospectionString& operator=(std::string rhs)
+		IntrospectionString() = delete;
+		IntrospectionString(ShmString str)
+			:
+			buffer_{ std::move(str) }
+		{}
+		IntrospectionString& operator=(ShmString rhs)
 		{
 			buffer_ = std::move(rhs);
 			return *this;
@@ -45,22 +50,16 @@ namespace pmon::ipc::intro
 			return pSelf;
 		}
 	private:
-		std::string buffer_;
+		ShmString buffer_;
 	};
 
 	template<typename T>
 	struct IntrospectionObjArray
 	{
-		IntrospectionObjArray() = default;
-		~IntrospectionObjArray()
+		IntrospectionObjArray(ShmSegmentManager* pSegmentManager) : buffer_{ pSegmentManager->get_allocator<ShmUniquePtr<T>>() } {}
+		void PushBack(ShmUniquePtr<T> pObj)
 		{
-			for (auto pObj : buffer_) {
-				delete pObj;
-			}
-		}
-		void PushBack(std::unique_ptr<T> pObj)
-		{
-			buffer_.push_back(pObj.release());
+			buffer_.push_back(std::move(pObj));
 		}
 		using ApiType = PM_INTROSPECTION_OBJARRAY;
 		template<class V>
@@ -93,12 +92,12 @@ namespace pmon::ipc::intro
 			return pSelf;
 		}
 	private:
-		std::vector<T*> buffer_;
+		ShmVector<ShmUniquePtr<T>> buffer_;
 	};
 
 	struct IntrospectionEnumKey
 	{
-		IntrospectionEnumKey(PM_ENUM enumId_in, int value_in, std::string symbol_in, std::string name_in, std::string shortName_in, std::string description_in)
+		IntrospectionEnumKey(PM_ENUM enumId_in, int value_in, ShmString symbol_in, ShmString name_in, ShmString shortName_in, ShmString description_in)
 			:
 			enumId_{ enumId_in},
 			value_{ value_in },
@@ -141,13 +140,14 @@ namespace pmon::ipc::intro
 
 	struct IntrospectionEnum
 	{
-		IntrospectionEnum(PM_ENUM id_in, std::string symbol_in, std::string description_in)
+		IntrospectionEnum(PM_ENUM id_in, ShmString symbol_in, ShmString description_in)
 			:
 			id_{ id_in },
+			keys_{ symbol_in.get_allocator().get_segment_manager() },
 			symbol_{ std::move(symbol_in) },
 			description_{ std::move(description_in) }
 		{}
-		void AddKey(std::unique_ptr<IntrospectionEnumKey> pKey)
+		void AddKey(ShmUniquePtr<IntrospectionEnumKey> pKey)
 		{
 			keys_.PushBack(std::move(pKey));
 		}
@@ -174,14 +174,14 @@ namespace pmon::ipc::intro
 		}
 	private:
 		PM_ENUM id_;
+		IntrospectionObjArray<IntrospectionEnumKey> keys_;
 		IntrospectionString symbol_;
 		IntrospectionString description_;
-		IntrospectionObjArray<IntrospectionEnumKey> keys_;
 	};
 
 	struct IntrospectionDevice
 	{
-		IntrospectionDevice(uint32_t id_in, PM_DEVICE_TYPE type_in, PM_DEVICE_VENDOR vendor_in, std::string name_in)
+		IntrospectionDevice(uint32_t id_in, PM_DEVICE_TYPE type_in, PM_DEVICE_VENDOR vendor_in, ShmString name_in)
 			:
 			id_{ id_in },
 			type_{ type_in },
@@ -311,18 +311,21 @@ namespace pmon::ipc::intro
 
 	struct IntrospectionMetric
 	{
-		IntrospectionMetric(PM_METRIC id_in, PM_METRIC_TYPE type_in, PM_UNIT unit_in, const IntrospectionDataTypeInfo& typeInfo_in, std::vector<PM_STAT> stats_in = {})
+		IntrospectionMetric(ShmSegmentManager* pSegmentManager_in, PM_METRIC id_in, PM_METRIC_TYPE type_in, PM_UNIT unit_in, const IntrospectionDataTypeInfo& typeInfo_in, std::vector<PM_STAT> stats_in = {})
 			:
+			pSegmentManager_{ pSegmentManager_in },
 			id_{ id_in },
 			type_{ type_in },
 			unit_{ unit_in },
-			pTypeInfo_{ std::make_unique<IntrospectionDataTypeInfo>(typeInfo_in) }
+			pTypeInfo_{ ShmMakeUnique<IntrospectionDataTypeInfo>(pSegmentManager_in, typeInfo_in) },
+			statInfo_{ pSegmentManager_in },
+			deviceMetricInfo_{ pSegmentManager_in }
 		{
 			AddStats(std::move(stats_in));
 		}
 		void AddStat(PM_STAT stat)
 		{
-			statInfo_.PushBack(std::make_unique<IntrospectionStatInfo>(stat));
+			statInfo_.PushBack(ShmMakeUnique<IntrospectionStatInfo>(pSegmentManager_, stat));
 		}
 		void AddStats(std::vector<PM_STAT> stats)
 		{
@@ -332,7 +335,7 @@ namespace pmon::ipc::intro
 		}
 		void AddDeviceMetricInfo(IntrospectionDeviceMetricInfo info)
 		{
-			deviceMetricInfo_.PushBack(std::make_unique<IntrospectionDeviceMetricInfo>(info));
+			deviceMetricInfo_.PushBack(ShmMakeUnique<IntrospectionDeviceMetricInfo>(pSegmentManager_, info));
 		}
 		using ApiType = PM_INTROSPECTION_METRIC;
 		template<class V>
@@ -362,25 +365,32 @@ namespace pmon::ipc::intro
 			return id_;
 		}
 	private:
+		ShmSegmentManager* pSegmentManager_;
 		PM_METRIC id_;
 		PM_METRIC_TYPE type_;
 		PM_UNIT unit_;
-		std::unique_ptr<IntrospectionDataTypeInfo> pTypeInfo_;
 		IntrospectionObjArray<IntrospectionStatInfo> statInfo_;
 		IntrospectionObjArray<IntrospectionDeviceMetricInfo> deviceMetricInfo_;
+		ShmUniquePtr<IntrospectionDataTypeInfo> pTypeInfo_;
 	};
 
-	struct IntrospectionRoot : PM_INTROSPECTION_ROOT
+	struct IntrospectionRoot
 	{
-		void AddEnum(std::unique_ptr<IntrospectionEnum> pEnum)
+		IntrospectionRoot(ShmSegmentManager* pSegmentManager_in)
+			:
+			metrics_{ pSegmentManager_in },
+			enums_{ pSegmentManager_in },
+			devices_{ pSegmentManager_in }
+		{}
+		void AddEnum(ShmUniquePtr<IntrospectionEnum> pEnum)
 		{
 			enums_.PushBack(std::move(pEnum));
 		}
-		void AddMetric(std::unique_ptr<IntrospectionMetric> pMetric)
+		void AddMetric(ShmUniquePtr<IntrospectionMetric> pMetric)
 		{
 			metrics_.PushBack(std::move(pMetric));
 		}
-		void AddDevice(std::unique_ptr<IntrospectionDevice> pDevice)
+		void AddDevice(ShmUniquePtr<IntrospectionDevice> pDevice)
 		{
 			devices_.PushBack(std::move(pDevice));
 		}

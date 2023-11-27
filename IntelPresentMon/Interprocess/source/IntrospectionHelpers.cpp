@@ -14,11 +14,13 @@ namespace pmon::ipc::intro
 		return 0;
 	}
 
-	void PopulateEnums(IntrospectionRoot& root)
+	void PopulateEnums(ShmSegmentManager* pSegmentManager, IntrospectionRoot& root)
 	{
-#define X_REG_KEYS(enum_frag, key_frag, name, short_name, description) REGISTER_ENUM_KEY(pEnum, enum_frag, key_frag, name, short_name, description);
+		auto charAlloc = pSegmentManager->get_allocator<char>();
+
+#define X_REG_KEYS(enum_frag, key_frag, name, short_name, description) REGISTER_ENUM_KEY(pSegmentManager, pEnum, enum_frag, key_frag, name, short_name, description);
 #define X_REG_ENUMS(master_frag, enum_frag, name, short_name, description) { \
-		auto pEnum = CREATE_INTROSPECTION_ENUM(enum_frag, description); \
+		auto pEnum = CREATE_INTROSPECTION_ENUM(pSegmentManager, enum_frag, description); \
 		\
 		MAKE_LIST_SYMBOL(enum_frag)(X_REG_KEYS) \
 		root.AddEnum(std::move(pEnum)); }
@@ -29,14 +31,16 @@ namespace pmon::ipc::intro
 #undef X_REG_KEYS
 	}
 
-	void PopulateDevices(IntrospectionRoot& root)
+	void PopulateDevices(ShmSegmentManager* pSegmentManager, IntrospectionRoot& root)
 	{
-		root.AddDevice(std::make_unique<IntrospectionDevice>(0, PM_DEVICE_TYPE_INDEPENDENT, PM_DEVICE_VENDOR_UNKNOWN, "Device-independent"));
-		root.AddDevice(std::make_unique<IntrospectionDevice>(1, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_DEVICE_VENDOR_INTEL, "Arc 750"));
-		root.AddDevice(std::make_unique<IntrospectionDevice>(2, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_DEVICE_VENDOR_NVIDIA, "GeForce RTX 2080 ti"));
+		auto charAlloc = pSegmentManager->get_allocator<char>();
+
+		root.AddDevice(ShmMakeUnique<IntrospectionDevice>(pSegmentManager, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_DEVICE_VENDOR_UNKNOWN, ShmString{ "Device-independent", charAlloc }));
+		root.AddDevice(ShmMakeUnique<IntrospectionDevice>(pSegmentManager, 1, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_DEVICE_VENDOR_INTEL, ShmString{ "Arc 750", charAlloc }));
+		root.AddDevice(ShmMakeUnique<IntrospectionDevice>(pSegmentManager, 2, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_DEVICE_VENDOR_NVIDIA, ShmString{ "GeForce RTX 2080 ti", charAlloc }));
 	}
 
-	void PopulateMetrics(IntrospectionRoot& root)
+	void PopulateMetrics(ShmSegmentManager* pSegmentManager, IntrospectionRoot& root)
 	{
 		// helper to generate mock per-device metric data
 		const auto PopulateDeviceMetricInfo = [](IntrospectionMetric& metric, PM_DEVICE_TYPE deviceType) {
@@ -55,7 +59,7 @@ namespace pmon::ipc::intro
 
 		// do metric population
 #define X_REG_METRIC(metric, metric_type, unit, data_type, enum_id, device_type, ...) { \
-		auto pMetric = std::make_unique<IntrospectionMetric>( \
+		auto pMetric = ShmMakeUnique<IntrospectionMetric>(pSegmentManager, pSegmentManager, \
 			metric, metric_type, unit, IntrospectionDataTypeInfo{ data_type, (PM_ENUM)enum_id }, std::vector{ __VA_ARGS__ }); \
 		PopulateDeviceMetricInfo(*pMetric, device_type); \
 		root.AddMetric(std::move(pMetric)); }
