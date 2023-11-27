@@ -68,13 +68,13 @@ namespace PresentMonAPI2
 		TEST_METHOD(IntrospectMetricStats)
 		{
 			using namespace std::string_literals;
-			Assert::AreEqual("Average"s, data->GetMetrics().begin()->GetStats().begin()->GetName());
-			Assert::AreEqual(7ull, data->GetMetrics().begin()->GetStats().size());
+			Assert::AreEqual("Average"s, data->GetMetrics().begin()->GetStatInfo().begin()->GetStat()->GetName());
+			Assert::AreEqual(7ull, data->GetMetrics().begin()->GetStatInfo().size());
 		}
 		TEST_METHOD(IntrospectMetricStatsWithLookup)
 		{
 			using namespace std::string_literals;
-			Assert::AreEqual("avg"s, data->GetMetrics().begin()->GetStats().begin()->GetShortName());
+			Assert::AreEqual("avg"s, data->GetMetrics().begin()->GetStatInfo().begin()->GetStat()->GetShortName());
 		}
 		TEST_METHOD(IntrospectMetricDataType)
 		{

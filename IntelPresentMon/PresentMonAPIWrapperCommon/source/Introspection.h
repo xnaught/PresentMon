@@ -404,6 +404,34 @@ namespace pmapi
             const BaseType* pBase = nullptr;
         };
 
+        class StatInfoView
+        {
+            using BaseType = PM_INTROSPECTION_STAT_INFO;
+            using SelfType = StatInfoView;
+            friend class ViewIterator<SelfType>;
+            friend class MetricView;
+        public:
+            EnumKeyView GetStat() const;
+            const SelfType* operator->() const
+            {
+                return this;
+            }
+            const BaseType* GetBasePtr() const
+            {
+                return pBase;
+            }
+        private:
+            // functions
+            StatInfoView(const class Dataset* pDataset_, const BaseType* pBase_)
+                :
+                pDataset{ pDataset_ },
+                pBase{ pBase_ }
+            {}
+            // data
+            const class Dataset* pDataset = nullptr;
+            const BaseType* pBase = nullptr;
+        };
+
         class MetricView
         {
             using BaseType = PM_INTROSPECTION_METRIC;
@@ -422,12 +450,17 @@ namespace pmapi
             {
                 return { pDataset, pBase->pTypeInfo };
             }
-            EnumKeyLookupRange<PM_STAT, PM_ENUM_STAT> GetStats() const
+            ViewRange<StatInfoView> GetStatInfo() const
             {
-                // trying to deduce the template params for subrange causes intellisense to crash
-                // workaround this by providing them explicitly as the return type (normally would use auto)
-                return { GetStatsBegin_(), GetStatsEnd_() };
+                return { GetStatInfoBegin_(), GetStatInfoEnd_() };
             }
+            // TODO: ELIMINATE
+            //EnumKeyLookupRange<PM_STAT, PM_ENUM_STAT> GetStats() const
+            //{
+            //    // trying to deduce the template params for subrange causes intellisense to crash
+            //    // workaround this by providing them explicitly as the return type (normally would use auto)
+            //    return { GetStatsBegin_(), GetStatsEnd_() };
+            //}
             ViewRange<DeviceMetricInfoView> GetDeviceMetricInfo() const
             {
                 // trying to deduce the template params for subrange causes intellisense to crash
@@ -444,13 +477,22 @@ namespace pmapi
             }
         private:
             // functions
-            EnumKeyLookupIterator<PM_STAT, PM_ENUM_STAT> GetStatsBegin_() const
+            // TODO: ELIMINATE
+            //EnumKeyLookupIterator<PM_STAT, PM_ENUM_STAT> GetStatsBegin_() const
+            //{
+            //    return { pDataset, pBase->pStats };
+            //}
+            //EnumKeyLookupIterator<PM_STAT, PM_ENUM_STAT> GetStatsEnd_() const
+            //{
+            //    return { pDataset, pBase->pStats, (int64_t)pBase->pStats->size };
+            //}
+            ViewIterator<StatInfoView> GetStatInfoBegin_() const
             {
-                return { pDataset, pBase->pStats };
+                return { pDataset, pBase->pStatInfo };
             }
-            EnumKeyLookupIterator<PM_STAT, PM_ENUM_STAT> GetStatsEnd_() const
+            ViewIterator<StatInfoView> GetStatInfoEnd_() const
             {
-                return { pDataset, pBase->pStats, (int64_t)pBase->pStats->size };
+                return { pDataset, pBase->pStatInfo, (int64_t)pBase->pStatInfo->size };
             }
             ViewIterator<DeviceMetricInfoView> GetDeviceMetricInfoBegin_() const
             {

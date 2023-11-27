@@ -298,6 +298,34 @@ namespace pmon::ipc::intro
 		PM_ENUM enumId_;
 	};
 
+	struct IntrospectionStatInfo
+	{
+		IntrospectionStatInfo(PM_STAT stat_in)
+			:
+			stat_{ stat_in }
+		{}
+		using ApiType =	PM_INTROSPECTION_STAT_INFO;
+		template<class V>
+		ApiType* ApiClone(V voidAlloc) const
+		{
+			// local to hold structure contents being built up
+			ApiType content;
+			// self allocation
+			using A = std::allocator_traits<V>::template rebind_alloc<ApiType>;
+			A alloc{ voidAlloc };
+			auto pSelf = alloc.allocate(1);
+			// prepare contents
+			content.stat = stat_;
+			// emplace to allocated self
+			if (pSelf) {
+				std::allocator_traits<A>::construct(alloc, pSelf, content);
+			}
+			return pSelf;
+		}
+	private:
+		PM_STAT stat_;
+	};
+
 	struct IntrospectionMetric
 	{
 		IntrospectionMetric(PM_METRIC id_in, PM_METRIC_TYPE type_in, PM_UNIT unit_in, const IntrospectionDataTypeInfo& typeInfo_in, std::vector<PM_STAT> stats_in = {})
@@ -311,12 +339,12 @@ namespace pmon::ipc::intro
 		}
 		void AddStat(PM_STAT stat)
 		{
-			stats_.PushBack(std::make_unique<PM_STAT>(stat));
+			statInfo_.PushBack(std::make_unique<IntrospectionStatInfo>(stat));
 		}
 		void AddStats(std::vector<PM_STAT> stats)
 		{
 			for (auto stat : stats) {
-				stats_.PushBack(std::make_unique<PM_STAT>(stat));
+				AddStat(stat);
 			}
 		}
 		void AddDeviceMetricInfo(IntrospectionDeviceMetricInfo info)
@@ -338,7 +366,7 @@ namespace pmon::ipc::intro
 			content.type = type_;
 			content.unit = unit_;
 			content.pTypeInfo = pTypeInfo_->ApiClone(voidAlloc);
-			content.pStats = stats_.ApiClone(voidAlloc);
+			content.pStatInfo = statInfo_.ApiClone(voidAlloc);
 			content.pDeviceMetricInfo = deviceMetricInfo_.ApiClone(voidAlloc);
 			// emplace to allocated self
 			if (pSelf) {
@@ -355,7 +383,7 @@ namespace pmon::ipc::intro
 		PM_METRIC_TYPE type_;
 		PM_UNIT unit_;
 		std::unique_ptr<IntrospectionDataTypeInfo> pTypeInfo_;
-		IntrospectionObjArray<PM_STAT> stats_;
+		IntrospectionObjArray<IntrospectionStatInfo> statInfo_;
 		IntrospectionObjArray<IntrospectionDeviceMetricInfo> deviceMetricInfo_;
 	};
 

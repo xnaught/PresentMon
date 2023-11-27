@@ -52,4 +52,9 @@ namespace pmapi::intro
     {
         return pDataset->FindEnumKey(PM_ENUM_METRIC_AVAILABILITY, (int)pBase->availability);
     }
+
+    EnumKeyView StatInfoView::GetStat() const
+    {
+        return pDataset->FindEnumKey(PM_ENUM_STAT, (int)pBase->stat);
+    }
 }

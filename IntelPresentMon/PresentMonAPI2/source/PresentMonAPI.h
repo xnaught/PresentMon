@@ -188,13 +188,18 @@ extern "C" {
 		PM_ENUM enumId;
 	};
 
+	struct PM_INTROSPECTION_STAT_INFO
+	{
+		PM_STAT stat;
+	};
+
 	struct PM_INTROSPECTION_METRIC
 	{
 		PM_METRIC id;
 		PM_METRIC_TYPE type;
 		PM_UNIT unit;
 		PM_INTROSPECTION_DATA_TYPE_INFO* pTypeInfo;
-		PM_INTROSPECTION_OBJARRAY* pStats;
+		PM_INTROSPECTION_OBJARRAY* pStatInfo;
 		PM_INTROSPECTION_OBJARRAY* pDeviceMetricInfo;
 	};
 
