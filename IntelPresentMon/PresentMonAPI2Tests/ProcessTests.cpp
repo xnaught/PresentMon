@@ -4,14 +4,30 @@
 #include <optional>
 #include <boost/process.hpp>
 #include "../Interprocess/source/ExperimentalInterprocess.h"
+#include "../Interprocess/source/SharedMemoryTypes.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace PresentMonAPI2
 {
-	TEST_CLASS(ProcessTests)
+	TEST_CLASS(InterprocessExperiments)
 	{
 	public:
+		TEST_METHOD(SingleProcessMakeUnique)
+		{
+			namespace bip = boost::interprocess;
+
+			struct S
+			{
+				float f;
+			};
+			
+			bip::managed_windows_shared_memory shm{ bip::create_only, "test-shm-chili", 0x10'0000 };
+
+			auto p = pmon::ipc::ShmMakeUnique<S>(shm.get_segment_manager(), 420.f);
+
+			Assert::AreEqual(420.f, p->f);
+		}
 		TEST_METHOD(ReadStdout)
 		{
 			namespace bp = boost::process;

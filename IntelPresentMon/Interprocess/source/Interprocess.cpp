@@ -23,11 +23,6 @@ namespace pmon::ipc
 			intro::PopulateDevices(pSegmentManager, *pRoot);
 			intro::PopulateMetrics(pSegmentManager, *pRoot);
 		}
-		~CommunicationBridge() override
-		{
-			// TODO: figure out why destroying this shm object blows up ("hdr->m_value_alignment == algn" failed)
-			pRoot.release();
-		}
 		intro::IntrospectionRoot& GetIntrospectionRoot() override
 		{
 			return *pRoot;

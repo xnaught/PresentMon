@@ -21,12 +21,8 @@ namespace pmon::ipc
 	template<typename T, typename...P>
 	ShmUniquePtr<T> ShmMakeUnique(ShmSegmentManager* pSegmentManager, P&&...params)
 	{
-		// make allocator for T
-		auto allocator = pSegmentManager->get_allocator<T>();
-		// allocate space in shared memory for object
-		auto ptr = allocator.allocate(1);
-		// construct object in allocated memory
-		std::allocator_traits<ShmAllocator<T>>::construct(allocator, to_raw_pointer(ptr), std::forward<P>(params)...);
+		// construct the instance in shared memory
+		auto ptr = pSegmentManager->construct<T>(bip::anonymous_instance)(std::forward<P>(params)...);
 		// construct uptr compatible with storage in a shared segment
 		return ShmUniquePtr<T>(ptr, bip::deleter<T, ShmSegmentManager>{ pSegmentManager });
 	}
