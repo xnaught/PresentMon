@@ -12,16 +12,17 @@
 #include "../../Interprocess/source/IntrospectionTransfer.h"
 #include "../../Interprocess/source/IntrospectionHelpers.h"
 #include "../../Interprocess/source/Interprocess.h"
-#include "ApiHelpers.h"
 #include "../../Interprocess/source/IntrospectionCloneAllocators.h"
 
 namespace pmon::mid
 {
 	using namespace ipc::intro;
 
-	MockMiddleware::MockMiddleware()
+	MockMiddleware::MockMiddleware(bool useLocalShmServer)
 	{
-		pServiceComms = ipc::MakeServiceComms();
+		if (useLocalShmServer) {
+			pServiceComms = ipc::MakeServiceComms();
+		}
 		pMiddlewareComms = ipc::MakeMiddlewareComms();
 	}
 
@@ -37,19 +38,7 @@ namespace pmon::mid
 
 	const PM_INTROSPECTION_ROOT* MockMiddleware::GetIntrospectionData()
 	{
-		UniqueApiRootPtr pApiIntrospectionRoot;
-		// get reference to underlying instrospection data root in shm
-		auto& root = pMiddlewareComms->GetIntrospectionRoot();
-		// probe allocator used to determine size of memory block required to hold the CAPI instrospection structure
-		ipc::intro::ProbeAllocator<void> probeAllocator;
-		// this call to clone doesn't allocate of initialize any memory, the probe just determines required memory
-		root.ApiClone(probeAllocator);
-		// create actual allocator based on required size
-		ipc::intro::BlockAllocator<void> blockAllocator{ probeAllocator.GetTotalSize() };
-		// create the CAPI introspection struct on the heap
-		pApiIntrospectionRoot = root.ApiClone(blockAllocator);
-		// it is now the caller's responsibility to track this resource
-		return pApiIntrospectionRoot.release();
+		return pMiddlewareComms->GetIntrospectionRoot();
 	}
 
 	void MockMiddleware::FreeIntrospectionData(const PM_INTROSPECTION_ROOT* pRoot)

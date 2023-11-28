@@ -11,16 +11,18 @@ using namespace pmon::mid;
 // global state
 bool useMockedMiddleware_ = false;
 bool useCrtHeapDebug_ = false;
+bool useLocalShmServer_ = false;
 std::unique_ptr<Middleware> pMiddleware_;
 
 // private implementation functions
 
 
 // private endpoints
-PRESENTMON_API_EXPORT void pmSetMiddlewareAsMock_(bool mocked, bool activateCrtHeapDebug)
+PRESENTMON_API_EXPORT void pmSetMiddlewareAsMock_(bool mocked, bool activateCrtHeapDebug, bool useLocalShmServer)
 {
 	useMockedMiddleware_ = mocked;
 	useCrtHeapDebug_ = activateCrtHeapDebug;
+	useLocalShmServer_ = useLocalShmServer;
 	if (useCrtHeapDebug_) {
 		_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF);
 	}
@@ -77,7 +79,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmOpenSession()
 	}
 	try {
 		if (useMockedMiddleware_) {
-			pMiddleware_ = std::make_unique<MockMiddleware>();
+			pMiddleware_ = std::make_unique<MockMiddleware>(useLocalShmServer_);
 		}
 		else {
 			pMiddleware_ = std::make_unique<ConcreteMiddleware>();

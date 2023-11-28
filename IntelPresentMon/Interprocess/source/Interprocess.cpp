@@ -2,6 +2,7 @@
 #include "IntrospectionTransfer.h"
 #include "IntrospectionHelpers.h"
 #include "SharedMemoryTypes.h"
+#include "IntrospectionCloneAllocators.h"
 
 namespace pmon::ipc
 {
@@ -46,13 +47,21 @@ namespace pmon::ipc
 				:
 				shm_{ bip::open_only, sharedMemoryName.value_or(defaultSegmentName).c_str() }
 			{}
-			intro::IntrospectionRoot& GetIntrospectionRoot() override
+			const PM_INTROSPECTION_ROOT* GetIntrospectionRoot() override
 			{
 				const auto result = shm_.find<intro::IntrospectionRoot>(introspectionRootName);
 				if (!result.first) {
 					throw std::runtime_error{ "Failed to find introspection root in shared memory" };
 				}
-				return *result.first;
+				const auto& root = *result.first;
+				// probe allocator used to determine size of memory block required to hold the CAPI instrospection structure
+				intro::ProbeAllocator<void> probeAllocator;
+				// this call to clone doesn't allocate of initialize any memory, the probe just determines required memory
+				root.ApiClone(probeAllocator);
+				// create actual allocator based on required size
+				ipc::intro::BlockAllocator<void> blockAllocator{ probeAllocator.GetTotalSize() };
+				// create the CAPI introspection struct on the heap, it is now the caller's responsibility to track this resource
+				return root.ApiClone(blockAllocator);
 			}
 		private:
 			bip::managed_windows_shared_memory shm_;

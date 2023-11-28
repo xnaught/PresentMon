@@ -6,7 +6,6 @@
 #include <ranges>
 #include <cstring>
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
-#include "../../PresentMonMiddleware/source/ApiHelpers.h"
 #include "SharedMemoryTypes.h"
 
 namespace pmon::ipc::intro
@@ -396,7 +395,7 @@ namespace pmon::ipc::intro
 		}
 		using ApiType = PM_INTROSPECTION_ROOT;
 		template<class V>
-		mid::UniqueApiRootPtr ApiClone(V voidAlloc) const
+		const ApiType* ApiClone(V voidAlloc) const
 		{
 			// local to hold structure contents being built up
 			ApiType content;
@@ -412,7 +411,7 @@ namespace pmon::ipc::intro
 			if (pSelf) {
 				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
-			return mid::UniqueApiRootPtr(pSelf);
+			return pSelf;
 		}
 	private:
 		IntrospectionObjArray<IntrospectionMetric> metrics_;

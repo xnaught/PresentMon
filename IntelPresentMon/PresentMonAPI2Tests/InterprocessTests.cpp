@@ -23,7 +23,8 @@ namespace PresentMonAPI2
 			ipc::intro::ProbeAllocator<void> alloc;
 			auto pClone = root.ApiClone(alloc);
 			Assert::AreEqual(14812ull, alloc.GetTotalSize());
-			Assert::IsNull(pClone.get());
+			Assert::IsNull(pClone);
+			free((void*)pClone);
 		}
 		TEST_METHOD(Padding)
 		{
@@ -38,12 +39,12 @@ namespace PresentMonAPI2
 			ipc::intro::ProbeAllocator<void> probeAlloc;
 			auto pNullClone = root.ApiClone(probeAlloc);
 			Assert::AreEqual(14812ull, probeAlloc.GetTotalSize());
-			Assert::IsNull(pNullClone.get());
+			Assert::IsNull(pNullClone);
 
 			ipc::intro::BlockAllocator<void> blockAlloc{ probeAlloc.GetTotalSize() };
 			auto pRoot = root.ApiClone(blockAlloc);
 
-			Assert::IsNotNull(pRoot.get());
+			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
 			Assert::AreEqual(8ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
@@ -141,6 +142,7 @@ namespace PresentMonAPI2
 					Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)pInfo->availability);
 				}
 			}
+			free((void*)pRoot);
 		}
 		TEST_METHOD(SeparateProcessesApiBlockClone)
 		{
@@ -158,16 +160,9 @@ namespace PresentMonAPI2
 			Assert::AreEqual("ready"s, output);
 
 			auto pComm = ipc::MakeMiddlewareComms();
-			auto& root = pComm->GetIntrospectionRoot();
-			ipc::intro::ProbeAllocator<void> probeAlloc;
-			auto pNullClone = root.ApiClone(probeAlloc);
-			Assert::AreEqual(14812ull, probeAlloc.GetTotalSize());
-			Assert::IsNull(pNullClone.get());
+			auto pRoot = pComm->GetIntrospectionRoot();
 
-			ipc::intro::BlockAllocator<void> blockAlloc{ probeAlloc.GetTotalSize() };
-			auto pRoot = root.ApiClone(blockAlloc);
-
-			Assert::IsNotNull(pRoot.get());
+			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
 			Assert::AreEqual(8ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
@@ -265,6 +260,7 @@ namespace PresentMonAPI2
 					Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)pInfo->availability);
 				}
 			}
+			free((void*)pRoot);
 
 			// ack to companion process so it can exit
 			in << "ack" << std::endl;

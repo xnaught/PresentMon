@@ -3,6 +3,8 @@
 #include <string>
 #include <memory>
 
+struct PM_INTROSPECTION_ROOT;
+
 namespace pmon::ipc
 {
 	namespace intro
@@ -21,7 +23,7 @@ namespace pmon::ipc
 	{
 	public:
 		virtual ~MiddlewareComms() = default;
-		virtual intro::IntrospectionRoot& GetIntrospectionRoot() = 0;
+		virtual const PM_INTROSPECTION_ROOT* GetIntrospectionRoot() = 0;
 	};
 
 	std::unique_ptr<ServiceComms> MakeServiceComms(std::optional<std::string> sharedMemoryName = {});
