@@ -40,20 +40,29 @@ namespace pmon::ipc
 			{
 				return *pRoot_;
 			}
-
 			void RegisterGpuDevice(PM_DEVICE_VENDOR vendor, std::string deviceName, const GpuTelemetryBitset& gpuCaps) override
 			{
-
+				auto lck = LockIntrospectionMutexExclusive_();
+				intro::PopulateGpuDevice(shm_.get_segment_manager(), *pRoot_, nextDeviceIndex_++, vendor, deviceName, gpuCaps);
 			}
-
 			void FinalizeGpuDevices() override
 			{
-
+				auto lck = LockIntrospectionMutexExclusive_();
+				introGpuComplete_ = true;
+				if (introGpuComplete_ && introCpuComplete_) {
+					lck.unlock();
+					FinalizeIntrospection_();
+				}
 			}
-
 			void RegisterCpuDevice(PM_DEVICE_VENDOR vendor, std::string deviceName, const CpuTelemetryBitset& cpuCaps) override
 			{
-
+				auto lck = LockIntrospectionMutexExclusive_();
+				intro::PopulateCpu(shm_.get_segment_manager(), *pRoot_, vendor, deviceName, cpuCaps);
+				introCpuComplete_ = true;
+				if (introGpuComplete_ && introCpuComplete_) {
+					lck.unlock();
+					FinalizeIntrospection_();
+				}
 			}
 		private:
 			// functions
@@ -62,21 +71,29 @@ namespace pmon::ipc
 				// populate introspection data structures at service-side
 				auto pSegmentManager = shm_.get_segment_manager();
 				intro::PopulateEnums(pSegmentManager, *pRoot_);
-				intro::PopulateDevices(pSegmentManager, *pRoot_);
 				intro::PopulateMetrics(pSegmentManager, *pRoot_);
-				// TODO: this should be called by final Register
-				FinalizeIntrospection_();
 			}
 			void FinalizeIntrospection_()
 			{
 				// release semaphore holdoff once construction is complete
 				for (int i = 0; i < 8; i++) { pIntroSemaphore_->post(); }
 			}
+			bip::scoped_lock<bip::interprocess_sharable_mutex> LockIntrospectionMutexExclusive_()
+			{
+				const auto result = shm_.find<bip::interprocess_sharable_mutex>(introspectionMutexName_);
+				if (!result.first) {
+					throw std::runtime_error{ "Failed to find introspection mutex in shared memory" };
+				}
+				return bip::scoped_lock{ *result.first };
+			}
 			// data
 			ShmSegment shm_;
 			ShmUniquePtr<bip::interprocess_sharable_mutex> pIntroMutex_;
 			ShmUniquePtr<bip::interprocess_semaphore> pIntroSemaphore_;
 			ShmUniquePtr<intro::IntrospectionRoot> pRoot_;
+			uint32_t nextDeviceIndex_ = 1;
+			bool introGpuComplete_ = false;
+			bool introCpuComplete_ = false;
 		};
 
 		class MiddlewareComms_ : public MiddlewareComms, CommsBase_

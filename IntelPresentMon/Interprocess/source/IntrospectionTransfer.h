@@ -7,6 +7,7 @@
 #include <cstring>
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
 #include "SharedMemoryTypes.h"
+#include <span>
 
 namespace pmon::ipc::intro
 {
@@ -89,6 +90,10 @@ namespace pmon::ipc::intro
 				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
 			return pSelf;
+		}
+		std::span<ShmUniquePtr<T>> GetElements()
+		{
+			return { buffer_ };
 		}
 	private:
 		ShmVector<ShmUniquePtr<T>> buffer_;
@@ -392,6 +397,10 @@ namespace pmon::ipc::intro
 		void AddDevice(ShmUniquePtr<IntrospectionDevice> pDevice)
 		{
 			devices_.PushBack(std::move(pDevice));
+		}
+		std::span<ShmUniquePtr<IntrospectionMetric>> GetMetrics()
+		{
+			return metrics_.GetElements();
 		}
 		using ApiType = PM_INTROSPECTION_ROOT;
 		template<class V>
