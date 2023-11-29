@@ -6,6 +6,7 @@
 #include <boost/interprocess/sync/interprocess_sharable_mutex.hpp>
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
 #include <boost/interprocess/sync/sharable_lock.hpp>
+#include <chrono>
 
 namespace pmon::ipc
 {
@@ -128,13 +129,17 @@ namespace pmon::ipc
 			// functions
 			void WaitOnIntrospectionHoldoff_()
 			{
+				using namespace std::chrono_literals;
+				using clock = std::chrono::high_resolution_clock;
 				const auto result = shm_.find<bip::interprocess_semaphore>(introspectionSemaphoreName_);
 				if (!result.first) {
 					throw std::runtime_error{ "Failed to find introspection semaphore in shared memory" };
 				}
 				auto& sem = *result.first;
-				// wait for holdoff to be released
-				sem.wait();
+				// wait for holdoff to be released (timeout after 100ms)
+				if (!sem.timed_wait(clock::now() + 100ms)) {
+					throw std::runtime_error{ "timeout accessing introspection" };
+				}
 				// return the slot we just took because holdoff should not limit entry once released
 				sem.post();
 			}
