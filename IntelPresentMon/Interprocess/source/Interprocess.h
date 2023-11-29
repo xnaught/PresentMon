@@ -2,6 +2,9 @@
 #include <optional>
 #include <string>
 #include <memory>
+#include "../../ControlLib/PresentMonPowerTelemetry.h"
+#include "../../ControlLib/CpuTelemetryInfo.h"
+#include "../../PresentMonAPI2/source/PresentMonAPI.h"
 
 struct PM_INTROSPECTION_ROOT;
 
@@ -17,6 +20,9 @@ namespace pmon::ipc
 	public:
 		virtual ~ServiceComms() = default;
 		virtual intro::IntrospectionRoot& GetIntrospectionRoot() = 0;
+		virtual void RegisterGpuDevice(PM_DEVICE_VENDOR vendor, std::string deviceName, const GpuTelemetryBitset& gpuCaps) = 0;
+		virtual void FinalizeGpuDevices() = 0;
+		virtual void RegisterCpuDevice(PM_DEVICE_VENDOR vendor, std::string deviceName, const CpuTelemetryBitset& cpuCaps) = 0;
 	};
 
 	class MiddlewareComms

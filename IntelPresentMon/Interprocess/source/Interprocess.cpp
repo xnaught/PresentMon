@@ -34,19 +34,45 @@ namespace pmon::ipc
 					introspectionSemaphoreName_, shm_.get_segment_manager(), 0) },
 				pRoot_{ ShmMakeNamedUnique<intro::IntrospectionRoot>(introspectionRootName_, shm_.get_segment_manager(), shm_.get_segment_manager()) }
 			{
-				// populate introspection data structures at service-side
-				auto pSegmentManager = shm_.get_segment_manager();
-				intro::PopulateEnums(pSegmentManager, *pRoot_);
-				intro::PopulateDevices(pSegmentManager, *pRoot_);
-				intro::PopulateMetrics(pSegmentManager, *pRoot_);
-				// release semaphore holdoff once construction is complete
-				for (int i = 0; i < 8; i++) { pIntroSemaphore_->post(); }
+				PreInitializeIntrospection_();
 			}
 			intro::IntrospectionRoot& GetIntrospectionRoot() override
 			{
 				return *pRoot_;
 			}
+
+			void RegisterGpuDevice(PM_DEVICE_VENDOR vendor, std::string deviceName, const GpuTelemetryBitset& gpuCaps) override
+			{
+
+			}
+
+			void FinalizeGpuDevices() override
+			{
+
+			}
+
+			void RegisterCpuDevice(PM_DEVICE_VENDOR vendor, std::string deviceName, const CpuTelemetryBitset& cpuCaps) override
+			{
+
+			}
 		private:
+			// functions
+			void PreInitializeIntrospection_()
+			{
+				// populate introspection data structures at service-side
+				auto pSegmentManager = shm_.get_segment_manager();
+				intro::PopulateEnums(pSegmentManager, *pRoot_);
+				intro::PopulateDevices(pSegmentManager, *pRoot_);
+				intro::PopulateMetrics(pSegmentManager, *pRoot_);
+				// TODO: this should be called by final Register
+				FinalizeIntrospection_();
+			}
+			void FinalizeIntrospection_()
+			{
+				// release semaphore holdoff once construction is complete
+				for (int i = 0; i < 8; i++) { pIntroSemaphore_->post(); }
+			}
+			// data
 			ShmSegment shm_;
 			ShmUniquePtr<bip::interprocess_sharable_mutex> pIntroMutex_;
 			ShmUniquePtr<bip::interprocess_semaphore> pIntroSemaphore_;

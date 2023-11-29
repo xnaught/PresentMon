@@ -1,6 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
+#define LEGACY_PM_API_HEADER_PRESENT
 #ifdef PRESENTMON_API_EXPORTS
 #define PRESENTMON_API_EXPORT __declspec(dllexport)
 #else

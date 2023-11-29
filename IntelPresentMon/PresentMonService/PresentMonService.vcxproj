@@ -213,6 +213,9 @@
     <ProjectReference Include="..\ControlLib\ControlLib.vcxproj">
       <Project>{3c39c9bc-0e85-42c0-894c-3561bb93e87f}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Interprocess\Interprocess.vcxproj">
+      <Project>{ca23d648-daef-4f06-81d5-fe619bd31f0b}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\PresentMonUtils\PresentMonUtils.vcxproj">
       <Project>{66e9f6c5-28db-4218-81b9-31e0e146ecc0}</Project>
     </ProjectReference>
