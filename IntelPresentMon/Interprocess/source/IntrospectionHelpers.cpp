@@ -51,15 +51,6 @@ namespace pmon::ipc::intro
 #undef X_REG_KEYS
 	}
 
-	void PopulateDevices(ShmSegmentManager* pSegmentManager, IntrospectionRoot& root)
-	{
-		auto charAlloc = pSegmentManager->get_allocator<char>();
-
-		root.AddDevice(ShmMakeUnique<IntrospectionDevice>(pSegmentManager, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_DEVICE_VENDOR_UNKNOWN, ShmString{ "Device-independent", charAlloc }));
-		root.AddDevice(ShmMakeUnique<IntrospectionDevice>(pSegmentManager, 1, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_DEVICE_VENDOR_INTEL, ShmString{ "Arc 750", charAlloc }));
-		root.AddDevice(ShmMakeUnique<IntrospectionDevice>(pSegmentManager, 2, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_DEVICE_VENDOR_NVIDIA, ShmString{ "GeForce RTX 2080 ti", charAlloc }));
-	}
-
 	template<PM_METRIC metric>
 	void RegisterUniversalMetricDeviceInfo_(ShmSegmentManager* pSegmentManager, IntrospectionRoot& root)
 	{

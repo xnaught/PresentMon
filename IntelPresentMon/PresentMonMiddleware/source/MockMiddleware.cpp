@@ -11,17 +11,19 @@
 // needed right now because even if we forward declare, we don't have the inheritance info
 #include "../../Interprocess/source/IntrospectionTransfer.h"
 #include "../../Interprocess/source/IntrospectionHelpers.h"
-#include "../../Interprocess/source/Interprocess.h"
 #include "../../Interprocess/source/IntrospectionCloneAllocators.h"
+#include "MockCommon.h"
 
 namespace pmon::mid
 {
 	using namespace ipc::intro;
+	using namespace std::string_literals;
 
 	MockMiddleware::MockMiddleware(bool useLocalShmServer)
 	{
 		if (useLocalShmServer) {
 			pServiceComms = ipc::MakeServiceComms();
+			ipc::intro::RegisterMockIntrospectionDevices(*pServiceComms);
 		}
 		pMiddlewareComms = ipc::MakeMiddlewareComms();
 	}
