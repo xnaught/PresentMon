@@ -22,7 +22,7 @@ namespace PresentMonAPI2
 			char buffer[256]{};
 
 			pmSetMiddlewareAsMock_(true);
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession(4004));
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmMiddlewareSpeak_(buffer));
 			Assert::AreEqual("mock-middle", buffer);
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
@@ -33,7 +33,7 @@ namespace PresentMonAPI2
 			char buffer[256]{};
 
 			pmSetMiddlewareAsMock_(false);
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession(4004));
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmMiddlewareSpeak_(buffer));
 			Assert::AreEqual("concrete-middle", buffer);
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
@@ -43,7 +43,7 @@ namespace PresentMonAPI2
 			char buffer[256]{};
 
 			pmSetMiddlewareAsMock_(true);
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession(4004));
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
 			Assert::AreEqual((int)PM_STATUS_SESSION_NOT_OPEN, (int)pmMiddlewareSpeak_(buffer));
 		}
@@ -52,7 +52,7 @@ namespace PresentMonAPI2
 			pmSetMiddlewareAsMock_(true, true);
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession(4004));
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
@@ -63,7 +63,7 @@ namespace PresentMonAPI2
 			pmSetMiddlewareAsMock_(true, true);
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession(4004));
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsTrue(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
@@ -73,7 +73,7 @@ namespace PresentMonAPI2
 			pmSetMiddlewareAsMock_(true, false);
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession(4004));
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));

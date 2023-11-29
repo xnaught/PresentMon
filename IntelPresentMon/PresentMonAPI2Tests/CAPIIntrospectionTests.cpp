@@ -16,7 +16,7 @@ namespace PresentMonAPI2
 		TEST_METHOD_INITIALIZE(BeforeEachTestMethod)
 		{
 			pmSetMiddlewareAsMock_(true, true);
-			pmOpenSession();
+			pmOpenSession(4004);
 		}
 		TEST_METHOD_CLEANUP(AfterEachTestMethod)
 		{
@@ -56,7 +56,7 @@ namespace PresentMonAPI2
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(8ull, pRoot->pMetrics->size);
+			Assert::AreEqual(14ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)

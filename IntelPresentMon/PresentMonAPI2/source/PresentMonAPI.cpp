@@ -70,7 +70,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(uint32_t milliseconds)
 }
 
 // public endpoints
-PRESENTMON_API_EXPORT PM_STATUS pmOpenSession()
+PRESENTMON_API_EXPORT PM_STATUS pmOpenSession(uint32_t process_id)
 {
 	if (pMiddleware_) {
 		return PM_STATUS_FAILURE;
@@ -137,7 +137,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pIn
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements)
+PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, double windowSizeMs, double metricOffsetMs)
 {
 	try {
 		if (!pMiddleware_) {
@@ -146,7 +146,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* 
 		if (!pHandle || !pElements || !numElements) {
 			return PM_STATUS_FAILURE;
 		}
-		*pHandle = pMiddleware_->RegisterDynamicQuery({pElements, numElements});
+		*pHandle = pMiddleware_->RegisterDynamicQuery({pElements, numElements}, windowSizeMs, metricOffsetMs);
 		return PM_STATUS_SUCCESS;
 	}
 	catch (...) {
@@ -171,7 +171,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handl
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint8_t* pBlob)
+PRESENTMON_API_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint8_t* pBlob, uint32_t* numSwapChains)
 {
 	try {
 		if (!pMiddleware_) {

@@ -14,6 +14,7 @@
 #include "../../Interprocess/source/Interprocess.h"
 #include "ApiHelpers.h"
 #include "../../Interprocess/source/IntrospectionCloneAllocators.h"
+#include "DynamicQuery.h"
 
 namespace pmon::mid
 {
@@ -57,7 +58,7 @@ namespace pmon::mid
 		free(const_cast<PM_INTROSPECTION_ROOT*>(pRoot));
 	}
 
-	PM_DYNAMIC_QUERY* MockMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements)
+	PM_DYNAMIC_QUERY* MockMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, double windowSizeMs, double metricOffsetMs)
 	{
 		// get introspection data for reference
 		// TODO: cache this data so it's not required to be generated every time

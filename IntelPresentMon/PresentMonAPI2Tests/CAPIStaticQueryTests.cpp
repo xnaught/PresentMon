@@ -16,7 +16,7 @@ namespace PresentMonAPI2
 		TEST_METHOD_INITIALIZE(BeforeEachTestMethod)
 		{
 			pmSetMiddlewareAsMock_(true, true);
-			pmOpenSession();
+			pmOpenSession(4004);
 		}
 		TEST_METHOD_CLEANUP(AfterEachTestMethod)
 		{

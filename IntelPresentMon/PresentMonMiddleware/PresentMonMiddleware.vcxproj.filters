@@ -27,6 +27,9 @@
     <ClInclude Include="source\ApiHelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\DynamicQuery.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\MockMiddleware.cpp">
