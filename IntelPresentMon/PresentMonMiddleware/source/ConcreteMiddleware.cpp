@@ -142,10 +142,9 @@ namespace pmon::mid
         }
 
         // Get the NSM file name from 
-        string mapFileName(startStreamResponse.fileName);
+        std::string mapFileName(startStreamResponse.fileName);
 
         // Initialize client with returned mapfile name
-        /*
         auto iter = presentMonStreamClients.find(processId);
         if (iter == presentMonStreamClients.end()) {
             try {
@@ -158,7 +157,6 @@ namespace pmon::mid
                 return PM_STATUS::PM_STATUS_FAILURE;
             }
         }
-        */
 
         // TODO: Where will the client caches reside? As part of the dynamic query?
         //if (!SetupClientCaches(process_id)) {
@@ -188,12 +186,10 @@ namespace pmon::mid
         }
 
         // Remove client
-        /*
         auto iter = presentMonStreamClients.find(processId);
         if (iter != presentMonStreamClients.end()) {
             presentMonStreamClients.erase(std::move(iter));
         }
-        */
 
         // TODO: If cached data is part of query maybe we can
         // remove this code

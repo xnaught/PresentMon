@@ -31,6 +31,9 @@
     <ProjectReference Include="..\PresentMonUtils\PresentMonUtils.vcxproj">
       <Project>{66e9f6c5-28db-4218-81b9-31e0e146ecc0}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Streamer\Streamer.vcxproj">
+      <Project>{bf43064b-01f0-4c69-91fb-c2122baf621d}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

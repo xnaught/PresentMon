@@ -15,7 +15,7 @@ StreamClient::StreamClient()
       current_dequeue_frame_num_(0),
       is_etl_stream_client_(false) {}
 
-StreamClient::StreamClient(string mapfile_name, bool is_etl_stream_client)
+StreamClient::StreamClient(std::string mapfile_name, bool is_etl_stream_client)
     : next_dequeue_idx_(0),
       recording_frame_data_(false),
       current_dequeue_frame_num_(0),
@@ -26,7 +26,7 @@ StreamClient::StreamClient(string mapfile_name, bool is_etl_stream_client)
 StreamClient::~StreamClient() {
 }
 
-void StreamClient::Initialize(string mapfile_name) {
+void StreamClient::Initialize(std::string mapfile_name) {
 	shared_mem_view_ = std::make_unique<NamedSharedMem>();
 	shared_mem_view_->OpenSharedMemView(mapfile_name);
 	mapfile_name_ = std::move(mapfile_name);

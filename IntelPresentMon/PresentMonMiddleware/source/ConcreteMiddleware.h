@@ -1,7 +1,7 @@
 #pragma once
 #include "Middleware.h"
 #include "../../PresentMonUtils/MemBuffer.h"
-//#include "../../Streamer/StreamClient.h"
+#include "../../Streamer/StreamClient.h"
 
 namespace pmon::mid
 {
@@ -32,6 +32,6 @@ namespace pmon::mid
 		std::unique_ptr<void, HandleDeleter> pNamedPipeHandle;
 		uint32_t clientProcessId = 0;
 		// Stream clients mapping to process id
-		//std::map<uint32_t, std::unique_ptr<StreamClient>> presentMonStreamClients;
+		std::map<uint32_t, std::unique_ptr<StreamClient>> presentMonStreamClients;
 	};
 }

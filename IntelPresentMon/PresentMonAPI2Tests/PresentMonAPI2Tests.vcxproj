@@ -111,6 +111,9 @@
     <ProjectReference Include="..\PresentMonAPIWrapper\PresentMonAPIWrapper.vcxproj">
       <Project>{cee032ed-b0d3-47f8-bdae-d46757b0061b}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Streamer\Streamer.vcxproj">
+      <Project>{bf43064b-01f0-4c69-91fb-c2122baf621d}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utilities.h" />

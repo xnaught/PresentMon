@@ -9,14 +9,13 @@
 #include "NamedSharedMemory.h"
 #include "../PresentMonAPI2\source/PresentMonAPI.h"
 
-using namespace std;
 class StreamClient {
  public:
   StreamClient();
-  StreamClient(string mapfile_name, bool is_etl_stream_client);
+  StreamClient(std::string mapfile_name, bool is_etl_stream_client);
   ~StreamClient();
 
-  void Initialize(string mapfile_name);
+  void Initialize(std::string mapfile_name);
   bool IsInitialized() { return initialized_; };
   // Read the latest frame from shared memory.
   PmNsmFrameData* ReadLatestFrame();
@@ -48,7 +47,7 @@ class StreamClient {
   // Shared memory view that the client opened into based on mapfile name
   std::unique_ptr<NamedSharedMem> shared_mem_view_;
   // mapfile name the client has for named shared memory
-  string mapfile_name_;
+  std::string mapfile_name_;
   // Last read offset from the shared_mem_view_
   bool initialized_;
   LARGE_INTEGER qpcFrequency_ = {};
