@@ -13,6 +13,7 @@
 extern "C" {
 #endif
 
+#ifndef LEGACY_PM_API_HEADER_PRESENT
 	enum PM_STATUS // **
 	{
 		PM_STATUS_SUCCESS,
@@ -29,6 +30,7 @@ extern "C" {
 		PM_STATUS_OUT_OF_RANGE,
 		PM_STATUS_INSUFFICIENT_BUFFER,
 	};
+#endif
 
 	enum PM_METRIC // **
 	{
@@ -62,6 +64,7 @@ extern "C" {
 		PM_DEVICE_VENDOR_UNKNOWN
 	};
 
+#ifndef LEGACY_PM_API_HEADER_PRESENT
 	enum PM_PRESENT_MODE
 	{
 		PM_PRESENT_MODE_HARDWARE_LEGACY_FLIP,
@@ -81,6 +84,7 @@ extern "C" {
 		PM_PSU_TYPE_6PIN,
 		PM_PSU_TYPE_8PIN
 	};
+#endif
 
 	enum PM_UNIT
 	{

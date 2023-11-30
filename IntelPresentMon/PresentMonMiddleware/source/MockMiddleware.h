@@ -7,7 +7,7 @@ namespace pmon::mid
 	class MockMiddleware : public Middleware
 	{
 	public:
-		MockMiddleware();
+		MockMiddleware(bool mockServer);
 		void AdvanceTime(uint32_t milliseconds);
 		void Speak(char* buffer) const override;
 		const PM_INTROSPECTION_ROOT* GetIntrospectionData() override;

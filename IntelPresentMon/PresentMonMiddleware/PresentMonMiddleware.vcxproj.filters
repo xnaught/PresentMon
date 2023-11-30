@@ -24,7 +24,7 @@
     <ClInclude Include="source\ConcreteMiddleware.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\ApiHelpers.h">
+    <ClInclude Include="source\MockCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\DynamicQuery.h">

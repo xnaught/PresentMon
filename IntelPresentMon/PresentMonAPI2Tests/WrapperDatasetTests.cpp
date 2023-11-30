@@ -165,7 +165,7 @@ namespace PresentMonAPI2
 			using namespace std::string_literals;
 			Assert::ExpectException<pmapi::DatatypeException>([this] {
 				data->FindMetric(PM_METRIC_FRAME_TIME).GetDataTypeInfo().GetEnum();
-				});
+			});
 		}
 		TEST_METHOD(IntrospectMetricType)
 		{

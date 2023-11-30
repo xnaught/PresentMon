@@ -6,8 +6,8 @@
 #include <ranges>
 #include <cstring>
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
-#include "../../PresentMonMiddleware/source/ApiHelpers.h"
 #include "SharedMemoryTypes.h"
+#include <span>
 
 namespace pmon::ipc::intro
 {
@@ -90,6 +90,10 @@ namespace pmon::ipc::intro
 				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
 			return pSelf;
+		}
+		std::span<ShmUniquePtr<T>> GetElements()
+		{
+			return { buffer_ };
 		}
 	private:
 		ShmVector<ShmUniquePtr<T>> buffer_;
@@ -394,9 +398,13 @@ namespace pmon::ipc::intro
 		{
 			devices_.PushBack(std::move(pDevice));
 		}
+		std::span<ShmUniquePtr<IntrospectionMetric>> GetMetrics()
+		{
+			return metrics_.GetElements();
+		}
 		using ApiType = PM_INTROSPECTION_ROOT;
 		template<class V>
-		mid::UniqueApiRootPtr ApiClone(V voidAlloc) const
+		const ApiType* ApiClone(V voidAlloc) const
 		{
 			// local to hold structure contents being built up
 			ApiType content;
@@ -412,7 +420,7 @@ namespace pmon::ipc::intro
 			if (pSelf) {
 				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
-			return mid::UniqueApiRootPtr(pSelf);
+			return pSelf;
 		}
 	private:
 		IntrospectionObjArray<IntrospectionMetric> metrics_;

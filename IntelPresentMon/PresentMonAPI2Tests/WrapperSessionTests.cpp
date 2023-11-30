@@ -38,7 +38,7 @@ namespace PresentMonAPI2
 			pmapi::Session session1;
 			Assert::ExpectException<pmapi::SessionException>([] {
 				pmapi::Session session2;
-				});
+			});
 		}
 	};
 }

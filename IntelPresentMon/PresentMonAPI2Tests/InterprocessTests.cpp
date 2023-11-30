@@ -6,7 +6,10 @@
 #include "../Interprocess/source/Interprocess.h"
 #include "../Interprocess/source/IntrospectionTransfer.h"
 #include "../Interprocess/source/IntrospectionCloneAllocators.h"
+#include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
+#include "../PresentMonAPI2/source/Internal.h"
 #include <boost/process.hpp>
+#include "../PresentMonMiddleware/source/MockCommon.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -19,11 +22,13 @@ namespace PresentMonAPI2
 		TEST_METHOD(ApiProbeCloneSize)
 		{
 			auto pComm = ipc::MakeServiceComms();
+			ipc::intro::RegisterMockIntrospectionDevices(*pComm);
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> alloc;
 			auto pClone = root.ApiClone(alloc);
 			Assert::AreEqual(14812ull, alloc.GetTotalSize());
-			Assert::IsNull(pClone.get());
+			Assert::IsNull(pClone);
+			free((void*)pClone);
 		}
 		TEST_METHOD(Padding)
 		{
@@ -34,16 +39,17 @@ namespace PresentMonAPI2
 		TEST_METHOD(ApiBlockClone)
 		{
 			auto pComm = ipc::MakeServiceComms();
+			ipc::intro::RegisterMockIntrospectionDevices(*pComm);
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> probeAlloc;
 			auto pNullClone = root.ApiClone(probeAlloc);
 			Assert::AreEqual(14812ull, probeAlloc.GetTotalSize());
-			Assert::IsNull(pNullClone.get());
+			Assert::IsNull(pNullClone);
 
 			ipc::intro::BlockAllocator<void> blockAlloc{ probeAlloc.GetTotalSize() };
 			auto pRoot = root.ApiClone(blockAlloc);
 
-			Assert::IsNotNull(pRoot.get());
+			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
 			Assert::AreEqual(8ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
@@ -141,6 +147,7 @@ namespace PresentMonAPI2
 					Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)pInfo->availability);
 				}
 			}
+			free((void*)pRoot);
 		}
 		TEST_METHOD(SeparateProcessesApiBlockClone)
 		{
@@ -158,16 +165,9 @@ namespace PresentMonAPI2
 			Assert::AreEqual("ready"s, output);
 
 			auto pComm = ipc::MakeMiddlewareComms();
-			auto& root = pComm->GetIntrospectionRoot();
-			ipc::intro::ProbeAllocator<void> probeAlloc;
-			auto pNullClone = root.ApiClone(probeAlloc);
-			Assert::AreEqual(14812ull, probeAlloc.GetTotalSize());
-			Assert::IsNull(pNullClone.get());
+			auto pRoot = pComm->GetIntrospectionRoot();
 
-			ipc::intro::BlockAllocator<void> blockAlloc{ probeAlloc.GetTotalSize() };
-			auto pRoot = root.ApiClone(blockAlloc);
-
-			Assert::IsNotNull(pRoot.get());
+			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
 			Assert::AreEqual(8ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
@@ -265,8 +265,157 @@ namespace PresentMonAPI2
 					Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)pInfo->availability);
 				}
 			}
+			free((void*)pRoot);
 
 			// ack to companion process so it can exit
+			in << "ack" << std::endl;
+
+			process.wait();
+
+			Assert::AreEqual(0, process.exit_code());
+		}
+		TEST_METHOD(SeparateProcessesWrapperSession)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			bp::child process("InterprocessMock.exe"s, "--basic-intro"s, bp::std_out > out, bp::std_in < in);
+
+			std::string output;
+			out >> output;
+
+			Assert::AreEqual("ready"s, output);
+
+			pmSetMiddlewareAsMock_(true, true, false);
+
+			const auto heapBefore = pmCreateHeapCheckpoint_();
+
+			{
+				pmapi::Session session;
+				auto data = session.GetIntrospectionDataset();
+			}
+
+			const auto heapAfter = pmCreateHeapCheckpoint_();
+			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
+
+			in << "ack" << std::endl;
+
+			process.wait();
+
+			Assert::AreEqual(0, process.exit_code());
+		}
+		TEST_METHOD(SeparateProcessesWrapperIntrospectionOmnibus)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			bp::child process("InterprocessMock.exe"s, "--basic-intro"s, bp::std_out > out, bp::std_in < in);
+
+			std::string output;
+			out >> output;
+
+			Assert::AreEqual("ready"s, output);
+
+			pmSetMiddlewareAsMock_(true, false, false);
+
+			{
+				pmapi::Session session;
+				auto datax = session.GetIntrospectionDataset();
+				auto data = &datax;
+
+				{
+					const std::vector expected{
+						"PM_STATUS"s, "PM_METRIC"s, "PM_METRIC_TYPE"s, "PM_DEVICE_VENDOR"s, "PM_PRESENT_MODE"s, "PM_PSU_TYPE"s,
+						"PM_UNIT"s, "PM_STAT"s, "PM_DATA_TYPE"s, "PM_GRAPHICS_RUNTIME"s, "PM_DEVICE_TYPE"s, "PM_METRIC_AVAILABILITY"s
+					};
+					auto e = expected.begin();
+					for (auto ev : data->GetEnums()) {
+						Assert::AreEqual(*e, ev.GetSymbol());
+						e++;
+					}
+				}
+				{
+					const std::vector expected{
+						"PM_STATUS_SUCCESS"s,
+						"PM_STATUS_FAILURE"s,
+						"PM_STATUS_SESSION_NOT_OPEN"s,
+					};
+					auto e = expected.begin();
+					for (auto kv : data->GetEnums().begin()->GetKeys()) {
+						Assert::AreEqual(*e, kv.GetSymbol());
+						e++;
+					}
+				}
+				{
+					auto metric = data->FindMetric(PM_METRIC_PRESENT_MODE);
+					auto type = metric.GetDataTypeInfo();
+					Assert::AreEqual("Present Mode"s, metric.GetMetricKey().GetName());
+					Assert::AreEqual("PM_PRESENT_MODE"s, type.GetEnum().GetSymbol());
+				}
+				{
+					auto metric = data->FindMetric(PM_METRIC_GPU_FAN_SPEED);
+					auto deviceInfos = metric.GetDeviceMetricInfo();
+					Assert::AreEqual(2ull, deviceInfos.size());
+					{
+						auto deviceInfo = deviceInfos.begin()[0];
+						Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, deviceInfo.GetAvailablity().GetValue());
+						Assert::AreEqual(1u, deviceInfo.GetArraySize());
+					}
+					{
+						auto deviceInfo = deviceInfos.begin()[1];
+						Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, deviceInfo.GetAvailablity().GetValue());
+						Assert::AreEqual(2u, deviceInfo.GetArraySize());
+					}
+				}
+				{
+					auto devices = data->GetDevices();
+					Assert::AreEqual(3ull, devices.size());
+					{
+						auto device = devices.begin()[0];
+						Assert::AreEqual("Unknown"s, device.GetVendor().GetName());
+						Assert::AreEqual("Device-independent"s, device.GetName());
+						Assert::AreEqual("Device Independent"s, device.GetType().GetName());
+						Assert::AreEqual(0u, device.GetId());
+					}
+					{
+						auto device = devices.begin()[1];
+						Assert::AreEqual("Intel"s, device.GetVendor().GetName());
+						Assert::AreEqual("Arc 750"s, device.GetName());
+						Assert::AreEqual("Graphics Adapter"s, device.GetType().GetName());
+						Assert::AreEqual(1u, device.GetId());
+					}
+					{
+						auto device = devices.begin()[2];
+						Assert::AreEqual("NVIDIA"s, device.GetVendor().GetName());
+						Assert::AreEqual("GeForce RTX 2080 ti"s, device.GetName());
+						Assert::AreEqual("Graphics Adapter"s, device.GetType().GetName());
+						Assert::AreEqual(2u, device.GetId());
+					}
+				}
+				{
+					auto metric = data->FindMetric(PM_METRIC_GPU_FAN_SPEED);
+					auto deviceInfos = metric.GetDeviceMetricInfo();
+					Assert::AreEqual(2ull, deviceInfos.size());
+					{
+						auto deviceInfo = deviceInfos.begin()[1];
+						Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, deviceInfo.GetAvailablity().GetValue());
+						Assert::IsTrue(deviceInfo.IsAvailable());
+						Assert::AreEqual(2u, deviceInfo.GetArraySize());
+						Assert::AreEqual("NVIDIA"s, deviceInfo.GetDevice().GetVendor().GetName());
+					}
+				}
+				{
+					Assert::AreEqual("Dynamic Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).GetType().GetName());
+					Assert::AreEqual("Static Metric"s, data->FindMetric(PM_METRIC_PROCESS_NAME).GetType().GetName());
+				}
+			}
+
 			in << "ack" << std::endl;
 
 			process.wait();

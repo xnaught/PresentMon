@@ -7,10 +7,13 @@
 #include "..\ControlLib\WmiCpu.h"
 #include "..\PresentMonUtils\StringUtils.h"
 #include <filesystem>
+#include "../Interprocess/source/Interprocess.h"
 
 #define GOOGLE_GLOG_DLL_DECL
 #define GLOG_NO_ABBREVIATED_SEVERITIES
 #include <glog/logging.h>
+
+using namespace pmon;
 
 void InitializeLogging(const char* servicename, const char* location, const char* basename,
                        const char* extension, int level) {
@@ -119,11 +122,13 @@ void IPCCommunication(Service* srv, PresentMon* pm)
     bool createNamedPipeServer = true;
 
     if (srv == nullptr) {
+        // TODO: log
         return;
     }
 
-    NamedPipeServer* nps = new NamedPipeServer(srv, pm);
-    if (nps == nullptr) {
+    auto nps = std::make_unique<NamedPipeServer>(srv, pm);
+    if (!nps) {
+        // TODO: log
         return;
     }
 
@@ -139,156 +144,177 @@ void IPCCommunication(Service* srv, PresentMon* pm)
             }
     }
 
-    delete nps;
-
     return;
 }
 
-void PowerTelemetry(Service* srv, PresentMon* pm,
-                    PowerTelemetryContainer* ptc) {
-  if (srv == nullptr || pm == nullptr || ptc == nullptr) {
-    return;
-  }
+void PowerTelemetry(Service* const srv, PresentMon* const pm,
+	PowerTelemetryContainer* const ptc, ipc::ServiceComms* const pComms)
+{
+	if (srv == nullptr || pm == nullptr || ptc == nullptr) {
+		// TODO: log error here
+		return;
+	}
 
-  // Grab the initial power telemetry providers right at the start
-  // to support client adapter enumeration queries
-  try {
-    ptc->QueryPowerTelemetrySupport();
-  } catch (...) {
-  }          
+	// this flag indicates that no clients have ever connected yet
+	bool firstConnection = true;
 
-  // Get the streaming start event
-  HANDLE events[2];
-  events[0] = pm->GetStreamingStartHandle();
-  events[1] = srv->GetServiceStopHandle();
-
-  while (1) {
-    auto waitResult = WaitForMultipleObjects(2, events, FALSE, INFINITE);
-    auto i = waitResult - WAIT_OBJECT_0;
-    if (i == 1) {
-      return;
-    }
-    while (WaitForSingleObject(srv->GetServiceStopHandle(), 0) !=
-           WAIT_OBJECT_0) {
-      if (WaitForSingleObject(srv->GetResetPowerTelemetryHandle(), 0) ==
-          WAIT_OBJECT_0) {
-        try {
-          ptc->QueryPowerTelemetrySupport();
-        } catch (...) {
-        }          
-      }
-      for (auto& adapter : ptc->GetPowerTelemetryAdapters()) {
-        adapter->Sample();
-      }
-      PmSleep(pm->GetGpuTelemetryPeriod());
-      // Get the number of currently active streams
-      auto num_active_streams = pm->GetActiveStreams();
-      if (num_active_streams == 0) {
-        break;
-      }
-    }
-  }
+	// Get the streaming start event
+	const HANDLE events[] {
+	  pm->GetStreamingStartHandle(),
+	  srv->GetServiceStopHandle(),
+	};
+	while (1) {
+		auto waitResult = WaitForMultipleObjects((DWORD)std::size(events), events, FALSE, INFINITE);
+		// TODO: check for wait result error
+		auto i = waitResult - WAIT_OBJECT_0;
+		// if events[1] was signalled, that means service is stopping so exit thread
+		if (i == 1) {
+			return;
+		}
+		// if events[0] was signalled, a client has connected where previously there were 0
+		// if this is the first connection, populate container and poll once for availability
+		if (firstConnection) {
+			// TODO: log error here or inside of repopulate
+			ptc->Repopulate();
+			for (auto& adapter : ptc->GetPowerTelemetryAdapters()) {
+				adapter->Sample();
+                // TODO: actually get vendor, need to make adapter use new vendor enum
+                pComms->RegisterGpuDevice(PM_DEVICE_VENDOR_INTEL, adapter->GetName(), adapter->GetPowerTelemetryCapBits());
+			}
+            pComms->FinalizeGpuDevices();
+			firstConnection = false;
+		}
+		while (WaitForSingleObject(srv->GetServiceStopHandle(), 0) != WAIT_OBJECT_0) {
+			if (WaitForSingleObject(srv->GetResetPowerTelemetryHandle(), 0) == WAIT_OBJECT_0) {
+				// TODO: log error here or inside of repopulate
+				ptc->Repopulate();
+			}
+			for (auto& adapter : ptc->GetPowerTelemetryAdapters()) {
+				adapter->Sample();
+			}
+			PmSleep(pm->GetGpuTelemetryPeriod());
+			// Get the number of currently active streams
+			auto num_active_streams = pm->GetActiveStreams();
+			if (num_active_streams == 0) {
+				break;
+			}
+		}
+	}
 }
 
-void CpuTelemetry(Service* srv, PresentMon* pm,
-                  std::shared_ptr<pwr::cpu::CpuTelemetry>* cpu) {
+void CpuTelemetry(Service* const srv, PresentMon* const pm,
+	pwr::cpu::CpuTelemetry* const cpu)
+{
+	if (srv == nullptr || pm == nullptr) {
+		// TODO: log error on this condition
+		return;
+	}
 
-  if (srv == nullptr || pm == nullptr) {
-    // TODO: log error on this condition
-    return;
-  }
+    const HANDLE events[] {
+        pm->GetStreamingStartHandle(),
+        srv->GetServiceStopHandle(),
+    };
 
-  HANDLE events[2];
-  events[0] = pm->GetStreamingStartHandle();
-  events[1] = srv->GetServiceStopHandle();
-
-  while (1) {
-    auto waitResult = WaitForMultipleObjects(2, events, FALSE, INFINITE);
-    auto i = waitResult - WAIT_OBJECT_0;
-    if (i == 1) {
-      return;
-    }
-    while (WaitForSingleObject(srv->GetServiceStopHandle(), 0) !=
-            WAIT_OBJECT_0) {
-      cpu->get()->Sample();
-      PmSleep(pm->GetGpuTelemetryPeriod());
-      // Get the number of currently active streams
-      auto num_active_streams = pm->GetActiveStreams();
-      if (num_active_streams == 0) {
-        break;
-      }
-    }
-  }
+	while (1) {
+		auto waitResult = WaitForMultipleObjects((DWORD)std::size(events), events, FALSE, INFINITE);
+		auto i = waitResult - WAIT_OBJECT_0;
+		if (i == 1) {
+			return;
+		}
+		while (WaitForSingleObject(srv->GetServiceStopHandle(), 0) !=
+			WAIT_OBJECT_0) {
+			cpu->Sample();
+			PmSleep(pm->GetGpuTelemetryPeriod());
+			// Get the number of currently active streams
+			auto num_active_streams = pm->GetActiveStreams();
+			if (num_active_streams == 0) {
+				break;
+			}
+		}
+	}
 }
 
 DWORD WINAPI PresentMonMainThread(LPVOID lpParam)
 {
-    if (lpParam == nullptr) {
-        return ERROR_INVALID_DATA;
-    }
-
-    // Extract out the PresentMon Service pointer
-    const auto srv = static_cast<Service*>(lpParam);
-    // Grab the stop service event handle
-    const auto serviceStopHandle = srv->GetServiceStopHandle();
-
-    // Simple checking of start parameters.
-    auto start_parameters = srv->GetArguments();
-
-    // Also check if the service is to be debugged while starting up
-    auto debug_service =
-        CheckStartParameters(start_parameters, L"--debug_service");
-
-    while (debug_service) {
-        if (WaitForSingleObject(serviceStopHandle, 0) != WAIT_OBJECT_0) {
-            PmSleep(500);
-        } else {
-            return ERROR_SUCCESS;
+    try {
+        if (lpParam == nullptr) {
+            return ERROR_INVALID_DATA;
         }
+
+        // Extract out the PresentMon Service pointer
+        const auto srv = static_cast<Service*>(lpParam);
+        // Grab the stop service event handle
+        const auto serviceStopHandle = srv->GetServiceStopHandle();
+
+        // Simple checking of start parameters.
+        auto start_parameters = srv->GetArguments();
+
+        // Also check if the service is to be debugged while starting up
+        auto debug_service =
+            CheckStartParameters(start_parameters, L"--debug_service");
+
+        while (debug_service) {
+            if (WaitForSingleObject(serviceStopHandle, 0) != WAIT_OBJECT_0) {
+                PmSleep(500);
+            }
+            else {
+                return ERROR_SUCCESS;
+            }
+        }
+
+        if (CheckStartParameters(start_parameters, L"--enable_file_logging")) {
+            SetupFileLogging(start_parameters);
+        }
+
+        PresentMon pm;
+        PowerTelemetryContainer ptc;
+        auto pComms = ipc::MakeServiceComms();
+
+        // Set the created power telemetry container 
+        pm.SetPowerTelemetryContainer(&ptc);
+
+        // Start IPC communication thread
+        std::jthread ipc_thread(IPCCommunication, srv, &pm);
+
+        // Launch telemetry thread
+        std::jthread telemetry_thread;
+
+        try {
+            telemetry_thread = std::jthread{ PowerTelemetry, srv, &pm, &ptc, pComms.get() };
+        }
+        catch (...) {}
+
+        // Create CPU telemetry
+        std::shared_ptr<pwr::cpu::CpuTelemetry> cpu;
+        std::jthread cpu_telemetry_thread;
+        try {
+            // Try to use WMI for metrics sampling
+            cpu = std::make_shared<pwr::cpu::wmi::WmiCpu>();
+        }
+        catch (const std::runtime_error& e) {
+            LOG(INFO) << "WMI Failure Status: " << e.what() << std::endl;
+        }
+        catch (...) {}
+
+        if (cpu) {
+            cpu_telemetry_thread = std::jthread{ CpuTelemetry, srv, &pm, cpu.get() };
+            pm.SetCpu(cpu);
+            // register cpu telemetry info with introspection
+            // TODO: get cpu vendor and pass info onto introspection
+            pComms->RegisterCpuDevice(PM_DEVICE_VENDOR_INTEL, cpu->GetCpuName(), cpu->GetCpuTelemetryCapBits());
+        }
+
+        while (WaitForSingleObject(serviceStopHandle, 0) != WAIT_OBJECT_0) {
+            pm.CheckTraceSessions();
+            PmSleep(500);
+        }
+
+        // Stop the PresentMon session
+        pm.StopTraceSession();
     }
-
-    if (CheckStartParameters(start_parameters, L"--enable_file_logging")) {
-        SetupFileLogging(start_parameters);
+    catch (...) {
+        return E_FAIL;
     }
-
-    PresentMon pm;
-    PowerTelemetryContainer ptc;
-
-    // Set the created power telemetry container 
-    pm.SetPowerTelemetryContainer(&ptc);
-
-    // Start IPC communication thread
-    std::jthread ipc_thread(IPCCommunication, srv, &pm);
-
-    // Launch telemetry thread
-    std::jthread telemetry_thread;
-
-    try {
-      telemetry_thread = std::jthread{ PowerTelemetry, srv, &pm, &ptc };
-    } catch (...) {}
-    
-    // Create CPU telemetry
-    std::shared_ptr<pwr::cpu::CpuTelemetry> cpu;
-    std::jthread cpu_telemetry_thread;
-    try {
-      // Try to use WMI for metrics sampling
-      cpu = std::make_shared<pwr::cpu::wmi::WmiCpu>();
-    } catch (const std::runtime_error& e) {
-      LOG(INFO) << "WMI Failure Status: " << e.what() << std::endl;
-    } catch (...) {}
-
-    if (cpu) {
-      cpu_telemetry_thread = std::jthread{ CpuTelemetry, srv, &pm, &cpu };
-      pm.SetCpu(cpu);
-    }
-
-    while (WaitForSingleObject(serviceStopHandle, 0) != WAIT_OBJECT_0) {
-        pm.CheckTraceSessions();
-        PmSleep(500);
-    }
-
-    // Stop the PresentMon session
-    pm.StopTraceSession();
 
     return ERROR_SUCCESS;
 }
