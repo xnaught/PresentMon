@@ -71,8 +71,11 @@ namespace pmon::ipc
 			{
 				// populate introspection data structures at service-side
 				auto pSegmentManager = shm_.get_segment_manager();
+				auto charAlloc = pSegmentManager->get_allocator<char>();
 				intro::PopulateEnums(pSegmentManager, *pRoot_);
 				intro::PopulateMetrics(pSegmentManager, *pRoot_);
+				pRoot_->AddDevice(ShmMakeUnique<intro::IntrospectionDevice>(pSegmentManager,
+					0, PM_DEVICE_TYPE_INDEPENDENT, PM_DEVICE_VENDOR_UNKNOWN, ShmString{ "Device-independent", charAlloc }));
 			}
 			void FinalizeIntrospection_()
 			{

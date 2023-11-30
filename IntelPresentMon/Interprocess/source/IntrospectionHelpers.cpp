@@ -51,17 +51,13 @@ namespace pmon::ipc::intro
 #undef X_REG_KEYS
 	}
 
-	template<PM_METRIC metric>
-	void RegisterUniversalMetricDeviceInfo_(ShmSegmentManager* pSegmentManager, IntrospectionRoot& root)
+	template<PM_METRIC metricId>
+	void RegisterUniversalMetricDeviceInfo_(ShmSegmentManager* pSegmentManager, IntrospectionRoot& root, IntrospectionMetric& metric)
 	{
-		using Lookup = IntrospectionCapsLookup<metric>;
+		using Lookup = IntrospectionCapsLookup<metricId>;
 		if constexpr (IsUniversalMetric<Lookup>) {
-			if (auto i = rn::find(root.GetMetrics(), metric, [](const ShmUniquePtr<IntrospectionMetric>& pMetric) {
-				return pMetric->GetId();
-			}); i != root.GetMetrics().end()) {
-				(*i)->AddDeviceMetricInfo(IntrospectionDeviceMetricInfo{ 0, PM_METRIC_AVAILABILITY_AVAILABLE, 1 });
-			}
-			// TODO: log metric not found
+			metric.AddDeviceMetricInfo(IntrospectionDeviceMetricInfo{
+				0, PM_METRIC_AVAILABILITY_AVAILABLE, 1 });
 		}
 	}
 
@@ -70,7 +66,7 @@ namespace pmon::ipc::intro
 #define X_REG_METRIC(metric, metric_type, unit, data_type, enum_id, device_type, ...) { \
 		auto pMetric = ShmMakeUnique<IntrospectionMetric>(pSegmentManager, pSegmentManager, \
 			metric, metric_type, unit, IntrospectionDataTypeInfo{ data_type, (PM_ENUM)enum_id }, std::vector{ __VA_ARGS__ }); \
-		RegisterUniversalMetricDeviceInfo_<metric>(pSegmentManager, root); \
+		RegisterUniversalMetricDeviceInfo_<metric>(pSegmentManager, root, *pMetric); \
 		root.AddMetric(std::move(pMetric)); }
 
 		METRIC_LIST(X_REG_METRIC)

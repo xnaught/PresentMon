@@ -9,6 +9,7 @@
 #include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
 #include "../PresentMonAPI2/source/Internal.h"
 #include <boost/process.hpp>
+#include "../PresentMonMiddleware/source/MockCommon.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -21,6 +22,7 @@ namespace PresentMonAPI2
 		TEST_METHOD(ApiProbeCloneSize)
 		{
 			auto pComm = ipc::MakeServiceComms();
+			ipc::intro::RegisterMockIntrospectionDevices(*pComm);
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> alloc;
 			auto pClone = root.ApiClone(alloc);
@@ -37,6 +39,7 @@ namespace PresentMonAPI2
 		TEST_METHOD(ApiBlockClone)
 		{
 			auto pComm = ipc::MakeServiceComms();
+			ipc::intro::RegisterMockIntrospectionDevices(*pComm);
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> probeAlloc;
 			auto pNullClone = root.ApiClone(probeAlloc);

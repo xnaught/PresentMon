@@ -3,6 +3,7 @@
 #include "../Interprocess/source/Interprocess.h"
 #include "Options.h"
 #include <thread>
+#include "../PresentMonMiddleware/source/MockCommon.h"
 
 int main(int argc, char** argv)
 {
@@ -271,6 +272,7 @@ int main(int argc, char** argv)
 		std::string buffer;
 
 		auto pServiceComms = pmon::ipc::MakeServiceComms();
+		pmon::ipc::intro::RegisterMockIntrospectionDevices(*pServiceComms);
 
 		// signal to client that shm has been created
 		std::cout << "ready" << std::endl;

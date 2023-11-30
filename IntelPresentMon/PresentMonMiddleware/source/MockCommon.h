@@ -15,14 +15,14 @@ namespace pmon::ipc::intro
 			GpuTelemetryBitset caps;
 			caps.set(size_t(GpuTelemetryCapBits::gpu_power));
 			caps.set(size_t(GpuTelemetryCapBits::fan_speed_0));
-			comms.RegisterGpuDevice(PM_DEVICE_VENDOR_NVIDIA, "Arc 750"s, caps);
+			comms.RegisterGpuDevice(PM_DEVICE_VENDOR_INTEL, "Arc 750"s, caps);
 		}
 		{
 			GpuTelemetryBitset caps;
 			caps.set(size_t(GpuTelemetryCapBits::gpu_power));
 			caps.set(size_t(GpuTelemetryCapBits::fan_speed_0));
 			caps.set(size_t(GpuTelemetryCapBits::fan_speed_1));
-			comms.RegisterGpuDevice(PM_DEVICE_VENDOR_INTEL, "GeForce RTX 2080 ti"s, caps);
+			comms.RegisterGpuDevice(PM_DEVICE_VENDOR_NVIDIA, "GeForce RTX 2080 ti"s, caps);
 		}
 		comms.FinalizeGpuDevices();
 	}
