@@ -1,5 +1,6 @@
 #pragma once
 #include "Middleware.h"
+#include "../../Interprocess/source/Interprocess.h"
 #include "../../PresentMonUtils/MemBuffer.h"
 #include "../../Streamer/StreamClient.h"
 
@@ -14,7 +15,7 @@ namespace pmon::mid
 		void FreeIntrospectionData(const PM_INTROSPECTION_ROOT* pRoot) override {}
 		PM_STATUS StartStreaming(uint32_t processId) override;
 		PM_STATUS StopStreaming(uint32_t processId) override;
-		PM_DYNAMIC_QUERY* RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, double windowSizeMs, double metricOffsetMs) override { return nullptr; }
+		PM_DYNAMIC_QUERY* RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, uint32_t processId, double windowSizeMs, double metricOffsetMs) override;
 		void FreeDynamicQuery(const PM_DYNAMIC_QUERY* pQuery) override {}
 		void PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob) override {}
 		void PollStaticQuery(const PM_QUERY_ELEMENT& element, uint8_t* pBlob) override {}

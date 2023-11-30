@@ -25,13 +25,13 @@ struct PM_DYNAMIC_QUERY
 		return elements.back().dataOffset + elements.back().dataSize;
 	}
 	// Data used to track what should be accumulated
-	bool accumFpsData;
+	bool accumFpsData = false;
 	std::bitset<static_cast<size_t>(GpuTelemetryCapBits::gpu_telemetry_count)> accumGpuBits;
 	std::bitset<static_cast<size_t>(CpuTelemetryCapBits::cpu_telemetry_count)> accumCpuBits;
 	// Data used to calculate the requested metrics
 	std::map<PM_METRIC, CompiledStats> compiledMetrics;
-	uint32_t processId;
-	double windowSizeMs;
-	double metricOffsetMs;
+	uint32_t processId = 0;
+	double windowSizeMs = 0;
+	double metricOffsetMs = 0;
 };
 

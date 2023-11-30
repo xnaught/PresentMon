@@ -167,7 +167,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pIn
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, double windowSizeMs, double metricOffsetMs)
+PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint32_t processId, double windowSizeMs, double metricOffsetMs)
 {
 	try {
 		if (!pMiddleware_) {
@@ -176,7 +176,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* 
 		if (!pHandle || !pElements || !numElements) {
 			return PM_STATUS_FAILURE;
 		}
-		*pHandle = pMiddleware_->RegisterDynamicQuery({pElements, numElements}, windowSizeMs, metricOffsetMs);
+		*pHandle = pMiddleware_->RegisterDynamicQuery({pElements, numElements}, processId, windowSizeMs, metricOffsetMs);
 		return PM_STATUS_SUCCESS;
 	}
 	catch (...) {

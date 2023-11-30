@@ -1,5 +1,22 @@
 #include "ConcreteMiddleware.h"
+#include <cstring>
+#include <string>
+#include <vector>
+#include <memory>
+#include <cassert>
+#include <cstdlib>
 #include "../../PresentMonUtils/NamedPipeHelper.h"
+#include "../../PresentMonAPI2/source/Internal.h"
+#include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
+// TODO: don't need transfer if we can somehow get the PM_ struct generation working without inheritance
+// needed right now because even if we forward declare, we don't have the inheritance info
+#include "../../Interprocess/source/IntrospectionTransfer.h"
+#include "../../Interprocess/source/IntrospectionHelpers.h"
+#include "../../Interprocess/source/IntrospectionCloneAllocators.h"
+//#include "MockCommon.h"
+#include "DynamicQuery.h"
+#include "../../ControlLib/PresentMonPowerTelemetry.h"
+#include "../../ControlLib/CpuTelemetryInfo.h"
 
 namespace pmon::mid
 {
@@ -150,7 +167,6 @@ namespace pmon::mid
             try {
                 std::unique_ptr<StreamClient> client =
                     std::make_unique<StreamClient>(std::move(mapFileName), false);
-
                 presentMonStreamClients.emplace(processId, std::move(client));
             }
             catch (...) {
@@ -186,15 +202,88 @@ namespace pmon::mid
         }
 
         // Remove client
-        auto iter = presentMonStreamClients.find(processId);
-        if (iter != presentMonStreamClients.end()) {
-            presentMonStreamClients.erase(std::move(iter));
-        }
+        //auto iter = presentMonStreamClients.find(processId);
+        //if (iter != presentMonStreamClients.end()) {
+        //    presentMonStreamClients.erase(std::move(iter));
+        //}
 
         // TODO: If cached data is part of query maybe we can
         // remove this code
         //RemoveClientCaches(process_id);
 
         return status;
+    }
+
+    PM_DYNAMIC_QUERY* ConcreteMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, uint32_t processId, double windowSizeMs, double metricOffsetMs)
+    { 
+        // get introspection data for reference
+        // TODO: cache this data so it's not required to be generated every time
+        pmapi::intro::Dataset ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
+
+        // make the query object that will be managed by the handle
+        auto pQuery = std::make_unique<PM_DYNAMIC_QUERY>();
+
+        uint64_t offset = 0u;
+        for (auto& qe : queryElements) {
+            auto metricView = ispec.FindMetric(qe.metric);
+            if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_DYNAMIC)) {
+                // TODO: specific exception here
+                throw std::runtime_error{ "Static metric in dynamic metric query specification" };
+            }
+            switch (qe.metric) {
+            case PM_METRIC_PRESENTED_FPS:
+            case PM_METRIC_DISPLAYED_FPS:
+            case PM_METRIC_FRAME_TIME:
+            case PM_METRIC_GPU_BUSY_TIME:
+            case PM_METRIC_CPU_BUSY_TIME:
+            case PM_METRIC_CPU_WAIT_TIME:
+            case PM_METRIC_DISPLAY_BUSY_TIME:
+                pQuery->accumFpsData = true;
+                break;
+            case PM_METRIC_GPU_POWER:
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_power));
+                break;
+            case PM_METRIC_GPU_FAN_SPEED:
+                switch (qe.arrayIndex)
+                {
+                case 0:
+                    pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::fan_speed_0));
+                    break;
+                case 1:
+                    pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::fan_speed_1));
+                    break;
+                case 2:
+                    pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::fan_speed_2));
+                    break;
+                case 3:
+                    pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::fan_speed_3));
+                    break;
+                case 4:
+                    pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::fan_speed_4));
+                    break;
+                default:
+                    // Unknown fan speed index
+                    throw std::runtime_error{ "Invalid fan speed index" };
+                }
+                break;
+            default:
+                break;
+            }
+
+            // TODO: Add or update requested stats for the metric
+
+            // TODO: validate device id
+            // TODO: validate array index
+            qe.dataOffset = offset;
+            qe.dataSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetBasePtr()->type);
+            offset += qe.dataSize;
+        }
+
+        pQuery->metricOffsetMs = metricOffsetMs;
+        pQuery->windowSizeMs = windowSizeMs;
+        pQuery->processId = processId;
+        pQuery->elements = std::vector<PM_QUERY_ELEMENT>{ queryElements.begin(), queryElements.end() };
+
+        return pQuery.release();
     }
 }
