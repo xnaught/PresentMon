@@ -5,6 +5,10 @@
 namespace pmon::util::cli
 {
 	OptionsContainer::OptionsContainer(const char* description, const char* name) : app_{ description, name } {}
+	std::string OptionsContainer::GetName() const
+	{
+		return app_.get_name();
+	}
 	void OptionsContainer::Finalize()
 	{
 		app_.parse(str::ToNarrow(GetCommandLineW()), true);

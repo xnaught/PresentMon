@@ -18,10 +18,6 @@ class Service {
 
   VOID WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
 
-  SIZE_T GetNumArguments() { return mArgv.size(); }
-  std::vector<std::wstring> GetArguments() {
-    return mArgv;
-  };
   HANDLE GetServiceStopHandle() { return mServiceStopEventHandle; }
   HANDLE GetResetPowerTelemetryHandle() {
     return mResetPowerTelemetryEventHandle;
@@ -29,7 +25,7 @@ class Service {
   VOID ReportServiceStatus(DWORD currentState, DWORD win32ExitCode,
                                   DWORD waitHint);
  private:
-  VOID ServiceInit(DWORD argc, LPTSTR* argv);
+  VOID ServiceInit();
 
   SERVICE_STATUS mServiceStatus{};
   SERVICE_STATUS_HANDLE mServiceStatusHandle{};
@@ -40,9 +36,6 @@ class Service {
   HDEVNOTIFY mDeviceNotifyHandle = nullptr;
   DWORD mCheckPoint = 1;
   std::atomic<bool> mResetProviders = true;
-
-  // Incoming arguments from Service Main.
-  std::vector<std::wstring> mArgv;
 };
 
 DWORD WINAPI PresentMonMainThread(LPVOID lpParam);

@@ -16,6 +16,7 @@ namespace pmon::util::cli
 		friend class Flag;
 	public:
 		OptionsContainer(const char* description, const char* name);
+		std::string GetName() const;
 		void Finalize();
 		int Exit(const CLI::ParseError& e);
 	protected:

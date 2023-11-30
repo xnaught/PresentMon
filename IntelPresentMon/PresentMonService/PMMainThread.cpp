@@ -8,6 +8,7 @@
 #include "..\PresentMonUtils\StringUtils.h"
 #include <filesystem>
 #include "../Interprocess/source/Interprocess.h"
+#include "CliOptions.h"
 
 #define GOOGLE_GLOG_DLL_DECL
 #define GLOG_NO_ABBREVIATED_SEVERITIES
@@ -65,47 +66,13 @@ bool NanoSleep(int32_t ms) {
   return true;
 }
 
-bool CheckStartParameters(std::vector<std::wstring>& start_parameters,
-                          std::wstring parameter) {
-  
-  for(auto p : start_parameters) {
-    if (p.compare(parameter) == 0) {
-      return true;
+void SetupFileLogging()
+{
+    auto& opt = clio::Options::Get();
+    auto& logDir = *opt.logDir;
+    if (std::filesystem::is_directory(logDir)) {
+        InitializeLogging(opt.GetName().c_str(), logDir.c_str(), "pm-srv", ".log", 0);
     }
-  }
-  return false;
-}
-
-bool SetupFileLogging(std::vector<std::wstring>& start_parameters) {
-  
-  // First parameter is executable name
-  std::string exe_name = ConvertFromWideString(start_parameters[0]);
-  if (exe_name.size() == 0){
-    return false;
-  }
-
-  // Now search for --enable_file_logging and the path
-  bool check_next_parameter = false;
-  for (auto p : start_parameters) {
-    if (check_next_parameter) {
-      std::filesystem::path path(p);
-      if (std::filesystem::is_directory(path)) {
-        std::string log_path = ConvertFromWideString(p);
-        if (log_path.size() == 0) {
-          return false;
-        }
-        InitializeLogging(exe_name.c_str(), log_path.c_str(),
-                          "pm-srv", ".log", 0);
-        return true;
-      } else {
-        return false;
-      }
-    }
-    if (p.compare(L"--enable_file_logging") == 0) {
-      check_next_parameter = true;
-    }
-  }
-  return false;
 }
 
 // Attempt to use a high resolution sleep but if not
@@ -241,18 +208,20 @@ DWORD WINAPI PresentMonMainThread(LPVOID lpParam)
             return ERROR_INVALID_DATA;
         }
 
+        // alias for options
+        auto& opt = clio::Options::Get();
+
         // Extract out the PresentMon Service pointer
         const auto srv = static_cast<Service*>(lpParam);
+
         // Grab the stop service event handle
         const auto serviceStopHandle = srv->GetServiceStopHandle();
 
-        // Simple checking of start parameters.
-        auto start_parameters = srv->GetArguments();
+        // check if the service is to be debugged while starting up
+        auto debug_service = opt.debug;
 
-        // Also check if the service is to be debugged while starting up
-        auto debug_service =
-            CheckStartParameters(start_parameters, L"--debug_service");
-
+        // spin here waiting for debugger to attach, after which debugger should set
+        // debug_service to false in order to proceed
         while (debug_service) {
             if (WaitForSingleObject(serviceStopHandle, 0) != WAIT_OBJECT_0) {
                 PmSleep(500);
@@ -262,8 +231,8 @@ DWORD WINAPI PresentMonMainThread(LPVOID lpParam)
             }
         }
 
-        if (CheckStartParameters(start_parameters, L"--enable_file_logging")) {
-            SetupFileLogging(start_parameters);
+        if (opt.logDir) {
+            SetupFileLogging();
         }
 
         PresentMon pm;

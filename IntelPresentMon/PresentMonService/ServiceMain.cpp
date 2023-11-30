@@ -17,10 +17,6 @@ int __cdecl _tmain(int argc, TCHAR* argv[])
 		return *e;
 	}
 	auto& opt = clio::Options::Get();
-	if (opt.testIntOption) {
-		std::cout << "run as command line app now, option: " << *opt.testIntOption << std::endl;
-		return 0;
-	}
 
 	const SERVICE_TABLE_ENTRY dispatchTable[] = {
 		{serviceName, static_cast<LPSERVICE_MAIN_FUNCTION>(ServiceMain)},

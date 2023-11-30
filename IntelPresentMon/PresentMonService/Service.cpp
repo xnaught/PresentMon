@@ -68,13 +68,12 @@ VOID WINAPI Service::ServiceMain(DWORD argc, LPTSTR* argv) {
 
   ReportServiceStatus(SERVICE_START_PENDING, NO_ERROR, 3000);
 
-
-  ServiceInit(argc, argv);
+  ServiceInit();
 
   return;
 }
 
-VOID Service::ServiceInit(DWORD argc, LPTSTR* argv) {
+VOID Service::ServiceInit() {
   // Create an event. The control handler function, ServiceCtrlHandler,
   // signals this event when it receives the stop control code from the
   // SCM.
@@ -95,11 +94,6 @@ VOID Service::ServiceInit(DWORD argc, LPTSTR* argv) {
   if (mServiceStopEventHandle == nullptr) {
     ReportServiceStatus(SERVICE_STOPPED, GetLastError(), 0);
     return;
-  }
-
-  // Save off the passed in arguments for later use by PresentMon
-  for (DWORD i = 0; i < argc; i++) {
-    mArgv.push_back(argv[i]);
   }
 
   // Start the main PresentMon thread

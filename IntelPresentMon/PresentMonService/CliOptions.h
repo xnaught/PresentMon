@@ -6,7 +6,8 @@ namespace clio
 	using namespace pmon::util::cli;
 	struct Options : public OptionsBase<Options>
 	{
-		Option<int> testIntOption{ this, "--test-int-option", -1, "Test passing info via the command line" };
+		Flag debug{ this, "--debug,-d", "Stall service by running in a loop after startup waiting for debugger to connect" };
+		Option<std::string> logDir{ this, "--log-dir", "", "Enable logging to specified directory" };
 		static constexpr const char* description = "Intel PresentMon service for frame and system performance measurement";
 		static constexpr const char* name = "PresentMonService.exe";
 	};
