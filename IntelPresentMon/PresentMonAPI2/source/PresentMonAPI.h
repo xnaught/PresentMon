@@ -27,6 +27,7 @@ extern "C" {
 		PM_STATUS_UNABLE_TO_CREATE_NSM,
 		PM_STATUS_INVALID_ADAPTER_ID,
 		PM_STATUS_OUT_OF_RANGE,
+		PM_STATUS_INSUFFICIENT_BUFFER,
 	};
 
 	enum PM_METRIC // **
@@ -447,6 +448,113 @@ extern "C" {
 		PM_METRIC_DOUBLE_DATA display_latency_ms;
 	};
 
+	struct PM_PSU_DATA {
+		// PSU type
+		PM_PSU_TYPE psu_type;
+		// PSU total energy consumed by power source
+		PM_METRIC_DOUBLE_DATA psu_power;
+		// PSU voltage of the power source
+		PM_METRIC_DOUBLE_DATA psu_voltage;
+		bool valid;
+	};
+
+	struct PM_GPU_DATA
+	{
+		// Total energy consumed by the GPU chip
+		PM_METRIC_DOUBLE_DATA gpu_power_w;
+		// Sustained power limit in W
+		PM_METRIC_DOUBLE_DATA gpu_sustained_power_limit_w;
+		// Voltage feeding the GPU chip, measured at the power supply output -
+		// chip input will be lower
+		PM_METRIC_DOUBLE_DATA gpu_voltage_v;
+		// GPU chip frequency
+		PM_METRIC_DOUBLE_DATA gpu_frequency_mhz;
+		// GPU chip temperature
+		PM_METRIC_DOUBLE_DATA gpu_temperature_c;
+		// Fan speed
+		PM_METRIC_DOUBLE_DATA gpu_fan_speed_rpm[MAX_PM_FAN_COUNT];
+		// Percentage utilization of the GPU
+		PM_METRIC_DOUBLE_DATA gpu_utilization;
+		// Percentage utilization of 3D/Compute blocks in GPU
+		PM_METRIC_DOUBLE_DATA gpu_render_compute_utilization;
+		// Percentage utilization of media blocks in the GPU
+		PM_METRIC_DOUBLE_DATA gpu_media_utilization;
+		// Total energy consumed by the memory modules
+		PM_METRIC_DOUBLE_DATA vram_power_w;
+		// Voltage feeding the memory modules
+		PM_METRIC_DOUBLE_DATA vram_voltage_v;
+		// Raw frequency driving the memory modules
+		PM_METRIC_DOUBLE_DATA vram_frequency_mhz;
+		// Effective data transfer rate the memory modules can sustain based on
+		// current clock frequency
+		PM_METRIC_DOUBLE_DATA vram_effective_frequency_gbps;
+		// Read bandwidth
+		PM_METRIC_DOUBLE_DATA vram_read_bandwidth_bps;
+		// Write bandwidth
+		PM_METRIC_DOUBLE_DATA vram_write_bandwidth_bps;
+		// Memory modules temperature
+		PM_METRIC_DOUBLE_DATA vram_temperature_c;
+		// Total GPU memory in bytes
+		PM_METRIC_DOUBLE_DATA gpu_mem_total_size_b;
+		// Total GPU memory used in bytes
+		PM_METRIC_DOUBLE_DATA gpu_mem_used_b;
+		// Percent utilization of GPU memory used.
+		PM_METRIC_DOUBLE_DATA gpu_mem_utilization;
+		// Max GPU bandwidth in bytes per second
+		PM_METRIC_DOUBLE_DATA gpu_mem_max_bandwidth_bps;
+		// GPU read bandwidth in bytes per second
+		PM_METRIC_DOUBLE_DATA gpu_mem_read_bandwidth_bps;
+		// GPU write bandwidth in bytes per second
+		PM_METRIC_DOUBLE_DATA gpu_mem_write_bandwidth_bps;
+
+		// PSU power data
+		PM_PSU_DATA psu_data[MAX_PM_PSU_COUNT];
+
+		// Throttling flags
+		// GPU is being throttled because the GPU chip exceeding the maximum power
+		// limits
+		PM_METRIC_DOUBLE_DATA gpu_power_limited;
+		// GPU frequency is being throttled because the GPU chip is exceeding the
+		// temperature limits
+		PM_METRIC_DOUBLE_DATA gpu_temperature_limited;
+		// The desired GPU frequency is being throttled because the GPU chip has
+		// exceeded the power supply current limits
+		PM_METRIC_DOUBLE_DATA gpu_current_limited;
+		// GPU frequency cannot be increased because the voltage limits have been
+		// reached
+		PM_METRIC_DOUBLE_DATA gpu_voltage_limited;
+		// Due to lower GPU utilization, the hardware has lowered the GPU
+		// frequency
+		PM_METRIC_DOUBLE_DATA gpu_utilization_limited;
+		// Memory frequency is being throttled because the memory modules are
+		// exceeding the maximum power limits
+		PM_METRIC_DOUBLE_DATA vram_power_limited;
+		// Memory frequency is being throttled because the memory modules are
+		// exceeding the maximum temperature limits
+		PM_METRIC_DOUBLE_DATA vram_temperature_limited;
+		// Memory frequency is being throttled because the memory modules have
+		// exceeded the power supply current limits
+		PM_METRIC_DOUBLE_DATA vram_current_limited;
+		// Memory frequency cannot be increased because the voltage limits have
+		// been reached
+		PM_METRIC_DOUBLE_DATA vram_voltage_limited;
+		// Due to lower memory traffic, the hardware has lowered the memory
+		// frequency
+		PM_METRIC_DOUBLE_DATA vram_utilization_limited;
+	};
+	
+	struct PM_CPU_DATA {
+		// CPU utilization
+		PM_METRIC_DOUBLE_DATA cpu_utilization;
+		// Total energy consumed by CPU
+		PM_METRIC_DOUBLE_DATA cpu_power_w;
+		// Power limit of CPU
+		PM_METRIC_DOUBLE_DATA cpu_power_limit_w;
+		// Temperature of CPU
+		PM_METRIC_DOUBLE_DATA cpu_temperature_c;
+		// Clock frequency of CPU
+		PM_METRIC_DOUBLE_DATA cpu_frequency;
+	};
 #ifdef __cplusplus
 } // extern "C"
 #endif

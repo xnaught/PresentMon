@@ -85,7 +85,7 @@ class PresentMonClient {
                                  PM_METRIC_DOUBLE_DATA& metric_double_data,
                                  bool valid=true);
   static PM_STATUS TranslateGetLastErrorToPmStatus(DWORD last_error) {
-    return PM_STATUS::PM_STATUS_ERROR;
+    return PM_STATUS::PM_STATUS_FAILURE;
   }
   PmNsmFrameData* GetFrameDataStart(StreamClient* client,
       uint64_t& index,

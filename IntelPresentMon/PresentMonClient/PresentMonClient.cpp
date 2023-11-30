@@ -660,13 +660,13 @@ PM_STATUS PresentMonClient::RequestStreamProcess(uint32_t process_id) {
       clients_.emplace(process_id, std::move(client));
     } catch (...) {
       LOG(ERROR) << "Unabled to add client.\n";
-      return PM_STATUS::PM_STATUS_ERROR;
+      return PM_STATUS::PM_STATUS_FAILURE;
     }
   }
 
   if (!SetupClientCaches(process_id)) {
     LOG(ERROR) << "Unabled to setup client metric caches.\n";
-    return PM_STATUS::PM_STATUS_ERROR;
+    return PM_STATUS::PM_STATUS_FAILURE;
   }
 
   if (enable_file_logging_) {
@@ -704,7 +704,7 @@ PM_STATUS PresentMonClient::RequestStreamProcess(char const* etl_file_name) {
         etl_client_ = std::make_unique<StreamClient>(mapfile_name, true);
     } catch (...) {
         LOG(ERROR) << "Unabled to create stream client.\n";
-        return PM_STATUS::PM_STATUS_ERROR;
+        return PM_STATUS::PM_STATUS_FAILURE;
     }
 
     return status;
@@ -756,7 +756,7 @@ PM_STATUS PresentMonClient::GetGpuData(uint32_t process_id,
     LOG(INFO) << "Stream client for process " << process_id
               << " doesn't exist. Please call pmStartStream to initialize the "
                  "client.";
-    return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+    return PM_STATUS::PM_STATUS_INVALID_PID;
   }
 
   StreamClient* client = iter->second.get();
@@ -766,7 +766,7 @@ PM_STATUS PresentMonClient::GetGpuData(uint32_t process_id,
   auto cache_iter = client_metric_caches_.find(process_id);
   if (cache_iter == client_metric_caches_.end()) {
     // This should never happen!
-    return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+    return PM_STATUS::PM_STATUS_INVALID_PID;
   }
   auto metric_cache = &cache_iter->second;
 
@@ -865,7 +865,7 @@ PM_STATUS PresentMonClient::GetCpuData(uint32_t process_id,
     LOG(INFO) << "Stream client for process " << process_id
               << " doesn't exist. Please call pmStartStream to initialize the "
                  "client.";
-    return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+    return PM_STATUS::PM_STATUS_INVALID_PID;
   }
 
   StreamClient* client = iter->second.get();
@@ -875,7 +875,7 @@ PM_STATUS PresentMonClient::GetCpuData(uint32_t process_id,
   auto cache_iter = client_metric_caches_.find(process_id);
   if (cache_iter == client_metric_caches_.end()) {
     // This should never happen!
-    return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+    return PM_STATUS::PM_STATUS_INVALID_PID;
   }
   auto metric_cache = &cache_iter->second;
 
@@ -991,7 +991,7 @@ PM_STATUS PresentMonClient::GetFrameData(uint32_t process_id,
   PM_STATUS status = PM_STATUS::PM_STATUS_SUCCESS;
 
   if (in_out_num_frames == nullptr) {
-    return PM_STATUS::PM_STATUS_ERROR;
+    return PM_STATUS::PM_STATUS_FAILURE;
   }
 
   uint32_t frames_to_copy = *in_out_num_frames;
@@ -1012,7 +1012,7 @@ PM_STATUS PresentMonClient::GetFrameData(uint32_t process_id,
           << "Stream client for process "
           << " doesn't exist. Please call pmStartStream to initialize the "
              "client.";
-      return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+      return PM_STATUS::PM_STATUS_INVALID_PID;
     }
   } else {
     auto iter = clients_.find(process_id);
@@ -1029,7 +1029,7 @@ PM_STATUS PresentMonClient::GetFrameData(uint32_t process_id,
             << " doesn't exist. Please call pmStartStream to initialize the "
                "client.";
       }
-      return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+      return PM_STATUS::PM_STATUS_INVALID_PID;
     }
 
     client = iter->second.get();
@@ -1043,7 +1043,7 @@ PM_STATUS PresentMonClient::GetFrameData(uint32_t process_id,
     if (is_etl == false) {
       StopStreamProcess(process_id);
     }
-    return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+    return PM_STATUS::PM_STATUS_INVALID_PID;
   }
 
   uint64_t last_frame_idx = client->GetLatestFrameIndex();
@@ -1303,7 +1303,7 @@ PM_STATUS PresentMonClient::GetCpuName(char* cpu_name_buffer,
         return PM_STATUS::PM_STATUS_SUCCESS;
       }
     } catch (...) {
-      return PM_STATUS::PM_STATUS_ERROR;
+      return PM_STATUS::PM_STATUS_FAILURE;
     }
   }
 }
