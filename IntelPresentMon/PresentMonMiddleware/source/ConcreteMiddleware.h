@@ -26,12 +26,10 @@ namespace pmon::mid
 				CloseHandle(handle);
 			}
 		};
-		std::unique_ptr<HANDLE, HandleDeleter> uniqueHandleMember;
-		std::unique_ptr<void, HandleDeleter> testHandle;
+		std::unique_ptr<void, HandleDeleter> pNamedPipeHandle;
 		PM_STATUS SendRequest(MemBuffer* requestBuffer);
 		PM_STATUS ReadResponse(MemBuffer* responseBuffer);
 		PM_STATUS CallPmService(MemBuffer* requestBuffer, MemBuffer* responseBuffer);
-		HANDLE uniqueHandleMember = INVALID_HANDLE_VALUE;
 		uint32_t clientProcessId = 0;
 	};
 }

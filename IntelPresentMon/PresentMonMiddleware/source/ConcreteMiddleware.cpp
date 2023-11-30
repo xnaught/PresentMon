@@ -45,7 +45,7 @@ namespace pmon::mid
         if (!success) {
             throw std::runtime_error{ "Pipe error" };
         }
-        testHandle.reset(namedPipeHandle);
+        pNamedPipeHandle.reset(namedPipeHandle);
         clientProcessId = GetCurrentProcessId();
 	}
 
@@ -57,7 +57,7 @@ namespace pmon::mid
     PM_STATUS ConcreteMiddleware::SendRequest(MemBuffer* requestBuffer) {
         DWORD bytesWritten;
         BOOL success = WriteFile(
-            uniqueHandleMember,
+            pNamedPipeHandle.get(),
             requestBuffer->AccessMem(),
             static_cast<DWORD>(requestBuffer->GetCurrentSize()),
             &bytesWritten,
@@ -79,7 +79,7 @@ namespace pmon::mid
 
         do {
             // Read from the pipe using a nonoverlapped read
-            success = ReadFile(uniqueHandleMember,
+            success = ReadFile(pNamedPipeHandle.get(),
                 inBuffer,
                 sizeof(inBuffer),
                 &bytesRead,
@@ -107,7 +107,7 @@ namespace pmon::mid
 
     PM_STATUS ConcreteMiddleware::CallPmService(MemBuffer* requestBuffer, MemBuffer* responseBuffer)
     {
-
+        return PM_STATUS_SUCCESS;
     }
 
     PM_STATUS ConcreteMiddleware::OpenSession(uint32_t processId)

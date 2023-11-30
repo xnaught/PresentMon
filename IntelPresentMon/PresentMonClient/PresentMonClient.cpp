@@ -127,7 +127,7 @@ PM_STATUS PresentMonClient::GetGfxLatencyData(
   std::unordered_map<uint64_t, fps_swap_chain_data> swap_chain_data;
 
   if (*num_swapchains == 0) {
-    return PM_STATUS::PM_STATUS_ERROR;
+    return PM_STATUS::PM_STATUS_FAILURE;
   }
 
   auto iter = clients_.find(process_id);
@@ -135,7 +135,7 @@ PM_STATUS PresentMonClient::GetGfxLatencyData(
     LOG(INFO) << "Stream client for process " << process_id
               << " doesn't exist. Please call pmStartStream to initialize the "
                  "client.";
-    return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+    return PM_STATUS::PM_STATUS_INVALID_PID;
   }
 
   StreamClient* client = iter->second.get();
@@ -145,13 +145,13 @@ PM_STATUS PresentMonClient::GetGfxLatencyData(
     // Server destroyed the named shared memory due to process exit. Destroy
     // the mapped view from client side.
     StopStreamProcess(process_id);
-    return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+    return PM_STATUS::PM_STATUS_INVALID_PID;
   }
 
   auto cache_iter = client_metric_caches_.find(process_id);
   if (cache_iter == client_metric_caches_.end()) {
     // This should never happen!
-    return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+    return PM_STATUS::PM_STATUS_INVALID_PID;
   }
   auto metric_cache = &cache_iter->second;
 
@@ -301,7 +301,7 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
   QueryPerformanceCounter(&api_qpc);
   
   if (*num_swapchains == 0) {
-    return PM_STATUS::PM_STATUS_ERROR;
+    return PM_STATUS::PM_STATUS_FAILURE;
   }
 
   auto iter = clients_.find(process_id);
@@ -309,7 +309,7 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
     LOG(INFO) << "Stream client for process " << process_id
               << " doesn't exist. Please call pmStartStream to initialize the "
                  "client.";
-    return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+    return PM_STATUS::PM_STATUS_INVALID_PID;
   }
 
   StreamClient* client = iter->second.get();
@@ -319,13 +319,13 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
     // Server destroyed the named shared memory due to process exit. Destroy the
     // mapped view from client side.
     StopStreamProcess(process_id);
-    return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+    return PM_STATUS::PM_STATUS_INVALID_PID;
   }
 
   auto cache_iter = client_metric_caches_.find(process_id);
   if (cache_iter == client_metric_caches_.end()) {
     // This should never happen!
-    return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+    return PM_STATUS::PM_STATUS_INVALID_PID;
   }
   auto metric_cache = &cache_iter->second;
 

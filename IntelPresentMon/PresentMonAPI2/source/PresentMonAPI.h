@@ -411,6 +411,42 @@ extern "C" {
 		PM_FRAME_DATA_OPT_DOUBLE cpu_frequency;
 	};
 
+	struct PM_METRIC_DOUBLE_DATA {
+		double avg;
+		double percentile_99;
+		double percentile_95;
+		double percentile_90;
+		double high;
+		double low;
+		double raw;
+		bool valid;
+	};
+
+	struct PM_FPS_DATA
+	{
+		uint64_t swap_chain;
+
+		PM_METRIC_DOUBLE_DATA displayed_fps;
+		PM_METRIC_DOUBLE_DATA presented_fps;
+		PM_METRIC_DOUBLE_DATA frame_time_ms;
+
+		PM_METRIC_DOUBLE_DATA gpu_busy;
+		PM_METRIC_DOUBLE_DATA percent_dropped_frames;
+
+		uint32_t num_presents;
+
+		int32_t sync_interval;
+		PM_PRESENT_MODE present_mode;
+		int32_t allows_tearing;
+	};
+
+	struct PM_GFX_LATENCY_DATA
+	{
+		uint64_t swap_chain;
+		PM_METRIC_DOUBLE_DATA render_latency_ms;
+		PM_METRIC_DOUBLE_DATA display_latency_ms;
+	};
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
