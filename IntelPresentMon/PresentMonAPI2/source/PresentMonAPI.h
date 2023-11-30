@@ -555,6 +555,8 @@ extern "C" {
 		// Clock frequency of CPU
 		PM_METRIC_DOUBLE_DATA cpu_frequency;
 	};
+
+	PRESENTMON_API_EXPORT PM_STATUS pmSetGPUTelemetryPeriod(uint32_t period_ms);
 #ifdef __cplusplus
 } // extern "C"
 #endif
