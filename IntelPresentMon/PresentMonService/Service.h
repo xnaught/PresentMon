@@ -16,7 +16,7 @@ class Service {
  public:
   Service(const TCHAR* serviceName);
 
-  VOID WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
+  VOID WINAPI ServiceMain();
 
   HANDLE GetServiceStopHandle() { return mServiceStopEventHandle; }
   HANDLE GetResetPowerTelemetryHandle() {

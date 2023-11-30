@@ -9,29 +9,35 @@
 
 TCHAR serviceName[MaxBufferLength] = TEXT("Intel PresentMon Service");
 
-VOID WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
+// common entry point whether invoked as service or as app
+int CommonEntry(DWORD argc, LPTSTR* argv, bool asApp = false)
+{
+	if (auto e = clio::Options::Init(argc, argv); e && asApp) {
+		return *e;
+	}
+	Service present_mon_service(serviceName);
+	present_mon_service.ServiceMain();
+	return 0;
+}
+
+// callback registered with and called by the Service Control Manager
+VOID WINAPI ServiceMainCallback(DWORD argc, LPTSTR* argv)
+{
+	CommonEntry(argc, argv);
+}
 
 int __cdecl _tmain(int argc, TCHAR* argv[])
 {
-	if (auto e = clio::Options::Init()) {
-		return *e;
-	}
-	auto& opt = clio::Options::Get();
-
 	const SERVICE_TABLE_ENTRY dispatchTable[] = {
-		{serviceName, static_cast<LPSERVICE_MAIN_FUNCTION>(ServiceMain)},
+		{serviceName, static_cast<LPSERVICE_MAIN_FUNCTION>(ServiceMainCallback)},
 		{NULL, NULL}
 	};
 
 	if (!StartServiceCtrlDispatcher(dispatchTable)) {
-		return -1;
+		// if registration fails, that usually means this was run as an app
+		// so we call the common entry point directly
+		return CommonEntry(argc, argv, true);
 	}
 
 	return 0;
-}
-
-VOID WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
-  Service present_mon_service(serviceName);
-
-  present_mon_service.ServiceMain(argc, argv);
 }

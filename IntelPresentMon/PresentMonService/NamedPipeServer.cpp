@@ -7,10 +7,15 @@
 #include <thread>
 #include "NamedPipeCmdProcess.h"
 #include "..\PresentMonUtils\NamedPipeHelper.h"
+#include "..\CommonUtilities\source\str\String.h"
+#include "GlobalIdentifiers.h"
 #include "sddl.h"
 
-NamedPipeServer::NamedPipeServer(Service* srv, PresentMon* pm)
-    : mService(srv), mPm(pm) {
+using namespace pmon;
+
+NamedPipeServer::NamedPipeServer(Service* srv, PresentMon* pm, std::optional<std::string> pipeName)
+    : mService(srv), mPm(pm),
+    mPipeName{pipeName.value_or(gid::defaultControlPipeName)} {
   // Initialize all events associated with a pipe
   for (DWORD i = 0; i < mMaxPipes; i++) {
     mEvents[i] = INVALID_HANDLE_VALUE;
@@ -49,8 +54,9 @@ DWORD NamedPipeServer::CreateNamedPipesAndEvents() {
     mPipe[i].mOverlap.hEvent = mEvents[i];
 
     // Create the pipe instance
+    auto pipeNameWide = util::str::ToWide(mPipeName);
     if (const auto result = mPipe[i].CreatePipeInstance(
-            mPresentMonServicePipeName, mMaxPipes, mPipeTimeout);
+        pipeNameWide.c_str(), mMaxPipes, mPipeTimeout);
         result != ERROR_SUCCESS) {
       return result;
     }

@@ -200,6 +200,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CliOptions.h" />
+    <ClInclude Include="GlobalIdentifiers.h" />
     <ClInclude Include="NamedPipeCmdProcess.h" />
     <ClInclude Include="LateStageReprojectionData.hpp" />
     <ClInclude Include="NamedPipeServer.h" />

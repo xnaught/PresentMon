@@ -1,6 +1,7 @@
 #include "CliFramework.h"
 #include "../str/String.h"
-#include <Windows.h>
+#include <span>
+#include <vector>
 
 namespace pmon::util::cli
 {
@@ -9,14 +10,34 @@ namespace pmon::util::cli
 	{
 		return app_.get_name();
 	}
-	void OptionsContainer::Finalize()
+	void OptionsContainer::Finalize(int argc, const char* const* argv)
 	{
-		app_.parse(str::ToNarrow(GetCommandLineW()), true);
+		app_.parse(argc, argv);
 		finalized_ = true;
 	}
 	int OptionsContainer::Exit(const CLI::ParseError& e)
 	{
 		return app_.exit(e);
+	}
+
+	OptionsContainer::ConvertedNarrowOptions_::ConvertedNarrowOptions_(int argc, const wchar_t* const* wargv)
+	{
+		for (auto pWideStr : std::span{ wargv, size_t(argc) }) {
+			const auto narrow = str::ToNarrow(pWideStr);
+			auto pNarrowStr = new char[narrow.size() + 1];
+			strcpy_s(pNarrowStr, narrow.size() + 1, narrow.c_str());
+			stringPointerArray.push_back(pNarrowStr);
+		}
+	}
+	OptionsContainer::ConvertedNarrowOptions_::~ConvertedNarrowOptions_()
+	{
+		for (auto p : stringPointerArray) {
+			delete[] p;
+		}
+	}
+	const char* const* OptionsContainer::ConvertedNarrowOptions_::GetRawPointerArray() const
+	{
+		return stringPointerArray.data();
 	}
 
 	Flag::Flag(OptionsContainer* pParent, std::string names, std::string description)

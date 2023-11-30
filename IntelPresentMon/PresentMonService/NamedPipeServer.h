@@ -3,6 +3,8 @@
 #pragma once
 #include <thread>
 #include <vector>
+#include <string>
+#include <optional>
 
 #include "..\PresentMonUtils\MemBuffer.h"
 #include "PresentMon.h"
@@ -14,7 +16,7 @@ const size_t MaxBufferSize = 4096;
 
 class NamedPipeServer {
  public:
-  NamedPipeServer(Service* srv, PresentMon* pm);
+  NamedPipeServer(Service* srv, PresentMon* pm, std::optional<std::string> pipeName);
   ~NamedPipeServer();
   NamedPipeServer(const NamedPipeServer& t) = delete;
   NamedPipeServer& operator=(const NamedPipeServer& t) = delete;
@@ -93,8 +95,7 @@ class NamedPipeServer {
   void EvaluateAndRespondToRequestMessage(DWORD pipeIndex);
   DWORD GetNumActiveConnections();
 
-  LPCTSTR mPresentMonServicePipeName =
-      TEXT("\\\\.\\pipe\\presentmonsvcnamedpipe");
+  std::string mPipeName;
   static const int mMaxPipes = 5;
   static const int mMaxEvents = mMaxPipes + 1;
   const UINT32 mPipeTimeout = 5000;

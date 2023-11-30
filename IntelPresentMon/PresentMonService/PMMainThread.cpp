@@ -86,6 +86,9 @@ void PmSleep(int32_t ms) {
 
 void IPCCommunication(Service* srv, PresentMon* pm)
 {
+    // alias for options
+    auto& opt = clio::Options::Get();
+
     bool createNamedPipeServer = true;
 
     if (srv == nullptr) {
@@ -93,7 +96,7 @@ void IPCCommunication(Service* srv, PresentMon* pm)
         return;
     }
 
-    auto nps = std::make_unique<NamedPipeServer>(srv, pm);
+    auto nps = std::make_unique<NamedPipeServer>(srv, pm, opt.controlPipe.AsOptional());
     if (!nps) {
         // TODO: log
         return;

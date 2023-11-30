@@ -7,6 +7,8 @@
 
 #include <optional>
 #include <cassert>
+#include <string>
+#include <span>
 
 namespace pmon::util::cli
 {
@@ -17,13 +19,22 @@ namespace pmon::util::cli
 	public:
 		OptionsContainer(const char* description, const char* name);
 		std::string GetName() const;
-		void Finalize();
+		void Finalize(int argc, const char* const* argv);
 		int Exit(const CLI::ParseError& e);
 	protected:
+		class ConvertedNarrowOptions_
+		{
+		public:
+			ConvertedNarrowOptions_(int argc, const wchar_t* const* wargv);
+			~ConvertedNarrowOptions_();
+			const char* const* GetRawPointerArray() const;
+		private:
+			std::vector<char*> stringPointerArray;
+		};
 		bool finalized_ = false;
 		CLI::App app_;
 	};
-
+	
 	template<class T>
 	class OptionsBase : public OptionsContainer
 	{
@@ -35,18 +46,23 @@ namespace pmon::util::cli
 			assert(opts.finalized_);
 			return opts;
 		}
-		static std::optional<int> Init()
+		static std::optional<int> Init(int argc, const wchar_t* const* wargv)
+		{
+			ConvertedNarrowOptions_ narrowArgs{ argc, wargv };
+			return Init(argc, narrowArgs.GetRawPointerArray());
+		}
+		static std::optional<int> Init(int argc, const char* const* argv)
 		{
 			auto& opts = Get_();
 			try {
-				opts.Finalize();
+				opts.Finalize(argc, argv);
 				return {};
 			}
 			catch (const CLI::ParseError& e) {
 				return opts.Exit(e);
 			}
 		}
-	public:
+	private:
 		static T& Get_()
 		{
 			static T opts;
@@ -75,6 +91,13 @@ namespace pmon::util::cli
 		bool operator!() const
 		{
 			return !bool(*this);
+		}
+		std::optional<T> AsOptional() const
+		{
+			if (*this) {
+				return **this;
+			}
+			return {};
 		}
 	private:
 		T data_;

@@ -40,7 +40,7 @@ Service::Service(const TCHAR* serviceName) : mServiceName(serviceName) {
   mEventLogHandle = RegisterEventSource(NULL, mServiceName.c_str());
 }
 
-VOID WINAPI Service::ServiceMain(DWORD argc, LPTSTR* argv) {
+VOID WINAPI Service::ServiceMain() {
   mServiceStatusHandle = RegisterServiceCtrlHandlerEx(
       mServiceName.c_str(), ServiceCtrlHandlerEx, this);
 
@@ -67,6 +67,7 @@ VOID WINAPI Service::ServiceMain(DWORD argc, LPTSTR* argv) {
   mServiceStatus.dwServiceSpecificExitCode = 0;
 
   ReportServiceStatus(SERVICE_START_PENDING, NO_ERROR, 3000);
+
 
   ServiceInit();
 

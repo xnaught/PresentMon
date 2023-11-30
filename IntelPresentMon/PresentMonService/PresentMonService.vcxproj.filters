@@ -17,5 +17,6 @@
     <ClInclude Include="PresentMon.h" />
     <ClInclude Include="Service.h" />
     <ClInclude Include="CliOptions.h" />
+    <ClInclude Include="GlobalIdentifiers.h" />
   </ItemGroup>
 </Project>
