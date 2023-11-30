@@ -20,12 +20,8 @@ enum class StreamMode : int{
 
 class Streamer {
  public:
-  Streamer()
-      : shared_mem_size_(kBufSize),
-        start_qpc_(0),
-        stream_mode_(StreamMode::kDefault),
-        write_timedout_(false){};
-  ~Streamer(){};
+     Streamer();
+  ~Streamer() = default;
 
   // Client API, start streaming data for process by name
   PM_STATUS StartStreaming(uint32_t client_process_id,
@@ -67,6 +63,7 @@ class Streamer {
   void CopyFromPresentMonPresentEvent(PresentEvent* present_event,
                                       PmNsmPresentEvent* nsm_present_event);
   bool UpdateNSMAttachments(uint32_t process_id, int& ref_count);
+  std::string mapfileNamePrefix_;
   // Shared mem buffer map of process id and share mem handle
   std::map<DWORD, std::unique_ptr<NamedSharedMem>> process_shared_mem_map_;
   std::multimap<uint32_t, uint32_t> client_map_;

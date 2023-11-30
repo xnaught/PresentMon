@@ -19,9 +19,18 @@
 #include <chrono>
 #include <ctime>
 #include <cstdlib>
+#include "../PresentMonService/CliOptions.h"
 
 static const std::chrono::milliseconds kTimeoutLimitMs =
     std::chrono::milliseconds(500);
+
+Streamer::Streamer()
+    : shared_mem_size_(kBufSize),
+    start_qpc_(0),
+    stream_mode_(StreamMode::kDefault),
+    write_timedout_(false),
+    mapfileNamePrefix_{ clio::Options::Get().nsmPrefix.AsOptional().value_or(kGlobalPrefix) }
+{}
 
 void Streamer::WriteFrameData(
     uint32_t process_id, PmNsmFrameData* data,
@@ -376,9 +385,7 @@ void Streamer::StopAllStreams() {
 
 bool Streamer::CreateNamedSharedMemory(DWORD process_id,
                                        uint64_t nsm_size_in_bytes) {
-  std::string mapfile_name;
-
-  mapfile_name = kGlobalPrefix + std::to_string(process_id);
+  const std::string mapfile_name = mapfileNamePrefix_ + std::to_string(process_id);
 
   std::lock_guard<std::mutex> lock(nsm_map_mutex_);
   auto iter = process_shared_mem_map_.find(process_id);
