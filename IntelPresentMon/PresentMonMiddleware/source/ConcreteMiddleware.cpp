@@ -1,5 +1,3 @@
-#include <cstring>
-#include <stdexcept>
 #include "ConcreteMiddleware.h"
 #include "../../PresentMonUtils/NamedPipeHelper.h"
 
@@ -107,23 +105,100 @@ namespace pmon::mid
 
     PM_STATUS ConcreteMiddleware::CallPmService(MemBuffer* requestBuffer, MemBuffer* responseBuffer)
     {
-        return PM_STATUS_SUCCESS;
+        PM_STATUS status;
+
+        status = SendRequest(requestBuffer);
+        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            return status;
+        }
+
+        status = ReadResponse(responseBuffer);
+        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            return status;
+        }
+
+        return status;
     }
 
-    PM_STATUS ConcreteMiddleware::OpenSession(uint32_t processId)
+    PM_STATUS ConcreteMiddleware::StartStreaming(uint32_t processId)
     {
-        MemBuffer requestBuf;
-        MemBuffer responseBuf;
+        MemBuffer requestBuffer;
+        MemBuffer responseBuffer;
 
-        NamedPipeHelper::EncodeStartStreamingRequest(&requestBuf, clientProcessId,
+        NamedPipeHelper::EncodeStartStreamingRequest(&requestBuffer, clientProcessId,
             processId, nullptr);
+
+        PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
+        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            return status;
+        }
+
+        IPMSMStartStreamResponse startStreamResponse{};
+
+        status = NamedPipeHelper::DecodeStartStreamingResponse(
+            &responseBuffer, &startStreamResponse);
+        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            return status;
+        }
+
+        // Get the NSM file name from 
+        string mapFileName(startStreamResponse.fileName);
+
+        // Initialize client with returned mapfile name
+        /*
+        auto iter = presentMonStreamClients.find(processId);
+        if (iter == presentMonStreamClients.end()) {
+            try {
+                std::unique_ptr<StreamClient> client =
+                    std::make_unique<StreamClient>(std::move(mapFileName), false);
+
+                presentMonStreamClients.emplace(processId, std::move(client));
+            }
+            catch (...) {
+                return PM_STATUS::PM_STATUS_FAILURE;
+            }
+        }
+        */
+
+        // TODO: Where will the client caches reside? As part of the dynamic query?
+        //if (!SetupClientCaches(process_id)) {
+        //    return PM_STATUS::PM_STATUS_FAILURE;
+        //}
 
         return PM_STATUS_SUCCESS;
     }
     
-    PM_STATUS ConcreteMiddleware::CloseSession(uint32_t processId)
+    PM_STATUS ConcreteMiddleware::StopStreaming(uint32_t processId)
     {
+        MemBuffer requestBuffer;
+        MemBuffer responseBuffer;
 
-        return PM_STATUS_SUCCESS;
+        NamedPipeHelper::EncodeStopStreamingRequest(&requestBuffer,
+            clientProcessId,
+            processId);
+
+        PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
+        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            return status;
+        }
+
+        status = NamedPipeHelper::DecodeStopStreamingResponse(&responseBuffer);
+        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            return status;
+        }
+
+        // Remove client
+        /*
+        auto iter = presentMonStreamClients.find(processId);
+        if (iter != presentMonStreamClients.end()) {
+            presentMonStreamClients.erase(std::move(iter));
+        }
+        */
+
+        // TODO: If cached data is part of query maybe we can
+        // remove this code
+        //RemoveClientCaches(process_id);
+
+        return status;
     }
 }

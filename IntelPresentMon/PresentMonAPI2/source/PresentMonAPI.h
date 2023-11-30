@@ -237,10 +237,10 @@ extern "C" {
 	};
 
 	typedef struct PM_DYNAMIC_QUERY* PM_DYNAMIC_QUERY_HANDLE;
-	PRESENTMON_API_EXPORT PM_STATUS pmInitialize();
-	PRESENTMON_API_EXPORT PM_STATUS pmShutdown();
-	PRESENTMON_API_EXPORT PM_STATUS pmOpenSession(uint32_t process_id);
-	PRESENTMON_API_EXPORT PM_STATUS pmCloseSession(uint32_t process_id);
+	PRESENTMON_API_EXPORT PM_STATUS pmOpenSession();
+	PRESENTMON_API_EXPORT PM_STATUS pmCloseSession();
+	PRESENTMON_API_EXPORT PM_STATUS pmStartStreaming(uint32_t process_id);
+	PRESENTMON_API_EXPORT PM_STATUS pmStopStreaming(uint32_t process_id);
 	PRESENTMON_API_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROOT** ppInterface);
 	PRESENTMON_API_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pInterface);
 	PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, double windowSizeMs, double metricOffsetMs = 0.f);
@@ -555,8 +555,6 @@ extern "C" {
 		// Clock frequency of CPU
 		PM_METRIC_DOUBLE_DATA cpu_frequency;
 	};
-
-	PRESENTMON_API_EXPORT PM_STATUS pmSetGPUTelemetryPeriod(uint32_t period_ms);
 #ifdef __cplusplus
 } // extern "C"
 #endif

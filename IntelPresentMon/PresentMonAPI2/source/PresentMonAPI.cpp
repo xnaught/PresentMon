@@ -70,7 +70,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(uint32_t milliseconds)
 }
 
 // public endpoints
-PRESENTMON_API_EXPORT PM_STATUS pmInitialize()
+PRESENTMON_API_EXPORT PM_STATUS pmOpenSession()
 {
 	if (pMiddleware_) {
 		return PM_STATUS_FAILURE;
@@ -89,7 +89,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmInitialize()
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmShutdown()
+PRESENTMON_API_EXPORT PM_STATUS pmCloseSession()
 {
 	try {
 		if (!pMiddleware_) {
@@ -103,13 +103,13 @@ PRESENTMON_API_EXPORT PM_STATUS pmShutdown()
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmOpenSession(uint32_t processId)
+PRESENTMON_API_EXPORT PM_STATUS pmStartStreaming(uint32_t processId)
 {
 	try {
 		if (!pMiddleware_) {
 			return PM_STATUS_SESSION_NOT_OPEN;
 		}
-		pMiddleware_->OpenSession(processId);
+		pMiddleware_->StartStreaming(processId);
 		return PM_STATUS_SUCCESS;
 	}
 	catch (...) {
@@ -117,13 +117,13 @@ PRESENTMON_API_EXPORT PM_STATUS pmOpenSession(uint32_t processId)
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmCloseSession(uint32_t processId)
+PRESENTMON_API_EXPORT PM_STATUS pmStopStreaming(uint32_t processId)
 {
 	try {
 		if (!pMiddleware_) {
 			return PM_STATUS_SESSION_NOT_OPEN;
 		}
-		pMiddleware_->CloseSession(processId);
+		pMiddleware_->StopStreaming(processId);
 		return PM_STATUS_SUCCESS;
 	}
 	catch (...) {

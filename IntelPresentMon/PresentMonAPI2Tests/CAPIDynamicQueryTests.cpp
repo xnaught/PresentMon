@@ -16,11 +16,11 @@ namespace PresentMonAPI2
 		TEST_METHOD_INITIALIZE(BeforeEachTestMethod)
 		{
 			pmSetMiddlewareAsMock_(true, true);
-			pmOpenSession(1337);
+			pmOpenSession();
 		}
 		TEST_METHOD_CLEANUP(AfterEachTestMethod)
 		{
-			pmShutdown();
+			pmCloseSession();
 		}
 		TEST_METHOD(CreateAndFreeQuery)
 		{

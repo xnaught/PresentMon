@@ -13,26 +13,6 @@
 // Global pointer to PresentMon Client object
 static PresentMonClient* gPmClient = nullptr;
 
-PM_STATUS pmInitialize() {
-  if (gPmClient == nullptr) {
-    try {
-      gPmClient = new PresentMonClient();
-    } catch (...) {
-      return PM_STATUS::PM_STATUS_SERVICE_ERROR;
-    }
-  }
-  return PM_STATUS::PM_STATUS_SUCCESS;
-}
-
-PM_STATUS pmShutdown() {
-  if (gPmClient) {
-    delete gPmClient;
-    gPmClient = nullptr;
-  }
-
-  return PM_STATUS::PM_STATUS_SUCCESS;
-}
-
 PM_STATUS pmGetFramesPerSecondData(uint32_t processId, PM_FPS_DATA* pmFpsData,
                                    double windowSizeinMs,
                                    uint32_t* numSwapChains) {
@@ -159,19 +139,6 @@ PM_STATUS pmGetCpuName(char* cpu_name_buffer,
                                              uint32_t* buffer_size) {
   if (gPmClient) {
     return gPmClient->GetCpuName(cpu_name_buffer, buffer_size);
-  } else {
-    return PM_STATUS::PM_STATUS_SESSION_NOT_OPEN;
-  }
-}
-
-PM_STATUS pmSetGPUTelemetryPeriod(uint32_t period_ms) {
-  if (gPmClient) {
-    if (period_ms >= MIN_PM_TELEMETRY_PERIOD &&
-        period_ms <= MAX_PM_TELEMETRY_PERIOD) {
-      return gPmClient->SetGPUTelemetryPeriod(period_ms);
-    } else {
-      return PM_STATUS::PM_STATUS_OUT_OF_RANGE;
-    }
   } else {
     return PM_STATUS::PM_STATUS_SESSION_NOT_OPEN;
   }
