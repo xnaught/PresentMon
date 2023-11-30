@@ -739,7 +739,7 @@ int main(int argc, char* argv[]) {
 
   PM_STATUS pmStatus{};
   try {
-    pmStatus = pmInitialize();
+    pmStatus = pmInitialize(nullptr);
     if (pmStatus != PM_STATUS::PM_STATUS_SUCCESS) {
       PrintError(pmStatus);
       return -1;

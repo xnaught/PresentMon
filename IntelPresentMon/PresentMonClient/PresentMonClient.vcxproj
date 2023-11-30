@@ -25,6 +25,9 @@
     <ClInclude Include="PresentMonClient.h" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">
+      <Project>{08a704d8-ca1c-45e9-8ede-542a1a43b53e}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\PresentMonUtils\PresentMonUtils.vcxproj">
       <Project>{66e9f6c5-28db-4218-81b9-31e0e146ecc0}</Project>
     </ProjectReference>

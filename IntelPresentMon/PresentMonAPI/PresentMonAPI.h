@@ -238,7 +238,7 @@ extern "C" {
   /// @return Returns PM_STATUS_SUCCESS if successful.
   ///         Returns PM_STATUS_LIBRARY_NOT_FOUND if unable to load PresentMon
   ///         library.
-  PRESENTMON_API_EXPORT PM_STATUS pmInitialize();
+  PRESENTMON_API_EXPORT PM_STATUS pmInitialize(const char* controlPipeName);
 
   ///////////////////////////////////////////////////////////////////////////
   /// @brief Unloads the PresentMon library.

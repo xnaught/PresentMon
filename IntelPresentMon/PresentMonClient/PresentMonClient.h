@@ -6,12 +6,14 @@
 #include "../PresentMonUtils/NamedPipeHelper.h"
 #include "../Streamer/StreamClient.h"
 #include "gtest/gtest.h"
+#include <optional>
+#include <string>
 
 double QpcDeltaToMs(uint64_t qpc_delta, LARGE_INTEGER qpc_frequency);
 
 class PresentMonClient {
  public:
-  PresentMonClient();
+  PresentMonClient(const char* controlPipeName = "");
   ~PresentMonClient();
   PresentMonClient(const PresentMonClient& t) = delete;
   PresentMonClient& operator=(const PresentMonClient& t) = delete;

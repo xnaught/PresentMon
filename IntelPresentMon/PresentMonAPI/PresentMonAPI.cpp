@@ -13,10 +13,10 @@
 // Global pointer to PresentMon Client object
 static PresentMonClient* gPmClient = nullptr;
 
-PM_STATUS pmInitialize() {
+PM_STATUS pmInitialize(const char* controlPipeName) {
   if (gPmClient == nullptr) {
     try {
-      gPmClient = new PresentMonClient();
+      gPmClient = new PresentMonClient(controlPipeName);
     } catch (...) {
       return PM_STATUS::PM_STATUS_SERVICE_ERROR;
     }
