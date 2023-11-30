@@ -12,20 +12,42 @@
 const int MaxBufferLength = MAX_PATH;
 const int NumReportEventStrings = 2;
 
-class Service {
- public:
-  Service(const TCHAR* serviceName);
+class Service
+{
+public:
+	virtual HANDLE GetServiceStopHandle() = 0;
+	virtual HANDLE GetResetPowerTelemetryHandle() = 0;
+};
 
-  VOID WINAPI ServiceMain();
+class ConsoleDebugMockService : public Service
+{
+public:
+	static ConsoleDebugMockService& Get();
+	void Run();
+	HANDLE GetServiceStopHandle() override;
+	HANDLE GetResetPowerTelemetryHandle() override;
+private:
+	ConsoleDebugMockService();
+	static BOOL WINAPI ConsoleHandler(DWORD signal);
+	HANDLE stopEvent_;
+	HANDLE resetTelemetryEvent_;
+};
 
-  HANDLE GetServiceStopHandle() { return mServiceStopEventHandle; }
-  HANDLE GetResetPowerTelemetryHandle() {
-    return mResetPowerTelemetryEventHandle;
+class ConcreteService : public Service
+{
+public:
+	ConcreteService(const TCHAR* serviceName);
+
+  void ServiceMain();
+
+  HANDLE GetServiceStopHandle() override { return mServiceStopEventHandle; }
+  HANDLE GetResetPowerTelemetryHandle() override {
+	  return mResetPowerTelemetryEventHandle;
   }
-  VOID ReportServiceStatus(DWORD currentState, DWORD win32ExitCode,
+  void ReportServiceStatus(DWORD currentState, DWORD win32ExitCode,
                                   DWORD waitHint);
  private:
-  VOID ServiceInit();
+  void ServiceInit();
 
   SERVICE_STATUS mServiceStatus{};
   SERVICE_STATUS_HANDLE mServiceStatusHandle{};
@@ -37,5 +59,3 @@ class Service {
   DWORD mCheckPoint = 1;
   std::atomic<bool> mResetProviders = true;
 };
-
-DWORD WINAPI PresentMonMainThread(LPVOID lpParam);

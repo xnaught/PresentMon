@@ -204,18 +204,15 @@ void CpuTelemetry(Service* const srv, PresentMon* const pm,
 	}
 }
 
-DWORD WINAPI PresentMonMainThread(LPVOID lpParam)
+void PresentMonMainThread(Service* const srv)
 {
     try {
-        if (lpParam == nullptr) {
-            return ERROR_INVALID_DATA;
+        if (!srv) {
+            return;
         }
 
         // alias for options
         auto& opt = clio::Options::Get();
-
-        // Extract out the PresentMon Service pointer
-        const auto srv = static_cast<Service*>(lpParam);
 
         // Grab the stop service event handle
         const auto serviceStopHandle = srv->GetServiceStopHandle();
@@ -230,7 +227,7 @@ DWORD WINAPI PresentMonMainThread(LPVOID lpParam)
                 PmSleep(500);
             }
             else {
-                return ERROR_SUCCESS;
+                return;
             }
         }
 
@@ -284,9 +281,5 @@ DWORD WINAPI PresentMonMainThread(LPVOID lpParam)
         // Stop the PresentMon session
         pm.StopTraceSession();
     }
-    catch (...) {
-        return E_FAIL;
-    }
-
-    return ERROR_SUCCESS;
+    catch (...) {}
 }

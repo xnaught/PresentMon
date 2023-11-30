@@ -18,5 +18,6 @@
     <ClInclude Include="Service.h" />
     <ClInclude Include="CliOptions.h" />
     <ClInclude Include="GlobalIdentifiers.h" />
+    <ClInclude Include="PMMainThread.h" />
   </ItemGroup>
 </Project>

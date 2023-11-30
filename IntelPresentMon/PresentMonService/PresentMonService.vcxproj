@@ -206,6 +206,7 @@
     <ClInclude Include="NamedPipeServer.h" />
     <ClInclude Include="PowerTelemetryContainer.h" />
     <ClInclude Include="PresentMon.h" />
+    <ClInclude Include="PMMainThread.h" />
     <ClInclude Include="Service.h" />
   </ItemGroup>
   <ItemGroup>

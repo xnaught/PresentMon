@@ -15,8 +15,13 @@ int CommonEntry(DWORD argc, LPTSTR* argv, bool asApp = false)
 	if (auto e = clio::Options::Init(argc, argv); e && asApp) {
 		return *e;
 	}
-	Service present_mon_service(serviceName);
-	present_mon_service.ServiceMain();
+	if (asApp) {
+		ConsoleDebugMockService::Get().Run();
+	}
+	else {
+		ConcreteService present_mon_service(serviceName);
+		present_mon_service.ServiceMain();
+	}
 	return 0;
 }
 
@@ -34,9 +39,12 @@ int __cdecl _tmain(int argc, TCHAR* argv[])
 	};
 
 	if (!StartServiceCtrlDispatcher(dispatchTable)) {
-		// if registration fails, that usually means this was run as an app
-		// so we call the common entry point directly
-		return CommonEntry(argc, argv, true);
+		// if registration fails with ERROR_FAILED_SERVICE_CONTROLLER_CONNECT
+		// this usually means we're running as console application
+		if (GetLastError() == ERROR_FAILED_SERVICE_CONTROLLER_CONNECT) {
+			return CommonEntry(argc, argv, true);
+		}
+		return -1;
 	}
 
 	return 0;
