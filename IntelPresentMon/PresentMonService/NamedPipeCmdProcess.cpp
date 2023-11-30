@@ -127,7 +127,7 @@ bool EncodeGeneralRequestSetAction(PM_ACTION action, PresentMon* pm,
     return false;
   }
 
-  PM_STATUS rsp_status = PM_STATUS_ERROR;
+  PM_STATUS rsp_status = PM_STATUS_FAILURE;
   switch (action) {
     case PM_ACTION::SELECT_ADAPTER:
       rsp_status = pm->SelectAdapter(genRqstInfo->adapterId);
@@ -186,7 +186,7 @@ void ProcessRequests(PresentMon* pm, MemBuffer* rqstBuf, MemBuffer* rspBuf) {
     _tcscpy_s(response.idString, 6, ipmsmIdString);
     response.action = PM_ACTION::INVALID_REQUEST;
     response.version = 1;
-    response.result = PM_STATUS::PM_STATUS_ERROR;
+    response.result = PM_STATUS::PM_STATUS_FAILURE;
     response.payloadSize = 0;
     rspBuf->AddItem(&response, sizeof(response));
   }

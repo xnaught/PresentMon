@@ -435,8 +435,8 @@ std::optional<PresentMonPowerTelemetryInfo> AmdPowerTelemetryAdapter::GetClosest
   return history_.GetNearest(qpc);
 }
 
-PM_GPU_VENDOR AmdPowerTelemetryAdapter::GetVendor() const noexcept {
-  return PM_GPU_VENDOR::PM_GPU_VENDOR_AMD;
+PM_DEVICE_VENDOR AmdPowerTelemetryAdapter::GetVendor() const noexcept {
+  return PM_DEVICE_VENDOR::PM_DEVICE_VENDOR_AMD;
 }
 
 std::string AmdPowerTelemetryAdapter::GetName() const noexcept {

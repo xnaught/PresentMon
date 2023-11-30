@@ -179,9 +179,9 @@ namespace pwr::nv
         return history.GetNearest(qpc);
     }
 
-    PM_GPU_VENDOR NvidiaPowerTelemetryAdapter::GetVendor() const noexcept
+    PM_DEVICE_VENDOR NvidiaPowerTelemetryAdapter::GetVendor() const noexcept
     {
-        return PM_GPU_VENDOR::PM_GPU_VENDOR_NVIDIA;
+        return PM_DEVICE_VENDOR::PM_DEVICE_VENDOR_NVIDIA;
     }
 
     std::string NvidiaPowerTelemetryAdapter::GetName() const noexcept

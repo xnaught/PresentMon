@@ -7,7 +7,7 @@
 #include <string>
 #include <map>
 
-#include "..\PresentMonUtils\PresentMonNamedPipe.h"
+#include "../PresentMonUtils/PresentMonNamedPipe.h"
 #include "gtest/gtest.h"
 #include "NamedSharedMemory.h"
 

@@ -25,7 +25,7 @@ class AmdPowerTelemetryAdapter : public PowerTelemetryAdapter {
   bool Sample() noexcept override;
   std::optional<PresentMonPowerTelemetryInfo> GetClosest(
       uint64_t qpc) const noexcept override;
-  PM_GPU_VENDOR GetVendor() const noexcept override;
+  PM_DEVICE_VENDOR GetVendor() const noexcept override;
   std::string GetName() const noexcept override;
   uint64_t GetDedicatedVideoMemory() const noexcept override;
 

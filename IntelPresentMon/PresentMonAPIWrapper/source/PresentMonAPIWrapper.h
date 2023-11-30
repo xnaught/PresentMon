@@ -26,7 +26,7 @@ namespace pmapi
         ~Session()
         {
             if (token) {
-                pmCloseSession();
+                pmShutdown();
             }
         }
         intro::Dataset GetIntrospectionDataset() const

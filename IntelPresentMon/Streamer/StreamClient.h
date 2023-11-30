@@ -5,9 +5,9 @@
 #include <thread>
 #include <string>
 #include <map>
-#include "..\PresentMonUtils\PresentMonNamedPipe.h"
+#include "../PresentMonUtils/PresentMonNamedPipe.h"
 #include "NamedSharedMemory.h"
-#include "..\PresentMonAPI\PresentMonAPI.h"
+#include "../PresentMonAPI2\source/PresentMonAPI.h"
 
 using namespace std;
 class StreamClient {

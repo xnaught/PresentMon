@@ -26,7 +26,7 @@ PM_STATUS PresentMonSession::StartTraceSession() {
   std::lock_guard<std::mutex> lock(session_mutex_);
 
   if (pm_consumer_) {
-    return PM_STATUS::PM_STATUS_SESSION_ALREADY_EXISTS;
+    return PM_STATUS::PM_STATUS_SERVICE_ERROR;
   }
 
   auto expectFilteredEvents = IsWindows8Point1OrGreater();
@@ -37,7 +37,7 @@ PM_STATUS PresentMonSession::StartTraceSession() {
   try {
     pm_consumer_ = std::make_unique<PMTraceConsumer>();
   } catch (...) {
-    return PM_STATUS::PM_STATUS_ERROR;
+    return PM_STATUS::PM_STATUS_FAILURE;
   }
 
   pm_consumer_->mFilteredEvents = expectFilteredEvents;
@@ -74,11 +74,11 @@ PM_STATUS PresentMonSession::StartTraceSession() {
     pm_consumer_.reset();
     switch (status) {
       case ERROR_ALREADY_EXISTS:
-        return PM_STATUS::PM_STATUS_SESSION_ALREADY_EXISTS;
+        return PM_STATUS::PM_STATUS_SERVICE_ERROR;
       case ERROR_FILE_NOT_FOUND:
         return PM_STATUS::PM_STATUS_INVALID_ETL_FILE;
       default:
-        return PM_STATUS::PM_STATUS_ERROR;
+        return PM_STATUS::PM_STATUS_FAILURE;
     }
   }
 
@@ -115,7 +115,7 @@ PM_STATUS PresentMonSession::ProcessEtlFile(uint32_t client_process_id,
   if (pm_consumer_ != nullptr) {
     // There is a current consumer running. For now,
     // only support a single consumer.
-    return PM_STATUS::PM_STATUS_CREATE_SESSION_FAILED;
+    return PM_STATUS::PM_STATUS_SERVICE_ERROR;
   }
 
   streamer_.SetStreamMode(StreamMode::kOfflineEtl);
@@ -123,7 +123,7 @@ PM_STATUS PresentMonSession::ProcessEtlFile(uint32_t client_process_id,
       client_process_id, static_cast<uint32_t>(StreamPidOverride::kEtlPid),
       nsm_file_name);
   if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-    return PM_STATUS::PM_STATUS_CREATE_SESSION_FAILED;
+    return PM_STATUS::PM_STATUS_SERVICE_ERROR;
   }
 
   // Start the trace session
@@ -562,7 +562,7 @@ PM_STATUS PresentMonSession::StartStreaming(uint32_t client_process_id,
     // Add the client process id to be monitored
     GetProcessInfo(client_process_id);
     auto status = StartTraceSession();
-    if (status == PM_STATUS_ERROR) {
+    if (status == PM_STATUS_FAILURE) {
       // Unable to start a trace session. Destroy the NSM and
       // return status
       streamer_.StopStreaming(target_process_id);

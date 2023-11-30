@@ -113,7 +113,7 @@ PM_STATUS StreamClient::RecordFrame(PM_FRAME_DATA** out_frame_data) {
   if (is_etl_stream_client_) {
     LOG(INFO) << "ETL Client should be using DequeueFrame instead.";
     *out_frame_data = nullptr;
-    return PM_STATUS::PM_STATUS_SERVICE_NOT_SUPPORTED;
+    return PM_STATUS::PM_STATUS_SERVICE_ERROR;
   }
 
   PmNsmFrameData* data = nullptr;
@@ -122,7 +122,7 @@ PM_STATUS StreamClient::RecordFrame(PM_FRAME_DATA** out_frame_data) {
   if (!nsm_hdr->process_active) {
     // Service destroyed the named shared memory.
     *out_frame_data = nullptr;
-    return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+    return PM_STATUS::PM_STATUS_INVALID_PID;
   }
 
   if (recording_frame_data_ == false) {
@@ -157,7 +157,7 @@ PM_STATUS StreamClient::RecordFrame(PM_FRAME_DATA** out_frame_data) {
 
     return PM_STATUS::PM_STATUS_SUCCESS;
   } else {
-    return PM_STATUS::PM_STATUS_ERROR;
+    return PM_STATUS::PM_STATUS_FAILURE;
   }
 }
 
@@ -485,7 +485,7 @@ PM_STATUS StreamClient::DequeueFrame(PM_FRAME_DATA** out_frame_data) {
   if (!nsm_hdr->process_active) {
     // Service destroyed the named shared memory.
     *out_frame_data = nullptr;
-    return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+    return PM_STATUS::PM_STATUS_INVALID_PID;
   }
 
   if ((nsm_view->GetBuffer() == nullptr) || (nsm_view->IsEmpty())) {

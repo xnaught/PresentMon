@@ -13,10 +13,10 @@ bool PowerTelemetryContainer::QueryPowerTelemetrySupport() {
     telemetry_adapters_.clear();
 
     // create providers
-    for (int iVendor = 0; iVendor < int(PM_GPU_VENDOR_UNKNOWN); iVendor++) {
+    for (int iVendor = 0; iVendor < int(PM_DEVICE_VENDOR_UNKNOWN); iVendor++) {
       try {
         if (auto pProvider = pwr::PowerTelemetryProviderFactory::Make(
-                PM_GPU_VENDOR(iVendor))) {
+                PM_DEVICE_VENDOR(iVendor))) {
           telemetry_providers_.push_back(std::move(pProvider));
         }
       } catch (const std::runtime_error& e) {

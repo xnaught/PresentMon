@@ -7,7 +7,7 @@
 #include <optional>
 #include <bitset>
 #include "PresentMonPowerTelemetry.h"
-#include "../PresentMonAPI/PresentMonAPI.h"
+#include "../PresentMonAPI2/source/PresentMonAPI.h"
 
 namespace pwr
 {
@@ -17,7 +17,7 @@ namespace pwr
         virtual ~PowerTelemetryAdapter() = default;
         virtual bool Sample() noexcept = 0;
         virtual std::optional<PresentMonPowerTelemetryInfo> GetClosest(uint64_t qpc) const noexcept = 0;
-        virtual PM_GPU_VENDOR GetVendor() const noexcept = 0;
+        virtual PM_DEVICE_VENDOR GetVendor() const noexcept = 0;
         virtual std::string GetName() const noexcept = 0;
         virtual uint64_t GetDedicatedVideoMemory() const noexcept = 0;
         

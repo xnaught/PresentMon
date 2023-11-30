@@ -16,10 +16,10 @@
 #include <Windows.h>
 #include <tchar.h>
 #include <bitset>
-#include "..\..\PresentData\PresentMonTraceConsumer.hpp"
-#include "..\PresentMonAPI\PresentMonAPI.h"
-#include "..\ControlLib\PowerTelemetryProvider.h"
-#include "..\ControlLib\CpuTelemetryInfo.h"
+#include "../../PresentData/PresentMonTraceConsumer.hpp"
+#include "../PresentMonAPI2/source/PresentMonAPI.h"
+#include "../ControlLib/PowerTelemetryProvider.h"
+#include "../ControlLib/CpuTelemetryInfo.h"
 
 // We use system reserved pid (0: System Idle Process, 4: System) that will
 // never show up in present mon for StreamAll and ETL PIDs
@@ -196,6 +196,7 @@ struct IPMSMStartStreamResponse
 	size_t      fileNameLength;
 };
 
+
 struct IPMAdapterInfo
 {
   uint32_t num_adapters;
@@ -207,6 +208,7 @@ struct IPMCpuNameResponse
   char cpu_name[MAX_PM_CPU_NAME];
   uint32_t cpu_name_length;
 };
+
 
 #ifdef __cplusplus
 } // extern "C"

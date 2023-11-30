@@ -20,7 +20,7 @@ namespace PresentMonAPI2
 		}
 		TEST_METHOD_CLEANUP(AfterEachTestMethod)
 		{
-			pmCloseSession();
+			pmShutdown();
 		}
 		TEST_METHOD(CreateAndFreeQuery)
 		{

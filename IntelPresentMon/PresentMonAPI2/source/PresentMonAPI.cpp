@@ -70,7 +70,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(uint32_t milliseconds)
 }
 
 // public endpoints
-PRESENTMON_API_EXPORT PM_STATUS pmOpenSession(uint32_t process_id)
+PRESENTMON_API_EXPORT PM_STATUS pmInitialize()
 {
 	if (pMiddleware_) {
 		return PM_STATUS_FAILURE;
@@ -89,13 +89,41 @@ PRESENTMON_API_EXPORT PM_STATUS pmOpenSession(uint32_t process_id)
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmCloseSession()
+PRESENTMON_API_EXPORT PM_STATUS pmShutdown()
 {
 	try {
 		if (!pMiddleware_) {
 			return PM_STATUS_SESSION_NOT_OPEN;
 		}
 		pMiddleware_.reset();
+		return PM_STATUS_SUCCESS;
+	}
+	catch (...) {
+		return PM_STATUS_FAILURE;
+	}
+}
+
+PRESENTMON_API_EXPORT PM_STATUS pmOpenSession(uint32_t processId)
+{
+	try {
+		if (!pMiddleware_) {
+			return PM_STATUS_SESSION_NOT_OPEN;
+		}
+		pMiddleware_->OpenSession(processId);
+		return PM_STATUS_SUCCESS;
+	}
+	catch (...) {
+		return PM_STATUS_FAILURE;
+	}
+}
+
+PRESENTMON_API_EXPORT PM_STATUS pmCloseSession(uint32_t processId)
+{
+	try {
+		if (!pMiddleware_) {
+			return PM_STATUS_SESSION_NOT_OPEN;
+		}
+		pMiddleware_->CloseSession(processId);
 		return PM_STATUS_SUCCESS;
 	}
 	catch (...) {

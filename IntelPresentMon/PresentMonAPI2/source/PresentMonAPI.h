@@ -18,6 +18,15 @@ extern "C" {
 		PM_STATUS_SUCCESS,
 		PM_STATUS_FAILURE,
 		PM_STATUS_SESSION_NOT_OPEN,
+		PM_STATUS_SERVICE_ERROR,
+		PM_STATUS_INVALID_ETL_FILE,
+		PM_STATUS_DATA_LOSS,
+		PM_STATUS_NO_DATA,
+		PM_STATUS_INVALID_PID,
+		PM_STATUS_STREAM_ALREADY_EXISTS,
+		PM_STATUS_UNABLE_TO_CREATE_NSM,
+		PM_STATUS_INVALID_ADAPTER_ID,
+		PM_STATUS_OUT_OF_RANGE,
 	};
 
 	enum PM_METRIC // **
@@ -227,9 +236,10 @@ extern "C" {
 	};
 
 	typedef struct PM_DYNAMIC_QUERY* PM_DYNAMIC_QUERY_HANDLE;
-
+	PRESENTMON_API_EXPORT PM_STATUS pmInitialize();
+	PRESENTMON_API_EXPORT PM_STATUS pmShutdown();
 	PRESENTMON_API_EXPORT PM_STATUS pmOpenSession(uint32_t process_id);
-	PRESENTMON_API_EXPORT PM_STATUS pmCloseSession();
+	PRESENTMON_API_EXPORT PM_STATUS pmCloseSession(uint32_t process_id);
 	PRESENTMON_API_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROOT** ppInterface);
 	PRESENTMON_API_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pInterface);
 	PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, double windowSizeMs, double metricOffsetMs = 0.f);
@@ -257,7 +267,149 @@ extern "C" {
 	// input the file
 	// 
 
+	/////// compilation fixes that can be REMOVED ///////
+	#define MAX_PM_ADAPTER_NAME 64
+	#define MAX_PM_CPU_NAME 256
+	#define MAX_RUNTIME_LENGTH 7
+	#define MAX_PM_PATH 260
+	#define MAX_PM_FAN_COUNT 5
+	#define MAX_PM_PSU_COUNT 5
+	#define MIN_PM_TELEMETRY_PERIOD 1
+	#define MAX_PM_TELEMETRY_PERIOD 1000
 
+	struct PM_ADAPTER_INFO
+	{
+		uint32_t id;
+		PM_DEVICE_VENDOR vendor;
+		char name[MAX_PM_ADAPTER_NAME];
+	};
+
+	struct PM_FRAME_DATA_OPT_DOUBLE {
+		double data;
+		bool valid;
+	};
+
+	struct PM_FRAME_DATA_OPT_UINT64 {
+		uint64_t data;
+		bool valid;
+	};
+
+	struct PM_FRAME_DATA_OPT_INT {
+		int data;
+		bool valid;
+	};
+
+	struct PM_FRAME_DATA_OPT_PSU_TYPE {
+		PM_PSU_TYPE data;
+		bool valid;
+	};
+
+	struct PM_FRAME_DATA
+	{
+		// @brief The name of the process that called Present().
+		char application[MAX_PM_PATH];
+
+		// @brief The process ID of the process that called Present().
+		uint32_t process_id;
+		// @brief The address of the swap chain that was presented into.
+		uint64_t swap_chain_address;
+		// @brief The runtime used to present (e.g., D3D9 or DXGI).
+		char runtime[MAX_RUNTIME_LENGTH];
+		// @brief The sync interval provided by the application in the Present()
+		// call. This value may be modified later by the driver, e.g., based on
+		// control panel overrides.
+		int32_t sync_interval;
+		// @brief Flags used in the Present() call.
+		uint32_t present_flags;
+		// @brief Whether the frame was dropped (1) or displayed (0).  Note, if
+		// dropped, msUntilDisplayed will be 0.
+		uint32_t dropped;
+		// @brief The time of the Present() call, in seconds, relative to when the
+		// PresentMon started recording.
+		double time_in_seconds;
+		// @brief The time spent inside the Present() call, in milliseconds.
+		double ms_in_present_api;
+		// @brief The time between this Present() call and the previous one, in
+		// milliseconds.
+		double ms_between_presents;
+		// @brief Whether tearing is possible (1) or not (0).
+		uint32_t allows_tearing;
+		// @brief The presentation mode used by the system for this Present().
+		PM_PRESENT_MODE present_mode;
+		// @brief The time between the Present() call and when the GPU work
+		// completed, in milliseconds.
+		double ms_until_render_complete;
+		// @brief The time between the Present() call and when the frame was
+		// displayed, in milliseconds.
+		double ms_until_displayed;
+		// @brief How long the previous frame was displayed before this Present()
+		// was displayed, in milliseconds.
+		double ms_between_display_change;
+		// @brief The time between the Present() call and when the GPU work
+		// started, in milliseconds.
+		double ms_until_render_start;
+		// @brief The time of the Present() call, as a performance counter value.
+		uint64_t qpc_time;
+
+		// @brief The time between the Present() call and the earliest keyboard or
+		// mouse interaction that contributed to this frame.
+		double ms_since_input;
+		// @brief The time that any GPU engine was active working on this frame,
+		// in milliseconds. Not supported on Win7
+		double ms_gpu_active;
+		// @brief The time video encode/decode was active separate from the other
+		// engines in milliseconds. Not supported on Win7
+		double ms_gpu_video_active;
+
+		// Power telemetry
+		PM_FRAME_DATA_OPT_DOUBLE gpu_power_w;
+		PM_FRAME_DATA_OPT_DOUBLE gpu_sustained_power_limit_w;
+		PM_FRAME_DATA_OPT_DOUBLE gpu_voltage_v;
+		PM_FRAME_DATA_OPT_DOUBLE gpu_frequency_mhz;
+		PM_FRAME_DATA_OPT_DOUBLE gpu_temperature_c;
+		PM_FRAME_DATA_OPT_DOUBLE gpu_utilization;
+		PM_FRAME_DATA_OPT_DOUBLE gpu_render_compute_utilization;
+		PM_FRAME_DATA_OPT_DOUBLE gpu_media_utilization;
+
+		PM_FRAME_DATA_OPT_DOUBLE vram_power_w;
+		PM_FRAME_DATA_OPT_DOUBLE vram_voltage_v;
+		PM_FRAME_DATA_OPT_DOUBLE vram_frequency_mhz;
+		PM_FRAME_DATA_OPT_DOUBLE vram_effective_frequency_gbs;
+		PM_FRAME_DATA_OPT_DOUBLE vram_temperature_c;
+
+		PM_FRAME_DATA_OPT_DOUBLE fan_speed_rpm[MAX_PM_FAN_COUNT];
+
+		PM_FRAME_DATA_OPT_PSU_TYPE psu_type[MAX_PM_PSU_COUNT];
+		PM_FRAME_DATA_OPT_DOUBLE psu_power[MAX_PM_PSU_COUNT];
+		PM_FRAME_DATA_OPT_DOUBLE psu_voltage[MAX_PM_PSU_COUNT];
+
+		// Gpu memory telemetry
+		PM_FRAME_DATA_OPT_UINT64 gpu_mem_total_size_b;
+		PM_FRAME_DATA_OPT_UINT64 gpu_mem_used_b;
+		PM_FRAME_DATA_OPT_UINT64 gpu_mem_max_bandwidth_bps;
+		PM_FRAME_DATA_OPT_DOUBLE gpu_mem_read_bandwidth_bps;
+		PM_FRAME_DATA_OPT_DOUBLE gpu_mem_write_bandwidth_bps;
+
+		// Throttling flags
+		PM_FRAME_DATA_OPT_INT gpu_power_limited;
+		PM_FRAME_DATA_OPT_INT gpu_temperature_limited;
+		PM_FRAME_DATA_OPT_INT gpu_current_limited;
+		PM_FRAME_DATA_OPT_INT gpu_voltage_limited;
+		PM_FRAME_DATA_OPT_INT gpu_utilization_limited;
+
+		PM_FRAME_DATA_OPT_INT vram_power_limited;
+		PM_FRAME_DATA_OPT_INT vram_temperature_limited;
+		PM_FRAME_DATA_OPT_INT vram_current_limited;
+		PM_FRAME_DATA_OPT_INT vram_voltage_limited;
+		PM_FRAME_DATA_OPT_INT vram_utilization_limited;
+
+		// Cpu Telemetry
+		PM_FRAME_DATA_OPT_DOUBLE cpu_utilization;
+		PM_FRAME_DATA_OPT_DOUBLE cpu_power_w;
+		PM_FRAME_DATA_OPT_DOUBLE cpu_power_limit_w;
+		PM_FRAME_DATA_OPT_DOUBLE cpu_temperature_c;
+		PM_FRAME_DATA_OPT_DOUBLE cpu_frequency;
+	};
 
 #ifdef __cplusplus
 } // extern "C"

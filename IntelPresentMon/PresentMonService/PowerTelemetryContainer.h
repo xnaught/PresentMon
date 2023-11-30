@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
-#include "..\ControlLib\PowerTelemetryProviderFactory.h"
+#include "../ControlLib/PowerTelemetryProviderFactory.h"
 
 class PowerTelemetryContainer {
  public:

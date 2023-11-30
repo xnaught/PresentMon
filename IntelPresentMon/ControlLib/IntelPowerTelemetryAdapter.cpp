@@ -151,9 +151,9 @@ namespace pwr::intel
         return history.GetNearest(qpc);
     }
 
-    PM_GPU_VENDOR IntelPowerTelemetryAdapter::GetVendor() const noexcept
+    PM_DEVICE_VENDOR IntelPowerTelemetryAdapter::GetVendor() const noexcept
     {
-        return PM_GPU_VENDOR::PM_GPU_VENDOR_INTEL;
+        return PM_DEVICE_VENDOR::PM_DEVICE_VENDOR_INTEL;
     }
 
     std::string IntelPowerTelemetryAdapter::GetName() const noexcept
