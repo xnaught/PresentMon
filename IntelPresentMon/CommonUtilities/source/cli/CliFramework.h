@@ -6,6 +6,7 @@
 #pragma warning(pop)
 
 #include <optional>
+#include <cassert>
 
 namespace pmon::util::cli
 {
@@ -15,10 +16,10 @@ namespace pmon::util::cli
 		friend class Flag;
 	public:
 		OptionsContainer(const char* description, const char* name);
-		void Finalize(int argc, char** argv);
+		void Finalize();
 		int Exit(const CLI::ParseError& e);
 	protected:
-		// functions
+		bool finalized_ = false;
 		CLI::App app_;
 	};
 
@@ -29,13 +30,15 @@ namespace pmon::util::cli
 		OptionsBase() : OptionsContainer{ T::description, T::name } {}
 		static const T& Get()
 		{
-			return Get_();
+			auto& opts = Get_();
+			assert(opts.finalized_);
+			return opts;
 		}
-		static std::optional<int> Init(int argc, char** argv)
+		static std::optional<int> Init()
 		{
 			auto& opts = Get_();
 			try {
-				opts.Finalize(argc, argv);
+				opts.Finalize();
 				return {};
 			}
 			catch (const CLI::ParseError& e) {

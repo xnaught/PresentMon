@@ -18,9 +18,15 @@
     <ClInclude Include="source\cli\CliFramework.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\str\String.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\cli\CliFramework.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\str\String.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

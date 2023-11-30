@@ -16,5 +16,6 @@
     <ClInclude Include="PowerTelemetryContainer.h" />
     <ClInclude Include="PresentMon.h" />
     <ClInclude Include="Service.h" />
+    <ClInclude Include="CliOptions.h" />
   </ItemGroup>
 </Project>

@@ -199,6 +199,7 @@
     <ClCompile Include="NamedPipeCmdProcess.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CliOptions.h" />
     <ClInclude Include="NamedPipeCmdProcess.h" />
     <ClInclude Include="LateStageReprojectionData.hpp" />
     <ClInclude Include="NamedPipeServer.h" />
@@ -209,6 +210,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\PresentData\PresentData.vcxproj">
       <Project>{892028e5-32f6-45fc-8ab2-90fcbcac4bf6}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">
+      <Project>{08a704d8-ca1c-45e9-8ede-542a1a43b53e}</Project>
     </ProjectReference>
     <ProjectReference Include="..\ControlLib\ControlLib.vcxproj">
       <Project>{3c39c9bc-0e85-42c0-894c-3561bb93e87f}</Project>

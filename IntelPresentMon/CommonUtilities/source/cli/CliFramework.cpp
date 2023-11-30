@@ -1,11 +1,14 @@
 #include "CliFramework.h"
+#include "../str/String.h"
+#include <Windows.h>
 
 namespace pmon::util::cli
 {
 	OptionsContainer::OptionsContainer(const char* description, const char* name) : app_{ description, name } {}
-	void OptionsContainer::Finalize(int argc, char** argv)
+	void OptionsContainer::Finalize()
 	{
-		app_.parse(argc, argv);
+		app_.parse(str::ToNarrow(GetCommandLineW()), true);
+		finalized_ = true;
 	}
 	int OptionsContainer::Exit(const CLI::ParseError& e)
 	{
