@@ -1,9 +1,10 @@
-#include "PresentMonAPI.h"
+#include "../../PresentMonAPI/PresentMonAPI.h"
 #include <memory>
 #include <crtdbg.h>
 #include "../../PresentMonMiddleware/source/MockMiddleware.h"
 #include "../../PresentMonMiddleware/source/ConcreteMiddleware.h"
 #include "Internal.h"
+#include "PresentMonAPI.h"
 
 
 using namespace pmon::mid;
@@ -18,7 +19,7 @@ std::unique_ptr<Middleware> pMiddleware_;
 
 
 // private endpoints
-PRESENTMON_API_EXPORT void pmSetMiddlewareAsMock_(bool mocked, bool activateCrtHeapDebug, bool useLocalShmServer)
+PRESENTMON_API2_EXPORT void pmSetMiddlewareAsMock_(bool mocked, bool activateCrtHeapDebug, bool useLocalShmServer)
 {
 	useMockedMiddleware_ = mocked;
 	useCrtHeapDebug_ = activateCrtHeapDebug;
@@ -31,14 +32,14 @@ PRESENTMON_API_EXPORT void pmSetMiddlewareAsMock_(bool mocked, bool activateCrtH
 	}
 }
 
-PRESENTMON_API_EXPORT _CrtMemState pmCreateHeapCheckpoint_()
+PRESENTMON_API2_EXPORT _CrtMemState pmCreateHeapCheckpoint_()
 {
 	_CrtMemState s;
 	_CrtMemCheckpoint(&s);
 	return s;
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmMiddlewareSpeak_(char* buffer)
+PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareSpeak_(char* buffer)
 {
 	try {
 		if (!pMiddleware_) {
@@ -52,7 +53,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmMiddlewareSpeak_(char* buffer)
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(uint32_t milliseconds)
+PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(uint32_t milliseconds)
 {
 	try {
 		if (!pMiddleware_) {
@@ -72,7 +73,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(uint32_t milliseconds)
 }
 
 // public endpoints
-PRESENTMON_API_EXPORT PM_STATUS pmOpenSession()
+PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession()
 {
 	if (pMiddleware_) {
 		return PM_STATUS_FAILURE;
@@ -91,7 +92,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmOpenSession()
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmCloseSession()
+PRESENTMON_API2_EXPORT PM_STATUS pmCloseSession()
 {
 	try {
 		if (!pMiddleware_) {
@@ -105,7 +106,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmCloseSession()
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmStartStreaming(uint32_t processId)
+PRESENTMON_API2_EXPORT PM_STATUS pmStartStreaming(uint32_t processId)
 {
 	try {
 		if (!pMiddleware_) {
@@ -119,7 +120,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmStartStreaming(uint32_t processId)
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmStopStreaming(uint32_t processId)
+PRESENTMON_API2_EXPORT PM_STATUS pmStopStreaming(uint32_t processId)
 {
 	try {
 		if (!pMiddleware_) {
@@ -133,7 +134,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmStopStreaming(uint32_t processId)
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROOT** ppInterface)
+PRESENTMON_API2_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROOT** ppInterface)
 {
 	try {
 		if (!pMiddleware_) {
@@ -150,7 +151,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROOT
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pInterface)
+PRESENTMON_API2_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pInterface)
 {
 	try {
 		if (!pMiddleware_) {
@@ -167,7 +168,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pIn
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint32_t processId, double windowSizeMs, double metricOffsetMs)
+PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint32_t processId, double windowSizeMs, double metricOffsetMs)
 {
 	try {
 		if (!pMiddleware_) {
@@ -184,7 +185,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* 
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle)
+PRESENTMON_API2_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle)
 {
 	try {
 		if (!pMiddleware_) {
@@ -201,7 +202,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handl
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint8_t* pBlob, uint32_t* numSwapChains)
+PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint8_t* pBlob, uint32_t* numSwapChains)
 {
 	try {
 		if (!pMiddleware_) {
@@ -218,7 +219,7 @@ PRESENTMON_API_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handl
 	}
 }
 
-PRESENTMON_API_EXPORT PM_STATUS pmPollStaticQuery(const PM_QUERY_ELEMENT* pElement, uint8_t* pBlob)
+PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(const PM_QUERY_ELEMENT* pElement, uint8_t* pBlob)
 {
 	try {
 		if (!pMiddleware_) {

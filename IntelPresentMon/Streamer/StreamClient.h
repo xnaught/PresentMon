@@ -7,7 +7,7 @@
 #include <map>
 #include "../PresentMonUtils/PresentMonNamedPipe.h"
 #include "NamedSharedMemory.h"
-#include "../PresentMonAPI2\source/PresentMonAPI.h"
+#include "../PresentMonAPI/PresentMonAPI.h"
 
 class StreamClient {
  public:

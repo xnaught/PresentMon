@@ -85,7 +85,7 @@ bool EncodeEnumerateAdapters(PresentMon* pm, MemBuffer* rspBuf) {
 
   for (uint32_t i = 0; i < adapter_info.num_adapters; i++) {
     adapter_info.adapters[i].id = i;
-    adapter_info.adapters[i].vendor = adapter_infos.at(i)->GetVendor();
+    adapter_info.adapters[i].vendor = (PM_GPU_VENDOR)adapter_infos.at(i)->GetVendor();
     strcpy_s(adapter_info.adapters[i].name, MAX_PM_ADAPTER_NAME,
              adapter_infos.at(i)->GetName().c_str());
   }

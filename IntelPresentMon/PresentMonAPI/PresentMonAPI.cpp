@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 // PresentMonAPI.cpp : Defines the functions for the static library.
-#include "../PresentMonAPI2/source/PresentMonAPI.h"
+#include "PresentMonAPI.h"
 
 #include <Windows.h>
 
@@ -13,7 +13,7 @@
 // Global pointer to PresentMon Client object
 static PresentMonClient* gPmClient = nullptr;
 
-PM_STATUS pmInitialize(const char* controlPipeName) {
+PRESENTMON_API_EXPORT PM_STATUS pmInitialize(const char* controlPipeName) {
   if (gPmClient == nullptr) {
     try {
       gPmClient = new PresentMonClient(controlPipeName);
@@ -24,7 +24,7 @@ PM_STATUS pmInitialize(const char* controlPipeName) {
   return PM_STATUS::PM_STATUS_SUCCESS;
 }
 
-PM_STATUS pmShutdown() {
+PRESENTMON_API_EXPORT PM_STATUS pmShutdown() {
   if (gPmClient) {
     delete gPmClient;
     gPmClient = nullptr;
@@ -33,7 +33,7 @@ PM_STATUS pmShutdown() {
   return PM_STATUS::PM_STATUS_SUCCESS;
 }
 
-PM_STATUS pmGetFramesPerSecondData(uint32_t processId, PM_FPS_DATA* pmFpsData,
+PRESENTMON_API_EXPORT PM_STATUS pmGetFramesPerSecondData(uint32_t processId, PM_FPS_DATA* pmFpsData,
                                    double windowSizeinMs,
                                    uint32_t* numSwapChains) {
   if (gPmClient) {
@@ -44,7 +44,7 @@ PM_STATUS pmGetFramesPerSecondData(uint32_t processId, PM_FPS_DATA* pmFpsData,
   }
 }
 
-PM_STATUS pmGetGfxLatencyData(uint32_t processId,
+PRESENTMON_API_EXPORT PM_STATUS pmGetGfxLatencyData(uint32_t processId,
                               PM_GFX_LATENCY_DATA* pmGfxLatencyData,
                               double windowSizeinMs, uint32_t* numSwapChains) {
   if (gPmClient) {
@@ -55,7 +55,7 @@ PM_STATUS pmGetGfxLatencyData(uint32_t processId,
   }
 }
 
-PM_STATUS pmGetFrameData(uint32_t processId, uint32_t* in_out_num_frames,
+PRESENTMON_API_EXPORT PM_STATUS pmGetFrameData(uint32_t processId, uint32_t* in_out_num_frames,
                          PM_FRAME_DATA* out_data) {
   if (gPmClient) {
     return gPmClient->GetFrameData(processId, false, in_out_num_frames,
@@ -65,7 +65,7 @@ PM_STATUS pmGetFrameData(uint32_t processId, uint32_t* in_out_num_frames,
   }
 }
 
-PM_STATUS pmGetStreamAllFrameData(uint32_t* in_out_num_frames,
+PRESENTMON_API_EXPORT PM_STATUS pmGetStreamAllFrameData(uint32_t* in_out_num_frames,
                                   PM_FRAME_DATA* out_data) {
   if (gPmClient) {
     return gPmClient->GetFrameData(
@@ -76,7 +76,7 @@ PM_STATUS pmGetStreamAllFrameData(uint32_t* in_out_num_frames,
   }
 }
 
-PM_STATUS pmGetEtlFrameData(uint32_t* in_out_num_frames,
+PRESENTMON_API_EXPORT PM_STATUS pmGetEtlFrameData(uint32_t* in_out_num_frames,
                             PM_FRAME_DATA* out_data) {
   if (gPmClient) {
     return gPmClient->GetFrameData(0, true, in_out_num_frames, out_data);
@@ -85,7 +85,7 @@ PM_STATUS pmGetEtlFrameData(uint32_t* in_out_num_frames,
   }
 }
 
-PM_STATUS pmGetGPUData(uint32_t processId, PM_GPU_DATA* pmGpuData,
+PRESENTMON_API_EXPORT PM_STATUS pmGetGPUData(uint32_t processId, PM_GPU_DATA* pmGpuData,
                        double windowSizeinMs) {
   if (gPmClient) {
     return gPmClient->GetGpuData(processId, pmGpuData, windowSizeinMs);
@@ -94,7 +94,7 @@ PM_STATUS pmGetGPUData(uint32_t processId, PM_GPU_DATA* pmGpuData,
   }
 }
 
-PM_STATUS pmGetCPUData(uint32_t processId, PM_CPU_DATA* pmCpuData,
+PRESENTMON_API_EXPORT PM_STATUS pmGetCPUData(uint32_t processId, PM_CPU_DATA* pmCpuData,
                        double windowSizeinMs) {
   if (gPmClient) {
     return gPmClient->GetCpuData(processId, pmCpuData, windowSizeinMs);
@@ -103,7 +103,7 @@ PM_STATUS pmGetCPUData(uint32_t processId, PM_CPU_DATA* pmCpuData,
   }
 }
 
-PM_STATUS pmStartStream(uint32_t processId) {
+PRESENTMON_API_EXPORT PM_STATUS pmStartStream(uint32_t processId) {
   if (gPmClient == nullptr) {
     return PM_STATUS::PM_STATUS_SESSION_NOT_OPEN;
   }
@@ -111,7 +111,7 @@ PM_STATUS pmStartStream(uint32_t processId) {
   return gPmClient->RequestStreamProcess(processId);
 }
 
-PM_STATUS pmStartStreamEtl(char const* etl_file_name) {
+PRESENTMON_API_EXPORT PM_STATUS pmStartStreamEtl(char const* etl_file_name) {
   if (gPmClient == nullptr) {
     return PM_STATUS::PM_STATUS_SESSION_NOT_OPEN;
   }
@@ -119,7 +119,7 @@ PM_STATUS pmStartStreamEtl(char const* etl_file_name) {
   return gPmClient->RequestStreamProcess(etl_file_name);
 }
 
-PM_STATUS pmStopStream(uint32_t processId) {
+PRESENTMON_API_EXPORT PM_STATUS pmStopStream(uint32_t processId) {
   if (gPmClient == nullptr) {
     return PM_STATUS::PM_STATUS_SESSION_NOT_OPEN;
   }
@@ -127,7 +127,7 @@ PM_STATUS pmStopStream(uint32_t processId) {
   return gPmClient->StopStreamProcess(processId);
 }
 
-PM_STATUS pmSetMetricsOffset(double offset_in_ms) {
+PRESENTMON_API_EXPORT PM_STATUS pmSetMetricsOffset(double offset_in_ms) {
   if (gPmClient) {
     return gPmClient->SetMetricsOffset(offset_in_ms);
   } else {
@@ -135,7 +135,7 @@ PM_STATUS pmSetMetricsOffset(double offset_in_ms) {
   }
 }
 
-PM_STATUS pmEnumerateAdapters(
+PRESENTMON_API_EXPORT PM_STATUS pmEnumerateAdapters(
     PM_ADAPTER_INFO* adapter_info_buffer, uint32_t* adapter_count) {
   if (!adapter_count) {
     return PM_STATUS::PM_STATUS_FAILURE;
@@ -147,7 +147,7 @@ PM_STATUS pmEnumerateAdapters(
   }
 }
 
-PM_STATUS pmSetActiveAdapter(uint32_t adapter_id) {
+PRESENTMON_API_EXPORT PM_STATUS pmSetActiveAdapter(uint32_t adapter_id) {
   if (gPmClient) {
     return gPmClient->SetActiveAdapter(adapter_id);
   } else {
@@ -155,7 +155,7 @@ PM_STATUS pmSetActiveAdapter(uint32_t adapter_id) {
   }
 }
 
-PM_STATUS pmGetCpuName(char* cpu_name_buffer,
+PRESENTMON_API_EXPORT PM_STATUS pmGetCpuName(char* cpu_name_buffer,
                                              uint32_t* buffer_size) {
   if (gPmClient) {
     return gPmClient->GetCpuName(cpu_name_buffer, buffer_size);
@@ -164,7 +164,22 @@ PM_STATUS pmGetCpuName(char* cpu_name_buffer,
   }
 }
 
-void pmInitializeLogging(const char* location, const char* basename, const char* extension, int level)
+PRESENTMON_API_EXPORT PM_STATUS pmSetGPUTelemetryPeriod(uint32_t period_ms) {
+    if (gPmClient) {
+        if (period_ms >= MIN_PM_TELEMETRY_PERIOD &&
+            period_ms <= MAX_PM_TELEMETRY_PERIOD) {
+            return gPmClient->SetGPUTelemetryPeriod(period_ms);
+        }
+        else {
+            return PM_STATUS::PM_STATUS_OUT_OF_RANGE;
+        }
+    }
+    else {
+        return PM_STATUS::PM_STATUS_SERVICE_NOT_INITIALIZED;
+    }
+}
+
+PRESENTMON_API_EXPORT void pmInitializeLogging(const char* location, const char* basename, const char* extension, int level)
 {
     InitializeLogging(location, basename, extension, level);
 }

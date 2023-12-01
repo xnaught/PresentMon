@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #ifdef PRESENTMONAPI2_EXPORTS
-#define PRESENTMON_API_EXPORT __declspec(dllexport)
+#define PRESENTMON_API2_EXPORT __declspec(dllexport)
 #else
-#define PRESENTMON_API_EXPORT __declspec(dllimport)
+#define PRESENTMON_API2_EXPORT __declspec(dllimport)
 #endif
 
 #include <cstdint>
@@ -241,16 +241,16 @@ extern "C" {
 	};
 
 	typedef struct PM_DYNAMIC_QUERY* PM_DYNAMIC_QUERY_HANDLE;
-	PRESENTMON_API_EXPORT PM_STATUS pmOpenSession();
-	PRESENTMON_API_EXPORT PM_STATUS pmCloseSession();
-	PRESENTMON_API_EXPORT PM_STATUS pmStartStreaming(uint32_t process_id);
-	PRESENTMON_API_EXPORT PM_STATUS pmStopStreaming(uint32_t process_id);
-	PRESENTMON_API_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROOT** ppInterface);
-	PRESENTMON_API_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pInterface);
-	PRESENTMON_API_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint32_t processId, double windowSizeMs, double metricOffsetMs = 0.f);
-	PRESENTMON_API_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle);
-	PRESENTMON_API_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint8_t* pBlob, uint32_t* numSwapChains);
-	PRESENTMON_API_EXPORT PM_STATUS pmPollStaticQuery(const PM_QUERY_ELEMENT* pElement, uint8_t* pBlob);
+	PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession();
+	PRESENTMON_API2_EXPORT PM_STATUS pmCloseSession();
+	PRESENTMON_API2_EXPORT PM_STATUS pmStartStreaming(uint32_t process_id);
+	PRESENTMON_API2_EXPORT PM_STATUS pmStopStreaming(uint32_t process_id);
+	PRESENTMON_API2_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROOT** ppInterface);
+	PRESENTMON_API2_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pInterface);
+	PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint32_t processId, double windowSizeMs, double metricOffsetMs = 0.f);
+	PRESENTMON_API2_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle);
+	PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint8_t* pBlob, uint32_t* numSwapChains);
+	PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(const PM_QUERY_ELEMENT* pElement, uint8_t* pBlob);
 	
 
 	/////// draft functions ///////
@@ -271,294 +271,6 @@ extern "C" {
 	//// offline etl streaming session
 	// input the file
 	// 
-
-	/////// compilation fixes that can be REMOVED ///////
-	#define MAX_PM_ADAPTER_NAME 64
-	#define MAX_PM_CPU_NAME 256
-	#define MAX_RUNTIME_LENGTH 7
-	#define MAX_PM_PATH 260
-	#define MAX_PM_FAN_COUNT 5
-	#define MAX_PM_PSU_COUNT 5
-	#define MIN_PM_TELEMETRY_PERIOD 1
-	#define MAX_PM_TELEMETRY_PERIOD 1000
-
-	struct PM_ADAPTER_INFO
-	{
-		uint32_t id;
-		PM_DEVICE_VENDOR vendor;
-		char name[MAX_PM_ADAPTER_NAME];
-	};
-
-	struct PM_FRAME_DATA_OPT_DOUBLE {
-		double data;
-		bool valid;
-	};
-
-	struct PM_FRAME_DATA_OPT_UINT64 {
-		uint64_t data;
-		bool valid;
-	};
-
-	struct PM_FRAME_DATA_OPT_INT {
-		int data;
-		bool valid;
-	};
-
-	struct PM_FRAME_DATA_OPT_PSU_TYPE {
-		PM_PSU_TYPE data;
-		bool valid;
-	};
-
-	struct PM_FRAME_DATA
-	{
-		// @brief The name of the process that called Present().
-		char application[MAX_PM_PATH];
-
-		// @brief The process ID of the process that called Present().
-		uint32_t process_id;
-		// @brief The address of the swap chain that was presented into.
-		uint64_t swap_chain_address;
-		// @brief The runtime used to present (e.g., D3D9 or DXGI).
-		char runtime[MAX_RUNTIME_LENGTH];
-		// @brief The sync interval provided by the application in the Present()
-		// call. This value may be modified later by the driver, e.g., based on
-		// control panel overrides.
-		int32_t sync_interval;
-		// @brief Flags used in the Present() call.
-		uint32_t present_flags;
-		// @brief Whether the frame was dropped (1) or displayed (0).  Note, if
-		// dropped, msUntilDisplayed will be 0.
-		uint32_t dropped;
-		// @brief The time of the Present() call, in seconds, relative to when the
-		// PresentMon started recording.
-		double time_in_seconds;
-		// @brief The time spent inside the Present() call, in milliseconds.
-		double ms_in_present_api;
-		// @brief The time between this Present() call and the previous one, in
-		// milliseconds.
-		double ms_between_presents;
-		// @brief Whether tearing is possible (1) or not (0).
-		uint32_t allows_tearing;
-		// @brief The presentation mode used by the system for this Present().
-		PM_PRESENT_MODE present_mode;
-		// @brief The time between the Present() call and when the GPU work
-		// completed, in milliseconds.
-		double ms_until_render_complete;
-		// @brief The time between the Present() call and when the frame was
-		// displayed, in milliseconds.
-		double ms_until_displayed;
-		// @brief How long the previous frame was displayed before this Present()
-		// was displayed, in milliseconds.
-		double ms_between_display_change;
-		// @brief The time between the Present() call and when the GPU work
-		// started, in milliseconds.
-		double ms_until_render_start;
-		// @brief The time of the Present() call, as a performance counter value.
-		uint64_t qpc_time;
-
-		// @brief The time between the Present() call and the earliest keyboard or
-		// mouse interaction that contributed to this frame.
-		double ms_since_input;
-		// @brief The time that any GPU engine was active working on this frame,
-		// in milliseconds. Not supported on Win7
-		double ms_gpu_active;
-		// @brief The time video encode/decode was active separate from the other
-		// engines in milliseconds. Not supported on Win7
-		double ms_gpu_video_active;
-
-		// Power telemetry
-		PM_FRAME_DATA_OPT_DOUBLE gpu_power_w;
-		PM_FRAME_DATA_OPT_DOUBLE gpu_sustained_power_limit_w;
-		PM_FRAME_DATA_OPT_DOUBLE gpu_voltage_v;
-		PM_FRAME_DATA_OPT_DOUBLE gpu_frequency_mhz;
-		PM_FRAME_DATA_OPT_DOUBLE gpu_temperature_c;
-		PM_FRAME_DATA_OPT_DOUBLE gpu_utilization;
-		PM_FRAME_DATA_OPT_DOUBLE gpu_render_compute_utilization;
-		PM_FRAME_DATA_OPT_DOUBLE gpu_media_utilization;
-
-		PM_FRAME_DATA_OPT_DOUBLE vram_power_w;
-		PM_FRAME_DATA_OPT_DOUBLE vram_voltage_v;
-		PM_FRAME_DATA_OPT_DOUBLE vram_frequency_mhz;
-		PM_FRAME_DATA_OPT_DOUBLE vram_effective_frequency_gbs;
-		PM_FRAME_DATA_OPT_DOUBLE vram_temperature_c;
-
-		PM_FRAME_DATA_OPT_DOUBLE fan_speed_rpm[MAX_PM_FAN_COUNT];
-
-		PM_FRAME_DATA_OPT_PSU_TYPE psu_type[MAX_PM_PSU_COUNT];
-		PM_FRAME_DATA_OPT_DOUBLE psu_power[MAX_PM_PSU_COUNT];
-		PM_FRAME_DATA_OPT_DOUBLE psu_voltage[MAX_PM_PSU_COUNT];
-
-		// Gpu memory telemetry
-		PM_FRAME_DATA_OPT_UINT64 gpu_mem_total_size_b;
-		PM_FRAME_DATA_OPT_UINT64 gpu_mem_used_b;
-		PM_FRAME_DATA_OPT_UINT64 gpu_mem_max_bandwidth_bps;
-		PM_FRAME_DATA_OPT_DOUBLE gpu_mem_read_bandwidth_bps;
-		PM_FRAME_DATA_OPT_DOUBLE gpu_mem_write_bandwidth_bps;
-
-		// Throttling flags
-		PM_FRAME_DATA_OPT_INT gpu_power_limited;
-		PM_FRAME_DATA_OPT_INT gpu_temperature_limited;
-		PM_FRAME_DATA_OPT_INT gpu_current_limited;
-		PM_FRAME_DATA_OPT_INT gpu_voltage_limited;
-		PM_FRAME_DATA_OPT_INT gpu_utilization_limited;
-
-		PM_FRAME_DATA_OPT_INT vram_power_limited;
-		PM_FRAME_DATA_OPT_INT vram_temperature_limited;
-		PM_FRAME_DATA_OPT_INT vram_current_limited;
-		PM_FRAME_DATA_OPT_INT vram_voltage_limited;
-		PM_FRAME_DATA_OPT_INT vram_utilization_limited;
-
-		// Cpu Telemetry
-		PM_FRAME_DATA_OPT_DOUBLE cpu_utilization;
-		PM_FRAME_DATA_OPT_DOUBLE cpu_power_w;
-		PM_FRAME_DATA_OPT_DOUBLE cpu_power_limit_w;
-		PM_FRAME_DATA_OPT_DOUBLE cpu_temperature_c;
-		PM_FRAME_DATA_OPT_DOUBLE cpu_frequency;
-	};
-
-	struct PM_METRIC_DOUBLE_DATA {
-		double avg;
-		double percentile_99;
-		double percentile_95;
-		double percentile_90;
-		double high;
-		double low;
-		double raw;
-		bool valid;
-	};
-
-	struct PM_FPS_DATA
-	{
-		uint64_t swap_chain;
-
-		PM_METRIC_DOUBLE_DATA displayed_fps;
-		PM_METRIC_DOUBLE_DATA presented_fps;
-		PM_METRIC_DOUBLE_DATA frame_time_ms;
-
-		PM_METRIC_DOUBLE_DATA gpu_busy;
-		PM_METRIC_DOUBLE_DATA percent_dropped_frames;
-
-		uint32_t num_presents;
-
-		int32_t sync_interval;
-		PM_PRESENT_MODE present_mode;
-		int32_t allows_tearing;
-	};
-
-	struct PM_GFX_LATENCY_DATA
-	{
-		uint64_t swap_chain;
-		PM_METRIC_DOUBLE_DATA render_latency_ms;
-		PM_METRIC_DOUBLE_DATA display_latency_ms;
-	};
-
-	struct PM_PSU_DATA {
-		// PSU type
-		PM_PSU_TYPE psu_type;
-		// PSU total energy consumed by power source
-		PM_METRIC_DOUBLE_DATA psu_power;
-		// PSU voltage of the power source
-		PM_METRIC_DOUBLE_DATA psu_voltage;
-		bool valid;
-	};
-
-	struct PM_GPU_DATA
-	{
-		// Total energy consumed by the GPU chip
-		PM_METRIC_DOUBLE_DATA gpu_power_w;
-		// Sustained power limit in W
-		PM_METRIC_DOUBLE_DATA gpu_sustained_power_limit_w;
-		// Voltage feeding the GPU chip, measured at the power supply output -
-		// chip input will be lower
-		PM_METRIC_DOUBLE_DATA gpu_voltage_v;
-		// GPU chip frequency
-		PM_METRIC_DOUBLE_DATA gpu_frequency_mhz;
-		// GPU chip temperature
-		PM_METRIC_DOUBLE_DATA gpu_temperature_c;
-		// Fan speed
-		PM_METRIC_DOUBLE_DATA gpu_fan_speed_rpm[MAX_PM_FAN_COUNT];
-		// Percentage utilization of the GPU
-		PM_METRIC_DOUBLE_DATA gpu_utilization;
-		// Percentage utilization of 3D/Compute blocks in GPU
-		PM_METRIC_DOUBLE_DATA gpu_render_compute_utilization;
-		// Percentage utilization of media blocks in the GPU
-		PM_METRIC_DOUBLE_DATA gpu_media_utilization;
-		// Total energy consumed by the memory modules
-		PM_METRIC_DOUBLE_DATA vram_power_w;
-		// Voltage feeding the memory modules
-		PM_METRIC_DOUBLE_DATA vram_voltage_v;
-		// Raw frequency driving the memory modules
-		PM_METRIC_DOUBLE_DATA vram_frequency_mhz;
-		// Effective data transfer rate the memory modules can sustain based on
-		// current clock frequency
-		PM_METRIC_DOUBLE_DATA vram_effective_frequency_gbps;
-		// Read bandwidth
-		PM_METRIC_DOUBLE_DATA vram_read_bandwidth_bps;
-		// Write bandwidth
-		PM_METRIC_DOUBLE_DATA vram_write_bandwidth_bps;
-		// Memory modules temperature
-		PM_METRIC_DOUBLE_DATA vram_temperature_c;
-		// Total GPU memory in bytes
-		PM_METRIC_DOUBLE_DATA gpu_mem_total_size_b;
-		// Total GPU memory used in bytes
-		PM_METRIC_DOUBLE_DATA gpu_mem_used_b;
-		// Percent utilization of GPU memory used.
-		PM_METRIC_DOUBLE_DATA gpu_mem_utilization;
-		// Max GPU bandwidth in bytes per second
-		PM_METRIC_DOUBLE_DATA gpu_mem_max_bandwidth_bps;
-		// GPU read bandwidth in bytes per second
-		PM_METRIC_DOUBLE_DATA gpu_mem_read_bandwidth_bps;
-		// GPU write bandwidth in bytes per second
-		PM_METRIC_DOUBLE_DATA gpu_mem_write_bandwidth_bps;
-
-		// PSU power data
-		PM_PSU_DATA psu_data[MAX_PM_PSU_COUNT];
-
-		// Throttling flags
-		// GPU is being throttled because the GPU chip exceeding the maximum power
-		// limits
-		PM_METRIC_DOUBLE_DATA gpu_power_limited;
-		// GPU frequency is being throttled because the GPU chip is exceeding the
-		// temperature limits
-		PM_METRIC_DOUBLE_DATA gpu_temperature_limited;
-		// The desired GPU frequency is being throttled because the GPU chip has
-		// exceeded the power supply current limits
-		PM_METRIC_DOUBLE_DATA gpu_current_limited;
-		// GPU frequency cannot be increased because the voltage limits have been
-		// reached
-		PM_METRIC_DOUBLE_DATA gpu_voltage_limited;
-		// Due to lower GPU utilization, the hardware has lowered the GPU
-		// frequency
-		PM_METRIC_DOUBLE_DATA gpu_utilization_limited;
-		// Memory frequency is being throttled because the memory modules are
-		// exceeding the maximum power limits
-		PM_METRIC_DOUBLE_DATA vram_power_limited;
-		// Memory frequency is being throttled because the memory modules are
-		// exceeding the maximum temperature limits
-		PM_METRIC_DOUBLE_DATA vram_temperature_limited;
-		// Memory frequency is being throttled because the memory modules have
-		// exceeded the power supply current limits
-		PM_METRIC_DOUBLE_DATA vram_current_limited;
-		// Memory frequency cannot be increased because the voltage limits have
-		// been reached
-		PM_METRIC_DOUBLE_DATA vram_voltage_limited;
-		// Due to lower memory traffic, the hardware has lowered the memory
-		// frequency
-		PM_METRIC_DOUBLE_DATA vram_utilization_limited;
-	};
-	
-	struct PM_CPU_DATA {
-		// CPU utilization
-		PM_METRIC_DOUBLE_DATA cpu_utilization;
-		// Total energy consumed by CPU
-		PM_METRIC_DOUBLE_DATA cpu_power_w;
-		// Power limit of CPU
-		PM_METRIC_DOUBLE_DATA cpu_power_limit_w;
-		// Temperature of CPU
-		PM_METRIC_DOUBLE_DATA cpu_temperature_c;
-		// Clock frequency of CPU
-		PM_METRIC_DOUBLE_DATA cpu_frequency;
-	};
 #ifdef __cplusplus
 } // extern "C"
 #endif
