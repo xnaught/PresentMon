@@ -41,6 +41,7 @@ void InitializeLogging(const char* location, const char* basename, const char* e
             google::SetLogFilenameExtension(extension);
         }
         FLAGS_minloglevel = std::clamp(level, 0, 3);
+        LOG(INFO) << "hello from log init" << std::endl;
     }
 }
 
@@ -71,13 +72,13 @@ PresentMonClient::PresentMonClient(const char* controlPipeName)
 
     // Exit if an error other than ERROR_PIPE_BUSY occurs.
     if (GetLastError() != ERROR_PIPE_BUSY) {
-      LOG(ERROR) << "Service not found.";
+      LOG(ERROR) << "Service not found." << std::endl;
       throw std::runtime_error{"Service not found"};
     }
 
     // All pipe instances are busy, so wait for 20 seconds.
     if (!WaitNamedPipe(pipe_name.c_str(), 20000)) {
-      LOG(ERROR) << "Pipe sessions full.";
+      LOG(ERROR) << "Pipe sessions full." << std::endl;
       throw std::runtime_error{"Pipe sessions full"};
     }
   }
@@ -88,7 +89,7 @@ PresentMonClient::PresentMonClient(const char* controlPipeName)
                                          NULL,   // don't set maximum bytes
                                          NULL);  // don't set maximum time
   if (!success) {
-    LOG(ERROR) << "Pipe error.";
+    LOG(ERROR) << "Pipe error." << std::endl;
     throw std::runtime_error{"Pipe error"};
   }
 
