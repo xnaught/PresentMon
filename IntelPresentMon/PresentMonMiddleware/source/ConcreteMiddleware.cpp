@@ -20,6 +20,8 @@
 
 namespace pmon::mid
 {
+    using namespace ipc::intro;
+
     static const uint32_t kMaxRespBufferSize = 4096;
 	ConcreteMiddleware::ConcreteMiddleware()
 	{

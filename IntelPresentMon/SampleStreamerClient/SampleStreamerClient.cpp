@@ -21,7 +21,7 @@ int main(int argc, TCHAR* argv[])
 		LOG(ERROR) << "Mapfile name needed.";
 	}
 
-	string mapfile_name = argv[1];
+	std::string mapfile_name = argv[1];
 	LOG(INFO) << "Mapfile name is " << mapfile_name;
 
 	StreamClient client;
