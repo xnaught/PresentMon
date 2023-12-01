@@ -29,8 +29,12 @@ Streamer::Streamer()
     start_qpc_(0),
     stream_mode_(StreamMode::kDefault),
     write_timedout_(false),
-    mapfileNamePrefix_{ clio::Options::Get().nsmPrefix.AsOptional().value_or(kGlobalPrefix) }
-{}
+    mapfileNamePrefix_{ kGlobalPrefix }
+{
+    if (clio::Options::IsInitialized()) {
+        mapfileNamePrefix_ = clio::Options::Get().nsmPrefix.AsOptional().value_or(mapfileNamePrefix_);
+    }
+}
 
 void Streamer::WriteFrameData(
     uint32_t process_id, PmNsmFrameData* data,

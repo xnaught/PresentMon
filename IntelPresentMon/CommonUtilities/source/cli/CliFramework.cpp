@@ -10,12 +10,12 @@ namespace pmon::util::cli
 	{
 		return app_.get_name();
 	}
-	void OptionsContainer::Finalize(int argc, const char* const* argv)
+	void OptionsContainer::Finalize_(int argc, const char* const* argv)
 	{
 		app_.parse(argc, argv);
 		finalized_ = true;
 	}
-	int OptionsContainer::Exit(const CLI::ParseError& e)
+	int OptionsContainer::Exit_(const CLI::ParseError& e)
 	{
 		return app_.exit(e);
 	}

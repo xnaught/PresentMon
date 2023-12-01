@@ -19,9 +19,8 @@ namespace pmon::util::cli
 	public:
 		OptionsContainer(const char* description, const char* name);
 		std::string GetName() const;
-		void Finalize(int argc, const char* const* argv);
-		int Exit(const CLI::ParseError& e);
 	protected:
+		// types
 		class ConvertedNarrowOptions_
 		{
 		public:
@@ -31,6 +30,10 @@ namespace pmon::util::cli
 		private:
 			std::vector<char*> stringPointerArray;
 		};
+		// functions
+		void Finalize_(int argc, const char* const* argv);
+		int Exit_(const CLI::ParseError& e);
+		// data
 		bool finalized_ = false;
 		CLI::App app_;
 	};
@@ -55,12 +58,16 @@ namespace pmon::util::cli
 		{
 			auto& opts = Get_();
 			try {
-				opts.Finalize(argc, argv);
+				opts.Finalize_(argc, argv);
 				return {};
 			}
 			catch (const CLI::ParseError& e) {
-				return opts.Exit(e);
+				return opts.Exit_(e);
 			}
+		}
+		static bool IsInitialized()
+		{
+			return Get_().finalized_;
 		}
 	private:
 		static T& Get_()
