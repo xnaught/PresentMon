@@ -17,7 +17,7 @@
 using namespace pmon;
 
 void InitializeLogging(const char* servicename, const char* location, const char* basename,
-                       const char* extension, int level) {
+                       const char* extension, int level, bool logstderr) {
   // initialize glog
   if (!google::IsGoogleLoggingInitialized()) {
     google::InitGoogleLogging(servicename);
@@ -42,6 +42,7 @@ void InitializeLogging(const char* servicename, const char* location, const char
       google::SetLogFilenameExtension(extension);
     }
     FLAGS_minloglevel = std::clamp(level, 0, 3);
+    FLAGS_alsologtostderr = logstderr;
   }
 }
 
@@ -71,7 +72,7 @@ void SetupFileLogging()
     auto& opt = clio::Options::Get();
     auto& logDir = *opt.logDir;
     if (std::filesystem::is_directory(logDir)) {
-        InitializeLogging(opt.GetName().c_str(), logDir.c_str(), "pm-srv", ".log", 0);
+        InitializeLogging(opt.GetName().c_str(), logDir.c_str(), "pm-srv", ".log", 0, opt.logStderr);
     }
 }
 
