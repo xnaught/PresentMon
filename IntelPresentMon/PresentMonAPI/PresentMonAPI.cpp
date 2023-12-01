@@ -13,6 +13,26 @@
 // Global pointer to PresentMon Client object
 static PresentMonClient* gPmClient = nullptr;
 
+PM_STATUS pmInitialize(const char* controlPipeName) {
+  if (gPmClient == nullptr) {
+    try {
+      gPmClient = new PresentMonClient(controlPipeName);
+    } catch (...) {
+      return PM_STATUS::PM_STATUS_SERVICE_ERROR;
+    }
+  }
+  return PM_STATUS::PM_STATUS_SUCCESS;
+}
+
+PM_STATUS pmShutdown() {
+  if (gPmClient) {
+    delete gPmClient;
+    gPmClient = nullptr;
+  }
+
+  return PM_STATUS::PM_STATUS_SUCCESS;
+}
+
 PM_STATUS pmGetFramesPerSecondData(uint32_t processId, PM_FPS_DATA* pmFpsData,
                                    double windowSizeinMs,
                                    uint32_t* numSwapChains) {

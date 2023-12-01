@@ -12,6 +12,7 @@
 #include "TargetLostException.h"
 #include <Core/source/win/ProcessMapBuilder.h>
 #include <Core/source/win/com/WbemConnection.h>
+#include <Core/source/infra/opt/Options.h>
 
 using namespace std::literals;
 
@@ -126,11 +127,14 @@ namespace p2c::kern
             std::unique_lock startLck{ mtx };
             p2clog.info(L"== kernel thread started ==").pid().tid().commit();
 
+            // command line options
+            auto& opt = infra::opt::get();
+
             // connect to wbem
             win::com::WbemConnection wbemConn;
 
             // create the PresentMon object
-            try { pm.emplace(); }
+            try { pm.emplace(opt.controlPipe.AsOptional()); }
             catch (...) {
                 pHandler->OnPresentmonInitFailed();
                 p2clog.note(L"Failed to init presentmon api").nox().notrace().commit();

@@ -10,7 +10,7 @@ namespace p2c::cli::pmon
 {
 	Client::Client(uint32_t telemetrySamplePeriodMs)
 	{
-		if (auto sta = pmInitialize(); sta != PM_STATUS::PM_STATUS_SUCCESS)
+		if (auto sta = pmInitialize(nullptr); sta != PM_STATUS::PM_STATUS_SUCCESS)
 		{
 			p2clog.note(L"could not init pmon").code(sta).commit();
 		}

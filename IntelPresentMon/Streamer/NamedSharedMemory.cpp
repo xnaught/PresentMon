@@ -59,6 +59,8 @@ HRESULT NamedSharedMem::CreateSharedMem(std::string mapfile_name, uint64_t buf_s
 {
     HRESULT hr = S_OK;
 
+    LOG(INFO) << "Creating NSM: " << mapfile_name << std::endl;
+
     if (buf_size == 0) {
         LOG(ERROR) << " CreateSharedMem failed with zero buf_size.";
         return E_FAIL;
@@ -272,12 +274,12 @@ void NamedSharedMem::WriteFrameData(PmNsmFrameData* data) {
 
     LARGE_INTEGER qpc;
     QueryPerformanceCounter(&qpc);
-    LOG(INFO) << data->present_event.ProcessId << "," << qpc.QuadPart
-              << "," << data->present_event.SwapChainAddress << "," 
-              << "," << data->present_event.PresentStartTime << ","
-              << (int)data->present_event.FinalState << ","
-              << data->present_event.ScreenTime << "," << header_->tail_idx
-              << "," << header_->head_idx << "," << header_->num_frames_written;
+    //LOG(INFO) << data->present_event.ProcessId << "," << qpc.QuadPart
+    //          << "," << data->present_event.SwapChainAddress << "," 
+    //          << "," << data->present_event.PresentStartTime << ","
+    //          << (int)data->present_event.FinalState << ","
+    //          << data->present_event.ScreenTime << "," << header_->tail_idx
+    //          << "," << header_->head_idx << "," << header_->num_frames_written;
 
     UnmapViewOfFile(buf_);
     buf_ = NULL;

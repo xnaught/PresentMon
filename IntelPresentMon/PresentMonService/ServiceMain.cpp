@@ -2,28 +2,50 @@
 // SPDX-License-Identifier: MIT
 #include <Windows.h>
 #include <tchar.h>
+#include <iostream>
 
 #include "Service.h"
+#include "CliOptions.h"
 
 TCHAR serviceName[MaxBufferLength] = TEXT("Intel PresentMon Service");
 
-VOID WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
-
-int __cdecl _tmain(int argc, TCHAR* argv[]) {
-
-  SERVICE_TABLE_ENTRY dispatchTable[] = {
-      {serviceName, static_cast<LPSERVICE_MAIN_FUNCTION>(ServiceMain)},
-      {NULL, NULL}};
-
-  if (!StartServiceCtrlDispatcher(dispatchTable)) {
-    return 1;
-  }
-
-  return 0;
+// common entry point whether invoked as service or as app
+int CommonEntry(DWORD argc, LPTSTR* argv, bool asApp = false)
+{
+	if (auto e = clio::Options::Init(argc, argv); e && asApp) {
+		return *e;
+	}
+	if (asApp) {
+		ConsoleDebugMockService::Get().Run();
+	}
+	else {
+		ConcreteService present_mon_service(serviceName);
+		present_mon_service.ServiceMain();
+	}
+	return 0;
 }
 
-VOID WINAPI ServiceMain(DWORD argc, LPTSTR* argv) {
-  Service present_mon_service(serviceName);
+// callback registered with and called by the Service Control Manager
+VOID WINAPI ServiceMainCallback(DWORD argc, LPTSTR* argv)
+{
+	CommonEntry(argc, argv);
+}
 
-  present_mon_service.ServiceMain(argc, argv);
+int __cdecl _tmain(int argc, TCHAR* argv[])
+{
+	const SERVICE_TABLE_ENTRY dispatchTable[] = {
+		{serviceName, static_cast<LPSERVICE_MAIN_FUNCTION>(ServiceMainCallback)},
+		{NULL, NULL}
+	};
+
+	if (!StartServiceCtrlDispatcher(dispatchTable)) {
+		// if registration fails with ERROR_FAILED_SERVICE_CONTROLLER_CONNECT
+		// this usually means we're running as console application
+		if (GetLastError() == ERROR_FAILED_SERVICE_CONTROLLER_CONNECT) {
+			return CommonEntry(argc, argv, true);
+		}
+		return -1;
+	}
+
+	return 0;
 }

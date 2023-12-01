@@ -10,6 +10,8 @@
 #include <format>
 #include <algorithm>
 #include <shlobj.h>
+#include "../CommonUtilities/source/str/String.h"
+#include "../PresentMonService/GlobalIdentifiers.h"
 
 #define GOOGLE_GLOG_DLL_DECL
 #define GLOG_NO_ABBREVIATED_SEVERITIES
@@ -17,6 +19,8 @@
 
 static const uint32_t kMaxRespBufferSize = 4096;
 static const uint64_t kClientFrameDeltaQPCThreshold = 50000000;
+
+using namespace pmon;
 
 void InitializeLogging(const char* location, const char* basename, const char* extension, int level)
 {
@@ -37,18 +41,22 @@ void InitializeLogging(const char* location, const char* basename, const char* e
             google::SetLogFilenameExtension(extension);
         }
         FLAGS_minloglevel = std::clamp(level, 0, 3);
+        LOG(INFO) << "hello from log init" << std::endl;
     }
 }
 
-PresentMonClient::PresentMonClient()
+PresentMonClient::PresentMonClient(const char* controlPipeName)
     : pipe_(INVALID_HANDLE_VALUE),
       set_metric_offset_in_qpc_ticks_(0),
       client_to_frame_data_delta_(0) {
-  LPCTSTR pipe_name = TEXT("\\\\.\\pipe\\presentmonsvcnamedpipe");
+
+    std::wstring pipe_name = controlPipeName ?
+        util::str::ToWide(controlPipeName) :
+        util::str::ToWide(gid::defaultControlPipeName);
   
   // Try to open a named pipe; wait for it, if necessary.
   while (1) {
-    pipe_ = CreateFile(pipe_name,      // pipe name
+    pipe_ = CreateFile(pipe_name.c_str(),      // pipe name
                        GENERIC_READ |  // read and write access
                            GENERIC_WRITE,
                        0,              // no sharing
@@ -64,13 +72,13 @@ PresentMonClient::PresentMonClient()
 
     // Exit if an error other than ERROR_PIPE_BUSY occurs.
     if (GetLastError() != ERROR_PIPE_BUSY) {
-      LOG(ERROR) << "Service not found.";
+      LOG(ERROR) << "Service not found." << std::endl;
       throw std::runtime_error{"Service not found"};
     }
 
     // All pipe instances are busy, so wait for 20 seconds.
-    if (!WaitNamedPipe(pipe_name, 20000)) {
-      LOG(ERROR) << "Pipe sessions full.";
+    if (!WaitNamedPipe(pipe_name.c_str(), 20000)) {
+      LOG(ERROR) << "Pipe sessions full." << std::endl;
       throw std::runtime_error{"Pipe sessions full"};
     }
   }
@@ -81,7 +89,7 @@ PresentMonClient::PresentMonClient()
                                          NULL,   // don't set maximum bytes
                                          NULL);  // don't set maximum time
   if (!success) {
-    LOG(ERROR) << "Pipe error.";
+    LOG(ERROR) << "Pipe error." << std::endl;
     throw std::runtime_error{"Pipe error"};
   }
 

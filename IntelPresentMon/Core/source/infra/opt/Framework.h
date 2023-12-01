@@ -164,6 +164,10 @@ namespace p2c::infra::opt::impl
 		{
 			return value_;
 		}
+		std::optional<T> AsOptional() const
+		{
+			return bool(*this) ? std::optional<T>{ **this } : std::optional<T>{};
+		}
 		CLI::Option* opt() const { return pOption_; }
 	private:
 		T value_{};
