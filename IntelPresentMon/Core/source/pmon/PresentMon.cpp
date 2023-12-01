@@ -3,6 +3,7 @@
 #include "PresentMon.h"
 #include <Core/source/infra/log/Logging.h>
 #include <PresentMonAPI/PresentMonAPI.h>
+#include <Core/source/infra/util/Util.h>
 #include "metric/NoisySineFakeMetric.h"
 #include "metric/RawMetric.h"
 #include "metric/SimpleMetric.h"
@@ -18,7 +19,7 @@
 
 namespace p2c::pmon
 {
-	PresentMon::PresentMon(double window_in, double offset_in, uint32_t telemetrySamplePeriodMs_in)
+	PresentMon::PresentMon(std::optional<std::string> namedPipeName, double window_in, double offset_in, uint32_t telemetrySamplePeriodMs_in)
 		:
 		fpsAdaptor{ this },
 		gfxLatencyAdaptor{ this },
@@ -27,7 +28,23 @@ namespace p2c::pmon
 		cpuAdaptor{ this },
 		infoAdaptor{ this }
 	{
-		if (auto sta = pmInitialize(nullptr); sta != PM_STATUS::PM_STATUS_SUCCESS)
+		const char* pPipeName = nullptr;
+		std::string name;
+		if (namedPipeName) {
+			auto name = *namedPipeName;
+			// we need to remove quotes if they get added for some reason (probably due to this process getting launched from another)
+			if (name.front() == '"' && name.back() == '"' && name.size() >= 2) {
+				name = name.substr(1, name.size() - 2);
+			}
+			pPipeName = name.c_str();
+		}
+		if (pPipeName) {
+			p2clog.info(std::format(L"Connecting to service with custom pipe name: [{}]", infra::util::ToWide(pPipeName))).commit();
+		}
+		else {
+			p2clog.info(L"Connecting to service with default pipe name").commit();
+		}
+		if (auto sta = pmInitialize(pPipeName); sta != PM_STATUS::PM_STATUS_SUCCESS)
 		{
 			p2clog.note(L"could not init pmon").code(sta).commit();
 		}

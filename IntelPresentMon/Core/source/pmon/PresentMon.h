@@ -24,7 +24,7 @@ namespace p2c::pmon
 		// types
 		using AdapterInfo = pmon::AdapterInfo;
 		// functions
-		PresentMon(double window = 1000., double offset = 1000., uint32_t telemetrySampleRateMs = 16);
+		PresentMon(std::optional<std::string> namedPipeName, double window = 1000., double offset = 1000., uint32_t telemetrySampleRateMs = 16);
 		~PresentMon();
 		void StartStream(uint32_t pid_);
 		void StopStream();
