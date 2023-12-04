@@ -13,7 +13,13 @@
 #include <vector>
 #include <algorithm>
 #include <format>
-#include "PresentMonAPI.h"
+#include "../PresentMonAPI2/source/PresentMonAPI.h"
+
+#undef ENABLE_FRAME_DATA_WRITE
+#undef ENABLE_PRESENT_MODE
+#undef ENABLE_METRICS
+#undef ENABLE_ETL
+#undef ENABLE_STATIC_QUERIES
 
 using namespace std::chrono;
 
@@ -48,20 +54,12 @@ void PrintError(PM_STATUS status) {
 
   switch (status) {
     PROCESS_VAL(PM_STATUS::PM_STATUS_SUCCESS);
-    PROCESS_VAL(PM_STATUS::PM_STATUS_CREATE_SESSION_FAILED);
     PROCESS_VAL(PM_STATUS::PM_STATUS_NO_DATA);
     PROCESS_VAL(PM_STATUS::PM_STATUS_DATA_LOSS);
-    PROCESS_VAL(PM_STATUS::PM_STATUS_INVALID_SESSION);
-    PROCESS_VAL(PM_STATUS::PM_STATUS_SESSION_ALREADY_EXISTS);
-    PROCESS_VAL(PM_STATUS::PM_STATUS_SERVICE_NOT_INITIALIZED);
-    PROCESS_VAL(PM_STATUS::PM_STATUS_SERVICE_NOT_FOUND);
-    PROCESS_VAL(PM_STATUS::PM_STATUS_SERVICE_SESSIONS_FULL);
     PROCESS_VAL(PM_STATUS::PM_STATUS_SERVICE_ERROR);
-    PROCESS_VAL(PM_STATUS::PM_STATUS_SERVICE_NOT_SUPPORTED);
     PROCESS_VAL(PM_STATUS::PM_STATUS_INVALID_PID);
     PROCESS_VAL(PM_STATUS::PM_STATUS_INVALID_ETL_FILE);
-    PROCESS_VAL(PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST);
-    PROCESS_VAL(PM_STATUS::PM_STATUS_ERROR);
+    PROCESS_VAL(PM_STATUS::PM_STATUS_FAILURE);
   }
 #undef PROCESS_VAL
   if (s.length() > 0) {
@@ -77,6 +75,7 @@ std::string TranslateOptionalTelemetry(T telemetry_item) {
   return data;
 }
 
+#ifdef ENABLE_FRAME_DATA_WRITE
 void WriteToCSV(PM_FRAME_DATA* data) {
   try {
     g_csv_file << "\n";
@@ -296,7 +295,9 @@ void RecordFrames(bool is_etl) {
   CommitConsole();
   delete[] out_data;
 }
+#endif
 
+#ifdef ENABLE_PRESENT_MODE
 void PrintPresentMode(PM_PRESENT_MODE present_mode) {
   switch (present_mode) {
     case PM_PRESENT_MODE::PM_PRESENT_MODE_HARDWARE_LEGACY_FLIP:
@@ -326,6 +327,9 @@ void PrintPresentMode(PM_PRESENT_MODE present_mode) {
   }
   return;
 }
+#endif
+
+#ifdef ENABLE_METRICS
 void PrintSwapChainMetrics(PM_FPS_DATA* fps_data, uint32_t num_gfx_swap_chains,
                            PM_GFX_LATENCY_DATA* latency_data,
                            uint32_t num_latency_swap_chains) {
@@ -368,6 +372,7 @@ void PrintSwapChainMetrics(PM_FPS_DATA* fps_data, uint32_t num_gfx_swap_chains,
     }
   }
 }
+#endif
 
 bool GetUserInput(std::string& input){
   try {
@@ -397,6 +402,7 @@ void PrintMetric(char const* format, double metric_data, bool valid) {
   }
 }
 
+#ifdef ENABLE_METRICS
 void ReadMetrics() {
   PM_STATUS pmStatus = PM_STATUS::PM_STATUS_SUCCESS;
 
@@ -574,6 +580,7 @@ void ReadMetrics() {
   delete[] fps_data;
   delete[] latency_data;
 }
+#endif
 
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType) {
   switch (fdwCtrlType) {
@@ -697,6 +704,7 @@ DWORD FindProcessId(const std::string& process_name) {
   return 0;
 }
 
+#ifdef ENABLE_ETL
 void ProcessEtl() {
   bool valid_selection = false;
   PM_STATUS status;
@@ -717,6 +725,29 @@ void ProcessEtl() {
     }
   }
   RecordFrames(true);
+}
+#endif
+
+PM_DYNAMIC_QUERY_HANDLE CreateFpsDynamicQuery(uint32_t processId, double metricsOffset)
+{
+    PM_DYNAMIC_QUERY_HANDLE q = nullptr;
+    PM_QUERY_ELEMENT elements[7]{
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+    };
+    auto result = pmRegisterDynamicQuery(&q, elements, std::size(elements), processId, 1000., metricsOffset);
+
+    auto pBlob = std::make_unique<uint8_t[]>(elements[6].dataOffset + elements[6].dataSize);
+    uint32_t numSwapChains = 1;
+
+    pmPollDynamicQuery(q, pBlob.get(), &numSwapChains);
+
+    return q;
 }
 
 int main(int argc, char* argv[]) {
@@ -739,23 +770,25 @@ int main(int argc, char* argv[]) {
 
   PM_STATUS pmStatus{};
   try {
-    pmStatus = pmInitialize(nullptr);
+    pmStatus = pmOpenSession();
     if (pmStatus != PM_STATUS::PM_STATUS_SUCCESS) {
       PrintError(pmStatus);
       return -1;
     }
   } catch (const std::bad_array_new_length& e) {
     std::cout
-        << "pmInitialize caused bad array new length exception, with message '"
+        << "pmOpenSession caused bad array new length exception, with message '"
         << e.what() << "'" << std::endl;
   } catch (const std::runtime_error& e) {
     std::cout
-        << "pmInitialize caused std::runtime exception '"
+        << "pmOpenSession caused std::runtime exception '"
         << e.what() << "'" << std::endl;
   }
 
   if (g_menu_action == MenuActions::kProcessETL) {
-    ProcessEtl();
+#ifdef ENABLE_ETL
+      ProcessEtl();
+#endif // ENABLE_ETL
   } else {
     g_metrics_offset = GetMetricsOffset();
     gQuit = false;
@@ -765,32 +798,34 @@ int main(int argc, char* argv[]) {
         return 0;
       }
       if (g_process_name.length() == 0) {
-          pmShutdown();
+          pmCloseSession();
           return 0;
       }
       gCurrentPid = FindProcessId(g_process_name);
       if (gCurrentPid != 0) {
         SetRecordFrames();
         try {
-          pmStatus = pmStartStream(gCurrentPid);
+          pmStatus = pmStartStreaming(gCurrentPid);
           if (pmStatus == PM_STATUS::PM_STATUS_SUCCESS) {
             streamingStarted = true;
           } else {
             OutputString("Process Name Not Found.\n");
           }
         } catch (...) {
-          pmStatus = PM_STATUS::PM_STATUS_ERROR;
+          pmStatus = PM_STATUS::PM_STATUS_FAILURE;
           OutputString("Unable to start stream\n");
         }
       }
     }
 
+#ifdef ENABLE_STATIC_QUERIES
     uint32_t cpu_name_size = 0;
     pmStatus = pmGetCpuName(nullptr, &cpu_name_size);
     if (cpu_name_size != 0) {
       g_cpu_name.resize(cpu_name_size);
       pmStatus = pmGetCpuName(g_cpu_name.data(), &cpu_name_size);
     }
+#endif
 
     std::string status_string;
     try {
@@ -808,6 +843,10 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Hit Ctrl-C to exit application." << std::endl;
 
+    auto dynamicQueryHandle = CreateFpsDynamicQuery(gCurrentPid, g_metrics_offset);
+    pmFreeDynamicQuery(dynamicQueryHandle);
+
+#ifdef ENABLE_METRICS
     // Create an event
     gCloseEvent = CreateEvent(NULL,   // default security attributes
                               TRUE,   // manual reset event
@@ -821,10 +860,11 @@ int main(int argc, char* argv[]) {
       // Wait for the metrics capture thread to finish
       readMetricsThread.join();
     }
+#endif
   }
 
-  pmStopStream(gCurrentPid);
-  pmShutdown();
+  pmStopStreaming(gCurrentPid);
+  pmCloseSession();
 
   try {
     g_csv_file.close();

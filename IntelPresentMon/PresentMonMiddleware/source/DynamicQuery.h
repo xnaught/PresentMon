@@ -8,13 +8,13 @@
 
 struct CompiledStats
 {
-	bool calcAvg;
-	bool calcPercentile99;
-	bool calcPercentile95;
-	bool calcPercentile90;
-	bool calcMax;
-	bool calcMin;
-	bool calcRaw;
+	bool calcAvg = false;
+	bool calcPercentile99 = false;
+	bool calcPercentile95 = false;
+	bool calcPercentile90 = false;
+	bool calcMax = false;
+	bool calcMin = false;
+	bool calcRaw = false;
 };
 
 struct PM_DYNAMIC_QUERY
@@ -32,6 +32,7 @@ struct PM_DYNAMIC_QUERY
 	std::map<PM_METRIC, CompiledStats> compiledMetrics;
 	uint32_t processId = 0;
 	double windowSizeMs = 0;
-	double metricOffsetMs = 0;
+	double metricOffsetMs = 0.;
+	PM_DYNAMIC_QUERY* dynamicQueryHandle = nullptr;
 };
 

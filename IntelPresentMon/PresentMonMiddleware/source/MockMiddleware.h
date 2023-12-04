@@ -16,7 +16,7 @@ namespace pmon::mid
 		PM_STATUS StopStreaming(uint32_t processId) override { return PM_STATUS_SUCCESS; }
 		PM_DYNAMIC_QUERY* RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, uint32_t processId, double windowSizeMs, double metricOffsetMs) override;
 		void FreeDynamicQuery(const PM_DYNAMIC_QUERY* pQuery) override;
-		void PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob) override;
+		void PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob, uint32_t* numSwapChains) override;
 		void PollStaticQuery(const PM_QUERY_ELEMENT& element, uint8_t* pBlob) override;
 	private:
 		uint32_t t = 0;

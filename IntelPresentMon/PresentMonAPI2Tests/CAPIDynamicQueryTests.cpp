@@ -135,5 +135,30 @@ namespace PresentMonAPI2
 			};
 			Assert::AreEqual((int)PM_STATUS_FAILURE, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 4004, 1000.));
 		}
+		
+		TEST_METHOD(FpsMetricSize)
+		{
+			PM_DYNAMIC_QUERY_HANDLE q = nullptr;
+			PM_QUERY_ELEMENT elements[7]{
+				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
+				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
+				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
+				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+			};
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 4004, 1000.));
+			Assert::IsNotNull(q);
+
+			Assert::AreEqual(0ull, elements[0].dataOffset);
+			Assert::AreEqual(8ull, elements[0].dataSize);
+			Assert::AreEqual(8ull, elements[1].dataOffset);
+			Assert::AreEqual(4ull, elements[1].dataSize);
+			Assert::AreEqual(12ull, elements[2].dataOffset);
+			Assert::AreEqual(8ull, elements[2].dataSize);
+
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeDynamicQuery(q));
+		}
 	};
 }

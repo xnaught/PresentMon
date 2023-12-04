@@ -46,7 +46,7 @@ void InitializeLogging(const char* servicename, const char* location, const char
   }
 }
 
-bool NanoSleep(int32_t ms, bool alertable) {
+bool NanoSleep(int32_t ms) {
   HANDLE timer;
   LARGE_INTEGER li;
   // Convert from ms to 100ns units and negate
@@ -62,7 +62,7 @@ bool NanoSleep(int32_t ms, bool alertable) {
     CloseHandle(timer);
     return false;
   }
-  WaitForSingleObjectEx(timer, INFINITE, BOOL(alertable));
+  WaitForSingleObject(timer, INFINITE);
   CloseHandle(timer);
   return true;
 }
@@ -78,8 +78,8 @@ void SetupFileLogging()
 
 // Attempt to use a high resolution sleep but if not
 // supported use regular Sleep().
-void PmSleep(int32_t ms, bool alertable = false) {
-  if (!NanoSleep(ms, alertable)) {
+void PmSleep(int32_t ms) {
+  if (!NanoSleep(ms)) {
     Sleep(ms);
   }
   return;
@@ -126,20 +126,10 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
 		return;
 	}
 
-    // we first wait for a client control connection before populating telemetry container
-    // after populating, we sample each adapter to gather availability information
-    // this is deferred until client connection in order to increase the probability that
-    // telemetry metric availability is accurately assessed
-    WaitForSingleObject(pm->GetFirstConnectionHandle(), INFINITE);
-    ptc->Repopulate();
-    for (auto& adapter : ptc->GetPowerTelemetryAdapters()) {
-        adapter->Sample();
-        pComms->RegisterGpuDevice(adapter->GetVendor(), adapter->GetName(), adapter->GetPowerTelemetryCapBits());
-    }
-    pComms->FinalizeGpuDevices();    
+	// this flag indicates that no clients have ever connected yet
+	bool firstConnection = true;
 
-	// only start periodic polling when streaming starts
-    // exit polling loop and this thread when service is stopping
+	// Get the streaming start event
 	const HANDLE events[] {
 	  pm->GetStreamingStartHandle(),
 	  srv->GetServiceStopHandle(),
@@ -147,14 +137,25 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
 	while (1) {
 		auto waitResult = WaitForMultipleObjects((DWORD)std::size(events), events, FALSE, INFINITE);
 		// TODO: check for wait result error
+		auto i = waitResult - WAIT_OBJECT_0;
 		// if events[1] was signalled, that means service is stopping so exit thread
-		const auto i = waitResult - WAIT_OBJECT_0;
 		if (i == 1) {
 			return;
 		}
-        // otherwise we assume streaming has started and we begin the polling loop
+		// if events[0] was signalled, a client has connected where previously there were 0
+		// if this is the first connection, populate container and poll once for availability
+		if (firstConnection) {
+			// TODO: log error here or inside of repopulate
+			ptc->Repopulate();
+			for (auto& adapter : ptc->GetPowerTelemetryAdapters()) {
+				adapter->Sample();
+                // TODO: actually get vendor, need to make adapter use new vendor enum
+                pComms->RegisterGpuDevice(PM_DEVICE_VENDOR_INTEL, adapter->GetName(), adapter->GetPowerTelemetryCapBits());
+			}
+            pComms->FinalizeGpuDevices();
+			firstConnection = false;
+		}
 		while (WaitForSingleObject(srv->GetServiceStopHandle(), 0) != WAIT_OBJECT_0) {
-            // if device was reset (driver installed etc.) we need to repopulate telemetry
 			if (WaitForSingleObject(srv->GetResetPowerTelemetryHandle(), 0) == WAIT_OBJECT_0) {
 				// TODO: log error here or inside of repopulate
 				ptc->Repopulate();
@@ -163,9 +164,9 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
 				adapter->Sample();
 			}
 			PmSleep(pm->GetGpuTelemetryPeriod());
-			// go dormant if there are no active streams left
-            // TODO: consider race condition here if client stops and starts streams rapidly
-			if (pm->GetActiveStreams() == 0) {
+			// Get the number of currently active streams
+			auto num_active_streams = pm->GetActiveStreams();
+			if (num_active_streams == 0) {
 				break;
 			}
 		}
@@ -235,25 +236,9 @@ void PresentMonMainThread(Service* const srv)
             SetupFileLogging();
         }
 
-        if (opt.timedStop) {
-            auto hTimer = CreateWaitableTimer(NULL, FALSE, NULL);
-            LARGE_INTEGER liDueTime;
-            liDueTime.QuadPart = -10'000LL * long long(*opt.timedStop);
-            struct Completion {
-                static void CALLBACK Routine(LPVOID lpArg, DWORD dwTimerLowValue, DWORD dwTimerHighValue) {
-                    SetEvent((HANDLE)lpArg);
-                }
-            };
-            if (hTimer) {
-                SetWaitableTimer(hTimer, &liDueTime, 0, &Completion::Routine, srv->GetServiceStopHandle(), FALSE);
-            }
-        }
-
         PresentMon pm;
         PowerTelemetryContainer ptc;
-
-        // create service-side comms object for transmitting introspection data to clients
-        auto pComms = ipc::MakeServiceComms(opt.introNsm.AsOptional());
+        auto pComms = ipc::MakeServiceComms();
 
         // Set the created power telemetry container 
         pm.SetPowerTelemetryContainer(&ptc);
@@ -289,9 +274,9 @@ void PresentMonMainThread(Service* const srv)
             pComms->RegisterCpuDevice(PM_DEVICE_VENDOR_INTEL, cpu->GetCpuName(), cpu->GetCpuTelemetryCapBits());
         }
 
-        while (WaitForSingleObjectEx(serviceStopHandle, INFINITE, (bool)opt.timedStop) != WAIT_OBJECT_0) {
+        while (WaitForSingleObject(serviceStopHandle, 0) != WAIT_OBJECT_0) {
             pm.CheckTraceSessions();
-            PmSleep(500, opt.timedStop);
+            PmSleep(500);
         }
 
         // Stop the PresentMon session
