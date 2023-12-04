@@ -59,7 +59,7 @@ namespace EndToEndTests
 			const auto introName = "pm_intro_test_nsm_1"s;
 
 			oChild.emplace("PresentMonService.exe"s,
-				"--timed-stop"s, "400000"s,
+				"--timed-stop"s, "4000"s,
 				"--control-pipe"s, pipeName,
 				"--nsm-prefix"s, "pmon_nsm_utest_"s,
 				"--intro-nsm"s, introName,
