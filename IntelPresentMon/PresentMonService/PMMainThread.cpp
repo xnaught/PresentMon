@@ -237,17 +237,17 @@ void PresentMonMainThread(Service* const srv)
         }
 
         if (opt.timedStop) {
-            LOG(INFO) << "getting ready to go gogo: " << *opt.timedStop << std::endl;
             auto hTimer = CreateWaitableTimer(NULL, FALSE, NULL);
             LARGE_INTEGER liDueTime;
             liDueTime.QuadPart = -10'000LL * long long(*opt.timedStop);
             struct Completion {
                 static void CALLBACK Routine(LPVOID lpArg, DWORD dwTimerLowValue, DWORD dwTimerHighValue) {
-                    LOG(INFO) << "Let's go bois" << std::endl;
                     SetEvent((HANDLE)lpArg);
                 }
             };
-            SetWaitableTimer(hTimer, &liDueTime, 0, &Completion::Routine, srv->GetServiceStopHandle(), FALSE);
+            if (hTimer) {
+                SetWaitableTimer(hTimer, &liDueTime, 0, &Completion::Routine, srv->GetServiceStopHandle(), FALSE);
+            }
         }
 
         PresentMon pm;

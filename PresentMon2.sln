@@ -99,6 +99,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InterprocessMock", "IntelPr
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CommonUtilities", "IntelPresentMon\CommonUtilities\CommonUtilities.vcxproj", "{08A704D8-CA1C-45E9-8EDE-542A1A43B53E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PresentMonAPI1Tests", "IntelPresentMon\PresentMonAPI1Tests\PresentMonAPI1Tests.vcxproj", "{DB147F8C-09D2-44E4-B808-BF0EA8EEC7FD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -419,6 +421,18 @@ Global
 		{08A704D8-CA1C-45E9-8EDE-542A1A43B53E}.Release-EDSS|x64.Build.0 = Release|x64
 		{08A704D8-CA1C-45E9-8EDE-542A1A43B53E}.Release-EDSS|x86.ActiveCfg = Release|Win32
 		{08A704D8-CA1C-45E9-8EDE-542A1A43B53E}.Release-EDSS|x86.Build.0 = Release|Win32
+		{DB147F8C-09D2-44E4-B808-BF0EA8EEC7FD}.Debug|x64.ActiveCfg = Debug|x64
+		{DB147F8C-09D2-44E4-B808-BF0EA8EEC7FD}.Debug|x64.Build.0 = Debug|x64
+		{DB147F8C-09D2-44E4-B808-BF0EA8EEC7FD}.Debug|x86.ActiveCfg = Debug|Win32
+		{DB147F8C-09D2-44E4-B808-BF0EA8EEC7FD}.Debug|x86.Build.0 = Debug|Win32
+		{DB147F8C-09D2-44E4-B808-BF0EA8EEC7FD}.Release|x64.ActiveCfg = Release|x64
+		{DB147F8C-09D2-44E4-B808-BF0EA8EEC7FD}.Release|x64.Build.0 = Release|x64
+		{DB147F8C-09D2-44E4-B808-BF0EA8EEC7FD}.Release|x86.ActiveCfg = Release|Win32
+		{DB147F8C-09D2-44E4-B808-BF0EA8EEC7FD}.Release|x86.Build.0 = Release|Win32
+		{DB147F8C-09D2-44E4-B808-BF0EA8EEC7FD}.Release-EDSS|x64.ActiveCfg = Release|x64
+		{DB147F8C-09D2-44E4-B808-BF0EA8EEC7FD}.Release-EDSS|x64.Build.0 = Release|x64
+		{DB147F8C-09D2-44E4-B808-BF0EA8EEC7FD}.Release-EDSS|x86.ActiveCfg = Release|Win32
+		{DB147F8C-09D2-44E4-B808-BF0EA8EEC7FD}.Release-EDSS|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -454,6 +468,7 @@ Global
 		{CA23D648-DAEF-4F06-81D5-FE619BD31F0B} = {53E20071-60E7-491C-A85D-95E87179AF1D}
 		{F612934B-9333-4628-9076-7DFE0B5C3E0C} = {53E20071-60E7-491C-A85D-95E87179AF1D}
 		{08A704D8-CA1C-45E9-8EDE-542A1A43B53E} = {B4CC5828-9638-42EC-A692-E81E8227DD84}
+		{DB147F8C-09D2-44E4-B808-BF0EA8EEC7FD} = {53E20071-60E7-491C-A85D-95E87179AF1D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {485BBDCE-E37E-4C3F-A336-A96029B45E1B}
