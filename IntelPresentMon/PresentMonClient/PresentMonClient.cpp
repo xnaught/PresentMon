@@ -71,8 +71,8 @@ PresentMonClient::PresentMonClient(const char* controlPipeName)
     }
 
     // Exit if an error other than ERROR_PIPE_BUSY occurs.
-    if (GetLastError() != ERROR_PIPE_BUSY) {
-      LOG(ERROR) << "Service not found." << std::endl;
+    if (const auto hr = GetLastError(); hr != ERROR_PIPE_BUSY) {
+      LOG(ERROR) << "Service not found; errno: " << hr << std::endl;
       throw std::runtime_error{"Service not found"};
     }
 

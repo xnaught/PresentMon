@@ -1,5 +1,6 @@
 #include "CppUnitTest.h"
 #include <boost/process.hpp>
+#include "../PresentMonAPI/PresentMonAPI.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -24,6 +25,33 @@ namespace PresentMonAPI1Tests
 
 			process.wait();
 			Assert::AreEqual(0, process.exit_code());
+		}
+		TEST_METHOD(ConnectToServicePipe)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+			using namespace std::chrono_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc)"s;
+
+			bp::child process("PresentMonService.exe"s,
+				"--timed-stop"s, "2000"s,
+				"--control-pipe"s, pipeName.c_str(),
+				"--nsm-prefix"s, "pmon_nsm_utest_"s,
+				bp::std_out > out, bp::std_in < in);
+
+			std::this_thread::sleep_for(10ms);
+
+			{
+				const auto sta = pmInitialize(pipeName.c_str());
+				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta));
+			}
+
+			process.terminate();
+			process.wait();
 		}
 	};
 }
