@@ -46,7 +46,7 @@ void InitializeLogging(const char* servicename, const char* location, const char
   }
 }
 
-bool NanoSleep(int32_t ms) {
+bool NanoSleep(int32_t ms, bool alertable) {
   HANDLE timer;
   LARGE_INTEGER li;
   // Convert from ms to 100ns units and negate
@@ -62,7 +62,7 @@ bool NanoSleep(int32_t ms) {
     CloseHandle(timer);
     return false;
   }
-  WaitForSingleObject(timer, INFINITE);
+  WaitForSingleObjectEx(timer, INFINITE, BOOL(alertable));
   CloseHandle(timer);
   return true;
 }
@@ -78,8 +78,8 @@ void SetupFileLogging()
 
 // Attempt to use a high resolution sleep but if not
 // supported use regular Sleep().
-void PmSleep(int32_t ms) {
-  if (!NanoSleep(ms)) {
+void PmSleep(int32_t ms, bool alertable = false) {
+  if (!NanoSleep(ms, alertable)) {
     Sleep(ms);
   }
   return;
@@ -236,6 +236,20 @@ void PresentMonMainThread(Service* const srv)
             SetupFileLogging();
         }
 
+        if (opt.timedStop) {
+            LOG(INFO) << "getting ready to go gogo: " << *opt.timedStop << std::endl;
+            auto hTimer = CreateWaitableTimer(NULL, FALSE, NULL);
+            LARGE_INTEGER liDueTime;
+            liDueTime.QuadPart = -10'000LL * long long(*opt.timedStop);
+            struct Completion {
+                static void CALLBACK Routine(LPVOID lpArg, DWORD dwTimerLowValue, DWORD dwTimerHighValue) {
+                    LOG(INFO) << "Let's go bois" << std::endl;
+                    SetEvent((HANDLE)lpArg);
+                }
+            };
+            SetWaitableTimer(hTimer, &liDueTime, 0, &Completion::Routine, srv->GetServiceStopHandle(), FALSE);
+        }
+
         PresentMon pm;
         PowerTelemetryContainer ptc;
         auto pComms = ipc::MakeServiceComms();
@@ -274,9 +288,9 @@ void PresentMonMainThread(Service* const srv)
             pComms->RegisterCpuDevice(PM_DEVICE_VENDOR_INTEL, cpu->GetCpuName(), cpu->GetCpuTelemetryCapBits());
         }
 
-        while (WaitForSingleObject(serviceStopHandle, 0) != WAIT_OBJECT_0) {
+        while (WaitForSingleObjectEx(serviceStopHandle, INFINITE, (bool)opt.timedStop) != WAIT_OBJECT_0) {
             pm.CheckTraceSessions();
-            PmSleep(500);
+            PmSleep(500, opt.timedStop);
         }
 
         // Stop the PresentMon session

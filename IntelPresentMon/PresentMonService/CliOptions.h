@@ -11,6 +11,7 @@ namespace clio
 		Flag logStderr{ this, "--log-stderr", "When logging to files in specified directory, also log to stderr" };
 		Option<std::string> controlPipe{ this, "--control-pipe", "", "Name of the named pipe to use for the client-service control channel" };
 		Option<std::string> nsmPrefix{ this, "--nsm-prefix", "", "Prefix to use when naming named shared memory segments created for frame data circular buffers" };
+		Option<int> timedStop{ this, "--timed-stop", -1, "Signal stop event after specified number of milliseconds" };
 		static constexpr const char* description = "Intel PresentMon service for frame and system performance measurement";
 		static constexpr const char* name = "PresentMonService.exe";
 	};
