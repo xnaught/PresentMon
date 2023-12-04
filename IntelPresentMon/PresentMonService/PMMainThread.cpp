@@ -126,10 +126,20 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
 		return;
 	}
 
-	// this flag indicates that no clients have ever connected yet
-	bool firstConnection = true;
+    // we first wait for a client control connection before populating telemetry container
+    // after populating, we sample each adapter to gather availability information
+    // this is deferred until client connection in order to increase the probability that
+    // telemetry metric availability is accurately assessed
+    WaitForSingleObject(pm->GetFirstConnectionHandle(), INFINITE);
+    ptc->Repopulate();
+    for (auto& adapter : ptc->GetPowerTelemetryAdapters()) {
+        adapter->Sample();
+        pComms->RegisterGpuDevice(adapter->GetVendor(), adapter->GetName(), adapter->GetPowerTelemetryCapBits());
+    }
+    pComms->FinalizeGpuDevices();    
 
-	// Get the streaming start event
+	// only start periodic polling when streaming starts
+    // exit polling loop and this thread when service is stopping
 	const HANDLE events[] {
 	  pm->GetStreamingStartHandle(),
 	  srv->GetServiceStopHandle(),
@@ -137,25 +147,14 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
 	while (1) {
 		auto waitResult = WaitForMultipleObjects((DWORD)std::size(events), events, FALSE, INFINITE);
 		// TODO: check for wait result error
-		auto i = waitResult - WAIT_OBJECT_0;
 		// if events[1] was signalled, that means service is stopping so exit thread
+		const auto i = waitResult - WAIT_OBJECT_0;
 		if (i == 1) {
 			return;
 		}
-		// if events[0] was signalled, a client has connected where previously there were 0
-		// if this is the first connection, populate container and poll once for availability
-		if (firstConnection) {
-			// TODO: log error here or inside of repopulate
-			ptc->Repopulate();
-			for (auto& adapter : ptc->GetPowerTelemetryAdapters()) {
-				adapter->Sample();
-                // TODO: actually get vendor, need to make adapter use new vendor enum
-                pComms->RegisterGpuDevice(PM_DEVICE_VENDOR_INTEL, adapter->GetName(), adapter->GetPowerTelemetryCapBits());
-			}
-            pComms->FinalizeGpuDevices();
-			firstConnection = false;
-		}
+        // otherwise we assume streaming has started and we begin the polling loop
 		while (WaitForSingleObject(srv->GetServiceStopHandle(), 0) != WAIT_OBJECT_0) {
+            // if device was reset (driver installed etc.) we need to repopulate telemetry
 			if (WaitForSingleObject(srv->GetResetPowerTelemetryHandle(), 0) == WAIT_OBJECT_0) {
 				// TODO: log error here or inside of repopulate
 				ptc->Repopulate();
@@ -164,9 +163,9 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
 				adapter->Sample();
 			}
 			PmSleep(pm->GetGpuTelemetryPeriod());
-			// Get the number of currently active streams
-			auto num_active_streams = pm->GetActiveStreams();
-			if (num_active_streams == 0) {
+			// go dormant if there are no active streams left
+            // TODO: consider race condition here if client stops and starts streams rapidly
+			if (pm->GetActiveStreams() == 0) {
 				break;
 			}
 		}
@@ -252,7 +251,9 @@ void PresentMonMainThread(Service* const srv)
 
         PresentMon pm;
         PowerTelemetryContainer ptc;
-        auto pComms = ipc::MakeServiceComms();
+
+        // create service-side comms object for transmitting introspection data to clients
+        auto pComms = ipc::MakeServiceComms(opt.introNsm.AsOptional());
 
         // Set the created power telemetry container 
         pm.SetPowerTelemetryContainer(&ptc);

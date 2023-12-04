@@ -6,3 +6,4 @@ PRESENTMON_API2_EXPORT void pmSetMiddlewareAsMock_(bool mocked, bool useCrtHeapD
 PRESENTMON_API2_EXPORT _CrtMemState pmCreateHeapCheckpoint_();
 PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareSpeak_(char* buffer);
 PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(uint32_t milliseconds);
+PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(const char* pipeNameOverride, const char* introNsmOverride);

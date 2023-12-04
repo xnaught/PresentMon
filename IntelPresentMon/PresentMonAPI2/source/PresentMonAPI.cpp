@@ -72,8 +72,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(uint32_t milliseconds)
 	}
 }
 
-// public endpoints
-PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession()
+PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(const char* pipeNameOverride, const char* introNsmOverride)
 {
 	if (pMiddleware_) {
 		return PM_STATUS_FAILURE;
@@ -83,13 +82,27 @@ PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession()
 			pMiddleware_ = std::make_unique<MockMiddleware>(useLocalShmServer_);
 		}
 		else {
-			pMiddleware_ = std::make_unique<ConcreteMiddleware>();
+			std::optional<std::string> pipeName;
+			std::optional<std::string> introNsm;
+			if (pipeNameOverride) {
+				pipeName = std::string(pipeNameOverride);
+			}
+			if (introNsmOverride) {
+				introNsm = std::string(introNsmOverride);
+			}
+			pMiddleware_ = std::make_unique<ConcreteMiddleware>(std::move(pipeName), std::move(introNsm));
 		}
 		return PM_STATUS_SUCCESS;
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
 	}
+}
+
+// public endpoints
+PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession()
+{
+	return pmOpenSession_(nullptr, nullptr);
 }
 
 PRESENTMON_API2_EXPORT PM_STATUS pmCloseSession()

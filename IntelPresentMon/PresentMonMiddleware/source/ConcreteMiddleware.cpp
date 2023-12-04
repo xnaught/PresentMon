@@ -17,20 +17,23 @@
 #include "DynamicQuery.h"
 #include "../../ControlLib/PresentMonPowerTelemetry.h"
 #include "../../ControlLib/CpuTelemetryInfo.h"
+#include "../../PresentMonService/GlobalIdentifiers.h"
 
 namespace pmon::mid
 {
     using namespace ipc::intro;
 
     static const uint32_t kMaxRespBufferSize = 4096;
-	ConcreteMiddleware::ConcreteMiddleware()
+	ConcreteMiddleware::ConcreteMiddleware(std::optional<std::string> pipeNameOverride, std::optional<std::string> introNsmOverride)
 	{
-        LPCTSTR pipe_name = TEXT("\\\\.\\pipe\\presentmonsvcnamedpipe");
+        const auto pipeName = pipeNameOverride.transform(&std::string::c_str)
+            .value_or(pmon::gid::defaultControlPipeName);
 
         HANDLE namedPipeHandle;
         // Try to open a named pipe; wait for it, if necessary.
         while (1) {
-            namedPipeHandle = CreateFile(pipe_name,
+            namedPipeHandle = CreateFileA(
+                pipeName,
                 GENERIC_READ | GENERIC_WRITE,
                 0,              
                 NULL,           
@@ -44,12 +47,12 @@ namespace pmon::mid
             }
 
             // Exit if an error other than ERROR_PIPE_BUSY occurs.
-            if (GetLastError() != ERROR_PIPE_BUSY) {
+            if (const auto hr = GetLastError(); hr != ERROR_PIPE_BUSY) {
                 throw std::runtime_error{ "Service not found" };
             }
 
             // All pipe instances are busy, so wait for 20 seconds.
-            if (!WaitNamedPipe(pipe_name, 20000)) {
+            if (!WaitNamedPipeA(pipeName, 20000)) {
                 throw std::runtime_error{ "Pipe sessions full" };
             }
         }
@@ -64,7 +67,19 @@ namespace pmon::mid
         }
         pNamedPipeHandle.reset(namedPipeHandle);
         clientProcessId = GetCurrentProcessId();
+        // connect to the introspection nsm
+        pComms = ipc::MakeMiddlewareComms(std::move(introNsmOverride));
 	}
+    
+    const PM_INTROSPECTION_ROOT* ConcreteMiddleware::GetIntrospectionData()
+    {
+        return pComms->GetIntrospectionRoot();
+    }
+
+    void ConcreteMiddleware::FreeIntrospectionData(const PM_INTROSPECTION_ROOT* pRoot)
+    {
+        free(const_cast<PM_INTROSPECTION_ROOT*>(pRoot));
+    }
 
 	void ConcreteMiddleware::Speak(char* buffer) const
 	{

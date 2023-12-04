@@ -96,6 +96,7 @@
     <ClCompile Include="CAPISessionTests.cpp" />
     <ClCompile Include="CAPIIntrospectionTests.cpp" />
     <ClCompile Include="CAPIStaticQueryTests.cpp" />
+    <ClCompile Include="EndToEndTests.cpp" />
     <ClCompile Include="InterprocessTests.cpp" />
     <ClCompile Include="InterprocessExperimentTests.cpp" />
     <ClCompile Include="WrapperDatasetTests.cpp" />

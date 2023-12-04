@@ -139,8 +139,8 @@ namespace pmon::ipc
 					throw std::runtime_error{ "Failed to find introspection semaphore in shared memory" };
 				}
 				auto& sem = *result.first;
-				// wait for holdoff to be released (timeout after 100ms)
-				if (!sem.timed_wait(clock::now() + 100ms)) {
+				// wait for holdoff to be released (timeout after XXXms)
+				if (!sem.timed_wait(clock::now() + 750ms)) {
 					throw std::runtime_error{ "timeout accessing introspection" };
 				}
 				// return the slot we just took because holdoff should not limit entry once released
