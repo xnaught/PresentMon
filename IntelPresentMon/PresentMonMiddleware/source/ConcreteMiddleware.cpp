@@ -262,6 +262,9 @@ namespace pmon::mid
             case PM_METRIC_GPU_POWER:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_power));
                 break;
+            case PM_METRIC_GPU_SUSTAINED_POWER_LIMIT:
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_sustained_power_limit));
+                break;
             case PM_METRIC_GPU_FAN_SPEED:
                 switch (qe.arrayIndex)
                 {
@@ -339,6 +342,8 @@ namespace pmon::mid
     void ConcreteMiddleware::PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob, uint32_t* numSwapChains)
     {
         std::unordered_map<uint64_t, fpsSwapChainData> swap_chain_data;
+        std::unordered_map<PM_METRIC, std::vector<double>> gpuMetricData;
+        std::unordered_map<PM_METRIC, std::vector<double>> cpuMetricData;
         LARGE_INTEGER api_qpc;
         QueryPerformanceCounter(&api_qpc);
 
@@ -397,66 +402,86 @@ namespace pmon::mid
         // Loop from the most recent frame data until we either run out of data or
         // we meet the window size requirements sent in by the client
         while (frame_data->present_event.PresentStartTime > end_qpc) {
-            auto result = swap_chain_data.emplace(
-                frame_data->present_event.SwapChainAddress, fpsSwapChainData());
-            auto swap_chain = &result.first->second;
+            if (pQuery->accumFpsData)
+            {
+                auto result = swap_chain_data.emplace(
+                    frame_data->present_event.SwapChainAddress, fpsSwapChainData());
+                auto swap_chain = &result.first->second;
 
-            // Copy swap_chain data for the previous first frame needed for calculations below
-            auto nextFramePresentStartTime = swap_chain->present_start_0;
-            auto nextFramePresentStopTime = swap_chain->present_stop_0;
-            auto nextFrameGPUDuration = swap_chain->gpu_duration_0;
+                // Copy swap_chain data for the previous first frame needed for calculations below
+                auto nextFramePresentStartTime = swap_chain->present_start_0;
+                auto nextFramePresentStopTime = swap_chain->present_stop_0;
+                auto nextFrameGPUDuration = swap_chain->gpu_duration_0;
 
-            // Save current frame's properties into swap_chain (the new first frame)
-            swap_chain->displayed_0 = frame_data->present_event.FinalState == PresentResult::Presented;
-            swap_chain->present_start_0 = frame_data->present_event.PresentStartTime;
-            swap_chain->present_stop_0 = frame_data->present_event.PresentStopTime;
-            swap_chain->gpu_duration_0 = frame_data->present_event.GPUDuration;
-            swap_chain->num_presents += 1;
+                // Save current frame's properties into swap_chain (the new first frame)
+                swap_chain->displayed_0 = frame_data->present_event.FinalState == PresentResult::Presented;
+                swap_chain->present_start_0 = frame_data->present_event.PresentStartTime;
+                swap_chain->present_stop_0 = frame_data->present_event.PresentStopTime;
+                swap_chain->gpu_duration_0 = frame_data->present_event.GPUDuration;
+                swap_chain->num_presents += 1;
 
-            if (swap_chain->displayed_0) {
-                swap_chain->display_1_screen_time = swap_chain->display_0_screen_time;
-                swap_chain->display_0_screen_time = frame_data->present_event.ScreenTime;
-                swap_chain->display_count += 1;
-                if (swap_chain->display_count == 1) {
-                    swap_chain->display_n_screen_time = frame_data->present_event.ScreenTime;
+                if (swap_chain->displayed_0) {
+                    swap_chain->display_1_screen_time = swap_chain->display_0_screen_time;
+                    swap_chain->display_0_screen_time = frame_data->present_event.ScreenTime;
+                    swap_chain->display_count += 1;
+                    if (swap_chain->display_count == 1) {
+                        swap_chain->display_n_screen_time = frame_data->present_event.ScreenTime;
+                    }
+                }
+
+                // These are only saved for the last frame:
+                if (swap_chain->num_presents == 1) {
+                    swap_chain->present_start_n = frame_data->present_event.PresentStartTime;
+                    swap_chain->sync_interval = frame_data->present_event.SyncInterval;
+                    //swap_chain->present_mode = TranslatePresentMode(frame_data->present_event.PresentMode);
+                    swap_chain->allows_tearing = static_cast<int32_t>(frame_data->present_event.SupportsTearing);
+                }
+
+                // Compute metrics for this frame if we've seen enough subsequent frames to have all the
+                // required data
+                //
+                // frame_data:      PresentStart--PresentStop--GPUDuration--ScreenTime
+                // nextFrame:                                   PresentStart--PresentStop--GPUDuration--ScreenTime
+                // nextNextFrame:                                                           PresentStart--PresentStop--GPUDuration--ScreenTime
+                //                                CPUStart
+                //                                CPUBusy------>CPUWait----------------->  GPUBusy--->  DisplayBusy---------------->
+                if (swap_chain->num_presents > 1) {
+                    auto cpuStart = frame_data->present_event.PresentStopTime;
+                    auto cpuBusy = nextFramePresentStartTime - cpuStart;
+                    auto cpuWait = nextFramePresentStopTime - nextFramePresentStartTime;
+                    auto gpuBusy = nextFrameGPUDuration;
+                    auto displayBusy = swap_chain->display_1_screen_time - swap_chain->display_0_screen_time;;
+
+                    auto frameTime_ms = QpcDeltaToMs(cpuBusy + cpuWait, client->GetQpcFrequency());
+                    auto gpuBusy_ms = QpcDeltaToMs(gpuBusy, client->GetQpcFrequency());
+                    auto displayBusy_ms = QpcDeltaToMs(displayBusy, client->GetQpcFrequency());
+                    auto cpuBusy_ms = QpcDeltaToMs(cpuBusy, client->GetQpcFrequency());
+                    auto cpuWait_ms = QpcDeltaToMs(cpuWait, client->GetQpcFrequency());
+
+                    swap_chain->frame_times_ms.push_back(frameTime_ms);
+                    swap_chain->gpu_sum_ms.push_back(gpuBusy_ms);
+                    swap_chain->cpu_busy_ms.push_back(cpuBusy_ms);
+                    swap_chain->cpu_wait_ms.push_back(cpuWait_ms);
+                    swap_chain->display_busy_ms.push_back(displayBusy_ms);
+                    swap_chain->dropped.push_back(swap_chain->displayed_0 ? 0. : 1.);
+
+                    if (swap_chain->displayed_0 && swap_chain->display_count >= 2 && displayBusy > 0) {
+                        swap_chain->displayed_fps.push_back(1000. / displayBusy_ms);
+                    }
                 }
             }
 
-            // These are only saved for the last frame:
-            if (swap_chain->num_presents == 1) {
-                swap_chain->present_start_n = frame_data->present_event.PresentStartTime;
-                swap_chain->sync_interval = frame_data->present_event.SyncInterval;
-                //swap_chain->present_mode = TranslatePresentMode(frame_data->present_event.PresentMode);
-                swap_chain->allows_tearing = static_cast<int32_t>(frame_data->present_event.SupportsTearing);
-            }
-
-            // Compute metrics for this frame if we've seen enough subsequent frames to have all the
-            // required data
-            //
-            // frame_data:      PresentStart--PresentStop--GPUDuration--ScreenTime
-            // nextFrame:                                   PresentStart--PresentStop--GPUDuration--ScreenTime
-            // nextNextFrame:                                                           PresentStart--PresentStop--GPUDuration--ScreenTime
-            //                                CPUStart
-            //                                CPUBusy------>CPUWait----------------->  GPUBusy--->  DisplayBusy---------------->
-            if (swap_chain->num_presents > 1) {
-                auto cpuStart = frame_data->present_event.PresentStopTime;
-                auto cpuBusy = nextFramePresentStartTime - cpuStart;
-                auto cpuWait = nextFramePresentStopTime - nextFramePresentStartTime;
-                auto gpuBusy = nextFrameGPUDuration;
-                auto displayBusy = swap_chain->display_1_screen_time - swap_chain->display_0_screen_time;;
-
-                auto frameTime_ms = QpcDeltaToMs(cpuBusy + cpuWait, client->GetQpcFrequency());
-                auto gpuBusy_ms = QpcDeltaToMs(gpuBusy, client->GetQpcFrequency());
-                auto displayBusy_ms = QpcDeltaToMs(displayBusy, client->GetQpcFrequency());
-                auto cpuBusy_ms = QpcDeltaToMs(cpuBusy, client->GetQpcFrequency());
-                auto cpuWait_ms = QpcDeltaToMs(cpuWait, client->GetQpcFrequency());
-
-                swap_chain->frame_times_ms.push_back(frameTime_ms);
-                swap_chain->gpu_sum_ms.push_back(gpuBusy_ms);
-                swap_chain->dropped.push_back(swap_chain->displayed_0 ? 0. : 1.);
-
-                if (swap_chain->displayed_0 && swap_chain->display_count >= 2 && displayBusy > 0) {
-                    swap_chain->displayed_fps.push_back(1000. / displayBusy_ms);
+            for (size_t i = 0; i < pQuery->accumGpuBits.size(); ++i) {
+                if (pQuery->accumGpuBits[i])
+                {
+                    PM_METRIC gpuMetric;
+                    double gpuMetricValue;
+                    if (GetGpuMetricData(i, frame_data->power_telemetry, gpuMetric, gpuMetricValue))
+                    {
+                        auto result = gpuMetricData.emplace(gpuMetric, std::vector<double>());
+                        auto data = &result.first->second;
+                        data->push_back(gpuMetricValue);
+                    }
                 }
             }
 
@@ -488,6 +513,36 @@ namespace pmon::mid
                 case PM_METRIC_DISPLAY_BUSY_TIME:
                     CalculateFpsMetric(swapChain, qe, pBlob, client->GetQpcFrequency());
                     break;
+                case PM_METRIC_GPU_POWER:
+                case PM_METRIC_GPU_FAN_SPEED:
+                case PM_METRIC_GPU_SUSTAINED_POWER_LIMIT:
+                case PM_METRIC_GPU_VOLTAGE:
+                case PM_METRIC_GPU_FREQUENCY:
+                case PM_METRIC_GPU_TEMPERATURE:
+                case PM_METRIC_GPU_UTILIZATION:
+                case PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION:
+                case PM_METRIC_GPU_MEDIA_UTILIZATION:
+                case PM_METRIC_VRAM_POWER:
+                case PM_METRIC_VRAM_VOLTAGE:
+                case PM_METRIC_VRAM_FREQUENCY:
+                case PM_METRIC_VRAM_EFFECTIVE_FREQUENCY:
+                case PM_METRIC_VRAM_TEMPERATURE:
+                case PM_METRIC_GPU_MEM_SIZE:
+                case PM_METRIC_GPU_MEM_USED:
+                case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
+                case PM_METRIC_GPU_MEM_WRITE_BANDWIDTH:
+                case PM_METRIC_GPU_MEM_READ_BANDWIDTH:
+                case PM_METRIC_GPU_POWER_LIMITED:
+                case PM_METRIC_GPU_TEMPERATURE_LIMITED:
+                case PM_METRIC_GPU_CURRENT_LIMITED:
+                case PM_METRIC_GPU_VOLTAGE_LIMITED:
+                case PM_METRIC_GPU_UTILIZATION_LIMITED:
+                case PM_METRIC_VRAM_POWER_LIMITED:
+                case PM_METRIC_VRAM_TEMPERATURE_LIMITED:
+                case PM_METRIC_VRAM_CURRENT_LIMITED:
+                case PM_METRIC_VRAM_VOLTAGE_LIMITED:
+                case PM_METRIC_VRAM_UTILIZATION_LIMITED:
+                    CalculateGpuMetric(gpuMetricData, qe, pBlob, client->GetQpcFrequency());
                 default:
                     break;
                 }
@@ -499,7 +554,11 @@ namespace pmon::mid
     {
         auto MillisecondsToFPS = [](double ms) { return ms == 0. ? 0. : 1000. / ms; };
         auto& output = reinterpret_cast<double&>(pBlob[element.dataOffset]);
+
         if (element.stat == PM_STAT_AVG) {
+            // We handle the averages for presented fps, frame times and displayed fps metrics
+            // by using the first and last frame data for the specified window. If not this combination
+            // metric and stat fall through
             if (element.metric == PM_METRIC_PRESENTED_FPS || element.metric == PM_METRIC_FRAME_TIME)
             {
                 if (swapChain.num_presents > 1)
@@ -515,6 +574,7 @@ namespace pmon::mid
                 {
                     output = 0.;
                 }
+                return;
             }
             else if (element.metric == PM_METRIC_DISPLAYED_FPS)
             {
@@ -527,30 +587,60 @@ namespace pmon::mid
                 {
                     output = 0.;
                 }
+                return;
             }
         }
-        else
+
+        switch (element.metric)
         {
-            if (element.metric == PM_METRIC_PRESENTED_FPS || element.metric == PM_METRIC_FRAME_TIME)
-            {
-                CalculateMetricsNoAvg(pBlob[element.dataOffset], swapChain.frame_times_ms, element.stat, false);
-                if (element.metric == PM_METRIC_PRESENTED_FPS) {
-                    output = MillisecondsToFPS(output);
-                }
+        case PM_METRIC_PRESENTED_FPS:
+        case PM_METRIC_FRAME_TIME:
+            CalculateMetric(output, swapChain.frame_times_ms, element.stat, false);
+            if (element.metric == PM_METRIC_PRESENTED_FPS) {
+                output = MillisecondsToFPS(output);
             }
-            else if (element.metric == PM_METRIC_DISPLAYED_FPS)
-            {
-                CalculateMetricsNoAvg(pBlob[element.dataOffset], swapChain.displayed_fps, element.stat, true);
-            }
+            break;
+        case PM_METRIC_DISPLAYED_FPS:
+            CalculateMetric(output, swapChain.displayed_fps, element.stat);
+            break;
+        case PM_METRIC_GPU_BUSY_TIME:
+            CalculateMetric(output, swapChain.gpu_sum_ms, element.stat);
+            break;
+        case PM_METRIC_CPU_BUSY_TIME:
+            CalculateMetric(output, swapChain.cpu_busy_ms, element.stat);
+            break;
+        case PM_METRIC_CPU_WAIT_TIME:
+            CalculateMetric(output, swapChain.cpu_wait_ms, element.stat);
+            break;
+        case PM_METRIC_DISPLAY_BUSY_TIME:
+            CalculateMetric(output, swapChain.display_busy_ms, element.stat);
+            break;
+        default:
+            output = 0.;
+            break;
         }
+
         return;
     }
 
-    void ConcreteMiddleware::CalculateMetricsNoAvg(uint8_t& pBlob, std::vector<double>& inData, PM_STAT stat, bool ascending)
+    void ConcreteMiddleware::CalculateGpuMetric(std::unordered_map<PM_METRIC, std::vector<double>>& gpuMetricDataconst, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
+    {
+        return;
+    }
+
+    void ConcreteMiddleware::CalculateMetric(double& pBlob, std::vector<double>& inData, PM_STAT stat, bool ascending)
     {
         auto& output = reinterpret_cast<double&>(pBlob);
         output = 0.;
         if (inData.size() > 1) {
+            if (stat == PM_STAT_AVG)
+            {
+                for (auto& element : inData) {
+                    output += element;
+                }
+                output /= inData.size();
+                return;
+            }
             if (stat == PM_STAT_RAW)
             {
                 size_t middle_index = inData.size() / 2;
@@ -733,5 +823,155 @@ namespace pmon::mid
         }
 
         return true;
+    }
+
+    bool ConcreteMiddleware::GetGpuMetricData(size_t telemetry_item_bit, PresentMonPowerTelemetryInfo& power_telemetry_info, PM_METRIC& gpuMetric, double& gpuMetricValue)
+    {
+        bool validGpuMetric = true;
+        GpuTelemetryCapBits bit =
+            static_cast<GpuTelemetryCapBits>(telemetry_item_bit);
+        switch (bit) {
+        case GpuTelemetryCapBits::time_stamp:
+            // This is a valid telemetry cap bit but we do not produce metrics for
+            // it.
+            validGpuMetric = false;
+            break;
+        case GpuTelemetryCapBits::gpu_power:
+            gpuMetric = PM_METRIC_GPU_POWER;
+            gpuMetricValue = power_telemetry_info.gpu_power_w;
+            break;
+        case GpuTelemetryCapBits::gpu_sustained_power_limit:
+            gpuMetric = PM_METRIC_GPU_SUSTAINED_POWER_LIMIT;
+            gpuMetricValue = power_telemetry_info.gpu_sustained_power_limit_w;
+            break;
+        case GpuTelemetryCapBits::gpu_voltage:
+            gpuMetric = PM_METRIC_GPU_VOLTAGE;
+            gpuMetricValue = power_telemetry_info.gpu_voltage_v;
+            break;
+        case GpuTelemetryCapBits::gpu_frequency:
+            gpuMetric = PM_METRIC_GPU_FREQUENCY;
+            gpuMetricValue = power_telemetry_info.gpu_frequency_mhz;
+            break;
+        case GpuTelemetryCapBits::gpu_temperature:
+            gpuMetric = PM_METRIC_GPU_TEMPERATURE;
+            gpuMetricValue = power_telemetry_info.gpu_temperature_c;
+            break;
+        case GpuTelemetryCapBits::gpu_utilization:
+            gpuMetric = PM_METRIC_GPU_UTILIZATION;
+            gpuMetricValue = power_telemetry_info.gpu_utilization;
+            break;
+        case GpuTelemetryCapBits::gpu_render_compute_utilization:
+            gpuMetric = PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION;
+            gpuMetricValue = power_telemetry_info.gpu_render_compute_utilization;
+            break;
+        case GpuTelemetryCapBits::gpu_media_utilization:
+            gpuMetric = PM_METRIC_GPU_MEDIA_UTILIZATION;
+            gpuMetricValue = power_telemetry_info.gpu_media_utilization;
+            break;
+        case GpuTelemetryCapBits::vram_power:
+            gpuMetric = PM_METRIC_VRAM_POWER;
+            gpuMetricValue = power_telemetry_info.vram_power_w;
+            break;
+        case GpuTelemetryCapBits::vram_voltage:
+            gpuMetric = PM_METRIC_VRAM_VOLTAGE;
+            gpuMetricValue = power_telemetry_info.vram_voltage_v;
+            break;
+        case GpuTelemetryCapBits::vram_frequency:
+            gpuMetric = PM_METRIC_VRAM_FREQUENCY;
+            gpuMetricValue = power_telemetry_info.vram_frequency_mhz;
+            break;
+        case GpuTelemetryCapBits::vram_effective_frequency:
+            gpuMetric = PM_METRIC_VRAM_EFFECTIVE_FREQUENCY;
+            gpuMetricValue = power_telemetry_info.vram_effective_frequency_gbps;
+            break;
+        case GpuTelemetryCapBits::vram_temperature:
+            gpuMetric = PM_METRIC_VRAM_TEMPERATURE;
+            gpuMetricValue = power_telemetry_info.vram_temperature_c;
+            break;
+        case GpuTelemetryCapBits::fan_speed_0:
+            gpuMetric = PM_METRIC_GPU_FAN_SPEED;
+            gpuMetricValue = power_telemetry_info.fan_speed_rpm[0];
+            break;
+        case GpuTelemetryCapBits::fan_speed_1:
+            gpuMetric = PM_METRIC_GPU_FAN_SPEED;
+            gpuMetricValue = power_telemetry_info.fan_speed_rpm[1];
+            break;
+        case GpuTelemetryCapBits::fan_speed_2:
+            gpuMetric = PM_METRIC_GPU_FAN_SPEED;
+            gpuMetricValue = power_telemetry_info.fan_speed_rpm[2];
+            break;
+        case GpuTelemetryCapBits::fan_speed_3:
+            gpuMetric = PM_METRIC_GPU_FAN_SPEED;
+            gpuMetricValue = power_telemetry_info.fan_speed_rpm[3];
+            break;
+        case GpuTelemetryCapBits::fan_speed_4:
+            gpuMetric = PM_METRIC_GPU_FAN_SPEED;
+            gpuMetricValue = power_telemetry_info.fan_speed_rpm[4];
+            break;
+        case GpuTelemetryCapBits::gpu_mem_size:
+            gpuMetric = PM_METRIC_GPU_MEM_SIZE;
+            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_mem_total_size_b);
+            break;
+        case GpuTelemetryCapBits::gpu_mem_used:
+            gpuMetric = PM_METRIC_GPU_MEM_USED;
+            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_mem_used_b);
+            break;
+        case GpuTelemetryCapBits::gpu_mem_max_bandwidth:
+            gpuMetric = PM_METRIC_GPU_MEM_MAX_BANDWIDTH;
+            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_mem_max_bandwidth_bps);
+            break;
+        case GpuTelemetryCapBits::gpu_mem_write_bandwidth:
+            gpuMetric = PM_METRIC_GPU_MEM_WRITE_BANDWIDTH;
+            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_mem_write_bandwidth_bps);
+            break;
+        case GpuTelemetryCapBits::gpu_mem_read_bandwidth:
+            gpuMetric = PM_METRIC_GPU_MEM_READ_BANDWIDTH;
+            gpuMetricValue = power_telemetry_info.gpu_mem_read_bandwidth_bps;
+            break;
+        case GpuTelemetryCapBits::gpu_power_limited:
+            gpuMetric = PM_METRIC_GPU_POWER_LIMITED;
+            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_power_limited);
+            break;
+        case GpuTelemetryCapBits::gpu_temperature_limited:
+            gpuMetric = PM_METRIC_GPU_TEMPERATURE_LIMITED;
+            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_temperature_limited);
+            break;
+        case GpuTelemetryCapBits::gpu_current_limited:
+            gpuMetric = PM_METRIC_GPU_CURRENT_LIMITED;
+            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_current_limited);
+            break;
+        case GpuTelemetryCapBits::gpu_voltage_limited:
+            gpuMetric = PM_METRIC_GPU_VOLTAGE_LIMITED;
+            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_voltage_limited);
+            break;
+        case GpuTelemetryCapBits::gpu_utilization_limited:
+            gpuMetric = PM_METRIC_GPU_UTILIZATION_LIMITED;
+            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_utilization_limited);
+            break;
+        case GpuTelemetryCapBits::vram_power_limited:
+            gpuMetric = PM_METRIC_VRAM_POWER_LIMITED;
+            gpuMetricValue = static_cast<double>(power_telemetry_info.vram_power_limited);
+            break;
+        case GpuTelemetryCapBits::vram_temperature_limited:
+            gpuMetric = PM_METRIC_VRAM_TEMPERATURE_LIMITED;
+            gpuMetricValue = static_cast<double>(power_telemetry_info.vram_temperature_limited);
+            break;
+        case GpuTelemetryCapBits::vram_current_limited:
+            gpuMetric = PM_METRIC_VRAM_CURRENT_LIMITED;
+            gpuMetricValue = static_cast<double>(power_telemetry_info.vram_current_limited);
+            break;
+        case GpuTelemetryCapBits::vram_voltage_limited:
+            gpuMetric = PM_METRIC_VRAM_VOLTAGE_LIMITED;
+            gpuMetricValue = static_cast<double>(power_telemetry_info.vram_voltage_limited);
+            break;
+        case GpuTelemetryCapBits::vram_utilization_limited:
+            gpuMetric = PM_METRIC_VRAM_UTILIZATION_LIMITED;
+            gpuMetricValue = static_cast<double>(power_telemetry_info.vram_utilization_limited);
+            break;
+        default:
+            validGpuMetric = false;
+            break;
+        }
+        return validGpuMetric;
     }
 }

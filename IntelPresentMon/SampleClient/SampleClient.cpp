@@ -731,7 +731,7 @@ void ProcessEtl() {
 void PollMetrics(uint32_t processId, double metricsOffset)
 {
     PM_DYNAMIC_QUERY_HANDLE q = nullptr;
-    PM_QUERY_ELEMENT elements[7]{
+    PM_QUERY_ELEMENT elements[]{
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
@@ -739,10 +739,52 @@ void PollMetrics(uint32_t processId, double metricsOffset)
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_BUSY_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_BUSY_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_BUSY_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_BUSY_TIME, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_BUSY_TIME, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_BUSY_TIME, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_BUSY_TIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
     };
     auto result = pmRegisterDynamicQuery(&q, elements, std::size(elements), processId, 2000., metricsOffset);
 
-    auto pBlob = std::make_unique<uint8_t[]>(elements[6].dataOffset + elements[6].dataSize);
+    auto pBlob = std::make_unique<uint8_t[]>(elements[48].dataOffset + elements[48].dataSize);
     uint32_t numSwapChains = 1;
 
     for (;;)
@@ -757,6 +799,48 @@ void PollMetrics(uint32_t processId, double metricsOffset)
             PrintMetric("Presented fps Max = %f", reinterpret_cast<double&>(pBlob[elements[4].dataOffset]), true);
             PrintMetric("Presented fps Min = %f", reinterpret_cast<double&>(pBlob[elements[5].dataOffset]), true);
             PrintMetric("Presented fps Raw = %f", reinterpret_cast<double&>(pBlob[elements[6].dataOffset]), true);
+            PrintMetric("Frame time Average = %f", reinterpret_cast<double&>(pBlob[elements[7].dataOffset]), true);
+            PrintMetric("Frame time 99% = %f", reinterpret_cast<double&>(pBlob[elements[8].dataOffset]), true);
+            PrintMetric("Frame time 95% = %f", reinterpret_cast<double&>(pBlob[elements[9].dataOffset]), true);
+            PrintMetric("Frame time 90% = %f", reinterpret_cast<double&>(pBlob[elements[10].dataOffset]), true);
+            PrintMetric("Frame time Max = %f", reinterpret_cast<double&>(pBlob[elements[11].dataOffset]), true);
+            PrintMetric("Frame time Min = %f", reinterpret_cast<double&>(pBlob[elements[12].dataOffset]), true);
+            PrintMetric("Frame time Raw = %f", reinterpret_cast<double&>(pBlob[elements[13].dataOffset]), true);
+            PrintMetric("Displayed fps Average = %f", reinterpret_cast<double&>(pBlob[elements[14].dataOffset]), true);
+            PrintMetric("Displayed fps 99% = %f", reinterpret_cast<double&>(pBlob[elements[15].dataOffset]), true);
+            PrintMetric("Displayed fps 95% = %f", reinterpret_cast<double&>(pBlob[elements[16].dataOffset]), true);
+            PrintMetric("Displayed fps 90% = %f", reinterpret_cast<double&>(pBlob[elements[17].dataOffset]), true);
+            PrintMetric("Displayed fps Max = %f", reinterpret_cast<double&>(pBlob[elements[18].dataOffset]), true);
+            PrintMetric("Displayed fps Min = %f", reinterpret_cast<double&>(pBlob[elements[19].dataOffset]), true);
+            PrintMetric("Displayed fps Raw = %f", reinterpret_cast<double&>(pBlob[elements[20].dataOffset]), true);
+            PrintMetric("Cpu Wait time Average = %f", reinterpret_cast<double&>(pBlob[elements[21].dataOffset]), true);
+            PrintMetric("Cpu Wait time 99% = %f", reinterpret_cast<double&>(pBlob[elements[22].dataOffset]), true);
+            PrintMetric("Cpu Wait time 95% = %f", reinterpret_cast<double&>(pBlob[elements[23].dataOffset]), true);
+            PrintMetric("Cpu Wait time 90% = %f", reinterpret_cast<double&>(pBlob[elements[24].dataOffset]), true);
+            PrintMetric("Cpu Wait time Max = %f", reinterpret_cast<double&>(pBlob[elements[25].dataOffset]), true);
+            PrintMetric("Cpu Wait time Min = %f", reinterpret_cast<double&>(pBlob[elements[26].dataOffset]), true);
+            PrintMetric("Cpu Wait time Raw = %f", reinterpret_cast<double&>(pBlob[elements[27].dataOffset]), true);
+            PrintMetric("Cpu Busy time Average = %f", reinterpret_cast<double&>(pBlob[elements[28].dataOffset]), true);
+            PrintMetric("Cpu Busy time 99% = %f", reinterpret_cast<double&>(pBlob[elements[29].dataOffset]), true);
+            PrintMetric("Cpu Busy time 95% = %f", reinterpret_cast<double&>(pBlob[elements[30].dataOffset]), true);
+            PrintMetric("Cpu Busy time 90% = %f", reinterpret_cast<double&>(pBlob[elements[31].dataOffset]), true);
+            PrintMetric("Cpu Busy time Max = %f", reinterpret_cast<double&>(pBlob[elements[32].dataOffset]), true);
+            PrintMetric("Cpu Busy time Min = %f", reinterpret_cast<double&>(pBlob[elements[33].dataOffset]), true);
+            PrintMetric("Cpu Busy time Raw = %f", reinterpret_cast<double&>(pBlob[elements[34].dataOffset]), true);
+            PrintMetric("Gpu Busy time Average = %f", reinterpret_cast<double&>(pBlob[elements[35].dataOffset]), true);
+            PrintMetric("Gpu Busy time 99% = %f", reinterpret_cast<double&>(pBlob[elements[36].dataOffset]), true);
+            PrintMetric("Gpu Busy time 95% = %f", reinterpret_cast<double&>(pBlob[elements[37].dataOffset]), true);
+            PrintMetric("Gpu Busy time 90% = %f", reinterpret_cast<double&>(pBlob[elements[38].dataOffset]), true);
+            PrintMetric("Gpu Busy time Max = %f", reinterpret_cast<double&>(pBlob[elements[39].dataOffset]), true);
+            PrintMetric("Gpu Busy time Min = %f", reinterpret_cast<double&>(pBlob[elements[40].dataOffset]), true);
+            PrintMetric("Gpu Busy time Raw = %f", reinterpret_cast<double&>(pBlob[elements[41].dataOffset]), true);
+            PrintMetric("Display Busy time Average = %f", reinterpret_cast<double&>(pBlob[elements[42].dataOffset]), true);
+            PrintMetric("Display Busy time 99% = %f", reinterpret_cast<double&>(pBlob[elements[43].dataOffset]), true);
+            PrintMetric("Display Busy time 95% = %f", reinterpret_cast<double&>(pBlob[elements[44].dataOffset]), true);
+            PrintMetric("Display Busy time 90% = %f", reinterpret_cast<double&>(pBlob[elements[45].dataOffset]), true);
+            PrintMetric("Display Busy time Max = %f", reinterpret_cast<double&>(pBlob[elements[46].dataOffset]), true);
+            PrintMetric("Display Busy time Min = %f", reinterpret_cast<double&>(pBlob[elements[47].dataOffset]), true);
+            PrintMetric("Display Busy time Raw = %f", reinterpret_cast<double&>(pBlob[elements[48].dataOffset]), true);
             CommitConsole();
         }
 

@@ -19,6 +19,9 @@ namespace pmon::mid
 		std::vector<double> displayed_fps;
 		std::vector<double> frame_times_ms;
 		std::vector<double> gpu_sum_ms;
+		std::vector<double> cpu_busy_ms;
+		std::vector<double> cpu_wait_ms;
+		std::vector<double> display_busy_ms;
 		std::vector<double> dropped;
 		uint64_t present_start_0 = 0;             // The first frame's PresentStartTime (qpc)
 		uint64_t present_start_n = 0;             // The last frame's PresentStartTime (qpc)
@@ -71,9 +74,10 @@ namespace pmon::mid
 		bool DecrementIndex(NamedSharedMem* nsm_view, uint64_t& index);
 
 		void CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency);
-		void CalculateMetricsNoAvg(uint8_t& pBlob, std::vector<double>& inData, PM_STAT stat, bool ascending);
+		void CalculateGpuMetric(std::unordered_map<PM_METRIC, std::vector<double>>& gpuMetricDataconst, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency);
+		void CalculateMetric(double& pBlob, std::vector<double>& inData, PM_STAT stat, bool ascending = true);
 		double GetPercentile(std::vector<double>& data, double percentile);
-
+		bool GetGpuMetricData(size_t telemetry_item_bit, PresentMonPowerTelemetryInfo& power_telemetry_info, PM_METRIC& gpuMetric, double& gpuMetricValue);
 		std::unique_ptr<void, HandleDeleter> pNamedPipeHandle;
 		uint32_t clientProcessId = 0;
 		// Stream clients mapping to process id
