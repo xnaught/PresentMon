@@ -728,7 +728,7 @@ void ProcessEtl() {
 }
 #endif
 
-PM_DYNAMIC_QUERY_HANDLE CreateFpsDynamicQuery(uint32_t processId, double metricsOffset)
+void PollMetrics(uint32_t processId, double metricsOffset)
 {
     PM_DYNAMIC_QUERY_HANDLE q = nullptr;
     PM_QUERY_ELEMENT elements[7]{
@@ -740,14 +740,36 @@ PM_DYNAMIC_QUERY_HANDLE CreateFpsDynamicQuery(uint32_t processId, double metrics
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
     };
-    auto result = pmRegisterDynamicQuery(&q, elements, std::size(elements), processId, 1000., metricsOffset);
+    auto result = pmRegisterDynamicQuery(&q, elements, std::size(elements), processId, 2000., metricsOffset);
 
     auto pBlob = std::make_unique<uint8_t[]>(elements[6].dataOffset + elements[6].dataSize);
     uint32_t numSwapChains = 1;
 
-    pmPollDynamicQuery(q, pBlob.get(), &numSwapChains);
+    for (;;)
+    {
+        auto status = pmPollDynamicQuery(q, pBlob.get(), &numSwapChains);
+        if (status == PM_STATUS_SUCCESS)
+        {
+            PrintMetric("Presented fps Average = %f", reinterpret_cast<double&>(pBlob[elements[0].dataOffset]), true);
+            PrintMetric("Presented fps 99% = %f", reinterpret_cast<double&>(pBlob[elements[1].dataOffset]), true);
+            PrintMetric("Presented fps 95% = %f", reinterpret_cast<double&>(pBlob[elements[2].dataOffset]), true);
+            PrintMetric("Presented fps 90% = %f", reinterpret_cast<double&>(pBlob[elements[3].dataOffset]), true);
+            PrintMetric("Presented fps Max = %f", reinterpret_cast<double&>(pBlob[elements[4].dataOffset]), true);
+            PrintMetric("Presented fps Min = %f", reinterpret_cast<double&>(pBlob[elements[5].dataOffset]), true);
+            PrintMetric("Presented fps Raw = %f", reinterpret_cast<double&>(pBlob[elements[6].dataOffset]), true);
+            CommitConsole();
+        }
 
-    return q;
+        if (gQuit == true) {
+            break;
+        }
+
+        Sleep(kSleepTime);
+    }
+
+    pmFreeDynamicQuery(q);
+
+    return;
 }
 
 int main(int argc, char* argv[]) {
@@ -843,10 +865,6 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Hit Ctrl-C to exit application." << std::endl;
 
-    auto dynamicQueryHandle = CreateFpsDynamicQuery(gCurrentPid, g_metrics_offset);
-    pmFreeDynamicQuery(dynamicQueryHandle);
-
-#ifdef ENABLE_METRICS
     // Create an event
     gCloseEvent = CreateEvent(NULL,   // default security attributes
                               TRUE,   // manual reset event
@@ -855,12 +873,11 @@ int main(int argc, char* argv[]) {
 
     if (SetConsoleCtrlHandler(CtrlHandler, TRUE)) {
       // Start metrics capture thread
-      std::thread readMetricsThread(ReadMetrics);
+      std::thread pollMetricsThread(PollMetrics, gCurrentPid, g_metrics_offset);
 
       // Wait for the metrics capture thread to finish
-      readMetricsThread.join();
+      pollMetricsThread.join();
     }
-#endif
   }
 
   pmStopStreaming(gCurrentPid);

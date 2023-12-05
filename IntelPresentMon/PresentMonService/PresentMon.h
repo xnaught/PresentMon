@@ -142,7 +142,9 @@ class PresentMonSession {
 
 class PresentMon {
  public:
-  PresentMon() {}
+  PresentMon() {
+      firstConnectionEvent_.reset(CreateEventA(NULL, TRUE, FALSE, NULL));
+  }
   ~PresentMon();
 
   PM_STATUS StartTraceSession();
@@ -201,7 +203,11 @@ class PresentMon {
     return real_time_session_.SetPowerTelemetryContainer(ptc);
   }
 
+  HANDLE GetFirstConnectionHandle() { return firstConnectionEvent_.get(); }
+
  private:
+  std::unique_ptr<std::remove_pointer_t<HANDLE>, HandleDeleter>
+    firstConnectionEvent_;
   PresentMonSession real_time_session_;
   PresentMonSession etl_session_;
 };

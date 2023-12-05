@@ -70,7 +70,7 @@ namespace pmon::mid
         pNamedPipeHandle.reset(namedPipeHandle);
         clientProcessId = GetCurrentProcessId();
         // connect to the introspection nsm
-        pComms = ipc::MakeMiddlewareComms(std::move(introNsmOverride));
+        //pComms = ipc::MakeMiddlewareComms(std::move(introNsmOverride));
 	}
     
     const PM_INTROSPECTION_ROOT* ConcreteMiddleware::GetIntrospectionData()
@@ -237,18 +237,18 @@ namespace pmon::mid
     { 
         // get introspection data for reference
         // TODO: cache this data so it's not required to be generated every time
-        pmapi::intro::Dataset ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
+        //pmapi::intro::Dataset ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
 
         // make the query object that will be managed by the handle
         auto pQuery = std::make_unique<PM_DYNAMIC_QUERY>();
 
         uint64_t offset = 0u;
         for (auto& qe : queryElements) {
-            auto metricView = ispec.FindMetric(qe.metric);
-            if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_DYNAMIC)) {
-                // TODO: specific exception here
-                throw std::runtime_error{ "Static metric in dynamic metric query specification" };
-            }
+            //auto metricView = ispec.FindMetric(qe.metric);
+            //if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_DYNAMIC)) {
+            //    // TODO: specific exception here
+            //    throw std::runtime_error{ "Static metric in dynamic metric query specification" };
+            //}
             switch (qe.metric) {
             case PM_METRIC_PRESENTED_FPS:
             case PM_METRIC_DISPLAYED_FPS:
@@ -336,38 +336,9 @@ namespace pmon::mid
         return pQuery.release();
     }
 
-    struct fps_swap_chain_data {
-        std::vector<double> displayed_fps;
-        std::vector<double> frame_times_ms;
-        std::vector<double> gpu_sum_ms;
-        std::vector<double> dropped;
-        uint64_t present_start_0 = 0;             // The first frame's PresentStartTime (qpc)
-        uint64_t present_start_n = 0;             // The last frame's PresentStartTime (qpc)
-        uint64_t present_stop_0 = 0;             // The first frame's PresentStopTime (qpc)
-        uint64_t present_stop_n = 0;             // The last frame's PresentStopTime (qpc)
-        uint64_t gpu_duration_0 = 0;             // The first frame's GPUDuration (qpc)
-        uint64_t display_n_screen_time = 0;       // The last presented frame's ScreenTime (qpc)
-        uint64_t display_0_screen_time = 0;       // The first presented frame's ScreenTime (qpc)
-        uint64_t display_1_screen_time = 0;       // The second presented frame's ScreenTime (qpc)
-        uint32_t display_count = 0;               // The number of presented frames
-        uint32_t num_presents = 0;                // The number of frames
-        bool     displayed_0 = false;             // Whether the first frame was displayed
-
-        // Properties of the most-recent processed frame:
-        int32_t sync_interval = 0;
-        PM_PRESENT_MODE present_mode = PM_PRESENT_MODE_UNKNOWN;
-        int32_t allows_tearing = 0;
-
-        // Only used by GetGfxLatencyData():
-        std::vector<double> render_latency_ms;
-        std::vector<double> display_latency_ms;
-        uint64_t render_latency_sum = 0;
-        uint64_t display_latency_sum = 0;
-    };
-
     void ConcreteMiddleware::PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob, uint32_t* numSwapChains)
     {
-        std::unordered_map<uint64_t, fps_swap_chain_data> swap_chain_data;
+        std::unordered_map<uint64_t, fpsSwapChainData> swap_chain_data;
         LARGE_INTEGER api_qpc;
         QueryPerformanceCounter(&api_qpc);
 
@@ -396,7 +367,7 @@ namespace pmon::mid
         }
 
         uint64_t index = 0;
-        double adjusted_window_size_in_ms = pQuery->metricOffsetMs;
+        double adjusted_window_size_in_ms = pQuery->windowSizeMs;
 
         auto result = queryFrameDataDeltas.emplace(pQuery->dynamicQueryHandle, uint64_t());
         auto queryToFrameDataDelta = &result.first->second;
@@ -427,7 +398,7 @@ namespace pmon::mid
         // we meet the window size requirements sent in by the client
         while (frame_data->present_event.PresentStartTime > end_qpc) {
             auto result = swap_chain_data.emplace(
-                frame_data->present_event.SwapChainAddress, fps_swap_chain_data());
+                frame_data->present_event.SwapChainAddress, fpsSwapChainData());
             auto swap_chain = &result.first->second;
 
             // Copy swap_chain data for the previous first frame needed for calculations below
@@ -453,7 +424,7 @@ namespace pmon::mid
 
             // These are only saved for the last frame:
             if (swap_chain->num_presents == 1) {
-                swap_chain->present_stop_n = frame_data->present_event.PresentStopTime;
+                swap_chain->present_start_n = frame_data->present_event.PresentStartTime;
                 swap_chain->sync_interval = frame_data->present_event.SyncInterval;
                 //swap_chain->present_mode = TranslatePresentMode(frame_data->present_event.PresentMode);
                 swap_chain->allows_tearing = static_cast<int32_t>(frame_data->present_event.SupportsTearing);
@@ -501,6 +472,160 @@ namespace pmon::mid
                 break;
             }
         }
+
+        for (auto& pair : swap_chain_data) {
+            auto& swapChain = pair.second;
+
+            for (auto& qe : pQuery->elements) {
+                switch (qe.metric)
+                {
+                case PM_METRIC_PRESENTED_FPS:
+                case PM_METRIC_DISPLAYED_FPS:
+                case PM_METRIC_FRAME_TIME:
+                case PM_METRIC_GPU_BUSY_TIME:
+                case PM_METRIC_CPU_BUSY_TIME:
+                case PM_METRIC_CPU_WAIT_TIME:
+                case PM_METRIC_DISPLAY_BUSY_TIME:
+                    CalculateFpsMetric(swapChain, qe, pBlob, client->GetQpcFrequency());
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+    }
+
+    void ConcreteMiddleware::CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
+    {
+        auto MillisecondsToFPS = [](double ms) { return ms == 0. ? 0. : 1000. / ms; };
+        auto& output = reinterpret_cast<double&>(pBlob[element.dataOffset]);
+        if (element.stat == PM_STAT_AVG) {
+            if (element.metric == PM_METRIC_PRESENTED_FPS || element.metric == PM_METRIC_FRAME_TIME)
+            {
+                if (swapChain.num_presents > 1)
+                {
+                    output = QpcDeltaToMs(swapChain.present_start_n - swapChain.present_start_0, qpcFrequency);
+                    output = output / (swapChain.num_presents - 1);
+                    if (element.metric == PM_METRIC_PRESENTED_FPS)
+                    {
+                        output = MillisecondsToFPS(output);
+                    }
+                }
+                else
+                {
+                    output = 0.;
+                }
+            }
+            else if (element.metric == PM_METRIC_DISPLAYED_FPS)
+            {
+                if (swapChain.display_count > 1)
+                {
+                    output = QpcDeltaToMs(swapChain.display_n_screen_time - swapChain.display_0_screen_time, qpcFrequency);
+                    output = MillisecondsToFPS(output / (swapChain.display_count - 1));
+                }
+                else
+                {
+                    output = 0.;
+                }
+            }
+        }
+        else
+        {
+            if (element.metric == PM_METRIC_PRESENTED_FPS || element.metric == PM_METRIC_FRAME_TIME)
+            {
+                CalculateMetricsNoAvg(pBlob[element.dataOffset], swapChain.frame_times_ms, element.stat, false);
+                if (element.metric == PM_METRIC_PRESENTED_FPS) {
+                    output = MillisecondsToFPS(output);
+                }
+            }
+            else if (element.metric == PM_METRIC_DISPLAYED_FPS)
+            {
+                CalculateMetricsNoAvg(pBlob[element.dataOffset], swapChain.displayed_fps, element.stat, true);
+            }
+        }
+        return;
+    }
+
+    void ConcreteMiddleware::CalculateMetricsNoAvg(uint8_t& pBlob, std::vector<double>& inData, PM_STAT stat, bool ascending)
+    {
+        auto& output = reinterpret_cast<double&>(pBlob);
+        output = 0.;
+        if (inData.size() > 1) {
+            if (stat == PM_STAT_RAW)
+            {
+                size_t middle_index = inData.size() / 2;
+                output = inData[middle_index];
+                return;
+            }
+            if (ascending) {
+                std::sort(inData.begin(), inData.end());
+                switch (stat)
+                {
+                case PM_STAT_MIN:
+                    output = inData[0];
+                    break;
+                case PM_STAT_MAX:
+                    output = inData[inData.size() - 1];
+                    break;
+                case PM_STAT_PERCENTILE_99:
+                    output = GetPercentile(inData, 0.01);
+                    break;
+                case PM_STAT_PERCENTILE_95:
+                    output = GetPercentile(inData, 0.05);
+                    break;
+                case PM_STAT_PERCENTILE_90:
+                    output = GetPercentile(inData, 0.10);
+                    break;
+                default:
+                    break;
+                }
+            }
+            else {
+                std::sort(inData.begin(), inData.end(), std::greater<>());
+                switch (stat)
+                {
+                case PM_STAT_MIN:
+                    output = inData[0];
+                    break;
+                case PM_STAT_MAX:
+                    output = inData[inData.size() - 1];
+                    break;
+                case PM_STAT_PERCENTILE_99:
+                    output = GetPercentile(inData, 0.01);
+                    break;
+                case PM_STAT_PERCENTILE_95:
+                    output = GetPercentile(inData, 0.05);
+                    break;
+                case PM_STAT_PERCENTILE_90:
+                    output = GetPercentile(inData, 0.10);
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+        else if (inData.size() == 1) {
+            output = inData[0];
+        }
+    }
+
+    // Calculate percentile using linear interpolation between the closet ranks
+    // data must be pre-sorted
+    double ConcreteMiddleware::GetPercentile(std::vector<double>& data, double percentile)
+    {
+        percentile = max(percentile, 0.);
+
+        double integral_part_as_double;
+        double fractpart =
+            modf(percentile * static_cast<double>(data.size()),
+                &integral_part_as_double);
+
+        uint32_t idx = static_cast<uint32_t>(integral_part_as_double);
+        if (idx >= data.size() - 1) {
+            return data[data.size() - 1];
+        }
+
+        return data[idx] + (fractpart * (data[idx + 1] - data[idx]));
     }
 
     PmNsmFrameData* ConcreteMiddleware::GetFrameDataStart(StreamClient* client, uint64_t& index, uint64_t queryMetricsDataOffset, uint64_t& queryFrameDataDelta, double& window_sample_size_in_ms)
