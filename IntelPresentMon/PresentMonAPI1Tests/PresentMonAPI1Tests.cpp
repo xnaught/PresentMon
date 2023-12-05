@@ -19,7 +19,7 @@ namespace PresentMonAPI1Tests
 
 			bp::child process("PresentMonService.exe"s,
 				"--timed-stop"s, "100"s,
-				"--control-pipe"s, R"(\\.\pipe\test-pipe-pmsvc)"s,
+				"--control-pipe"s, R"(\\.\pipe\test-pipe-pmsvca)"s,
 				"--nsm-prefix"s, "pmon_nsm_utest_"s,
 				bp::std_out > out, bp::std_in < in);
 
@@ -35,7 +35,7 @@ namespace PresentMonAPI1Tests
 			bp::ipstream out; // Stream for reading the process's output
 			bp::opstream in;  // Stream for writing to the process's input
 
-			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc)"s;
+			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvcb)"s;
 
 			bp::child process("PresentMonService.exe"s,
 				"--timed-stop"s, "2000"s,
