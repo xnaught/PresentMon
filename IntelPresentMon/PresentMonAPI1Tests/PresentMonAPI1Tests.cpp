@@ -47,7 +47,7 @@ namespace PresentMonAPI1Tests
 
 			{
 				const auto sta = pmInitialize(pipeName.c_str());
-				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta), L"Connecting to service via named pipe");
+				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta), L"*** Connecting to service via named pipe");
 			}
 
 			process.terminate();

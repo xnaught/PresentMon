@@ -206,11 +206,8 @@ void ConsoleDebugMockService::Run()
 {
 	std::cout << "Running service as a console app..." << std::endl;
 
-	// Start the main PresentMon thread
-	std::thread pmMainThread(PresentMonMainThread, this);
-
-	WaitForSingleObject(stopEvent_, INFINITE);
-	pmMainThread.join();
+	// Start the main PresentMon thread, wait for it to exit
+	std::jthread pmMainThread(PresentMonMainThread, this);
 }
 
 HANDLE ConsoleDebugMockService::GetServiceStopHandle()

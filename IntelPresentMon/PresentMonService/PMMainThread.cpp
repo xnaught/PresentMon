@@ -130,46 +130,58 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
     // after populating, we sample each adapter to gather availability information
     // this is deferred until client connection in order to increase the probability that
     // telemetry metric availability is accurately assessed
-    WaitForSingleObject(pm->GetFirstConnectionHandle(), INFINITE);
-    ptc->Repopulate();
-    for (auto& adapter : ptc->GetPowerTelemetryAdapters()) {
-        adapter->Sample();
-        pComms->RegisterGpuDevice(adapter->GetVendor(), adapter->GetName(), adapter->GetPowerTelemetryCapBits());
+    {
+        const HANDLE events[]{
+              pm->GetFirstConnectionHandle(),
+              srv->GetServiceStopHandle(),
+        };
+        const auto waitResult = WaitForMultipleObjects((DWORD)std::size(events), events, FALSE, INFINITE);
+        // TODO: check for wait result error
+        // if events[1] was signalled, that means service is stopping so exit thread
+        if ((waitResult - WAIT_OBJECT_0) == 1) {
+            return;
+        }
+        ptc->Repopulate();
+        for (auto& adapter : ptc->GetPowerTelemetryAdapters()) {
+            adapter->Sample();
+            pComms->RegisterGpuDevice(adapter->GetVendor(), adapter->GetName(), adapter->GetPowerTelemetryCapBits());
+        }
+        pComms->FinalizeGpuDevices();
     }
-    pComms->FinalizeGpuDevices();    
 
 	// only start periodic polling when streaming starts
     // exit polling loop and this thread when service is stopping
-	const HANDLE events[] {
-	  pm->GetStreamingStartHandle(),
-	  srv->GetServiceStopHandle(),
-	};
-	while (1) {
-		auto waitResult = WaitForMultipleObjects((DWORD)std::size(events), events, FALSE, INFINITE);
-		// TODO: check for wait result error
-		// if events[1] was signalled, that means service is stopping so exit thread
-		const auto i = waitResult - WAIT_OBJECT_0;
-		if (i == 1) {
-			return;
-		}
-        // otherwise we assume streaming has started and we begin the polling loop
-		while (WaitForSingleObject(srv->GetServiceStopHandle(), 0) != WAIT_OBJECT_0) {
-            // if device was reset (driver installed etc.) we need to repopulate telemetry
-			if (WaitForSingleObject(srv->GetResetPowerTelemetryHandle(), 0) == WAIT_OBJECT_0) {
-				// TODO: log error here or inside of repopulate
-				ptc->Repopulate();
-			}
-			for (auto& adapter : ptc->GetPowerTelemetryAdapters()) {
-				adapter->Sample();
-			}
-			PmSleep(pm->GetGpuTelemetryPeriod());
-			// go dormant if there are no active streams left
-            // TODO: consider race condition here if client stops and starts streams rapidly
-			if (pm->GetActiveStreams() == 0) {
-				break;
-			}
-		}
-	}
+    {
+        const HANDLE events[]{
+          pm->GetStreamingStartHandle(),
+          srv->GetServiceStopHandle(),
+        };
+        while (1) {
+            auto waitResult = WaitForMultipleObjects((DWORD)std::size(events), events, FALSE, INFINITE);
+            // TODO: check for wait result error
+            // if events[1] was signalled, that means service is stopping so exit thread
+            if ((waitResult - WAIT_OBJECT_0) == 1) {
+                return;
+            }
+            // otherwise we assume streaming has started and we begin the polling loop
+            while (WaitForSingleObject(srv->GetServiceStopHandle(), 0) != WAIT_OBJECT_0) {
+                // if device was reset (driver installed etc.) we need to repopulate telemetry
+                if (WaitForSingleObject(srv->GetResetPowerTelemetryHandle(), 0) == WAIT_OBJECT_0) {
+                    // TODO: log error here or inside of repopulate
+                    ptc->Repopulate();
+                }
+                for (auto& adapter : ptc->GetPowerTelemetryAdapters()) {
+                    adapter->Sample();
+                }
+                PmSleep(pm->GetGpuTelemetryPeriod());
+                // go dormant if there are no active streams left
+                // TODO: consider race condition here if client stops and starts streams rapidly
+                if (pm->GetActiveStreams() == 0) {
+                    break;
+                }
+            }
+        }
+    }
 }
 
 void CpuTelemetry(Service* const srv, PresentMon* const pm,
@@ -236,9 +248,9 @@ void PresentMonMainThread(Service* const srv)
         }
 
         if (opt.timedStop) {
-            auto hTimer = CreateWaitableTimer(NULL, FALSE, NULL);
+            auto hTimer = CreateWaitableTimerA(NULL, FALSE, NULL);
             LARGE_INTEGER liDueTime;
-            liDueTime.QuadPart = -10'000LL * long long(*opt.timedStop);
+            liDueTime.QuadPart = -10'000LL * *opt.timedStop;
             struct Completion {
                 static void CALLBACK Routine(LPVOID lpArg, DWORD dwTimerLowValue, DWORD dwTimerHighValue) {
                     SetEvent((HANDLE)lpArg);
