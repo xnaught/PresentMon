@@ -26,7 +26,7 @@ namespace PresentMonAPI2
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> alloc;
 			auto pClone = root.ApiClone(alloc);
-			Assert::AreEqual(14812ull, alloc.GetTotalSize());
+			Assert::AreEqual(17004ull, alloc.GetTotalSize());
 			Assert::IsNull(pClone);
 			free((void*)pClone);
 		}
@@ -43,7 +43,7 @@ namespace PresentMonAPI2
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> probeAlloc;
 			auto pNullClone = root.ApiClone(probeAlloc);
-			Assert::AreEqual(14812ull, probeAlloc.GetTotalSize());
+			Assert::AreEqual(17004ull, probeAlloc.GetTotalSize());
 			Assert::IsNull(pNullClone);
 
 			ipc::intro::BlockAllocator<void> blockAlloc{ probeAlloc.GetTotalSize() };
@@ -51,7 +51,7 @@ namespace PresentMonAPI2
 
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(8ull, pRoot->pMetrics->size);
+			Assert::AreEqual(14ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)
@@ -169,7 +169,7 @@ namespace PresentMonAPI2
 
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(8ull, pRoot->pMetrics->size);
+			Assert::AreEqual(14ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)
