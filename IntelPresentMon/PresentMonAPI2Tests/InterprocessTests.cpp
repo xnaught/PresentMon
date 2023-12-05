@@ -13,7 +13,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace PresentMonAPI2
+namespace PresentMonAPI2Mock
 {
 	using namespace pmon;
 	TEST_CLASS(InterprocessTests)

@@ -8,7 +8,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace PresentMonAPI2
+namespace PresentMonAPI2Mock
 {
 	TEST_CLASS(CAPIDynamicQueryTests)
 	{

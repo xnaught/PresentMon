@@ -8,7 +8,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
-namespace PresentMonAPI2
+namespace PresentMonAPI2Mock
 {
 	TEST_CLASS(CAPISessionTests)
 	{
@@ -17,7 +17,6 @@ namespace PresentMonAPI2
 		{
 			pmCloseSession();
 		}
-
 		TEST_METHOD(OpenAndCloseMockSession)
 		{
 			char buffer[256]{};
@@ -28,16 +27,6 @@ namespace PresentMonAPI2
 			Assert::AreEqual("mock-middle", buffer);
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
 			Assert::AreEqual((int)PM_STATUS_SESSION_NOT_OPEN, (int)pmMiddlewareSpeak_(buffer));
-		}
-		TEST_METHOD(OpenAndCloseConcreteSession)
-		{
-			char buffer[256]{};
-
-			pmSetMiddlewareAsMock_(false);
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmMiddlewareSpeak_(buffer));
-			Assert::AreEqual("concrete-middle", buffer);
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
 		}
 		TEST_METHOD(FailUsingClosedSession)
 		{
@@ -79,8 +68,29 @@ namespace PresentMonAPI2
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
 		}
+	};
+}
 
-		TEST_METHOD(ConcreteStartAndStopStreaming)
+namespace PresentMonAPI2Concrete
+{
+	TEST_CLASS(CAPISessionTests)
+	{
+	public:
+		TEST_METHOD_CLEANUP(AfterEachTestMethod)
+		{
+			pmCloseSession();
+		}
+		TEST_METHOD(OpenAndCloseSession)
+		{
+			char buffer[256]{};
+
+			pmSetMiddlewareAsMock_(false);
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmMiddlewareSpeak_(buffer));
+			Assert::AreEqual("concrete-middle", buffer);
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
+		}
+		TEST_METHOD(StartAndStopStreaming)
 		{
 			pmSetMiddlewareAsMock_(false);
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
