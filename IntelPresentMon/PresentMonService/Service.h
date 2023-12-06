@@ -15,6 +15,7 @@ const int NumReportEventStrings = 2;
 class Service
 {
 public:
+	void SignalServiceStop();
 	virtual HANDLE GetServiceStopHandle() = 0;
 	virtual HANDLE GetResetPowerTelemetryHandle() = 0;
 };

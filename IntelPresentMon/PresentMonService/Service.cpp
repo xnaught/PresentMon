@@ -25,8 +25,7 @@ DWORD ServiceCtrlHandlerEx(DWORD control, DWORD dwEventType, LPVOID lpEventData,
 	switch (control) {
 	case SERVICE_CONTROL_STOP:
 		service_in->ReportServiceStatus(SERVICE_STOP_PENDING, NO_ERROR, 0);
-		// Set the event to shut down our service
-		SetEvent(service_in->GetServiceStopHandle());
+		service_in->SignalServiceStop();
 		return NO_ERROR;
 	case SERVICE_CONTROL_HARDWAREPROFILECHANGE:
 		return NO_ERROR;
@@ -40,6 +39,11 @@ DWORD ServiceCtrlHandlerEx(DWORD control, DWORD dwEventType, LPVOID lpEventData,
 	default:
 		return ERROR_CALL_NOT_IMPLEMENTED;
 	}
+}
+
+void Service::SignalServiceStop()
+{
+	SetEvent(GetServiceStopHandle());
 }
 
 ConcreteService::ConcreteService(const TCHAR* serviceName) : mServiceName(serviceName)
@@ -190,7 +194,7 @@ BOOL WINAPI ConsoleDebugMockService::ConsoleHandler(DWORD signal)
 {
 	if (signal == CTRL_C_EVENT || signal == CTRL_CLOSE_EVENT) {
 		google::FlushLogFiles(0);
-		SetEvent(Get().stopEvent_);
+		Get().SignalServiceStop();
 		return TRUE;
 	}
 	return FALSE;

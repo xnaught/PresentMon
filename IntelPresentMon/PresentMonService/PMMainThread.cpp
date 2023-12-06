@@ -248,16 +248,20 @@ void PresentMonMainThread(Service* const srv)
         }
 
         if (opt.timedStop) {
-            auto hTimer = CreateWaitableTimerA(NULL, FALSE, NULL);
-            LARGE_INTEGER liDueTime;
-            liDueTime.QuadPart = -10'000LL * *opt.timedStop;
+            const auto hTimer = CreateWaitableTimerA(NULL, FALSE, NULL);
+            const LARGE_INTEGER liDueTime{
+                // timedStop in ms, we need to express in units of 100ns
+                // and making it negative makes the timeout relative to now
+                // (positive value indicates an absolute timepoint)
+                .QuadPart = -10'000LL * *opt.timedStop,
+            };
             struct Completion {
-                static void CALLBACK Routine(LPVOID lpArg, DWORD dwTimerLowValue, DWORD dwTimerHighValue) {
-                    SetEvent((HANDLE)lpArg);
+                static void CALLBACK Routine(LPVOID pSvc, DWORD dwTimerLowValue, DWORD dwTimerHighValue) {
+                    static_cast<Service*>(pSvc)->SignalServiceStop();
                 }
             };
             if (hTimer) {
-                SetWaitableTimer(hTimer, &liDueTime, 0, &Completion::Routine, srv->GetServiceStopHandle(), FALSE);
+                SetWaitableTimer(hTimer, &liDueTime, 0, &Completion::Routine, srv, FALSE);
             }
         }
 
