@@ -43,6 +43,7 @@ void InitializeLogging(const char* servicename, const char* location, const char
       google::SetLogFilenameExtension(extension);
     }
     FLAGS_minloglevel = std::clamp(level, 0, 3);
+    // TODO: allow setting stderr log without setting log dir, also allow setting stderr exclusive logging
     FLAGS_alsologtostderr = logstderr;
   }
 }
@@ -105,15 +106,15 @@ void IPCCommunication(Service* srv, PresentMon* pm)
     }
 
     while (createNamedPipeServer) {
-            DWORD result = nps->RunServer();
-            if (result == ERROR_SUCCESS) {
-                createNamedPipeServer = false;
-            }
-            else {
-                // We were unable to start our named pipe server. Sleep for
-                // a bit and then try again.
-                PmSleep(3000);
-            }
+        DWORD result = nps->RunServer();
+        if (result == ERROR_SUCCESS) {
+            createNamedPipeServer = false;
+        }
+        else {
+            // We were unable to start our named pipe server. Sleep for
+            // a bit and then try again.
+            PmSleep(3000);
+        }
     }
 
     return;
@@ -217,26 +218,25 @@ void CpuTelemetry(Service* const srv, PresentMon* const pm,
 	}
 }
 
-void PresentMonMainThread(Service* const srv)
+void PresentMonMainThread(Service* const pSvc)
 {
-    try {
-        if (!srv) {
-            return;
-        }
+    assert(pSvc);
 
+    // these thread containers need to be created outside of the try scope
+    // so that if an exception happens, it won't block during unwinding,
+    // trying to join threads that are waiting for a stop signal
+    std::jthread controlPipeThread;
+    std::jthread gpuTelemetryThread;
+    std::jthread cpuTelemetryThread;
+
+    try {
         // alias for options
         auto& opt = clio::Options::Get();
 
-        // Grab the stop service event handle
-        const auto serviceStopHandle = srv->GetServiceStopHandle();
-
-        // check if the service is to be debugged while starting up
-        auto debug_service = opt.debug;
-
         // spin here waiting for debugger to attach, after which debugger should set
         // debug_service to false in order to proceed
-        while (debug_service) {
-            if (WaitForSingleObject(serviceStopHandle, 0) != WAIT_OBJECT_0) {
+        for (auto debug_service = opt.debug; debug_service;) {
+            if (WaitForSingleObject(pSvc->GetServiceStopHandle(), 0) != WAIT_OBJECT_0) {
                 PmSleep(500);
             }
             else {
@@ -262,7 +262,7 @@ void PresentMonMainThread(Service* const srv)
                 }
             };
             if (hTimer) {
-                SetWaitableTimer(hTimer, &liDueTime, 0, &Completion::Routine, srv, FALSE);
+                SetWaitableTimer(hTimer, &liDueTime, 0, &Completion::Routine, pSvc, FALSE);
             }
         }
 
@@ -279,7 +279,7 @@ void PresentMonMainThread(Service* const srv)
         catch (const std::exception& e) {
             LOG(ERROR) << "Failed making service comms> " << e.what() << std::endl;
             google::FlushLogFiles(0);
-            srv->SignalServiceStop();
+            pSvc->SignalServiceStop(-1);
             return;
         }
 
@@ -287,37 +287,37 @@ void PresentMonMainThread(Service* const srv)
         pm.SetPowerTelemetryContainer(&ptc);
 
         // Start IPC communication thread
-        std::jthread ipc_thread(IPCCommunication, srv, &pm);
-
-        // Launch telemetry thread
-        std::jthread telemetry_thread;
+        controlPipeThread = std::jthread{ IPCCommunication, pSvc, &pm };
 
         try {
-            telemetry_thread = std::jthread{ PowerTelemetry, srv, &pm, &ptc, pComms.get() };
+            gpuTelemetryThread = std::jthread{ PowerTelemetry, pSvc, &pm, &ptc, pComms.get() };
         }
-        catch (...) {}
+        catch (...) {
+            LOG(ERROR) << "failed creating gpu(power) telemetry thread" << std::endl;
+        }
 
         // Create CPU telemetry
         std::shared_ptr<pwr::cpu::CpuTelemetry> cpu;
-        std::jthread cpu_telemetry_thread;
         try {
             // Try to use WMI for metrics sampling
             cpu = std::make_shared<pwr::cpu::wmi::WmiCpu>();
         }
         catch (const std::runtime_error& e) {
-            LOG(INFO) << "WMI Failure Status: " << e.what() << std::endl;
+            LOG(ERROR) << "failed creating wmi cpu telemetry thread; Status: " << e.what() << std::endl;
         }
-        catch (...) {}
+        catch (...) {
+            LOG(ERROR) << "failed creating wmi cpu telemetry thread" << std::endl;
+        }
 
         if (cpu) {
-            cpu_telemetry_thread = std::jthread{ CpuTelemetry, srv, &pm, cpu.get() };
+            cpuTelemetryThread = std::jthread{ CpuTelemetry, pSvc, &pm, cpu.get() };
             pm.SetCpu(cpu);
             // register cpu telemetry info with introspection
             // TODO: get cpu vendor and pass info onto introspection
             pComms->RegisterCpuDevice(PM_DEVICE_VENDOR_INTEL, cpu->GetCpuName(), cpu->GetCpuTelemetryCapBits());
         }
 
-        while (WaitForSingleObjectEx(serviceStopHandle, INFINITE, (bool)opt.timedStop) != WAIT_OBJECT_0) {
+        while (WaitForSingleObjectEx(pSvc->GetServiceStopHandle(), INFINITE, (bool)opt.timedStop) != WAIT_OBJECT_0) {
             pm.CheckTraceSessions();
             PmSleep(500, opt.timedStop);
         }
@@ -325,5 +325,10 @@ void PresentMonMainThread(Service* const srv)
         // Stop the PresentMon session
         pm.StopTraceSession();
     }
-    catch (...) {}
+    catch (...) {
+        LOG(ERROR) << "Exception in PMMainThread, bailing" << std::endl;
+        if (pSvc) {
+            pSvc->SignalServiceStop(-1);
+        }
+    }
 }

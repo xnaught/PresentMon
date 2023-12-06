@@ -41,9 +41,15 @@ DWORD ServiceCtrlHandlerEx(DWORD control, DWORD dwEventType, LPVOID lpEventData,
 	}
 }
 
-void Service::SignalServiceStop()
+void Service::SignalServiceStop(std::optional<int> errCode)
 {
+	errCode_ = errCode;
 	SetEvent(GetServiceStopHandle());
+}
+
+std::optional<int> Service::GetErrorCode() const
+{
+	return errCode_;
 }
 
 ConcreteService::ConcreteService(const TCHAR* serviceName) : mServiceName(serviceName)
@@ -188,6 +194,16 @@ ConsoleDebugMockService::ConsoleDebugMockService()
 		nullptr    // object name
 	);
 	SetConsoleCtrlHandler(&ConsoleHandler, TRUE);
+}
+
+ConsoleDebugMockService::~ConsoleDebugMockService()
+{
+	if (stopEvent_) {
+		CloseHandle(stopEvent_);
+	}
+	if (resetTelemetryEvent_) {
+		CloseHandle(resetTelemetryEvent_);
+	}
 }
 
 BOOL WINAPI ConsoleDebugMockService::ConsoleHandler(DWORD signal)

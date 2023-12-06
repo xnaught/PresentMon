@@ -8,6 +8,7 @@
 #include <thread>
 #include <vector>
 #include <atomic>
+#include <optional>
 
 const int MaxBufferLength = MAX_PATH;
 const int NumReportEventStrings = 2;
@@ -15,9 +16,12 @@ const int NumReportEventStrings = 2;
 class Service
 {
 public:
-	void SignalServiceStop();
+	void SignalServiceStop(std::optional<int> errCode = {});
+	std::optional<int> GetErrorCode() const;
 	virtual HANDLE GetServiceStopHandle() = 0;
 	virtual HANDLE GetResetPowerTelemetryHandle() = 0;
+private:
+	std::optional<int> errCode_;
 };
 
 class ConsoleDebugMockService : public Service
@@ -29,6 +33,7 @@ public:
 	HANDLE GetResetPowerTelemetryHandle() override;
 private:
 	ConsoleDebugMockService();
+	~ConsoleDebugMockService();
 	static BOOL WINAPI ConsoleHandler(DWORD signal);
 	HANDLE stopEvent_;
 	HANDLE resetTelemetryEvent_;

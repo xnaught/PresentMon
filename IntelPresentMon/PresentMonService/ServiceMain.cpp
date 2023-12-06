@@ -16,13 +16,18 @@ int CommonEntry(DWORD argc, LPTSTR* argv, bool asApp = false)
 		return *e;
 	}
 	if (asApp) {
-		ConsoleDebugMockService::Get().Run();
+		auto& svc = ConsoleDebugMockService::Get();
+		svc.Run();
+		return svc.GetErrorCode().value_or(0);
 	}
 	else {
-		ConcreteService present_mon_service(serviceName);
-		present_mon_service.ServiceMain();
+		ConcreteService svc{ serviceName };
+		svc.ServiceMain();
+		const auto exitCode = svc.GetErrorCode().value_or(0);
+		svc.ReportServiceStatus(SERVICE_STOPPED, exitCode, 0);
+		// this return code is not actually effectual, but we need to return something
+		return exitCode;
 	}
-	return 0;
 }
 
 // callback registered with and called by the Service Control Manager

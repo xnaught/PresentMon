@@ -27,18 +27,20 @@ namespace EndToEndTests
 			bp::ipstream out; // Stream for reading the process's output
 			bp::opstream in;  // Stream for writing to the process's input
 
-			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-1)"s;
+			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
+			const auto introName = "pm_intro_test_nsm_2"s;
 
 			oChild.emplace("PresentMonService.exe"s,
 				"--timed-stop"s, "4000"s,
 				"--control-pipe"s, pipeName.c_str(),
 				"--nsm-prefix"s, "pmon_nsm_utest_"s,
+				"--intro-nsm"s, introName,
 				bp::std_out > out, bp::std_in < in);
 
 			std::this_thread::sleep_for(10ms);
 
 			{
-				const auto sta = pmOpenSession_(pipeName.c_str(), nullptr);
+				const auto sta = pmOpenSession_(pipeName.c_str(), introName.c_str());
 				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta), L"*** Connecting to service via named pipe");
 			}
 			{
@@ -56,7 +58,7 @@ namespace EndToEndTests
 			bp::opstream in;  // Stream for writing to the process's input
 
 			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
-			const auto introName = "pm_intro_test_nsm_1"s;
+			const auto introName = "pm_intro_test_nsm_2"s;
 
 			oChild.emplace("PresentMonService.exe"s,
 				"--timed-stop"s, "4000"s,
@@ -95,7 +97,7 @@ namespace EndToEndTests
 			bp::opstream in;  // Stream for writing to the process's input
 
 			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
-			const auto introName = "pm_intro_test_nsm_1"s;
+			const auto introName = "pm_intro_test_nsm_2"s;
 
 			oChild.emplace("PresentMonService.exe"s,
 				"--timed-stop"s, "4000"s,
