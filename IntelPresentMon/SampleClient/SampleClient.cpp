@@ -787,10 +787,14 @@ void PollMetrics(uint32_t processId, double metricsOffset)
 
     PM_QUERY_ELEMENT elements[]{
         PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_UTILIZATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_UTILIZATION, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_UTILIZATION, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_UTILIZATION, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_TEMPERATURE, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
     };
     auto result = pmRegisterDynamicQuery(&q, elements, std::size(elements), processId, 2000., metricsOffset);
 
-    auto pBlob = std::make_unique<uint8_t[]>(elements[0].dataOffset + elements[0].dataSize);
+    auto pBlob = std::make_unique<uint8_t[]>(elements[4].dataOffset + elements[4].dataSize);
     //auto pBlob = std::make_unique<uint8_t[]>(elements[48].dataOffset + elements[48].dataSize);
     uint32_t numSwapChains = 1;
 
@@ -800,6 +804,10 @@ void PollMetrics(uint32_t processId, double metricsOffset)
         if (status == PM_STATUS_SUCCESS)
         {
             PrintMetric("GPU Utilization Average = %f", reinterpret_cast<double&>(pBlob[elements[0].dataOffset]), true);
+            PrintMetric("GPU Utilization 90% = %f", reinterpret_cast<double&>(pBlob[elements[1].dataOffset]), true);
+            PrintMetric("GPU Utilization 95% = %f", reinterpret_cast<double&>(pBlob[elements[2].dataOffset]), true);
+            PrintMetric("GPU Utilization 99% = %f", reinterpret_cast<double&>(pBlob[elements[3].dataOffset]), true);
+            PrintMetric("GPU Temperature Average = %f", reinterpret_cast<double&>(pBlob[elements[4].dataOffset]), true);
             /*
             PrintMetric("Presented fps Average = %f", reinterpret_cast<double&>(pBlob[elements[0].dataOffset]), true);
             PrintMetric("Presented fps 99% = %f", reinterpret_cast<double&>(pBlob[elements[1].dataOffset]), true);
