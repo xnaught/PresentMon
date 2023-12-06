@@ -15,7 +15,7 @@ namespace pmon::mid
 		virtual PM_STATUS StopStreaming(uint32_t processId) = 0;
 		virtual PM_DYNAMIC_QUERY* RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, uint32_t processId, double windowSizeMs, double metricOffsetMs) = 0;
 		virtual void FreeDynamicQuery(const PM_DYNAMIC_QUERY* pQuery) = 0;
-		virtual void PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob) = 0;
+		virtual void PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob, uint32_t* numSwapChains) = 0;
 		virtual void PollStaticQuery(const PM_QUERY_ELEMENT& element, uint8_t* pBlob) = 0;
 	};
 }

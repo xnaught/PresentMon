@@ -224,7 +224,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE hand
 		if (!handle || !pBlob) {
 			return PM_STATUS_FAILURE;
 		}
-		pMiddleware_->PollDynamicQuery(handle, pBlob);
+		pMiddleware_->PollDynamicQuery(handle, pBlob, numSwapChains);
 		return PM_STATUS_SUCCESS;
 	}
 	catch (...) {

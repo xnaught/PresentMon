@@ -202,8 +202,8 @@
     <ClInclude Include="Console.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PresentMonAPI\PresentMonAPI.vcxproj">
-      <Project>{811adcf0-da1d-4a94-97c7-7aa6c33b5368}</Project>
+    <ProjectReference Include="..\PresentMonAPI2\PresentMonAPI2.vcxproj">
+      <Project>{5ddba061-53a0-4835-8aaf-943f403f924f}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

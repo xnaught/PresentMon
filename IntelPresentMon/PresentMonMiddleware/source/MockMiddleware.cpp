@@ -82,7 +82,7 @@ namespace pmon::mid
 		delete pQuery;
 	}
 
-	void MockMiddleware::PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob)
+	void MockMiddleware::PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob, uint32_t* numSwapChains)
 	{
 		for (auto& qe : pQuery->elements) {
 			if (qe.metric == PM_METRIC_PRESENT_MODE) {
