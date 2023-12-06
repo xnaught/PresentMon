@@ -14,6 +14,8 @@
 #include <algorithm>
 #include <format>
 #include "../PresentMonAPI2/source/PresentMonAPI.h"
+#include "../PresentMonAPI2/source/Internal.h"
+#include "CliOptions.h"
 
 #undef ENABLE_FRAME_DATA_WRITE
 #undef ENABLE_PRESENT_MODE
@@ -857,6 +859,16 @@ void PollMetrics(uint32_t processId, double metricsOffset)
 }
 
 int main(int argc, char* argv[]) {
+    if (auto e = clio::Options::Init(argc, argv)) {
+        return *e;
+    }
+    auto& opt = clio::Options::Get();
+    // validate options, better to do this with CLI11 validation but framework needs upgrade...
+    if (bool(opt.controlPipe) != bool(opt.introNsm)) {
+        OutputString("Must set both control pipe and intro NSM, or neither.\n");
+        return -1;
+    }
+
   bool streamingStarted = false;
 
   // finer granularity sleeps
@@ -876,7 +888,12 @@ int main(int argc, char* argv[]) {
 
   PM_STATUS pmStatus{};
   try {
-    pmStatus = pmOpenSession();
+      if (opt.controlPipe) {
+          pmStatus = pmOpenSession_((*opt.controlPipe).c_str(), (*opt.introNsm).c_str());
+      }
+      else {
+          pmStatus = pmOpenSession();
+      }
     if (pmStatus != PM_STATUS::PM_STATUS_SUCCESS) {
       PrintError(pmStatus);
       return -1;
