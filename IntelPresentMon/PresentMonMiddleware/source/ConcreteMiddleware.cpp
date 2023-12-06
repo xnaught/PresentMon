@@ -366,6 +366,24 @@ namespace pmon::mid
                     throw std::runtime_error{ "Invalid fan speed index" };
                 }
                 break;
+            case PM_METRIC_CPU_UTILIZATION:
+                pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_utilization));
+                break;
+            case PM_METRIC_CPU_POWER:
+                pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_power));
+                break;
+            case PM_METRIC_CPU_POWER_LIMIT:
+                pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_power_limit));
+                break;
+            case PM_METRIC_CPU_TEMPERATURE:
+                pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_temperature));
+                break;
+            case PM_METRIC_CPU_FREQUENCY:
+                pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_frequency));
+                break;
+            case PM_METRIC_CPU_CORE_UTILITY:
+                //pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_power));
+                break;
             default:
                 break;
             }
@@ -403,6 +421,7 @@ namespace pmon::mid
             // TODO: validate array index
             qe.dataOffset = offset;
             qe.dataSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetBasePtr()->type);
+            // qe.dataSize = 8;
             offset += qe.dataSize;
         }
 
@@ -419,8 +438,8 @@ namespace pmon::mid
     void ConcreteMiddleware::PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob, uint32_t* numSwapChains)
     {
         std::unordered_map<uint64_t, fpsSwapChainData> swap_chain_data;
-        std::unordered_map<PM_METRIC, std::vector<double>> gpuMetricData;
-        std::unordered_map<PM_METRIC, std::vector<double>> cpuMetricData;
+        std::unordered_map<PM_METRIC, std::vector<double>> gpucpuMetricData;
+        bool allMetricsCalculated = false;
         LARGE_INTEGER api_qpc;
         QueryPerformanceCounter(&api_qpc);
 
@@ -555,9 +574,23 @@ namespace pmon::mid
                     double gpuMetricValue;
                     if (GetGpuMetricData(i, frame_data->power_telemetry, gpuMetric, gpuMetricValue))
                     {
-                        auto result = gpuMetricData.emplace(gpuMetric, std::vector<double>());
+                        auto result = gpucpuMetricData.emplace(gpuMetric, std::vector<double>());
                         auto data = &result.first->second;
                         data->push_back(gpuMetricValue);
+                    }
+                }
+            }
+
+            for (size_t i = 0; i < pQuery->accumCpuBits.size(); ++i) {
+                if (pQuery->accumCpuBits[i])
+                {
+                    PM_METRIC cpuMetric;
+                    double cpuMetricValue;
+                    if (GetCpuMetricData(i, frame_data->cpu_telemetry, cpuMetric, cpuMetricValue))
+                    {
+                        auto result = gpucpuMetricData.emplace(cpuMetric, std::vector<double>());
+                        auto data = &result.first->second;
+                        data->push_back(cpuMetricValue);
                     }
                 }
             }
@@ -591,46 +624,59 @@ namespace pmon::mid
                     CalculateFpsMetric(swapChain, qe, pBlob, client->GetQpcFrequency());
                     break;
                 default:
+                    CalculateGpuCpuMetric(gpucpuMetricData, qe, pBlob);
                     break;
                 }
             }
+            allMetricsCalculated = true;
         }
-        for (auto& qe : pQuery->elements) {
-            switch (qe.metric)
+
+        if (allMetricsCalculated == false)
+        {
+            for (auto& qe : pQuery->elements)
             {
-            case PM_METRIC_GPU_POWER:
-            case PM_METRIC_GPU_FAN_SPEED:
-            case PM_METRIC_GPU_SUSTAINED_POWER_LIMIT:
-            case PM_METRIC_GPU_VOLTAGE:
-            case PM_METRIC_GPU_FREQUENCY:
-            case PM_METRIC_GPU_TEMPERATURE:
-            case PM_METRIC_GPU_UTILIZATION:
-            case PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION:
-            case PM_METRIC_GPU_MEDIA_UTILIZATION:
-            case PM_METRIC_VRAM_POWER:
-            case PM_METRIC_VRAM_VOLTAGE:
-            case PM_METRIC_VRAM_FREQUENCY:
-            case PM_METRIC_VRAM_EFFECTIVE_FREQUENCY:
-            case PM_METRIC_VRAM_TEMPERATURE:
-            case PM_METRIC_GPU_MEM_SIZE:
-            case PM_METRIC_GPU_MEM_USED:
-            case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
-            case PM_METRIC_GPU_MEM_WRITE_BANDWIDTH:
-            case PM_METRIC_GPU_MEM_READ_BANDWIDTH:
-            case PM_METRIC_GPU_POWER_LIMITED:
-            case PM_METRIC_GPU_TEMPERATURE_LIMITED:
-            case PM_METRIC_GPU_CURRENT_LIMITED:
-            case PM_METRIC_GPU_VOLTAGE_LIMITED:
-            case PM_METRIC_GPU_UTILIZATION_LIMITED:
-            case PM_METRIC_VRAM_POWER_LIMITED:
-            case PM_METRIC_VRAM_TEMPERATURE_LIMITED:
-            case PM_METRIC_VRAM_CURRENT_LIMITED:
-            case PM_METRIC_VRAM_VOLTAGE_LIMITED:
-            case PM_METRIC_VRAM_UTILIZATION_LIMITED:
-                CalculateGpuMetric(gpuMetricData, qe, pBlob, client->GetQpcFrequency());
-                break;
-            default:
-                break;
+                switch (qe.metric)
+                {
+                case PM_METRIC_GPU_POWER:
+                case PM_METRIC_GPU_FAN_SPEED:
+                case PM_METRIC_GPU_SUSTAINED_POWER_LIMIT:
+                case PM_METRIC_GPU_VOLTAGE:
+                case PM_METRIC_GPU_FREQUENCY:
+                case PM_METRIC_GPU_TEMPERATURE:
+                case PM_METRIC_GPU_UTILIZATION:
+                case PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION:
+                case PM_METRIC_GPU_MEDIA_UTILIZATION:
+                case PM_METRIC_VRAM_POWER:
+                case PM_METRIC_VRAM_VOLTAGE:
+                case PM_METRIC_VRAM_FREQUENCY:
+                case PM_METRIC_VRAM_EFFECTIVE_FREQUENCY:
+                case PM_METRIC_VRAM_TEMPERATURE:
+                case PM_METRIC_GPU_MEM_SIZE:
+                case PM_METRIC_GPU_MEM_USED:
+                case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
+                case PM_METRIC_GPU_MEM_WRITE_BANDWIDTH:
+                case PM_METRIC_GPU_MEM_READ_BANDWIDTH:
+                case PM_METRIC_GPU_POWER_LIMITED:
+                case PM_METRIC_GPU_TEMPERATURE_LIMITED:
+                case PM_METRIC_GPU_CURRENT_LIMITED:
+                case PM_METRIC_GPU_VOLTAGE_LIMITED:
+                case PM_METRIC_GPU_UTILIZATION_LIMITED:
+                case PM_METRIC_VRAM_POWER_LIMITED:
+                case PM_METRIC_VRAM_TEMPERATURE_LIMITED:
+                case PM_METRIC_VRAM_CURRENT_LIMITED:
+                case PM_METRIC_VRAM_VOLTAGE_LIMITED:
+                case PM_METRIC_VRAM_UTILIZATION_LIMITED:
+                case PM_METRIC_CPU_UTILIZATION:
+                case PM_METRIC_CPU_POWER:
+                case PM_METRIC_CPU_POWER_LIMIT:
+                case PM_METRIC_CPU_TEMPERATURE:
+                case PM_METRIC_CPU_FREQUENCY:
+                case PM_METRIC_CPU_CORE_UTILITY:
+                    CalculateGpuCpuMetric(gpucpuMetricData, qe, pBlob);
+                    break;
+                default:
+                    break;
+                }
             }
         }
 
@@ -708,13 +754,13 @@ namespace pmon::mid
         return;
     }
 
-    void ConcreteMiddleware::CalculateGpuMetric(std::unordered_map<PM_METRIC, std::vector<double>>& gpuMetricData, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
+    void ConcreteMiddleware::CalculateGpuCpuMetric(std::unordered_map<PM_METRIC, std::vector<double>>& metricData, const PM_QUERY_ELEMENT& element, uint8_t* pBlob)
     {
         auto& output = reinterpret_cast<double&>(pBlob[element.dataOffset]);
         output = 0.;
 
-        auto it = gpuMetricData.find(element.metric);
-        if (it != gpuMetricData.end())
+        auto it = metricData.find(element.metric);
+        if (it != metricData.end())
         {
             CalculateMetric(output, it->second, element.stat);
         }
@@ -1066,5 +1112,39 @@ namespace pmon::mid
             break;
         }
         return validGpuMetric;
+    }
+
+    bool ConcreteMiddleware::GetCpuMetricData(size_t telemetryBit, CpuTelemetryInfo& cpuTelemetry, PM_METRIC& cpuMetric, double& cpuMetricValue)
+    {
+        bool validCpuMetric = true;
+        CpuTelemetryCapBits bit =
+            static_cast<CpuTelemetryCapBits>(telemetryBit);
+        switch (bit) {
+        case CpuTelemetryCapBits::cpu_utilization:
+            cpuMetric = PM_METRIC_CPU_UTILIZATION;
+            cpuMetricValue = cpuTelemetry.cpu_utilization;
+            break;
+        case CpuTelemetryCapBits::cpu_power:
+            cpuMetric = PM_METRIC_CPU_POWER;
+            cpuMetricValue = cpuTelemetry.cpu_power_w;
+            break;
+        case CpuTelemetryCapBits::cpu_power_limit:
+            cpuMetric = PM_METRIC_CPU_POWER_LIMIT;
+            cpuMetricValue = cpuTelemetry.cpu_power_limit_w;
+            break;
+        case CpuTelemetryCapBits::cpu_temperature:
+            cpuMetric = PM_METRIC_CPU_TEMPERATURE;
+            cpuMetricValue = cpuTelemetry.cpu_temperature;
+            break;
+        case CpuTelemetryCapBits::cpu_frequency:
+            cpuMetric = PM_METRIC_CPU_FREQUENCY;
+            cpuMetricValue = cpuTelemetry.cpu_frequency;
+            break;
+        default:
+            validCpuMetric = false;
+            break;
+        }
+
+        return validCpuMetric;
     }
 }

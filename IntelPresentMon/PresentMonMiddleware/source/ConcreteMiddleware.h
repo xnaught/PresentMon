@@ -74,10 +74,11 @@ namespace pmon::mid
 		bool DecrementIndex(NamedSharedMem* nsm_view, uint64_t& index);
 
 		void CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency);
-		void CalculateGpuMetric(std::unordered_map<PM_METRIC, std::vector<double>>& gpuMetricDataconst, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency);
+		void CalculateGpuCpuMetric(std::unordered_map<PM_METRIC, std::vector<double>>& metricData, const PM_QUERY_ELEMENT& element, uint8_t* pBlob);
 		void CalculateMetric(double& pBlob, std::vector<double>& inData, PM_STAT stat, bool ascending = true);
 		double GetPercentile(std::vector<double>& data, double percentile);
 		bool GetGpuMetricData(size_t telemetry_item_bit, PresentMonPowerTelemetryInfo& power_telemetry_info, PM_METRIC& gpuMetric, double& gpuMetricValue);
+		bool GetCpuMetricData(size_t telemetryBit, CpuTelemetryInfo& cpuTelemetry, PM_METRIC& cpuMetric, double& cpuMetricValue);
 		std::unique_ptr<void, HandleDeleter> pNamedPipeHandle;
 		uint32_t clientProcessId = 0;
 		// Stream clients mapping to process id

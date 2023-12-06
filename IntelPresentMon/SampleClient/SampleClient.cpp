@@ -801,10 +801,10 @@ void PollMetrics(uint32_t processId, double metricsOffset)
         PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_UTILIZATION, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_UTILIZATION, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_TEMPERATURE, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_UTILIZATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
     };
     auto result = pmRegisterDynamicQuery(&q, elements, std::size(elements), processId, 2000., metricsOffset);
-    size_t test = std::size(elements);
-    auto pBlob = std::make_unique<uint8_t[]>(elements[12].dataOffset + elements[12].dataSize);
+    auto pBlob = std::make_unique<uint8_t[]>(elements[std::size(elements) - 1].dataOffset + elements[std::size(elements) - 1].dataSize);
     //auto pBlob = std::make_unique<uint8_t[]>(elements[48].dataOffset + elements[48].dataSize);
     uint32_t numSwapChains = 1;
 
@@ -826,6 +826,7 @@ void PollMetrics(uint32_t processId, double metricsOffset)
             PrintMetric("GPU Utilization 95% = %f", reinterpret_cast<double&>(pBlob[elements[10].dataOffset]), true);
             PrintMetric("GPU Utilization 99% = %f", reinterpret_cast<double&>(pBlob[elements[11].dataOffset]), true);
             PrintMetric("GPU Temperature Average = %f", reinterpret_cast<double&>(pBlob[elements[12].dataOffset]), true);
+            PrintMetric("CPU Utilization Average = %f", reinterpret_cast<double&>(pBlob[elements[13].dataOffset]), true);
             /*
             PrintMetric("Presented fps Average = %f", reinterpret_cast<double&>(pBlob[elements[0].dataOffset]), true);
             PrintMetric("Presented fps 99% = %f", reinterpret_cast<double&>(pBlob[elements[1].dataOffset]), true);
