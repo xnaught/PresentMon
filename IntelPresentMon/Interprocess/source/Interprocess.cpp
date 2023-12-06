@@ -8,6 +8,8 @@
 #include <boost/interprocess/sync/sharable_lock.hpp>
 #include <chrono>
 #include "../../PresentMonService/GlobalIdentifiers.h"
+#include <windows.h>
+#include <sddl.h>
 
 namespace pmon::ipc
 {
@@ -29,12 +31,14 @@ namespace pmon::ipc
 		public:
 			ServiceComms_(std::optional<std::string> sharedMemoryName)
 				:
-				shm_{ bip::create_only, sharedMemoryName.value_or(defaultSegmentName_).c_str(), 0x10'0000 },
+				shm_{ bip::create_only, sharedMemoryName.value_or(defaultSegmentName_).c_str(),
+					0x10'0000, nullptr, Permissions_{} },
 				pIntroMutex_{ ShmMakeNamedUnique<bip::interprocess_sharable_mutex>(
 					introspectionMutexName_, shm_.get_segment_manager()) },
 				pIntroSemaphore_{ ShmMakeNamedUnique<bip::interprocess_semaphore>(
 					introspectionSemaphoreName_, shm_.get_segment_manager(), 0) },
-				pRoot_{ ShmMakeNamedUnique<intro::IntrospectionRoot>(introspectionRootName_, shm_.get_segment_manager(), shm_.get_segment_manager()) }
+				pRoot_{ ShmMakeNamedUnique<intro::IntrospectionRoot>(introspectionRootName_,
+					shm_.get_segment_manager(), shm_.get_segment_manager()) }
 			{
 				PreInitializeIntrospection_();
 			}
@@ -67,6 +71,25 @@ namespace pmon::ipc
 				}
 			}
 		private:
+			// types
+			class Permissions_
+			{
+			public:
+				Permissions_()
+				{
+					if (!ConvertStringSecurityDescriptorToSecurityDescriptorA(
+						"D:PNO_ACCESS_CONTROLS:(ML;;NW;;;LW)",
+						SDDL_REVISION_1, &secAttr_.lpSecurityDescriptor, NULL)) {
+						throw std::runtime_error{ "Failed to create security descriptor for shared memory" };
+					}
+				}
+				operator bip::permissions()
+				{
+					return bip::permissions{ &secAttr_ };
+				}
+			private:
+				SECURITY_ATTRIBUTES secAttr_{ sizeof(secAttr_) };
+			};
 			// functions
 			void PreInitializeIntrospection_()
 			{
