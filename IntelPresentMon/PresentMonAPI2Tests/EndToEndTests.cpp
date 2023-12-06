@@ -1,5 +1,5 @@
 #include "CppUnitTest.h"
-#include <boost/process.hpp>
+#include "BoostProcess.h"
 #include "../PresentMonAPI2/source/Internal.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;

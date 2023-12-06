@@ -8,7 +8,7 @@
 #include "../Interprocess/source/IntrospectionCloneAllocators.h"
 #include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
 #include "../PresentMonAPI2/source/Internal.h"
-#include <boost/process.hpp>
+#include "BoostProcess.h"
 #include "../PresentMonMiddleware/source/MockCommon.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;

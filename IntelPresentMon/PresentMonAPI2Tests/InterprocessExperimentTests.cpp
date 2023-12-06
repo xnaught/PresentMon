@@ -2,7 +2,7 @@
 #include <cstring>
 #include <vector>
 #include <optional>
-#include <boost/process.hpp>
+#include "BoostProcess.h"
 #include "../Interprocess/source/ExperimentalInterprocess.h"
 #include "../Interprocess/source/SharedMemoryTypes.h"
 
