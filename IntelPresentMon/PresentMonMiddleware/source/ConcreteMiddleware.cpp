@@ -70,7 +70,7 @@ namespace pmon::mid
         pNamedPipeHandle.reset(namedPipeHandle);
         clientProcessId = GetCurrentProcessId();
         // connect to the introspection nsm
-        //pComms = ipc::MakeMiddlewareComms(std::move(introNsmOverride));
+        pComms = ipc::MakeMiddlewareComms(std::move(introNsmOverride));
 	}
     
     const PM_INTROSPECTION_ROOT* ConcreteMiddleware::GetIntrospectionData()
@@ -237,18 +237,18 @@ namespace pmon::mid
     { 
         // get introspection data for reference
         // TODO: cache this data so it's not required to be generated every time
-        //pmapi::intro::Dataset ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
+        pmapi::intro::Dataset ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
 
         // make the query object that will be managed by the handle
         auto pQuery = std::make_unique<PM_DYNAMIC_QUERY>();
 
         uint64_t offset = 0u;
         for (auto& qe : queryElements) {
-            //auto metricView = ispec.FindMetric(qe.metric);
-            //if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_DYNAMIC)) {
-            //    // TODO: specific exception here
-            //    throw std::runtime_error{ "Static metric in dynamic metric query specification" };
-            //}
+            auto metricView = ispec.FindMetric(qe.metric);
+            if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_DYNAMIC)) {
+                // TODO: specific exception here
+                throw std::runtime_error{ "Static metric in dynamic metric query specification" };
+            }
             switch (qe.metric) {
             case PM_METRIC_PRESENTED_FPS:
             case PM_METRIC_DISPLAYED_FPS:
@@ -324,8 +324,7 @@ namespace pmon::mid
             // TODO: validate device id
             // TODO: validate array index
             qe.dataOffset = offset;
-            //qe.dataSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetBasePtr()->type);
-            qe.dataSize = size_t(8);
+            qe.dataSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetBasePtr()->type);
             offset += qe.dataSize;
         }
 
