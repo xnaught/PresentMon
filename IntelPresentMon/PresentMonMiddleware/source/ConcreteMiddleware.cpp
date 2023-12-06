@@ -265,6 +265,43 @@ namespace pmon::mid
             case PM_METRIC_GPU_SUSTAINED_POWER_LIMIT:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_sustained_power_limit));
                 break;
+            case PM_METRIC_GPU_VOLTAGE:
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_voltage));
+                break;
+            case PM_METRIC_GPU_FREQUENCY:
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_frequency));
+                break;
+            case PM_METRIC_GPU_TEMPERATURE:
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_temperature));
+                break;
+            case PM_METRIC_GPU_UTILIZATION:
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_utilization));
+                break;
+            case PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION:
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_render_compute_utilization));
+                break;
+            case PM_METRIC_GPU_MEDIA_UTILIZATION:
+            case PM_METRIC_VRAM_POWER:
+            case PM_METRIC_VRAM_VOLTAGE:
+            case PM_METRIC_VRAM_FREQUENCY:
+            case PM_METRIC_VRAM_EFFECTIVE_FREQUENCY:
+            case PM_METRIC_VRAM_TEMPERATURE:
+            case PM_METRIC_GPU_MEM_SIZE:
+            case PM_METRIC_GPU_MEM_USED:
+            case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
+            case PM_METRIC_GPU_MEM_WRITE_BANDWIDTH:
+            case PM_METRIC_GPU_MEM_READ_BANDWIDTH:
+            case PM_METRIC_GPU_POWER_LIMITED:
+            case PM_METRIC_GPU_TEMPERATURE_LIMITED:
+            case PM_METRIC_GPU_CURRENT_LIMITED:
+            case PM_METRIC_GPU_VOLTAGE_LIMITED:
+            case PM_METRIC_GPU_UTILIZATION_LIMITED:
+            case PM_METRIC_VRAM_POWER_LIMITED:
+            case PM_METRIC_VRAM_TEMPERATURE_LIMITED:
+            case PM_METRIC_VRAM_CURRENT_LIMITED:
+            case PM_METRIC_VRAM_VOLTAGE_LIMITED:
+            case PM_METRIC_VRAM_UTILIZATION_LIMITED:
+
             case PM_METRIC_GPU_FAN_SPEED:
                 switch (qe.arrayIndex)
                 {
@@ -498,9 +535,9 @@ namespace pmon::mid
             }
         }
 
+
         for (auto& pair : swap_chain_data) {
             auto& swapChain = pair.second;
-
             for (auto& qe : pQuery->elements) {
                 switch (qe.metric)
                 {
@@ -513,41 +550,50 @@ namespace pmon::mid
                 case PM_METRIC_DISPLAY_BUSY_TIME:
                     CalculateFpsMetric(swapChain, qe, pBlob, client->GetQpcFrequency());
                     break;
-                case PM_METRIC_GPU_POWER:
-                case PM_METRIC_GPU_FAN_SPEED:
-                case PM_METRIC_GPU_SUSTAINED_POWER_LIMIT:
-                case PM_METRIC_GPU_VOLTAGE:
-                case PM_METRIC_GPU_FREQUENCY:
-                case PM_METRIC_GPU_TEMPERATURE:
-                case PM_METRIC_GPU_UTILIZATION:
-                case PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION:
-                case PM_METRIC_GPU_MEDIA_UTILIZATION:
-                case PM_METRIC_VRAM_POWER:
-                case PM_METRIC_VRAM_VOLTAGE:
-                case PM_METRIC_VRAM_FREQUENCY:
-                case PM_METRIC_VRAM_EFFECTIVE_FREQUENCY:
-                case PM_METRIC_VRAM_TEMPERATURE:
-                case PM_METRIC_GPU_MEM_SIZE:
-                case PM_METRIC_GPU_MEM_USED:
-                case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
-                case PM_METRIC_GPU_MEM_WRITE_BANDWIDTH:
-                case PM_METRIC_GPU_MEM_READ_BANDWIDTH:
-                case PM_METRIC_GPU_POWER_LIMITED:
-                case PM_METRIC_GPU_TEMPERATURE_LIMITED:
-                case PM_METRIC_GPU_CURRENT_LIMITED:
-                case PM_METRIC_GPU_VOLTAGE_LIMITED:
-                case PM_METRIC_GPU_UTILIZATION_LIMITED:
-                case PM_METRIC_VRAM_POWER_LIMITED:
-                case PM_METRIC_VRAM_TEMPERATURE_LIMITED:
-                case PM_METRIC_VRAM_CURRENT_LIMITED:
-                case PM_METRIC_VRAM_VOLTAGE_LIMITED:
-                case PM_METRIC_VRAM_UTILIZATION_LIMITED:
-                    CalculateGpuMetric(gpuMetricData, qe, pBlob, client->GetQpcFrequency());
                 default:
                     break;
                 }
             }
         }
+        for (auto& qe : pQuery->elements) {
+            switch (qe.metric)
+            {
+            case PM_METRIC_GPU_POWER:
+            case PM_METRIC_GPU_FAN_SPEED:
+            case PM_METRIC_GPU_SUSTAINED_POWER_LIMIT:
+            case PM_METRIC_GPU_VOLTAGE:
+            case PM_METRIC_GPU_FREQUENCY:
+            case PM_METRIC_GPU_TEMPERATURE:
+            case PM_METRIC_GPU_UTILIZATION:
+            case PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION:
+            case PM_METRIC_GPU_MEDIA_UTILIZATION:
+            case PM_METRIC_VRAM_POWER:
+            case PM_METRIC_VRAM_VOLTAGE:
+            case PM_METRIC_VRAM_FREQUENCY:
+            case PM_METRIC_VRAM_EFFECTIVE_FREQUENCY:
+            case PM_METRIC_VRAM_TEMPERATURE:
+            case PM_METRIC_GPU_MEM_SIZE:
+            case PM_METRIC_GPU_MEM_USED:
+            case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
+            case PM_METRIC_GPU_MEM_WRITE_BANDWIDTH:
+            case PM_METRIC_GPU_MEM_READ_BANDWIDTH:
+            case PM_METRIC_GPU_POWER_LIMITED:
+            case PM_METRIC_GPU_TEMPERATURE_LIMITED:
+            case PM_METRIC_GPU_CURRENT_LIMITED:
+            case PM_METRIC_GPU_VOLTAGE_LIMITED:
+            case PM_METRIC_GPU_UTILIZATION_LIMITED:
+            case PM_METRIC_VRAM_POWER_LIMITED:
+            case PM_METRIC_VRAM_TEMPERATURE_LIMITED:
+            case PM_METRIC_VRAM_CURRENT_LIMITED:
+            case PM_METRIC_VRAM_VOLTAGE_LIMITED:
+            case PM_METRIC_VRAM_UTILIZATION_LIMITED:
+                CalculateGpuMetric(gpuMetricData, qe, pBlob, client->GetQpcFrequency());
+                break;
+            default:
+                break;
+            }
+        }
+
     }
 
     void ConcreteMiddleware::CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
@@ -619,12 +665,19 @@ namespace pmon::mid
             output = 0.;
             break;
         }
-
         return;
     }
 
-    void ConcreteMiddleware::CalculateGpuMetric(std::unordered_map<PM_METRIC, std::vector<double>>& gpuMetricDataconst, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
+    void ConcreteMiddleware::CalculateGpuMetric(std::unordered_map<PM_METRIC, std::vector<double>>& gpuMetricData, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
     {
+        auto& output = reinterpret_cast<double&>(pBlob[element.dataOffset]);
+        output = 0.;
+
+        auto it = gpuMetricData.find(element.metric);
+        if (it != gpuMetricData.end())
+        {
+            CalculateMetric(output, it->second, element.stat);
+        }
         return;
     }
 
