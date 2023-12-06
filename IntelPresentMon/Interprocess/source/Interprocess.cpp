@@ -7,6 +7,7 @@
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
 #include <boost/interprocess/sync/sharable_lock.hpp>
 #include <chrono>
+#include "../../PresentMonService/GlobalIdentifiers.h"
 
 namespace pmon::ipc
 {
@@ -17,7 +18,7 @@ namespace pmon::ipc
 		class CommsBase_
 		{
 		protected:
-			static constexpr const char* defaultSegmentName_ = "presentmon-2-bip-shm";
+			static constexpr const char* defaultSegmentName_ = pmon::gid::defaultIntrospectionNsmName;
 			static constexpr const char* introspectionRootName_ = "in-root";
 			static constexpr const char* introspectionMutexName_ = "in-mtx";
 			static constexpr const char* introspectionSemaphoreName_ = "in-sem";
