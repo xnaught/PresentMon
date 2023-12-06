@@ -23,10 +23,10 @@ namespace pmon::mid
 	MockMiddleware::MockMiddleware(bool useLocalShmServer)
 	{
 		if (useLocalShmServer) {
-			pServiceComms = ipc::MakeServiceComms();
+			pServiceComms = ipc::MakeServiceComms(mockIntrospectionNsmName);
 			ipc::intro::RegisterMockIntrospectionDevices(*pServiceComms);
 		}
-		pMiddlewareComms = ipc::MakeMiddlewareComms();
+		pMiddlewareComms = ipc::MakeMiddlewareComms(mockIntrospectionNsmName);
 	}
 
 	void MockMiddleware::AdvanceTime(uint32_t milliseconds)

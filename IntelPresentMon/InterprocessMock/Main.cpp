@@ -271,7 +271,7 @@ int main(int argc, char** argv)
 	else if (opts.basicIntro) {
 		std::string buffer;
 
-		auto pServiceComms = pmon::ipc::MakeServiceComms();
+		auto pServiceComms = pmon::ipc::MakeServiceComms(*opts.introNsm);
 		pmon::ipc::intro::RegisterMockIntrospectionDevices(*pServiceComms);
 
 		// signal to client that shm has been created

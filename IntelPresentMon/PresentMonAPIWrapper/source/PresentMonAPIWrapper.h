@@ -2,6 +2,7 @@
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
 #include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
 #include <format>
+#include <string>
 
 namespace pmapi
 {
@@ -11,6 +12,7 @@ namespace pmapi
 	{
     public:
         Session();
+        Session(std::string controlPipe, std::string introspectionNsm);
         Session(Session&& rhs) noexcept
             :
             token{ rhs.token }

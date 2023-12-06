@@ -154,8 +154,8 @@ namespace PresentMonAPI2Mock
 			Assert::AreEqual(0ull, elements[0].dataOffset);
 			Assert::AreEqual(8ull, elements[0].dataSize);
 			Assert::AreEqual(8ull, elements[1].dataOffset);
-			Assert::AreEqual(4ull, elements[1].dataSize);
-			Assert::AreEqual(12ull, elements[2].dataOffset);
+			Assert::AreEqual(8ull, elements[1].dataSize);
+			Assert::AreEqual(16ull, elements[2].dataOffset);
 			Assert::AreEqual(8ull, elements[2].dataSize);
 
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeDynamicQuery(q));

@@ -10,6 +10,7 @@
 #include "../PresentMonAPI2/source/Internal.h"
 #include "BoostProcess.h"
 #include "../PresentMonMiddleware/source/MockCommon.h"
+#include "../PresentMonMiddleware/source/MockMiddleware.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -21,7 +22,7 @@ namespace PresentMonAPI2Mock
 	public:
 		TEST_METHOD(ApiProbeCloneSize)
 		{
-			auto pComm = ipc::MakeServiceComms();
+			auto pComm = ipc::MakeServiceComms("svc_comms_shm_1");
 			ipc::intro::RegisterMockIntrospectionDevices(*pComm);
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> alloc;
@@ -38,7 +39,7 @@ namespace PresentMonAPI2Mock
 		}
 		TEST_METHOD(ApiBlockClone)
 		{
-			auto pComm = ipc::MakeServiceComms();
+			auto pComm = ipc::MakeServiceComms("svc_comms_shm_2");
 			ipc::intro::RegisterMockIntrospectionDevices(*pComm);
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> probeAlloc;
@@ -157,14 +158,19 @@ namespace PresentMonAPI2Mock
 			bp::ipstream out; // Stream for reading the process's output
 			bp::opstream in;  // Stream for writing to the process's input
 
-			bp::child process("InterprocessMock.exe"s, "--basic-intro"s, bp::std_out > out, bp::std_in < in);
+			const auto introNsm = "intro_shm_test_1"s;
+
+			bp::child process("InterprocessMock.exe"s,
+				"--basic-intro"s,
+				"--intro-nsm"s, introNsm,
+				bp::std_out > out, bp::std_in < in);
 
 			std::string output;
 			out >> output;
 
 			Assert::AreEqual("ready"s, output);
 
-			auto pComm = ipc::MakeMiddlewareComms();
+			auto pComm = ipc::MakeMiddlewareComms(introNsm);
 			auto pRoot = pComm->GetIntrospectionRoot();
 
 			Assert::IsNotNull(pRoot);
@@ -282,7 +288,10 @@ namespace PresentMonAPI2Mock
 			bp::ipstream out; // Stream for reading the process's output
 			bp::opstream in;  // Stream for writing to the process's input
 
-			bp::child process("InterprocessMock.exe"s, "--basic-intro"s, bp::std_out > out, bp::std_in < in);
+			bp::child process("InterprocessMock.exe"s,
+				"--basic-intro"s,
+				"--intro-nsm"s, mid::MockMiddleware::mockIntrospectionNsmName,
+				bp::std_out > out, bp::std_in < in);
 
 			std::string output;
 			out >> output;
@@ -315,7 +324,10 @@ namespace PresentMonAPI2Mock
 			bp::ipstream out; // Stream for reading the process's output
 			bp::opstream in;  // Stream for writing to the process's input
 
-			bp::child process("InterprocessMock.exe"s, "--basic-intro"s, bp::std_out > out, bp::std_in < in);
+			bp::child process("InterprocessMock.exe"s,
+				"--basic-intro"s,
+				"--intro-nsm"s, mid::MockMiddleware::mockIntrospectionNsmName,
+				bp::std_out > out, bp::std_in < in);
 
 			std::string output;
 			out >> output;

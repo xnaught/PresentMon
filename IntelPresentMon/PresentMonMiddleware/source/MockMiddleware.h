@@ -7,6 +7,7 @@ namespace pmon::mid
 	class MockMiddleware : public Middleware
 	{
 	public:
+		// functions
 		MockMiddleware(bool mockServer);
 		void AdvanceTime(uint32_t milliseconds);
 		void Speak(char* buffer) const override;
@@ -18,6 +19,8 @@ namespace pmon::mid
 		void FreeDynamicQuery(const PM_DYNAMIC_QUERY* pQuery) override;
 		void PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob, uint32_t* numSwapChains) override;
 		void PollStaticQuery(const PM_QUERY_ELEMENT& element, uint8_t* pBlob) override;
+		// data
+		static constexpr const char* mockIntrospectionNsmName = "pm_api2_intro_nsm_mock";
 	private:
 		uint32_t t = 0;
 		std::unique_ptr<ipc::ServiceComms> pServiceComms;
