@@ -9,6 +9,7 @@
 #include <filesystem>
 #include "../Interprocess/source/Interprocess.h"
 #include "CliOptions.h"
+#include "GlobalIdentifiers.h"
 
 #define GOOGLE_GLOG_DLL_DECL
 #define GLOG_NO_ABBREVIATED_SEVERITIES
@@ -269,7 +270,18 @@ void PresentMonMainThread(Service* const srv)
         PowerTelemetryContainer ptc;
 
         // create service-side comms object for transmitting introspection data to clients
-        auto pComms = ipc::MakeServiceComms(opt.introNsm.AsOptional());
+        std::unique_ptr<ipc::ServiceComms> pComms;
+        try {
+            auto introNsmName = opt.introNsm.AsOptional().value_or(gid::defaultIntrospectionNsmName);
+            LOG(INFO) << "Creating comms with NSM name: " << introNsmName;
+            pComms = ipc::MakeServiceComms(std::move(introNsmName));
+        }
+        catch (const std::exception& e) {
+            LOG(ERROR) << "Failed making service comms> " << e.what() << std::endl;
+            google::FlushLogFiles(0);
+            srv->SignalServiceStop();
+            return;
+        }
 
         // Set the created power telemetry container 
         pm.SetPowerTelemetryContainer(&ptc);
