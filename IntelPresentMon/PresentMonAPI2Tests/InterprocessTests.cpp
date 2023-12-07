@@ -11,6 +11,7 @@
 #include "BoostProcess.h"
 #include "../PresentMonMiddleware/source/MockCommon.h"
 #include "../PresentMonMiddleware/source/MockMiddleware.h"
+#include "../CommonUtilities/source/Memory.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -33,9 +34,9 @@ namespace PresentMonAPI2Mock
 		}
 		TEST_METHOD(Padding)
 		{
-			Assert::AreEqual(4ull, ipc::intro::GetPadding<void*>(4ull));
-			Assert::AreEqual(3ull, ipc::intro::GetPadding<PM_ENUM>(41ull));
-			Assert::AreEqual(1ull, ipc::intro::GetPadding<uint32_t>(3ull));
+			Assert::AreEqual(4ull, util::GetPadding<void*>(4ull));
+			Assert::AreEqual(3ull, util::GetPadding<PM_ENUM>(41ull));
+			Assert::AreEqual(1ull, util::GetPadding<uint32_t>(3ull));
 		}
 		TEST_METHOD(ApiBlockClone)
 		{
