@@ -56,7 +56,7 @@ namespace PresentMonAPI2Mock
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(14ull, pRoot->pMetrics->size);
+			Assert::AreEqual(45ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)

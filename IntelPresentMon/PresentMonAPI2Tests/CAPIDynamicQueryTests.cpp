@@ -129,7 +129,7 @@ namespace PresentMonAPI2Mock
 		TEST_METHOD(UnsupportedMetric)
 		{
 			PM_DYNAMIC_QUERY_HANDLE q = nullptr;
-			int PM_METRIC_GPU_VOLTAGE = PM_METRIC_GPU_POWER + 10;
+			int PM_METRIC_GPU_VOLTAGE = PM_METRIC_CPU_FREQUENCY + 10;
 			PM_QUERY_ELEMENT elements[]{
 				PM_QUERY_ELEMENT{.metric = (PM_METRIC)PM_METRIC_GPU_VOLTAGE, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
 			};

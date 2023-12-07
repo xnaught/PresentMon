@@ -193,11 +193,6 @@ namespace pmon::mid
             }
         }
 
-        // TODO: Where will the client caches reside? As part of the dynamic query?
-        //if (!SetupClientCaches(process_id)) {
-        //    return PM_STATUS::PM_STATUS_FAILURE;
-        //}
-
         return PM_STATUS_SUCCESS;
     }
     
@@ -225,10 +220,6 @@ namespace pmon::mid
         if (iter != presentMonStreamClients.end()) {
             presentMonStreamClients.erase(std::move(iter));
         }
-
-        // TODO: If cached data is part of query maybe we can
-        // remove this code
-        //RemoveClientCaches(process_id);
 
         return status;
     }
@@ -366,6 +357,24 @@ namespace pmon::mid
                     throw std::runtime_error{ "Invalid fan speed index" };
                 }
                 break;
+            case PM_METRIC_CPU_UTILIZATION:
+                pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_utilization));
+                break;
+            case PM_METRIC_CPU_POWER:
+                pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_power));
+                break;
+            case PM_METRIC_CPU_POWER_LIMIT:
+                pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_power_limit));
+                break;
+            case PM_METRIC_CPU_TEMPERATURE:
+                pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_temperature));
+                break;
+            case PM_METRIC_CPU_FREQUENCY:
+                pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_frequency));
+                break;
+            case PM_METRIC_CPU_CORE_UTILITY:
+                //pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_power));
+                break;
             default:
                 break;
             }
@@ -412,17 +421,19 @@ namespace pmon::mid
         pQuery->windowSizeMs = windowSizeMs;
         pQuery->processId = processId;
         pQuery->elements = std::vector<PM_QUERY_ELEMENT>{ queryElements.begin(), queryElements.end() };
+        pQuery->queryCacheSize = pQuery->elements[std::size(pQuery->elements) - 1].dataOffset + pQuery->elements[std::size(pQuery->elements) - 1].dataSize;
+        size_t querySize = pQuery->elements.size();
+
 
         return pQuery.release();
     }
 
     void ConcreteMiddleware::PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob, uint32_t* numSwapChains)
     {
-        std::unordered_map<uint64_t, fpsSwapChainData> swap_chain_data;
-        std::unordered_map<PM_METRIC, std::vector<double>> gpuMetricData;
-        std::unordered_map<PM_METRIC, std::vector<double>> cpuMetricData;
-        LARGE_INTEGER api_qpc;
-        QueryPerformanceCounter(&api_qpc);
+        std::unordered_map<uint64_t, fpsSwapChainData> swapChainData;
+        std::unordered_map<PM_METRIC, std::vector<double>> gpucpuMetricData;
+        bool allMetricsCalculated = false;
+        bool fpsMetricsCalculated = false;
 
         if (*numSwapChains == 0) {
             return;
@@ -456,12 +467,7 @@ namespace pmon::mid
         
         PmNsmFrameData* frame_data = GetFrameDataStart(client, index, SecondsDeltaToQpc(pQuery->metricOffsetMs/1000., client->GetQpcFrequency()), *queryToFrameDataDelta, adjusted_window_size_in_ms);
         if (frame_data == nullptr) {
-            //if (CopyCacheData(fps_data, num_swapchains, metric_cache->cached_fps_data_)) {
-            //    return PM_STATUS::PM_STATUS_SUCCESS;
-            //}
-            //else {
-            //    return PM_STATUS::PM_STATUS_NO_DATA;
-            //}
+            CopyMetricCacheToBlob(pQuery, pBlob);
             return;
         }
 
@@ -481,7 +487,7 @@ namespace pmon::mid
         while (frame_data->present_event.PresentStartTime > end_qpc) {
             if (pQuery->accumFpsData)
             {
-                auto result = swap_chain_data.emplace(
+                auto result = swapChainData.emplace(
                     frame_data->present_event.SwapChainAddress, fpsSwapChainData());
                 auto swap_chain = &result.first->second;
 
@@ -555,9 +561,23 @@ namespace pmon::mid
                     double gpuMetricValue;
                     if (GetGpuMetricData(i, frame_data->power_telemetry, gpuMetric, gpuMetricValue))
                     {
-                        auto result = gpuMetricData.emplace(gpuMetric, std::vector<double>());
+                        auto result = gpucpuMetricData.emplace(gpuMetric, std::vector<double>());
                         auto data = &result.first->second;
                         data->push_back(gpuMetricValue);
+                    }
+                }
+            }
+
+            for (size_t i = 0; i < pQuery->accumCpuBits.size(); ++i) {
+                if (pQuery->accumCpuBits[i])
+                {
+                    PM_METRIC cpuMetric;
+                    double cpuMetricValue;
+                    if (GetCpuMetricData(i, frame_data->cpu_telemetry, cpuMetric, cpuMetricValue))
+                    {
+                        auto result = gpucpuMetricData.emplace(cpuMetric, std::vector<double>());
+                        auto data = &result.first->second;
+                        data->push_back(cpuMetricValue);
                     }
                 }
             }
@@ -575,65 +595,7 @@ namespace pmon::mid
             }
         }
 
-
-        for (auto& pair : swap_chain_data) {
-            auto& swapChain = pair.second;
-            for (auto& qe : pQuery->elements) {
-                switch (qe.metric)
-                {
-                case PM_METRIC_PRESENTED_FPS:
-                case PM_METRIC_DISPLAYED_FPS:
-                case PM_METRIC_FRAME_TIME:
-                case PM_METRIC_GPU_BUSY_TIME:
-                case PM_METRIC_CPU_BUSY_TIME:
-                case PM_METRIC_CPU_WAIT_TIME:
-                case PM_METRIC_DISPLAY_BUSY_TIME:
-                    CalculateFpsMetric(swapChain, qe, pBlob, client->GetQpcFrequency());
-                    break;
-                default:
-                    break;
-                }
-            }
-        }
-        for (auto& qe : pQuery->elements) {
-            switch (qe.metric)
-            {
-            case PM_METRIC_GPU_POWER:
-            case PM_METRIC_GPU_FAN_SPEED:
-            case PM_METRIC_GPU_SUSTAINED_POWER_LIMIT:
-            case PM_METRIC_GPU_VOLTAGE:
-            case PM_METRIC_GPU_FREQUENCY:
-            case PM_METRIC_GPU_TEMPERATURE:
-            case PM_METRIC_GPU_UTILIZATION:
-            case PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION:
-            case PM_METRIC_GPU_MEDIA_UTILIZATION:
-            case PM_METRIC_VRAM_POWER:
-            case PM_METRIC_VRAM_VOLTAGE:
-            case PM_METRIC_VRAM_FREQUENCY:
-            case PM_METRIC_VRAM_EFFECTIVE_FREQUENCY:
-            case PM_METRIC_VRAM_TEMPERATURE:
-            case PM_METRIC_GPU_MEM_SIZE:
-            case PM_METRIC_GPU_MEM_USED:
-            case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
-            case PM_METRIC_GPU_MEM_WRITE_BANDWIDTH:
-            case PM_METRIC_GPU_MEM_READ_BANDWIDTH:
-            case PM_METRIC_GPU_POWER_LIMITED:
-            case PM_METRIC_GPU_TEMPERATURE_LIMITED:
-            case PM_METRIC_GPU_CURRENT_LIMITED:
-            case PM_METRIC_GPU_VOLTAGE_LIMITED:
-            case PM_METRIC_GPU_UTILIZATION_LIMITED:
-            case PM_METRIC_VRAM_POWER_LIMITED:
-            case PM_METRIC_VRAM_TEMPERATURE_LIMITED:
-            case PM_METRIC_VRAM_CURRENT_LIMITED:
-            case PM_METRIC_VRAM_VOLTAGE_LIMITED:
-            case PM_METRIC_VRAM_UTILIZATION_LIMITED:
-                CalculateGpuMetric(gpuMetricData, qe, pBlob, client->GetQpcFrequency());
-                break;
-            default:
-                break;
-            }
-        }
-
+        CalculateMetrics(pQuery, pBlob, numSwapChains, client->GetQpcFrequency(), swapChainData, gpucpuMetricData);
     }
 
     void ConcreteMiddleware::CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
@@ -708,13 +670,13 @@ namespace pmon::mid
         return;
     }
 
-    void ConcreteMiddleware::CalculateGpuMetric(std::unordered_map<PM_METRIC, std::vector<double>>& gpuMetricData, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
+    void ConcreteMiddleware::CalculateGpuCpuMetric(std::unordered_map<PM_METRIC, std::vector<double>>& metricData, const PM_QUERY_ELEMENT& element, uint8_t* pBlob)
     {
         auto& output = reinterpret_cast<double&>(pBlob[element.dataOffset]);
         output = 0.;
 
-        auto it = gpuMetricData.find(element.metric);
-        if (it != gpuMetricData.end())
+        auto it = metricData.find(element.metric);
+        if (it != metricData.end())
         {
             CalculateMetric(output, it->second, element.stat);
         }
@@ -1066,5 +1028,203 @@ namespace pmon::mid
             break;
         }
         return validGpuMetric;
+    }
+
+    bool ConcreteMiddleware::GetCpuMetricData(size_t telemetryBit, CpuTelemetryInfo& cpuTelemetry, PM_METRIC& cpuMetric, double& cpuMetricValue)
+    {
+        bool validCpuMetric = true;
+        CpuTelemetryCapBits bit =
+            static_cast<CpuTelemetryCapBits>(telemetryBit);
+        switch (bit) {
+        case CpuTelemetryCapBits::cpu_utilization:
+            cpuMetric = PM_METRIC_CPU_UTILIZATION;
+            cpuMetricValue = cpuTelemetry.cpu_utilization;
+            break;
+        case CpuTelemetryCapBits::cpu_power:
+            cpuMetric = PM_METRIC_CPU_POWER;
+            cpuMetricValue = cpuTelemetry.cpu_power_w;
+            break;
+        case CpuTelemetryCapBits::cpu_power_limit:
+            cpuMetric = PM_METRIC_CPU_POWER_LIMIT;
+            cpuMetricValue = cpuTelemetry.cpu_power_limit_w;
+            break;
+        case CpuTelemetryCapBits::cpu_temperature:
+            cpuMetric = PM_METRIC_CPU_TEMPERATURE;
+            cpuMetricValue = cpuTelemetry.cpu_temperature;
+            break;
+        case CpuTelemetryCapBits::cpu_frequency:
+            cpuMetric = PM_METRIC_CPU_FREQUENCY;
+            cpuMetricValue = cpuTelemetry.cpu_frequency;
+            break;
+        default:
+            validCpuMetric = false;
+            break;
+        }
+
+        return validCpuMetric;
+    }
+
+    void ConcreteMiddleware::SaveMetricCache(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob)
+    {
+        auto it = cachedMetricDatas.find(pQuery->dynamicQueryHandle);
+        if (it != cachedMetricDatas.end())
+        {
+            auto& uniquePtr = it->second;
+            std::copy(pBlob, pBlob + pQuery->queryCacheSize, uniquePtr.get());
+        }
+        else
+        {
+            auto dataArray = std::make_unique<uint8_t[]>(pQuery->queryCacheSize);
+            std::copy(pBlob, pBlob + pQuery->queryCacheSize, dataArray.get());
+            cachedMetricDatas.emplace(pQuery->dynamicQueryHandle, std::move(dataArray));
+        }
+    }
+
+    void ConcreteMiddleware::CopyMetricCacheToBlob(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob)
+    {
+        auto it = cachedMetricDatas.find(pQuery->dynamicQueryHandle);
+        if (it != cachedMetricDatas.end())
+        {
+            auto& uniquePtr = it->second;
+            std::copy(uniquePtr.get(), uniquePtr.get() + pQuery->queryCacheSize, pBlob);
+        }
+    }
+
+    // This code currently doesn't support the copying of multiple swap chains. If a second swap chain
+    // is encountered it will update the numSwapChains to the correct number and then copy the swap
+    // chain frame information with the most presents. If the client does happen to specify two swap
+    // chains this code will incorrectly copy the data. WIP.
+    void ConcreteMiddleware::CalculateMetrics(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob, uint32_t* numSwapChains, LARGE_INTEGER qpcFrequency, std::unordered_map<uint64_t, fpsSwapChainData>& swapChainData, std::unordered_map<PM_METRIC, std::vector<double>>& gpucpuMetricData)
+    {
+        auto GetSwapChainIndex = [swapChainData]()
+            { 
+                uint32_t maxSwapChainPresents = 0;
+                uint32_t maxSwapChainPresentsIndex = 0;
+                uint32_t currentSwapChainIndex = 0;
+                for (auto& pair : swapChainData) {
+                    auto& swapChain = pair.second;
+                    if (swapChain.num_presents > maxSwapChainPresents)
+                    {
+                        maxSwapChainPresents = swapChain.num_presents;
+                        maxSwapChainPresentsIndex = currentSwapChainIndex;
+                    }
+                    currentSwapChainIndex++;
+                }
+                return maxSwapChainPresentsIndex;
+            };
+
+        uint32_t maxSwapChainPresentsIndex = GetSwapChainIndex();
+        uint32_t currentSwapChainIndex = 0;
+        bool copyAllMetrics = true;
+        bool useCache = false;
+        bool allMetricsCalculated = false;
+
+        // If the number of swap chains found in the frame data is greater than the number passed
+        // in update the passed in number to notify the client there is more data present than
+        // can be returned
+        if (swapChainData.size() > *numSwapChains)
+        {
+            *numSwapChains = static_cast<uint32_t>(swapChainData.size());
+            copyAllMetrics = false;
+        }
+
+        // If the client choose to monitor frame information then this loop
+        // will calculate all store all metrics.
+        for (auto& pair : swapChainData) {
+            auto& swapChain = pair.second;
+
+            // There are couple reasons where we will not be able to produce
+            // fps metric data. The first is if all of the frames are dropped.
+            // The second is if in the requested sample window there are
+            // no presents.
+            if ((swapChain.display_count <= 1) && (swapChain.num_presents <= 1)) {
+                useCache = true;
+                break;
+            }
+
+            // If we are unable to copy all of the metrics to the blob and the current swap
+            // chain isn't the one with the most presents, skip by it
+            if ((copyAllMetrics == false) && (currentSwapChainIndex != maxSwapChainPresentsIndex))
+            {
+                continue;
+            }
+            for (auto& qe : pQuery->elements) {
+                switch (qe.metric)
+                {
+                case PM_METRIC_PRESENTED_FPS:
+                case PM_METRIC_DISPLAYED_FPS:
+                case PM_METRIC_FRAME_TIME:
+                case PM_METRIC_GPU_BUSY_TIME:
+                case PM_METRIC_CPU_BUSY_TIME:
+                case PM_METRIC_CPU_WAIT_TIME:
+                case PM_METRIC_DISPLAY_BUSY_TIME:
+                    CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
+                    break;
+                default:
+                    CalculateGpuCpuMetric(gpucpuMetricData, qe, pBlob);
+                    break;
+                }
+            }
+
+            allMetricsCalculated = true;
+            currentSwapChainIndex++;
+        }
+
+        if (useCache == true) {
+            CopyMetricCacheToBlob(pQuery, pBlob);
+            return;
+        }
+
+        if (allMetricsCalculated == false)
+        {
+            for (auto& qe : pQuery->elements)
+            {
+                switch (qe.metric)
+                {
+                case PM_METRIC_GPU_POWER:
+                case PM_METRIC_GPU_FAN_SPEED:
+                case PM_METRIC_GPU_SUSTAINED_POWER_LIMIT:
+                case PM_METRIC_GPU_VOLTAGE:
+                case PM_METRIC_GPU_FREQUENCY:
+                case PM_METRIC_GPU_TEMPERATURE:
+                case PM_METRIC_GPU_UTILIZATION:
+                case PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION:
+                case PM_METRIC_GPU_MEDIA_UTILIZATION:
+                case PM_METRIC_VRAM_POWER:
+                case PM_METRIC_VRAM_VOLTAGE:
+                case PM_METRIC_VRAM_FREQUENCY:
+                case PM_METRIC_VRAM_EFFECTIVE_FREQUENCY:
+                case PM_METRIC_VRAM_TEMPERATURE:
+                case PM_METRIC_GPU_MEM_SIZE:
+                case PM_METRIC_GPU_MEM_USED:
+                case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
+                case PM_METRIC_GPU_MEM_WRITE_BANDWIDTH:
+                case PM_METRIC_GPU_MEM_READ_BANDWIDTH:
+                case PM_METRIC_GPU_POWER_LIMITED:
+                case PM_METRIC_GPU_TEMPERATURE_LIMITED:
+                case PM_METRIC_GPU_CURRENT_LIMITED:
+                case PM_METRIC_GPU_VOLTAGE_LIMITED:
+                case PM_METRIC_GPU_UTILIZATION_LIMITED:
+                case PM_METRIC_VRAM_POWER_LIMITED:
+                case PM_METRIC_VRAM_TEMPERATURE_LIMITED:
+                case PM_METRIC_VRAM_CURRENT_LIMITED:
+                case PM_METRIC_VRAM_VOLTAGE_LIMITED:
+                case PM_METRIC_VRAM_UTILIZATION_LIMITED:
+                case PM_METRIC_CPU_UTILIZATION:
+                case PM_METRIC_CPU_POWER:
+                case PM_METRIC_CPU_POWER_LIMIT:
+                case PM_METRIC_CPU_TEMPERATURE:
+                case PM_METRIC_CPU_FREQUENCY:
+                case PM_METRIC_CPU_CORE_UTILITY:
+                    CalculateGpuCpuMetric(gpucpuMetricData, qe, pBlob);
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+
+        // Save calculated metrics blob to cache
+        SaveMetricCache(pQuery, pBlob);
     }
 }
