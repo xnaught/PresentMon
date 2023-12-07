@@ -244,11 +244,11 @@ namespace pmon::mid
 
         uint64_t offset = 0u;
         for (auto& qe : queryElements) {
-            auto metricView = ispec.FindMetric(qe.metric);
-            if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_DYNAMIC)) {
-                // TODO: specific exception here
-                throw std::runtime_error{ "Static metric in dynamic metric query specification" };
-            }
+            //auto metricView = ispec.FindMetric(qe.metric);
+            //if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_DYNAMIC)) {
+            //    // TODO: specific exception here
+            //    throw std::runtime_error{ "Static metric in dynamic metric query specification" };
+            //}
             switch (qe.metric) {
             case PM_METRIC_PRESENTED_FPS:
             case PM_METRIC_DISPLAYED_FPS:
@@ -420,8 +420,8 @@ namespace pmon::mid
             // TODO: validate device id
             // TODO: validate array index
             qe.dataOffset = offset;
-            qe.dataSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetBasePtr()->type);
-            // qe.dataSize = 8;
+            //qe.dataSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetBasePtr()->type);
+             qe.dataSize = 8;
             offset += qe.dataSize;
         }
 
@@ -431,6 +431,9 @@ namespace pmon::mid
         pQuery->windowSizeMs = windowSizeMs;
         pQuery->processId = processId;
         pQuery->elements = std::vector<PM_QUERY_ELEMENT>{ queryElements.begin(), queryElements.end() };
+        pQuery->queryCacheSize = pQuery->elements[std::size(pQuery->elements) - 1].dataOffset + pQuery->elements[std::size(pQuery->elements) - 1].dataSize;
+        size_t querySize = pQuery->elements.size();
+
 
         return pQuery.release();
     }
@@ -475,12 +478,12 @@ namespace pmon::mid
         
         PmNsmFrameData* frame_data = GetFrameDataStart(client, index, SecondsDeltaToQpc(pQuery->metricOffsetMs/1000., client->GetQpcFrequency()), *queryToFrameDataDelta, adjusted_window_size_in_ms);
         if (frame_data == nullptr) {
-            //if (CopyCacheData(fps_data, num_swapchains, metric_cache->cached_fps_data_)) {
-            //    return PM_STATUS::PM_STATUS_SUCCESS;
-            //}
-            //else {
-            //    return PM_STATUS::PM_STATUS_NO_DATA;
-            //}
+            auto it = cachedMetricDatas.find(pQuery->dynamicQueryHandle);
+            if (it != cachedMetricDatas.end())
+            {
+                auto& uniquePtr = it->second;
+                std::copy(uniquePtr.get(), uniquePtr.get() + pQuery->queryCacheSize, pBlob);
+            }
             return;
         }
 
@@ -680,6 +683,8 @@ namespace pmon::mid
             }
         }
 
+        // Copy blob to cache
+        SaveMetricCache(pQuery, pBlob);
     }
 
     void ConcreteMiddleware::CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
@@ -1146,5 +1151,21 @@ namespace pmon::mid
         }
 
         return validCpuMetric;
+    }
+
+    void ConcreteMiddleware::SaveMetricCache(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob)
+    {
+        auto it = cachedMetricDatas.find(pQuery->dynamicQueryHandle);
+        if (it != cachedMetricDatas.end())
+        {
+            auto& uniquePtr = it->second;
+            std::copy(pBlob, pBlob + pQuery->queryCacheSize, uniquePtr.get());
+        }
+        else
+        {
+            auto dataArray = std::make_unique<uint8_t[]>(pQuery->queryCacheSize);
+            std::copy(pBlob, pBlob + pQuery->queryCacheSize, dataArray.get());
+            cachedMetricDatas.emplace(pQuery->dynamicQueryHandle, std::move(dataArray));
+        }
     }
 }
