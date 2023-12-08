@@ -14,7 +14,8 @@ PmNsmFrameData fff;
 	X_(PM_METRIC_PRESENT_RUNTIME, present_event.Runtime) \
 	X_(PM_METRIC_PRESENT_MODE, present_event.PresentMode) \
 	X_(PM_METRIC_GPU_POWER, power_telemetry.gpu_power_w) \
-	X_(PM_METRIC_CPU_UTILIZATION, cpu_telemetry.cpu_utilization)
+	X_(PM_METRIC_CPU_UTILIZATION, cpu_telemetry.cpu_utilization) \
+	X_(PM_METRIC_GPU_FAN_SPEED, power_telemetry.fan_speed_rpm[0])
 
 constexpr uint16_t GetNsmMemberSize_(PM_METRIC metric)
 {
@@ -39,6 +40,11 @@ constexpr uint32_t GetNsmMemberOffset_(PM_METRIC metric)
 
 PM_FRAME_EVENT_QUERY::PM_FRAME_EVENT_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
 {
+	// TODO: validation
+	//	only allow array index zero if not array type in nsm
+	//	fail if array index out of bounds
+	//  fail if any metrics aren't event-compatible
+	//  fail if any stats other than NONE are specified
 	for (auto& q : queryElements) {
 		copyCommands_.push_back(MapQueryElementToCopyCommand_(q, blobSize_));
 		const auto& cmd = copyCommands_.back();
@@ -66,10 +72,10 @@ PM_FRAME_EVENT_QUERY::CopyCommand_ PM_FRAME_EVENT_QUERY::MapQueryElementToCopyCo
 	// TODO: figure out what to do when metric is an array
 	const auto size = GetNsmMemberSize_(q.metric);
 	return CopyCommand_{
-		.offset = GetNsmMemberOffset_(q.metric),
+		.offset = GetNsmMemberOffset_(q.metric) + size * q.arrayIndex,
 		// this padding will cause issues with something like char[260]
 		// TODO: calculate padding based on static type via x-macro machinery
-		// lookup from metric
+		// lookup from metric (not good for forward compat., maybe use intro?)
 		.padding = (uint8_t)util::GetPadding(pos, size),
 		.size = size,
 	};
