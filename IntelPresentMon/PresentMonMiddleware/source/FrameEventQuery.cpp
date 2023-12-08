@@ -10,6 +10,7 @@ using namespace pmon;
 PmNsmFrameData fff;
 
 #define METRIC_OFFSET_SIZE_LOOKUP_LIST \
+	X_(PM_METRIC_PRESENT_QPC, present_event.PresentStartTime) \
 	X_(PM_METRIC_RUNTIME, present_event.Runtime) \
 	X_(PM_METRIC_PRESENT_MODE, present_event.PresentMode) \
 	X_(PM_METRIC_GPU_POWER, power_telemetry.gpu_power_w) \

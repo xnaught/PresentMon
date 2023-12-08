@@ -64,7 +64,8 @@ namespace pmon::ipc::intro {
 		X_(METRIC, CPU_POWER_LIMIT, "CPU Power Limit", "", "Power limit of the CPU") \
 		X_(METRIC, CPU_TEMPERATURE, "CPU Temperature", "", "Temperature of the CPU") \
 		X_(METRIC, CPU_FREQUENCY, "CPU Frequency", "", "Clock speed of the CPU") \
-		X_(METRIC, RUNTIME, "Graphics Runtime", "", "The runtime used for the present operation (DXGI, D3D9, etc.)")
+		X_(METRIC, RUNTIME, "Graphics Runtime", "", "The runtime used for the present operation (DXGI, D3D9, etc.)") \
+		X_(METRIC, PRESENT_QPC, "Present QPC Timestamp", "", "The high performance timestamp corresponding to the present")
 #define ENUM_KEY_LIST_METRIC_TYPE(X_) \
 		X_(METRIC_TYPE, DYNAMIC, "Dynamic Metric", "", "Metric that changes over time and requires polling using a registered query") \
 		X_(METRIC_TYPE, STATIC, "Static Metric", "", "Metric that never changes and can be polled without registering a query") \
@@ -119,7 +120,8 @@ namespace pmon::ipc::intro {
 		X_(DATA_TYPE, INT32, "32-bit Signed Integer", "int32_t", "32-bit signed integer") \
 		X_(DATA_TYPE, UINT32, "32-bit Unsigned Integer", "uint32_t", "32-bit unsigned integer") \
 		X_(DATA_TYPE, ENUM, "Enumeration", "int", "Integral value of an enum key, guaranteed to fit within a 32-bit signed integer") \
-		X_(DATA_TYPE, STRING, "String", "char[260]", "Textual value, typically for non-numeric data")
+		X_(DATA_TYPE, STRING, "String", "char[260]", "Textual value, typically for non-numeric data") \
+		X_(DATA_TYPE, UINT64, "64-bit Unsigned Integer", "uint64_t", "64-bit unsigned integer")
 #define ENUM_KEY_LIST_GRAPHICS_RUNTIME(X_) \
 		X_(GRAPHICS_RUNTIME, UNKNOWN, "Unknown", "", "Unknown graphics runtime") \
 		X_(GRAPHICS_RUNTIME, DXGI, "DXGI", "", "DirectX Graphics Infrastructure runtime") \
@@ -191,7 +193,8 @@ namespace pmon::ipc::intro {
 		X_(PM_METRIC_CPU_POWER_LIMIT, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_WATTS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
 		X_(PM_METRIC_CPU_TEMPERATURE, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_CELSIUS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
 		X_(PM_METRIC_CPU_FREQUENCY, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_MEGAHERTZ, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
-		X_(PM_METRIC_RUNTIME, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_DIMENSIONLESS, PM_DATA_TYPE_ENUM, PM_ENUM_GRAPHICS_RUNTIME, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_RAW)
+		X_(PM_METRIC_RUNTIME, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_DIMENSIONLESS, PM_DATA_TYPE_ENUM, PM_ENUM_GRAPHICS_RUNTIME, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_RAW) \
+		X_(PM_METRIC_PRESENT_QPC, PM_METRIC_TYPE_FRAME_EVENT, PM_UNIT_QPC, PM_DATA_TYPE_UINT64, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_NONE)
 // static mapping of datatype enum to static type
 	template<PM_DATA_TYPE T>
 	struct EnumToStaticType;
@@ -200,6 +203,7 @@ namespace pmon::ipc::intro {
 	template<> struct EnumToStaticType<PM_DATA_TYPE::PM_DATA_TYPE_UINT32> { using type = uint32_t; };
 	template<> struct EnumToStaticType<PM_DATA_TYPE::PM_DATA_TYPE_ENUM> { using type = int; };
 	template<> struct EnumToStaticType<PM_DATA_TYPE::PM_DATA_TYPE_STRING> { using type = char[260]; };
+	template<> struct EnumToStaticType<PM_DATA_TYPE::PM_DATA_TYPE_UINT64> { using type = uint64_t; };
 	// TODO: find better place for this template glue
 	template<PM_DATA_TYPE T>
 	using EnumToStaticType_t = typename EnumToStaticType<T>::type;
