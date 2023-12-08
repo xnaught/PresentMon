@@ -9,13 +9,15 @@ using namespace pmon;
 
 PmNsmFrameData fff;
 
+// TODO: some what of validating that all frame event metrics are covered here
 #define METRIC_OFFSET_SIZE_LOOKUP_LIST \
 	X_(PM_METRIC_PRESENT_QPC, present_event.PresentStartTime) \
 	X_(PM_METRIC_PRESENT_RUNTIME, present_event.Runtime) \
 	X_(PM_METRIC_PRESENT_MODE, present_event.PresentMode) \
 	X_(PM_METRIC_GPU_POWER, power_telemetry.gpu_power_w) \
 	X_(PM_METRIC_CPU_UTILIZATION, cpu_telemetry.cpu_utilization) \
-	X_(PM_METRIC_GPU_FAN_SPEED, power_telemetry.fan_speed_rpm[0])
+	X_(PM_METRIC_GPU_FAN_SPEED, power_telemetry.fan_speed_rpm[0]) \
+	X_(PM_METRIC_GPU_TEMPERATURE_LIMITED, power_telemetry.gpu_temperature_limited)
 
 constexpr uint16_t GetNsmMemberSize_(PM_METRIC metric)
 {
@@ -24,6 +26,7 @@ constexpr uint16_t GetNsmMemberSize_(PM_METRIC metric)
 #define X_(metric, nsm) case metric: return sizeof(fd.nsm);
 		METRIC_OFFSET_SIZE_LOOKUP_LIST
 #undef X_
+			// TODO: do something with this default
 	default: return 0;
 	}
 }
@@ -34,6 +37,7 @@ constexpr uint32_t GetNsmMemberOffset_(PM_METRIC metric)
 #define X_(metric, nsm) case metric: return (uint32_t)offsetof(PmNsmFrameData, nsm);
 		METRIC_OFFSET_SIZE_LOOKUP_LIST
 #undef X_
+			// TODO: do something with this default
 	default: return 0;
 	}
 }
