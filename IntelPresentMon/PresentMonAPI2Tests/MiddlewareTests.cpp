@@ -28,6 +28,7 @@ namespace PresentMonAPI2Mock
 			query.GatherToBlob((const uint8_t*)&frame, pBlob.get());
 			Assert::AreEqual(420., *(double*)pBlob.get());
 			Assert::AreEqual(30., *(double*)&pBlob.get()[8]);
+			Assert::AreEqual(16ull, query.GetBlobSize());
 		}
 		TEST_METHOD(TestQueryEnum)
 		{
@@ -53,6 +54,7 @@ namespace PresentMonAPI2Mock
 			Assert::AreEqual(420., *(double*)&pBlob.get()[0]);
 			Assert::AreEqual((int)PM_PRESENT_MODE_COMPOSED_FLIP, *(int*)&pBlob.get()[8]);
 			Assert::AreEqual(30., *(double*)&pBlob.get()[16]);
+			Assert::AreEqual(24ull, query.GetBlobSize());
 		}
 		TEST_METHOD(TestQueryRuntime)
 		{
@@ -76,6 +78,7 @@ namespace PresentMonAPI2Mock
 			};
 			PM_FRAME_EVENT_QUERY query{ queryElements };
 			auto pBlob = std::make_unique<uint8_t[]>(24);
+			Assert::AreEqual(24ull, query.GetBlobSize());
 			query.GatherToBlob((const uint8_t*)&frame, pBlob.get());
 			Assert::AreEqual(420., *(double*)&pBlob.get()[0]);
 			Assert::AreEqual((int)PM_PRESENT_MODE_COMPOSED_FLIP, *(int*)&pBlob.get()[8]);
@@ -112,6 +115,7 @@ namespace PresentMonAPI2Mock
 			Assert::AreEqual((int)PM_GRAPHICS_RUNTIME_DXGI, *(int*)&pBlob.get()[12]);
 			Assert::AreEqual(30., *(double*)&pBlob.get()[16]);
 			Assert::AreEqual(69420ull, *(uint64_t*)&pBlob.get()[24]);
+			Assert::AreEqual(32ull, query.GetBlobSize());
 		}
 	};
 }

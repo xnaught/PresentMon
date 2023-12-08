@@ -56,6 +56,11 @@ void PM_FRAME_EVENT_QUERY::GatherToBlob(const uint8_t* sourceFrameData, uint8_t*
 	}
 }
 
+size_t PM_FRAME_EVENT_QUERY::GetBlobSize() const
+{
+	return blobSize_;
+}
+
 PM_FRAME_EVENT_QUERY::CopyCommand_ PM_FRAME_EVENT_QUERY::MapQueryElementToCopyCommand_(const PM_QUERY_ELEMENT& q, size_t pos)
 {
 	// TODO: figure out what to do when metric is an array

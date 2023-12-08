@@ -13,6 +13,7 @@ struct PM_FRAME_EVENT_QUERY
 public:
 	PM_FRAME_EVENT_QUERY(std::span<PM_QUERY_ELEMENT> queryElements);
 	void GatherToBlob(const uint8_t* sourceFrameData, uint8_t* destBlob) const;
+	size_t GetBlobSize() const;
 private:
 	// types
 	struct CopyCommand_
