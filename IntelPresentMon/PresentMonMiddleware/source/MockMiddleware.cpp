@@ -49,7 +49,7 @@ namespace pmon::mid
 		free(const_cast<PM_INTROSPECTION_ROOT*>(pRoot));
 	}
 
-	PM_DYNAMIC_QUERY* MockMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, uint32_t processId, double windowSizeMs, double metricOffsetMs)
+	PM_DYNAMIC_QUERY* MockMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, double windowSizeMs, double metricOffsetMs)
 	{
 		// get introspection data for reference
 		// TODO: cache this data so it's not required to be generated every time

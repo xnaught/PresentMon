@@ -224,7 +224,7 @@ namespace pmon::mid
         return status;
     }
 
-    PM_DYNAMIC_QUERY* ConcreteMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, uint32_t processId, double windowSizeMs, double metricOffsetMs)
+    PM_DYNAMIC_QUERY* ConcreteMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, double windowSizeMs, double metricOffsetMs)
     { 
         // get introspection data for reference
         // TODO: cache this data so it's not required to be generated every time
@@ -418,7 +418,6 @@ namespace pmon::mid
         pQuery->dynamicQueryHandle = pQuery.get();
         pQuery->metricOffsetMs = metricOffsetMs;
         pQuery->windowSizeMs = windowSizeMs;
-        pQuery->processId = processId;
         pQuery->elements = std::vector<PM_QUERY_ELEMENT>{ queryElements.begin(), queryElements.end() };
         pQuery->queryCacheSize = pQuery->elements[std::size(pQuery->elements) - 1].dataOffset + pQuery->elements[std::size(pQuery->elements) - 1].dataSize;
         size_t querySize = pQuery->elements.size();
@@ -438,7 +437,7 @@ namespace pmon::mid
         }
 
         // Check to stream client associated with the process id saved in the dynamic query
-        auto iter = presentMonStreamClients.find(pQuery->processId);
+        auto iter = presentMonStreamClients.find(processId);
         if (iter == presentMonStreamClients.end()) {
             return;
         }
