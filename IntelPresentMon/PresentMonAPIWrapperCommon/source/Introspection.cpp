@@ -2,6 +2,16 @@
 
 namespace pmapi::intro
 {
+    bool MetricTypeIsDynamic(PM_METRIC_TYPE type)
+    {
+        return type == PM_METRIC_TYPE_DYNAMIC || type == PM_METRIC_TYPE_DYNAMIC_FRAME;
+    }
+
+    bool MetricTypeIsFrameEvent(PM_METRIC_TYPE type)
+    {
+        return type == PM_METRIC_TYPE_FRAME_EVENT || type == PM_METRIC_TYPE_DYNAMIC_FRAME;
+    }
+
     EnumKeyView MetricView::GetMetricKey() const
     {
         return pDataset->FindEnumKey(PM_ENUM_METRIC, (int)pBase->id);

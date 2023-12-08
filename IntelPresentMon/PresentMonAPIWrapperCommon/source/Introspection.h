@@ -17,6 +17,9 @@ namespace pmapi
 
     namespace intro
     {
+        bool MetricTypeIsDynamic(PM_METRIC_TYPE type);
+        bool MetricTypeIsFrameEvent(PM_METRIC_TYPE type);
+
         template<class T>
         class ViewIterator
         {

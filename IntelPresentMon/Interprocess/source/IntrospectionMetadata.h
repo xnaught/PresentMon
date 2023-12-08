@@ -7,7 +7,17 @@ namespace pmon::ipc::intro {
 #define ENUM_KEY_LIST_STATUS(X_) \
 		X_(STATUS, SUCCESS, "Success", "", "Operation succeeded") \
 		X_(STATUS, FAILURE, "Failure", "", "Operation failed") \
-		X_(STATUS, SESSION_NOT_OPEN, "Session Not Open", "", "Operation requires an open session")
+		X_(STATUS, SESSION_NOT_OPEN, "Session Not Open", "", "Operation requires an open session") \
+		X_(STATUS, SERVICE_ERROR, "", "", "") \
+		X_(STATUS, INVALID_ETL_FILE, "", "", "") \
+		X_(STATUS, DATA_LOSS, "", "", "") \
+		X_(STATUS, NO_DATA, "", "", "") \
+		X_(STATUS, INVALID_PID, "", "", "") \
+		X_(STATUS, STREAM_ALREADY_EXISTS, "", "", "") \
+		X_(STATUS, UNABLE_TO_CREATE_NSM, "", "", "") \
+		X_(STATUS, INVALID_ADAPTER_ID, "", "", "") \
+		X_(STATUS, OUT_OF_RANGE, "", "", "") \
+		X_(STATUS, INSUFFICIENT_BUFFER, "", "", "")
 #define ENUM_KEY_LIST_METRIC(X_) \
 		X_(METRIC, DISPLAYED_FPS, "Displayed FPS", "", "Rate of frame change measurable at display") \
 		X_(METRIC, PRESENTED_FPS, "Presented FPS", "", "Rate of application calls to a Present() function") \
@@ -56,7 +66,9 @@ namespace pmon::ipc::intro {
 		X_(METRIC, CPU_FREQUENCY, "CPU Frequency", "", "Clock speed of the CPU")
 #define ENUM_KEY_LIST_METRIC_TYPE(X_) \
 		X_(METRIC_TYPE, DYNAMIC, "Dynamic Metric", "", "Metric that changes over time and requires polling using a registered query") \
-		X_(METRIC_TYPE, STATIC, "Static Metric", "", "Metric that never changes and can be polled without registering a query")
+		X_(METRIC_TYPE, STATIC, "Static Metric", "", "Metric that never changes and can be polled without registering a query") \
+		X_(METRIC_TYPE, FRAME_EVENT, "Frame Event Metric", "", "Metric that is not polled, but rather consumed from a queue of frame events") \
+		X_(METRIC_TYPE, DYNAMIC_FRAME, "Dynamic and Frame Event Metric", "", "Metric that can either be polled with statisics, or consumed from frame event queue")
 #define ENUM_KEY_LIST_DEVICE_VENDOR(X_) \
 		X_(DEVICE_VENDOR, INTEL, "Intel", "", "Device vendor Intel") \
 		X_(DEVICE_VENDOR, NVIDIA, "NVIDIA", "", "Device vendor NVIDIA") \
@@ -80,6 +92,7 @@ namespace pmon::ipc::intro {
 		X_(UNIT, DIMENSIONLESS, "Dimensionless", "", "Dimensionless numeric metric") \
 		X_(UNIT, BOOLEAN, "Boolean", "", "Boolean value with 1 indicating present/active and 0 indicating vacant/inactive") \
 		X_(UNIT, FPS, "Frames Per Second", "fps", "Rate of application frames being presented per unit time") \
+		X_(UNIT, SECONDS, "Seconds", "s", "Time duration in seconds") \
 		X_(UNIT, MILLISECONDS, "Milliseconds", "ms", "Time duration in milliseconds") \
 		X_(UNIT, PERCENT, "Percent", "%", "Proportion or ratio represented as a fraction of 100") \
 		X_(UNIT, WATTS, "Watts", "W", "Power in watts (Joules per second)") \
@@ -89,8 +102,10 @@ namespace pmon::ipc::intro {
 		X_(UNIT, CELSIUS, "Degrees Celsius", "C", "Temperature in degrees Celsius") \
 		X_(UNIT, RPM, "Revolutions per Minute", "RPM", "Angular speed in revolutions per minute") \
 		X_(UNIT, BPS, "Bits per Second", "bps", "Bandwidth / data throughput in bits per second") \
-		X_(UNIT, BYTES, "Bytes", "B", "Bandwidth / data throughput in bits per second")
+		X_(UNIT, BYTES, "Bytes", "B", "Bandwidth / data throughput in bits per second") \
+		X_(UNIT, QPC, "High-performance timestamp", "qpc", "Timestamp obtained via QueryPerformanceCounter (or compatible)")
 #define ENUM_KEY_LIST_STAT(X_) \
+		X_(STAT, NONE, "None", "", "Null stat, typically used when querying static or consuming frame events") \
 		X_(STAT, AVG, "Average", "avg", "Average or mean of frame samples over the sliding window") \
 		X_(STAT, PERCENTILE_99, "99th Percentile", "99%", "Value below which 99% of the observations within the sliding window fall (worst 1% value)") \
 		X_(STAT, PERCENTILE_95, "95th Percentile", "95%", "Value below which 95% of the observations within the sliding window fall (worst 5% value)") \
@@ -134,8 +149,8 @@ namespace pmon::ipc::intro {
 		X_(PM_METRIC_PRESENTED_FPS, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_FPS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, FULL_STATS) \
 		X_(PM_METRIC_FRAME_TIME, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_MILLISECONDS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, FULL_STATS) \
 		X_(PM_METRIC_PRESENT_MODE, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_DIMENSIONLESS, PM_DATA_TYPE_ENUM, PM_ENUM_PRESENT_MODE, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_RAW) \
-		X_(PM_METRIC_GPU_POWER, PM_METRIC_TYPE_DYNAMIC_AND_FRAME_EVENT, PM_UNIT_WATTS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
-		X_(PM_METRIC_CPU_UTILIZATION, PM_METRIC_TYPE_DYNAMIC_AND_FRAME_EVENT, PM_UNIT_PERCENT, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, FULL_STATS) \
+		X_(PM_METRIC_GPU_POWER, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_WATTS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
+		X_(PM_METRIC_CPU_UTILIZATION, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_PERCENT, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, FULL_STATS) \
 		X_(PM_METRIC_GPU_FAN_SPEED, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_RPM, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
 		X_(PM_METRIC_PROCESS_NAME, PM_METRIC_TYPE_STATIC, PM_UNIT_DIMENSIONLESS, PM_DATA_TYPE_STRING, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_RAW) \
 		X_(PM_METRIC_GPU_BUSY_TIME, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_MILLISECONDS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, FULL_STATS) \

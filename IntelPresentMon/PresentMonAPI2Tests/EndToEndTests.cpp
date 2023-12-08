@@ -120,7 +120,7 @@ namespace EndToEndTests
 
 				Assert::IsNotNull(pRoot);
 				Assert::AreEqual(12ull, pRoot->pEnums->size);
-				Assert::AreEqual(14ull, pRoot->pMetrics->size);
+				Assert::AreEqual(45ull, pRoot->pMetrics->size);
 
 				// checking 7th enum (unit)
 				{

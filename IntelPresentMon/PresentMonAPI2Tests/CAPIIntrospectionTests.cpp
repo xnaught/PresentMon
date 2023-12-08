@@ -66,7 +66,7 @@ namespace PresentMonAPI2Mock
 				Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
 				Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
 				Assert::AreEqual("List of all units of measure used for metrics", pEnum->pDescription->pData);
-				Assert::AreEqual(13ull, pEnum->pKeys->size);
+				Assert::AreEqual(15ull, pEnum->pKeys->size);
 				// 1st key
 				{
 					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
@@ -80,7 +80,7 @@ namespace PresentMonAPI2Mock
 				}
 				// 5th key
 				{
-					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[4]);
+					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[5]);
 					Assert::IsNotNull(pKey);
 					Assert::IsNotNull(pKey->pSymbol);
 					Assert::AreEqual("PM_UNIT_PERCENT", pKey->pSymbol->pData);

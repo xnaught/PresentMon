@@ -28,7 +28,7 @@ namespace PresentMonAPI2Mock
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> alloc;
 			auto pClone = root.ApiClone(alloc);
-			Assert::AreEqual(17004ull, alloc.GetTotalSize());
+			Assert::AreEqual(31580ull, alloc.GetTotalSize());
 			Assert::IsNull(pClone);
 			free((void*)pClone);
 		}
@@ -45,7 +45,7 @@ namespace PresentMonAPI2Mock
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> probeAlloc;
 			auto pNullClone = root.ApiClone(probeAlloc);
-			Assert::AreEqual(17004ull, probeAlloc.GetTotalSize());
+			Assert::AreEqual(31580ull, probeAlloc.GetTotalSize());
 			Assert::IsNull(pNullClone);
 
 			ipc::intro::BlockAllocator<void> blockAlloc{ probeAlloc.GetTotalSize() };
@@ -53,7 +53,7 @@ namespace PresentMonAPI2Mock
 
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(14ull, pRoot->pMetrics->size);
+			Assert::AreEqual(45ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)
@@ -63,7 +63,7 @@ namespace PresentMonAPI2Mock
 				Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
 				Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
 				Assert::AreEqual("List of all units of measure used for metrics", pEnum->pDescription->pData);
-				Assert::AreEqual(13ull, pEnum->pKeys->size);
+				Assert::AreEqual(15ull, pEnum->pKeys->size);
 				// 1st key
 				{
 					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
@@ -77,7 +77,7 @@ namespace PresentMonAPI2Mock
 				}
 				// 5th key
 				{
-					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[4]);
+					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[5]);
 					Assert::IsNotNull(pKey);
 					Assert::IsNotNull(pKey->pSymbol);
 					Assert::AreEqual("PM_UNIT_PERCENT", pKey->pSymbol->pData);
@@ -176,7 +176,7 @@ namespace PresentMonAPI2Mock
 
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(14ull, pRoot->pMetrics->size);
+			Assert::AreEqual(45ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)
@@ -186,7 +186,7 @@ namespace PresentMonAPI2Mock
 				Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
 				Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
 				Assert::AreEqual("List of all units of measure used for metrics", pEnum->pDescription->pData);
-				Assert::AreEqual(13ull, pEnum->pKeys->size);
+				Assert::AreEqual(15ull, pEnum->pKeys->size);
 				// 1st key
 				{
 					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
@@ -200,7 +200,7 @@ namespace PresentMonAPI2Mock
 				}
 				// 5th key
 				{
-					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[4]);
+					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[5]);
 					Assert::IsNotNull(pKey);
 					Assert::IsNotNull(pKey->pSymbol);
 					Assert::AreEqual("PM_UNIT_PERCENT", pKey->pSymbol->pData);
@@ -358,6 +358,16 @@ namespace PresentMonAPI2Mock
 						"PM_STATUS_SUCCESS"s,
 						"PM_STATUS_FAILURE"s,
 						"PM_STATUS_SESSION_NOT_OPEN"s,
+						"PM_STATUS_SERVICE_ERROR"s,
+						"PM_STATUS_INVALID_ETL_FILE"s,
+						"PM_STATUS_DATA_LOSS"s,
+						"PM_STATUS_NO_DATA"s,
+						"PM_STATUS_INVALID_PID"s,
+						"PM_STATUS_STREAM_ALREADY_EXISTS"s,
+						"PM_STATUS_UNABLE_TO_CREATE_NSM"s,
+						"PM_STATUS_INVALID_ADAPTER_ID"s,
+						"PM_STATUS_OUT_OF_RANGE"s,
+						"PM_STATUS_INSUFFICIENT_BUFFER"s,
 					};
 					auto e = expected.begin();
 					for (auto kv : data->GetEnums().begin()->GetKeys()) {
@@ -424,7 +434,7 @@ namespace PresentMonAPI2Mock
 					}
 				}
 				{
-					Assert::AreEqual("Dynamic Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).GetType().GetName());
+					Assert::AreEqual("Dynamic and Frame Event Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).GetType().GetName());
 					Assert::AreEqual("Static Metric"s, data->FindMetric(PM_METRIC_PROCESS_NAME).GetType().GetName());
 				}
 			}

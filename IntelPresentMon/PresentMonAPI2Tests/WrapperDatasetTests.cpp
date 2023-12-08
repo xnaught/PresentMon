@@ -48,6 +48,16 @@ namespace PresentMonAPI2Mock
 				"PM_STATUS_SUCCESS"s,
 				"PM_STATUS_FAILURE"s,
 				"PM_STATUS_SESSION_NOT_OPEN"s,
+				"PM_STATUS_SERVICE_ERROR"s,
+				"PM_STATUS_INVALID_ETL_FILE"s,
+				"PM_STATUS_DATA_LOSS"s,
+				"PM_STATUS_NO_DATA"s,
+				"PM_STATUS_INVALID_PID"s,
+				"PM_STATUS_STREAM_ALREADY_EXISTS"s,
+				"PM_STATUS_UNABLE_TO_CREATE_NSM"s,
+				"PM_STATUS_INVALID_ADAPTER_ID"s,
+				"PM_STATUS_OUT_OF_RANGE"s,
+				"PM_STATUS_INSUFFICIENT_BUFFER"s,
 			};
 			auto e = expected.begin();
 			for (auto kv : data->GetEnums().begin()->GetKeys()) {
@@ -171,7 +181,7 @@ namespace PresentMonAPI2Mock
 		{
 			using namespace std::string_literals;
 
-			Assert::AreEqual("Dynamic Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).GetType().GetName());
+			Assert::AreEqual("Dynamic and Frame Event Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).GetType().GetName());
 			Assert::AreEqual("Static Metric"s, data->FindMetric(PM_METRIC_PROCESS_NAME).GetType().GetName());
 		}
 	private:

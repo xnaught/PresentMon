@@ -19,6 +19,7 @@ namespace pmon::mid
 {
 	using namespace ipc::intro;
 	using namespace std::string_literals;
+	using namespace pmapi;
 
 	MockMiddleware::MockMiddleware(bool useLocalShmServer)
 	{
@@ -61,7 +62,7 @@ namespace pmon::mid
 		uint64_t offset = 0u;
 		for (auto& qe : queryElements) {
 			auto metricView = ispec.FindMetric(qe.metric);
-			if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_DYNAMIC)) {
+			if (!intro::MetricTypeIsDynamic((PM_METRIC_TYPE)metricView.GetType().GetValue())) {
 				// TODO: specific exception here
 				throw std::runtime_error{ "Static metric in dynamic metric query specification" };
 			}
@@ -110,7 +111,7 @@ namespace pmon::mid
 	{
 		// get introspection data for reference
 		// TODO: cache this data so it's not required to be generated every time
-		pmapi::intro::Dataset ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
+		intro::Dataset ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
 
 		auto metricView = ispec.FindMetric(element.metric);
 		if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_STATIC)) {
