@@ -7,7 +7,11 @@
 
 using namespace pmon;
 
+PmNsmFrameData fff;
+
 #define METRIC_OFFSET_SIZE_LOOKUP_LIST \
+	X_(PM_METRIC_RUNTIME, present_event.Runtime) \
+	X_(PM_METRIC_PRESENT_MODE, present_event.PresentMode) \
 	X_(PM_METRIC_GPU_POWER, power_telemetry.gpu_power_w) \
 	X_(PM_METRIC_CPU_UTILIZATION, cpu_telemetry.cpu_utilization)
 
@@ -60,7 +64,7 @@ PM_FRAME_EVENT_QUERY::CopyCommand_ PM_FRAME_EVENT_QUERY::MapQueryElementToCopyCo
 		// this padding will cause issues with something like char[260]
 		// TODO: calculate padding based on static type via x-macro machinery
 		// lookup from metric
-		.padding = (uint16_t)util::GetPadding(pos, size),
+		.padding = (uint8_t)util::GetPadding(pos, size),
 		.size = size,
 	};
 }
