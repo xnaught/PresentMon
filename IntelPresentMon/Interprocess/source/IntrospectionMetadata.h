@@ -116,12 +116,13 @@ namespace pmon::ipc::intro {
 		X_(STAT, MIN, "Minimum", "min", "Minimum value of frame samples within the sliding window") \
 		X_(STAT, RAW, "Raw", "raw", "Point sample of the frame data with timestamp nearest to polling timestamp (does not use sliding window)")
 #define ENUM_KEY_LIST_DATA_TYPE(X_) \
-		X_(DATA_TYPE, DOUBLE, "Double Precision Floating Point", "double", "64-bit double precision floating point number in IEEE 754 format") \
+		X_(DATA_TYPE, DOUBLE, "Double Precision Floating Point Value", "double", "64-bit double precision floating point number in IEEE 754 format") \
 		X_(DATA_TYPE, INT32, "32-bit Signed Integer", "int32_t", "32-bit signed integer") \
 		X_(DATA_TYPE, UINT32, "32-bit Unsigned Integer", "uint32_t", "32-bit unsigned integer") \
 		X_(DATA_TYPE, ENUM, "Enumeration", "int", "Integral value of an enum key, guaranteed to fit within a 32-bit signed integer") \
 		X_(DATA_TYPE, STRING, "String", "char[260]", "Textual value, typically for non-numeric data") \
-		X_(DATA_TYPE, UINT64, "64-bit Unsigned Integer", "uint64_t", "64-bit unsigned integer")
+		X_(DATA_TYPE, UINT64, "64-bit Unsigned Integer", "uint64_t", "64-bit unsigned integer") \
+		X_(DATA_TYPE, BOOL, "Boolean Value", "bool", "8-bit boolean flag value")
 #define ENUM_KEY_LIST_GRAPHICS_RUNTIME(X_) \
 		X_(GRAPHICS_RUNTIME, UNKNOWN, "Unknown", "", "Unknown graphics runtime") \
 		X_(GRAPHICS_RUNTIME, DXGI, "DXGI", "", "DirectX Graphics Infrastructure runtime") \
@@ -204,6 +205,7 @@ namespace pmon::ipc::intro {
 	template<> struct EnumToStaticType<PM_DATA_TYPE::PM_DATA_TYPE_ENUM> { using type = int; };
 	template<> struct EnumToStaticType<PM_DATA_TYPE::PM_DATA_TYPE_STRING> { using type = char[260]; };
 	template<> struct EnumToStaticType<PM_DATA_TYPE::PM_DATA_TYPE_UINT64> { using type = uint64_t; };
+	template<> struct EnumToStaticType<PM_DATA_TYPE::PM_DATA_TYPE_BOOL> { using type = bool; };
 	// TODO: find better place for this template glue
 	template<PM_DATA_TYPE T>
 	using EnumToStaticType_t = typename EnumToStaticType<T>::type;
