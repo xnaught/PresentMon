@@ -415,7 +415,6 @@ namespace pmon::mid
             offset += qe.dataSize;
         }
 
-        queryFrameDataDeltas.emplace(pQuery.get(), uint64_t());
         pQuery->dynamicQueryHandle = pQuery.get();
         pQuery->metricOffsetMs = metricOffsetMs;
         pQuery->windowSizeMs = windowSizeMs;
@@ -424,11 +423,10 @@ namespace pmon::mid
         pQuery->queryCacheSize = pQuery->elements[std::size(pQuery->elements) - 1].dataOffset + pQuery->elements[std::size(pQuery->elements) - 1].dataSize;
         size_t querySize = pQuery->elements.size();
 
-
         return pQuery.release();
     }
 
-    void ConcreteMiddleware::PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob, uint32_t* numSwapChains)
+    void ConcreteMiddleware::PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains)
     {
         std::unordered_map<uint64_t, fpsSwapChainData> swapChainData;
         std::unordered_map<PM_METRIC, std::vector<double>> gpucpuMetricData;
@@ -461,13 +459,12 @@ namespace pmon::mid
 
         uint64_t index = 0;
         double adjusted_window_size_in_ms = pQuery->windowSizeMs;
-
-        auto result = queryFrameDataDeltas.emplace(pQuery->dynamicQueryHandle, uint64_t());
+        auto result = queryFrameDataDeltas.emplace(std::pair(std::pair(pQuery->dynamicQueryHandle, processId), uint64_t()));
         auto queryToFrameDataDelta = &result.first->second;
         
         PmNsmFrameData* frame_data = GetFrameDataStart(client, index, SecondsDeltaToQpc(pQuery->metricOffsetMs/1000., client->GetQpcFrequency()), *queryToFrameDataDelta, adjusted_window_size_in_ms);
         if (frame_data == nullptr) {
-            CopyMetricCacheToBlob(pQuery, pBlob);
+            CopyMetricCacheToBlob(pQuery, processId, pBlob);
             return;
         }
 
@@ -595,7 +592,7 @@ namespace pmon::mid
             }
         }
 
-        CalculateMetrics(pQuery, pBlob, numSwapChains, client->GetQpcFrequency(), swapChainData, gpucpuMetricData);
+        CalculateMetrics(pQuery, processId, pBlob, numSwapChains, client->GetQpcFrequency(), swapChainData, gpucpuMetricData);
     }
 
     void ConcreteMiddleware::CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
@@ -1064,9 +1061,9 @@ namespace pmon::mid
         return validCpuMetric;
     }
 
-    void ConcreteMiddleware::SaveMetricCache(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob)
+    void ConcreteMiddleware::SaveMetricCache(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob)
     {
-        auto it = cachedMetricDatas.find(pQuery->dynamicQueryHandle);
+        auto it = cachedMetricDatas.find(std::pair(pQuery->dynamicQueryHandle, processId));
         if (it != cachedMetricDatas.end())
         {
             auto& uniquePtr = it->second;
@@ -1076,13 +1073,13 @@ namespace pmon::mid
         {
             auto dataArray = std::make_unique<uint8_t[]>(pQuery->queryCacheSize);
             std::copy(pBlob, pBlob + pQuery->queryCacheSize, dataArray.get());
-            cachedMetricDatas.emplace(pQuery->dynamicQueryHandle, std::move(dataArray));
+            cachedMetricDatas.emplace(std::pair(pQuery->dynamicQueryHandle, processId), std::move(dataArray));
         }
     }
 
-    void ConcreteMiddleware::CopyMetricCacheToBlob(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob)
+    void ConcreteMiddleware::CopyMetricCacheToBlob(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob)
     {
-        auto it = cachedMetricDatas.find(pQuery->dynamicQueryHandle);
+        auto it = cachedMetricDatas.find(std::pair(pQuery->dynamicQueryHandle, processId));
         if (it != cachedMetricDatas.end())
         {
             auto& uniquePtr = it->second;
@@ -1094,7 +1091,7 @@ namespace pmon::mid
     // is encountered it will update the numSwapChains to the correct number and then copy the swap
     // chain frame information with the most presents. If the client does happen to specify two swap
     // chains this code will incorrectly copy the data. WIP.
-    void ConcreteMiddleware::CalculateMetrics(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob, uint32_t* numSwapChains, LARGE_INTEGER qpcFrequency, std::unordered_map<uint64_t, fpsSwapChainData>& swapChainData, std::unordered_map<PM_METRIC, std::vector<double>>& gpucpuMetricData)
+    void ConcreteMiddleware::CalculateMetrics(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains, LARGE_INTEGER qpcFrequency, std::unordered_map<uint64_t, fpsSwapChainData>& swapChainData, std::unordered_map<PM_METRIC, std::vector<double>>& gpucpuMetricData)
     {
         auto GetSwapChainIndex = [swapChainData]()
             { 
@@ -1171,7 +1168,7 @@ namespace pmon::mid
         }
 
         if (useCache == true) {
-            CopyMetricCacheToBlob(pQuery, pBlob);
+            CopyMetricCacheToBlob(pQuery, processId, pBlob);
             return;
         }
 
@@ -1225,6 +1222,6 @@ namespace pmon::mid
         }
 
         // Save calculated metrics blob to cache
-        SaveMetricCache(pQuery, pBlob);
+        SaveMetricCache(pQuery, processId, pBlob);
     }
 }

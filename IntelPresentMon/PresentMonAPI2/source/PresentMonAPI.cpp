@@ -215,7 +215,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE hand
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint8_t* pBlob, uint32_t* numSwapChains)
+PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains)
 {
 	try {
 		if (!pMiddleware_) {
@@ -224,7 +224,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE hand
 		if (!handle || !pBlob) {
 			return PM_STATUS_FAILURE;
 		}
-		pMiddleware_->PollDynamicQuery(handle, pBlob, numSwapChains);
+		pMiddleware_->PollDynamicQuery(handle, processId, pBlob, numSwapChains);
 		return PM_STATUS_SUCCESS;
 	}
 	catch (...) {
@@ -232,7 +232,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE hand
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(const PM_QUERY_ELEMENT* pElement, uint8_t* pBlob)
+PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(const PM_QUERY_ELEMENT* pElement, uint32_t processId, uint8_t* pBlob)
 {
 	try {
 		if (!pMiddleware_) {
@@ -241,7 +241,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(const PM_QUERY_ELEMENT* pElem
 		if (!pElement || !pBlob) {
 			return PM_STATUS_FAILURE;
 		}
-		pMiddleware_->PollStaticQuery(*pElement, pBlob);
+		pMiddleware_->PollStaticQuery(*pElement, processId, pBlob);
 		return PM_STATUS_SUCCESS;
 	}
 	catch (...) {

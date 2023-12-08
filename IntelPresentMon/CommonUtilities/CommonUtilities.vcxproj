@@ -20,10 +20,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\cli\CliFramework.h" />
+    <ClInclude Include="source\hash\Hash.h" />
     <ClInclude Include="source\str\String.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\cli\CliFramework.cpp" />
+    <ClCompile Include="source\hash\Hash.cpp" />
     <ClCompile Include="source\str\String.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

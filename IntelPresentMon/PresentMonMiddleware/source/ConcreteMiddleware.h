@@ -6,6 +6,7 @@
 #include "../../Streamer/StreamClient.h"
 #include <optional>
 #include <string>
+#include "../../CommonUtilities/source/hash/Hash.h"
 
 namespace pmon::mid
 {
@@ -57,8 +58,8 @@ namespace pmon::mid
 		PM_STATUS StopStreaming(uint32_t processId) override;
 		PM_DYNAMIC_QUERY* RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, uint32_t processId, double windowSizeMs, double metricOffsetMs) override;
 		void FreeDynamicQuery(const PM_DYNAMIC_QUERY* pQuery) override {}
-		void PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob, uint32_t* numSwapChains) override;
-		void PollStaticQuery(const PM_QUERY_ELEMENT& element, uint8_t* pBlob) override {}
+		void PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains) override;
+		void PollStaticQuery(const PM_QUERY_ELEMENT& element, uint32_t processId, uint8_t* pBlob) override {}
 	private:
 		struct HandleDeleter {
 			void operator()(HANDLE handle) const {
@@ -80,9 +81,9 @@ namespace pmon::mid
 		bool GetGpuMetricData(size_t telemetry_item_bit, PresentMonPowerTelemetryInfo& power_telemetry_info, PM_METRIC& gpuMetric, double& gpuMetricValue);
 		bool GetCpuMetricData(size_t telemetryBit, CpuTelemetryInfo& cpuTelemetry, PM_METRIC& cpuMetric, double& cpuMetricValue);
 
-		void CalculateMetrics(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob, uint32_t* numSwapChains, LARGE_INTEGER qpcFrequency, std::unordered_map<uint64_t, fpsSwapChainData>& swapChainData, std::unordered_map<PM_METRIC, std::vector<double>>& gpucpuMetricData);
-		void SaveMetricCache(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob);
-		void CopyMetricCacheToBlob(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob);
+		void CalculateMetrics(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains, LARGE_INTEGER qpcFrequency, std::unordered_map<uint64_t, fpsSwapChainData>& swapChainData, std::unordered_map<PM_METRIC, std::vector<double>>& gpucpuMetricData);
+		void SaveMetricCache(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob);
+		void CopyMetricCacheToBlob(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob);
 
 		std::unique_ptr<void, HandleDeleter> pNamedPipeHandle;
 		uint32_t clientProcessId = 0;
@@ -90,8 +91,8 @@ namespace pmon::mid
 		std::map<uint32_t, std::unique_ptr<StreamClient>> presentMonStreamClients;
 		std::unique_ptr<ipc::MiddlewareComms> pComms;
 		// Dynamic query handle to frame data delta
-		std::map<PM_DYNAMIC_QUERY*, uint64_t> queryFrameDataDeltas;
+		std::unordered_map<std::pair<PM_DYNAMIC_QUERY*, uint32_t>, uint64_t> queryFrameDataDeltas;
 		// Dynamic query handle to cache data
-		std::unordered_map<PM_DYNAMIC_QUERY*, std::unique_ptr<uint8_t[]>> cachedMetricDatas;
+		std::unordered_map<std::pair<PM_DYNAMIC_QUERY*, uint32_t>, std::unique_ptr<uint8_t[]>> cachedMetricDatas;
 	};
 }

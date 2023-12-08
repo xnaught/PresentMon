@@ -26,14 +26,14 @@ namespace PresentMonAPI2Mock
 		{
 			PM_QUERY_ELEMENT element{ .metric = PM_METRIC_PROCESS_NAME, .deviceId = 0, .arrayIndex = 0 };
 			auto pBlob = std::make_unique<uint8_t[]>(260);
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollStaticQuery(&element, pBlob.get()));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollStaticQuery(&element, 4004, pBlob.get()));
 			Assert::AreEqual("dota2.exe", (const char*)pBlob.get());
 		}
 		TEST_METHOD(FailToPollDynamicMetricAsStatic)
 		{
 			PM_QUERY_ELEMENT element{ .metric = PM_METRIC_CPU_UTILIZATION, .deviceId = 0, .arrayIndex = 0 };
 			auto pBlob = std::make_unique<uint8_t>(8);
-			Assert::AreEqual((int)PM_STATUS_FAILURE, (int)pmPollStaticQuery(&element, pBlob.get()));
+			Assert::AreEqual((int)PM_STATUS_FAILURE, (int)pmPollStaticQuery(&element, 4004, pBlob.get()));
 		}
 	};
 }

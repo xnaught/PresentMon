@@ -82,7 +82,7 @@ namespace pmon::mid
 		delete pQuery;
 	}
 
-	void MockMiddleware::PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint8_t* pBlob, uint32_t* numSwapChains)
+	void MockMiddleware::PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains)
 	{
 		for (auto& qe : pQuery->elements) {
 			if (qe.metric == PM_METRIC_PRESENT_MODE) {
@@ -106,7 +106,7 @@ namespace pmon::mid
 		}
 	}
 
-	void MockMiddleware::PollStaticQuery(const PM_QUERY_ELEMENT& element, uint8_t* pBlob)
+	void MockMiddleware::PollStaticQuery(const PM_QUERY_ELEMENT& element, uint32_t processId, uint8_t* pBlob)
 	{
 		// get introspection data for reference
 		// TODO: cache this data so it's not required to be generated every time

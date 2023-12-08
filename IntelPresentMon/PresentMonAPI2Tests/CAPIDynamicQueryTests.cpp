@@ -83,7 +83,7 @@ namespace PresentMonAPI2Mock
 			auto pBlob = std::make_unique<uint8_t[]>(elements[2].dataOffset + elements[2].dataSize);
 			uint32_t numSwapChains = 1;
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, pBlob.get(), &numSwapChains));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, 4004, pBlob.get(), &numSwapChains));
 			Assert::AreEqual((double)PM_METRIC_CPU_UTILIZATION, reinterpret_cast<double&>(pBlob[elements[0].dataOffset]));
 			Assert::AreEqual((int)PM_PRESENT_MODE_HARDWARE_LEGACY_FLIP, reinterpret_cast<int&>(pBlob[elements[1].dataOffset]));
 			Assert::AreEqual((double)PM_METRIC_GPU_POWER, reinterpret_cast<double&>(pBlob[elements[2].dataOffset]));
@@ -104,21 +104,21 @@ namespace PresentMonAPI2Mock
 			auto pBlob = std::make_unique<uint8_t[]>(elements[2].dataOffset + elements[2].dataSize);
 			uint32_t numSwapChains = 1;
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, pBlob.get(), &numSwapChains));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, 4004, pBlob.get(), &numSwapChains));
 			Assert::AreEqual((double)PM_METRIC_CPU_UTILIZATION, reinterpret_cast<double&>(pBlob[elements[0].dataOffset]));
 			Assert::AreEqual((int)PM_PRESENT_MODE_HARDWARE_LEGACY_FLIP, reinterpret_cast<int&>(pBlob[elements[1].dataOffset]));
 			Assert::AreEqual((double)PM_METRIC_GPU_POWER, reinterpret_cast<double&>(pBlob[elements[2].dataOffset]));
 
 			pmMiddlewareAdvanceTime_(1);
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, pBlob.get(), &numSwapChains));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, 4004, pBlob.get(), &numSwapChains));
 			Assert::AreEqual(0., reinterpret_cast<double&>(pBlob[elements[0].dataOffset]));
 			Assert::AreEqual((int)PM_PRESENT_MODE_HARDWARE_INDEPENDENT_FLIP, reinterpret_cast<int&>(pBlob[elements[1].dataOffset]));
 			Assert::AreEqual(0., reinterpret_cast<double&>(pBlob[elements[2].dataOffset]));
 
 			pmMiddlewareAdvanceTime_(1);
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, pBlob.get(), &numSwapChains));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, 4004, pBlob.get(), &numSwapChains));
 			Assert::AreEqual((double)PM_METRIC_CPU_UTILIZATION, reinterpret_cast<double&>(pBlob[elements[0].dataOffset]));
 			Assert::AreEqual((int)PM_PRESENT_MODE_HARDWARE_LEGACY_FLIP, reinterpret_cast<int&>(pBlob[elements[1].dataOffset]));
 			Assert::AreEqual((double)PM_METRIC_GPU_POWER, reinterpret_cast<double&>(pBlob[elements[2].dataOffset]));
