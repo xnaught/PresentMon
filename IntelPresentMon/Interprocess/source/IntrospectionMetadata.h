@@ -64,7 +64,7 @@ namespace pmon::ipc::intro {
 		X_(METRIC, CPU_POWER_LIMIT, "CPU Power Limit", "", "Power limit of the CPU") \
 		X_(METRIC, CPU_TEMPERATURE, "CPU Temperature", "", "Temperature of the CPU") \
 		X_(METRIC, CPU_FREQUENCY, "CPU Frequency", "", "Clock speed of the CPU") \
-		X_(METRIC, RUNTIME, "Graphics Runtime", "", "The runtime used for the present operation (DXGI, D3D9, etc.)") \
+		X_(METRIC, PRESENT_RUNTIME, "Present Runtime", "", "The graphics runtime used for the present operation (DXGI, D3D9, etc.)") \
 		X_(METRIC, PRESENT_QPC, "Present QPC Timestamp", "", "The high performance timestamp corresponding to the present")
 #define ENUM_KEY_LIST_METRIC_TYPE(X_) \
 		X_(METRIC_TYPE, DYNAMIC, "Dynamic Metric", "", "Metric that changes over time and requires polling using a registered query") \
@@ -193,7 +193,7 @@ namespace pmon::ipc::intro {
 		X_(PM_METRIC_CPU_POWER_LIMIT, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_WATTS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
 		X_(PM_METRIC_CPU_TEMPERATURE, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_CELSIUS, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
 		X_(PM_METRIC_CPU_FREQUENCY, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_MEGAHERTZ, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
-		X_(PM_METRIC_RUNTIME, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_DIMENSIONLESS, PM_DATA_TYPE_ENUM, PM_ENUM_GRAPHICS_RUNTIME, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_RAW) \
+		X_(PM_METRIC_PRESENT_RUNTIME, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_DIMENSIONLESS, PM_DATA_TYPE_ENUM, PM_ENUM_GRAPHICS_RUNTIME, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_RAW) \
 		X_(PM_METRIC_PRESENT_QPC, PM_METRIC_TYPE_FRAME_EVENT, PM_UNIT_QPC, PM_DATA_TYPE_UINT64, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_NONE)
 // static mapping of datatype enum to static type
 	template<PM_DATA_TYPE T>
