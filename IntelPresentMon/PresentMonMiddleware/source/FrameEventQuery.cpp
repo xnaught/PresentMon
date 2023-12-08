@@ -7,8 +7,6 @@
 
 using namespace pmon;
 
-PmNsmFrameData fff;
-
 // TODO: some what of validating that all frame event metrics are covered here
 #define METRIC_OFFSET_SIZE_LOOKUP_LIST \
 	X_(PM_METRIC_PRESENT_QPC, present_event.PresentStartTime) \

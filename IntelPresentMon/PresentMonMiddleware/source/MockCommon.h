@@ -3,7 +3,7 @@
 
 namespace pmon::ipc::intro
 {
-	void RegisterMockIntrospectionDevices(ServiceComms& comms)
+	inline void RegisterMockIntrospectionDevices(ServiceComms& comms)
 	{
 		using namespace std::string_literals;
 		{
