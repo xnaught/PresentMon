@@ -54,6 +54,8 @@ PM_FRAME_EVENT_QUERY::PM_FRAME_EVENT_QUERY(std::span<PM_QUERY_ELEMENT> queryElem
 		q.dataOffset = blobSize_ + cmd.padding;
 		blobSize_ += cmd.size + cmd.padding;
 	}
+	// make sure blobs are a multiple of 16 so that blobs in array always start 16-aligned
+	blobSize_ += util::GetPadding(blobSize_, 16);
 }
 
 void PM_FRAME_EVENT_QUERY::GatherToBlob(const uint8_t* sourceFrameData, uint8_t* destBlob) const

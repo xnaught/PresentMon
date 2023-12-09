@@ -50,12 +50,12 @@ namespace PresentMonAPI2Mock
 				{ PM_METRIC_CPU_UTILIZATION, PM_STAT_NONE, 0, 0 }
 			};
 			PM_FRAME_EVENT_QUERY query{ queryElements };
-			auto pBlob = std::make_unique<uint8_t[]>(24);
+			auto pBlob = std::make_unique<uint8_t[]>(32);
 			query.GatherToBlob((const uint8_t*)&frame, pBlob.get());
 			Assert::AreEqual(420., *(double*)&pBlob.get()[0]);
 			Assert::AreEqual((int)PM_PRESENT_MODE_COMPOSED_FLIP, *(int*)&pBlob.get()[8]);
 			Assert::AreEqual(30., *(double*)&pBlob.get()[16]);
-			Assert::AreEqual(24ull, query.GetBlobSize());
+			Assert::AreEqual(32ull, query.GetBlobSize());
 		}
 		TEST_METHOD(TestQueryRuntime)
 		{
@@ -78,8 +78,8 @@ namespace PresentMonAPI2Mock
 				{ PM_METRIC_CPU_UTILIZATION, PM_STAT_NONE, 0, 0 }
 			};
 			PM_FRAME_EVENT_QUERY query{ queryElements };
-			auto pBlob = std::make_unique<uint8_t[]>(24);
-			Assert::AreEqual(24ull, query.GetBlobSize());
+			auto pBlob = std::make_unique<uint8_t[]>(32);
+			Assert::AreEqual(32ull, query.GetBlobSize());
 			query.GatherToBlob((const uint8_t*)&frame, pBlob.get());
 			Assert::AreEqual(420., *(double*)&pBlob.get()[0]);
 			Assert::AreEqual((int)PM_PRESENT_MODE_COMPOSED_FLIP, *(int*)&pBlob.get()[8]);
@@ -183,8 +183,8 @@ namespace PresentMonAPI2Mock
 				{ PM_METRIC_GPU_TEMPERATURE_LIMITED, PM_STAT_NONE, 1, 0 },
 			};
 			PM_FRAME_EVENT_QUERY query{ queryElements };
-			auto pBlob = std::make_unique<uint8_t[]>(49);
-			Assert::AreEqual(49ull, query.GetBlobSize());
+			auto pBlob = std::make_unique<uint8_t[]>(64);
+			Assert::AreEqual(64ull, query.GetBlobSize());
 			query.GatherToBlob((const uint8_t*)&frame, pBlob.get());
 			Assert::AreEqual(420., *(double*)&pBlob.get()[0]);
 			Assert::AreEqual((int)PM_PRESENT_MODE_COMPOSED_FLIP, *(int*)&pBlob.get()[8]);
@@ -211,7 +211,7 @@ namespace PresentMonAPI2Mock
 
 			uint32_t blobSize = 0;
 			auto pQuery = mid.RegisterFrameEventQuery(queryElements, blobSize);
-			Assert::AreEqual(uint32_t(49), blobSize);
+			Assert::AreEqual(uint32_t(64), blobSize);
 			auto pBlob = std::make_unique<uint8_t[]>(blobSize);
 			uint32_t nFrames = 1;
 			mid.ConsumeFrameEvents(pQuery, 111, pBlob.get(), nFrames);
@@ -245,7 +245,7 @@ namespace PresentMonAPI2Mock
 
 			uint32_t blobSize = 0;
 			auto pQuery = mid.RegisterFrameEventQuery(queryElements, blobSize);
-			Assert::AreEqual(uint32_t(49), blobSize);
+			Assert::AreEqual(uint32_t(64), blobSize);
 			auto pBlobs = std::make_unique<uint8_t[]>(blobSize * 2);
 			uint32_t nFrames = 2;
 			mid.ConsumeFrameEvents(pQuery, 111, pBlobs.get(), nFrames);
@@ -293,7 +293,7 @@ namespace PresentMonAPI2Mock
 
 			uint32_t blobSize = 0;
 			auto pQuery = mid.RegisterFrameEventQuery(queryElements, blobSize);
-			Assert::AreEqual(uint32_t(49), blobSize);
+			Assert::AreEqual(uint32_t(64), blobSize);
 			auto pBlobs = std::make_unique<uint8_t[]>(blobSize * 2);
 			uint32_t nFrames = 8;
 			mid.ConsumeFrameEvents(pQuery, 111, pBlobs.get(), nFrames);
@@ -341,7 +341,7 @@ namespace PresentMonAPI2Mock
 
 			uint32_t blobSize = 0;
 			auto pQuery = mid.RegisterFrameEventQuery(queryElements, blobSize);
-			Assert::AreEqual(uint32_t(49), blobSize);
+			Assert::AreEqual(uint32_t(64), blobSize);
 			auto pBlobs = std::make_unique<uint8_t[]>(blobSize * 3);
 
 			// first consume 1 when 2 are available
