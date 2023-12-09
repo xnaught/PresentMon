@@ -1123,16 +1123,16 @@ int main(int argc, char* argv[])
             { PM_METRIC_PRESENT_QPC, PM_STAT_NONE, 0, 0 },
         };
 
-        PM_FRAME_EVENT_QUERY_HANDLE hEventQuery = nullptr;
+        PM_FRAME_QUERY_HANDLE hEventQuery = nullptr;
         uint32_t blobSize = 0;
-        pmRegisterFrameEventQuery(&hEventQuery, queryElements, std::size(queryElements), &blobSize);
+        pmRegisterFrameQuery(&hEventQuery, queryElements, std::size(queryElements), &blobSize);
         constexpr uint32_t maxFrames = 50;
         auto pBlobs = std::make_unique<uint8_t[]>(blobSize * maxFrames);
 
         while (true) {
             std::cout << "Checking for new frames...\n";
             uint32_t numFrames = maxFrames;
-            pmConsumeFrameEvents(hEventQuery, gCurrentPid, pBlobs.get(), &numFrames);
+            pmConsumeFrames(hEventQuery, gCurrentPid, pBlobs.get(), &numFrames);
             if (numFrames == 0) {
                 std::cout << "No frames pending, waiting ~200ms\n";
                 std::this_thread::sleep_for(200ms);

@@ -24,7 +24,7 @@ namespace PresentMonAPI2Mock
 				{ PM_METRIC_GPU_POWER, PM_STAT_NONE, 1, 0 },
 				{ PM_METRIC_CPU_UTILIZATION, PM_STAT_NONE, 0, 0 }
 			};
-			PM_FRAME_EVENT_QUERY query{ queryElements };
+			PM_FRAME_QUERY query{ queryElements };
 			auto pBlob = std::make_unique<uint8_t[]>(16);
 			query.GatherToBlob((const uint8_t*)&frame, pBlob.get());
 			Assert::AreEqual(420., *(double*)pBlob.get());
@@ -49,7 +49,7 @@ namespace PresentMonAPI2Mock
 				{ PM_METRIC_PRESENT_MODE, PM_STAT_NONE, 0, 0 },
 				{ PM_METRIC_CPU_UTILIZATION, PM_STAT_NONE, 0, 0 }
 			};
-			PM_FRAME_EVENT_QUERY query{ queryElements };
+			PM_FRAME_QUERY query{ queryElements };
 			auto pBlob = std::make_unique<uint8_t[]>(32);
 			query.GatherToBlob((const uint8_t*)&frame, pBlob.get());
 			Assert::AreEqual(420., *(double*)&pBlob.get()[0]);
@@ -77,7 +77,7 @@ namespace PresentMonAPI2Mock
 				{ PM_METRIC_PRESENT_RUNTIME, PM_STAT_NONE, 0, 0 },
 				{ PM_METRIC_CPU_UTILIZATION, PM_STAT_NONE, 0, 0 }
 			};
-			PM_FRAME_EVENT_QUERY query{ queryElements };
+			PM_FRAME_QUERY query{ queryElements };
 			auto pBlob = std::make_unique<uint8_t[]>(32);
 			Assert::AreEqual(32ull, query.GetBlobSize());
 			query.GatherToBlob((const uint8_t*)&frame, pBlob.get());
@@ -108,7 +108,7 @@ namespace PresentMonAPI2Mock
 				{ PM_METRIC_CPU_UTILIZATION, PM_STAT_NONE, 0, 0 },
 				{ PM_METRIC_PRESENT_QPC, PM_STAT_NONE, 0, 0 },
 			};
-			PM_FRAME_EVENT_QUERY query{ queryElements };
+			PM_FRAME_QUERY query{ queryElements };
 			auto pBlob = std::make_unique<uint8_t[]>(32);
 			query.GatherToBlob((const uint8_t*)&frame, pBlob.get());
 			Assert::AreEqual(420., *(double*)&pBlob.get()[0]);
@@ -143,7 +143,7 @@ namespace PresentMonAPI2Mock
 				{ PM_METRIC_GPU_FAN_SPEED, PM_STAT_NONE, 1, 1 },
 				{ PM_METRIC_GPU_FAN_SPEED, PM_STAT_NONE, 1, 4 },
 			};
-			PM_FRAME_EVENT_QUERY query{ queryElements };
+			PM_FRAME_QUERY query{ queryElements };
 			auto pBlob = std::make_unique<uint8_t[]>(48);
 			query.GatherToBlob((const uint8_t*)&frame, pBlob.get());
 			Assert::AreEqual(420., *(double*)&pBlob.get()[0]);
@@ -182,7 +182,7 @@ namespace PresentMonAPI2Mock
 				{ PM_METRIC_GPU_FAN_SPEED, PM_STAT_NONE, 1, 4 },
 				{ PM_METRIC_GPU_TEMPERATURE_LIMITED, PM_STAT_NONE, 1, 0 },
 			};
-			PM_FRAME_EVENT_QUERY query{ queryElements };
+			PM_FRAME_QUERY query{ queryElements };
 			auto pBlob = std::make_unique<uint8_t[]>(64);
 			Assert::AreEqual(64ull, query.GetBlobSize());
 			query.GatherToBlob((const uint8_t*)&frame, pBlob.get());

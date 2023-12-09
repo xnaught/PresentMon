@@ -132,7 +132,7 @@ namespace pmon::mid
 		}
 	}
 
-	PM_FRAME_EVENT_QUERY* MockMiddleware::RegisterFrameEventQuery(std::span<PM_QUERY_ELEMENT> queryElements, uint32_t& blobSize)
+	PM_FRAME_QUERY* MockMiddleware::RegisterFrameEventQuery(std::span<PM_QUERY_ELEMENT> queryElements, uint32_t& blobSize)
 	{
 		if (!pendingFrameEvents.has_value()) {
 			pendingFrameEvents = std::make_any<std::deque<PmNsmFrameData>>(std::deque<PmNsmFrameData>{
@@ -168,17 +168,17 @@ namespace pmon::mid
 				},
 			});
 		}
-		const auto pQuery = new PM_FRAME_EVENT_QUERY{ queryElements };
+		const auto pQuery = new PM_FRAME_QUERY{ queryElements };
 		blobSize = (uint32_t)pQuery->GetBlobSize();
 		return pQuery;
 	}
 
-	void MockMiddleware::FreeFrameEventQuery(const PM_FRAME_EVENT_QUERY* pQuery)
+	void MockMiddleware::FreeFrameEventQuery(const PM_FRAME_QUERY* pQuery)
 	{
-		delete const_cast<PM_FRAME_EVENT_QUERY*>(pQuery);
+		delete const_cast<PM_FRAME_QUERY*>(pQuery);
 	}
 
-	void MockMiddleware::ConsumeFrameEvents(const PM_FRAME_EVENT_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t& numFrames)
+	void MockMiddleware::ConsumeFrameEvents(const PM_FRAME_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t& numFrames)
 	{
 		auto& frames = std::any_cast<std::deque<PmNsmFrameData>&>(pendingFrameEvents);
 		if (t > 0) {

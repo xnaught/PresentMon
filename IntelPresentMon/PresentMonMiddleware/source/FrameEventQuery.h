@@ -8,10 +8,10 @@ namespace pmapi::intro
 	class Dataset;
 }
 
-struct PM_FRAME_EVENT_QUERY
+struct PM_FRAME_QUERY
 {
 public:
-	PM_FRAME_EVENT_QUERY(std::span<PM_QUERY_ELEMENT> queryElements);
+	PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements);
 	void GatherToBlob(const uint8_t* sourceFrameData, uint8_t* destBlob) const;
 	size_t GetBlobSize() const;
 private:

@@ -655,19 +655,19 @@ namespace pmon::mid
         CalculateMetrics(pQuery, processId, pBlob, numSwapChains, client->GetQpcFrequency(), swapChainData, gpucpuMetricData);
     }
 
-    PM_FRAME_EVENT_QUERY* mid::ConcreteMiddleware::RegisterFrameEventQuery(std::span<PM_QUERY_ELEMENT> queryElements, uint32_t& blobSize)
+    PM_FRAME_QUERY* mid::ConcreteMiddleware::RegisterFrameEventQuery(std::span<PM_QUERY_ELEMENT> queryElements, uint32_t& blobSize)
     {
-        const auto pQuery = new PM_FRAME_EVENT_QUERY{ queryElements };
+        const auto pQuery = new PM_FRAME_QUERY{ queryElements };
         blobSize = (uint32_t)pQuery->GetBlobSize();
         return pQuery;
     }
 
-    void mid::ConcreteMiddleware::FreeFrameEventQuery(const PM_FRAME_EVENT_QUERY* pQuery)
+    void mid::ConcreteMiddleware::FreeFrameEventQuery(const PM_FRAME_QUERY* pQuery)
     {
-        delete const_cast<PM_FRAME_EVENT_QUERY*>(pQuery);
+        delete const_cast<PM_FRAME_QUERY*>(pQuery);
     }
 
-    void mid::ConcreteMiddleware::ConsumeFrameEvents(const PM_FRAME_EVENT_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t& numFrames)
+    void mid::ConcreteMiddleware::ConsumeFrameEvents(const PM_FRAME_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t& numFrames)
     {
         PM_STATUS status = PM_STATUS::PM_STATUS_SUCCESS;
 

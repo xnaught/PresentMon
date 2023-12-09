@@ -249,7 +249,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(const PM_QUERY_ELEMENT* pElem
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameEventQuery(PM_FRAME_EVENT_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint32_t* pBlobSize)
+PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameQuery(PM_FRAME_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint32_t* pBlobSize)
 {
 	try {
 		if (!pMiddleware_) {
@@ -266,7 +266,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameEventQuery(PM_FRAME_EVENT_QUERY_
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmConsumeFrameEvents(PM_FRAME_EVENT_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlob, uint32_t* pNumFramesToRead)
+PRESENTMON_API2_EXPORT PM_STATUS pmConsumeFrames(PM_FRAME_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlob, uint32_t* pNumFramesToRead)
 {
 	try {
 		if (!pMiddleware_) {
@@ -283,7 +283,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmConsumeFrameEvents(PM_FRAME_EVENT_QUERY_HANDL
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmFreeFrameEventQuery(PM_FRAME_EVENT_QUERY_HANDLE handle)
+PRESENTMON_API2_EXPORT PM_STATUS pmFreeFrameQuery(PM_FRAME_QUERY_HANDLE handle)
 {
 	try {
 		if (!pMiddleware_) {

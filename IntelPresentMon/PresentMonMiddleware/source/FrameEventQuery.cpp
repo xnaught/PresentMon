@@ -40,7 +40,7 @@ constexpr uint32_t GetNsmMemberOffset_(PM_METRIC metric)
 	}
 }
 
-PM_FRAME_EVENT_QUERY::PM_FRAME_EVENT_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
+PM_FRAME_QUERY::PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
 {
 	// TODO: validation
 	//	only allow array index zero if not array type in nsm
@@ -70,7 +70,7 @@ PM_FRAME_EVENT_QUERY::PM_FRAME_EVENT_QUERY(std::span<PM_QUERY_ELEMENT> queryElem
 	blobSize_ += util::GetPadding(blobSize_, 16);
 }
 
-void PM_FRAME_EVENT_QUERY::GatherToBlob(const uint8_t* sourceFrameData, uint8_t* destBlob) const
+void PM_FRAME_QUERY::GatherToBlob(const uint8_t* sourceFrameData, uint8_t* destBlob) const
 {
 	for (auto& cmd : copyCommands_) {
 		std::copy_n(sourceFrameData + cmd.offset, cmd.size, destBlob + cmd.padding);
@@ -78,12 +78,12 @@ void PM_FRAME_EVENT_QUERY::GatherToBlob(const uint8_t* sourceFrameData, uint8_t*
 	}
 }
 
-size_t PM_FRAME_EVENT_QUERY::GetBlobSize() const
+size_t PM_FRAME_QUERY::GetBlobSize() const
 {
 	return blobSize_;
 }
 
-PM_FRAME_EVENT_QUERY::CopyCommand_ PM_FRAME_EVENT_QUERY::MapQueryElementToCopyCommand_(const PM_QUERY_ELEMENT& q, size_t pos)
+PM_FRAME_QUERY::CopyCommand_ PM_FRAME_QUERY::MapQueryElementToCopyCommand_(const PM_QUERY_ELEMENT& q, size_t pos)
 {
 	// TODO: figure out what to do when metric is an array
 	const auto size = GetNsmMemberSize_(q.metric);
