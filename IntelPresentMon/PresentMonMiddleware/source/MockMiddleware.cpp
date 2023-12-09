@@ -134,21 +134,6 @@ namespace pmon::mid
 
 	PM_FRAME_EVENT_QUERY* MockMiddleware::RegisterFrameEventQuery(std::span<PM_QUERY_ELEMENT> queryElements, uint32_t& blobSize)
 	{
-		const PmNsmFrameData frame{
-			.present_event = {
-				.PresentStartTime = 69420ull,
-				.Runtime = Runtime::DXGI,
-				.PresentMode = PresentMode::Composed_Flip,
-			},
-			.power_telemetry = {
-				.gpu_power_w = 420.,
-				.fan_speed_rpm = { 1.1, 2.2, 3.3, 4.4, 5.5 },
-				.gpu_temperature_limited = true,
-			},
-			.cpu_telemetry = {
-				.cpu_utilization = 30.,
-			},
-		};
 		if (!pendingFrameEvents.has_value()) {
 			pendingFrameEvents = std::make_any<std::deque<PmNsmFrameData>>(std::deque<PmNsmFrameData>{
 				PmNsmFrameData{
