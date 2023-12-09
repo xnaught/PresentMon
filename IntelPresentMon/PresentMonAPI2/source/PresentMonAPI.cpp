@@ -119,7 +119,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmCloseSession()
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmStartStreaming(uint32_t processId)
+PRESENTMON_API2_EXPORT PM_STATUS pmStartTrackingProcess(uint32_t processId)
 {
 	try {
 		if (!pMiddleware_) {
@@ -133,7 +133,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmStartStreaming(uint32_t processId)
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmStopStreaming(uint32_t processId)
+PRESENTMON_API2_EXPORT PM_STATUS pmStopTrackingProcess(uint32_t processId)
 {
 	try {
 		if (!pMiddleware_) {
@@ -147,7 +147,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmStopStreaming(uint32_t processId)
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROOT** ppInterface)
+PRESENTMON_API2_EXPORT PM_STATUS pmGetIntrospectionRoot(const PM_INTROSPECTION_ROOT** ppInterface)
 {
 	try {
 		if (!pMiddleware_) {
@@ -164,7 +164,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROO
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pInterface)
+PRESENTMON_API2_EXPORT PM_STATUS pmFreeIntrospectionRoot(const PM_INTROSPECTION_ROOT* pInterface)
 {
 	try {
 		if (!pMiddleware_) {

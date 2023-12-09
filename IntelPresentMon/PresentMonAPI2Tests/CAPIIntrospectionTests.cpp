@@ -27,10 +27,10 @@ namespace PresentMonAPI2Mock
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
 			const PM_INTROSPECTION_ROOT* pRoot{};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmGetIntrospectionRoot(&pRoot));
 			Assert::IsNotNull(pRoot);
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeIntrospectionRoot(pRoot));
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
@@ -40,11 +40,11 @@ namespace PresentMonAPI2Mock
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
 			const PM_INTROSPECTION_ROOT* pRoot{};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmGetIntrospectionRoot(&pRoot));
 			Assert::IsNotNull(pRoot);
 
 			// normally we would free the linked structure here via its root
-			// Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
+			// Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeIntrospectionRoot(pRoot));
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsTrue(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
@@ -53,7 +53,7 @@ namespace PresentMonAPI2Mock
 		{
 			// introspection query
 			const PM_INTROSPECTION_ROOT* pRoot{};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmGetIntrospectionRoot(&pRoot));
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
 			Assert::AreEqual(51ull, pRoot->pMetrics->size);
@@ -153,7 +153,7 @@ namespace PresentMonAPI2Mock
 				}
 			}
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeIntrospectionRoot(pRoot));
 		}
 	};
 }

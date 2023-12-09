@@ -38,10 +38,10 @@ namespace pmapi
                 throw SessionException{ "introspection call failed due to empty session object" };
             }
             const PM_INTROSPECTION_ROOT* pRoot{};
-            if (auto sta = pmEnumerateInterface(&pRoot); sta != PM_STATUS_SUCCESS) {
+            if (auto sta = pmGetIntrospectionRoot(&pRoot); sta != PM_STATUS_SUCCESS) {
                 throw SessionException{ std::format("introspection call failed with error id={}", (int)sta) };
             }
-            return { pRoot, [](const PM_INTROSPECTION_ROOT* ptr) { pmFreeInterface(ptr); } };
+            return { pRoot, [](const PM_INTROSPECTION_ROOT* ptr) { pmFreeIntrospectionRoot(ptr); } };
         }
     private:
         bool token = true;

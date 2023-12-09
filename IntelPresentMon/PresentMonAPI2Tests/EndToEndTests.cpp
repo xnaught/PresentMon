@@ -76,10 +76,10 @@ namespace EndToEndTests
 
 			{
 				const PM_INTROSPECTION_ROOT* pRoot = nullptr;
-				const auto sta = pmEnumerateInterface(&pRoot);
+				const auto sta = pmGetIntrospectionRoot(&pRoot);
 				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta));
 
-				Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
+				Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeIntrospectionRoot(pRoot));
 			}
 
 			{
@@ -115,7 +115,7 @@ namespace EndToEndTests
 
 			{
 				const PM_INTROSPECTION_ROOT* pRoot = nullptr;
-				const auto sta = pmEnumerateInterface(&pRoot);
+				const auto sta = pmGetIntrospectionRoot(&pRoot);
 				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta));
 
 				Assert::IsNotNull(pRoot);
@@ -202,7 +202,7 @@ namespace EndToEndTests
 					}
 				}
 
-				Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
+				Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeIntrospectionRoot(pRoot));
 			}
 
 			{

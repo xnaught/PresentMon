@@ -1013,7 +1013,7 @@ int main(int argc, char* argv[])
 			if (gCurrentPid != 0) {
 				SetRecordFrames();
 				try {
-					pmStatus = pmStartStreaming(gCurrentPid);
+					pmStatus = pmStartTrackingProcess(gCurrentPid);
 					if (pmStatus == PM_STATUS::PM_STATUS_SUCCESS) {
 						streamingStarted = true;
 					}
@@ -1083,7 +1083,7 @@ int main(int argc, char* argv[])
             gCurrentPid = FindProcessId(g_process_name);
             if (gCurrentPid != 0) {
                 try {
-                    pmStatus = pmStartStreaming(gCurrentPid);
+                    pmStatus = pmStartTrackingProcess(gCurrentPid);
                     if (pmStatus == PM_STATUS::PM_STATUS_SUCCESS) {
                         streamingStarted = true;
                     }
@@ -1153,7 +1153,7 @@ int main(int argc, char* argv[])
         }
     }
 
-	pmStopStreaming(gCurrentPid);
+	pmStopTrackingProcess(gCurrentPid);
 	pmCloseSession();
 
 	try {
