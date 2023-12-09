@@ -184,7 +184,7 @@ namespace pmon::mid
 			});
 		}
 		const auto pQuery = new PM_FRAME_EVENT_QUERY{ queryElements };
-		blobSize = pQuery->GetBlobSize();
+		blobSize = (uint32_t)pQuery->GetBlobSize();
 		return pQuery;
 	}
 

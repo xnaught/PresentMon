@@ -19,6 +19,11 @@
 #include "../../ControlLib/PresentMonPowerTelemetry.h"
 #include "../../ControlLib/CpuTelemetryInfo.h"
 #include "../../PresentMonService/GlobalIdentifiers.h"
+#include "FrameEventQuery.h"
+
+
+#define GLOG_NO_ABBREVIATED_SEVERITIES
+#include <glog/logging.h>
 
 namespace pmon::mid
 {
@@ -602,6 +607,73 @@ namespace pmon::mid
         }
 
         CalculateMetrics(pQuery, processId, pBlob, numSwapChains, client->GetQpcFrequency(), swapChainData, gpucpuMetricData);
+    }
+
+    PM_FRAME_EVENT_QUERY* mid::ConcreteMiddleware::RegisterFrameEventQuery(std::span<PM_QUERY_ELEMENT> queryElements, uint32_t& blobSize)
+    {
+        const auto pQuery = new PM_FRAME_EVENT_QUERY{ queryElements };
+        blobSize = (uint32_t)pQuery->GetBlobSize();
+        return pQuery;
+    }
+
+    void mid::ConcreteMiddleware::FreeFrameEventQuery(const PM_FRAME_EVENT_QUERY* pQuery)
+    {
+        delete const_cast<PM_FRAME_EVENT_QUERY*>(pQuery);
+    }
+
+    void mid::ConcreteMiddleware::ConsumeFrameEvents(const PM_FRAME_EVENT_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t& numFrames)
+    {
+        PM_STATUS status = PM_STATUS::PM_STATUS_SUCCESS;
+
+        const auto frames_to_copy = numFrames;
+        // We have saved off the number of frames to copy, now set
+        // to zero in case we error out along the way BEFORE we
+        // copy frames into the buffer. If a successful copy occurs
+        // we'll set to actual number copied.
+        uint32_t frames_copied = 0;
+        numFrames = 0;
+
+        StreamClient* pClient = nullptr;
+        try {
+            const auto pClient = presentMonStreamClients.at(processId).get();
+        }
+        catch (...) {
+            LOG(INFO)
+                << "Stream client for process " << processId
+                << " doesn't exist. Please call pmStartStream to initialize the "
+                "client.";
+            throw std::runtime_error{ "Failed to find stream for pid in ConsumeFrameEvents" };
+        }
+
+        const auto nsm_view = pClient->GetNamedSharedMemView();
+        const auto nsm_hdr = nsm_view->GetHeader();
+        if (!nsm_hdr->process_active) {
+            StopStreaming(processId);
+            throw std::runtime_error{ "Process died cannot consume frame events" };
+        }
+
+        const auto last_frame_idx = pClient->GetLatestFrameIndex();
+        if (last_frame_idx == UINT_MAX) {
+            // There are no frames available, no error frames copied = 0
+            return;
+        }
+
+        for (uint32_t i = 0; i < frames_to_copy; i++) {
+            const PmNsmFrameData* pNsmFrameData = nullptr;
+            const auto status = pClient->ConsumePtrToNextNsmFrameData(&pNsmFrameData);
+            if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+                throw std::runtime_error{ "Error while trying to get frame data from shared memory" };
+            }
+            if (!pNsmFrameData) {
+                break;
+            }
+            // if we make it here, we have a ptr to frame data in nsm, time to gather to blob
+            pQuery->GatherToBlob(reinterpret_cast<const uint8_t*>(pNsmFrameData), pBlob);
+            pBlob += pQuery->GetBlobSize();
+            frames_copied++;
+        }
+        // Set to the actual number of frames copied
+        numFrames = frames_copied;
     }
 
     void ConcreteMiddleware::CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
