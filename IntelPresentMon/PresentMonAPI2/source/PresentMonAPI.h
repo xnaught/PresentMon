@@ -297,9 +297,9 @@ extern "C" {
 	PRESENTMON_API2_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle);
 	PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains);
 	PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(const PM_QUERY_ELEMENT* pElement, uint32_t processId, uint8_t* pBlob);
-	PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameEventQuery(PM_FRAME_EVENT_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements);
-	PRESENTMON_API2_EXPORT PM_STATUS pmConsumeFrameEvents(PM_FRAME_EVENT_QUERY_HANDLE pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements);
-	PRESENTMON_API2_EXPORT PM_STATUS pmFreeFrameEventQuery(PM_DYNAMIC_QUERY_HANDLE handle);
+	PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameEventQuery(PM_FRAME_EVENT_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint32_t* pBlobSize);
+	PRESENTMON_API2_EXPORT PM_STATUS pmConsumeFrameEvents(PM_FRAME_EVENT_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlobs, uint32_t* pNumFramesToRead);
+	PRESENTMON_API2_EXPORT PM_STATUS pmFreeFrameEventQuery(PM_FRAME_EVENT_QUERY_HANDLE handle);
 
 
 	/////// draft functions ///////

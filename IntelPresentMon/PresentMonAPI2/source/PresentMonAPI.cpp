@@ -171,7 +171,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pI
 			return PM_STATUS_SESSION_NOT_OPEN;
 		}
 		if (!pInterface) {
-			return PM_STATUS_FAILURE;
+			return PM_STATUS_SUCCESS;
 		}
 		pMiddleware_->FreeIntrospectionData(pInterface);
 		return PM_STATUS_SUCCESS;
@@ -205,7 +205,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE hand
 			return PM_STATUS_SESSION_NOT_OPEN;
 		}
 		if (!handle) {
-			return PM_STATUS_FAILURE;
+			return PM_STATUS_SUCCESS;
 		}
 		pMiddleware_->FreeDynamicQuery(handle);
 		return PM_STATUS_SUCCESS;
@@ -242,6 +242,57 @@ PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(const PM_QUERY_ELEMENT* pElem
 			return PM_STATUS_FAILURE;
 		}
 		pMiddleware_->PollStaticQuery(*pElement, processId, pBlob);
+		return PM_STATUS_SUCCESS;
+	}
+	catch (...) {
+		return PM_STATUS_FAILURE;
+	}
+}
+
+PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameEventQuery(PM_FRAME_EVENT_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint32_t* pBlobSize)
+{
+	try {
+		if (!pMiddleware_) {
+			return PM_STATUS_SESSION_NOT_OPEN;
+		}
+		if (!pHandle || !pElements || !numElements || !pBlobSize) {
+			return PM_STATUS_FAILURE;
+		}
+		*pHandle = pMiddleware_->RegisterFrameEventQuery({ pElements, numElements }, *pBlobSize);
+		return PM_STATUS_SUCCESS;
+	}
+	catch (...) {
+		return PM_STATUS_FAILURE;
+	}
+}
+
+PRESENTMON_API2_EXPORT PM_STATUS pmConsumeFrameEvents(PM_FRAME_EVENT_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlob, uint32_t* pNumFramesToRead)
+{
+	try {
+		if (!pMiddleware_) {
+			return PM_STATUS_SESSION_NOT_OPEN;
+		}
+		if (!handle || !pBlob) {
+			return PM_STATUS_FAILURE;
+		}
+		pMiddleware_->ConsumeFrameEvents(handle, processId, pBlob, *pNumFramesToRead);
+		return PM_STATUS_SUCCESS;
+	}
+	catch (...) {
+		return PM_STATUS_FAILURE;
+	}
+}
+
+PRESENTMON_API2_EXPORT PM_STATUS pmFreeFrameEventQuery(PM_FRAME_EVENT_QUERY_HANDLE handle)
+{
+	try {
+		if (!pMiddleware_) {
+			return PM_STATUS_SESSION_NOT_OPEN;
+		}
+		if (!handle) {
+			return PM_STATUS_SUCCESS;
+		}
+		pMiddleware_->FreeFrameEventQuery(handle);
 		return PM_STATUS_SUCCESS;
 	}
 	catch (...) {
