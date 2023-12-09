@@ -47,6 +47,11 @@ namespace pmon::mid
 		uint64_t display_latency_sum = 0;
 	};
 
+	struct DeviceInfo {
+		PM_DEVICE_VENDOR deviceVendor;
+		std::string deviceName;
+	};
+
 	class ConcreteMiddleware : public Middleware
 	{
 	public:
@@ -83,6 +88,7 @@ namespace pmon::mid
 		double GetPercentile(std::vector<double>& data, double percentile);
 		bool GetGpuMetricData(size_t telemetry_item_bit, PresentMonPowerTelemetryInfo& power_telemetry_info, PM_METRIC& gpuMetric, double& gpuMetricValue);
 		bool GetCpuMetricData(size_t telemetryBit, CpuTelemetryInfo& cpuTelemetry, PM_METRIC& cpuMetric, double& cpuMetricValue);
+		void GetCpuInfo();
 
 		void CalculateMetrics(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains, LARGE_INTEGER qpcFrequency, std::unordered_map<uint64_t, fpsSwapChainData>& swapChainData, std::unordered_map<PM_METRIC, std::vector<double>>& gpucpuMetricData);
 		void SaveMetricCache(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob);
@@ -97,5 +103,7 @@ namespace pmon::mid
 		std::unordered_map<std::pair<PM_DYNAMIC_QUERY*, uint32_t>, uint64_t> queryFrameDataDeltas;
 		// Dynamic query handle to cache data
 		std::unordered_map<std::pair<PM_DYNAMIC_QUERY*, uint32_t>, std::unique_ptr<uint8_t[]>> cachedMetricDatas;
+		std::vector<DeviceInfo> cachedGpuInfo;
+		std::vector<DeviceInfo> cachedCpuInfo;
 	};
 }

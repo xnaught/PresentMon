@@ -85,10 +85,14 @@ namespace pmon::mid
         {
             if (dev.GetBasePtr()->type == PM_DEVICE_TYPE_GRAPHICS_ADAPTER)
             {
+
                 auto vendor = dev.GetBasePtr()->vendor;
                 auto name = dev.GetName();
+                cachedGpuInfo.push_back({ vendor,name });
             }
         }
+
+        GetCpuInfo();
 	}
     
     const PM_INTROSPECTION_ROOT* ConcreteMiddleware::GetIntrospectionData()
@@ -240,6 +244,48 @@ namespace pmon::mid
         }
 
         return status;
+    }
+
+    void ConcreteMiddleware::GetCpuInfo()
+    {
+        MemBuffer requestBuffer;
+        MemBuffer responseBuffer;
+
+        NamedPipeHelper::EncodeRequestHeader(&requestBuffer, PM_ACTION::GET_CPU_NAME);
+
+        PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
+        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            return;
+        }
+
+        IPMCpuNameResponse cpu_name{};
+        status = NamedPipeHelper::DecodeCpuNameResponse(&responseBuffer, &cpu_name);
+        if (status != PM_STATUS::PM_STATUS_SUCCESS ||
+            cpu_name.cpu_name_length > MAX_PM_CPU_NAME) {
+            return;
+        }
+
+        auto ContainsString = [](std::string str, std::string subStr)
+            {
+                return std::search(str.begin(), str.end(), subStr.begin(), subStr.end(),
+                    [](char c1, char c2) { return std::tolower(c1) == std::tolower(c2); }) != str.end();
+            };
+
+        std::string cpuName = cpu_name.cpu_name;
+        PM_DEVICE_VENDOR deviceVendor;
+        if (ContainsString(cpuName, "intel"))
+        {
+            deviceVendor = PM_DEVICE_VENDOR_INTEL;
+        }
+        else if (ContainsString(cpuName, "amd"))
+        {
+            deviceVendor = PM_DEVICE_VENDOR_AMD;
+        }
+        else
+        {
+            deviceVendor = PM_DEVICE_VENDOR_UNKNOWN;
+        }
+        cachedCpuInfo.push_back({ deviceVendor, cpuName });
     }
 
     PM_DYNAMIC_QUERY* ConcreteMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, double windowSizeMs, double metricOffsetMs)
