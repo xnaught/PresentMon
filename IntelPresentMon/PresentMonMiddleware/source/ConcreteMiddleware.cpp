@@ -71,6 +71,19 @@ namespace pmon::mid
         clientProcessId = GetCurrentProcessId();
         // connect to the introspection nsm
         pComms = ipc::MakeMiddlewareComms(std::move(introNsmOverride));
+
+        // Get the introspection data
+        pmapi::intro::Dataset ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
+        
+        auto deviceView = ispec.GetDevices();
+        for (auto dev : deviceView)
+        {
+            if (dev.GetBasePtr()->type == PM_DEVICE_TYPE_GRAPHICS_ADAPTER)
+            {
+                auto vendor = dev.GetBasePtr()->vendor;
+                auto name = dev.GetName();
+            }
+        }
 	}
     
     const PM_INTROSPECTION_ROOT* ConcreteMiddleware::GetIntrospectionData()
@@ -236,10 +249,6 @@ namespace pmon::mid
         uint64_t offset = 0u;
         for (auto& qe : queryElements) {
             auto metricView = ispec.FindMetric(qe.metric);
-            if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_DYNAMIC)) {
-                // TODO: specific exception here
-                throw std::runtime_error{ "Static metric in dynamic metric query specification" };
-            }
             switch (qe.metric) {
             case PM_METRIC_PRESENTED_FPS:
             case PM_METRIC_DISPLAYED_FPS:
@@ -248,6 +257,7 @@ namespace pmon::mid
             case PM_METRIC_CPU_BUSY_TIME:
             case PM_METRIC_CPU_WAIT_TIME:
             case PM_METRIC_DISPLAY_BUSY_TIME:
+            case PM_METRIC_PROCESS_NAME:
                 pQuery->accumFpsData = true;
                 break;
             case PM_METRIC_GPU_POWER:
