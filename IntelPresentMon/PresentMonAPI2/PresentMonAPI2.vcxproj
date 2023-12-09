@@ -104,6 +104,9 @@
     <ClInclude Include="source\PresentMonAPI.h" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">
+      <Project>{08a704d8-ca1c-45e9-8ede-542a1a43b53e}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\PresentMonMiddleware\PresentMonMiddleware.vcxproj">
       <Project>{34b60aac-4646-4aa8-a267-9a5dd7c097d5}</Project>
     </ProjectReference>

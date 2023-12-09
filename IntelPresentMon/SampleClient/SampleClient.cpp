@@ -831,7 +831,7 @@ void PollMetrics(uint32_t processId, double metricsOffset)
 
     for (;;)
     {
-        auto status = pmPollDynamicQuery(q, pBlob.get(), &numSwapChains);
+        auto status = pmPollDynamicQuery(q, processId, pBlob.get(), &numSwapChains);
         if (status == PM_STATUS_SUCCESS)
         {
             PrintMetric("Presented fps Average = %f", reinterpret_cast<double&>(pBlob[elements[0].dataOffset]), true);
