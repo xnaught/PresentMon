@@ -27,4 +27,5 @@ private:
 	// data
 	std::vector<CopyCommand_> copyCommands_;
 	size_t blobSize_ = 0;
+	std::optional<uint32_t> referencedDevice_;
 };

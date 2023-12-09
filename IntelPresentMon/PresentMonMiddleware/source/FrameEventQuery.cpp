@@ -47,7 +47,19 @@ PM_FRAME_EVENT_QUERY::PM_FRAME_EVENT_QUERY(std::span<PM_QUERY_ELEMENT> queryElem
 	//	fail if array index out of bounds
 	//  fail if any metrics aren't event-compatible
 	//  fail if any stats other than NONE are specified
+	
+	// we need to keep track of how many non-universal devices are specified
+	// current release: only 1 gpu device maybe be polled at a time
 	for (auto& q : queryElements) {
+		// validate that maximum 1 device (gpu) id is specified throughout the query
+		if (q.deviceId != 0) {
+			if (!referencedDevice_) {
+				referencedDevice_ = q.deviceId;
+			}
+			else if (*referencedDevice_ != q.deviceId) {
+				throw std::runtime_error{ "Cannot specify 2 different non-universal devices in the same query" };
+			}
+		}
 		copyCommands_.push_back(MapQueryElementToCopyCommand_(q, blobSize_));
 		const auto& cmd = copyCommands_.back();
 		q.dataSize = cmd.size;
