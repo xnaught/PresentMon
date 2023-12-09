@@ -31,7 +31,7 @@ namespace PresentMonAPI2Mock
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_UTILIZATION, .deviceId = 0, .arrayIndex = 0},
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_POWER, .deviceId = 1, .arrayIndex = 0},
 			};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 4004, 1000.));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 1000.));
 			Assert::IsNotNull(q);
 
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeDynamicQuery(q));
@@ -48,7 +48,7 @@ namespace PresentMonAPI2Mock
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_MODE, .deviceId = 0, .arrayIndex = 0},
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_POWER, .deviceId = 1, .arrayIndex = 0},
 			};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 4004, 1000.));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 1000.));
 			Assert::IsNotNull(q);
 
 			Assert::AreEqual(0ull, elements[0].dataOffset);
@@ -66,7 +66,7 @@ namespace PresentMonAPI2Mock
 			PM_QUERY_ELEMENT elements[]{
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_PROCESS_NAME, .deviceId = 0, .arrayIndex = 0},
 			};
-			Assert::AreEqual((int)PM_STATUS_FAILURE, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 4004, 1000.));
+			Assert::AreEqual((int)PM_STATUS_FAILURE, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 1000.));
 			Assert::IsNull(q);
 		}
 		TEST_METHOD(PollValuesTimeZero)
@@ -77,7 +77,7 @@ namespace PresentMonAPI2Mock
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_MODE, .deviceId = 0, .arrayIndex = 0},
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_POWER, .deviceId = 1, .arrayIndex = 0},
 			};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 4004, 1000.));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 1000.));
 			Assert::IsNotNull(q);
 
 			auto pBlob = std::make_unique<uint8_t[]>(elements[2].dataOffset + elements[2].dataSize);
@@ -98,7 +98,7 @@ namespace PresentMonAPI2Mock
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_MODE, .deviceId = 0, .arrayIndex = 0},
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_POWER, .deviceId = 1, .arrayIndex = 0},
 			};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 4004, 1000.));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 1000.));
 			Assert::IsNotNull(q);
 
 			auto pBlob = std::make_unique<uint8_t[]>(elements[2].dataOffset + elements[2].dataSize);
@@ -133,7 +133,7 @@ namespace PresentMonAPI2Mock
 			PM_QUERY_ELEMENT elements[]{
 				PM_QUERY_ELEMENT{.metric = (PM_METRIC)PM_METRIC_GPU_VOLTAGE, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
 			};
-			Assert::AreEqual((int)PM_STATUS_FAILURE, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 4004, 1000.));
+			Assert::AreEqual((int)PM_STATUS_FAILURE, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 1000.));
 		}
 		
 		TEST_METHOD(FpsMetricSize)
@@ -148,7 +148,7 @@ namespace PresentMonAPI2Mock
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
 			};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 4004, 1000.));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 1000.));
 			Assert::IsNotNull(q);
 
 			Assert::AreEqual(0ull, elements[0].dataOffset);

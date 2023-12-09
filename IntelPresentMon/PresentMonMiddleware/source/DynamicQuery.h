@@ -30,7 +30,6 @@ struct PM_DYNAMIC_QUERY
 	std::bitset<static_cast<size_t>(CpuTelemetryCapBits::cpu_telemetry_count)> accumCpuBits;
 	// Data used to calculate the requested metrics
 	std::map<PM_METRIC, CompiledStats> compiledMetrics;
-	uint32_t processId = 0;
 	double windowSizeMs = 0;
 	double metricOffsetMs = 0.;
 	PM_DYNAMIC_QUERY* dynamicQueryHandle = nullptr;
