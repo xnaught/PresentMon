@@ -635,7 +635,7 @@ namespace pmon::mid
 
         StreamClient* pClient = nullptr;
         try {
-            const auto pClient = presentMonStreamClients.at(processId).get();
+            pClient = presentMonStreamClients.at(processId).get();
         }
         catch (...) {
             LOG(INFO)

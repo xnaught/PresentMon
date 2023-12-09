@@ -13,6 +13,7 @@
 #include <vector>
 #include <algorithm>
 #include <format>
+#include <chrono>
 #include "../PresentMonAPI2/source/PresentMonAPI.h"
 #include "../PresentMonAPI2/source/Internal.h"
 #include "CliOptions.h"
@@ -24,6 +25,7 @@
 #undef ENABLE_STATIC_QUERIES
 
 using namespace std::chrono;
+using namespace std::chrono_literals;
 
 HANDLE gCloseEvent;
 bool gQuit = false;
@@ -42,6 +44,7 @@ std::vector<char> g_cpu_name;
 enum MenuActions{
   kProcessETL = 1,
   kProcessLive,
+  kChurnEvents,
   kQuit
 };
 
@@ -632,6 +635,7 @@ int32_t DisplayMainMenu() {
     OutputString("Set Action:\n");
     OutputString("(1) Process ETL File\n");
     OutputString("(2) Real Time PresentMon for Single Process\n");
+    OutputString("(3) Churn Frame Event Data\n");
     OutputString("(4) Quit\n");
     if (GetUserInput(action) == false) {
       break;
@@ -935,137 +939,229 @@ void PollMetrics(uint32_t processId, double metricsOffset)
     return;
 }
 
-int main(int argc, char* argv[]) {
-    if (auto e = clio::Options::Init(argc, argv)) {
-        return *e;
-    }
-    auto& opt = clio::Options::Get();
-    // validate options, better to do this with CLI11 validation but framework needs upgrade...
-    if (bool(opt.controlPipe) != bool(opt.introNsm)) {
-        OutputString("Must set both control pipe and intro NSM, or neither.\n");
-        return -1;
-    }
+int main(int argc, char* argv[])
+{
+	if (auto e = clio::Options::Init(argc, argv)) {
+		return *e;
+	}
+	auto& opt = clio::Options::Get();
+	// validate options, better to do this with CLI11 validation but framework needs upgrade...
+	if (bool(opt.controlPipe) != bool(opt.introNsm)) {
+		OutputString("Must set both control pipe and intro NSM, or neither.\n");
+		return -1;
+	}
 
-  bool streamingStarted = false;
+	bool streamingStarted = false;
 
-  // finer granularity sleeps
-  if (timeBeginPeriod(kSleepTime) != TIMERR_NOERROR) {
-    OutputString("Not able to set the Windows sleep() resolution\n");
-  }
+	// finer granularity sleeps
+	if (timeBeginPeriod(kSleepTime) != TIMERR_NOERROR) {
+		OutputString("Not able to set the Windows sleep() resolution\n");
+	}
 
-  if (InitializeConsole() == false) {
-    OutputString("\nFailed to initialize console.\n");
-    return -1;
-  }
+	if (InitializeConsole() == false) {
+		OutputString("\nFailed to initialize console.\n");
+		return -1;
+	}
 
-   g_menu_action = DisplayMainMenu();
-  if (g_menu_action == kQuit) {
-    return 0;
-  }
+	g_menu_action = DisplayMainMenu();
+	if (g_menu_action == kQuit) {
+		return 0;
+	}
 
-  PM_STATUS pmStatus{};
-  try {
-      if (opt.controlPipe) {
-          pmStatus = pmOpenSession_((*opt.controlPipe).c_str(), (*opt.introNsm).c_str());
-      }
-      else {
-          pmStatus = pmOpenSession();
-      }
-    if (pmStatus != PM_STATUS::PM_STATUS_SUCCESS) {
-      PrintError(pmStatus);
-      return -1;
-    }
-  } catch (const std::bad_array_new_length& e) {
-    std::cout
-        << "pmOpenSession caused bad array new length exception, with message '"
-        << e.what() << "'" << std::endl;
-  } catch (const std::runtime_error& e) {
-    std::cout
-        << "pmOpenSession caused std::runtime exception '"
-        << e.what() << "'" << std::endl;
-  }
+	PM_STATUS pmStatus{};
+	try {
+		if (opt.controlPipe) {
+			pmStatus = pmOpenSession_((*opt.controlPipe).c_str(), (*opt.introNsm).c_str());
+		}
+		else {
+			pmStatus = pmOpenSession();
+		}
+		if (pmStatus != PM_STATUS::PM_STATUS_SUCCESS) {
+			PrintError(pmStatus);
+			return -1;
+		}
+	}
+	catch (const std::bad_array_new_length& e) {
+		std::cout
+			<< "pmOpenSession caused bad array new length exception, with message '"
+			<< e.what() << "'" << std::endl;
+	}
+	catch (const std::runtime_error& e) {
+		std::cout
+			<< "pmOpenSession caused std::runtime exception '"
+			<< e.what() << "'" << std::endl;
+	}
 
-  if (g_menu_action == MenuActions::kProcessETL) {
+	if (g_menu_action == MenuActions::kProcessETL) {
 #ifdef ENABLE_ETL
-      ProcessEtl();
+		ProcessEtl();
 #endif // ENABLE_ETL
-  } else {
-    g_metrics_offset = GetMetricsOffset();
-    gQuit = false;
-    while (streamingStarted == false) {
-      OutputString("Enter Process Name to monitor: \n");
-      if (GetUserInput(g_process_name) == false) {
-        return 0;
-      }
-      if (g_process_name.length() == 0) {
-          pmCloseSession();
-          return 0;
-      }
-      gCurrentPid = FindProcessId(g_process_name);
-      if (gCurrentPid != 0) {
-        SetRecordFrames();
-        try {
-          pmStatus = pmStartStreaming(gCurrentPid);
-          if (pmStatus == PM_STATUS::PM_STATUS_SUCCESS) {
-            streamingStarted = true;
-          } else {
-            OutputString("Process Name Not Found.\n");
-          }
-        } catch (...) {
-          pmStatus = PM_STATUS::PM_STATUS_FAILURE;
-          OutputString("Unable to start stream\n");
-        }
-      }
-    }
+	}
+	else if (g_menu_action == MenuActions::kProcessLive) {
+		g_metrics_offset = GetMetricsOffset();
+		gQuit = false;
+		while (streamingStarted == false) {
+			OutputString("Enter Process Name to monitor: \n");
+			if (GetUserInput(g_process_name) == false) {
+				return 0;
+			}
+			if (g_process_name.length() == 0) {
+				pmCloseSession();
+				return 0;
+			}
+			gCurrentPid = FindProcessId(g_process_name);
+			if (gCurrentPid != 0) {
+				SetRecordFrames();
+				try {
+					pmStatus = pmStartStreaming(gCurrentPid);
+					if (pmStatus == PM_STATUS::PM_STATUS_SUCCESS) {
+						streamingStarted = true;
+					}
+					else {
+						OutputString("Process Name Not Found.\n");
+					}
+				}
+				catch (...) {
+					pmStatus = PM_STATUS::PM_STATUS_FAILURE;
+					OutputString("Unable to start stream\n");
+				}
+			}
+		}
 
 #ifdef ENABLE_STATIC_QUERIES
-    uint32_t cpu_name_size = 0;
-    pmStatus = pmGetCpuName(nullptr, &cpu_name_size);
-    if (cpu_name_size != 0) {
-      g_cpu_name.resize(cpu_name_size);
-      pmStatus = pmGetCpuName(g_cpu_name.data(), &cpu_name_size);
-    }
+		uint32_t cpu_name_size = 0;
+		pmStatus = pmGetCpuName(nullptr, &cpu_name_size);
+		if (cpu_name_size != 0) {
+			g_cpu_name.resize(cpu_name_size);
+			pmStatus = pmGetCpuName(g_cpu_name.data(), &cpu_name_size);
+		}
 #endif
 
-    std::string status_string;
-    try {
-    status_string = std::format("Process Name: {}\n", g_process_name);
-    OutputString(status_string.c_str());
-    } catch (...) {
-    OutputString("Process Name: Unknown\n");
+		std::string status_string;
+		try {
+			status_string = std::format("Process Name: {}\n", g_process_name);
+			OutputString(status_string.c_str());
+		}
+		catch (...) {
+			OutputString("Process Name: Unknown\n");
+		}
+		try {
+			status_string = std::format("Monitoring Process Id: {}\n", gCurrentPid);
+			OutputString(status_string.c_str());
+		}
+		catch (...) {
+			OutputString("Process Id: Unknown\n");
+		}
+
+		std::cout << "Hit Ctrl-C to exit application." << std::endl;
+
+		// Create an event
+		gCloseEvent = CreateEvent(NULL,   // default security attributes
+			TRUE,   // manual reset event
+			FALSE,  // not signaled
+			NULL);  // no name
+
+		if (SetConsoleCtrlHandler(CtrlHandler, TRUE)) {
+			// Start metrics capture thread
+			std::thread pollMetricsThread(PollMetrics, gCurrentPid, g_metrics_offset);
+
+			// Wait for the metrics capture thread to finish
+			pollMetricsThread.join();
+	    }
     }
-    try {
-    status_string = std::format("Monitoring Process Id: {}\n", gCurrentPid);
-    OutputString(status_string.c_str());
-    } catch (...) {
-    OutputString("Process Id: Unknown\n");
+    else if (g_menu_action == MenuActions::kChurnEvents) {
+        gQuit = false;
+        while (streamingStarted == false) {
+            OutputString("Enter Process Name to monitor: \n");
+            if (GetUserInput(g_process_name) == false) {
+                return 0;
+            }
+            if (g_process_name.length() == 0) {
+                pmCloseSession();
+                return 0;
+            }
+            gCurrentPid = FindProcessId(g_process_name);
+            if (gCurrentPid != 0) {
+                try {
+                    pmStatus = pmStartStreaming(gCurrentPid);
+                    if (pmStatus == PM_STATUS::PM_STATUS_SUCCESS) {
+                        streamingStarted = true;
+                    }
+                    else {
+                        OutputString("Process Name Not Found.\n");
+                    }
+                }
+                catch (...) {
+                    pmStatus = PM_STATUS::PM_STATUS_FAILURE;
+                    OutputString("Unable to start stream\n");
+                }
+            }
+        }
+
+        std::string status_string;
+        try {
+            status_string = std::format("Process Name: {}\n", g_process_name);
+            OutputString(status_string.c_str());
+        }
+        catch (...) {
+            OutputString("Process Name: Unknown\n");
+        }
+        try {
+            status_string = std::format("Monitoring Process Id: {}\n", gCurrentPid);
+            OutputString(status_string.c_str());
+        }
+        catch (...) {
+            OutputString("Process Id: Unknown\n");
+        }
+
+        std::cout << "Hit Ctrl-C to exit application." << std::endl;
+
+
+        PM_QUERY_ELEMENT queryElements[]{
+            { PM_METRIC_GPU_POWER, PM_STAT_NONE, 1, 0 },
+            { PM_METRIC_PRESENT_MODE, PM_STAT_NONE, 0, 0 },
+            { PM_METRIC_PRESENT_QPC, PM_STAT_NONE, 0, 0 },
+        };
+
+        PM_FRAME_EVENT_QUERY_HANDLE hEventQuery = nullptr;
+        uint32_t blobSize = 0;
+        pmRegisterFrameEventQuery(&hEventQuery, queryElements, std::size(queryElements), &blobSize);
+        constexpr uint32_t maxFrames = 50;
+        auto pBlobs = std::make_unique<uint8_t[]>(blobSize * maxFrames);
+
+        while (true) {
+            std::cout << "Checking for new frames...\n";
+            uint32_t numFrames = maxFrames;
+            pmConsumeFrameEvents(hEventQuery, gCurrentPid, pBlobs.get(), &numFrames);
+            if (numFrames == 0) {
+                std::cout << "No frames pending, waiting ~200ms\n";
+                std::this_thread::sleep_for(200ms);
+            }
+            else {
+                std::cout << std::format("Dumping [{}] frames...\n", numFrames);
+                const auto* pBlob = pBlobs.get();
+                for (auto i = 0u; i < numFrames; i++) {
+                    const auto gpuPower     = *reinterpret_cast<const double*>(&pBlob[0]);
+                    const auto presentMode  = *reinterpret_cast<const PM_PRESENT_MODE*>(&pBlob[8]);
+                    const auto presentQpc   = *reinterpret_cast<const uint64_t*>(&pBlob[12]);
+                    std::cout << std::format("GPWR: {} PMOD: {} PQPC: {}\n",
+                        gpuPower, (int)presentMode, presentQpc
+                    );
+                    pBlob += blobSize;
+                }
+            }
+        }
     }
 
-    std::cout << "Hit Ctrl-C to exit application." << std::endl;
+	pmStopStreaming(gCurrentPid);
+	pmCloseSession();
 
-    // Create an event
-    gCloseEvent = CreateEvent(NULL,   // default security attributes
-                              TRUE,   // manual reset event
-                              FALSE,  // not signaled
-                              NULL);  // no name
+	try {
+		g_csv_file.close();
+	}
+	catch (...) {
+		std::cout << "Unabled to close csv file" << std::endl;
+	}
 
-    if (SetConsoleCtrlHandler(CtrlHandler, TRUE)) {
-      // Start metrics capture thread
-      std::thread pollMetricsThread(PollMetrics, gCurrentPid, g_metrics_offset);
-
-      // Wait for the metrics capture thread to finish
-      pollMetricsThread.join();
-    }
-  }
-
-  pmStopStreaming(gCurrentPid);
-  pmCloseSession();
-
-  try {
-    g_csv_file.close();
-  } catch (...) {
-    std::cout << "Unabled to close csv file" << std::endl;
-  }
-
-  return 0;
+	return 0;
 }
