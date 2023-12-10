@@ -543,6 +543,8 @@ namespace pmon::mid
                     frame_data->present_event.SwapChainAddress, fpsSwapChainData());
                 auto swap_chain = &result.first->second;
 
+                // Save off the application name
+                swap_chain->applicationName = frame_data->present_event.application;
                 // Copy swap_chain data for the previous first frame needed for calculations below
                 auto nextFramePresentStartTime = swap_chain->present_start_0;
                 auto nextFramePresentStopTime = swap_chain->present_stop_0;
@@ -613,9 +615,20 @@ namespace pmon::mid
                     double gpuMetricValue;
                     if (GetGpuMetricData(i, frame_data->power_telemetry, gpuMetric, gpuMetricValue))
                     {
-                        auto result = gpucpuMetricData.emplace(gpuMetric, std::vector<double>());
-                        auto data = &result.first->second;
-                        data->push_back(gpuMetricValue);
+                        if (gpuMetric == PM_METRIC_GPU_MEM_MAX_BANDWIDTH)
+                        {
+                            cachedGpuMemMaxBandwidth = gpuMetricValue;
+                        }
+                        else if (gpuMetric == PM_METRIC_GPU_MEM_SIZE)
+                        {
+                            cachedGpuMemSize = gpuMetricValue;
+                        }
+                        else
+                        {
+                            auto result = gpucpuMetricData.emplace(gpuMetric, std::vector<double>());
+                            auto data = &result.first->second;
+                            data->push_back(gpuMetricValue);
+                        }
                     }
                 }
             }
@@ -648,6 +661,83 @@ namespace pmon::mid
         }
 
         CalculateMetrics(pQuery, processId, pBlob, numSwapChains, client->GetQpcFrequency(), swapChainData, gpucpuMetricData);
+    }
+
+    void ConcreteMiddleware::PollStaticQuery(const PM_QUERY_ELEMENT& element, uint32_t processId, uint8_t* pBlob)
+    {
+        pmapi::intro::Dataset ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
+        auto metricView = ispec.FindMetric(element.metric);
+        if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_STATIC)) {
+            throw std::runtime_error{ "dynamic metric in static query poll" };
+        }
+        switch (element.metric)
+        {
+        case PM_METRIC_CPU_NAME:
+            strcpy_s(reinterpret_cast<char*>(pBlob[element.dataOffset]), 260, cachedCpuInfo[0].deviceName.c_str());
+            break;
+        case PM_METRIC_GPU_NAME:
+            strcpy_s(reinterpret_cast<char*>(pBlob[element.dataOffset]), 260, cachedGpuInfo[element.deviceId].deviceName.c_str());
+            break;
+        case PM_METRIC_CPU_VENDOR:
+        {
+            auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[element.dataOffset]);
+            output = cachedCpuInfo[0].deviceVendor;
+        }
+            break;
+        case PM_METRIC_GPU_VENDOR:
+        {
+            auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[element.dataOffset]);
+            output = cachedGpuInfo[element.deviceId].deviceVendor;
+        }
+            break;
+        case PM_METRIC_PROCESS_NAME:
+        case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
+        case PM_METRIC_GPU_MEM_SIZE:
+        {
+            // Check to stream client associated with the process id saved in the dynamic query
+            auto iter = presentMonStreamClients.find(processId);
+            if (iter == presentMonStreamClients.end()) {
+                return;
+            }
+
+            // Get the named shared memory associated with the stream client
+            StreamClient* client = iter->second.get();
+            auto nsm_view = client->GetNamedSharedMemView();
+            auto nsm_hdr = nsm_view->GetHeader();
+            if (!nsm_hdr->process_active) {
+                // TODO: Do we want to inform the client if the server has destroyed the
+                // named shared memory?
+                // Server destroyed the named shared memory due to process exit. Destroy the
+                // mapped view from client side.
+                //StopStreamProcess(process_id);
+                //return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+                return;
+            }
+
+            PmNsmFrameData* frameData = client->ReadFrameByIdx(client->GetLatestFrameIndex());
+            if (frameData == nullptr) {
+                return;
+            }
+            if (element.metric == PM_METRIC_PROCESS_NAME)
+            {
+                strcpy_s(reinterpret_cast<char*>(pBlob[element.dataOffset]), 260, frameData->present_event.application);
+            }
+            else if (element.metric == PM_METRIC_GPU_MEM_MAX_BANDWIDTH)
+            {
+                auto& output = reinterpret_cast<double&>(pBlob[element.dataOffset]);
+                output = (double)frameData->power_telemetry.gpu_mem_max_bandwidth_bps;
+            }
+            else if (element.metric == PM_METRIC_GPU_MEM_SIZE)
+            {
+                auto& output = reinterpret_cast<double&>(pBlob[element.dataOffset]);
+                output = (double)frameData->power_telemetry.gpu_mem_total_size_b;
+            }
+        }
+            break;
+        default:
+            throw std::runtime_error{ "unknown metric in static poll" };
+        }
+        return;
     }
 
     void ConcreteMiddleware::CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
@@ -1212,6 +1302,39 @@ namespace pmon::mid
                 case PM_METRIC_DISPLAY_BUSY_TIME:
                     CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
                     break;
+                case PM_METRIC_PROCESS_NAME:
+                    strcpy_s(reinterpret_cast<char*>(pBlob[qe.dataOffset]), 260, swapChain.applicationName.c_str());
+                    break;
+                case PM_METRIC_CPU_VENDOR:
+                {
+                    auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[qe.dataOffset]);
+                    output = cachedCpuInfo[0].deviceVendor;
+                }
+                    break;
+                case PM_METRIC_GPU_VENDOR:
+                {
+                    auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[qe.dataOffset]);
+                    output = cachedGpuInfo[qe.deviceId].deviceVendor;
+                }
+                    break;
+                case PM_METRIC_CPU_NAME:
+                    strcpy_s(reinterpret_cast<char*>(pBlob[qe.dataOffset]), 260, cachedCpuInfo[0].deviceName.c_str());
+                    break;
+                case PM_METRIC_GPU_NAME:
+                    strcpy_s(reinterpret_cast<char*>(pBlob[qe.dataOffset]), 260, cachedGpuInfo[qe.deviceId].deviceName.c_str());
+                    break;
+                case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
+                {
+                    auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
+                    output = cachedGpuMemMaxBandwidth;
+                }
+                    break;
+                case PM_METRIC_GPU_MEM_SIZE:
+                {
+                    auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
+                    output = cachedGpuMemSize;
+                }
+                    break;
                 default:
                     CalculateGpuCpuMetric(gpucpuMetricData, qe, pBlob);
                     break;
@@ -1247,9 +1370,7 @@ namespace pmon::mid
                 case PM_METRIC_VRAM_FREQUENCY:
                 case PM_METRIC_VRAM_EFFECTIVE_FREQUENCY:
                 case PM_METRIC_VRAM_TEMPERATURE:
-                case PM_METRIC_GPU_MEM_SIZE:
                 case PM_METRIC_GPU_MEM_USED:
-                case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
                 case PM_METRIC_GPU_MEM_WRITE_BANDWIDTH:
                 case PM_METRIC_GPU_MEM_READ_BANDWIDTH:
                 case PM_METRIC_GPU_POWER_LIMITED:
@@ -1270,6 +1391,36 @@ namespace pmon::mid
                 case PM_METRIC_CPU_CORE_UTILITY:
                     CalculateGpuCpuMetric(gpucpuMetricData, qe, pBlob);
                     break;
+                case PM_METRIC_CPU_VENDOR:
+                {
+                    auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[qe.dataOffset]);
+                    output = cachedCpuInfo[0].deviceVendor;
+                }
+                break;
+                case PM_METRIC_GPU_VENDOR:
+                {
+                    auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[qe.dataOffset]);
+                    output = cachedGpuInfo[qe.deviceId].deviceVendor;
+                }
+                break;
+                case PM_METRIC_CPU_NAME:
+                    strcpy_s(reinterpret_cast<char*>(pBlob[qe.dataOffset]), 260, cachedCpuInfo[0].deviceName.c_str());
+                    break;
+                case PM_METRIC_GPU_NAME:
+                    strcpy_s(reinterpret_cast<char*>(pBlob[qe.dataOffset]), 260, cachedGpuInfo[qe.deviceId].deviceName.c_str());
+                    break;
+                case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
+                {
+                    auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
+                    output = cachedGpuMemMaxBandwidth;
+                }
+                break;
+                case PM_METRIC_GPU_MEM_SIZE:
+                {
+                    auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
+                    output = cachedGpuMemSize;
+                }
+                break;
                 default:
                     break;
                 }
