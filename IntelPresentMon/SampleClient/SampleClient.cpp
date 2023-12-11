@@ -376,6 +376,28 @@ void PrintSwapChainMetrics(PM_FPS_DATA* fps_data, uint32_t num_gfx_swap_chains,
 }
 #endif
 
+void PrintDeviceVendor(char const* vendorLabel, PM_DEVICE_VENDOR deviceVendor) {
+    ConsolePrint(vendorLabel);
+    switch (deviceVendor) {
+    case PM_DEVICE_VENDOR_INTEL:
+        ConsolePrintLn("PM_DEVICE_VENDOR_INTEL");
+        break;
+    case PM_DEVICE_VENDOR_NVIDIA:
+        ConsolePrintLn("PM_DEVICE_VENDOR_NVIDIA");
+        break;
+    case PM_DEVICE_VENDOR_AMD:
+        ConsolePrintLn("PM_DEVICE_VENDOR_AMD");
+        break;
+    case PM_DEVICE_VENDOR_UNKNOWN:
+        ConsolePrintLn("PM_DEVICE_VENDOR_UNKNOWN");
+        break;
+    default:
+        ConsolePrintLn("PM_DEVICE_VENDOR_UNKNOWN");
+        break;
+    }
+    return;
+}
+
 bool GetUserInput(std::string& input){
   try {
     std::getline(std::cin, input);
@@ -823,17 +845,53 @@ void PollMetrics(uint32_t processId, double metricsOffset)
         PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_UTILIZATION, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_TEMPERATURE, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_UTILIZATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PROCESS_NAME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_VENDOR, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_NAME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_VENDOR, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_NAME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_MEM_MAX_BANDWIDTH, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_MEM_SIZE, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
     };
     auto result = pmRegisterDynamicQuery(&q, elements, std::size(elements), 2000., metricsOffset);
     auto pBlob = std::make_unique<uint8_t[]>(elements[std::size(elements) - 1].dataOffset + elements[std::size(elements) - 1].dataSize);
-    //auto pBlob = std::make_unique<uint8_t[]>(elements[48].dataOffset + elements[48].dataSize);
     uint32_t numSwapChains = 1;
+
+    PM_QUERY_ELEMENT staticQueryElement{ .metric = PM_METRIC_PROCESS_NAME, .deviceId = 0, .arrayIndex = 0 };
+    auto processName = std::make_unique<uint8_t[]>(260);
+    pmPollStaticQuery(&staticQueryElement, processId, processName.get());
+    staticQueryElement = { .metric = PM_METRIC_CPU_VENDOR, .deviceId = 0, .arrayIndex = 0 };
+    auto cpuVendor = std::make_unique<uint8_t[]>(4);
+    pmPollStaticQuery(&staticQueryElement, processId, cpuVendor.get());
+    staticQueryElement = { .metric = PM_METRIC_CPU_NAME, .deviceId = 0, .arrayIndex = 0 };
+    auto cpuName = std::make_unique<uint8_t[]>(260);
+    pmPollStaticQuery(&staticQueryElement, processId, cpuName.get());
+    staticQueryElement = { .metric = PM_METRIC_GPU_VENDOR, .deviceId = 0, .arrayIndex = 0 };
+    auto gpuVendor = std::make_unique<uint8_t[]>(4);
+    pmPollStaticQuery(&staticQueryElement, processId, gpuVendor.get());
+    staticQueryElement = { .metric = PM_METRIC_GPU_NAME, .deviceId = 0, .arrayIndex = 0 };
+    auto gpuName = std::make_unique<uint8_t[]>(260);
+    pmPollStaticQuery(&staticQueryElement, processId, gpuName.get());
+    staticQueryElement = { .metric = PM_METRIC_GPU_MEM_MAX_BANDWIDTH, .deviceId = 0, .arrayIndex = 0 };
+    auto gpuMemMaxBw = std::make_unique<uint8_t[]>(8);
+    pmPollStaticQuery(&staticQueryElement, processId, gpuMemMaxBw.get());
+    staticQueryElement = { .metric = PM_METRIC_GPU_MEM_SIZE, .deviceId = 0, .arrayIndex = 0 };
+    auto gpuMemSize = std::make_unique<uint8_t[]>(8);
+    pmPollStaticQuery(&staticQueryElement, processId, gpuMemSize.get());
 
     for (;;)
     {
         auto status = pmPollDynamicQuery(q, processId, pBlob.get(), &numSwapChains);
         if (status == PM_STATUS_SUCCESS)
         {
+            ConsolePrintLn("Static Process Name = %s", reinterpret_cast<char*>(processName.get()));
+            PrintDeviceVendor("Static CPU Vendor = ", reinterpret_cast<PM_DEVICE_VENDOR&>(cpuVendor[0]));
+            ConsolePrintLn("Static CPU Name = %s", reinterpret_cast<char*>(cpuName.get()));
+            PrintDeviceVendor("Static GPU Vendor = ", reinterpret_cast<PM_DEVICE_VENDOR&>(gpuVendor[0]));
+            ConsolePrintLn("Static GPU Name = %s", reinterpret_cast<char*>(gpuName.get()));
+            PrintMetric("Static GPU Memory Max Bandwidth = %f", reinterpret_cast<double&>(gpuMemMaxBw[0]), true);
+            PrintMetric("Static GPU Memory Size = %f", reinterpret_cast<double&>(gpuMemSize[0]), true);
+
             PrintMetric("Presented fps Average = %f", reinterpret_cast<double&>(pBlob[elements[0].dataOffset]), true);
             PrintMetric("Presented fps 90% = %f", reinterpret_cast<double&>(pBlob[elements[1].dataOffset]), true);
             PrintMetric("Presented fps 95% = %f", reinterpret_cast<double&>(pBlob[elements[2].dataOffset]), true);
@@ -869,6 +927,13 @@ void PollMetrics(uint32_t processId, double metricsOffset)
             PrintMetric("GPU Utilization 99% = %f", reinterpret_cast<double&>(pBlob[elements[32].dataOffset]), true);
             PrintMetric("GPU Temperature Average = %f", reinterpret_cast<double&>(pBlob[elements[33].dataOffset]), true);
             PrintMetric("CPU Utilization Average = %f", reinterpret_cast<double&>(pBlob[elements[34].dataOffset]), true);
+            ConsolePrintLn("Process Name = %s", reinterpret_cast<char*>(&pBlob[elements[35].dataOffset]));
+            PrintDeviceVendor("CPU Vendor = ", reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[elements[36].dataOffset]));
+            ConsolePrintLn("CPU Name = %s", reinterpret_cast<char*>(&pBlob[elements[37].dataOffset]));
+            PrintDeviceVendor("GPU Vendor = ", reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[elements[38].dataOffset]));
+            ConsolePrintLn("GPU Name = %s", reinterpret_cast<char*>(&pBlob[elements[39].dataOffset]));
+            PrintMetric("GPU Memory Max Bandwidth = %f", reinterpret_cast<double&>(pBlob[elements[40].dataOffset]), true);
+            PrintMetric("GPU Memory Size = %f", reinterpret_cast<double&>(pBlob[elements[41].dataOffset]), true);
             /*
             PrintMetric("Presented fps Average = %f", reinterpret_cast<double&>(pBlob[elements[0].dataOffset]), true);
             PrintMetric("Presented fps 99% = %f", reinterpret_cast<double&>(pBlob[elements[1].dataOffset]), true);
