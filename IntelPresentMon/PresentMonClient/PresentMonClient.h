@@ -84,6 +84,9 @@ class PresentMonClient {
   void CalculateMetricDoubleData(std::vector<double>& in_data,
                                  PM_METRIC_DOUBLE_DATA& metric_double_data,
                                  bool valid=true);
+  void CalculateMetricDoubleDataNoAvg(std::vector<double>& in_data,
+                                      PM_METRIC_DOUBLE_DATA& metric_double_data,
+                                      bool valid=true);
   static PM_STATUS TranslateGetLastErrorToPmStatus(DWORD last_error) {
     return PM_STATUS::PM_STATUS_ERROR;
   }
@@ -161,36 +164,31 @@ class PresentMonClient {
 };
 
 struct fps_swap_chain_data {
-  fps_swap_chain_data()
-      : cpu_n_time(0),
-        cpu_0_time(0),
-        display_n_screen_time(0),
-        display_0_screen_time(0),
-        render_latency_sum(0),
-        display_latency_sum(0),
-        display_count(0),
-        num_presents(0),
-        sync_interval(0),
-        present_mode(PM_PRESENT_MODE_UNKNOWN),
-        allows_tearing(0) {}
-  std::vector<double> presented_fps;
   std::vector<double> displayed_fps;
-  std::vector<double> render_latency_ms;
-  std::vector<double> display_latency_ms;
   std::vector<double> frame_times_ms;
   std::vector<double> gpu_sum_ms;
   std::vector<double> dropped;
-  uint64_t cpu_n_time;
-  uint64_t cpu_0_time;
-  uint64_t display_n_screen_time;
-  uint64_t display_0_screen_time;
+  uint64_t cpu_n_time = 0;                  // The last frame's PresentStartTime (qpc)
+  uint64_t cpu_0_time = 0;                  // The first frame's PresentStartTime (qpc)
+  uint64_t present_stop_0 = 0;              // The first frame's PresentStopTime (qpc)
+  uint64_t gpu_duration_0 = 0;              // The first frame's GPUDuration (qpc)
+  uint64_t display_n_screen_time = 0;       // The last presented frame's ScreenTime (qpc)
+  uint64_t display_0_screen_time = 0;       // The first presented frame's ScreenTime (qpc)
+  uint64_t display_1_screen_time = 0;       // The second presented frame's ScreenTime (qpc)
+  uint32_t display_count = 0;               // The number of presented frames
+  uint32_t num_presents = 0;                // The number of frames
+  bool     displayed_0 = false;             // Whether the first frame was displayed
+
+  // Properties of the most-recent processed frame:
+  int32_t sync_interval = 0;
+  PM_PRESENT_MODE present_mode = PM_PRESENT_MODE_UNKNOWN;
+  int32_t allows_tearing = 0;
+
+  // Only used by GetGfxLatencyData():
+  std::vector<double> render_latency_ms;
+  std::vector<double> display_latency_ms;
   uint64_t render_latency_sum = 0;
   uint64_t display_latency_sum = 0;
-  uint32_t display_count;
-  uint32_t num_presents;
-  int32_t sync_interval;
-  PM_PRESENT_MODE present_mode;
-  int32_t allows_tearing;
 };
 
 void InitializeLogging(const char* location, const char* basename, const char* extension, int level);
