@@ -51,6 +51,8 @@ namespace pmon::mid
 	struct DeviceInfo {
 		PM_DEVICE_VENDOR deviceVendor;
 		std::string deviceName;
+		uint32_t deviceId;
+		std::optional<uint32_t> adapterId;
 	};
 
 	class ConcreteMiddleware : public Middleware
@@ -79,6 +81,7 @@ namespace pmon::mid
 		PmNsmFrameData* GetFrameDataStart(StreamClient* client, uint64_t& index, uint64_t dataOffset, uint64_t& queryFrameDataDelta, double& windowSampleSizeMs);
 		uint64_t GetAdjustedQpc(uint64_t current_qpc, uint64_t frame_data_qpc, uint64_t queryMetricsOffset, LARGE_INTEGER frequency, uint64_t& queryFrameDataDelta);
 		bool DecrementIndex(NamedSharedMem* nsm_view, uint64_t& index);
+		PM_STATUS SetActiveGraphicsAdapter(uint32_t adapter_id);
 
 		void CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency);
 		void CalculateGpuCpuMetric(std::unordered_map<PM_METRIC, std::vector<double>>& metricData, const PM_QUERY_ELEMENT& element, uint8_t* pBlob);
@@ -105,5 +108,6 @@ namespace pmon::mid
 		std::vector<DeviceInfo> cachedCpuInfo;
 		double cachedGpuMemMaxBandwidth = 0.;
 		double cachedGpuMemSize = 0.;
+		uint32_t currentGpuInfoIndex = 0;
 	};
 }

@@ -75,15 +75,14 @@ namespace pmon::mid
         // Get the introspection data
         pmapi::intro::Dataset ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
         
+        uint32_t gpuAdapterId = 0;
         auto deviceView = ispec.GetDevices();
         for (auto dev : deviceView)
         {
             if (dev.GetBasePtr()->type == PM_DEVICE_TYPE_GRAPHICS_ADAPTER)
             {
-
-                auto vendor = dev.GetBasePtr()->vendor;
-                auto name = dev.GetName();
-                cachedGpuInfo.push_back({ vendor,name });
+                cachedGpuInfo.push_back({ dev.GetBasePtr()->vendor, dev.GetName(), dev.GetId(), gpuAdapterId });
+                gpuAdapterId++;
             }
         }
 
@@ -291,9 +290,39 @@ namespace pmon::mid
 
         // make the query object that will be managed by the handle
         auto pQuery = std::make_unique<PM_DYNAMIC_QUERY>();
+        std::optional<uint32_t> cachedGpuInfoIndex;
 
         uint64_t offset = 0u;
-        for (auto& qe : queryElements) {
+        for (auto& qe : queryElements)
+        {
+            // A device of zero is NOT a graphics adapter.
+            if (qe.deviceId != 0)
+            {
+                // If we have already set a device id in this query, check to
+                // see if it's the same device id as previously set. Currently
+                // we don't support querying multiple gpu devices in the one
+                // query
+                if (cachedGpuInfoIndex.has_value())
+                {
+                    if (cachedGpuInfo[cachedGpuInfoIndex.value()].deviceId != qe.deviceId)
+                    {
+                        throw std::runtime_error{ "Multiple GPU devices not allowed in single query" };
+                    }
+                }
+                else
+                {
+                    // Go through the cached Gpus and see which device the client
+                    // wants
+                    for (int i = 0; i < cachedGpuInfo.size(); i++)
+                    {
+                        if (qe.deviceId == cachedGpuInfo[i].deviceId)
+                        {
+                            cachedGpuInfoIndex = i;
+                        }
+                    }
+                }
+            }
+
             auto metricView = ispec.FindMetric(qe.metric);
             switch (qe.metric) {
             case PM_METRIC_PRESENTED_FPS:
@@ -408,9 +437,6 @@ namespace pmon::mid
                 case 4:
                     pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::fan_speed_4));
                     break;
-                default:
-                    // Unknown fan speed index
-                    throw std::runtime_error{ "Invalid fan speed index" };
                 }
                 break;
             case PM_METRIC_CPU_UTILIZATION:
@@ -464,8 +490,6 @@ namespace pmon::mid
                 // Invalid stat enum
                 throw std::runtime_error{ "Invalid stat enum" };
             }
-            // TODO: validate device id
-            // TODO: validate array index
             qe.dataOffset = offset;
             qe.dataSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetBasePtr()->type);
             offset += qe.dataSize;
@@ -476,7 +500,10 @@ namespace pmon::mid
         pQuery->windowSizeMs = windowSizeMs;
         pQuery->elements = std::vector<PM_QUERY_ELEMENT>{ queryElements.begin(), queryElements.end() };
         pQuery->queryCacheSize = pQuery->elements[std::size(pQuery->elements) - 1].dataOffset + pQuery->elements[std::size(pQuery->elements) - 1].dataSize;
-        size_t querySize = pQuery->elements.size();
+        if (cachedGpuInfoIndex.has_value())
+        {
+            pQuery->cachedGpuInfoIndex = cachedGpuInfoIndex.value();
+        }
 
         return pQuery.release();
     }
@@ -492,7 +519,17 @@ namespace pmon::mid
             return;
         }
 
-        // Check to stream client associated with the process id saved in the dynamic query
+        if (pQuery->cachedGpuInfoIndex.has_value())
+        {
+            if (pQuery->cachedGpuInfoIndex.value() != currentGpuInfoIndex)
+            {
+                // Set the adapter id 
+                SetActiveGraphicsAdapter(cachedGpuInfo[pQuery->cachedGpuInfoIndex.value()].adapterId.value());
+                // Set the current index to the queried one
+                currentGpuInfoIndex = pQuery->cachedGpuInfoIndex.value();
+            }
+        }
+
         auto iter = presentMonStreamClients.find(processId);
         if (iter == presentMonStreamClients.end()) {
             return;
@@ -587,7 +624,7 @@ namespace pmon::mid
                     auto cpuBusy = nextFramePresentStartTime - cpuStart;
                     auto cpuWait = nextFramePresentStopTime - nextFramePresentStartTime;
                     auto gpuBusy = nextFrameGPUDuration;
-                    auto displayBusy = swap_chain->display_1_screen_time - swap_chain->display_0_screen_time;;
+                    auto displayBusy = swap_chain->display_1_screen_time - swap_chain->display_0_screen_time;
 
                     auto frameTime_ms = QpcDeltaToMs(cpuBusy + cpuWait, client->GetQpcFrequency());
                     auto gpuBusy_ms = QpcDeltaToMs(gpuBusy, client->GetQpcFrequency());
@@ -1313,14 +1350,14 @@ namespace pmon::mid
                 case PM_METRIC_GPU_VENDOR:
                 {
                     auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[qe.dataOffset]);
-                    output = cachedGpuInfo[qe.deviceId].deviceVendor;
+                    output = cachedGpuInfo[currentGpuInfoIndex].deviceVendor;
                 }
                     break;
                 case PM_METRIC_CPU_NAME:
                     strcpy_s(reinterpret_cast<char*>(&pBlob[qe.dataOffset]), 260, cachedCpuInfo[0].deviceName.c_str());
                     break;
                 case PM_METRIC_GPU_NAME:
-                    strcpy_s(reinterpret_cast<char*>(&pBlob[qe.dataOffset]), 260, cachedGpuInfo[qe.deviceId].deviceName.c_str());
+                    strcpy_s(reinterpret_cast<char*>(&pBlob[qe.dataOffset]), 260, cachedGpuInfo[currentGpuInfoIndex].deviceName.c_str());
                     break;
                 case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
                 {
@@ -1399,14 +1436,14 @@ namespace pmon::mid
                 case PM_METRIC_GPU_VENDOR:
                 {
                     auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[qe.dataOffset]);
-                    output = cachedGpuInfo[qe.deviceId].deviceVendor;
+                    output = cachedGpuInfo[currentGpuInfoIndex].deviceVendor;
                 }
                 break;
                 case PM_METRIC_CPU_NAME:
                     strcpy_s(reinterpret_cast<char*>(pBlob[qe.dataOffset]), 260, cachedCpuInfo[0].deviceName.c_str());
                     break;
                 case PM_METRIC_GPU_NAME:
-                    strcpy_s(reinterpret_cast<char*>(pBlob[qe.dataOffset]), 260, cachedGpuInfo[qe.deviceId].deviceName.c_str());
+                    strcpy_s(reinterpret_cast<char*>(pBlob[qe.dataOffset]), 260, cachedGpuInfo[currentGpuInfoIndex].deviceName.c_str());
                     break;
                 case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
                 {
@@ -1429,4 +1466,23 @@ namespace pmon::mid
         // Save calculated metrics blob to cache
         SaveMetricCache(pQuery, processId, pBlob);
     }
+
+    PM_STATUS ConcreteMiddleware::SetActiveGraphicsAdapter(uint32_t adapterId) {
+        MemBuffer requestBuf;
+        MemBuffer responseBuf;
+
+        NamedPipeHelper::EncodeGeneralSetActionRequest(PM_ACTION::SELECT_ADAPTER,
+            &requestBuf, adapterId);
+
+        PM_STATUS status = CallPmService(&requestBuf, &responseBuf);
+        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            return status;
+        }
+
+        status = NamedPipeHelper::DecodeGeneralSetActionResponse(
+            PM_ACTION::SELECT_ADAPTER, &responseBuf);
+
+        return status;
+    }
+
 }
