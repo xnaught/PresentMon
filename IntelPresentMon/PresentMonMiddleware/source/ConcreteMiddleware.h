@@ -34,6 +34,7 @@ namespace pmon::mid
 		uint32_t display_count = 0;               // The number of presented frames
 		uint32_t num_presents = 0;                // The number of frames
 		bool     displayed_0 = false;             // Whether the first frame was displayed
+		std::string applicationName;
 
 		// Properties of the most-recent processed frame:
 		int32_t sync_interval = 0;
@@ -64,7 +65,7 @@ namespace pmon::mid
 		PM_DYNAMIC_QUERY* RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, double windowSizeMs, double metricOffsetMs) override;
 		void FreeDynamicQuery(const PM_DYNAMIC_QUERY* pQuery) override {}
 		void PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains) override;
-		void PollStaticQuery(const PM_QUERY_ELEMENT& element, uint32_t processId, uint8_t* pBlob) override {}
+		void PollStaticQuery(const PM_QUERY_ELEMENT& element, uint32_t processId, uint8_t* pBlob) override;
 		PM_FRAME_QUERY* RegisterFrameEventQuery(std::span<PM_QUERY_ELEMENT> queryElements, uint32_t& blobSize) override;
 		void FreeFrameEventQuery(const PM_FRAME_QUERY* pQuery) override;
 		void ConsumeFrameEvents(const PM_FRAME_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t& numFrames) override;
@@ -105,5 +106,7 @@ namespace pmon::mid
 		std::unordered_map<std::pair<PM_DYNAMIC_QUERY*, uint32_t>, std::unique_ptr<uint8_t[]>> cachedMetricDatas;
 		std::vector<DeviceInfo> cachedGpuInfo;
 		std::vector<DeviceInfo> cachedCpuInfo;
+		double cachedGpuMemMaxBandwidth = 0.;
+		double cachedGpuMemSize = 0.;
 	};
 }
