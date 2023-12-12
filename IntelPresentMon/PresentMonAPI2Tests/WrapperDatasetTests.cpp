@@ -86,13 +86,24 @@ namespace PresentMonAPI2Mock
 			using namespace std::string_literals;
 			Assert::AreEqual("avg"s, data->GetMetrics().begin()->GetStatInfo().begin()->GetStat()->GetShortName());
 		}
-		TEST_METHOD(IntrospectMetricDataType)
+		TEST_METHOD(IntrospectMetricDataTypeEnum)
 		{
 			using namespace std::string_literals;
 			auto metric = data->FindMetric(PM_METRIC_PRESENT_MODE);
 			auto type = metric.GetDataTypeInfo();
 			Assert::AreEqual("Present Mode"s, metric.GetMetricKey().GetName());
+			Assert::AreEqual((int)PM_DATA_TYPE_ENUM, type.GetPolledType().GetValue());
+			Assert::AreEqual((int)PM_DATA_TYPE_ENUM, type.GetFrameType().GetValue());
 			Assert::AreEqual("PM_PRESENT_MODE"s, type.GetEnum().GetSymbol());
+		}
+		TEST_METHOD(IntrospectMetricDataTypeDivergent)
+		{
+			using namespace std::string_literals;
+			auto metric = data->FindMetric(PM_METRIC_GPU_POWER_LIMITED);
+			auto type = metric.GetDataTypeInfo();
+			Assert::AreEqual("GPU Power Limited"s, metric.GetMetricKey().GetName());
+			Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, type.GetPolledType().GetValue());
+			Assert::AreEqual((int)PM_DATA_TYPE_BOOL, type.GetFrameType().GetValue());
 		}
 		TEST_METHOD(IntrospectMetricDeviceMetricInfo)
 		{

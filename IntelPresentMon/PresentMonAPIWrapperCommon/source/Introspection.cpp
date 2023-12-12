@@ -27,7 +27,7 @@ namespace pmapi::intro
         return pDataset->FindEnumKey(PM_ENUM_METRIC_TYPE, (int)pBase->type);
     }
 
-    EnumKeyView DataTypeInfoView::GetpolledType() const
+    EnumKeyView DataTypeInfoView::GetPolledType() const
     {
         return pDataset->FindEnumKey(PM_ENUM_DATA_TYPE, (int)pBase->polledType);
     }

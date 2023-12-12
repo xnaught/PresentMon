@@ -47,6 +47,7 @@ PM_FRAME_QUERY::PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
 	//	fail if array index out of bounds
 	//  fail if any metrics aren't event-compatible
 	//  fail if any stats other than NONE are specified
+	//  fail if intro size doesn't match nsm size
 	
 	// we need to keep track of how many non-universal devices are specified
 	// current release: only 1 gpu device maybe be polled at a time
