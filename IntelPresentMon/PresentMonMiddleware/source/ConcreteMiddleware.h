@@ -108,6 +108,6 @@ namespace pmon::mid
 		std::vector<DeviceInfo> cachedCpuInfo;
 		double cachedGpuMemMaxBandwidth = 0.;
 		double cachedGpuMemSize = 0.;
-		uint32_t currentGpuInfoIndex = 0;
+		uint32_t currentGpuInfoIndex = UINT32_MAX;
 	};
 }

@@ -318,6 +318,7 @@ namespace pmon::mid
                         if (qe.deviceId == cachedGpuInfo[i].deviceId)
                         {
                             cachedGpuInfoIndex = i;
+                            break;
                         }
                     }
                 }
