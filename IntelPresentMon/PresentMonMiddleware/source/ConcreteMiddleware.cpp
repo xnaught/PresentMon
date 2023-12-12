@@ -472,7 +472,7 @@ namespace pmon::mid
             // TODO: validate device id
             // TODO: validate array index
             qe.dataOffset = offset;
-            qe.dataSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetBasePtr()->type);
+            qe.dataSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetBasePtr()->polledType);
             offset += qe.dataSize;
         }
 
@@ -676,7 +676,7 @@ namespace pmon::mid
             throw std::runtime_error{ "dynamic metric in static query poll" };
         }
 
-        auto elementSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetBasePtr()->type);
+        auto elementSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetBasePtr()->polledType);
 
         switch (element.metric)
         {

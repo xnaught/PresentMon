@@ -27,18 +27,20 @@ namespace pmapi::intro
         return pDataset->FindEnumKey(PM_ENUM_METRIC_TYPE, (int)pBase->type);
     }
 
-    EnumKeyView DataTypeInfoView::GetType() const
+    EnumKeyView DataTypeInfoView::GetpolledType() const
     {
-        return pDataset->FindEnumKey(PM_ENUM_DATA_TYPE, (int)pBase->type);
+        return pDataset->FindEnumKey(PM_ENUM_DATA_TYPE, (int)pBase->polledType);
+    }
+
+    EnumKeyView DataTypeInfoView::GetFrameType() const
+    {
+        return pDataset->FindEnumKey(PM_ENUM_DATA_TYPE, (int)pBase->frameType);
     }
 
     EnumView DataTypeInfoView::GetEnum() const
     {
-        if (pBase->type != PM_DATA_TYPE_ENUM) {
-            throw DatatypeException{ std::format(
-                "cannot get enum data for non-enum data type {}",
-                GetType().GetName())
-            };
+        if (pBase->polledType != PM_DATA_TYPE_ENUM && pBase->frameType != PM_DATA_TYPE_ENUM) {
+            throw DatatypeException{ "cannot get enum data for non-enum data type" };
         }
         return pDataset->FindEnum(pBase->enumId);
     }

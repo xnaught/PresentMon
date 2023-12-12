@@ -293,7 +293,8 @@ namespace pmapi
             using SelfType = DataTypeInfoView;
             friend class MetricView;
         public:
-            EnumKeyView GetType() const;
+            EnumKeyView GetpolledType() const;
+            EnumKeyView GetFrameType() const;
             EnumView GetEnum() const;
             const SelfType* operator->() const
             {

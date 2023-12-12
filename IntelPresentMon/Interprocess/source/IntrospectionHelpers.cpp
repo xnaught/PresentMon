@@ -63,9 +63,9 @@ namespace pmon::ipc::intro
 
 	void PopulateMetrics(ShmSegmentManager* pSegmentManager, IntrospectionRoot& root)
 	{
-#define X_REG_METRIC(metric, metric_type, unit, data_type, enum_id, device_type, ...) { \
+#define X_REG_METRIC(metric, metric_type, unit, data_type_polled, data_type_frame, enum_id, device_type, ...) { \
 		auto pMetric = ShmMakeUnique<IntrospectionMetric>(pSegmentManager, pSegmentManager, \
-			metric, metric_type, unit, IntrospectionDataTypeInfo{ data_type, (PM_ENUM)enum_id }, std::vector{ __VA_ARGS__ }); \
+			metric, metric_type, unit, IntrospectionDataTypeInfo{ data_type_polled, data_type_frame, (PM_ENUM)enum_id }, std::vector{ __VA_ARGS__ }); \
 		RegisterUniversalMetricDeviceInfo_<metric>(pSegmentManager, root, *pMetric); \
 		root.AddMetric(std::move(pMetric)); }
 

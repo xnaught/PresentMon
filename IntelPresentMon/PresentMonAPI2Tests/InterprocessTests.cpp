@@ -28,7 +28,7 @@ namespace PresentMonAPI2Mock
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> alloc;
 			auto pClone = root.ApiClone(alloc);
-			Assert::AreEqual(33556ull, alloc.GetTotalSize());
+			Assert::AreEqual(34132ull, alloc.GetTotalSize());
 			Assert::IsNull(pClone);
 			free((void*)pClone);
 		}
@@ -45,7 +45,7 @@ namespace PresentMonAPI2Mock
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> probeAlloc;
 			auto pNullClone = root.ApiClone(probeAlloc);
-			Assert::AreEqual(33556ull, probeAlloc.GetTotalSize());
+			Assert::AreEqual(34132ull, probeAlloc.GetTotalSize());
 			Assert::IsNull(pNullClone);
 
 			ipc::intro::BlockAllocator<void> blockAlloc{ probeAlloc.GetTotalSize() };
@@ -104,7 +104,7 @@ namespace PresentMonAPI2Mock
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_DISPLAYED_FPS, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_FPS, (int)pMetric->unit);
-				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->polledType);
 				Assert::AreEqual(7ull, pMetric->pStatInfo->size);
 				// check 1st stat
 				{
@@ -127,7 +127,7 @@ namespace PresentMonAPI2Mock
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_GPU_FAN_SPEED, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_RPM, (int)pMetric->unit);
-				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->polledType);
 				Assert::AreEqual(7ull, pMetric->pStatInfo->size);
 				// check 7th stat
 				{
@@ -227,7 +227,7 @@ namespace PresentMonAPI2Mock
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_DISPLAYED_FPS, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_FPS, (int)pMetric->unit);
-				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->polledType);
 				Assert::AreEqual(7ull, pMetric->pStatInfo->size);
 				// check 1st stat
 				{
@@ -250,7 +250,7 @@ namespace PresentMonAPI2Mock
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_GPU_FAN_SPEED, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_RPM, (int)pMetric->unit);
-				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->polledType);
 				Assert::AreEqual(7ull, pMetric->pStatInfo->size);
 				// check 7th stat
 				{

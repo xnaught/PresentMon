@@ -165,6 +165,7 @@ extern "C" {
 		PM_DATA_TYPE_STRING,
 		PM_DATA_TYPE_UINT64,
 		PM_DATA_TYPE_BOOL,
+		PM_DATA_TYPE_VOID,
 	};
 
 	enum PM_GRAPHICS_RUNTIME
@@ -248,7 +249,8 @@ extern "C" {
 
 	struct PM_INTROSPECTION_DATA_TYPE_INFO
 	{
-		PM_DATA_TYPE type;
+		PM_DATA_TYPE polledType;
+		PM_DATA_TYPE frameType;
 		PM_ENUM enumId;
 	};
 

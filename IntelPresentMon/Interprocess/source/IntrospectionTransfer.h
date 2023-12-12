@@ -256,9 +256,10 @@ namespace pmon::ipc::intro
 
 	struct IntrospectionDataTypeInfo
 	{
-		IntrospectionDataTypeInfo(PM_DATA_TYPE type_in, PM_ENUM enumId_in)
+		IntrospectionDataTypeInfo(PM_DATA_TYPE polledType_in, PM_DATA_TYPE frameType_in, PM_ENUM enumId_in)
 			:
-			type_{ type_in },
+			polledType_{ polledType_in },
+			frameType_{ frameType_in },
 			enumId_{ enumId_in }
 		{}
 		using ApiType = PM_INTROSPECTION_DATA_TYPE_INFO;
@@ -272,7 +273,8 @@ namespace pmon::ipc::intro
 			A alloc{ voidAlloc };
 			auto pSelf = alloc.allocate(1);
 			// prepare contents
-			content.type = type_;
+			content.polledType = polledType_;
+			content.frameType = frameType_;
 			content.enumId = enumId_;
 			// emplace to allocated self
 			if (pSelf) {
@@ -281,7 +283,8 @@ namespace pmon::ipc::intro
 			return pSelf;
 		}
 	private:
-		PM_DATA_TYPE type_;
+		PM_DATA_TYPE polledType_;
+		PM_DATA_TYPE frameType_;
 		PM_ENUM enumId_;
 	};
 
