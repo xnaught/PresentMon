@@ -17,11 +17,11 @@ struct TraceSession {
     ULONG Start(
         PMTraceConsumer* pmConsumer, // Required PMTraceConsumer instance
         MRTraceConsumer* mrConsumer, // If nullptr, no WinMR tracing
-        char const* etlPath,         // If nullptr, live/realtime tracing session
-        char const* sessionName);    // Required session name
+        wchar_t const* etlPath,         // If nullptr, live/realtime tracing session
+        wchar_t const* sessionName);    // Required session name
 
     void Stop();
 
     ULONG CheckLostReports(ULONG* eventsLost, ULONG* buffersLost) const;
-    static ULONG StopNamedSession(char const* sessionName);
+    static ULONG StopNamedSession(wchar_t const* sessionName);
 };
