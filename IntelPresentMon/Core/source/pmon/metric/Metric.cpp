@@ -17,7 +17,7 @@ namespace p2c::pmon
         }
         return L"NA";
     }
-    std::wstring Metric::GetStatType() const { return {}; }
+    std::wstring Metric::GetStatName() const { return {}; }
     const std::wstring& Metric::GetName() const { return name; }
     const std::wstring& Metric::GetUnits() const { return units; }
     Metric::Info Metric::GetInfo(size_t index) const
@@ -26,7 +26,7 @@ namespace p2c::pmon
             index,
             GetCategory(),
             GetName(),
-            GetStatType(),
+            GetStatName(),
             GetUnits(),
             GetMetricClassName()
         };

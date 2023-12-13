@@ -14,7 +14,7 @@ namespace p2c::kern
 		}
 		std::wstring GetFullName() const
 		{
-			auto stat = pMetric->GetStatType();
+			auto stat = pMetric->GetStatName();
 			auto statPart = stat.empty() ? std::wstring{} : std::format(L" ({})", stat);
 			return std::format(L"{}{}", pMetric->GetName(), statPart);
 		}

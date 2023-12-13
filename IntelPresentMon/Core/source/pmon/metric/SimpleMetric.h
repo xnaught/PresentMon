@@ -19,7 +19,7 @@
 //            NumericMetric{ scalingFactor, std::move(name_), std::move(units_) },
 //            pAdaptor{ pAdaptor }
 //        {}
-//        std::wstring GetStatType() const override { return L""; }
+//        std::wstring GetStatName() const override { return L""; }
 //        void PopulateData(gfx::lay::GraphData& graphData, double timestamp) override
 //        {
 //            graphData.Push(gfx::lay::DataPoint{ .value = ReadValue(timestamp), .time = timestamp});

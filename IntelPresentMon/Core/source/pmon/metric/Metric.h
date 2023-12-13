@@ -34,7 +34,7 @@ namespace p2c::pmon
         virtual ~Metric();
         virtual std::wstring ReadStringValue(double timestamp);
         virtual const std::wstring& GetCategory() const = 0;
-        virtual std::wstring GetStatType() const;
+        virtual std::wstring GetStatName() const;
         const std::wstring& GetName() const;
         const std::wstring& GetUnits() const;
         virtual const std::wstring& GetMetricClassName() const = 0;
