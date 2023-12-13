@@ -2,7 +2,12 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include <string>
-#include <vector>
+#include <optional>
+
+namespace p2c::gfx::lay
+{
+    class GraphData;
+}
 
 namespace p2c::pmon
 {
@@ -27,12 +32,14 @@ namespace p2c::pmon
         // functions
         Metric(std::wstring name, std::wstring units);
         virtual ~Metric();
-        virtual std::wstring ReadStringValue(double timestamp) = 0;
+        virtual std::wstring ReadStringValue(double timestamp);
         virtual const std::wstring& GetCategory() const = 0;
         virtual std::wstring GetStatType() const;
         const std::wstring& GetName() const;
         const std::wstring& GetUnits() const;
-        virtual const std::wstring& GetMetricClassName() const;
+        virtual const std::wstring& GetMetricClassName() const = 0;
+        virtual std::optional<float> ReadValue(double timestamp) = 0;
+        virtual void PopulateData(gfx::lay::GraphData& data, double timestamp) = 0;
         Info GetInfo(size_t index) const;
     private:
         std::wstring name;

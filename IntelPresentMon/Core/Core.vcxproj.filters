@@ -94,7 +94,6 @@
     <ClInclude Include="source\win\Key.h" />
     <ClInclude Include="source\win\ModSet.h" />
     <ClInclude Include="source\infra\util\FolderResolver.h" />
-    <ClInclude Include="source\pmon\metric\NumericMetric.h" />
     <ClInclude Include="source\kernel\TextDataPack.h" />
     <ClInclude Include="source\infra\util\Assert.h" />
     <ClInclude Include="source\infra\util\MacroHelpers.h" />
@@ -189,7 +188,6 @@
     <ClCompile Include="source\win\ModSet.cpp" />
     <ClCompile Include="source\infra\util\FolderResolver.cpp" />
     <ClCompile Include="source\pmon\metric\Metric.cpp" />
-    <ClCompile Include="source\pmon\metric\NumericMetric.cpp" />
     <ClCompile Include="source\infra\util\Assert.cpp" />
     <ClCompile Include="source\infra\util\CooldownTimer.cpp" />
     <ClCompile Include="source\gfx\layout\ReadoutElement.cpp" />

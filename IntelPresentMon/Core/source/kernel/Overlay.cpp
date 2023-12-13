@@ -152,7 +152,7 @@ namespace p2c::kern
             try {
                 if (auto pGraphSpec = std::get_if<GraphSpec>(&w)) {
                     for (const auto metric : pGraphSpec->metrics) {
-                        auto pMetric = dynamic_cast<pmon::NumericMetric*>(pm->GetMetricByIndex(metric.index));
+                        auto pMetric = pm->GetMetricByIndex(metric.index);
                         // TODO: silent fail this by inserting "empty" data pack and logging 
                         assert(pMetric);
                         auto [i, inserted] = graphPacks.emplace(metric.index,

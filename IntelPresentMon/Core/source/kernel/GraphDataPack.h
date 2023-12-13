@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <Core/source/pmon/metric/NumericMetric.h>
+#include <Core/source/pmon/metric/Metric.h>
 #include <Core/source/gfx/layout/GraphData.h>
 #include <format>
 
@@ -9,7 +9,7 @@ namespace p2c::kern
 {
 	struct GraphDataPack
 	{
-		GraphDataPack(pmon::NumericMetric* pMetric_, double windowSize_)
+		GraphDataPack(pmon::Metric* pMetric_, double windowSize_)
 			:
 			pMetric{ pMetric_ },
 			pData{ std::make_shared<gfx::lay::GraphData>(windowSize_) }
@@ -25,6 +25,6 @@ namespace p2c::kern
 			return std::format(L"{}{}", pMetric->GetName(), statPart);
 		}
 		std::shared_ptr<gfx::lay::GraphData> pData;
-		pmon::NumericMetric* pMetric = nullptr;
+		pmon::Metric* pMetric = nullptr;
 	};
 }
