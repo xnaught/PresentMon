@@ -512,7 +512,7 @@ namespace pmon::mid
     void ConcreteMiddleware::PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains)
     {
         std::unordered_map<uint64_t, fpsSwapChainData> swapChainData;
-        std::unordered_map<PM_METRIC, std::vector<double>> gpucpuMetricData;
+        std::unordered_map<PM_METRIC, MetricInfo> metricInfo;
         bool allMetricsCalculated = false;
         bool fpsMetricsCalculated = false;
 
@@ -649,39 +649,14 @@ namespace pmon::mid
             for (size_t i = 0; i < pQuery->accumGpuBits.size(); ++i) {
                 if (pQuery->accumGpuBits[i])
                 {
-                    PM_METRIC gpuMetric;
-                    double gpuMetricValue;
-                    if (GetGpuMetricData(i, frame_data->power_telemetry, gpuMetric, gpuMetricValue))
-                    {
-                        if (gpuMetric == PM_METRIC_GPU_MEM_MAX_BANDWIDTH)
-                        {
-                            cachedGpuMemMaxBandwidth = gpuMetricValue;
-                        }
-                        else if (gpuMetric == PM_METRIC_GPU_MEM_SIZE)
-                        {
-                            cachedGpuMemSize = gpuMetricValue;
-                        }
-                        else
-                        {
-                            auto result = gpucpuMetricData.emplace(gpuMetric, std::vector<double>());
-                            auto data = &result.first->second;
-                            data->push_back(gpuMetricValue);
-                        }
-                    }
+                    GetGpuMetricData(i, frame_data->power_telemetry, metricInfo);
                 }
             }
 
             for (size_t i = 0; i < pQuery->accumCpuBits.size(); ++i) {
                 if (pQuery->accumCpuBits[i])
                 {
-                    PM_METRIC cpuMetric;
-                    double cpuMetricValue;
-                    if (GetCpuMetricData(i, frame_data->cpu_telemetry, cpuMetric, cpuMetricValue))
-                    {
-                        auto result = gpucpuMetricData.emplace(cpuMetric, std::vector<double>());
-                        auto data = &result.first->second;
-                        data->push_back(cpuMetricValue);
-                    }
+                    GetCpuMetricData(i, frame_data->cpu_telemetry, metricInfo);
                 }
             }
 
@@ -698,7 +673,7 @@ namespace pmon::mid
             }
         }
 
-        CalculateMetrics(pQuery, processId, pBlob, numSwapChains, client->GetQpcFrequency(), swapChainData, gpucpuMetricData);
+        CalculateMetrics(pQuery, processId, pBlob, numSwapChains, client->GetQpcFrequency(), swapChainData, metricInfo);
     }
 
     void ConcreteMiddleware::PollStaticQuery(const PM_QUERY_ELEMENT& element, uint32_t processId, uint8_t* pBlob)
@@ -849,15 +824,21 @@ namespace pmon::mid
         return;
     }
 
-    void ConcreteMiddleware::CalculateGpuCpuMetric(std::unordered_map<PM_METRIC, std::vector<double>>& metricData, const PM_QUERY_ELEMENT& element, uint8_t* pBlob)
+    void ConcreteMiddleware::CalculateGpuCpuMetric(std::unordered_map<PM_METRIC, MetricInfo>& metricInfo, const PM_QUERY_ELEMENT& element, uint8_t* pBlob)
     {
         auto& output = reinterpret_cast<double&>(pBlob[element.dataOffset]);
         output = 0.;
 
-        auto it = metricData.find(element.metric);
-        if (it != metricData.end())
+        auto it = metricInfo.find(element.metric);
+        if (it != metricInfo.end())
         {
-            CalculateMetric(output, it->second, element.stat);
+            MetricInfo& mi = it->second;
+            auto it2 = mi.data.find(element.arrayIndex);
+            if (it2 != mi.data.end())
+            {
+                CalculateMetric(output, it2->second, element.stat);
+            }
+            
         }
         return;
     }
@@ -1059,7 +1040,7 @@ namespace pmon::mid
         return true;
     }
 
-    bool ConcreteMiddleware::GetGpuMetricData(size_t telemetry_item_bit, PresentMonPowerTelemetryInfo& power_telemetry_info, PM_METRIC& gpuMetric, double& gpuMetricValue)
+    bool ConcreteMiddleware::GetGpuMetricData(size_t telemetry_item_bit, PresentMonPowerTelemetryInfo& power_telemetry_info, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo)
     {
         bool validGpuMetric = true;
         GpuTelemetryCapBits bit =
@@ -1071,136 +1052,103 @@ namespace pmon::mid
             validGpuMetric = false;
             break;
         case GpuTelemetryCapBits::gpu_power:
-            gpuMetric = PM_METRIC_GPU_POWER;
-            gpuMetricValue = power_telemetry_info.gpu_power_w;
+            metricInfo[PM_METRIC_GPU_POWER].data[0].emplace_back(power_telemetry_info.gpu_power_w);
             break;
         case GpuTelemetryCapBits::gpu_sustained_power_limit:
-            gpuMetric = PM_METRIC_GPU_SUSTAINED_POWER_LIMIT;
-            gpuMetricValue = power_telemetry_info.gpu_sustained_power_limit_w;
+            metricInfo[PM_METRIC_GPU_SUSTAINED_POWER_LIMIT].data[0].emplace_back(power_telemetry_info.gpu_sustained_power_limit_w);
             break;
         case GpuTelemetryCapBits::gpu_voltage:
-            gpuMetric = PM_METRIC_GPU_VOLTAGE;
-            gpuMetricValue = power_telemetry_info.gpu_voltage_v;
+            metricInfo[PM_METRIC_GPU_VOLTAGE].data[0].emplace_back(power_telemetry_info.gpu_voltage_v);
             break;
         case GpuTelemetryCapBits::gpu_frequency:
-            gpuMetric = PM_METRIC_GPU_FREQUENCY;
-            gpuMetricValue = power_telemetry_info.gpu_frequency_mhz;
+            metricInfo[PM_METRIC_GPU_FREQUENCY].data[0].emplace_back(power_telemetry_info.gpu_frequency_mhz);
             break;
         case GpuTelemetryCapBits::gpu_temperature:
-            gpuMetric = PM_METRIC_GPU_TEMPERATURE;
-            gpuMetricValue = power_telemetry_info.gpu_temperature_c;
+            metricInfo[PM_METRIC_GPU_TEMPERATURE].data[0].emplace_back(power_telemetry_info.gpu_temperature_c);
             break;
         case GpuTelemetryCapBits::gpu_utilization:
-            gpuMetric = PM_METRIC_GPU_UTILIZATION;
-            gpuMetricValue = power_telemetry_info.gpu_utilization;
+            metricInfo[PM_METRIC_GPU_UTILIZATION].data[0].emplace_back(power_telemetry_info.gpu_utilization);
             break;
         case GpuTelemetryCapBits::gpu_render_compute_utilization:
-            gpuMetric = PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION;
-            gpuMetricValue = power_telemetry_info.gpu_render_compute_utilization;
+            metricInfo[PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION].data[0].emplace_back(power_telemetry_info.gpu_render_compute_utilization);
             break;
         case GpuTelemetryCapBits::gpu_media_utilization:
-            gpuMetric = PM_METRIC_GPU_MEDIA_UTILIZATION;
-            gpuMetricValue = power_telemetry_info.gpu_media_utilization;
+            metricInfo[PM_METRIC_GPU_MEDIA_UTILIZATION].data[0].emplace_back(power_telemetry_info.gpu_media_utilization);
             break;
         case GpuTelemetryCapBits::vram_power:
-            gpuMetric = PM_METRIC_VRAM_POWER;
-            gpuMetricValue = power_telemetry_info.vram_power_w;
+            metricInfo[PM_METRIC_VRAM_POWER].data[0].emplace_back(power_telemetry_info.vram_power_w);
             break;
         case GpuTelemetryCapBits::vram_voltage:
-            gpuMetric = PM_METRIC_VRAM_VOLTAGE;
-            gpuMetricValue = power_telemetry_info.vram_voltage_v;
+            metricInfo[PM_METRIC_VRAM_VOLTAGE].data[0].emplace_back(power_telemetry_info.vram_voltage_v);
             break;
         case GpuTelemetryCapBits::vram_frequency:
-            gpuMetric = PM_METRIC_VRAM_FREQUENCY;
-            gpuMetricValue = power_telemetry_info.vram_frequency_mhz;
+            metricInfo[PM_METRIC_VRAM_FREQUENCY].data[0].emplace_back(power_telemetry_info.vram_frequency_mhz);
             break;
         case GpuTelemetryCapBits::vram_effective_frequency:
-            gpuMetric = PM_METRIC_VRAM_EFFECTIVE_FREQUENCY;
-            gpuMetricValue = power_telemetry_info.vram_effective_frequency_gbps;
+            metricInfo[PM_METRIC_VRAM_EFFECTIVE_FREQUENCY].data[0].emplace_back(power_telemetry_info.vram_effective_frequency_gbps);
             break;
         case GpuTelemetryCapBits::vram_temperature:
-            gpuMetric = PM_METRIC_VRAM_TEMPERATURE;
-            gpuMetricValue = power_telemetry_info.vram_temperature_c;
+            metricInfo[PM_METRIC_VRAM_TEMPERATURE].data[0].emplace_back(power_telemetry_info.vram_temperature_c);
             break;
         case GpuTelemetryCapBits::fan_speed_0:
-            gpuMetric = PM_METRIC_GPU_FAN_SPEED;
-            gpuMetricValue = power_telemetry_info.fan_speed_rpm[0];
+            metricInfo[PM_METRIC_GPU_FAN_SPEED].data[0].emplace_back(power_telemetry_info.fan_speed_rpm[0]);
             break;
         case GpuTelemetryCapBits::fan_speed_1:
-            gpuMetric = PM_METRIC_GPU_FAN_SPEED;
-            gpuMetricValue = power_telemetry_info.fan_speed_rpm[1];
+            metricInfo[PM_METRIC_GPU_FAN_SPEED].data[1].emplace_back(power_telemetry_info.fan_speed_rpm[1]);
             break;
         case GpuTelemetryCapBits::fan_speed_2:
-            gpuMetric = PM_METRIC_GPU_FAN_SPEED;
-            gpuMetricValue = power_telemetry_info.fan_speed_rpm[2];
+            metricInfo[PM_METRIC_GPU_FAN_SPEED].data[2].emplace_back(power_telemetry_info.fan_speed_rpm[2]);
             break;
         case GpuTelemetryCapBits::fan_speed_3:
-            gpuMetric = PM_METRIC_GPU_FAN_SPEED;
-            gpuMetricValue = power_telemetry_info.fan_speed_rpm[3];
+            metricInfo[PM_METRIC_GPU_FAN_SPEED].data[3].emplace_back(power_telemetry_info.fan_speed_rpm[3]);
             break;
         case GpuTelemetryCapBits::fan_speed_4:
-            gpuMetric = PM_METRIC_GPU_FAN_SPEED;
-            gpuMetricValue = power_telemetry_info.fan_speed_rpm[4];
+            metricInfo[PM_METRIC_GPU_FAN_SPEED].data[4].emplace_back(power_telemetry_info.fan_speed_rpm[4]);
             break;
         case GpuTelemetryCapBits::gpu_mem_size:
-            gpuMetric = PM_METRIC_GPU_MEM_SIZE;
-            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_mem_total_size_b);
+            metricInfo[PM_METRIC_GPU_MEM_SIZE].data[0].emplace_back(static_cast<double>(power_telemetry_info.gpu_mem_total_size_b));
             break;
         case GpuTelemetryCapBits::gpu_mem_used:
-            gpuMetric = PM_METRIC_GPU_MEM_USED;
-            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_mem_used_b);
+            metricInfo[PM_METRIC_GPU_MEM_USED].data[0].emplace_back(static_cast<double>(power_telemetry_info.gpu_mem_used_b));
             break;
         case GpuTelemetryCapBits::gpu_mem_max_bandwidth:
-            gpuMetric = PM_METRIC_GPU_MEM_MAX_BANDWIDTH;
-            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_mem_max_bandwidth_bps);
+            metricInfo[PM_METRIC_GPU_MEM_MAX_BANDWIDTH].data[0].emplace_back(static_cast<double>(power_telemetry_info.gpu_mem_max_bandwidth_bps));
             break;
         case GpuTelemetryCapBits::gpu_mem_write_bandwidth:
-            gpuMetric = PM_METRIC_GPU_MEM_WRITE_BANDWIDTH;
-            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_mem_write_bandwidth_bps);
+            metricInfo[PM_METRIC_GPU_MEM_WRITE_BANDWIDTH].data[0].emplace_back(power_telemetry_info.gpu_mem_write_bandwidth_bps);
             break;
         case GpuTelemetryCapBits::gpu_mem_read_bandwidth:
-            gpuMetric = PM_METRIC_GPU_MEM_READ_BANDWIDTH;
-            gpuMetricValue = power_telemetry_info.gpu_mem_read_bandwidth_bps;
+            metricInfo[PM_METRIC_GPU_MEM_READ_BANDWIDTH].data[0].emplace_back(power_telemetry_info.gpu_mem_read_bandwidth_bps);
             break;
         case GpuTelemetryCapBits::gpu_power_limited:
-            gpuMetric = PM_METRIC_GPU_POWER_LIMITED;
-            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_power_limited);
+            metricInfo[PM_METRIC_GPU_POWER_LIMITED].data[0].emplace_back(power_telemetry_info.gpu_power_limited);
             break;
         case GpuTelemetryCapBits::gpu_temperature_limited:
-            gpuMetric = PM_METRIC_GPU_TEMPERATURE_LIMITED;
-            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_temperature_limited);
+            metricInfo[PM_METRIC_GPU_TEMPERATURE_LIMITED].data[0].emplace_back(power_telemetry_info.gpu_temperature_limited);
             break;
         case GpuTelemetryCapBits::gpu_current_limited:
-            gpuMetric = PM_METRIC_GPU_CURRENT_LIMITED;
-            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_current_limited);
+            metricInfo[PM_METRIC_GPU_CURRENT_LIMITED].data[0].emplace_back(power_telemetry_info.gpu_current_limited);
             break;
         case GpuTelemetryCapBits::gpu_voltage_limited:
-            gpuMetric = PM_METRIC_GPU_VOLTAGE_LIMITED;
-            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_voltage_limited);
+            metricInfo[PM_METRIC_GPU_VOLTAGE_LIMITED].data[0].emplace_back(power_telemetry_info.gpu_voltage_limited);
             break;
         case GpuTelemetryCapBits::gpu_utilization_limited:
-            gpuMetric = PM_METRIC_GPU_UTILIZATION_LIMITED;
-            gpuMetricValue = static_cast<double>(power_telemetry_info.gpu_utilization_limited);
+            metricInfo[PM_METRIC_GPU_UTILIZATION_LIMITED].data[0].emplace_back(power_telemetry_info.gpu_utilization_limited);
             break;
         case GpuTelemetryCapBits::vram_power_limited:
-            gpuMetric = PM_METRIC_VRAM_POWER_LIMITED;
-            gpuMetricValue = static_cast<double>(power_telemetry_info.vram_power_limited);
+            metricInfo[PM_METRIC_VRAM_POWER_LIMITED].data[0].emplace_back(power_telemetry_info.vram_power_limited);
             break;
         case GpuTelemetryCapBits::vram_temperature_limited:
-            gpuMetric = PM_METRIC_VRAM_TEMPERATURE_LIMITED;
-            gpuMetricValue = static_cast<double>(power_telemetry_info.vram_temperature_limited);
+            metricInfo[PM_METRIC_VRAM_TEMPERATURE_LIMITED].data[0].emplace_back(power_telemetry_info.vram_temperature_limited);
             break;
         case GpuTelemetryCapBits::vram_current_limited:
-            gpuMetric = PM_METRIC_VRAM_CURRENT_LIMITED;
-            gpuMetricValue = static_cast<double>(power_telemetry_info.vram_current_limited);
+            metricInfo[PM_METRIC_VRAM_CURRENT_LIMITED].data[0].emplace_back(power_telemetry_info.vram_current_limited);
             break;
         case GpuTelemetryCapBits::vram_voltage_limited:
-            gpuMetric = PM_METRIC_VRAM_VOLTAGE_LIMITED;
-            gpuMetricValue = static_cast<double>(power_telemetry_info.vram_voltage_limited);
+            metricInfo[PM_METRIC_VRAM_VOLTAGE_LIMITED].data[0].emplace_back(power_telemetry_info.vram_voltage_limited);
             break;
         case GpuTelemetryCapBits::vram_utilization_limited:
-            gpuMetric = PM_METRIC_VRAM_UTILIZATION_LIMITED;
-            gpuMetricValue = static_cast<double>(power_telemetry_info.vram_utilization_limited);
+            metricInfo[PM_METRIC_VRAM_UTILIZATION_LIMITED].data[0].emplace_back(power_telemetry_info.vram_utilization_limited);
             break;
         default:
             validGpuMetric = false;
@@ -1209,31 +1157,26 @@ namespace pmon::mid
         return validGpuMetric;
     }
 
-    bool ConcreteMiddleware::GetCpuMetricData(size_t telemetryBit, CpuTelemetryInfo& cpuTelemetry, PM_METRIC& cpuMetric, double& cpuMetricValue)
+    bool ConcreteMiddleware::GetCpuMetricData(size_t telemetryBit, CpuTelemetryInfo& cpuTelemetry, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo)
     {
         bool validCpuMetric = true;
         CpuTelemetryCapBits bit =
             static_cast<CpuTelemetryCapBits>(telemetryBit);
         switch (bit) {
         case CpuTelemetryCapBits::cpu_utilization:
-            cpuMetric = PM_METRIC_CPU_UTILIZATION;
-            cpuMetricValue = cpuTelemetry.cpu_utilization;
+            metricInfo[PM_METRIC_CPU_UTILIZATION].data[0].emplace_back(cpuTelemetry.cpu_utilization);
             break;
         case CpuTelemetryCapBits::cpu_power:
-            cpuMetric = PM_METRIC_CPU_POWER;
-            cpuMetricValue = cpuTelemetry.cpu_power_w;
+            metricInfo[PM_METRIC_CPU_POWER].data[0].emplace_back(cpuTelemetry.cpu_power_w);
             break;
         case CpuTelemetryCapBits::cpu_power_limit:
-            cpuMetric = PM_METRIC_CPU_POWER_LIMIT;
-            cpuMetricValue = cpuTelemetry.cpu_power_limit_w;
+            metricInfo[PM_METRIC_CPU_POWER_LIMIT].data[0].emplace_back(cpuTelemetry.cpu_power_limit_w);
             break;
         case CpuTelemetryCapBits::cpu_temperature:
-            cpuMetric = PM_METRIC_CPU_TEMPERATURE;
-            cpuMetricValue = cpuTelemetry.cpu_temperature;
+            metricInfo[PM_METRIC_CPU_TEMPERATURE].data[0].emplace_back(cpuTelemetry.cpu_temperature);
             break;
         case CpuTelemetryCapBits::cpu_frequency:
-            cpuMetric = PM_METRIC_CPU_FREQUENCY;
-            cpuMetricValue = cpuTelemetry.cpu_frequency;
+            metricInfo[PM_METRIC_CPU_FREQUENCY].data[0].emplace_back(cpuTelemetry.cpu_frequency);
             break;
         default:
             validCpuMetric = false;
@@ -1273,7 +1216,7 @@ namespace pmon::mid
     // is encountered it will update the numSwapChains to the correct number and then copy the swap
     // chain frame information with the most presents. If the client does happen to specify two swap
     // chains this code will incorrectly copy the data. WIP.
-    void ConcreteMiddleware::CalculateMetrics(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains, LARGE_INTEGER qpcFrequency, std::unordered_map<uint64_t, fpsSwapChainData>& swapChainData, std::unordered_map<PM_METRIC, std::vector<double>>& gpucpuMetricData)
+    void ConcreteMiddleware::CalculateMetrics(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains, LARGE_INTEGER qpcFrequency, std::unordered_map<uint64_t, fpsSwapChainData>& swapChainData, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo)
     {
         auto GetSwapChainIndex = [swapChainData]()
             { 
@@ -1308,7 +1251,7 @@ namespace pmon::mid
         }
 
         // If the client choose to monitor frame information then this loop
-        // will calculate all store all metrics.
+        // will calculate and store all metrics.
         for (auto& pair : swapChainData) {
             auto& swapChain = pair.second;
 
@@ -1373,7 +1316,7 @@ namespace pmon::mid
                 }
                     break;
                 default:
-                    CalculateGpuCpuMetric(gpucpuMetricData, qe, pBlob);
+                    CalculateGpuCpuMetric(metricInfo, qe, pBlob);
                     break;
                 }
             }
@@ -1426,7 +1369,7 @@ namespace pmon::mid
                 case PM_METRIC_CPU_TEMPERATURE:
                 case PM_METRIC_CPU_FREQUENCY:
                 case PM_METRIC_CPU_CORE_UTILITY:
-                    CalculateGpuCpuMetric(gpucpuMetricData, qe, pBlob);
+                    CalculateGpuCpuMetric(metricInfo, qe, pBlob);
                     break;
                 case PM_METRIC_CPU_VENDOR:
                 {

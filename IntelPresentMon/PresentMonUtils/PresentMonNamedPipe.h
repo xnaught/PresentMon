@@ -198,6 +198,17 @@ struct IPMSMStartStreamResponse
 };
 
 
+struct IPMStaticAdapterData
+{
+	uint32_t id;
+	PM_GPU_VENDOR vendor;
+	char name[MAX_PM_ADAPTER_NAME];
+	uint64_t gpuSustainedPowerLimit;
+	uint64_t gpuMemorySize;
+	uint64_t gpuMemoryMaxBandwidth;
+	uint64_t cpuPowerLimit;
+};
+
 struct IPMAdapterInfo
 {
   uint32_t num_adapters;
