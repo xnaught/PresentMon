@@ -11,6 +11,10 @@ namespace pmapi
 {
 	class Session;
 	class ProcessTracker;
+	namespace intro
+	{
+		class Root;
+	}
 }
 
 namespace p2c::pmon
@@ -50,7 +54,7 @@ namespace p2c::pmon
 		uint32_t telemetrySamplePeriod = 0;
 		std::unique_ptr<pmapi::Session> pSession;
 		std::vector<std::unique_ptr<Metric>> metrics;
-
+		std::shared_ptr<pmapi::intro::Root> pIntrospectionRoot;
 		std::shared_ptr<pmapi::ProcessTracker> pTracker;
 		std::optional<uint32_t> selectedAdapter;
 	};

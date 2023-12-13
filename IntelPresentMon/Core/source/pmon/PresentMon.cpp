@@ -35,9 +35,11 @@ namespace p2c::pmon
 			pSession = std::make_unique<pmapi::Session>();
 		}
 
+		// acquire introspection data
+		pIntrospectionRoot = pSession->GetIntrospectionRoot();
+
 		// Build table of available metrics using introspection
 		using namespace met;
-
 
 		// fake metrics for testing
 #ifdef _DEBUG
@@ -124,36 +126,17 @@ namespace p2c::pmon
 	}
 	std::vector<AdapterInfo> PresentMon::EnumerateAdapters() const
 	{
-		// TODO: implement adapter enumeration using introspection api
-
-		//uint32_t count = 0;
-		//if (auto sta = pmEnumerateAdapters(nullptr, &count); sta != PM_STATUS::PM_STATUS_SUCCESS)
-		//{
-		//	p2clog.note(L"could not enumerate adapter count").code(sta).commit();
-		//}
-		//std::vector<PM_ADAPTER_INFO> buffer{ size_t(count) };
-		//if (auto sta = pmEnumerateAdapters(buffer.data(), &count); sta != PM_STATUS::PM_STATUS_SUCCESS)
-		//{
-		//	p2clog.note(L"could not enumerate adapter count").code(sta).commit();
-		//}
 		std::vector<AdapterInfo> infos;
-		//for (const auto& info : buffer)
-		//{
-		//	const auto GetVendorName = [vendor = info.vendor] {
-		//		using namespace std::string_literals;
-		//		switch (vendor) {
-		//		case PM_GPU_VENDOR::PM_GPU_VENDOR_AMD: return "AMD"s;
-		//		case PM_GPU_VENDOR::PM_GPU_VENDOR_INTEL: return "Intel"s;
-		//		case PM_GPU_VENDOR::PM_GPU_VENDOR_NVIDIA: return "Nvidia"s;
-		//		default: return "Unknown"s;
-		//		}
-		//	};
-		//	infos.push_back(AdapterInfo{
-		//		.id = info.id,
-		//		.vendor = GetVendorName(),
-		//		.name = info.name,
-		//	});
-		//}
+		for (const auto& info : pIntrospectionRoot->GetDevices()) {
+			if (info.GetBasePtr()->type != PM_DEVICE_TYPE_GRAPHICS_ADAPTER) {
+				continue;
+			}
+			infos.push_back(AdapterInfo{
+				.id = info.GetId(),
+				.vendor = info.GetVendor().GetName(),
+				.name = info.GetName(),
+			});
+		}
 		return infos;
 	}
 	void PresentMon::SetAdapter(uint32_t id)
