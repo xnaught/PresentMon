@@ -78,7 +78,7 @@ namespace pmon::mid
         pComms = ipc::MakeMiddlewareComms(std::move(introNsmOverride));
 
         // Get the introspection data
-        pmapi::intro::Dataset ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
+        pmapi::intro::Root ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
         
         auto deviceView = ispec.GetDevices();
         for (auto dev : deviceView)
@@ -292,7 +292,7 @@ namespace pmon::mid
     { 
         // get introspection data for reference
         // TODO: cache this data so it's not required to be generated every time
-        pmapi::intro::Dataset ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
+        pmapi::intro::Root ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
 
         // make the query object that will be managed by the handle
         auto pQuery = std::make_unique<PM_DYNAMIC_QUERY>();
@@ -670,7 +670,7 @@ namespace pmon::mid
 
     void ConcreteMiddleware::PollStaticQuery(const PM_QUERY_ELEMENT& element, uint32_t processId, uint8_t* pBlob)
     {
-        pmapi::intro::Dataset ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
+        pmapi::intro::Root ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
         auto metricView = ispec.FindMetric(element.metric);
         if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_STATIC)) {
             throw std::runtime_error{ "dynamic metric in static query poll" };

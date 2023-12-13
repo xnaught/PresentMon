@@ -19,13 +19,13 @@ namespace PresentMonAPI2Mock
 		{
 			pmSetMiddlewareAsMock_(true, true);
 		}
-		TEST_METHOD(SessionRountripWithDatasetNoLeaks)
+		TEST_METHOD(SessionRountripWithRootNoLeaks)
 		{
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
 			{
 				pmapi::Session session;
-				auto data = session.GetIntrospectionDataset();
+				auto data = session.GetIntrospectionRoot();
 			}
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();

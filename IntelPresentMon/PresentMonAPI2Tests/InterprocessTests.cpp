@@ -305,7 +305,7 @@ namespace PresentMonAPI2Mock
 
 			{
 				pmapi::Session session;
-				auto data = session.GetIntrospectionDataset();
+				auto data = session.GetIntrospectionRoot();
 			}
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
@@ -339,8 +339,8 @@ namespace PresentMonAPI2Mock
 
 			{
 				pmapi::Session session;
-				auto datax = session.GetIntrospectionDataset();
-				auto data = &datax;
+				auto dataShared = session.GetIntrospectionRoot();
+				auto data = dataShared.get();
 
 				{
 					const std::vector expected{

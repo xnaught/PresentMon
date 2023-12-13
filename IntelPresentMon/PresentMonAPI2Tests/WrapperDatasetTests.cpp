@@ -12,14 +12,14 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace PresentMonAPI2Mock
 {
-	TEST_CLASS(WrapperDatasetTests)
+	TEST_CLASS(WrapperRootTests)
 	{
 	public:
 		TEST_METHOD_INITIALIZE(BeforeEachTestMethod)
 		{
 			pmSetMiddlewareAsMock_(true, true);
 			session.emplace();
-			data = session->GetIntrospectionDataset();
+			data = session->GetIntrospectionRoot();
 		}
 		TEST_METHOD_CLEANUP(AfterEachTestMethod)
 		{
@@ -197,6 +197,6 @@ namespace PresentMonAPI2Mock
 		}
 	private:
 		std::optional<pmapi::Session> session;
-		std::optional<pmapi::intro::Dataset> data;
+		std::shared_ptr<pmapi::intro::Root> data;
 	};
 }

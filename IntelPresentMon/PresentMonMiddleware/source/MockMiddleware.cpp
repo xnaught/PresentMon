@@ -60,7 +60,7 @@ namespace pmon::mid
 	{
 		// get introspection data for reference
 		// TODO: cache this data so it's not required to be generated every time
-		pmapi::intro::Dataset ispec{ GetIntrospectionData(), [this](auto p){FreeIntrospectionData(p);} };
+		pmapi::intro::Root ispec{ GetIntrospectionData(), [this](auto p){FreeIntrospectionData(p);} };
 
 		// make the query object that will be managed by the handle
 		auto pQuery = std::make_unique<PM_DYNAMIC_QUERY>();
@@ -117,7 +117,7 @@ namespace pmon::mid
 	{
 		// get introspection data for reference
 		// TODO: cache this data so it's not required to be generated every time
-		intro::Dataset ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
+		intro::Root ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
 
 		auto metricView = ispec.FindMetric(element.metric);
 		if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_STATIC)) {

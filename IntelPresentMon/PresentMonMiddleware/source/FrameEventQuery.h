@@ -5,7 +5,7 @@
 
 namespace pmapi::intro
 {
-	class Dataset;
+	class Root;
 }
 
 struct PM_FRAME_QUERY
