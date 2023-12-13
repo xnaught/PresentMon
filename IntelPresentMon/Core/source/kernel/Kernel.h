@@ -47,7 +47,7 @@ namespace p2c::kern
         std::vector<Process> ListProcesses();
         std::vector<pmon::Metric::Info> EnumerateMetrics() const;
         void SetAdapter(uint32_t id);
-        std::vector<pmon::PresentMon::AdapterInfo> EnumerateAdapters() const;
+        std::vector<pmon::AdapterInfo> EnumerateAdapters() const;
         void SetCapture(bool active);
     private:
         // functions

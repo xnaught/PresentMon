@@ -1,8 +1,6 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "RawFrameDataWriter.h"
-#include "adapt/RawAdapter.h"
-#include "PresentMode.h"
 #include <Core/source/infra/util/Util.h>
 #include <Core/source/infra/util/Assert.h>
 
@@ -94,96 +92,96 @@ namespace p2c::pmon
 
     void RawFrameDataWriter::Process(double timestamp)
     {
-        for (auto& f : pAdapter->Pull(timestamp))
-        {
-            if (pStatsTracker) {
-                // tracking trace duration
-                if (startTime < 0.) {
-                    startTime = f.time_in_seconds;
-                    endTime = f.time_in_seconds;
-                }
-                else {
-                    endTime = f.time_in_seconds;
-                }
-                // tracking frame times
-                pStatsTracker->Push(f.ms_between_presents);
-            }
+        //for (auto& f : pAdapter->Pull(timestamp))
+        //{
+        //    if (pStatsTracker) {
+        //        // tracking trace duration
+        //        if (startTime < 0.) {
+        //            startTime = f.time_in_seconds;
+        //            endTime = f.time_in_seconds;
+        //        }
+        //        else {
+        //            endTime = f.time_in_seconds;
+        //        }
+        //        // tracking frame times
+        //        pStatsTracker->Push(f.ms_between_presents);
+        //    }
 
-            file
-                << f.application << ","
-                << f.process_id << ","
-                << f.swap_chain_address << ","
-                << f.runtime << ","
-                << f.sync_interval << ","
-                << f.present_flags << ","
-                << f.dropped << ","
-                << f.time_in_seconds << ","
-                << f.ms_in_present_api << ","
-                << f.ms_between_presents << ","
-                << f.allows_tearing << ","
-                << infra::util::ToNarrow(PresentModeToString(ConvertPresentMode((PM_PRESENT_MODE)f.present_mode))) << ","
-                << f.ms_until_render_complete << ","
-                << f.ms_until_displayed << ","
-                << f.ms_between_display_change << ","
-                << f.ms_until_render_start << ","
-                << f.ms_gpu_active << ","
-                << f.ms_gpu_video_active << ","
-                << f.ms_since_input << ","
-                << f.qpc_time << ","
-                << f.gpu_power_w << ","
-                << f.gpu_sustained_power_limit_w << ","
-                << f.gpu_voltage_v << ","
-                << f.gpu_frequency_mhz << ","
-                << f.gpu_temperature_c << ","
-                << f.gpu_utilization << ","
-                << f.gpu_render_compute_utilization << ","
-                << f.gpu_media_utilization << ","
-                << f.vram_power_w << ","
-                << f.vram_voltage_v << ","
-                << f.vram_frequency_mhz << ","
-                << f.vram_effective_frequency_gbs << ","
-                << f.vram_temperature_c << ","
-                << f.gpu_mem_total_size_b << ","
-                << f.gpu_mem_used_b << ","
-                << f.gpu_mem_max_bandwidth_bps << ","
-                << f.gpu_mem_read_bandwidth_bps << ","
-                << f.gpu_mem_write_bandwidth_bps << ","
-                << f.fan_speed_rpm[0] << ","
-                << f.fan_speed_rpm[1] << ","
-                << f.fan_speed_rpm[2] << ","
-                << f.fan_speed_rpm[3] << ","
-                << f.fan_speed_rpm[4] << ","
-                << f.psu_type[0] << ","
-                << f.psu_type[1] << ","
-                << f.psu_type[2] << ","
-                << f.psu_type[3] << ","
-                << f.psu_type[4] << ","
-                << f.psu_power[0] << ","
-                << f.psu_power[1] << ","
-                << f.psu_power[2] << ","
-                << f.psu_power[3] << ","
-                << f.psu_power[4] << ","
-                << f.psu_voltage[0] << ","
-                << f.psu_voltage[1] << ","
-                << f.psu_voltage[2] << ","
-                << f.psu_voltage[3] << ","
-                << f.psu_voltage[4] << ","
-                << f.gpu_power_limited << ","
-                << f.gpu_temperature_limited << ","
-                << f.gpu_current_limited << ","
-                << f.gpu_voltage_limited << ","
-                << f.gpu_utilization_limited << ","
-                << f.vram_power_limited << ","
-                << f.vram_temperature_limited << ","
-                << f.vram_current_limited << ","
-                << f.vram_voltage_limited << ","
-                << f.vram_utilization_limited << ","
-                << f.cpu_utilization << ","
-                << f.cpu_frequency << ","
-                << f.cpu_power_w << ","
-                << f.cpu_power_limit_w << ","
-                << f.cpu_temperature_c << "\n";
-        }
+        //    file
+        //        << f.application << ","
+        //        << f.process_id << ","
+        //        << f.swap_chain_address << ","
+        //        << f.runtime << ","
+        //        << f.sync_interval << ","
+        //        << f.present_flags << ","
+        //        << f.dropped << ","
+        //        << f.time_in_seconds << ","
+        //        << f.ms_in_present_api << ","
+        //        << f.ms_between_presents << ","
+        //        << f.allows_tearing << ","
+        //        << infra::util::ToNarrow(PresentModeToString(ConvertPresentMode((PM_PRESENT_MODE)f.present_mode))) << ","
+        //        << f.ms_until_render_complete << ","
+        //        << f.ms_until_displayed << ","
+        //        << f.ms_between_display_change << ","
+        //        << f.ms_until_render_start << ","
+        //        << f.ms_gpu_active << ","
+        //        << f.ms_gpu_video_active << ","
+        //        << f.ms_since_input << ","
+        //        << f.qpc_time << ","
+        //        << f.gpu_power_w << ","
+        //        << f.gpu_sustained_power_limit_w << ","
+        //        << f.gpu_voltage_v << ","
+        //        << f.gpu_frequency_mhz << ","
+        //        << f.gpu_temperature_c << ","
+        //        << f.gpu_utilization << ","
+        //        << f.gpu_render_compute_utilization << ","
+        //        << f.gpu_media_utilization << ","
+        //        << f.vram_power_w << ","
+        //        << f.vram_voltage_v << ","
+        //        << f.vram_frequency_mhz << ","
+        //        << f.vram_effective_frequency_gbs << ","
+        //        << f.vram_temperature_c << ","
+        //        << f.gpu_mem_total_size_b << ","
+        //        << f.gpu_mem_used_b << ","
+        //        << f.gpu_mem_max_bandwidth_bps << ","
+        //        << f.gpu_mem_read_bandwidth_bps << ","
+        //        << f.gpu_mem_write_bandwidth_bps << ","
+        //        << f.fan_speed_rpm[0] << ","
+        //        << f.fan_speed_rpm[1] << ","
+        //        << f.fan_speed_rpm[2] << ","
+        //        << f.fan_speed_rpm[3] << ","
+        //        << f.fan_speed_rpm[4] << ","
+        //        << f.psu_type[0] << ","
+        //        << f.psu_type[1] << ","
+        //        << f.psu_type[2] << ","
+        //        << f.psu_type[3] << ","
+        //        << f.psu_type[4] << ","
+        //        << f.psu_power[0] << ","
+        //        << f.psu_power[1] << ","
+        //        << f.psu_power[2] << ","
+        //        << f.psu_power[3] << ","
+        //        << f.psu_power[4] << ","
+        //        << f.psu_voltage[0] << ","
+        //        << f.psu_voltage[1] << ","
+        //        << f.psu_voltage[2] << ","
+        //        << f.psu_voltage[3] << ","
+        //        << f.psu_voltage[4] << ","
+        //        << f.gpu_power_limited << ","
+        //        << f.gpu_temperature_limited << ","
+        //        << f.gpu_current_limited << ","
+        //        << f.gpu_voltage_limited << ","
+        //        << f.gpu_utilization_limited << ","
+        //        << f.vram_power_limited << ","
+        //        << f.vram_temperature_limited << ","
+        //        << f.vram_current_limited << ","
+        //        << f.vram_voltage_limited << ","
+        //        << f.vram_utilization_limited << ","
+        //        << f.cpu_utilization << ","
+        //        << f.cpu_frequency << ","
+        //        << f.cpu_power_w << ","
+        //        << f.cpu_power_limit_w << ","
+        //        << f.cpu_temperature_c << "\n";
+        //}
     }
 
     double RawFrameDataWriter::GetDuration_() const

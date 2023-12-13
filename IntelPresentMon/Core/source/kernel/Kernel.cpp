@@ -92,7 +92,7 @@ namespace p2c::kern
         pm->SetAdapter(id);
     }
 
-    std::vector<pmon::PresentMon::AdapterInfo> Kernel::EnumerateAdapters() const
+    std::vector<pmon::AdapterInfo> Kernel::EnumerateAdapters() const
     {
         std::lock_guard lk{ mtx };
         if (!pm) {
@@ -134,7 +134,7 @@ namespace p2c::kern
             win::com::WbemConnection wbemConn;
 
             // create the PresentMon object
-            try { pm.emplace(opt.controlPipe.AsOptional()); }
+            try { pm.emplace(opt.controlPipe.AsOptional(), opt.shmName.AsOptional()); }
             catch (...) {
                 pHandler->OnPresentmonInitFailed();
                 p2clog.note(L"Failed to init presentmon api").nox().notrace().commit();

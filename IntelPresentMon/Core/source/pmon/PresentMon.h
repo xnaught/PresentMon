@@ -5,14 +5,13 @@
 #include <vector>
 #include <memory>
 #include "metric/Metric.h"
-// adapters corresponding to pmapi structs/functions
-#include "adapt/FpsAdapter.h"
-#include "adapt/GfxLatencyAdapter.h"
-#include "adapt/GpuAdapter.h"
-#include "adapt/RawAdapter.h"
-#include "adapt/CpuAdapter.h"
-#include "adapt/InfoAdapter.h"
 #include "AdapterInfo.h"
+
+namespace pmapi
+{
+	class Session;
+	class ProcessTracker;
+}
 
 namespace p2c::pmon
 {
@@ -21,13 +20,11 @@ namespace p2c::pmon
 	class PresentMon
 	{
 	public:
-		// types
-		using AdapterInfo = pmon::AdapterInfo;
 		// functions
-		PresentMon(std::optional<std::string> namedPipeName, double window = 1000., double offset = 1000., uint32_t telemetrySampleRateMs = 16);
+		PresentMon(std::optional<std::string> namedPipeName, std::optional<std::string> sharedMemoryName, double window = 1000., double offset = 1000., uint32_t telemetrySampleRateMs = 16);
 		~PresentMon();
-		void StartStream(uint32_t pid_);
-		void StopStream();
+		void StartTracking(uint32_t pid_);
+		void StopTracking();
 		double GetWindow() const;
 		void SetWindow(double window_);
 		double GetOffset() const;
@@ -51,14 +48,9 @@ namespace p2c::pmon
 		double window = -1.;
 		double offset = -1.;
 		uint32_t telemetrySamplePeriod = 0;
-		adapt::FpsAdapter fpsAdaptor;
-		adapt::GfxLatencyAdapter gfxLatencyAdaptor;
-		adapt::GpuAdapter gpuAdaptor;
-		adapt::RawAdapter rawAdaptor;
-		adapt::CpuAdapter cpuAdaptor;
-		adapt::InfoAdapter infoAdaptor;
+		std::unique_ptr<pmapi::Session> pSession;
 		std::vector<std::unique_ptr<Metric>> metrics;
-		std::optional<uint32_t> pid;
+		std::shared_ptr<pmapi::ProcessTracker> pTracker;
 		std::optional<uint32_t> selectedAdapter;
 	};
 }

@@ -133,13 +133,13 @@ namespace p2c::kern
         pRoot = MakeDocument_(gfx, *pSpec, graphPacks, textPacks, pCaptureIndicatorText);
         UpdateCaptureStatusText_();
         AdjustOverlaySituation_(position);
-        pm->StartStream(proc.pid);
+        pm->StartTracking(proc.pid);
     }
 
     Overlay::~Overlay()
     {
         if (pm) {
-            try { pm->StopStream(); }
+            try { pm->StopTracking(); }
             catch (...) {}
         }
     }
@@ -549,7 +549,7 @@ namespace p2c::kern
             pos = pWindow->GetPosition();
         }
 
-        pm->StopStream();
+        pm->StopTracking();
         auto pNewOverlay = std::make_unique<Overlay>(
             proc_,
             std::move(pSpec),
