@@ -1,10 +1,13 @@
-// Copyright (C) 2019-2021 Intel Corporation
+// Copyright (C) 2019-2021,2023 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "PresentMon.hpp"
 
+#include <fcntl.h>
+#include <io.h>
+
 static HANDLE gConsoleHandle = INVALID_HANDLE_VALUE;
-static char gConsoleWriteBuffer[8 * 1024] = {};
+static wchar_t gConsoleWriteBuffer[8 * 1024] = {};
 static uint32_t gConsoleWriteBufferIndex = 0;
 static uint32_t gConsolePrevWriteBufferSize = 0;
 static SHORT gConsoleTop = 0;
@@ -19,6 +22,9 @@ bool IsConsoleInitialized()
 
 bool InitializeConsole()
 {
+    _setmode(_fileno(stdout), _O_U16TEXT);
+    _setmode(_fileno(stderr), _O_U16TEXT);
+
     if (!IsConsoleInitialized()) {
         gConsoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
         if (gConsoleHandle == INVALID_HANDLE_VALUE) {
@@ -42,18 +48,18 @@ bool InitializeConsole()
     return true;
 }
 
-static void vConsolePrint(char const* format, va_list args)
+static void vConsolePrint(wchar_t const* format, va_list args)
 {
     auto s = gConsoleWriteBuffer + gConsoleWriteBufferIndex;
-    auto n = sizeof(gConsoleWriteBuffer) - gConsoleWriteBufferIndex;
+    auto n = _countof(gConsoleWriteBuffer) - gConsoleWriteBufferIndex;
 
-    int r = vsnprintf(s, n, format, args);
+    int r = _vsnwprintf_s(s, n, _TRUNCATE, format, args);
     if (r > 0) {
         gConsoleWriteBufferIndex = std::min((uint32_t) (n - 1), gConsoleWriteBufferIndex + r);
     }
 }
 
-void ConsolePrint(char const* format, ...)
+void ConsolePrint(wchar_t const* format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -61,7 +67,7 @@ void ConsolePrint(char const* format, ...)
     va_end(args);
 }
 
-void ConsolePrintLn(char const* format, ...)
+void ConsolePrintLn(wchar_t const* format, ...)
 {
     va_list args;
     va_start(args, format);
@@ -70,18 +76,20 @@ void ConsolePrintLn(char const* format, ...)
 
     auto x = gConsoleWriteBufferIndex % gConsoleWidth;
     auto s = gConsoleWidth - x;
-    memset(gConsoleWriteBuffer + gConsoleWriteBufferIndex, ' ', s);
+    for (uint32_t i = 0; i < s; ++i) {
+        gConsoleWriteBuffer[gConsoleWriteBufferIndex + i] = L' ';
+    }
     gConsoleWriteBufferIndex += s;
 }
 
 void CommitConsole()
 {
-    auto sizeWritten = gConsoleWriteBufferIndex;
-    auto linesWritten = (SHORT) (sizeWritten / gConsoleWidth);
+    auto charsWritten = gConsoleWriteBufferIndex;
+    auto linesWritten = (SHORT) (charsWritten / gConsoleWidth);
 
     // Reset gConsoleTop on the first commit so we don't overwrite any warning
     // messages.
-    auto size = sizeWritten;
+    auto numChars = charsWritten;
     if (gConsoleFirstCommit) {
         gConsoleFirstCommit = false;
 
@@ -91,9 +99,11 @@ void CommitConsole()
     } else {
         // Write some extra empty lines to make sure we clear anything from
         // last time.
-        if (size < gConsolePrevWriteBufferSize) {
-            memset(gConsoleWriteBuffer + size, ' ', gConsolePrevWriteBufferSize - size);
-            size = gConsolePrevWriteBufferSize;
+        if (numChars < gConsolePrevWriteBufferSize) {
+            for (uint32_t i = 0; i < gConsolePrevWriteBufferSize - numChars; ++i) {
+                gConsoleWriteBuffer[numChars + i] = L' ';
+            }
+            numChars = gConsolePrevWriteBufferSize;
         }
     }
 
@@ -103,16 +113,16 @@ void CommitConsole()
     if (gConsoleTop > maxCursorY) {
         COORD bottom = { 0, gConsoleBufferHeight - 1 };
         SetConsoleCursorPosition(gConsoleHandle, bottom);
-        printf("\n");
+        wprintf(L"\n");
         for (--gConsoleTop; gConsoleTop > maxCursorY; --gConsoleTop) {
-            printf("\n");
+            wprintf(L"\n");
         }
     }
 
     // Write to the console.
     DWORD dwCharsWritten = 0;
     COORD cursor = { 0, gConsoleTop };
-    WriteConsoleOutputCharacterA(gConsoleHandle, gConsoleWriteBuffer, (DWORD) size, cursor, &dwCharsWritten);
+    WriteConsoleOutputCharacterW(gConsoleHandle, gConsoleWriteBuffer, (DWORD) numChars, cursor, &dwCharsWritten);
 
     // Put the cursor at the end of the written text.
     cursor.Y += linesWritten;
@@ -124,7 +134,7 @@ void CommitConsole()
     gConsoleWidth = info.srWindow.Right - info.srWindow.Left + 1;
     gConsoleBufferHeight = info.dwSize.Y;
     gConsoleWriteBufferIndex = 0;
-    gConsolePrevWriteBufferSize = sizeWritten;
+    gConsolePrevWriteBufferSize = charsWritten;
 }
 
 void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
@@ -191,10 +201,10 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
 
         if (empty) {
             empty = false;
-            ConsolePrintLn("%ws[%d]:", processInfo.mModuleName.c_str(), processId);
+            ConsolePrintLn(L"%s[%d]:", processInfo.mModuleName.c_str(), processId);
         }
 
-        ConsolePrint("    %016llX (%s): SyncInterval=%d Flags=%d CPU%s%s=%.2lf",
+        ConsolePrint(L"    %016llX (%hs): SyncInterval=%d Flags=%d CPU%hs%hs=%.2lf",
             address,
             RuntimeToString(presentN.Runtime),
             presentN.SyncInterval,
@@ -203,33 +213,33 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
             dspAvg > 0.0 ? "/Display" : "",
             1000.0 * cpuAvg);
 
-        if (gpuAvg > 0.0) ConsolePrint("/%.2lf", 1000.0 * gpuAvg);
-        if (dspAvg > 0.0) ConsolePrint("/%.2lf", 1000.0 * dspAvg);
+        if (gpuAvg > 0.0) ConsolePrint(L"/%.2lf", 1000.0 * gpuAvg);
+        if (dspAvg > 0.0) ConsolePrint(L"/%.2lf", 1000.0 * dspAvg);
 
-        ConsolePrint("ms (%.1lf", 1.0 / cpuAvg);
-        if (gpuAvg > 0.0) ConsolePrint("/%.1lf", 1.0 / gpuAvg);
-        if (dspAvg > 0.0) ConsolePrint("/%.1lf", 1.0 / dspAvg);
-        ConsolePrint(" fps)");
+        ConsolePrint(L"ms (%.1lf", 1.0 / cpuAvg);
+        if (gpuAvg > 0.0) ConsolePrint(L"/%.1lf", 1.0 / gpuAvg);
+        if (dspAvg > 0.0) ConsolePrint(L"/%.1lf", 1.0 / dspAvg);
+        ConsolePrint(L" fps)");
 
         if (latAvg > 0.0) {
-            ConsolePrint(" latency=%.2lfms", 1000.0 * latAvg);
+            ConsolePrint(L" latency=%.2lfms", 1000.0 * latAvg);
         }
 
         if (displayN != nullptr) {
-            ConsolePrint(" %s", PresentModeToString(displayN->PresentMode));
+            ConsolePrint(L" %hs", PresentModeToString(displayN->PresentMode));
         }
 
-        ConsolePrintLn("");
+        ConsolePrintLn(L"");
     }
 
     if (!empty) {
-        ConsolePrintLn("");
+        ConsolePrintLn(L"");
     }
 }
 
 namespace {
 
-int PrintColor(WORD color, char const* format, va_list val)
+int PrintColor(WORD color, wchar_t const* format, va_list val)
 {
     CONSOLE_SCREEN_BUFFER_INFO info = {};
     auto setColor = IsConsoleInitialized() && GetConsoleScreenBufferInfo(gConsoleHandle, &info) != 0;
@@ -241,7 +251,7 @@ int PrintColor(WORD color, char const* format, va_list val)
         SetConsoleTextAttribute(gConsoleHandle, WORD(bg | color));
     }
 
-    int c = vfprintf(stderr, format, val);
+    int c = vfwprintf(stderr, format, val);
 
     if (setColor) {
         SetConsoleTextAttribute(gConsoleHandle, info.wAttributes);
@@ -252,27 +262,27 @@ int PrintColor(WORD color, char const* format, va_list val)
 
 }
 
-int PrintWarning(char const* format, ...)
+int PrintWarning(wchar_t const* format, ...)
 {
     va_list val;
     va_start(val, format);
     int c = PrintColor(FOREGROUND_RED | FOREGROUND_GREEN, format, val);
     va_end(val);
-    c += fprintf(stderr, "\n");
+    c += fwprintf(stderr, L"\n");
     return c;
 }
 
-int PrintError(char const* format, ...)
+int PrintError(wchar_t const* format, ...)
 {
     va_list val;
     va_start(val, format);
     int c = PrintColor(FOREGROUND_RED, format, val);
     va_end(val);
-    c += fprintf(stderr, "\n");
+    c += fwprintf(stderr, L"\n");
     return c;
 }
 
-int PrintWarningNoNewLine(char const* format, ...)
+int PrintWarningNoNewLine(wchar_t const* format, ...)
 {
     va_list val;
     va_start(val, format);
@@ -281,7 +291,7 @@ int PrintWarningNoNewLine(char const* format, ...)
     return c;
 }
 
-int PrintErrorNoNewLine(char const* format, ...)
+int PrintErrorNoNewLine(wchar_t const* format, ...)
 {
     va_list val;
     va_start(val, format);

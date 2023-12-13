@@ -110,12 +110,12 @@ CommandLineArgs const& GetCommandLineArgs();
 // Console.cpp:
 bool InitializeConsole();
 bool IsConsoleInitialized();
-int PrintWarning(char const* format, ...);
-int PrintError(char const* format, ...);
-int PrintWarningNoNewLine(char const* format, ...);
-int PrintErrorNoNewLine(char const* format, ...);
-void ConsolePrint(char const* format, ...);
-void ConsolePrintLn(char const* format, ...);
+int PrintWarning(wchar_t const* format, ...);
+int PrintError(wchar_t const* format, ...);
+int PrintWarningNoNewLine(wchar_t const* format, ...);
+int PrintErrorNoNewLine(wchar_t const* format, ...);
+void ConsolePrint(wchar_t const* format, ...);
+void ConsolePrintLn(wchar_t const* format, ...);
 void CommitConsole();
 void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo);
 

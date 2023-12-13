@@ -531,7 +531,7 @@ void Output()
         case ConsoleOutput::Simple:
             #if _DEBUG
             if (realtimeRecording) {
-                printf(".");
+                wprintf(L".");
             }
             #endif
             break;
@@ -542,7 +542,7 @@ void Output()
             UpdateConsole(gProcesses, lsrData);
 
             if (realtimeRecording) {
-                ConsolePrintLn("** RECORDING **");
+                ConsolePrintLn(L"** RECORDING **");
             }
             CommitConsole();
             break;
@@ -566,10 +566,10 @@ void Output()
     ULONG buffersLost = 0;
     CheckLostReports(&eventsLost, &buffersLost);
     if (buffersLost > 0) {
-        PrintWarning("warning: %lu ETW buffers were lost.", buffersLost);
+        PrintWarning(L"warning: %lu ETW buffers were lost.", buffersLost);
     }
     if (eventsLost > 0) {
-        PrintWarning("warning: %lu ETW events were lost.", eventsLost);
+        PrintWarning(L"warning: %lu ETW events were lost.", eventsLost);
     }
 
     // Close all CSV and process handles

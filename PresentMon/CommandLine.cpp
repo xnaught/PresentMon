@@ -142,7 +142,7 @@ size_t GetConsoleWidth()
         : std::max<size_t>(DEFAULT_CONSOLE_WIDTH, info.srWindow.Right - info.srWindow.Left + 1);
 }
 
-bool ParseKeyName(KeyNameCode const* valid, size_t validCount, wchar_t* name, char const* errorMessage, UINT* outKeyCode)
+bool ParseKeyName(KeyNameCode const* valid, size_t validCount, wchar_t* name, wchar_t const* errorMessage, UINT* outKeyCode)
 {
     for (size_t i = 0; i < validCount; ++i) {
         if (_wcsicmp(name, valid[i].mName) == 0) {
@@ -151,17 +151,17 @@ bool ParseKeyName(KeyNameCode const* valid, size_t validCount, wchar_t* name, ch
         }
     }
 
-    int col = PrintErrorNoNewLine("error: %s '%ws'.\nValid options (case insensitive):", errorMessage, name);
+    int col = PrintErrorNoNewLine(L"error: %s '%s'.\nValid options (case insensitive):", errorMessage, name);
 
     size_t consoleWidth = GetConsoleWidth();
     for (size_t i = 0; i < validCount; ++i) {
         auto len = wcslen(valid[i].mName);
         if (col + len + 1 > consoleWidth) {
-            col = PrintErrorNoNewLine("\n   ") - 1;
+            col = PrintErrorNoNewLine(L"\n   ") - 1;
         }
-        col += PrintErrorNoNewLine(" %ws", valid[i].mName);
+        col += PrintErrorNoNewLine(L" %s", valid[i].mName);
     }
-    fprintf(stderr, "\n");
+    PrintError(L"");
 
     return false;
 }
@@ -175,13 +175,13 @@ bool AssignHotkey(wchar_t* key, CommandLineArgs* args)
 #pragma warning(suppress: 4996)
         token = wcstok(nullptr, L"+");
         if (token == nullptr) {
-            if (!ParseKeyName(HOTKEY_KEYS, _countof(HOTKEY_KEYS), prev, "invalid -hotkey key", &args->mHotkeyVirtualKeyCode)) {
+            if (!ParseKeyName(HOTKEY_KEYS, _countof(HOTKEY_KEYS), prev, L"invalid -hotkey key", &args->mHotkeyVirtualKeyCode)) {
                 return false;
             }
             break;
         }
 
-        if (!ParseKeyName(HOTKEY_MODS, _countof(HOTKEY_MODS), prev, "invalid -hotkey modifier", &args->mHotkeyModifiers)) {
+        if (!ParseKeyName(HOTKEY_MODS, _countof(HOTKEY_MODS), prev, L"invalid -hotkey modifier", &args->mHotkeyModifiers)) {
             return false;
         }
     }
@@ -193,11 +193,11 @@ bool AssignHotkey(wchar_t* key, CommandLineArgs* args)
 void SetCaptureAll(CommandLineArgs* args)
 {
     if (!args->mTargetProcessNames.empty()) {
-        PrintWarning("warning: -captureall elides all previous -process_name arguments.");
+        PrintWarning(L"warning: -captureall elides all previous -process_name arguments.");
         args->mTargetProcessNames.clear();
     }
     if (args->mTargetPid != 0) {
-        PrintWarning("warning: -captureall elides all previous -process_id arguments.");
+        PrintWarning(L"warning: -captureall elides all previous -process_id arguments.");
         args->mTargetPid = 0;
     }
 }
@@ -234,7 +234,7 @@ bool ParseValue(wchar_t** argv, int argc, int* i)
         *i += 1;
         return true;
     }
-    PrintError("error: %ws expecting argument.", argv[*i]);
+    PrintError(L"error: %s expecting argument.", argv[*i]);
     return false;
 }
 
@@ -263,10 +263,10 @@ bool ParseValue(wchar_t** argv, int argc, int* i, UINT* value)
 
 void PrintHelp()
 {
-    fprintf(stderr, "PresentMon %s\n", PRESENT_MON_VERSION);
+    fwprintf(stderr, L"PresentMon %hs\n", PRESENT_MON_VERSION);
 
     // Layout usage 
-    char* s[] = {
+    wchar_t* s[] = {
         #include <generated/command_line_options.inl>
     };
     size_t argWidth = 0;
@@ -274,7 +274,7 @@ void PrintHelp()
         auto arg = s[i];
         auto desc = s[i + 1];
         if (desc != nullptr) {
-            argWidth = std::max(argWidth, strlen(arg));
+            argWidth = std::max(argWidth, wcslen(arg));
         }
     }
 
@@ -287,12 +287,12 @@ void PrintHelp()
         auto arg = s[i];
         auto desc = s[i + 1];
         if (desc == nullptr) {
-            fprintf(stderr, "\n%s:\n", arg);
+            fwprintf(stderr, L"\n%s:\n", arg);
         } else {
-            fprintf(stderr, "  %-*s  ", (int) argWidth, arg);
-            for (auto len = strlen(desc); len > 0; ) {
+            fwprintf(stderr, L"  %-*s  ", (int) argWidth, arg);
+            for (auto len = wcslen(desc); len > 0; ) {
                 if (len <= descWidth) {
-                    fprintf(stderr, "%s\n", desc);
+                    fwprintf(stderr, L"%s\n", desc);
                     break;
                 }
 
@@ -300,7 +300,7 @@ void PrintHelp()
                 while (desc[w] != ' ') {
                     --w;
                 }
-                fprintf(stderr, "%.*s\n%-*s", (int) w, desc, (int) (argWidth + 4), "");
+                fwprintf(stderr, L"%.*s\n%-*s", (int) w, desc, (int) (argWidth + 4), L"");
                 desc += w + 1;
                 len -= w + 1;
             }
@@ -413,7 +413,7 @@ bool ParseCommandLine(int argc, wchar_t** argv)
 
         // Provided argument wasn't recognized
         else if (!(ParseArg(argv[i], L"?") || ParseArg(argv[i], L"h") || ParseArg(argv[i], L"help"))) {
-            PrintError("error: unrecognized argument '%ws'.", argv[i]);
+            PrintError(L"error: unrecognized argument '%s'.", argv[i]);
         }
 
         PrintHelp();
@@ -422,32 +422,32 @@ bool ParseCommandLine(int argc, wchar_t** argv)
 
     // Handle deprecated command line arguments
     if (DEPRECATED_simple) {
-        PrintWarning("warning: -simple command line argument has been deprecated; using -no_track_display instead.");
+        PrintWarning(L"warning: -simple command line argument has been deprecated; using -no_track_display instead.");
         args->mTrackDisplay = false;
     }
     if (DEPRECATED_verbose) {
-        PrintWarning("warning: -verbose command line argument has been deprecated; using -track_debug instead.");
+        PrintWarning(L"warning: -verbose command line argument has been deprecated; using -track_debug instead.");
         args->mTrackDebug = true;
     }
     if (DEPRECATED_wmr) {
-        PrintWarning("warning: -include_mixed_reality command line argument has been deprecated; using -track_mixed_reality instead.");
+        PrintWarning(L"warning: -include_mixed_reality command line argument has been deprecated; using -track_mixed_reality instead.");
         args->mTrackWMR = true;
     }
     if (DEPRECATED_dontRestart) {
-        PrintWarning("warning: -dont_restart_as_admin command line argument has been deprecated; it is now the default behaviour.");
+        PrintWarning(L"warning: -dont_restart_as_admin command line argument has been deprecated; it is now the default behaviour.");
     }
 
     // Ignore -no_track_display if required for other requested tracking
     if (args->mTrackDebug && !args->mTrackDisplay) {
-        PrintWarning("warning: -track_debug requires display tracking; ignoring -no_track_display.");
+        PrintWarning(L"warning: -track_debug requires display tracking; ignoring -no_track_display.");
         args->mTrackDisplay = true;
     }
     if (args->mTrackGPU && !args->mTrackDisplay) {
-        PrintWarning("warning: -track_gpu requires display tracking; ignoring -no_track_display.");
+        PrintWarning(L"warning: -track_gpu requires display tracking; ignoring -no_track_display.");
         args->mTrackDisplay = true;
     }
     if (args->mTrackGPUVideo && !args->mTrackDisplay) {
-        PrintWarning("warning: -track_gpu_video requires display tracking; ignoring -no_track_display.");
+        PrintWarning(L"warning: -track_gpu_video requires display tracking; ignoring -no_track_display.");
         args->mTrackDisplay = true;
     }
 
@@ -459,7 +459,7 @@ bool ParseCommandLine(int argc, wchar_t** argv)
 
     // -date_time is mutually exclusive to -qpc_time and -qpc_time_s
     if (args->mOutputDateTime && (args->mOutputQpcTime || args->mOutputQpcTimeInSeconds)) {
-        PrintError("error: -date_time and -qpc_time or -qpc_time_s cannot be used at the same time.");
+        PrintError(L"error: -date_time and -qpc_time or -qpc_time_s cannot be used at the same time.");
         PrintHelp();
         return false;
     }
@@ -469,13 +469,13 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         if ((args->mHotkeyModifiers & MOD_CONTROL) != 0 && (
             args->mHotkeyVirtualKeyCode == 0x44 /*C*/ ||
             args->mHotkeyVirtualKeyCode == VK_SCROLL)) {
-            PrintError("error: CTRL+C or CTRL+SCROLL cannot be used as a -hotkey, they are reserved for terminating the trace.");
+            PrintError(L"error: CTRL+C or CTRL+SCROLL cannot be used as a -hotkey, they are reserved for terminating the trace.");
             PrintHelp();
             return false;
         }
 
         if (args->mHotkeyModifiers == MOD_NOREPEAT && args->mHotkeyVirtualKeyCode == VK_F12) {
-            PrintError("error: 'F12' cannot be used as a -hotkey, it is reserved for the debugger.");
+            PrintError(L"error: 'F12' cannot be used as a -hotkey, it is reserved for the debugger.");
             PrintHelp();
             return false;
         }
@@ -485,24 +485,24 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     // -output_file, or -output_stdout if they are also used.
     if (!args->mOutputCsvToFile) {
         if (args->mOutputQpcTime) {
-            PrintWarning("warning: -qpc_time and -qpc_time_s are only relevant for CSV output; ignoring due to -no_csv.");
+            PrintWarning(L"warning: -qpc_time and -qpc_time_s are only relevant for CSV output; ignoring due to -no_csv.");
             args->mOutputQpcTime = false;
             args->mOutputQpcTimeInSeconds = false;
         }
         if (args->mOutputDateTime) {
-            PrintWarning("warning: -date_time is only relevant for CSV output; ignoring due to -no_csv.");
+            PrintWarning(L"warning: -date_time is only relevant for CSV output; ignoring due to -no_csv.");
             args->mOutputDateTime = false;
         }
         if (args->mMultiCsv) {
-            PrintWarning("warning: -multi_csv and -no_csv arguments are not compatible; ignoring -multi_csv.");
+            PrintWarning(L"warning: -multi_csv and -no_csv arguments are not compatible; ignoring -multi_csv.");
             args->mMultiCsv = false;
         }
         if (args->mOutputCsvFileName != nullptr) {
-            PrintWarning("warning: -output_file and -no_csv arguments are not compatible; ignoring -output_file.");
+            PrintWarning(L"warning: -output_file and -no_csv arguments are not compatible; ignoring -output_file.");
             args->mOutputCsvFileName = nullptr;
         }
         if (args->mOutputCsvToStdout) {
-            PrintWarning("warning: -output_stdout and -no_csv arguments are not compatible; ignoring -output_stdout.");
+            PrintWarning(L"warning: -output_stdout and -no_csv arguments are not compatible; ignoring -output_stdout.");
             args->mOutputCsvToStdout = false;
         }
     }
@@ -517,18 +517,18 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         args->mConsoleOutputType = ConsoleOutput::None;
 
         if (args->mOutputCsvFileName != nullptr) {
-            PrintError("error: only one of -output_file or -output_stdout arguments can be used.");
+            PrintError(L"error: only one of -output_file or -output_stdout arguments can be used.");
             PrintHelp();
             return false;
         }
 
         if (args->mMultiCsv) {
-            PrintWarning("warning: -multi_csv and -output_stdout are not compatible; ignoring -multi_csv.");
+            PrintWarning(L"warning: -multi_csv and -output_stdout are not compatible; ignoring -multi_csv.");
             args->mMultiCsv = false;
         }
 
         if (args->mTrackWMR) {
-            PrintWarning("warning: -track_mixed_reality and -output_stdout are not compatible; ignoring -track_mixed_reality.");
+            PrintWarning(L"warning: -track_mixed_reality and -output_stdout are not compatible; ignoring -track_mixed_reality.");
             args->mTrackWMR = false;
         }
     }
@@ -544,15 +544,15 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     // Try to initialize the console, and warn if we're not going to be able to
     // do the advanced display as requested.
     if (args->mConsoleOutputType == ConsoleOutput::Full && !IsConsoleInitialized()) {
-        PrintWarning("warning: could not initialize console display; continuing with -no_top.");
+        PrintWarning(L"warning: could not initialize console display; continuing with -no_top.");
         args->mConsoleOutputType = ConsoleOutput::Simple;
     }
 
     // If -terminate_existing, warn about any normal arguments since we'll just
     // be stopping an existing session and then exiting.
     if (args->mTerminateExisting && argc != 2) {
-        PrintWarning("warning: -terminate_existing exits without capturing anything; ignoring all capture,\n"
-                     "         output, and recording arguments.");
+        PrintWarning(L"warning: -terminate_existing exits without capturing anything; ignoring all capture,\n"
+                     L"         output, and recording arguments.");
     }
 
     // Convert the provided process names into a canonical form used for comparison.
