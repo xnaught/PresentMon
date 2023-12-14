@@ -82,7 +82,7 @@ static void WriteCsvHeader(FILE* fp)
     fwprintf(fp, L"\n");
 }
 
-void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, SwapChainData const& chain, PresentEvent const& p)
+void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, PresentEvent const& p, FrameMetrics const& metrics)
 {
     auto const& args = GetCommandLineArgs();
 
@@ -96,46 +96,6 @@ void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, SwapCh
     auto fp = GetOutputCsv(processInfo, p.ProcessId);
     if (fp == nullptr) {
         return;
-    }
-
-    // Look up the last present event in the swapchain's history.  We need at
-    // least two presents to compute frame statistics.
-    if (chain.mPresentHistoryCount == 0) {
-        return;
-    }
-
-    auto lastPresented = chain.mPresentHistory[(chain.mNextPresentIndex - 1) % SwapChainData::PRESENT_HISTORY_MAX_COUNT].get();
-
-    // Compute frame statistics.
-    double msBetweenPresents      = pmSession.QpcDeltaToUnsignedMilliSeconds(lastPresented->PresentStartTime, p.PresentStartTime);
-    double msInPresentApi         = pmSession.QpcDeltaToUnsignedMilliSeconds(p.PresentStartTime, p.PresentStopTime);
-    double msUntilRenderComplete  = 0.0;
-    double msUntilDisplayed       = 0.0;
-    double msBetweenDisplayChange = 0.0;
-
-    if (args.mTrackDisplay) {
-        msUntilRenderComplete = pmSession.QpcDeltaToMilliSeconds(p.PresentStartTime, p.ReadyTime);
-
-        if (presented) {
-            msUntilDisplayed = pmSession.QpcDeltaToUnsignedMilliSeconds(p.PresentStartTime, p.ScreenTime);
-
-            if (chain.mLastDisplayedPresentIndex != UINT32_MAX) {
-                auto lastDisplayed = chain.mPresentHistory[chain.mLastDisplayedPresentIndex % SwapChainData::PRESENT_HISTORY_MAX_COUNT].get();
-                msBetweenDisplayChange = pmSession.QpcDeltaToUnsignedMilliSeconds(lastDisplayed->ScreenTime, p.ScreenTime);
-            }
-        }
-    }
-
-    double msUntilRenderStart = 0.0;
-    if (args.mTrackGPU) {
-        msUntilRenderStart = pmSession.QpcDeltaToMilliSeconds(p.PresentStartTime, p.GPUStartTime);
-    }
-
-    double msSinceInput = 0.0;
-    if (args.mTrackInput) {
-        if (p.InputTime != 0) {
-            msSinceInput = pmSession.QpcDeltaToMilliSeconds(p.PresentStartTime - p.InputTime);
-        }
     }
 
     // Output in CSV format
@@ -163,27 +123,27 @@ void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, SwapCh
         fwprintf(fp, L"%.*lf", DBL_DIG - 1, 0.001 * pmSession.QpcToMilliSeconds(p.PresentStartTime));
     }
     fwprintf(fp, L",%.*lf,%.*lf",
-        DBL_DIG - 1, msInPresentApi,
-        DBL_DIG - 1, msBetweenPresents);
+        DBL_DIG - 1, metrics.msInPresentApi,
+        DBL_DIG - 1, metrics.msBetweenPresents);
     if (args.mTrackDisplay) {
         fwprintf(fp, L",%d,%hs,%.*lf,%.*lf,%.*lf",
             p.SupportsTearing,
             PresentModeToString(p.PresentMode),
-            DBL_DIG - 1, msUntilRenderComplete,
-            DBL_DIG - 1, msUntilDisplayed,
-            DBL_DIG - 1, msBetweenDisplayChange);
+            DBL_DIG - 1, metrics.msUntilRenderComplete,
+            DBL_DIG - 1, metrics.msUntilDisplayed,
+            DBL_DIG - 1, metrics.msBetweenDisplayChange);
     }
     if (args.mTrackGPU) {
         fwprintf(fp, L",%.*lf,%.*lf",
-            DBL_DIG - 1, msUntilRenderStart,
-            DBL_DIG - 1, pmSession.QpcDeltaToMilliSeconds(p.GPUDuration));
+            DBL_DIG - 1, metrics.msUntilRenderStart,
+            DBL_DIG - 1, metrics.msGPUDuration);
     }
     if (args.mTrackGPUVideo) {
         fwprintf(fp, L",%.*lf",
-            DBL_DIG - 1, pmSession.QpcDeltaToMilliSeconds(p.GPUVideoDuration));
+            DBL_DIG - 1, metrics.msVideoDuration);
     }
     if (args.mTrackInput) {
-        fwprintf(fp, L",%.*lf", DBL_DIG - 1, msSinceInput);
+        fwprintf(fp, L",%.*lf", DBL_DIG - 1, metrics.msSinceInput);
     }
     if (args.mOutputQpcTime) {
         if (args.mOutputQpcTimeInSeconds) {

@@ -74,16 +74,33 @@ struct CommandLineArgs {
     bool mStopExistingSession;
 };
 
-// CSV output only requires last presented/displayed event to compute frame
-// information, but if outputing to the console we maintain a longer history of
-// presents to compute averages, limited to 120 events (2 seconds @ 60Hz) to
-// reduce memory/compute overhead.
+// Metrics computed per-frame
+struct FrameMetrics {
+    double msBetweenPresents;
+    double msInPresentApi;
+    double msUntilRenderComplete;
+    double msUntilDisplayed;
+    double msBetweenDisplayChange;
+    double msUntilRenderStart;
+    double msGPUDuration;
+    double msVideoDuration;
+    double msSinceInput;
+};
+
+// We store SwapChainData per process and per swapchain, where we maintain:
+// - information on previous presents needed for console output or to compute metrics for upcoming
+//   presents,
+// - exponential averages of key metrics displayed in console output.
 struct SwapChainData {
-    enum { PRESENT_HISTORY_MAX_COUNT = 120 };
-    std::shared_ptr<PresentEvent> mPresentHistory[PRESENT_HISTORY_MAX_COUNT];
-    uint32_t mPresentHistoryCount;
-    uint32_t mNextPresentIndex;
-    uint32_t mLastDisplayedPresentIndex; // UINT32_MAX if none displayed
+    // Present info
+    std::shared_ptr<PresentEvent> mLastPresented;
+    std::shared_ptr<PresentEvent> mLastDisplayed;
+
+    // Frame statistics
+    float mAvgCPUDuration = 0.f;
+    float mAvgGPUDuration = 0.f;
+    float mAvgDisplayLatency = 0.f;
+    float mAvgDisplayDuration = 0.f;
 };
 
 struct ProcessInfo {
@@ -106,7 +123,7 @@ bool BeginConsoleUpdate();
 void EndConsoleUpdate();
 void ConsolePrint(wchar_t const* format, ...);
 void ConsolePrintLn(wchar_t const* format, ...);
-void UpdateConsole(PMTraceSession const& pmSession, uint32_t processId, ProcessInfo const& processInfo);
+void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo);
 int PrintWarning(wchar_t const* format, ...);
 int PrintError(wchar_t const* format, ...);
 
@@ -118,7 +135,7 @@ void WaitForConsumerThreadToExit();
 void IncrementRecordingCount();
 FILE* GetOutputCsv(ProcessInfo* processInfo, uint32_t processId);
 void CloseOutputCsv(ProcessInfo* processInfo);
-void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, SwapChainData const& chain, PresentEvent const& p);
+void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, PresentEvent const& p, FrameMetrics const& metrics);
 const char* FinalStateToDroppedString(PresentResult res);
 const char* PresentModeToString(PresentMode mode);
 const char* RuntimeToString(Runtime rt);
