@@ -65,7 +65,7 @@ static void StartRecording()
     gIsRecording = true;
 
     // Notify user we're recording
-    if (args.mConsoleOutput == ConsoleOutput::Simple) {
+    if (args.mConsoleOutput == ConsoleOutput::Simple && args.mCSVOutput != CSVOutput::None) {
         wprintf(L"Started recording.\n");
     }
     if (args.mScrollLockIndicator) {
@@ -75,7 +75,7 @@ static void StartRecording()
     // Tell OutputThread to record
     SetOutputRecordingState(true);
 
-    // Start -timed timer
+    // Start --timed timer
     if (args.mStartTimer) {
         SetTimer(gWnd, TIMED_TIMER_ID, args.mTimer * 1000, (TIMERPROC) nullptr);
     }
@@ -88,7 +88,7 @@ static void StopRecording()
     assert(IsRecording() == true);
     gIsRecording = false;
 
-    // Stop time -timed timer if there is one
+    // Stop time --timed timer if there is one
     if (args.mStartTimer) {
         KillTimer(gWnd, TIMED_TIMER_ID);
     }
@@ -100,7 +100,7 @@ static void StopRecording()
     if (args.mScrollLockIndicator) {
         EnableScrollLock(false);
     }
-    if (args.mConsoleOutput == ConsoleOutput::Simple) {
+    if (args.mConsoleOutput == ConsoleOutput::Simple && args.mCSVOutput != CSVOutput::None) {
         wprintf(L"Stopped recording.\n");
     }
 }
@@ -176,11 +176,11 @@ int wmain(int argc, wchar_t** argv)
     // Load system DLLs
     LoadLibraryExA("advapi32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     LoadLibraryExA("shell32.dll",  NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    LoadLibraryExA("shlwapi.dll",  NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     LoadLibraryExA("tdh.dll",      NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     LoadLibraryExA("user32.dll",   NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
 
     // Initialize console
+    SetThreadDescription(GetCurrentThread(), L"PresentMon Consumer Thread");
     InitializeConsole();
 
     // Parse command line arguments.
@@ -190,7 +190,7 @@ int wmain(int argc, wchar_t** argv)
 
     auto const& args = GetCommandLineArgs();
 
-    // Special case handling for -terminate_existing_session
+    // Special case handling for --terminate_existing_session
     if (args.mTerminateExistingSession) {
         auto status = StopNamedTraceSession(args.mSessionName);
         switch (status) {
@@ -221,8 +221,8 @@ int wmain(int argc, wchar_t** argv)
         PrintWarning(
             L"warning: PresentMon requires elevated privilege in order to query processes that are\n"
             L"         short-running or started on another account.  Without it, those processes will\n"
-            L"         be listed as '<error>' and they can't be targeted by -process_name nor trigger\n"
-            L"         -terminate_on_proc_exit.\n");
+            L"         be listed as '<unknown>' and they can't be targeted by --process_name nor trigger\n"
+            L"         --terminate_on_proc_exit.\n");
     }
 
     // Create a message queue to handle the input messages.
@@ -243,7 +243,7 @@ int wmain(int argc, wchar_t** argv)
 
     // Register the hotkey.
     if (args.mHotkeySupport && !RegisterHotKey(gWnd, HOTKEY_ID, args.mHotkeyModifiers, args.mHotkeyVirtualKeyCode)) {
-        PrintError(L"error: failed to register hotkey.\n");
+        PrintHotkeyError();
         DestroyWindow(gWnd);
         UnregisterClass(wndClass.lpszClassName, NULL);
         return 5;
@@ -276,12 +276,12 @@ int wmain(int argc, wchar_t** argv)
         if (args.mStopExistingSession) {
             PrintWarning(
                 L"warning: a trace session named \"%s\" is already running and it will be stopped.\n"
-                L"         Use -session_name with a different name to start a new session.\n",
+                L"         Use --session_name with a different name to start a new session.\n",
                 args.mSessionName);
         } else {
             PrintError(
-                L"error: a trace session named \"%s\" is already running. Use -stop_existing_session\n"
-                L"       to stop the existing session, or use -session_name with a different name to\n"
+                L"error: a trace session named \"%s\" is already running. Use --stop_existing_session\n"
+                L"       to stop the existing session, or use --session_name with a different name to\n"
                 L"       start a new session.\n",
                 args.mSessionName);
 
@@ -332,7 +332,7 @@ int wmain(int argc, wchar_t** argv)
         ? EnableScrollLock(IsRecording())
         : false;
 
-    // If the user didn't specify -hotkey, simulate a hotkey press to start the
+    // If the user didn't specify --hotkey, simulate a hotkey press to start the
     // recording right away.
     if (!args.mHotkeySupport) {
         PostMessage(gWnd, WM_HOTKEY, HOTKEY_ID, args.mHotkeyModifiers & ~MOD_NOREPEAT);

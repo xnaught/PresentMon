@@ -32,7 +32,7 @@ uint32_t GetDeferredCompletionWaitCount(PresentEvent const& p)
 {
     // If the present was displayed or discarded before Present_Stop, defer
     // completion for for one Present_Stop.
-    if (p.Runtime != Runtime::Other && p.PresentStopTime == 0) {
+    if (p.Runtime != Runtime::Other && p.TimeInPresent == 0) {
         return 1;
     }
 
@@ -76,7 +76,7 @@ PresentEvent::PresentEvent()
     : PresentStartTime(0)
     , ProcessId(0)
     , ThreadId(0)
-    , PresentStopTime(0)
+    , TimeInPresent(0)
     , GPUStartTime(0)
     , ReadyTime(0)
     , GPUDuration(0)
@@ -1771,6 +1771,7 @@ void PMTraceConsumer::CompletePresentHelper(std::shared_ptr<PresentEvent> const&
             }
         }
         p->DependentPresents.clear();
+        p->DependentPresents.shrink_to_fit();
     }
 
     // If presented, remove any earlier presents made on the same swap chain.
@@ -1796,7 +1797,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
     // created but not properly tracked due to missed events.  This is
     // especially prevalent in ETLs that start runtime providers before backend
     // providers and/or start capturing while an intensive graphics application
-    // is already running.  When that happens, PresentStartTime/PresentStopTime and
+    // is already running.  When that happens, PresentStartTime/TimeInPresentAPI and
     // ReadyTime/ScreenTime times can become mis-matched, and that offset can
     // persist for the full capture.
     //
@@ -1814,6 +1815,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
                 // recursion in CompletePresentHelper(), since we know that we're
                 // completing all the presents anyway.
                 p2->DependentPresents.clear();
+                p2->DependentPresents.shrink_to_fit();
 
                 VerboseTraceBeforeModifyingPresent(p2.get());
                 p2->IsLost = true;
@@ -2056,7 +2058,7 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
         auto present = FindThreadPresent(hdr.ThreadId);
         if (present != nullptr) {
             // Check expected state (a new Present() that has only been started).
-            DebugAssert(present->PresentStopTime             == 0);
+            DebugAssert(present->TimeInPresent               == 0);
             DebugAssert(present->IsCompleted                 == false);
             DebugAssert(present->IsLost                      == false);
             DebugAssert(present->DeferredCompletionWaitCount == 0);
@@ -2092,8 +2094,8 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
                         VerboseTraceBeforeModifyingPresent(present.get());
                         present->DeferredCompletionWaitCount -= 1;
 
-                        if (!presentStopUsed && present->PresentStopTime == 0) {
-                            present->PresentStopTime = *(uint64_t*) &hdr.TimeStamp;
+                        if (!presentStopUsed && present->TimeInPresent == 0) {
+                            present->TimeInPresent = *(uint64_t*) &hdr.TimeStamp - present->PresentStartTime;
                             if (GetDeferredCompletionWaitCount(*present) == 0) {
                                 present->DeferredCompletionWaitCount = 0;
                             }
@@ -2125,7 +2127,7 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
 
         VerboseTraceBeforeModifyingPresent(present.get());
         present->Runtime = runtime;
-        present->PresentStopTime = *(uint64_t*) &hdr.TimeStamp;
+        present->TimeInPresent = *(uint64_t*) &hdr.TimeStamp - present->PresentStartTime;
 
         bool visible = false;
         switch (runtime) {

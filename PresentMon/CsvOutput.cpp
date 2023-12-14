@@ -34,7 +34,8 @@ const char* RuntimeToString(Runtime rt)
     }
 }
 
-const char* FinalStateToDroppedString(PresentResult res)
+// v1.x only:
+static const char* FinalStateToDroppedString(PresentResult res)
 {
     switch (res) {
     case PresentResult::Presented: return "0";
@@ -88,7 +89,7 @@ static void GenerateFilename(wchar_t* path, std::wstring const& processName, uin
 
     // Append -PROCESSNAME if applicable.
     if (args.mMultiCsv) {
-        if (processName != L"<error>") {
+        if (processName != L"<unknown>") {
             ADD_TO_PATH(L"-%s", processName.c_str());
         }
         ADD_TO_PATH(L"-%u", processId);
@@ -105,33 +106,37 @@ static void GenerateFilename(wchar_t* path, std::wstring const& processName, uin
     #undef ADD_TO_PATH
 }
 
-static void WriteCsvHeader(FILE* fp)
+template<typename FrameMetricsT>
+void WriteCsvHeader(FILE* fp);
+
+template<typename FrameMetricsT>
+void WriteCsvRow(FILE* fp, PMTraceSession const& pmSession, ProcessInfo const& processInfo, PresentEvent const& p, FrameMetricsT const& metrics);
+
+template<>
+void WriteCsvHeader<FrameMetrics1>(FILE* fp)
 {
     auto const& args = GetCommandLineArgs();
 
-    fwprintf(fp,
-        L"Application"
-        L",ProcessID"
-        L",SwapChainAddress"
-        L",Runtime"
-        L",SyncInterval"
-        L",PresentFlags"
-        L",Dropped"
-        L",TimeInSeconds"
-        L",msInPresentAPI"
-        L",msBetweenPresents");
+    fwprintf(fp, L"Application"
+                 L",ProcessID"
+                 L",SwapChainAddress"
+                 L",Runtime"
+                 L",SyncInterval"
+                 L",PresentFlags"
+                 L",Dropped"
+                 L",TimeInSeconds"
+                 L",msInPresentAPI"
+                 L",msBetweenPresents");
     if (args.mTrackDisplay) {
-        fwprintf(fp,
-            L",AllowsTearing"
-            L",PresentMode"
-            L",msUntilRenderComplete"
-            L",msUntilDisplayed"
-            L",msBetweenDisplayChange");
+        fwprintf(fp, L",AllowsTearing"
+                     L",PresentMode"
+                     L",msUntilRenderComplete"
+                     L",msUntilDisplayed"
+                     L",msBetweenDisplayChange");
     }
     if (args.mTrackGPU) {
-        fwprintf(fp,
-            L",msUntilRenderStart"
-            L",msGPUActive");
+        fwprintf(fp, L",msUntilRenderStart"
+                     L",msGPUActive");
     }
     if (args.mTrackGPUVideo) {
         fwprintf(fp, L",msGPUVideoActive");
@@ -145,11 +150,181 @@ static void WriteCsvHeader(FILE* fp)
     fwprintf(fp, L"\n");
 }
 
-void UpdateCsv(
+template<>
+void WriteCsvRow<FrameMetrics1>(
+    FILE* fp,
+    PMTraceSession const& pmSession,
+    ProcessInfo const& processInfo,
+    PresentEvent const& p,
+    FrameMetrics1 const& metrics)
+{
+    auto const& args = GetCommandLineArgs();
+
+    fwprintf(fp, L"%s,%d,0x%016llX,%hs,%d,%d,%hs", processInfo.mModuleName.c_str(),
+                                                   p.ProcessId,
+                                                   p.SwapChainAddress,
+                                                   RuntimeToString(p.Runtime),
+                                                   p.SyncInterval,
+                                                   p.PresentFlags,
+                                                   FinalStateToDroppedString(p.FinalState));
+    switch (args.mTimeUnit) {
+    case TimeUnit::DateTime: {
+        SYSTEMTIME st = {};
+        uint64_t ns = 0;
+        pmSession.QpcToLocalSystemTime(p.PresentStartTime, &st, &ns);
+        fwprintf(fp, L",%u-%u-%u %u:%02u:%02u.%09llu", st.wYear,
+                                                       st.wMonth,
+                                                       st.wDay,
+                                                       st.wHour,
+                                                       st.wMinute,
+                                                       st.wSecond,
+                                                       ns);
+    }   break;
+    default:
+        fwprintf(fp, L",%.*lf", DBL_DIG - 1, 0.001 * pmSession.QpcToMilliSeconds(p.PresentStartTime));
+        break;
+    }
+    fwprintf(fp, L",%.*lf,%.*lf", DBL_DIG - 1, metrics.msInPresentApi,
+                                  DBL_DIG - 1, metrics.msBetweenPresents);
+    if (args.mTrackDisplay) {
+        fwprintf(fp, L",%d,%hs,%.*lf,%.*lf,%.*lf", p.SupportsTearing,
+                                                   PresentModeToString(p.PresentMode),
+                                                   DBL_DIG - 1, metrics.msUntilRenderComplete,
+                                                   DBL_DIG - 1, metrics.msUntilDisplayed,
+                                                   DBL_DIG - 1, metrics.msBetweenDisplayChange);
+    }
+    if (args.mTrackGPU) {
+        fwprintf(fp, L",%.*lf,%.*lf", DBL_DIG - 1, metrics.msUntilRenderStart,
+                                      DBL_DIG - 1, metrics.msGPUDuration);
+    }
+    if (args.mTrackGPUVideo) {
+        fwprintf(fp, L",%.*lf", DBL_DIG - 1, metrics.msVideoDuration);
+    }
+    if (args.mTrackInput) {
+        fwprintf(fp, L",%.*lf", DBL_DIG - 1, metrics.msSinceInput);
+    }
+    switch (args.mTimeUnit) {
+    case TimeUnit::QPC:
+        fwprintf(fp, L",%llu", p.PresentStartTime);
+        break;
+    case TimeUnit::QPCMilliSeconds:
+        fwprintf(fp, L",%.*lf", DBL_DIG - 1, 0.001 * pmSession.QpcDeltaToMilliSeconds(p.PresentStartTime));
+        break;
+    }
+    fwprintf(fp, L"\n");
+
+}
+
+template<>
+void WriteCsvHeader<FrameMetrics>(FILE* fp)
+{
+    auto const& args = GetCommandLineArgs();
+
+    fwprintf(fp, L"Application"
+                 L",ProcessID"
+                 L",SwapChainAddress"
+                 L",Runtime"
+                 L",SyncInterval"
+                 L",PresentFlags");
+    if (args.mTrackDisplay) {
+        fwprintf(fp, L",AllowsTearing"
+                     L",PresentMode");
+    }
+    switch (args.mTimeUnit) {
+    case TimeUnit::MilliSeconds:    fwprintf(fp, L",CPUStartTime"); break;
+    case TimeUnit::QPC:             fwprintf(fp, L",CPUStartQPC"); break;
+    case TimeUnit::QPCMilliSeconds: fwprintf(fp, L",CPUStartQPCTime"); break;
+    case TimeUnit::DateTime:        fwprintf(fp, L",CPUStartDateTime"); break;
+    }
+    fwprintf(fp, L",CPUBusy"
+                 L",CPUWait");
+    if (args.mTrackGPU) {
+        fwprintf(fp, L",GPULatency"
+                     L",GPUBusy"
+                     L",GPUWait");
+    }
+    if (args.mTrackGPUVideo) {
+        fwprintf(fp, L",VideoBusy");
+    }
+    if (args.mTrackDisplay) {
+        fwprintf(fp, L",DisplayLatency"
+                     L",DisplayedTime");
+    }
+    if (args.mTrackInput) {
+        fwprintf(fp, L",ClickToPhotonLatency");
+    }
+    fwprintf(fp, L"\n");
+}
+
+template<>
+void WriteCsvRow<FrameMetrics>(
+    FILE* fp,
+    PMTraceSession const& pmSession,
+    ProcessInfo const& processInfo,
+    PresentEvent const& p,
+    FrameMetrics const& metrics)
+{
+    auto const& args = GetCommandLineArgs();
+
+    fwprintf(fp, L"%s,%d,0x%016llX,%hs,%d,%d", processInfo.mModuleName.c_str(),
+                                               p.ProcessId,
+                                               p.SwapChainAddress,
+                                               RuntimeToString(p.Runtime),
+                                               p.SyncInterval,
+                                               p.PresentFlags);
+    if (args.mTrackDisplay) {
+        fwprintf(fp, L",%d,%hs", p.SupportsTearing,
+                                 PresentModeToString(p.PresentMode));
+    }
+    switch (args.mTimeUnit) {
+    case TimeUnit::MilliSeconds:
+        fwprintf(fp, L",%.6lf", pmSession.QpcToMilliSeconds(metrics.mCPUStart));
+        break;
+    case TimeUnit::QPC:
+        fwprintf(fp, L",%llu", metrics.mCPUStart);
+        break;
+    case TimeUnit::QPCMilliSeconds:
+        fwprintf(fp, L",%.6lf", pmSession.QpcDeltaToMilliSeconds(metrics.mCPUStart));
+        break;
+    case TimeUnit::DateTime: {
+        SYSTEMTIME st = {};
+        uint64_t ns = 0;
+        pmSession.QpcToLocalSystemTime(metrics.mCPUStart, &st, &ns);
+        fwprintf(fp, L",%u-%u-%u %u:%02u:%02u.%09llu", st.wYear,
+                                                       st.wMonth,
+                                                       st.wDay,
+                                                       st.wHour,
+                                                       st.wMinute,
+                                                       st.wSecond,
+                                                       ns);
+    }   break;
+    }
+    fwprintf(fp, L",%.6lf,%.6lf", metrics.mCPUBusy,
+                                  metrics.mCPUWait);
+    if (args.mTrackGPU) {
+        fwprintf(fp, L",%.6lf,%.6lf,%.6lf", metrics.mGPULatency,
+                                            metrics.mGPUBusy,
+                                            metrics.mGPUWait);
+    }
+    if (args.mTrackGPUVideo) {
+        fwprintf(fp, L",%.6lf", metrics.mVideoBusy);
+    }
+    if (args.mTrackDisplay) {
+        fwprintf(fp, L",%.6lf,%.6lf", metrics.mDisplayLatency,
+                                      metrics.mDisplayedTime);
+    }
+    if (args.mTrackInput) {
+        fwprintf(fp, L",%.6lf", metrics.mClickToPhotonLatency);
+    }
+    fwprintf(fp, L"\n");
+}
+
+template<typename FrameMetricsT>
+void UpdateCsvT(
     PMTraceSession const& pmSession,
     ProcessInfo* processInfo,
     PresentEvent const& p,
-    FrameMetrics const& metrics)
+    FrameMetricsT const& metrics)
 {
     auto const& args = GetCommandLineArgs();
 
@@ -180,68 +355,21 @@ void UpdateCsv(
             *fp = stdout;
         }
 
-        WriteCsvHeader(*fp);
+        WriteCsvHeader<FrameMetricsT>(*fp);
     }
 
     // Output in CSV format
-    fwprintf(*fp, L"%s,%d,0x%016llX,%hs,%d,%d,%hs,",
-        processInfo->mModuleName.c_str(),
-        p.ProcessId,
-        p.SwapChainAddress,
-        RuntimeToString(p.Runtime),
-        p.SyncInterval,
-        p.PresentFlags,
-        FinalStateToDroppedString(p.FinalState));
-    switch (args.mTimeUnit) {
-    case TimeUnit::DateTime: {
-        SYSTEMTIME st = {};
-        uint64_t ns = 0;
-        pmSession.QpcToLocalSystemTime(p.PresentStartTime, &st, &ns);
-        fwprintf(*fp, L"%u-%u-%u %u:%02u:%02u.%09llu",
-            st.wYear,
-            st.wMonth,
-            st.wDay,
-            st.wHour,
-            st.wMinute,
-            st.wSecond,
-            ns);
-    }   break;
-    default:
-        fwprintf(*fp, L"%.*lf", DBL_DIG - 1, 0.001 * pmSession.QpcToMilliSeconds(p.PresentStartTime));
-        break;
-    }
-    fwprintf(*fp, L",%.*lf,%.*lf",
-        DBL_DIG - 1, metrics.msInPresentApi,
-        DBL_DIG - 1, metrics.msBetweenPresents);
-    if (args.mTrackDisplay) {
-        fwprintf(*fp, L",%d,%hs,%.*lf,%.*lf,%.*lf",
-            p.SupportsTearing,
-            PresentModeToString(p.PresentMode),
-            DBL_DIG - 1, metrics.msUntilRenderComplete,
-            DBL_DIG - 1, metrics.msUntilDisplayed,
-            DBL_DIG - 1, metrics.msBetweenDisplayChange);
-    }
-    if (args.mTrackGPU) {
-        fwprintf(*fp, L",%.*lf,%.*lf",
-            DBL_DIG - 1, metrics.msUntilRenderStart,
-            DBL_DIG - 1, metrics.msGPUDuration);
-    }
-    if (args.mTrackGPUVideo) {
-        fwprintf(*fp, L",%.*lf",
-            DBL_DIG - 1, metrics.msVideoDuration);
-    }
-    if (args.mTrackInput) {
-        fwprintf(*fp, L",%.*lf", DBL_DIG - 1, metrics.msSinceInput);
-    }
-    switch (args.mTimeUnit) {
-    case TimeUnit::QPC:
-        fwprintf(*fp, L",%llu", p.PresentStartTime);
-        break;
-    case TimeUnit::QPCMilliSeconds:
-        fwprintf(*fp, L",%.*lf", DBL_DIG - 1, 0.001 * pmSession.QpcDeltaToMilliSeconds(p.PresentStartTime));
-        break;
-    }
-    fwprintf(*fp, L"\n");
+    WriteCsvRow(*fp, pmSession, *processInfo, p, metrics);
+}
+
+void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, PresentEvent const& p, FrameMetrics1 const& metrics)
+{
+    UpdateCsvT(pmSession, processInfo, p, metrics);
+}
+
+void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, PresentEvent const& p, FrameMetrics const& metrics)
+{
+    UpdateCsvT(pmSession, processInfo, p, metrics);
 }
 
 static void CloseCsv(FILE** fp)

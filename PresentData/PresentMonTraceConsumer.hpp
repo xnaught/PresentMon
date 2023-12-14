@@ -134,7 +134,7 @@ struct PresentEvent {
     uint64_t PresentStartTime;  // QPC value of the first event related to the Present (D3D9, DXGI, or DXGK Present_Start)
     uint32_t ProcessId;         // ID of the process that presented
     uint32_t ThreadId;          // ID of the thread that presented
-    uint64_t PresentStopTime;   // QPC value when the application's present call completed
+    uint64_t TimeInPresent;     // The QPC duration of the Present call (only applicable for D3D9/DXGI)
     uint64_t GPUStartTime;      // QPC value when the frame's first DMA packet started
     uint64_t ReadyTime;         // QPC value when the frame's last DMA packet completed
     uint64_t GPUDuration;       // QPC duration during which a frame's DMA packet was running on
@@ -172,7 +172,7 @@ struct PresentEvent {
     uint32_t DestHeight;
     uint32_t DriverThreadId;    // If the present is deferred by the driver, this will hold the
                                 // threaad id that the driver finally presented on.
-    Runtime Runtime;
+    Runtime Runtime;            // Whether PresentStart originated from D3D9, DXGI, or DXGK.
     PresentMode PresentMode;
     PresentResult FinalState;
     InputDeviceType InputType;

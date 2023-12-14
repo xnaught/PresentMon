@@ -226,7 +226,7 @@ void FlushModifiedPresent()
         printf("->"); \
         _Fn(gModifiedPresent->_Name); \
     }
-    FLUSH_MEMBER(PrintTime,          PresentStopTime)
+    FLUSH_MEMBER(PrintTimeDelta,     TimeInPresent)
     FLUSH_MEMBER(PrintTime,          ReadyTime)
     FLUSH_MEMBER(PrintTime,          ScreenTime)
     FLUSH_MEMBER(PrintTime,          InputTime)

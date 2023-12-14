@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2020-2023 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #ifndef NOMINMAX
@@ -13,37 +13,45 @@
 struct PresentMonCsv
 {
     enum Header {
-        // Required headers:
         Header_Application,
         Header_ProcessID,
         Header_SwapChainAddress,
         Header_Runtime,
         Header_SyncInterval,
         Header_PresentFlags,
+        Header_AllowsTearing,
+        Header_PresentMode,
+        Header_CPUStartTime,
+        Header_CPUStartQPC,
+        Header_CPUStartQPCTime,
+        Header_CPUStartDateTime,
+        Header_CPUBusy,
+        Header_CPUWait,
+        Header_GPULatency,
+        Header_GPUBusy,
+        Header_VideoBusy,
+        Header_GPUWait,
+        Header_DisplayLatency,
+        Header_DisplayedTime,
+        Header_ClickToPhotonLatency,
+
+        // --v1_metrics
         Header_Dropped,
         Header_TimeInSeconds,
         Header_msBetweenPresents,
         Header_msInPresentAPI,
-
-        // Optional headers:
-        Header_QPCTime,
-
-        // Required headers when -no_track_display is not used:
-        Header_AllowsTearing,
-        Header_PresentMode,
         Header_msBetweenDisplayChange,
         Header_msUntilRenderComplete,
         Header_msUntilDisplayed,
-
-        // Required headers when -no_track_gpu is not used:
         Header_msUntilRenderStart,
         Header_msGPUActive,
-
-        // Required headers when -track_gpu_video is used:
         Header_msGPUVideoActive,
-
-        // Required headers when -no_track_input is not used:
         Header_msSinceInput,
+        Header_QPCTime,
+
+        // Deprecated
+        Header_WasBatched,
+        Header_DwmNotified,
 
         // Special values:
         KnownHeaderCount,
@@ -59,13 +67,26 @@ struct PresentMonCsv
         case Header_Runtime:                return "Runtime";
         case Header_SyncInterval:           return "SyncInterval";
         case Header_PresentFlags:           return "PresentFlags";
+        case Header_AllowsTearing:          return "AllowsTearing";
+        case Header_PresentMode:            return "PresentMode";
+        case Header_CPUStartTime:           return "CPUStartTime";
+        case Header_CPUStartQPC:            return "CPUStartQPC";
+        case Header_CPUStartQPCTime:        return "CPUStartQPCTime";
+        case Header_CPUStartDateTime:       return "CPUStartDateTime";
+        case Header_CPUBusy:                return "CPUBusy";
+        case Header_CPUWait:                return "CPUWait";
+        case Header_GPULatency:             return "GPULatency";
+        case Header_GPUBusy:                return "GPUBusy";
+        case Header_VideoBusy:              return "VideoBusy";
+        case Header_GPUWait:                return "GPUWait";
+        case Header_DisplayLatency:         return "DisplayLatency";
+        case Header_DisplayedTime:          return "DisplayedTime";
+        case Header_ClickToPhotonLatency:   return "ClickToPhotonLatency";
+
         case Header_Dropped:                return "Dropped";
         case Header_TimeInSeconds:          return "TimeInSeconds";
         case Header_msBetweenPresents:      return "msBetweenPresents";
         case Header_msInPresentAPI:         return "msInPresentAPI";
-        case Header_QPCTime:                return "QPCTime";
-        case Header_AllowsTearing:          return "AllowsTearing";
-        case Header_PresentMode:            return "PresentMode";
         case Header_msBetweenDisplayChange: return "msBetweenDisplayChange";
         case Header_msUntilRenderComplete:  return "msUntilRenderComplete";
         case Header_msUntilDisplayed:       return "msUntilDisplayed";
@@ -73,6 +94,10 @@ struct PresentMonCsv
         case Header_msGPUActive:            return "msGPUActive";
         case Header_msGPUVideoActive:       return "msGPUVideoActive";
         case Header_msSinceInput:           return "msSinceInput";
+        case Header_QPCTime:                return "QPCTime";
+
+        case Header_WasBatched:             return "WasBatched";
+        case Header_DwmNotified:            return "DwmNotified";
         }
         return "<unknown>";
     }

@@ -80,11 +80,25 @@ struct CommandLineArgs {
     bool mHotkeySupport;
     bool mTryToElevate;
     bool mMultiCsv;
+    bool mUseV1Metrics;
     bool mStopExistingSession;
 };
 
-// Metrics computed per-frame
+// Metrics computed per-frame.  Duration and Latency metrics are in milliseconds.
 struct FrameMetrics {
+    uint64_t mCPUStart;
+    double mCPUBusy;
+    double mCPUWait;
+    double mGPULatency;
+    double mGPUBusy;
+    double mVideoBusy;
+    double mGPUWait;
+    double mDisplayLatency;
+    double mDisplayedTime;
+    double mClickToPhotonLatency;
+};
+
+struct FrameMetrics1 {
     double msBetweenPresents;
     double msInPresentApi;
     double msUntilRenderComplete;
@@ -99,17 +113,27 @@ struct FrameMetrics {
 // We store SwapChainData per process and per swapchain, where we maintain:
 // - information on previous presents needed for console output or to compute metrics for upcoming
 //   presents,
+// - pending presents whose metrics cannot be computed until future presents are received,
 // - exponential averages of key metrics displayed in console output.
 struct SwapChainData {
+    // Pending presents waiting for the next displayed present.
+    std::vector<std::shared_ptr<PresentEvent>> mPendingPresents;
+
     // Present info
-    std::shared_ptr<PresentEvent> mLastPresented;
-    std::shared_ptr<PresentEvent> mLastDisplayed;
+    uint64_t    mLastPresentStartTime = 0;
+    uint64_t    mLastDisplayedScreenTime = 0;
+    uint64_t    mNextFrameCPUStart = 0;
+    PresentMode mPresentMode = PresentMode::Unknown;
+    Runtime     mPresentRuntime = Runtime::Other;
+    int32_t     mPresentSyncInterval = 0;
+    uint32_t    mPresentFlags = 0;
+    bool        mPresentInfoValid = false;
 
     // Frame statistics
-    float mAvgCPUDuration = 0.f;
+    float mAvgCPUBusy = 0.f;
     float mAvgGPUDuration = 0.f;
     float mAvgDisplayLatency = 0.f;
-    float mAvgDisplayDuration = 0.f;
+    float mAvgDisplayedTime = 0.f;
 };
 
 struct ProcessInfo {
@@ -123,6 +147,7 @@ struct ProcessInfo {
 // CommandLine.cpp:
 bool ParseCommandLine(int argc, wchar_t** argv);
 CommandLineArgs const& GetCommandLineArgs();
+void PrintHotkeyError();
 
 // Console.cpp:
 void InitializeConsole();
@@ -144,10 +169,10 @@ void WaitForConsumerThreadToExit();
 void IncrementRecordingCount();
 void CloseMultiCsv(ProcessInfo* processInfo);
 void CloseGlobalCsv();
-void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, PresentEvent const& p, FrameMetrics const& metrics);
-const char* FinalStateToDroppedString(PresentResult res);
 const char* PresentModeToString(PresentMode mode);
 const char* RuntimeToString(Runtime rt);
+void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, PresentEvent const& p, FrameMetrics const& metrics);
+void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, PresentEvent const& p, FrameMetrics1 const& metrics);
 
 // MainThread.cpp:
 void ExitMainThread();

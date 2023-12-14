@@ -270,18 +270,18 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
 
         ConsolePrint(L"    %016llX", address);
 
-        if (chain.mLastPresented != nullptr) {
+        if (chain.mPresentInfoValid) {
             ConsolePrint(L" (%hs): SyncInterval=%d Flags=%d CPU=%.3fms (%.1f fps)",
-                RuntimeToString(chain.mLastPresented->Runtime),
-                chain.mLastPresented->SyncInterval,
-                chain.mLastPresented->PresentFlags,
-                chain.mAvgCPUDuration,
-                CalculateFPSForPrintf(chain.mAvgCPUDuration));
+                RuntimeToString(chain.mPresentRuntime),
+                chain.mPresentSyncInterval,
+                chain.mPresentFlags,
+                chain.mAvgCPUBusy,
+                CalculateFPSForPrintf(chain.mAvgCPUBusy));
 
             if (args.mTrackDisplay) {
                 ConsolePrint(L" Display=%.3fms (%.1f fps)",
-                    chain.mAvgDisplayDuration,
-                    CalculateFPSForPrintf(chain.mAvgDisplayDuration));
+                    chain.mAvgDisplayedTime,
+                    CalculateFPSForPrintf(chain.mAvgDisplayedTime));
             }
 
             if (args.mTrackGPU) {
@@ -291,10 +291,7 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
             if (args.mTrackDisplay) {
                 ConsolePrint(L" Latency=%.3fms %hs",
                     chain.mAvgDisplayLatency,
-                    PresentModeToString(
-                        chain.mLastDisplayed == nullptr
-                            ? chain.mLastPresented->PresentMode
-                            : chain.mLastDisplayed->PresentMode));
+                    PresentModeToString(chain.mPresentMode));
             }
         }
 

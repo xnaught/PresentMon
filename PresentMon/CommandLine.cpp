@@ -175,13 +175,13 @@ bool AssignHotkey(wchar_t* key, CommandLineArgs* args)
         #pragma warning(suppress: 4996)
         token = wcstok(nullptr, L"+");
         if (token == nullptr) {
-            if (!ParseKeyName(HOTKEY_KEYS, _countof(HOTKEY_KEYS), prev, L"invalid -hotkey key", &args->mHotkeyVirtualKeyCode)) {
+            if (!ParseKeyName(HOTKEY_KEYS, _countof(HOTKEY_KEYS), prev, L"invalid --hotkey key", &args->mHotkeyVirtualKeyCode)) {
                 return false;
             }
             break;
         }
 
-        if (!ParseKeyName(HOTKEY_MODS, _countof(HOTKEY_MODS), prev, L"invalid -hotkey modifier", &args->mHotkeyModifiers)) {
+        if (!ParseKeyName(HOTKEY_MODS, _countof(HOTKEY_MODS), prev, L"invalid --hotkey modifier", &args->mHotkeyModifiers)) {
             return false;
         }
     }
@@ -302,6 +302,28 @@ void PrintUsage()
 
 }
 
+void PrintHotkeyError()
+{
+    auto args = &gCommandLineArgs;
+
+    PrintError(L"error: ");
+
+    for (auto const& mod : HOTKEY_MODS) {
+        if (args->mHotkeyModifiers & mod.mCode) {
+            PrintError(L"%s+", mod.mName);
+        }
+    }
+
+    for (auto const& mod : HOTKEY_KEYS) {
+        if (args->mHotkeyVirtualKeyCode == mod.mCode) {
+            PrintError(L"%s", mod.mName);
+            break;
+        }
+    }
+
+    PrintError(L" is already in use and cannot be used as a --hotkey.\n");
+}
+
 CommandLineArgs const& GetCommandLineArgs()
 {
     return gCommandLineArgs;
@@ -321,13 +343,13 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     args->mTimer = 0;
     args->mHotkeyModifiers = MOD_NOREPEAT;
     args->mHotkeyVirtualKeyCode = 0;
+    args->mConsoleOutput = ConsoleOutput::Statistics;
     args->mTrackDisplay = true;
     args->mTrackInput = true;
     args->mTrackGPU = true;
     args->mTrackGPUVideo = false;
     args->mScrollLockIndicator = false;
     args->mExcludeDropped = false;
-    args->mConsoleOutput = ConsoleOutput::Statistics;
     args->mTerminateExistingSession = false;
     args->mTerminateOnProcExit = false;
     args->mStartTimer = false;
@@ -335,6 +357,7 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     args->mHotkeySupport = false;
     args->mTryToElevate = false;
     args->mMultiCsv = false;
+    args->mUseV1Metrics = false;
     args->mStopExistingSession = false;
 
     bool sessionNameSet  = false;
@@ -365,9 +388,10 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         else if (ParseArg(argv[i], L"no_csv"))           { csvOutputNone         = true;                              continue; }
         else if (ParseArg(argv[i], L"no_console_stats")) { args->mConsoleOutput  = ConsoleOutput::Simple;             continue; }
         else if (ParseArg(argv[i], L"qpc_time"))         { qpcTime               = true;                              continue; }
-        else if (ParseArg(argv[i], L"qpc_time_s"))       { qpcmsTime             = true;                              continue; }
+        else if (ParseArg(argv[i], L"qpc_time_ms"))      { qpcmsTime             = true;                              continue; }
         else if (ParseArg(argv[i], L"date_time"))        { dtTime                = true;                              continue; }
         else if (ParseArg(argv[i], L"exclude_dropped"))  { args->mExcludeDropped = true;                              continue; }
+        else if (ParseArg(argv[i], L"v1_metrics"))       { args->mUseV1Metrics   = true;                              continue; }
 
         // Recording options:
         else if (ParseArg(argv[i], L"hotkey"))           { if (ParseValue(argv, argc, &i) && AssignHotkey(argv[i], args)) continue; }
@@ -394,95 +418,91 @@ bool ParseCommandLine(int argc, wchar_t** argv)
 
         // Provided argument wasn't recognized
         else if (!(ParseArg(argv[i], L"?") || ParseArg(argv[i], L"h") || ParseArg(argv[i], L"help"))) {
-            PrintError(L"error: unrecognized argument '%s'.\n", argv[i]);
+            PrintError(L"error: unrecognized option '%s'.\n", argv[i]);
         }
 
         PrintUsage();
         return false;
     }
 
-    // Ensure at most one of -qpc_time -qpc_time_s -date_time.
+    // Ensure at most one of --qpc_time --qpc_time_ms --date_time.
     if (qpcTime + qpcmsTime + dtTime > 1) {
-        PrintError(L"error: incompatible options:");
-        if (qpcTime)   PrintError(L" -qpc_time");
-        if (qpcmsTime) PrintError(L" -qpc_time_s");
-        if (dtTime)    PrintError(L" -date_time");
+        PrintError(L"error: only one of the following options may be used:");
+        if (qpcTime)   PrintError(L" --qpc_time");
+        if (qpcmsTime) PrintError(L" --qpc_time_ms");
+        if (dtTime)    PrintError(L" --date_time");
         PrintError(L"\n");
         PrintUsage();
         return false;
     }
 
-    // Disallow hotkey of CTRL+C, CTRL+SCROLL, and F12
-    if (args->mHotkeySupport) {
-        if ((args->mHotkeyModifiers & MOD_CONTROL) != 0 && (
-            args->mHotkeyVirtualKeyCode == 0x44 /*C*/ ||
-            args->mHotkeyVirtualKeyCode == VK_SCROLL)) {
-            PrintError(L"error: CTRL+C or CTRL+SCROLL cannot be used as a -hotkey, they are reserved for terminating the trace.\n");
-            PrintUsage();
-            return false;
-        }
-
-        if (args->mHotkeyModifiers == MOD_NOREPEAT && args->mHotkeyVirtualKeyCode == VK_F12) {
-            PrintError(L"error: 'F12' cannot be used as a -hotkey, it is reserved for the debugger.\n");
-            PrintUsage();
-            return false;
-        }
+    // Disallow --hotkey that are known to be already in use:
+    // - CTRL+C, CTRL+PAUSE, and CTRL+SCROLLLOCK already used to exit PresentMon
+    // - F12 is reserved for debugger use at all times
+    if (args->mHotkeySupport && (
+            ((args->mHotkeyModifiers & MOD_CONTROL) && args->mHotkeyVirtualKeyCode == 0x43 /*C*/) ||
+            ((args->mHotkeyModifiers & MOD_CONTROL) && args->mHotkeyVirtualKeyCode == VK_SCROLL) ||
+            ((args->mHotkeyModifiers & MOD_CONTROL) && args->mHotkeyVirtualKeyCode == VK_PAUSE) ||
+            (args->mHotkeyModifiers == MOD_NOREPEAT && args->mHotkeyVirtualKeyCode == VK_F12))) {
+        PrintHotkeyError();
+        return false;
     }
 
-    // Ensure only one of -output_file -output_stdout -no_csv.
+    // Ensure only one of --output_file --output_stdout --no_csv.
     if (csvOutputNone + csvOutputStdout + (args->mOutputCsvFileName != nullptr) > 1) {
-        PrintWarning(L"warning: incompatible options:");
-        if (csvOutputNone)                       PrintWarning(L" -no_csv");
-        if (csvOutputStdout)                     PrintWarning(L" -output_stdout");
-        if (args->mOutputCsvFileName != nullptr) PrintWarning(L" -output_file");
+        PrintWarning(L"warning: only one of the following options may be used:");
+        if (csvOutputNone)                       PrintWarning(L" --no_csv");
+        if (csvOutputStdout)                     PrintWarning(L" --output_stdout");
+        if (args->mOutputCsvFileName != nullptr) PrintWarning(L" --output_file");
 
         PrintWarning(L"\n         ignoring:");
-        if (csvOutputNone)                                          { csvOutputNone   = false; PrintWarning(L" -no_csv"); }
-        if (csvOutputStdout && args->mOutputCsvFileName != nullptr) { csvOutputStdout = false; PrintWarning(L" -output_stdout"); }
+        if (csvOutputNone)                                          { csvOutputNone   = false; PrintWarning(L" --no_csv"); }
+        if (csvOutputStdout && args->mOutputCsvFileName != nullptr) { csvOutputStdout = false; PrintWarning(L" --output_stdout"); }
         PrintWarning(L"\n");
     }
 
-    // Ignore CSV-only options when -no_csv is used
-    if (csvOutputNone && (qpcTime || qpcmsTime || dtTime || args->mMultiCsv)) {
-        PrintWarning(L"warning: options ignored when -no_csv is used:");
-        if (qpcTime)         { qpcTime         = false; PrintWarning(L" -qpc_time"); }
-        if (qpcmsTime)       { qpcmsTime       = false; PrintWarning(L" -qpc_time_s"); }
-        if (dtTime)          { dtTime          = false; PrintWarning(L" -date_time"); }
-        if (args->mMultiCsv) { args->mMultiCsv = false; PrintWarning(L" -multi_csv"); }
+    // Ignore CSV-only options when --no_csv is used
+    if (csvOutputNone && (qpcTime || qpcmsTime || dtTime || args->mMultiCsv || args->mHotkeySupport)) {
+        PrintWarning(L"warning: ignoring CSV-related options due to --no_csv:");
+        if (qpcTime)              { qpcTime              = false; PrintWarning(L" --qpc_time"); }
+        if (qpcmsTime)            { qpcmsTime            = false; PrintWarning(L" --qpc_time_ms"); }
+        if (dtTime)               { dtTime               = false; PrintWarning(L" --date_time"); }
+        if (args->mMultiCsv)      { args->mMultiCsv      = false; PrintWarning(L" --multi_csv"); }
+        if (args->mHotkeySupport) { args->mHotkeySupport = false; PrintWarning(L" --hotkey"); }
         PrintWarning(L"\n");
     }
 
     // If we're outputting CSV to stdout, we can't use it for console output.
     //
-    // Also ignore -multi_csv since it only applies to file output.
+    // Also ignore --multi_csv since it only applies to file output.
     if (csvOutputStdout) {
         args->mConsoleOutput = ConsoleOutput::None;
 
         if (args->mMultiCsv) {
-            PrintWarning(L"warning: ignoring -multi_csv due to -output_stdout.\n");
+            PrintWarning(L"warning: ignoring --multi_csv due to --output_stdout.\n");
             args->mMultiCsv = false;
         }
     }
 
-    // Ignore -track_gpu_video if -no_track_gpu used
+    // Ignore --track_gpu_video if --no_track_gpu used
     if (args->mTrackGPUVideo && !args->mTrackGPU) {
-        PrintWarning(L"warning: ignoring -track_gpu_video due to -no_track_gpu.\n");
+        PrintWarning(L"warning: ignoring --track_gpu_video due to --no_track_gpu.\n");
         args->mTrackGPUVideo = false;
     }
 
-    // Ignore -no_track_display if required for other requested tracking
+    // Ignore --no_track_display if required for other requested tracking
     if (!args->mTrackDisplay && args->mTrackGPU) {
-        PrintWarning(L"warning: ignoring -no_track_display as display tracking is required when GPU tracking is enabled.\n");
+        PrintWarning(L"warning: ignoring --no_track_display because display tracking is required when GPU tracking is enabled.\n");
         args->mTrackDisplay = true;
     }
 
-    // If -terminate_existing, warn about any normal arguments since we'll just
+    // If --terminate_existing_session, warn about any normal arguments since we'll just
     // be stopping an existing session and then exiting.
     if (args->mTerminateExistingSession) {
         int expectedArgc = 2;
         if (sessionNameSet) expectedArgc += 1;
         if (argc != expectedArgc) {
-            PrintWarning(L"warning: -terminate_existing exits without capturing anything; ignoring all other options.\n");
+            PrintWarning(L"warning: --terminate_existing_session exits without capturing anything; ignoring all other options.\n");
         }
     }
 
@@ -497,9 +517,8 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     // Try to initialize the console, and warn if we're not going to be able to
     // do the advanced display as requested.
     if (args->mConsoleOutput == ConsoleOutput::Statistics && !StdOutIsConsole()) {
-        PrintWarning(L"warning: stdout does not support statistics reporting; continuing with -no_console_stats.\n");
+        PrintWarning(L"warning: --no_console_stats added because stdout does not support statistics reporting.\n");
         args->mConsoleOutput = ConsoleOutput::Simple;
-
     }
 
     // Convert the provided process names into a canonical form used for comparison.

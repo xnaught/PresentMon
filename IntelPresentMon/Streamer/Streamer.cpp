@@ -64,7 +64,7 @@ void Streamer::CopyFromPresentMonPresentEvent(
     nsm_present_event->PresentStartTime = present_event->PresentStartTime;
     nsm_present_event->ProcessId = present_event->ProcessId;
     nsm_present_event->ThreadId = present_event->ThreadId;
-    nsm_present_event->PresentStopTime = present_event->PresentStopTime;
+    nsm_present_event->PresentStopTime = present_event->PresentStartTime + present_event->TimeInPresent;
     nsm_present_event->GPUStartTime = present_event->GPUStartTime;
     nsm_present_event->ReadyTime = present_event->ReadyTime;
     nsm_present_event->ScreenTime = present_event->ScreenTime;
