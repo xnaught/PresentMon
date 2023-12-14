@@ -5,6 +5,7 @@
 #include <memory>
 #include <cassert>
 #include <cstdlib>
+#include <Shlwapi.h>
 #include "../../PresentMonUtils/NamedPipeHelper.h"
 #include "../../PresentMonUtils/QPCUtils.h"
 #include "../../PresentMonAPI2/source/Internal.h"
@@ -281,6 +282,19 @@ namespace pmon::mid
             deviceVendor = PM_DEVICE_VENDOR_UNKNOWN;
         }
         cachedCpuInfo.push_back({ deviceVendor, cpuName });
+    }
+
+    std::string ConcreteMiddleware::GetProcessName(uint32_t processId)
+    {
+        HANDLE handle = NULL;
+        std::string processName = "<UNKNOWN>";
+        char path[MAX_PATH];
+        DWORD numChars = sizeof(path);
+        handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId);
+        if (QueryFullProcessImageNameA(handle, 0, path, &numChars)) {
+            processName = PathFindFileNameA(path);
+        }
+        return processName;
     }
 
     PM_STATUS ConcreteMiddleware::SetTelemetryPollingPeriod(uint32_t deviceId, uint32_t timeMs)
@@ -628,7 +642,6 @@ namespace pmon::mid
                     swap_chain->present_start_n = frame_data->present_event.PresentStartTime;
                     swap_chain->sync_interval = frame_data->present_event.SyncInterval;
                     //swap_chain->present_mode = TranslatePresentMode(frame_data->present_event.PresentMode);
-                    swap_chain->allows_tearing = static_cast<int32_t>(frame_data->present_event.SupportsTearing);
                 }
 
                 // Compute metrics for this frame if we've seen enough subsequent frames to have all the
@@ -658,6 +671,7 @@ namespace pmon::mid
                     swap_chain->cpu_wait_ms.push_back(cpuWait_ms);
                     swap_chain->display_busy_ms.push_back(displayBusy_ms);
                     swap_chain->dropped.push_back(swap_chain->displayed_0 ? 0. : 1.);
+                    swap_chain->allowsTearing.push_back(frame_data->present_event.SupportsTearing ? 1. : 0.);
 
                     if (swap_chain->displayed_0 && swap_chain->display_count >= 2 && displayBusy > 0) {
                         swap_chain->displayed_fps.push_back(1000. / displayBusy_ms);
@@ -726,6 +740,8 @@ namespace pmon::mid
         }
         break;
         case PM_METRIC_PROCESS_NAME:
+            strcpy_s(reinterpret_cast<char*>(pBlob), elementSize, GetProcessName(processId).c_str());
+            break;
         case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
         {
             auto& output = reinterpret_cast<uint64_t&>(pBlob[0]);

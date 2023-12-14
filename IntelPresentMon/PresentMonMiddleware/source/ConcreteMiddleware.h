@@ -24,6 +24,8 @@ namespace pmon::mid
 		std::vector<double> cpu_wait_ms;
 		std::vector<double> display_busy_ms;
 		std::vector<double> dropped;
+		std::vector<double> allowsTearing;
+
 		uint64_t present_start_0 = 0;             // The first frame's PresentStartTime (qpc)
 		uint64_t present_start_n = 0;             // The last frame's PresentStartTime (qpc)
 		uint64_t present_stop_0 = 0;             // The first frame's PresentStopTime (qpc)
@@ -39,7 +41,6 @@ namespace pmon::mid
 		// Properties of the most-recent processed frame:
 		int32_t sync_interval = 0;
 		PM_PRESENT_MODE present_mode = PM_PRESENT_MODE_UNKNOWN;
-		int32_t allows_tearing = 0;
 
 		// Only used by GetGfxLatencyData():
 		std::vector<double> render_latency_ms;
@@ -102,6 +103,7 @@ namespace pmon::mid
 		bool GetGpuMetricData(size_t telemetry_item_bit, PresentMonPowerTelemetryInfo& power_telemetry_info, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo);
 		bool GetCpuMetricData(size_t telemetryBit, CpuTelemetryInfo& cpuTelemetry, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo);
 		void GetCpuInfo();
+		std::string GetProcessName(uint32_t processId);
 
 		void CalculateMetrics(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains, LARGE_INTEGER qpcFrequency, std::unordered_map<uint64_t, fpsSwapChainData>& swapChainData, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo);
 		void SaveMetricCache(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob);

@@ -426,186 +426,6 @@ void PrintMetric(char const* format, double metric_data, bool valid) {
   }
 }
 
-#ifdef ENABLE_METRICS
-void ReadMetrics() {
-  PM_STATUS pmStatus = PM_STATUS::PM_STATUS_SUCCESS;
-
-  PM_FPS_DATA* fps_data;
-  PM_GFX_LATENCY_DATA* latency_data;
-  PM_GPU_DATA gpu_data = {};
-  PM_CPU_DATA cpu_data = {};
-  uint32_t num_gfx_swap_chains = 1;
-  uint32_t num_latency_swap_chains = 1;
-  uint32_t current_num_gfx_swap_chains = num_gfx_swap_chains;
-  uint32_t current_num_latency_swap_chains = num_latency_swap_chains;
-
-  if (g_record_frames) {
-    RecordFrames(false);
-    return;
-  }
-
-  pmSetMetricsOffset(g_metrics_offset);
-
-  // Allocate single swap chains for all metrics to start
-  fps_data = new PM_FPS_DATA[num_gfx_swap_chains];
-  latency_data = new PM_GFX_LATENCY_DATA[num_latency_swap_chains];
-  if ((fps_data == nullptr) || (latency_data == nullptr)) {
-    return;
-  }
-
-  for (;;) {
-    Sleep(kSleepTime);
-    pmStatus = pmGetFramesPerSecondData(gCurrentPid, fps_data, kWindowSize,
-                                        &num_gfx_swap_chains);
-
-    if (pmStatus == PM_STATUS::PM_STATUS_SUCCESS) {
-      pmStatus = pmGetGfxLatencyData(gCurrentPid, latency_data, kWindowSize,
-                                     &num_latency_swap_chains);
-      if (pmStatus == PM_STATUS::PM_STATUS_SUCCESS) {
-        // Only print out the swap chain metrics if able to get both
-        // fps and latency successfully.
-        PrintSwapChainMetrics(fps_data, current_num_gfx_swap_chains,
-                              latency_data, current_num_latency_swap_chains);
-      }
-    }
-
-    pmStatus = pmGetGPUData(gCurrentPid, &gpu_data, kWindowSize);
-    if (pmStatus == PM_STATUS::PM_STATUS_SUCCESS) {
-      PrintMetric("GPU Mem Max Bandwidth = %f",
-                  gpu_data.gpu_mem_max_bandwidth_bps.avg / 1e-6,
-                  gpu_data.gpu_mem_max_bandwidth_bps.valid);
-      PrintMetric("GPU Memory Utilization = %.f %%",
-                  gpu_data.gpu_mem_utilization.avg,
-                  gpu_data.gpu_mem_utilization.valid);
-      PrintMetric("GPU Memory Used = %.f MB",
-                  gpu_data.gpu_mem_used_b.avg / 1000000.,
-                  gpu_data.gpu_mem_utilization.valid);
-      PrintMetric("GPU Voltage = %.f mV", 1000.0 * gpu_data.gpu_voltage_v.avg,
-                  gpu_data.gpu_voltage_v.valid);
-      PrintMetric("GPU Clock = %.f MHz", gpu_data.gpu_frequency_mhz.avg,
-                  gpu_data.gpu_frequency_mhz.valid);
-      PrintMetric("GPU Temperature = %.f C", gpu_data.gpu_temperature_c.avg,
-                  gpu_data.gpu_temperature_c.valid);
-      PrintMetric("GPU Power = %.f W", gpu_data.gpu_power_w.avg,
-                  gpu_data.gpu_power_w.valid);
-      PrintMetric("GPU Power Limit = %.f W",
-                  gpu_data.gpu_sustained_power_limit_w.avg,
-                  gpu_data.gpu_sustained_power_limit_w.valid);
-      PrintMetric("GPU Activity = %.f %%", gpu_data.gpu_utilization.avg,
-                  gpu_data.gpu_utilization.valid);
-      PrintMetric("VRAM Clock = %.f MHz", gpu_data.vram_frequency_mhz.avg,
-                  gpu_data.vram_frequency_mhz.valid);
-      PrintMetric("VRAM Effective Frequency = %.f GTs",
-                  gpu_data.vram_effective_frequency_gbps.avg,
-                  gpu_data.vram_effective_frequency_gbps.valid);
-      PrintMetric("VRAM Temperature = %.f C", gpu_data.vram_temperature_c.avg,
-                  gpu_data.vram_temperature_c.valid);
-      PrintMetric("VRAM Read Bandwidth = %.f MBs",
-                  gpu_data.vram_read_bandwidth_bps.avg / 1e-6,
-                  gpu_data.vram_read_bandwidth_bps.valid);
-      PrintMetric("VRAM Write Bandwidth = %.f MBs",
-                  gpu_data.vram_write_bandwidth_bps.avg / 1e-6,
-                  gpu_data.vram_write_bandwidth_bps.valid);
-      PrintMetric("Fan Speed = %.f RPM", gpu_data.gpu_fan_speed_rpm[0].avg,
-                  gpu_data.gpu_fan_speed_rpm[0].valid);
-      PrintMetric("Render Activity = %.f %%",
-                  gpu_data.gpu_render_compute_utilization.avg,
-                  gpu_data.gpu_render_compute_utilization.valid);
-      PrintMetric("Media Activity = %.f %%", gpu_data.gpu_media_utilization.avg,
-                  gpu_data.gpu_media_utilization.valid);
-      PrintMetric("VRAM Core Power = %f W", gpu_data.vram_power_w.avg,
-                  gpu_data.vram_power_w.valid);
-      PrintMetric("VRAM Core Voltage = %f V", gpu_data.vram_voltage_v.avg,
-                  gpu_data.vram_voltage_v.valid);
-
-      // The limited flags return back a value between 0 and 1.
-      PrintMetric("GPU Power Limited = %.f %%",
-                  gpu_data.gpu_power_limited.avg * 100.0,
-                  gpu_data.gpu_power_limited.valid);
-      PrintMetric("GPU Temperature Limited = %.f %%",
-                  gpu_data.gpu_temperature_limited.avg * 100.0,
-                  gpu_data.gpu_temperature_limited.valid);
-      PrintMetric("GPU Current Limited = %.f %%",
-                  gpu_data.gpu_current_limited.avg * 100.0,
-                  gpu_data.gpu_current_limited.valid);
-      PrintMetric("GPU Voltage Limited = %.f %%",
-                  gpu_data.gpu_voltage_limited.avg * 100.0,
-                  gpu_data.gpu_voltage_limited.valid);
-      PrintMetric("GPU Utilization Limited = %.f %%",
-                  gpu_data.gpu_utilization_limited.avg * 100.0,
-                  gpu_data.gpu_utilization_limited.valid);
-
-      PrintMetric("VRAM Power Limited = %.f %%",
-                  gpu_data.vram_power_limited.avg * 100.0,
-                  gpu_data.vram_power_limited.valid);
-      PrintMetric("VRAM Temperature Limited = %.f %%",
-                  gpu_data.vram_temperature_limited.avg * 100.0,
-                  gpu_data.vram_temperature_limited.valid);
-      PrintMetric("VRAM Current Limited = %.f %%",
-                  gpu_data.vram_current_limited.avg * 100.0,
-                  gpu_data.vram_current_limited.valid);
-      PrintMetric("VRAM Voltage Limited = %.f %%",
-                  gpu_data.vram_voltage_limited.avg * 100.0,
-                  gpu_data.vram_voltage_limited.valid);
-      PrintMetric("VRAM Utilization Limited = %.f %%",
-                  gpu_data.vram_utilization_limited.avg * 100.0,
-                  gpu_data.vram_utilization_limited.valid);
-    } else {
-      PrintError(pmStatus);
-    }
-
-    // Print CPU name
-    if (g_cpu_name.size() > 0) {
-      ConsolePrintLn(g_cpu_name.data());
-    }
-    pmStatus = pmGetCPUData(gCurrentPid, &cpu_data, kWindowSize);
-    if (pmStatus == PM_STATUS::PM_STATUS_SUCCESS) {
-      PrintMetric("CPU Utilization = %.f %%", cpu_data.cpu_utilization.avg,
-                  cpu_data.cpu_utilization.valid);
-      PrintMetric("CPU Power = %.f W", cpu_data.cpu_power_w.avg,
-                  cpu_data.cpu_power_w.valid);
-      PrintMetric("CPU Power Limit 1 = %.f W", cpu_data.cpu_power_limit_w.avg,
-                  cpu_data.cpu_power_limit_w.valid);
-      PrintMetric("CPU Temperature = %.f C", cpu_data.cpu_temperature_c.avg,
-                  cpu_data.cpu_temperature_c.valid);
-      PrintMetric("CPU Frequency = %.f MHz", cpu_data.cpu_frequency.avg,
-                  cpu_data.cpu_frequency.valid);
-    } else {
-      PrintError(pmStatus);
-    }
-
-    CommitConsole();
-
-    if (gQuit == true) {
-      break;
-    }
-
-    if (current_num_gfx_swap_chains < num_gfx_swap_chains) {
-      delete[] fps_data;
-      // Update the allocated number of swap chains for all metrics
-      fps_data = new PM_FPS_DATA[num_gfx_swap_chains];
-      if (fps_data == nullptr) {
-        return;
-      }
-      current_num_gfx_swap_chains = num_gfx_swap_chains;
-    }
-
-    if (current_num_latency_swap_chains < num_latency_swap_chains) {
-      delete[] latency_data;
-      // Update the allocated number of swap chains for all metrics
-      latency_data = new PM_GFX_LATENCY_DATA[num_latency_swap_chains];
-      if (latency_data == nullptr) {
-        return;
-      }
-      current_num_latency_swap_chains = num_latency_swap_chains;
-    }
-  }
-
-  delete[] fps_data;
-  delete[] latency_data;
-}
-#endif
-
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType) {
   switch (fdwCtrlType) {
     case CTRL_C_EVENT:
@@ -755,69 +575,60 @@ void ProcessEtl() {
 void PollMetrics(uint32_t processId, double metricsOffset)
 {
     PM_DYNAMIC_QUERY_HANDLE q = nullptr;
-    /*
     PM_QUERY_ELEMENT elements[]{
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_BUSY_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_BUSY_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_BUSY_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_BUSY_TIME, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_BUSY_TIME, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_BUSY_TIME, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_BUSY_TIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
-    };
-    */
-
-    PM_QUERY_ELEMENT elements[]{
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_TEMPERATURE, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_VOLTAGE, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_UTILIZATION, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_POWER, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FAN_SPEED, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FAN_SPEED, .stat = PM_STAT_PERCENTILE_90, .deviceId = 1, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FAN_SPEED, .stat = PM_STAT_PERCENTILE_95, .deviceId = 1, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FAN_SPEED, .stat = PM_STAT_PERCENTILE_99, .deviceId = 1, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FAN_SPEED, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 1},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FAN_SPEED, .stat = PM_STAT_PERCENTILE_90, .deviceId = 1, .arrayIndex = 1},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FAN_SPEED, .stat = PM_STAT_PERCENTILE_95, .deviceId = 1, .arrayIndex = 1},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FAN_SPEED, .stat = PM_STAT_PERCENTILE_99, .deviceId = 1, .arrayIndex = 1},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_VRAM_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_UTILIZATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
     };
     auto result = pmRegisterDynamicQuery(&q, elements, std::size(elements), 2000., metricsOffset);
     if (result != PM_STATUS_SUCCESS)
@@ -862,14 +673,69 @@ void PollMetrics(uint32_t processId, double metricsOffset)
             PrintMetric("Static GPU Memory Max Bandwidth = %f", reinterpret_cast<double&>(gpuMemMaxBw[0]), true);
             ConsolePrintLn("Static GPU Memory Size = = %lld", reinterpret_cast<uint64_t&>(gpuMemSize[0]));
 
-            PrintMetric("Gpu Fan Speed [0] Average = %f", reinterpret_cast<double&>(pBlob[elements[0].dataOffset]), true);
-            PrintMetric("Gpu Fan Speed [0] 90% = %f", reinterpret_cast<double&>(pBlob[elements[1].dataOffset]), true);
-            PrintMetric("Gpu Fan Speed [0] 95% = %f", reinterpret_cast<double&>(pBlob[elements[2].dataOffset]), true);
-            PrintMetric("Gpu Fan Speed [0] 99% = %f", reinterpret_cast<double&>(pBlob[elements[3].dataOffset]), true);
-            PrintMetric("Gpu Fan Speed [1] Average = %f", reinterpret_cast<double&>(pBlob[elements[4].dataOffset]), true);
-            PrintMetric("Gpu Fan Speed [1] 90% = %f", reinterpret_cast<double&>(pBlob[elements[5].dataOffset]), true);
-            PrintMetric("Gpu Fan Speed [1] 95% = %f", reinterpret_cast<double&>(pBlob[elements[6].dataOffset]), true);
-            PrintMetric("Gpu Fan Speed [1] 99% = %f", reinterpret_cast<double&>(pBlob[elements[7].dataOffset]), true);
+            PrintMetric("Presented FPS Average = %f", reinterpret_cast<double&>(pBlob[elements[0].dataOffset]), true);
+            PrintMetric("Presented FPS 90% = %f", reinterpret_cast<double&>(pBlob[elements[1].dataOffset]), true);
+            PrintMetric("Presented FPS 95% = %f", reinterpret_cast<double&>(pBlob[elements[2].dataOffset]), true);
+            PrintMetric("Presented FPS 99% = %f", reinterpret_cast<double&>(pBlob[elements[3].dataOffset]), true);
+            PrintMetric("Presented FPS Max = %f", reinterpret_cast<double&>(pBlob[elements[4].dataOffset]), true);
+            PrintMetric("Presented FPS Min = %f", reinterpret_cast<double&>(pBlob[elements[5].dataOffset]), true);
+            PrintMetric("Presented FPS Raw = %f", reinterpret_cast<double&>(pBlob[elements[6].dataOffset]), true);
+
+            PrintMetric("Frame Time Average = %f", reinterpret_cast<double&>(pBlob[elements[7].dataOffset]), true);
+            PrintMetric("Frame Time 90% = %f", reinterpret_cast<double&>(pBlob[elements[8].dataOffset]), true);
+            PrintMetric("Frame Time 95% = %f", reinterpret_cast<double&>(pBlob[elements[9].dataOffset]), true);
+            PrintMetric("Frame Time 99% = %f", reinterpret_cast<double&>(pBlob[elements[10].dataOffset]), true);
+            PrintMetric("Frame Time Max = %f", reinterpret_cast<double&>(pBlob[elements[11].dataOffset]), true);
+            PrintMetric("Frame Time Min = %f", reinterpret_cast<double&>(pBlob[elements[12].dataOffset]), true);
+            PrintMetric("Frame Time Raw = %f", reinterpret_cast<double&>(pBlob[elements[13].dataOffset]), true);
+
+            PrintMetric("Displayed FPS Average = %f", reinterpret_cast<double&>(pBlob[elements[14].dataOffset]), true);
+            PrintMetric("Displayed FPS 90% = %f", reinterpret_cast<double&>(pBlob[elements[15].dataOffset]), true);
+            PrintMetric("Displayed FPS 95% = %f", reinterpret_cast<double&>(pBlob[elements[16].dataOffset]), true);
+            PrintMetric("Displayed FPS 99% = %f", reinterpret_cast<double&>(pBlob[elements[17].dataOffset]), true);
+            PrintMetric("Displayed FPS Max = %f", reinterpret_cast<double&>(pBlob[elements[18].dataOffset]), true);
+            PrintMetric("Displayed FPS Min = %f", reinterpret_cast<double&>(pBlob[elements[19].dataOffset]), true);
+            PrintMetric("Displayed FPS Raw = %f", reinterpret_cast<double&>(pBlob[elements[20].dataOffset]), true);
+
+            PrintMetric("CPU Wait Time Average = %f", reinterpret_cast<double&>(pBlob[elements[21].dataOffset]), true);
+            PrintMetric("CPU Wait Time 90% = %f", reinterpret_cast<double&>(pBlob[elements[22].dataOffset]), true);
+            PrintMetric("CPU Wait Time 95% = %f", reinterpret_cast<double&>(pBlob[elements[23].dataOffset]), true);
+            PrintMetric("CPU Wait Time 99% = %f", reinterpret_cast<double&>(pBlob[elements[24].dataOffset]), true);
+            PrintMetric("CPU Wait Time Max = %f", reinterpret_cast<double&>(pBlob[elements[25].dataOffset]), true);
+            PrintMetric("CPU Wait Time Min = %f", reinterpret_cast<double&>(pBlob[elements[26].dataOffset]), true);
+            PrintMetric("CPU Wait Time Raw = %f", reinterpret_cast<double&>(pBlob[elements[27].dataOffset]), true);
+
+            PrintMetric("CPU Busy Time Average = %f", reinterpret_cast<double&>(pBlob[elements[28].dataOffset]), true);
+            PrintMetric("CPU Busy Time 90% = %f", reinterpret_cast<double&>(pBlob[elements[29].dataOffset]), true);
+            PrintMetric("CPU Busy Time 95% = %f", reinterpret_cast<double&>(pBlob[elements[30].dataOffset]), true);
+            PrintMetric("CPU Busy Time 99% = %f", reinterpret_cast<double&>(pBlob[elements[31].dataOffset]), true);
+            PrintMetric("CPU Busy Time Max = %f", reinterpret_cast<double&>(pBlob[elements[32].dataOffset]), true);
+            PrintMetric("CPU Busy Time Min = %f", reinterpret_cast<double&>(pBlob[elements[33].dataOffset]), true);
+            PrintMetric("CPU Busy Time Raw = %f", reinterpret_cast<double&>(pBlob[elements[34].dataOffset]), true);
+
+            PrintMetric("GPU Busy Time Average = %f", reinterpret_cast<double&>(pBlob[elements[35].dataOffset]), true);
+            PrintMetric("GPU Busy Time 90% = %f", reinterpret_cast<double&>(pBlob[elements[36].dataOffset]), true);
+            PrintMetric("GPU Busy Time 95% = %f", reinterpret_cast<double&>(pBlob[elements[37].dataOffset]), true);
+            PrintMetric("GPU Busy Time 99% = %f", reinterpret_cast<double&>(pBlob[elements[38].dataOffset]), true);
+            PrintMetric("GPU Busy Time Max = %f", reinterpret_cast<double&>(pBlob[elements[39].dataOffset]), true);
+            PrintMetric("GPU Busy Time Min = %f", reinterpret_cast<double&>(pBlob[elements[40].dataOffset]), true);
+            PrintMetric("GPU Busy Time Raw = %f", reinterpret_cast<double&>(pBlob[elements[41].dataOffset]), true);
+
+            PrintMetric("Display Busy Time Avg = %f", reinterpret_cast<double&>(pBlob[elements[42].dataOffset]), true);
+
+            PrintMetric("GPU Frequency Avg = %f", reinterpret_cast<double&>(pBlob[elements[43].dataOffset]), true);
+            PrintMetric("GPU Temperature Avg = %f", reinterpret_cast<double&>(pBlob[elements[44].dataOffset]), true);
+            PrintMetric("GPU Voltage Avg = %f", reinterpret_cast<double&>(pBlob[elements[45].dataOffset]), true);
+            PrintMetric("GPU Utilization Avg = %f", reinterpret_cast<double&>(pBlob[elements[46].dataOffset]), true);
+            PrintMetric("GPU Power Avg = %f", reinterpret_cast<double&>(pBlob[elements[47].dataOffset]), true);
+
+            PrintMetric("GPU Fan Speed [0] Avg = %f", reinterpret_cast<double&>(pBlob[elements[48].dataOffset]), true);
+            PrintMetric("GPU Fan Speed [1] Avg = %f", reinterpret_cast<double&>(pBlob[elements[49].dataOffset]), true);
+
+            PrintMetric("GPU Mem Frequency Avg = %f", reinterpret_cast<double&>(pBlob[elements[50].dataOffset]), true);
+            PrintMetric("CPU Utilization Avg = %f", reinterpret_cast<double&>(pBlob[elements[51].dataOffset]), true);
+            PrintMetric("CPU Frequency Avg = %f", reinterpret_cast<double&>(pBlob[elements[52].dataOffset]), true);
+
             CommitConsole();
         }
 
