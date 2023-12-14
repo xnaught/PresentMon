@@ -69,7 +69,7 @@ namespace pmon::ipc::intro {
 		X_(METRIC, GPU_VENDOR, "GPU Vendor", "", "Vendor name of the GPU") \
 		X_(METRIC, GPU_NAME, "GPU Name", "", "Device name of the GPU") \
 		X_(METRIC, CPU_VENDOR, "CPU Vendor", "", "Vendor name of the CPU") \
-		X_(METRIC, CPU_NAME, "CPU Name", "", "Device name of the CPU") 
+		X_(METRIC, CPU_NAME, "CPU Name", "", "Device name of the CPU")
 #define ENUM_KEY_LIST_METRIC_TYPE(X_) \
 		X_(METRIC_TYPE, DYNAMIC, "Dynamic Metric", "", "Metric that changes over time and requires polling using a registered query") \
 		X_(METRIC_TYPE, STATIC, "Static Metric", "", "Metric that never changes and can be polled without registering a query") \

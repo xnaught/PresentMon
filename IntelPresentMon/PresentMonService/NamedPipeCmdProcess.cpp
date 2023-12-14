@@ -88,6 +88,9 @@ bool EncodeEnumerateAdapters(PresentMon* pm, MemBuffer* rspBuf) {
     adapter_info.adapters[i].vendor = (PM_GPU_VENDOR)adapter_infos.at(i)->GetVendor();
     strcpy_s(adapter_info.adapters[i].name, MAX_PM_ADAPTER_NAME,
              adapter_infos.at(i)->GetName().c_str());
+    adapter_info.adapters[i].gpuMemorySize = adapter_infos.at(i)->GetDedicatedVideoMemory();
+    adapter_info.adapters[i].gpuMemoryMaxBandwidth = adapter_infos.at(i)->GetVideoMemoryMaxBandwidth();
+    adapter_info.adapters[i].gpuSustainedPowerLimit = adapter_infos.at(i)->GetSustainedPowerLimit();
   }
 
   NamedPipeHelper::PopulateResponseHeader(

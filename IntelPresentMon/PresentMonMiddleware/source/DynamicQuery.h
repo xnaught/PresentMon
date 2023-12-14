@@ -34,5 +34,6 @@ struct PM_DYNAMIC_QUERY
 	double metricOffsetMs = 0.;
 	PM_DYNAMIC_QUERY* dynamicQueryHandle = nullptr;
 	size_t queryCacheSize = 0;
+	std::optional<uint32_t> cachedGpuInfoIndex;
 };
 

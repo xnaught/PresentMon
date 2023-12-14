@@ -48,9 +48,21 @@ namespace pmon::mid
 		uint64_t display_latency_sum = 0;
 	};
 
-	struct DeviceInfo {
+	struct DeviceInfo
+	{
 		PM_DEVICE_VENDOR deviceVendor;
 		std::string deviceName;
+		uint32_t deviceId;
+		std::optional<uint32_t> adapterId;
+		std::optional<double> gpuSustainedPowerLimit;
+		std::optional<uint64_t> gpuMemorySize;
+		std::optional<uint64_t> gpuMemoryMaxBandwidth;
+	};
+
+	struct MetricInfo
+	{
+		// Map of array indices to associated data
+		std::unordered_map<uint32_t, std::vector<double>> data;
 	};
 
 	class ConcreteMiddleware : public Middleware
@@ -82,16 +94,18 @@ namespace pmon::mid
 		PmNsmFrameData* GetFrameDataStart(StreamClient* client, uint64_t& index, uint64_t dataOffset, uint64_t& queryFrameDataDelta, double& windowSampleSizeMs);
 		uint64_t GetAdjustedQpc(uint64_t current_qpc, uint64_t frame_data_qpc, uint64_t queryMetricsOffset, LARGE_INTEGER frequency, uint64_t& queryFrameDataDelta);
 		bool DecrementIndex(NamedSharedMem* nsm_view, uint64_t& index);
+		PM_STATUS SetActiveGraphicsAdapter(uint32_t adapter_id);
+		void GetStaticGpuMetrics();
 
 		void CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency);
-		void CalculateGpuCpuMetric(std::unordered_map<PM_METRIC, std::vector<double>>& metricData, const PM_QUERY_ELEMENT& element, uint8_t* pBlob);
+		void CalculateGpuCpuMetric(std::unordered_map<PM_METRIC, MetricInfo>& metricInfo, const PM_QUERY_ELEMENT& element, uint8_t* pBlob);
 		void CalculateMetric(double& pBlob, std::vector<double>& inData, PM_STAT stat, bool ascending = true);
 		double GetPercentile(std::vector<double>& data, double percentile);
-		bool GetGpuMetricData(size_t telemetry_item_bit, PresentMonPowerTelemetryInfo& power_telemetry_info, PM_METRIC& gpuMetric, double& gpuMetricValue);
-		bool GetCpuMetricData(size_t telemetryBit, CpuTelemetryInfo& cpuTelemetry, PM_METRIC& cpuMetric, double& cpuMetricValue);
+		bool GetGpuMetricData(size_t telemetry_item_bit, PresentMonPowerTelemetryInfo& power_telemetry_info, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo);
+		bool GetCpuMetricData(size_t telemetryBit, CpuTelemetryInfo& cpuTelemetry, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo);
 		void GetCpuInfo();
 
-		void CalculateMetrics(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains, LARGE_INTEGER qpcFrequency, std::unordered_map<uint64_t, fpsSwapChainData>& swapChainData, std::unordered_map<PM_METRIC, std::vector<double>>& gpucpuMetricData);
+		void CalculateMetrics(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains, LARGE_INTEGER qpcFrequency, std::unordered_map<uint64_t, fpsSwapChainData>& swapChainData, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo);
 		void SaveMetricCache(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob);
 		void CopyMetricCacheToBlob(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob);
 
@@ -108,5 +122,6 @@ namespace pmon::mid
 		std::vector<DeviceInfo> cachedCpuInfo;
 		double cachedGpuMemMaxBandwidth = 0.;
 		double cachedGpuMemSize = 0.;
+		uint32_t currentGpuInfoIndex = UINT32_MAX;
 	};
 }

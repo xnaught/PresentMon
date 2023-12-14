@@ -38,6 +38,16 @@ namespace pwr::nv
         return video_mem_size;
     }
 
+    double NvidiaPowerTelemetryAdapter::GetSustainedPowerLimit() const noexcept
+    {
+        unsigned int limitMw = 0;
+        if (nvml->Ok(nvml->DeviceGetPowerManagementLimit(*hNvml, &limitMw)))
+        {
+            return double(limitMw) / 1000.;
+        }
+        return 0.f;
+    }
+
     bool NvidiaPowerTelemetryAdapter::Sample() noexcept
     {
         LARGE_INTEGER qpc;

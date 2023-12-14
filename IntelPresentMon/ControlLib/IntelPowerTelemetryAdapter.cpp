@@ -164,10 +164,6 @@ namespace pwr::intel
     uint64_t IntelPowerTelemetryAdapter::GetDedicatedVideoMemory() const noexcept
     {
         ctl_mem_state_t memory_state = {.Size = sizeof(ctl_mem_state_t)};
-        ctl_mem_bandwidth_t memory_bandwidth = {
-            .Size = sizeof(ctl_mem_bandwidth_t),
-            .Version = 1,
-        };
         uint64_t video_mem_size = 0;
         if (memoryModules.size() > 0) {
             if (const auto result =
@@ -177,6 +173,38 @@ namespace pwr::intel
             }
         }
         return video_mem_size;
+    }
+
+    uint64_t IntelPowerTelemetryAdapter::GetVideoMemoryMaxBandwidth() const noexcept
+    {
+        ctl_mem_bandwidth_t memoryBandwidth = {
+            .Size = sizeof(ctl_mem_bandwidth_t),
+            .Version = 1,
+        };
+        uint64_t videoMemMaxBandwidth = 0;
+        if (memoryModules.size() > 0) {
+            if (const auto result =
+                ctlMemoryGetBandwidth(memoryModules[0], &memoryBandwidth);
+                result == CTL_RESULT_SUCCESS) {
+                videoMemMaxBandwidth = memoryBandwidth.maxBandwidth;
+            }
+
+        }
+        return videoMemMaxBandwidth;
+    }
+
+    double IntelPowerTelemetryAdapter::GetSustainedPowerLimit() const noexcept
+    {
+        double gpuSustainedPowerLimit = 0.;
+        if (const auto result = ctlOverclockPowerLimitGet(
+            deviceHandle, &gpuSustainedPowerLimit);
+            result == CTL_RESULT_SUCCESS) {
+            // Control lib returns back in milliwatts
+            gpuSustainedPowerLimit =
+                gpuSustainedPowerLimit / 1000.;
+        }
+
+        return gpuSustainedPowerLimit;
     }
 
     // private implementation functions
