@@ -65,7 +65,7 @@ static void StartRecording()
     gIsRecording = true;
 
     // Notify user we're recording
-    if (args.mConsoleOutputType == ConsoleOutput::Simple) {
+    if (args.mConsoleOutput == ConsoleOutput::Simple) {
         wprintf(L"Started recording.\n");
     }
     if (args.mScrollLockIndicator) {
@@ -100,7 +100,7 @@ static void StopRecording()
     if (args.mScrollLockIndicator) {
         EnableScrollLock(false);
     }
-    if (args.mConsoleOutputType == ConsoleOutput::Simple) {
+    if (args.mConsoleOutput == ConsoleOutput::Simple) {
         wprintf(L"Stopped recording.\n");
     }
 }

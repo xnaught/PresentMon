@@ -218,7 +218,7 @@ static void HandleTerminatedProcess(uint32_t processId)
     auto processInfo = &iter->second;
     if (processInfo->mIsTargetProcess) {
         // Close this process' CSV.
-        CloseOutputCsv(processInfo);
+        CloseMultiCsv(processInfo);
 
         // Quit if this is the last process tracked for -terminate_on_proc_exit.
         gTargetProcessCount -= 1;
@@ -269,7 +269,7 @@ static void AddPresents(
     bool* hitStopQpc)
 {
     auto const& args = GetCommandLineArgs();
-    auto computeAvg = args.mConsoleOutputType == ConsoleOutput::Full;
+    auto computeAvg = args.mConsoleOutput == ConsoleOutput::Statistics;
 
     auto i = *presentEventIndex;
     for (auto n = presentEvents.size(); i < n; ++i) {
@@ -374,6 +374,8 @@ static void ProcessEvents(
     std::vector<uint64_t>* recordingToggleHistory,
     std::vector<std::pair<uint32_t, uint64_t>>* terminatedProcesses)
 {
+    auto const& args = GetCommandLineArgs();
+
     // Copy the record range history form the MainThread.
     auto recording = CopyRecordingToggleHistory(recordingToggleHistory);
 
@@ -435,9 +437,13 @@ static void ProcessEvents(
         recording = !recording;
         if (!recording) {
             IncrementRecordingCount();
-            CloseOutputCsv(nullptr);
-            for (auto& pair : gProcesses) {
-                CloseOutputCsv(&pair.second);
+
+            if (args.mMultiCsv) {
+                for (auto& pair : gProcesses) {
+                    CloseMultiCsv(&pair.second);
+                }
+            } else {
+                CloseGlobalCsv();
             }
         }
     }
@@ -498,18 +504,15 @@ void Output(PMTraceSession const* pmSession)
         // just reading it without correlation to gRecordingToggleHistory, we
         // don't need the critical section.
         auto realtimeRecording = gIsRecording;
-        switch (args.mConsoleOutputType) {
-        case ConsoleOutput::None:
-            break;
-
+        switch (args.mConsoleOutput) {
+        #if _DEBUG
         case ConsoleOutput::Simple:
-            #if _DEBUG
             if (realtimeRecording) {
                 wprintf(L".");
             }
-            #endif
             break;
-        case ConsoleOutput::Full:
+        #endif
+        case ConsoleOutput::Statistics:
             if (BeginConsoleUpdate()) {
                 for (auto const& pair : gProcesses) {
                     UpdateConsole(pair.first, pair.second);
@@ -543,11 +546,10 @@ void Output(PMTraceSession const* pmSession)
         if (processInfo->mHandle != NULL) {
             CloseHandle(processInfo->mHandle);
         }
-        CloseOutputCsv(processInfo);
+        CloseMultiCsv(processInfo);
     }
     gProcesses.clear();
-    CloseOutputCsv(nullptr); // Special case to close single global CSV if not
-                             // using per-process CSVs.
+    CloseGlobalCsv();
 }
 
 void StartOutputThread(PMTraceSession const& pmSession)

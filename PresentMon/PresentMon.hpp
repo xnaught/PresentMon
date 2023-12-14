@@ -32,13 +32,25 @@ which is controlled from MainThread based on user input or timer.
 #include <unordered_map>
 
 // Verbosity of console output for normal operation:
-//     None = none
-//     Simple = recording changes, etc.
-//     Full = statistics about captured presents
 enum class ConsoleOutput {
-    None,
-    Simple,
-    Full
+    None,      // no output
+    Simple,    // commands such as recording start/stop
+    Statistics // statistics about captured presents
+};
+
+// Optional units to use for time-based metrics metric
+enum class TimeUnit {
+    MilliSeconds,       // Milliseconds since recording began
+    QPC,                // QueryPerformanceCounter value
+    QPCMilliSeconds,    // QueryPerformanceCounter value converted into milliseconds
+    DateTime,           // Date and time
+};
+
+// How to ouput per-frame metrics
+enum class CSVOutput {
+    None,   // Don't
+    File,   // To a CSV file
+    Stdout  // To STDOUT in CSV format
 };
 
 struct CommandLineArgs {
@@ -52,16 +64,13 @@ struct CommandLineArgs {
     UINT mTimer;
     UINT mHotkeyModifiers;
     UINT mHotkeyVirtualKeyCode;
-    ConsoleOutput mConsoleOutputType;
+    TimeUnit mTimeUnit;
+    CSVOutput mCSVOutput;
+    ConsoleOutput mConsoleOutput;
     bool mTrackDisplay;
     bool mTrackInput;
     bool mTrackGPU;
     bool mTrackGPUVideo;
-    bool mOutputCsvToFile;
-    bool mOutputCsvToStdout;
-    bool mOutputQpcTime;
-    bool mOutputQpcTimeInSeconds;
-    bool mOutputDateTime;
     bool mScrollLockIndicator;
     bool mExcludeDropped;
     bool mTerminateExistingSession;
@@ -133,8 +142,8 @@ void WaitForConsumerThreadToExit();
 
 // CsvOutput.cpp:
 void IncrementRecordingCount();
-FILE* GetOutputCsv(ProcessInfo* processInfo, uint32_t processId);
-void CloseOutputCsv(ProcessInfo* processInfo);
+void CloseMultiCsv(ProcessInfo* processInfo);
+void CloseGlobalCsv();
 void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, PresentEvent const& p, FrameMetrics const& metrics);
 const char* FinalStateToDroppedString(PresentResult res);
 const char* PresentModeToString(PresentMode mode);

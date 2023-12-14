@@ -325,14 +325,9 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     args->mTrackInput = true;
     args->mTrackGPU = true;
     args->mTrackGPUVideo = false;
-    args->mOutputCsvToFile = true;
-    args->mOutputCsvToStdout = false;
-    args->mOutputQpcTime = false;
-    args->mOutputQpcTimeInSeconds = false;
-    args->mOutputDateTime = false;
     args->mScrollLockIndicator = false;
     args->mExcludeDropped = false;
-    args->mConsoleOutputType = ConsoleOutput::Full;
+    args->mConsoleOutput = ConsoleOutput::Statistics;
     args->mTerminateExistingSession = false;
     args->mTerminateOnProcExit = false;
     args->mStartTimer = false;
@@ -342,7 +337,12 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     args->mMultiCsv = false;
     args->mStopExistingSession = false;
 
-    bool sessionNameSet = false;
+    bool sessionNameSet  = false;
+    bool csvOutputStdout = false;
+    bool csvOutputNone   = false;
+    bool qpcTime         = false;
+    bool qpcmsTime       = false;
+    bool dtTime          = false;
 
     #if PRESENTMON_ENABLE_DEBUG_TRACE
     bool verboseTrace = false;
@@ -360,14 +360,14 @@ bool ParseCommandLine(int argc, wchar_t** argv)
 
         // Output options:
         else if (ParseArg(argv[i], L"output_file"))      { if (ParseValue(argv, argc, &i, &args->mOutputCsvFileName)) continue; }
-        else if (ParseArg(argv[i], L"output_stdout"))    { args->mOutputCsvToStdout      = true;                      continue; }
-        else if (ParseArg(argv[i], L"multi_csv"))        { args->mMultiCsv               = true;                      continue; }
-        else if (ParseArg(argv[i], L"no_csv"))           { args->mOutputCsvToFile        = false;                     continue; }
-        else if (ParseArg(argv[i], L"no_console_stats")) { args->mConsoleOutputType      = ConsoleOutput::Simple;     continue; }
-        else if (ParseArg(argv[i], L"qpc_time"))         { args->mOutputQpcTime          = true;                      continue; }
-        else if (ParseArg(argv[i], L"qpc_time_s"))       { args->mOutputQpcTimeInSeconds = true;                      continue; }
-        else if (ParseArg(argv[i], L"date_time"))        { args->mOutputDateTime         = true;                      continue; }
-        else if (ParseArg(argv[i], L"exclude_dropped"))  { args->mExcludeDropped         = true;                      continue; }
+        else if (ParseArg(argv[i], L"output_stdout"))    { csvOutputStdout       = true;                              continue; }
+        else if (ParseArg(argv[i], L"multi_csv"))        { args->mMultiCsv       = true;                              continue; }
+        else if (ParseArg(argv[i], L"no_csv"))           { csvOutputNone         = true;                              continue; }
+        else if (ParseArg(argv[i], L"no_console_stats")) { args->mConsoleOutput  = ConsoleOutput::Simple;             continue; }
+        else if (ParseArg(argv[i], L"qpc_time"))         { qpcTime               = true;                              continue; }
+        else if (ParseArg(argv[i], L"qpc_time_s"))       { qpcmsTime             = true;                              continue; }
+        else if (ParseArg(argv[i], L"date_time"))        { dtTime                = true;                              continue; }
+        else if (ParseArg(argv[i], L"exclude_dropped"))  { args->mExcludeDropped = true;                              continue; }
 
         // Recording options:
         else if (ParseArg(argv[i], L"hotkey"))           { if (ParseValue(argv, argc, &i) && AssignHotkey(argv[i], args)) continue; }
@@ -401,25 +401,13 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         return false;
     }
 
-    // Ignore -no_track_display if required for other requested tracking
-    if (args->mTrackGPUVideo && !args->mTrackGPU) {
-        PrintWarning(L"warning: -track_gpu_video requires GPU tracking; ignoring -track_gpu_video due to -no_track_gpu.\n");
-        args->mTrackGPUVideo = false;
-    }
-    if (args->mTrackGPU && !args->mTrackDisplay) {
-        PrintWarning(L"warning: GPU tracking requires display tracking; ignoring -no_track_display.\n");
-        args->mTrackDisplay = true;
-    }
-
-    // Enable -qpc_time if only -qpc_time_s was provided, since we use that to
-    // add the column.
-    if (args->mOutputQpcTimeInSeconds) {
-        args->mOutputQpcTime = true;
-    }
-
-    // -date_time is mutually exclusive to -qpc_time and -qpc_time_s
-    if (args->mOutputDateTime && (args->mOutputQpcTime || args->mOutputQpcTimeInSeconds)) {
-        PrintError(L"error: -date_time and -qpc_time or -qpc_time_s cannot be used at the same time.\n");
+    // Ensure at most one of -qpc_time -qpc_time_s -date_time.
+    if (qpcTime + qpcmsTime + dtTime > 1) {
+        PrintError(L"error: incompatible options:");
+        if (qpcTime)   PrintError(L" -qpc_time");
+        if (qpcmsTime) PrintError(L" -qpc_time_s");
+        if (dtTime)    PrintError(L" -date_time");
+        PrintError(L"\n");
         PrintUsage();
         return false;
     }
@@ -441,50 +429,60 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         }
     }
 
-    // If -no_csv is used, ignore -date_time, -qpc_time, -qpc_time_s, -multi_csv,
-    // -output_file, or -output_stdout if they are also used.
-    if (!args->mOutputCsvToFile) {
-        if (args->mOutputQpcTime) {
-            PrintWarning(L"warning: -qpc_time and -qpc_time_s are only relevant for CSV output; ignoring due to -no_csv.\n");
-            args->mOutputQpcTime = false;
-            args->mOutputQpcTimeInSeconds = false;
-        }
-        if (args->mOutputDateTime) {
-            PrintWarning(L"warning: -date_time is only relevant for CSV output; ignoring due to -no_csv.\n");
-            args->mOutputDateTime = false;
-        }
+    // Ensure only one of -output_file -output_stdout -no_csv.
+    if (csvOutputNone + csvOutputStdout + (args->mOutputCsvFileName != nullptr) > 1) {
+        PrintWarning(L"warning: incompatible options:");
+        if (csvOutputNone)                       PrintWarning(L" -no_csv");
+        if (csvOutputStdout)                     PrintWarning(L" -output_stdout");
+        if (args->mOutputCsvFileName != nullptr) PrintWarning(L" -output_file");
+
+        PrintWarning(L"\n         ignoring:");
+        if (csvOutputNone)                                          { csvOutputNone   = false; PrintWarning(L" -no_csv"); }
+        if (csvOutputStdout && args->mOutputCsvFileName != nullptr) { csvOutputStdout = false; PrintWarning(L" -output_stdout"); }
+        PrintWarning(L"\n");
+    }
+
+    // Ignore CSV-only options when -no_csv is used
+    if (csvOutputNone && (qpcTime || qpcmsTime || dtTime || args->mMultiCsv)) {
+        PrintWarning(L"warning: options ignored when -no_csv is used:");
+        if (qpcTime)         { qpcTime         = false; PrintWarning(L" -qpc_time"); }
+        if (qpcmsTime)       { qpcmsTime       = false; PrintWarning(L" -qpc_time_s"); }
+        if (dtTime)          { dtTime          = false; PrintWarning(L" -date_time"); }
+        if (args->mMultiCsv) { args->mMultiCsv = false; PrintWarning(L" -multi_csv"); }
+        PrintWarning(L"\n");
+    }
+
+    // If we're outputting CSV to stdout, we can't use it for console output.
+    //
+    // Also ignore -multi_csv since it only applies to file output.
+    if (csvOutputStdout) {
+        args->mConsoleOutput = ConsoleOutput::None;
+
         if (args->mMultiCsv) {
-            PrintWarning(L"warning: -multi_csv and -no_csv arguments are not compatible; ignoring -multi_csv.\n");
+            PrintWarning(L"warning: ignoring -multi_csv due to -output_stdout.\n");
             args->mMultiCsv = false;
-        }
-        if (args->mOutputCsvFileName != nullptr) {
-            PrintWarning(L"warning: -output_file and -no_csv arguments are not compatible; ignoring -output_file.\n");
-            args->mOutputCsvFileName = nullptr;
-        }
-        if (args->mOutputCsvToStdout) {
-            PrintWarning(L"warning: -output_stdout and -no_csv arguments are not compatible; ignoring -output_stdout.\n");
-            args->mOutputCsvToStdout = false;
         }
     }
 
-    // If we're outputing CSV to stdout, we can't use it for console output.
-    //
-    // Further, we're currently limited to outputing CSV to either file(s) or
-    // stdout, so disallow use of both -output_file and -output_stdout.  Also,
-    // since -output_stdout redirects all CSV output to stdout ignore
-    // -multi_csv or -track_mixed_reality in this case.
-    if (args->mOutputCsvToStdout) {
-        args->mConsoleOutputType = ConsoleOutput::None;
+    // Ignore -track_gpu_video if -no_track_gpu used
+    if (args->mTrackGPUVideo && !args->mTrackGPU) {
+        PrintWarning(L"warning: ignoring -track_gpu_video due to -no_track_gpu.\n");
+        args->mTrackGPUVideo = false;
+    }
 
-        if (args->mOutputCsvFileName != nullptr) {
-            PrintError(L"error: only one of -output_file or -output_stdout arguments can be used.\n");
-            PrintUsage();
-            return false;
-        }
+    // Ignore -no_track_display if required for other requested tracking
+    if (!args->mTrackDisplay && args->mTrackGPU) {
+        PrintWarning(L"warning: ignoring -no_track_display as display tracking is required when GPU tracking is enabled.\n");
+        args->mTrackDisplay = true;
+    }
 
-        if (args->mMultiCsv) {
-            PrintWarning(L"warning: -multi_csv and -output_stdout are not compatible; ignoring -multi_csv.\n");
-            args->mMultiCsv = false;
+    // If -terminate_existing, warn about any normal arguments since we'll just
+    // be stopping an existing session and then exiting.
+    if (args->mTerminateExistingSession) {
+        int expectedArgc = 2;
+        if (sessionNameSet) expectedArgc += 1;
+        if (argc != expectedArgc) {
+            PrintWarning(L"warning: -terminate_existing exits without capturing anything; ignoring all other options.\n");
         }
     }
 
@@ -492,26 +490,16 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     #if PRESENTMON_ENABLE_DEBUG_TRACE
     if (verboseTrace) {
         EnableVerboseTrace(true);
-        args->mConsoleOutputType = ConsoleOutput::None;
+        args->mConsoleOutput = ConsoleOutput::None;
     }
     #endif
 
     // Try to initialize the console, and warn if we're not going to be able to
     // do the advanced display as requested.
-    if (args->mConsoleOutputType == ConsoleOutput::Full && !StdOutIsConsole()) {
-        PrintWarning(L"warning: could not initialize console display; continuing with -no_console_stats.\n");
-        args->mConsoleOutputType = ConsoleOutput::Simple;
-    }
+    if (args->mConsoleOutput == ConsoleOutput::Statistics && !StdOutIsConsole()) {
+        PrintWarning(L"warning: stdout does not support statistics reporting; continuing with -no_console_stats.\n");
+        args->mConsoleOutput = ConsoleOutput::Simple;
 
-    // If -terminate_existing_session, warn about any normal arguments since we'll just
-    // be stopping an existing session and then exiting.
-    if (args->mTerminateExistingSession) {
-        int expectedArgc = 2;
-        if (sessionNameSet) expectedArgc += 1;
-        if (argc != expectedArgc) {
-            PrintWarning(L"warning: -terminate_existing_session exits without capturing anything; ignoring all capture,\n"
-                         L"         output, and recording arguments.\n");
-        }
     }
 
     // Convert the provided process names into a canonical form used for comparison.
@@ -528,6 +516,15 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     for (auto& name : args->mExcludeProcessNames) {
         CanonicalizeProcessName(&name);
     }
+
+    args->mTimeUnit = qpcTime   ? TimeUnit::QPC :
+                      qpcmsTime ? TimeUnit::QPCMilliSeconds :
+                      dtTime    ? TimeUnit::DateTime
+                                : TimeUnit::MilliSeconds;
+
+    args->mCSVOutput = csvOutputNone   ? CSVOutput::None :
+                       csvOutputStdout ? CSVOutput::Stdout
+                                       : CSVOutput::File;
 
     return true;
 }
