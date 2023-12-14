@@ -4,6 +4,7 @@
 #include <PresentMonAPI/PresentMonAPI.h>
 #include <PresentMonAPI2/source/PresentMonAPI.h>
 #include <Core/source/gfx/layout/GraphData.h>
+#include <CommonUtilities/source/str/String.h>
 #include "Metric.h"
 #include "../CachingQuery.h"
 #include "../Timekeeper.h"
@@ -11,6 +12,7 @@
 
 namespace p2c::pmon::met
 {
+    using ::pmon::util::str::ToWide;
     // TODO: derive strings using reference to intro root
     class DynamicPollingMetric : public Metric
     {
@@ -60,6 +62,19 @@ namespace p2c::pmon::met
             }
             else {
                 return 0.f;
+            }
+        }
+        std::wstring ReadStringValue(double timestamp) override
+        {
+            if (!offset) {
+                throw std::runtime_error{ "Metric not finalized" };
+            }
+            if constexpr (std::integral<T> || std::floating_point<T>) {
+                return Metric::ReadStringValue(timestamp);
+            }
+            else {
+                auto pBlob = pQuery->Poll(timestamp);
+                return ToWide(reinterpret_cast<const char*>(&pBlob[*offset]));
             }
         }
     private:

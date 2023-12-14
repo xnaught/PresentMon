@@ -24,7 +24,7 @@ namespace p2c::pmon
 			pRealized = std::make_unique<met::TypedDynamicPollingMetric<double>>(requestedMetric, this);
 			break;
 		case PM_DATA_TYPE_STRING:
-			pRealized = std::make_unique<met::TypedDynamicPollingMetric<char*>>(requestedMetric, this);
+			pRealized = std::make_unique<met::TypedDynamicPollingMetric<const char*>>(requestedMetric, this);
 			break;
 		}
 		metricPtrs.push_back(std::move(pRealized));
