@@ -52,6 +52,46 @@ bool AmdPowerTelemetryAdapter::GetVideoMemoryInfo(uint64_t& gpu_mem_size, uint64
   return success;
 }
 
+bool AmdPowerTelemetryAdapter::GetSustainedPowerLimit(double& sustainedPowerLimit) const noexcept {
+  sustainedPowerLimit = 0.f;
+  if (overdrive_version_ == 5) {
+    int power_control_supported = 0;
+    int result = adl2_->Overdrive5_PowerControl_Caps(
+      adl_adapter_index_, &power_control_supported) >> chk;
+      if (adl2_->Ok(result)) {
+        if (power_control_supported) {
+          int power_control_current = 0;
+          int power_control_default = 0;
+          result = adl2_->Overdrive5_PowerControl_Get(adl_adapter_index_,
+            &power_control_current, &power_control_default) >> chk;
+          if (adl2_->Ok(result)) {
+            // Not sure on return type, assuming watts
+            sustainedPowerLimit = (double)power_control_current;
+            return true;
+          }
+        }
+      }
+    } else if (overdrive_version_ == 6) {
+      int power_control_supported = 0;
+      int result = adl2_->Overdrive6_PowerControl_Caps(
+        adl_adapter_index_, &power_control_supported) >> chk;
+      if (adl2_->Ok(result)) {
+        if (power_control_supported) {
+          int power_control_current = 0;
+          int power_control_default = 0;
+          result = adl2_->Overdrive6_PowerControl_Get(adl_adapter_index_,
+            &power_control_current, &power_control_default) >> chk;
+          if (adl2_->Ok(result)) {
+            sustainedPowerLimit = (double)power_control_current;
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+}
+
 uint64_t AmdPowerTelemetryAdapter::GetDedicatedVideoMemory() const noexcept {
   uint64_t video_mem_size = 0;
   uint64_t video_max_bandwidth = 0;
@@ -65,6 +105,12 @@ uint64_t AmdPowerTelemetryAdapter::GetVideoMemoryMaxBandwidth() const noexcept {
 
   GetVideoMemoryInfo(video_mem_size, video_max_bandwidth);
   return video_max_bandwidth;
+}
+
+double AmdPowerTelemetryAdapter::GetSustainedPowerLimit() const noexcept {
+  double sustainedPowerLimit = 0.f;
+  GetSustainedPowerLimit(sustainedPowerLimit);
+  return sustainedPowerLimit;
 }
 
 bool AmdPowerTelemetryAdapter::Sample() noexcept {
@@ -201,24 +247,8 @@ bool AmdPowerTelemetryAdapter::Overdrive5Sample(
 
   // Current Sustained Power Control limit
   {
-    int power_control_supported = 0;
-    int result = adl2_->Overdrive5_PowerControl_Caps(
-                     adl_adapter_index_, &power_control_supported) >>
-        chk;
-    if (adl2_->Ok(result)) {
-      if (power_control_supported) {
-        int power_control_current = 0;
-        int power_control_default = 0;
-        result = adl2_->Overdrive5_PowerControl_Get(adl_adapter_index_,
-                                                    &power_control_current,
-                                                    &power_control_default) >>
-                 chk;
-        if (adl2_->Ok(result)) {
-          // Not sure on return type, assuming watts
-          info.gpu_sustained_power_limit_w = (double)power_control_current;
-          SetTelemetryCapBit(GpuTelemetryCapBits::gpu_sustained_power_limit);
-        }
-      }
+    if (GetSustainedPowerLimit(info.gpu_sustained_power_limit_w)) {
+      SetTelemetryCapBit(GpuTelemetryCapBits::gpu_sustained_power_limit);
     }
   }
 
@@ -322,23 +352,8 @@ bool AmdPowerTelemetryAdapter::Overdrive6Sample(
 
   // sustained power control limit
   {
-    int power_control_supported = 0;
-    int result = adl2_->Overdrive6_PowerControl_Caps(
-                     adl_adapter_index_, &power_control_supported) >>
-                 chk;
-    if (adl2_->Ok(result)) {
-      if (power_control_supported) {
-        int power_control_current = 0;
-        int power_control_default = 0;
-        result = adl2_->Overdrive6_PowerControl_Get(adl_adapter_index_,
-                                                    &power_control_current,
-                                                    &power_control_default) >>
-                 chk;
-        if (adl2_->Ok(result)) {
-          info.gpu_sustained_power_limit_w = (double)power_control_current;
-          SetTelemetryCapBit(GpuTelemetryCapBits::gpu_sustained_power_limit);
-        }
-      }
+    if (GetSustainedPowerLimit(info.gpu_sustained_power_limit_w)) {
+      SetTelemetryCapBit(GpuTelemetryCapBits::gpu_sustained_power_limit);
     }
   }
 

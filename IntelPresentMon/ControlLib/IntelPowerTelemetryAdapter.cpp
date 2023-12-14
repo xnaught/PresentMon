@@ -193,6 +193,20 @@ namespace pwr::intel
         return videoMemMaxBandwidth;
     }
 
+    double IntelPowerTelemetryAdapter::GetSustainedPowerLimit() const noexcept
+    {
+        double gpuSustainedPowerLimit = 0.;
+        if (const auto result = ctlOverclockPowerLimitGet(
+            deviceHandle, &gpuSustainedPowerLimit);
+            result == CTL_RESULT_SUCCESS) {
+            // Control lib returns back in milliwatts
+            gpuSustainedPowerLimit =
+                gpuSustainedPowerLimit / 1000.;
+        }
+
+        return gpuSustainedPowerLimit;
+    }
+
     // private implementation functions
 
     ctl_result_t IntelPowerTelemetryAdapter::EnumerateMemoryModules()

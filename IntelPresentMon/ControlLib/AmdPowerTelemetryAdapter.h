@@ -29,6 +29,7 @@ class AmdPowerTelemetryAdapter : public PowerTelemetryAdapter {
   std::string GetName() const noexcept override;
   uint64_t GetDedicatedVideoMemory() const noexcept override;
   uint64_t GetVideoMemoryMaxBandwidth() const noexcept override;
+  double GetSustainedPowerLimit() const noexcept override;
 
  private:
   bool Overdrive5Sample(PresentMonPowerTelemetryInfo& info) noexcept;
@@ -36,6 +37,7 @@ class AmdPowerTelemetryAdapter : public PowerTelemetryAdapter {
   bool Overdrive7Sample(PresentMonPowerTelemetryInfo& info) noexcept;
   bool Overdrive8Sample(PresentMonPowerTelemetryInfo& info) noexcept;
   bool GetVideoMemoryInfo(uint64_t& gpu_mem_size, uint64_t& gpu_mem_max_bandwidth) const noexcept;
+  bool GetSustainedPowerLimit(double& sustainedPowerLimit) const noexcept;
 
   const Adl2Wrapper* adl2_;
   int adl_adapter_index_ = 0;

@@ -413,6 +413,9 @@ extern "C" {
       uint32_t id;
       PM_GPU_VENDOR vendor;
       char name[MAX_PM_ADAPTER_NAME];
+      double gpuSustainedPowerLimit;
+      uint64_t gpuMemorySize;
+      uint64_t gpuMemoryMaxBandwidth;
   };
 
   /////////////////////////////////////////////////////////////////////////////

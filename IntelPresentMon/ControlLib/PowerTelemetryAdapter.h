@@ -22,6 +22,7 @@ namespace pwr
         virtual std::string GetName() const noexcept = 0;
         virtual uint64_t GetDedicatedVideoMemory() const noexcept = 0;
         virtual uint64_t GetVideoMemoryMaxBandwidth() const noexcept = 0;
+        virtual double GetSustainedPowerLimit() const noexcept = 0;
         
         void SetTelemetryCapBit(GpuTelemetryCapBits telemetryCapBit) noexcept
         {

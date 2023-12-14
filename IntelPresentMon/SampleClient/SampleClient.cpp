@@ -860,7 +860,7 @@ void PollMetrics(uint32_t processId, double metricsOffset)
             PrintDeviceVendor("Static GPU Vendor = ", reinterpret_cast<PM_DEVICE_VENDOR&>(gpuVendor[0]));
             ConsolePrintLn("Static GPU Name = %s", reinterpret_cast<char*>(gpuName.get()));
             PrintMetric("Static GPU Memory Max Bandwidth = %f", reinterpret_cast<double&>(gpuMemMaxBw[0]), true);
-            PrintMetric("Static GPU Memory Size = %f", reinterpret_cast<double&>(gpuMemSize[0]), true);
+            ConsolePrintLn("Static GPU Memory Size = = %lld", reinterpret_cast<uint64_t&>(gpuMemSize[0]));
 
             PrintMetric("Gpu Fan Speed [0] Average = %f", reinterpret_cast<double&>(pBlob[elements[0].dataOffset]), true);
             PrintMetric("Gpu Fan Speed [0] 90% = %f", reinterpret_cast<double&>(pBlob[elements[1].dataOffset]), true);

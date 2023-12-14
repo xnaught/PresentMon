@@ -81,11 +81,12 @@ namespace pmon::mid
         {
             if (dev.GetBasePtr()->type == PM_DEVICE_TYPE_GRAPHICS_ADAPTER)
             {
-                cachedGpuInfo.push_back({ dev.GetBasePtr()->vendor, dev.GetName(), dev.GetId(), gpuAdapterId });
+                cachedGpuInfo.push_back({ dev.GetBasePtr()->vendor, dev.GetName(), dev.GetId(), gpuAdapterId, 0., 0, 0 });
                 gpuAdapterId++;
             }
         }
-
+        // Update the static GPU metric data from the service
+        GetStaticGpuMetrics();
         GetCpuInfo();
 	}
     
@@ -699,53 +700,50 @@ namespace pmon::mid
             auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[0]);
             output = cachedCpuInfo[0].deviceVendor;
         }
-            break;
+        break;
         case PM_METRIC_GPU_VENDOR:
         {
             auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[0]);
             output = cachedGpuInfo[element.deviceId].deviceVendor;
         }
-            break;
+        break;
         case PM_METRIC_PROCESS_NAME:
         case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
-        case PM_METRIC_GPU_MEM_SIZE:
         {
-            // Check to stream client associated with the process id saved in the dynamic query
-            auto iter = presentMonStreamClients.find(processId);
-            if (iter == presentMonStreamClients.end()) {
-                return;
+            auto& output = reinterpret_cast<uint64_t&>(pBlob[0]);
+            if (cachedGpuInfo[element.deviceId].gpuMemoryMaxBandwidth.has_value()) {
+                output = cachedGpuInfo[element.deviceId].gpuMemoryMaxBandwidth.value();
             }
-
-            // Get the named shared memory associated with the stream client
-            StreamClient* client = iter->second.get();
-            auto nsm_view = client->GetNamedSharedMemView();
-            auto nsm_hdr = nsm_view->GetHeader();
-            if (!nsm_hdr->process_active) {
-                return;
-            }
-
-            PmNsmFrameData* frameData = client->ReadFrameByIdx(client->GetLatestFrameIndex());
-            if (frameData == nullptr) {
-                return;
-            }
-            if (element.metric == PM_METRIC_PROCESS_NAME)
+            else
             {
-                strcpy_s(reinterpret_cast<char*>(pBlob), elementSize, frameData->present_event.application);
-            }
-            else if (element.metric == PM_METRIC_GPU_MEM_MAX_BANDWIDTH)
-            {
-                auto& output = reinterpret_cast<double&>(pBlob[0]);
-                output = static_cast<double>(frameData->power_telemetry.gpu_mem_max_bandwidth_bps);
-            }
-            else if (element.metric == PM_METRIC_GPU_MEM_SIZE)
-            {
-                auto& output = reinterpret_cast<double&>(pBlob[0]);
-                output = static_cast<double>(frameData->power_telemetry.gpu_mem_total_size_b);
-                int i = 0;
-                i++;
+                output = 0;
             }
         }
-            break;
+        break;
+        case PM_METRIC_GPU_MEM_SIZE:
+        {
+            auto& output = reinterpret_cast<uint64_t&>(pBlob[0]);
+            if (cachedGpuInfo[element.deviceId].gpuMemorySize.has_value()) {
+                output = cachedGpuInfo[element.deviceId].gpuMemorySize.value();
+            }
+            else
+            {
+                output = 0;
+            }
+        }
+        break;
+        case PM_METRIC_GPU_SUSTAINED_POWER_LIMIT:
+        {
+            auto& output = reinterpret_cast<double&>(pBlob[0]);
+            if (cachedGpuInfo[element.deviceId].gpuSustainedPowerLimit.has_value()) {
+                output = cachedGpuInfo[element.deviceId].gpuSustainedPowerLimit.value();
+            }
+            else
+            {
+                output = 0.f;
+            }
+        }
+        break;
         default:
             throw std::runtime_error{ "unknown metric in static poll" };
         }
@@ -1411,7 +1409,8 @@ namespace pmon::mid
         SaveMetricCache(pQuery, processId, pBlob);
     }
 
-    PM_STATUS ConcreteMiddleware::SetActiveGraphicsAdapter(uint32_t adapterId) {
+    PM_STATUS ConcreteMiddleware::SetActiveGraphicsAdapter(uint32_t adapterId)
+    {
         MemBuffer requestBuf;
         MemBuffer responseBuf;
 
@@ -1429,4 +1428,39 @@ namespace pmon::mid
         return status;
     }
 
+    void ConcreteMiddleware::GetStaticGpuMetrics()
+    {
+        MemBuffer requestBuf;
+        MemBuffer responseBuf;
+
+        NamedPipeHelper::EncodeRequestHeader(&requestBuf, PM_ACTION::ENUMERATE_ADAPTERS);
+
+        PM_STATUS status = CallPmService(&requestBuf, &responseBuf);
+        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            return;
+        }
+
+        IPMAdapterInfoNext adapterInfo{};
+        status =
+            NamedPipeHelper::DecodeEnumerateAdaptersResponse(&responseBuf, (IPMAdapterInfo*)&adapterInfo);
+        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            return;
+        }
+
+        // For each cached gpu search through the returned adapter information and set the returned
+        // static gpu metrics
+        for (auto& gpuInfo : cachedGpuInfo)
+        {
+            for (uint32_t i = 0; i < adapterInfo.num_adapters; i++)
+            {
+                if (gpuInfo.adapterId == adapterInfo.adapters[i].id)
+                {
+                    gpuInfo.gpuSustainedPowerLimit = adapterInfo.adapters[i].gpuSustainedPowerLimit;
+                    gpuInfo.gpuMemorySize = adapterInfo.adapters[i].gpuMemorySize;
+                    gpuInfo.gpuMemoryMaxBandwidth = adapterInfo.adapters[i].gpuMemoryMaxBandwidth;
+                    break;
+                }
+            }
+        }
+    }
 }

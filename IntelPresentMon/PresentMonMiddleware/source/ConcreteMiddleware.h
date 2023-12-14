@@ -54,6 +54,9 @@ namespace pmon::mid
 		std::string deviceName;
 		uint32_t deviceId;
 		std::optional<uint32_t> adapterId;
+		std::optional<double> gpuSustainedPowerLimit;
+		std::optional<uint64_t> gpuMemorySize;
+		std::optional<uint64_t> gpuMemoryMaxBandwidth;
 	};
 
 	struct MetricInfo
@@ -89,6 +92,7 @@ namespace pmon::mid
 		uint64_t GetAdjustedQpc(uint64_t current_qpc, uint64_t frame_data_qpc, uint64_t queryMetricsOffset, LARGE_INTEGER frequency, uint64_t& queryFrameDataDelta);
 		bool DecrementIndex(NamedSharedMem* nsm_view, uint64_t& index);
 		PM_STATUS SetActiveGraphicsAdapter(uint32_t adapter_id);
+		void GetStaticGpuMetrics();
 
 		void CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency);
 		void CalculateGpuCpuMetric(std::unordered_map<PM_METRIC, MetricInfo>& metricInfo, const PM_QUERY_ELEMENT& element, uint8_t* pBlob);

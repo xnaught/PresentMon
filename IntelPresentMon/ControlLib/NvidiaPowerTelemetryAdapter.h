@@ -24,6 +24,7 @@ namespace pwr::nv
 		std::string GetName() const noexcept override;
         uint64_t GetDedicatedVideoMemory() const noexcept override;
 		uint64_t GetVideoMemoryMaxBandwidth() const noexcept override { return 0; }
+		double GetSustainedPowerLimit() const noexcept override;
 
 	private:
 		// data
