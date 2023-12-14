@@ -283,6 +283,24 @@ namespace pmon::mid
         cachedCpuInfo.push_back({ deviceVendor, cpuName });
     }
 
+    PM_STATUS ConcreteMiddleware::SetTelemetryPollingPeriod(uint32_t deviceId, uint32_t timeMs)
+    {
+        MemBuffer requestBuffer;
+        MemBuffer responseBuffer;
+
+        NamedPipeHelper::EncodeGeneralSetActionRequest(
+            PM_ACTION::SET_GPU_TELEMETRY_PERIOD, &requestBuffer, timeMs);
+
+        PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
+        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            return status;
+        }
+
+        status = NamedPipeHelper::DecodeGeneralSetActionResponse(
+            PM_ACTION::SET_GPU_TELEMETRY_PERIOD, &responseBuffer);
+        return status;
+    }
+
     PM_DYNAMIC_QUERY* ConcreteMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, double windowSizeMs, double metricOffsetMs)
     { 
         // get introspection data for reference

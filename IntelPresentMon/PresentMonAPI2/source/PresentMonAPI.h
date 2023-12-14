@@ -282,6 +282,7 @@ extern "C" {
 	PRESENTMON_API2_EXPORT PM_STATUS pmStopStreaming(uint32_t process_id);
 	PRESENTMON_API2_EXPORT PM_STATUS pmEnumerateInterface(const PM_INTROSPECTION_ROOT** ppInterface);
 	PRESENTMON_API2_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pInterface);
+	PRESENTMON_API2_EXPORT PM_STATUS pmSetTelemetryPollingPeriod(uint32_t deviceId, uint32_t timeMs);
 	PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, double windowSizeMs, double metricOffsetMs = 0.f);
 	PRESENTMON_API2_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle);
 	PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains);

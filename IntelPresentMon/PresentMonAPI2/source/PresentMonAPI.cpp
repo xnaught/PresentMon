@@ -181,6 +181,20 @@ PRESENTMON_API2_EXPORT PM_STATUS pmFreeInterface(const PM_INTROSPECTION_ROOT* pI
 	}
 }
 
+PRESENTMON_API2_EXPORT PM_STATUS pmSetTelemetryPollingPeriod(uint32_t deviceId, uint32_t timeMs)
+{
+	try {
+		if (!pMiddleware_) {
+			return PM_STATUS_SESSION_NOT_OPEN;
+		}
+		pMiddleware_->SetTelemetryPollingPeriod(deviceId, timeMs);
+		return PM_STATUS_SUCCESS;
+	}
+	catch (...) {
+		return PM_STATUS_FAILURE;
+	}
+}
+
 PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, double windowSizeMs, double metricOffsetMs)
 {
 	try {

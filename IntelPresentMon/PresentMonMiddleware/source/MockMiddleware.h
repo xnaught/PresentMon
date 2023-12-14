@@ -15,6 +15,7 @@ namespace pmon::mid
 		void FreeIntrospectionData(const PM_INTROSPECTION_ROOT* pRoot) override;
 		PM_STATUS StartStreaming(uint32_t processId) override { return PM_STATUS_SUCCESS; }
 		PM_STATUS StopStreaming(uint32_t processId) override { return PM_STATUS_SUCCESS; }
+		PM_STATUS SetTelemetryPollingPeriod(uint32_t deviceId, uint32_t timeMs) override { return PM_STATUS_SUCCESS; }
 		PM_DYNAMIC_QUERY* RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, double windowSizeMs, double metricOffsetMs) override;
 		void FreeDynamicQuery(const PM_DYNAMIC_QUERY* pQuery) override;
 		void PollDynamicQuery(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains) override;
