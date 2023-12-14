@@ -7,9 +7,9 @@
 #include <PresentMonAPIWrapper/source/PresentMonAPIWrapper.h>
 #include <Core/source/infra/util/Util.h>
 #include "metric/NoisySineFakeMetric.h"
-#include "metric/SimpleMetric.h"
-#include "RawFrameDataWriter.h"
 #include "metric/SquareWaveMetric.h"
+#include "metric/DynamicPollingMetric.h"
+#include "RawFrameDataWriter.h"
 
 namespace p2c::pmon
 {
@@ -40,6 +40,8 @@ namespace p2c::pmon
 
 		// Build table of available metrics using introspection
 		using namespace met;
+
+		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_DISPLAYED_FPS, 0, 0, PM_STAT_AVG, *pIntrospectionRoot));
 
 		// fake metrics for testing
 #ifdef _DEBUG
@@ -120,6 +122,7 @@ namespace p2c::pmon
 		for (auto& m : metrics)
 		{
 			info.push_back(m->GetInfo(index));
+			p2clog.info(info.back().className).commit();
 			index++;
 		}
 		return info;

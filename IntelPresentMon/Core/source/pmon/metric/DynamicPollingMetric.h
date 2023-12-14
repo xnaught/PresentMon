@@ -16,9 +16,16 @@ namespace p2c::pmon::met
     {
     public:
         DynamicPollingMetric(PM_METRIC metricId_, uint32_t deviceId_, uint32_t arrayIndex_, PM_STAT stat_,
-            std::wstring name_, std::wstring units_);
+            const pmapi::intro::Root& introRoot);
         std::wstring GetStatName() const override;
         const std::wstring& GetCategory() const override;
+        const std::wstring& GetMetricClassName() const override;
+        void PopulateData(gfx::lay::GraphData& graphData, double timestamp) override
+        {
+            graphData.Push(gfx::lay::DataPoint{ .value = ReadValue(timestamp), .time = timestamp });
+            graphData.Trim(timestamp);
+        }
+        std::optional<float> ReadValue(double timestamp) override { return {};}
         PM_QUERY_ELEMENT MakeQueryElement() const;
         void Finalize(uint32_t offset);
     protected:
@@ -26,6 +33,8 @@ namespace p2c::pmon::met
         PM_STAT stat;
         uint32_t deviceId;
         uint32_t arrayIndex;
+        std::wstring statName;
+        bool numeric = true;
         std::optional<uint32_t> offset;
     };
 
@@ -40,22 +49,6 @@ namespace p2c::pmon::met
             DynamicPollingMetric{ mold },
             pQuery{ pQuery_ }
         {}
-        void PopulateData(gfx::lay::GraphData& graphData, double timestamp) override
-        {
-            graphData.Push(gfx::lay::DataPoint{ .value = ReadValue(timestamp), .time = timestamp });
-            graphData.Trim(timestamp);
-        }
-        const std::wstring& GetMetricClassName() const override
-        {
-            if constexpr (std::integral<T> || std::floating_point<T>) {
-                static std::wstring cls = L"Numeric";
-                return cls;
-            }
-            else {
-                static std::wstring cls = L"Text";
-                return cls;
-            }
-        }
         std::optional<float> ReadValue(double timestamp) override
         {
             if constexpr (std::integral<T> || std::floating_point<T>) {

@@ -195,6 +195,14 @@ namespace PresentMonAPI2Mock
 			Assert::AreEqual("Dynamic and Frame Event Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).GetType().GetName());
 			Assert::AreEqual("Static Metric"s, data->FindMetric(PM_METRIC_PROCESS_NAME).GetType().GetName());
 		}
+		TEST_METHOD(IntrospectStat)
+		{
+			using namespace std::string_literals;
+
+			auto shortName = data->FindEnumKey(PM_ENUM_STAT, (int)PM_STAT_AVG).GetShortName();
+
+			Assert::AreEqual("avg"s, shortName);
+		}
 	private:
 		std::optional<pmapi::Session> session;
 		std::shared_ptr<pmapi::intro::Root> data;

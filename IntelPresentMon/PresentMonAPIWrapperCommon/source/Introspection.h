@@ -359,6 +359,7 @@ namespace pmapi
             }
             EnumKeyView GetUnit() const;
             EnumKeyView GetType() const;
+            std::string GetName() const;
             DataTypeInfoView GetDataTypeInfo() const
             {
                 return { pRoot, pBase->pTypeInfo };

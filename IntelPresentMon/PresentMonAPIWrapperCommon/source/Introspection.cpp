@@ -27,6 +27,11 @@ namespace pmapi::intro
         return pRoot->FindEnumKey(PM_ENUM_METRIC_TYPE, (int)pBase->type);
     }
 
+    std::string MetricView::GetName() const
+    {
+        return pRoot->FindEnumKey(PM_ENUM_METRIC, pBase->id).GetName();
+    }
+
     EnumKeyView DataTypeInfoView::GetPolledType() const
     {
         return pRoot->FindEnumKey(PM_ENUM_DATA_TYPE, (int)pBase->polledType);

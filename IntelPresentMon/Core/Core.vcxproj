@@ -103,7 +103,6 @@
     <ClInclude Include="source\kernel\WindowSpawnHandler.h" />
     <ClInclude Include="source\pmon\metric\Metric.h" />
     <ClInclude Include="source\pmon\metric\NoisySineFakeMetric.h" />
-    <ClInclude Include="source\pmon\metric\SimpleMetric.h" />
     <ClInclude Include="source\pmon\RawFrameDataWriter.h" />
     <ClInclude Include="source\meta\TypeFromMember.h" />
     <ClInclude Include="source\pmon\PresentMon.h" />
@@ -225,6 +224,9 @@
     <None Include="cpp.hint" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">
+      <Project>{08a704d8-ca1c-45e9-8ede-542a1a43b53e}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\PresentMonAPIWrapper\PresentMonAPIWrapper.vcxproj">
       <Project>{cee032ed-b0d3-47f8-bdae-d46757b0061b}</Project>
     </ProjectReference>

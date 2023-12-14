@@ -88,7 +88,6 @@
     <ClInclude Include="source\pmon\RawFrameDataWriter.h" />
     <ClInclude Include="source\pmon\metric\Metric.h" />
     <ClInclude Include="source\pmon\metric\NoisySineFakeMetric.h" />
-    <ClInclude Include="source\pmon\metric\SimpleMetric.h" />
     <ClInclude Include="source\kernel\TargetLostException.h" />
     <ClInclude Include="source\kernel\KernelHandler.h" />
     <ClInclude Include="source\win\Key.h" />
