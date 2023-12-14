@@ -9,6 +9,32 @@ namespace pmapi
 {
     class SessionException : public Exception { using Exception::Exception; };
 
+    class DynamicQuery
+    {
+        friend class Session;
+    public:
+        ~DynamicQuery()
+        {
+            pmFreeDynamicQuery(hQuery_);
+        }
+        size_t GetBlobSize() const
+        {
+            return blobSize_;
+        }
+        void Poll(uint32_t pid, uint8_t* pBlob, uint32_t& numSwapChains)
+        {
+            pmPollDynamicQuery(hQuery_, pid, pBlob, &numSwapChains);
+        }
+    private:
+        DynamicQuery(std::span<PM_QUERY_ELEMENT> elements, double winSizeMs, double metricOffsetMs)
+        {
+            pmRegisterDynamicQuery(&hQuery_, elements.data(), elements.size(), winSizeMs, metricOffsetMs);
+            blobSize_ = elements.back().dataOffset + elements.back().dataSize;
+        }
+        PM_DYNAMIC_QUERY_HANDLE hQuery_ = nullptr;
+        size_t blobSize_ = 0ull;
+    };
+
     class ProcessTracker
     {
         friend class Session;
@@ -67,6 +93,10 @@ namespace pmapi
         std::shared_ptr<ProcessTracker> TrackProcess(uint32_t pid)
         {
             return std::shared_ptr<ProcessTracker>{ new ProcessTracker{ pid } };
+        }
+        std::shared_ptr<DynamicQuery> RegisterDyanamicQuery(std::span<PM_QUERY_ELEMENT> elements, double winSizeMs, double metricOffsetMs)
+        {
+            return std::shared_ptr<DynamicQuery>{ new DynamicQuery{ elements, winSizeMs, metricOffsetMs } };
         }
     private:
         bool token_ = true;

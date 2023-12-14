@@ -89,6 +89,8 @@
     <ClInclude Include="source\infra\util\rn\ToVector.h" />
     <ClInclude Include="source\infra\util\Util.h" />
     <ClInclude Include="source\pmon\AdapterInfo.h" />
+    <ClInclude Include="source\pmon\CachingQuery.h" />
+    <ClInclude Include="source\pmon\metric\DynamicPollingMetric.h" />
     <ClInclude Include="source\pmon\metric\SquareWaveMetric.h" />
     <ClInclude Include="source\pmon\StatisticsTracker.h" />
     <ClInclude Include="source\win\com\ProcessSpawnSink.h" />
@@ -184,6 +186,8 @@
     <ClCompile Include="source\infra\util\Hash.cpp" />
     <ClCompile Include="source\infra\util\IntervalWaiter.cpp" />
     <ClCompile Include="source\infra\util\Util.cpp" />
+    <ClCompile Include="source\pmon\CachingQuery.cpp" />
+    <ClCompile Include="source\pmon\metric\DynamicPollingMetric.cpp" />
     <ClCompile Include="source\pmon\metric\SquareWaveMetric.cpp" />
     <ClCompile Include="source\pmon\StatisticsTracker.cpp" />
     <ClCompile Include="source\win\com\ProcessSpawnSink.cpp" />

@@ -124,6 +124,8 @@
     <ClInclude Include="source\infra\opt\Options.h" />
     <ClInclude Include="source\infra\opt\Framework.h" />
     <ClInclude Include="source\pmon\AdapterInfo.h" />
+    <ClInclude Include="source\pmon\metric\DynamicPollingMetric.h" />
+    <ClInclude Include="source\pmon\CachingQuery.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\win\MessageMap.cpp" />
@@ -206,6 +208,8 @@
     <ClCompile Include="source\pmon\metric\SquareWaveMetric.cpp" />
     <ClCompile Include="source\win\GpuUtilization.cpp" />
     <ClCompile Include="source\infra\opt\Framework.cpp" />
+    <ClCompile Include="source\pmon\CachingQuery.cpp" />
+    <ClCompile Include="source\pmon\metric\DynamicPollingMetric.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
