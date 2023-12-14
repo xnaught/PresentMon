@@ -112,10 +112,10 @@ namespace p2c::pmon
 		}
 		return infra::util::ToWide(std::string{ buffer, bufferSize });
 	}
-	Metric* PresentMon::GetMetricByIndex(size_t index) { return metrics.at(index).get(); };
-	std::vector<Metric::Info> PresentMon::EnumerateMetrics() const
+	met::Metric* PresentMon::GetMetricByIndex(size_t index) { return metrics.at(index).get(); };
+	std::vector<met::Metric::Info> PresentMon::EnumerateMetrics() const
 	{
-		std::vector<Metric::Info> info;
+		std::vector<met::Metric::Info> info;
 		size_t index = 0;
 		for (auto& m : metrics)
 		{
@@ -166,11 +166,11 @@ namespace p2c::pmon
 	{
 		return selectedAdapter;
 	}
-	void PresentMon::AddMetric(std::unique_ptr<Metric> metric_)
+	void PresentMon::AddMetric(std::unique_ptr<met::Metric> metric_)
 	{
 		metrics.push_back(std::move(metric_));
 	}
-	void PresentMon::AddMetrics(std::vector<std::unique_ptr<Metric>> metrics_)
+	void PresentMon::AddMetrics(std::vector<std::unique_ptr<met::Metric>> metrics_)
 	{
 		metrics.insert(
 			metrics.end(),

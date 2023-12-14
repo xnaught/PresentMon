@@ -7,28 +7,39 @@
 
 namespace p2c::pmon
 {
-	CachingQuery::CachingQuery(pmapi::Session& session, const pmapi::intro::Root& introRoot, uint32_t pid,
-		std::span<const met::DynamicPollingMetric*> metricsRequestedPtrs, double winSizeMs, double metricOffsetMs)
+	CachingQuery::CachingQuery(uint32_t pid, double winSizeMs, double metricOffsetMs)
 		:
-		pid{ pid }
+		pid{ pid },
+		winSizeMs{ winSizeMs },
+		metricOffsetMs{ metricOffsetMs }
+	{}
+
+	met::Metric* CachingQuery::AddDynamicMetric(const pmapi::intro::Root& introRoot, const met::DynamicPollingMetric& requestedMetric)
+	{
+		const auto metricId = requestedMetric.MakeQueryElement().metric;
+		const auto dataTypeId = introRoot.FindMetric(metricId).GetDataTypeInfo().GetBasePtr()->polledType;
+		std::unique_ptr<met::DynamicPollingMetric> pRealized;
+		switch (dataTypeId) {
+		case PM_DATA_TYPE_DOUBLE:
+			pRealized = std::make_unique<met::TypedDynamicPollingMetric<double>>(requestedMetric, this);
+			break;
+		case PM_DATA_TYPE_STRING:
+			pRealized = std::make_unique<met::TypedDynamicPollingMetric<char*>>(requestedMetric, this);
+			break;
+		}
+		metricPtrs.push_back(std::move(pRealized));
+		return metricPtrs.back().get();
+	}
+
+	void CachingQuery::Finalize(pmapi::Session& session)
 	{
 		std::vector<PM_QUERY_ELEMENT> queryElements;
-		for (auto pReq : metricsRequestedPtrs) {
-			queryElements.push_back(pReq->MakeQueryElement());
+		for (auto& pMet : metricPtrs) {
+			queryElements.push_back(pMet->MakeQueryElement());
 		}
 		pQuery = session.RegisterDyanamicQuery(queryElements, winSizeMs, metricOffsetMs);
-		for (auto&& [e, m] : std::views::zip(queryElements, metricsRequestedPtrs)) {
-			const auto dataTypeId = introRoot.FindMetric(e.metric).GetDataTypeInfo().GetBasePtr()->polledType;
-			std::unique_ptr<met::DynamicPollingMetric> pRealized;
-			switch (dataTypeId) {
-			case PM_DATA_TYPE_DOUBLE:
-				pRealized = std::make_unique<met::TypedDynamicPollingMetric<double>>(*m, this, e.dataOffset);
-				break;
-			case PM_DATA_TYPE_STRING:
-				pRealized = std::make_unique<met::TypedDynamicPollingMetric<char*>>(*m, this, e.dataOffset);
-				break;
-			}
-			metricPtrs.push_back(std::move(pRealized));
+		for (auto&& [e, m] : std::views::zip(queryElements, metricPtrs)) {
+			m->Finalize(uint32_t(e.dataOffset));
 		}
 		pBlob = std::make_unique<uint8_t[]>(pQuery->GetBlobSize());
 	}

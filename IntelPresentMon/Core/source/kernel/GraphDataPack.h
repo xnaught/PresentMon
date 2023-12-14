@@ -9,7 +9,7 @@ namespace p2c::kern
 {
 	struct GraphDataPack
 	{
-		GraphDataPack(pmon::Metric* pMetric_, double windowSize_)
+		GraphDataPack(pmon::met::Metric* pMetric_, double windowSize_)
 			:
 			pMetric{ pMetric_ },
 			pData{ std::make_shared<gfx::lay::GraphData>(windowSize_) }
@@ -25,6 +25,6 @@ namespace p2c::kern
 			return std::format(L"{}{}", pMetric->GetName(), statPart);
 		}
 		std::shared_ptr<gfx::lay::GraphData> pData;
-		pmon::Metric* pMetric = nullptr;
+		pmon::met::Metric* pMetric = nullptr;
 	};
 }

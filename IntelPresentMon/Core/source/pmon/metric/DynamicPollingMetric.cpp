@@ -26,4 +26,8 @@ namespace p2c::pmon::met
             .arrayIndex = arrayIndex,
         };
     }
+    void DynamicPollingMetric::Finalize(uint32_t offset_)
+    {
+        offset = offset_;
+    }
 }

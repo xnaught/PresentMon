@@ -3,7 +3,7 @@
 #include "Metric.h"
 #include <format>
 
-namespace p2c::pmon
+namespace p2c::pmon::met
 {
     Metric::Metric(std::wstring name, std::wstring units) : name{ std::move(name) }, units{ std::move(units) } {}
     Metric::~Metric() = default;

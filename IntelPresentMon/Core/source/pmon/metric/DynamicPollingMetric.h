@@ -20,11 +20,13 @@ namespace p2c::pmon::met
         std::wstring GetStatName() const override;
         const std::wstring& GetCategory() const override;
         PM_QUERY_ELEMENT MakeQueryElement() const;
+        void Finalize(uint32_t offset);
     protected:
         PM_METRIC metricId;
         PM_STAT stat;
         uint32_t deviceId;
         uint32_t arrayIndex;
+        std::optional<uint32_t> offset;
     };
 
     // TODO: idea; don't template metric, just template a polymorphic type deserializer
@@ -33,11 +35,10 @@ namespace p2c::pmon::met
     class TypedDynamicPollingMetric : public DynamicPollingMetric
     {
     public:
-        TypedDynamicPollingMetric(const DynamicPollingMetric& mold, CachingQuery* pQuery_, size_t offset_)
+        TypedDynamicPollingMetric(const DynamicPollingMetric& mold, CachingQuery* pQuery_)
             :
             DynamicPollingMetric{ mold },
-            pQuery{ pQuery_ },
-            offset{ offset_ }
+            pQuery{ pQuery_ }
         {}
         void PopulateData(gfx::lay::GraphData& graphData, double timestamp) override
         {
@@ -58,17 +59,18 @@ namespace p2c::pmon::met
         std::optional<float> ReadValue(double timestamp) override
         {
             if constexpr (std::integral<T> || std::floating_point<T>) {
+                if (!offset) {
+                    throw std::runtime_error{ "Metric not finalized" };
+                }
                 auto pBlob = pQuery->Poll(timestamp);
-                return (float)*reinterpret_cast<const T*>(&pBlob[offset]);
+                return (float)*reinterpret_cast<const T*>(&pBlob[*offset]);
             }
             else {
                 return 0.f;
             }
         }
-
     private:
         CachingQuery* pQuery = nullptr;
-        size_t offset;
     };
 
 }

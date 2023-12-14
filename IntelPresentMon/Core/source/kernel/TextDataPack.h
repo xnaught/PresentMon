@@ -19,6 +19,6 @@ namespace p2c::kern
 			return std::format(L"{}{}", pMetric->GetName(), statPart);
 		}
 		std::wstring text;
-		pmon::Metric* pMetric = nullptr;
+		pmon::met::Metric* pMetric = nullptr;
 	};
 }

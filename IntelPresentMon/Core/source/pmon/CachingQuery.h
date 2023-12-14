@@ -20,17 +20,21 @@ namespace p2c::pmon
 {
 	namespace met
 	{
+		class Metric;
 		class DynamicPollingMetric;
 	}
 
 	class CachingQuery
 	{
 	public:
-		CachingQuery(pmapi::Session& session, const pmapi::intro::Root& introRoot, uint32_t pid,
-			std::span<const met::DynamicPollingMetric*> metricsRequestedPtrs, double winSizeMs, double metricOffsetMs);
+		CachingQuery(uint32_t pid, double winSizeMs, double metricOffsetMs);
+		met::Metric* AddDynamicMetric(const pmapi::intro::Root& introRoot, const met::DynamicPollingMetric& requestedMetric);
+		void Finalize(pmapi::Session& session);
 		const uint8_t* Poll(double timestamp_);
 	private:
 		uint32_t pid;
+		double winSizeMs;
+		double metricOffsetMs;
 		std::shared_ptr<pmapi::DynamicQuery> pQuery;
 		std::vector<std::unique_ptr<met::DynamicPollingMetric>> metricPtrs;
 		std::unique_ptr<uint8_t[]> pBlob;

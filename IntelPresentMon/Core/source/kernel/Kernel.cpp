@@ -72,7 +72,7 @@ namespace p2c::kern
         return list;
     }
 
-    std::vector<pmon::Metric::Info> Kernel::EnumerateMetrics() const
+    std::vector<pmon::met::Metric::Info> Kernel::EnumerateMetrics() const
     {
         std::lock_guard lk{ mtx };
         if (!pm) {

@@ -9,7 +9,7 @@ namespace p2c::gfx::lay
     class GraphData;
 }
 
-namespace p2c::pmon
+namespace p2c::pmon::met
 {
     class Metric
     {
