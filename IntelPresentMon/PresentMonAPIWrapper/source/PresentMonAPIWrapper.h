@@ -29,7 +29,9 @@ namespace pmapi
         DynamicQuery(std::span<PM_QUERY_ELEMENT> elements, double winSizeMs, double metricOffsetMs)
         {
             pmRegisterDynamicQuery(&hQuery_, elements.data(), elements.size(), winSizeMs, metricOffsetMs);
-            blobSize_ = elements.back().dataOffset + elements.back().dataSize;
+            if (elements.size() > 0) {
+                blobSize_ = elements.back().dataOffset + elements.back().dataSize;
+            }
         }
         PM_DYNAMIC_QUERY_HANDLE hQuery_ = nullptr;
         size_t blobSize_ = 0ull;

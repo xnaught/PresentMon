@@ -166,6 +166,14 @@ namespace p2c::pmon
 	{
 		return selectedAdapter;
 	}
+	const pmapi::intro::Root& PresentMon::GetIntrospectionRoot() const
+	{
+		return *pIntrospectionRoot;
+	}
+	pmapi::Session& PresentMon::GetSession()
+	{
+		return *pSession;
+	}
 	void PresentMon::AddMetric(std::unique_ptr<met::Metric> metric_)
 	{
 		metrics.push_back(std::move(metric_));

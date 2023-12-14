@@ -9,11 +9,13 @@
 #include <memory>
 #include <vector>
 #include <atomic>
+#include <unordered_map>
 #include "WindowMoveHandler.h"
 #include "WindowActivateHandler.h"
 #include "OverlaySpec.h"
 #include "GraphDataPack.h"
 #include "TextDataPack.h"
+#include <Core/source/pmon/CachingQuery.h>
 
 namespace p2c::gfx::lay
 {
@@ -77,6 +79,8 @@ namespace p2c::kern
         win::Process proc;
         std::shared_ptr<OverlaySpec> pSpec;
         pmon::PresentMon* pm;
+        std::unordered_map<size_t, pmon::met::Metric*> activeMetricsMap;
+        pmon::CachingQuery query;
         std::map<size_t, GraphDataPack> graphPacks;
         HANDLE hProcess;
         win::EventHookManager::Token moveHandlerToken;

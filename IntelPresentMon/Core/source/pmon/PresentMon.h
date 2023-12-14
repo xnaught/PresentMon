@@ -44,6 +44,8 @@ namespace p2c::pmon
 		std::shared_ptr<RawFrameDataWriter> MakeRawFrameDataWriter(std::wstring path, std::optional<std::wstring> statsPath);
 		void FlushRawData();
 		std::optional<uint32_t> GetSelectedAdapter() const;
+		const pmapi::intro::Root& GetIntrospectionRoot() const;
+		pmapi::Session& GetSession();
 	private:
 		// functions
 		void AddMetric(std::unique_ptr<met::Metric> metric_);
