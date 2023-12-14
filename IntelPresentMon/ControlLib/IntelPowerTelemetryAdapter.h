@@ -20,6 +20,7 @@ namespace pwr::intel
 		PM_DEVICE_VENDOR GetVendor() const noexcept override;
 		std::string GetName() const noexcept override;
         uint64_t GetDedicatedVideoMemory() const noexcept override;
+		uint64_t GetVideoMemoryMaxBandwidth() const noexcept override;
 
 		// types
 		class NonGraphicsDeviceException : public std::exception {};

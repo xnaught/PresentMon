@@ -31,14 +31,40 @@ AmdPowerTelemetryAdapter::AmdPowerTelemetryAdapter(
       adl_adapter_index_(adl_adapter_index),
       overdrive_version_(overdrive_version) {}
 
+bool AmdPowerTelemetryAdapter::GetVideoMemoryInfo(uint64_t& gpu_mem_size, uint64_t& gpu_mem_max_bandwidth) const noexcept {
+
+  bool success = false;
+  ADLMemoryInfoX4 memory_info;
+
+  gpu_mem_size = 0;
+  gpu_mem_max_bandwidth = 0;
+
+  auto result = adl2_->Adapter_MemoryInfoX4_Get(adl_adapter_index_, &memory_info) >> chk;
+  if (adl2_->Ok(result)) {
+    // iMemoryBandwidthX2 does not specify size but iMemoryBandwith
+    // returns megabytes per second. Assuming they are the same.
+    gpu_mem_max_bandwidth = static_cast<uint64_t>(memory_info.iMemoryBandwidthX2) * 1000000;
+    // iMemorySize is the memory size in bytes
+    gpu_mem_size = static_cast<uint64_t>(memory_info.iMemorySize);
+    success = true;
+  }
+    
+  return success;
+}
+
 uint64_t AmdPowerTelemetryAdapter::GetDedicatedVideoMemory() const noexcept {
   uint64_t video_mem_size = 0;
-  ADLMemoryInfoX4 memory_info;
-  if (adl2_->Ok(adl2_->Adapter_MemoryInfoX4_Get(adl_adapter_index_, &memory_info))) {
-    // iMemorySize is the memory size in bytes
-    video_mem_size = static_cast<uint64_t>(memory_info.iMemorySize);
-  }
+  uint64_t video_max_bandwidth = 0;
+  GetVideoMemoryInfo(video_mem_size, video_max_bandwidth);
   return video_mem_size;
+}
+
+uint64_t AmdPowerTelemetryAdapter::GetVideoMemoryMaxBandwidth() const noexcept {
+  uint64_t video_mem_size = 0;
+  uint64_t video_max_bandwidth = 0;
+
+  GetVideoMemoryInfo(video_mem_size, video_max_bandwidth);
+  return video_max_bandwidth;
 }
 
 bool AmdPowerTelemetryAdapter::Sample() noexcept {
@@ -75,19 +101,9 @@ bool AmdPowerTelemetryAdapter::Sample() noexcept {
 
   // Next sample memory usage
   { 
-    ADLMemoryInfoX4 memory_info;
-    auto result =
-        adl2_->Adapter_MemoryInfoX4_Get(adl_adapter_index_, &memory_info) >>
-        chk;
-    if (adl2_->Ok(result)) {
-      // iMemoryBandwidthX2 does not specify size but iMemoryBandwith
-      // returns megabytes per second. Assuming they are the same.
-      info.gpu_mem_max_bandwidth_bps =
-          static_cast<uint64_t>(memory_info.iMemoryBandwidthX2) * 1000000;
-      SetTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_max_bandwidth);
-      // iMemorySize is the memory size in bytes
-      info.gpu_mem_total_size_b = static_cast<uint64_t>(memory_info.iMemorySize);
-      SetTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_size);
+    if (GetVideoMemoryInfo(info.gpu_mem_total_size_b, info.gpu_mem_max_bandwidth_bps)){
+        SetTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_max_bandwidth);
+        SetTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_size);
     }
   }
 
