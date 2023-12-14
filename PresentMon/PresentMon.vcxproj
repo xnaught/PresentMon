@@ -122,7 +122,6 @@
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="ConsumerThread.cpp" />
     <ClCompile Include="CsvOutput.cpp" />
-    <ClCompile Include="LateStageReprojectionData.cpp" />
     <ClCompile Include="MainThread.cpp" />
     <ClCompile Include="OutputThread.cpp" />
     <ClCompile Include="Privilege.cpp" />
@@ -130,7 +129,6 @@
   <ItemGroup>
     <ClInclude Include="..\build\obj\generated\command_line_options.inl" />
     <ClInclude Include="..\build\obj\generated\version.h" />
-    <ClInclude Include="LateStageReprojectionData.hpp" />
     <ClInclude Include="PresentMon.hpp" />
   </ItemGroup>
   <ItemGroup>

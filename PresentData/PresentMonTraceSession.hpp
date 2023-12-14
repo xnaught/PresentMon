@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: MIT
 
 struct PMTraceConsumer;
-struct MRTraceConsumer;
 
 struct PMTraceSession {
     PMTraceConsumer* mPMConsumer = nullptr; // Required PMTraceConsumer instance
-    MRTraceConsumer* mMRConsumer = nullptr; // If nullptr, no WinMR tracing
 
     LARGE_INTEGER mStartQpc = {};
     LARGE_INTEGER mQpcFrequency = {};

@@ -4,7 +4,6 @@
 #include "Debug.hpp"
 #include "PresentMonTraceConsumer.hpp"
 #include "PresentMonTraceSession.hpp"
-#include "MixedRealityTraceConsumer.hpp"
 
 #include "ETW/Microsoft_Windows_D3D9.h"
 #include "ETW/Microsoft_Windows_Dwm_Core.h"
@@ -133,8 +132,7 @@ struct FilteredProvider {
 ULONG EnableProviders(
     TRACEHANDLE sessionHandle,
     GUID const& sessionGuid,
-    PMTraceConsumer* pmConsumer,
-    MRTraceConsumer* mrConsumer)
+    PMTraceConsumer* pmConsumer)
 {
     ULONG status = 0;
 
@@ -306,27 +304,12 @@ ULONG EnableProviders(
     status = provider.Enable(sessionHandle, Microsoft_Windows_D3D9::GUID);
     if (status != ERROR_SUCCESS) return status;
 
-    if (mrConsumer != nullptr) {
-        // DHD
-        status = EnableTraceEx2(sessionHandle, &DHD_PROVIDER_GUID, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
-                                TRACE_LEVEL_VERBOSE, 0x1C00000, 0, 0, nullptr);
-        if (status != ERROR_SUCCESS) return status;
-
-        if (!mrConsumer->mSimpleMode) {
-            // SPECTRUMCONTINUOUS
-            status = EnableTraceEx2(sessionHandle, &SPECTRUMCONTINUOUS_PROVIDER_GUID, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
-                                    TRACE_LEVEL_VERBOSE, 0x800000, 0, 0, nullptr);
-            if (status != ERROR_SUCCESS) return status;
-        }
-    }
-
     return ERROR_SUCCESS;
 }
 
 void DisableProviders(TRACEHANDLE sessionHandle)
 {
     ULONG status = 0;
-    status = EnableTraceEx2(sessionHandle, &DHD_PROVIDER_GUID,                      EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_D3D9::GUID,           EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_DXGI::GUID,           EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_Dwm_Core::GUID,       EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
@@ -335,14 +318,12 @@ void DisableProviders(TRACEHANDLE sessionHandle)
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_DxgKrnl::Win7::GUID,  EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_Kernel_Process::GUID, EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_Win32k::GUID,         EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
-    status = EnableTraceEx2(sessionHandle, &SPECTRUMCONTINUOUS_PROVIDER_GUID,       EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
 }
 
 template<
     bool IS_REALTIME_SESSION,
     bool TRACK_DISPLAY,
-    bool TRACK_INPUT,
-    bool TRACK_WMR>
+    bool TRACK_INPUT>
 void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
 {
     auto session = (PMTraceSession*) pEventRecord->UserContext;
@@ -422,20 +403,6 @@ void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
             session->mPMConsumer->HandleWin7DxgkMMIOFlip(pEventRecord);
             return;
         }
-
-        if constexpr (TRACK_WMR) {
-            if (hdr.ProviderId == SPECTRUMCONTINUOUS_PROVIDER_GUID) {
-                session->mMRConsumer->HandleSpectrumContinuousEvent(pEventRecord);
-                return;
-            }
-        }
-    }
-
-    if constexpr (TRACK_WMR) {
-        if (hdr.ProviderId == DHD_PROVIDER_GUID) {
-            session->mMRConsumer->HandleDHDEvent(pEventRecord);
-            return;
-        }
     }
 
     #pragma warning(pop)
@@ -504,7 +471,7 @@ ULONG PMTraceSession::Start(
             return status;
         }
 
-        status = EnableProviders(mSessionHandle, sessionProps.Wnode.Guid, mPMConsumer, mMRConsumer);
+        status = EnableProviders(mSessionHandle, sessionProps.Wnode.Guid, mPMConsumer);
         if (status != ERROR_SUCCESS) {
             Stop();
             return status;
@@ -531,8 +498,7 @@ ULONG PMTraceSession::Start(
     traceProps.EventRecordCallback = GetEventRecordCallback(
         mIsRealtimeSession,         // IS_REALTIME_SESSION
         mPMConsumer->mTrackDisplay, // TRACK_DISPLAY
-        mPMConsumer->mTrackInput,   // TRACK_INPUT
-        mMRConsumer != nullptr);    // TRACK_WMR
+        mPMConsumer->mTrackInput);  // TRACK_INPUT
 
     mTraceHandle = OpenTrace(&traceProps);
     if (mTraceHandle == INVALID_PROCESSTRACE_HANDLE) {

@@ -345,7 +345,6 @@
     <ClInclude Include="ETW\NT_Process.h" />
     <ClInclude Include="Debug.hpp" />
     <ClInclude Include="GpuTrace.hpp" />
-    <ClInclude Include="MixedRealityTraceConsumer.hpp" />
     <ClInclude Include="PresentMonTraceConsumer.hpp" />
     <ClInclude Include="TraceConsumer.hpp" />
     <ClInclude Include="PresentMonTraceSession.hpp" />
@@ -353,7 +352,6 @@
   <ItemGroup>
     <ClCompile Include="Debug.cpp" />
     <ClCompile Include="GpuTrace.cpp" />
-    <ClCompile Include="MixedRealityTraceConsumer.cpp" />
     <ClCompile Include="PresentMonTraceConsumer.cpp" />
     <ClCompile Include="TraceConsumer.cpp" />
     <ClCompile Include="PresentMonTraceSession.cpp" />

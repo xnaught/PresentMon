@@ -264,15 +264,9 @@ int wmain(int argc, wchar_t** argv)
         pmConsumer.AddTrackedProcessForFiltering(args.mTargetPid);
     }
 
-    MRTraceConsumer* mrConsumer = nullptr;
-    if (args.mTrackWMR) {
-        mrConsumer = new MRTraceConsumer(args.mTrackDisplay);
-    }
-
     // Start the ETW trace session.
     PMTraceSession pmSession;
     pmSession.mPMConsumer = &pmConsumer;
-    pmSession.mMRConsumer = mrConsumer;
     auto status = pmSession.Start(args.mEtlFileName, args.mSessionName);
 
     // If a session with this same name is already running, we either exit or
@@ -290,9 +284,6 @@ int wmain(int argc, wchar_t** argv)
                 L"       to stop the existing session, or use -session_name with a different name to\n"
                 L"       start a new session.\n",
                 args.mSessionName);
-
-            delete mrConsumer;
-            mrConsumer = nullptr;
 
             SetConsoleCtrlHandler(HandleCtrlEvent, FALSE);
             DestroyWindow(gWnd);
@@ -323,9 +314,6 @@ int wmain(int argc, wchar_t** argv)
                 L"       PresentMon requires either administrative privileges or to be run by a user in the\n"
                 L"       \"Performance Log Users\" user group.  View the readme for more details.\n");
         }
-
-        delete mrConsumer;
-        mrConsumer = nullptr;
 
         SetConsoleCtrlHandler(HandleCtrlEvent, FALSE);
         DestroyWindow(gWnd);
@@ -386,10 +374,6 @@ int wmain(int argc, wchar_t** argv)
     if (pmSession.mNumEventsLost > 0) {
         PrintWarning(L"warning: %lu ETW events were lost.\n", pmSession.mNumEventsLost);
     }
-
-    // Deallocate the consumers
-    delete mrConsumer;
-    mrConsumer = nullptr;
 
     /* We cannot remove the Ctrl handler because it is in an infinite sleep so
      * this call will never return, either hanging the application or having

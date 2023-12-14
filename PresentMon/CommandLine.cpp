@@ -338,7 +338,6 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     args->mTrackInput = false;
     args->mTrackGPU = false;
     args->mTrackGPUVideo = false;
-    args->mTrackWMR = false;
     args->mOutputCsvToFile = true;
     args->mOutputCsvToStdout = false;
     args->mOutputQpcTime = false;
@@ -359,7 +358,6 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     bool DEPRECATED_dontRestart = false;
     bool DEPRECATED_simple = false;
     bool DEPRECATED_verbose = false;
-    bool DEPRECATED_wmr = false;
 
     bool sessionNameSet = false;
 
@@ -409,13 +407,11 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         else if (ParseArg(argv[i], L"track_gpu"))           { args->mTrackGPU       = true; continue; }
         else if (ParseArg(argv[i], L"track_gpu_video"))     { args->mTrackGPUVideo  = true; continue; }
         else if (ParseArg(argv[i], L"track_input"))         { args->mTrackInput     = true; continue; }
-        else if (ParseArg(argv[i], L"track_mixed_reality")) { args->mTrackWMR       = true; continue; }
 
         // Deprecated options:
         else if (ParseArg(argv[i], L"simple"))                { DEPRECATED_simple      = true; continue; }
         else if (ParseArg(argv[i], L"verbose"))               { DEPRECATED_verbose     = true; continue; }
         else if (ParseArg(argv[i], L"dont_restart_as_admin")) { DEPRECATED_dontRestart = true; continue; }
-        else if (ParseArg(argv[i], L"include_mixed_reality")) { DEPRECATED_wmr         = true; continue; }
 
         // Hidden options:
         #if PRESENTMON_ENABLE_DEBUG_TRACE
@@ -439,10 +435,6 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     if (DEPRECATED_verbose) {
         PrintWarning(L"warning: -verbose command line argument has been deprecated; using -track_debug instead.\n");
         args->mTrackDebug = true;
-    }
-    if (DEPRECATED_wmr) {
-        PrintWarning(L"warning: -include_mixed_reality command line argument has been deprecated; using -track_mixed_reality instead.\n");
-        args->mTrackWMR = true;
     }
     if (DEPRECATED_dontRestart) {
         PrintWarning(L"warning: -dont_restart_as_admin command line argument has been deprecated; it is now the default behaviour.\n");
@@ -536,11 +528,6 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         if (args->mMultiCsv) {
             PrintWarning(L"warning: -multi_csv and -output_stdout are not compatible; ignoring -multi_csv.\n");
             args->mMultiCsv = false;
-        }
-
-        if (args->mTrackWMR) {
-            PrintWarning(L"warning: -track_mixed_reality and -output_stdout are not compatible; ignoring -track_mixed_reality.\n");
-            args->mTrackWMR = false;
         }
     }
 

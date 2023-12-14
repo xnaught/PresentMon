@@ -49,7 +49,6 @@ A binary of the console application is provided in the release, e.g.: [PresentMo
 | `-track_gpu`              | Tracks the duration of each process' GPU work performed between presents.  Not supported on Win7.       |
 | `-track_gpu_video`        | Track the video encode/decode portion of GPU work separately from other engines. Not supported on Win7. |
 | `-track_input`            | Tracks the time of keyboard/mouse clicks that were used by each frame.                                  |
-| `-track_mixed_reality`    | Capture Windows Mixed Reality data to a CSV file with "_WMR" suffix.                                    |
 
 ## Comma-separated value (CSV) file output
 
@@ -114,41 +113,3 @@ For more information on the performance implications of these, see:
 - https://www.youtube.com/watch?v=E3wTajGZOsA
 - https://software.intel.com/content/www/us/en/develop/articles/sample-application-for-direct3d-12-flip-model-swap-chains.html
 
-### Windows Mixed Reality
-
-*Note: Windows Mixed Reality support is in beta, with limited OS support and maintenance.*
-
-If `-track_mixed_reality` is used, a second CSV file will be generated with "_WMR" appended to the filename with the following columns:
-
-| Column Header                                  | Data Description                                                                                                                                         |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| *Application*                                  | Process name (if known)                                                                                                                                  |
-| *ProcessID*                                    | Process ID                                                                                                                                               |
-| *DwmProcessID*                                 | Compositor Process ID                                                                                                                                    |
-| *TimeInSeconds*                                | Time since PresentMon recording started                                                                                                                  |
-| *msBetweenLsrs*                                | Time between this Lsr CPU start and the previous one                                                                                                     |
-| *AppMissed*                                    | Whether Lsr is reprojecting a new (0) or old (1) App frame (App GPU work must complete before Lsr CPU start)                                             |
-| *LsrMissed*                                    | Whether Lsr displayed a new frame (0) or not (1+) at the intended V-Sync (Count V-Syncs with no display change)                                          |
-| *msAppPoseLatency*                             | Time between App's pose sample and the intended mid-photon frame display                                                                                 |
-| *msLsrPoseLatency*                             | Time between Lsr's pose sample and the intended mid-photon frame display                                                                                 |
-| *msActualLsrPoseLatency*                       | Time between Lsr's pose sample and mid-photon frame display                                                                                              |
-| *msTimeUntilVsync*                             | Time between Lsr CPU start and the intended V-Sync                                                                                                       |
-| *msLsrThreadWakeupToGpuEnd*                    | Time between Lsr CPU start and GPU work completion                                                                                                       |
-| *msLsrThreadWakeupError*                       | Time between intended Lsr CPU start and Lsr CPU start                                                                                                    |
-| *msLsrPreemption*                              | Time spent preempting the GPU with Lsr GPU work                                                                                                          |
-| *msLsrExecution*                               | Time spent executing the Lsr GPU work                                                                                                                    |
-| *msCopyPreemption*                             | Time spent preempting the GPU with Lsr GPU cross-adapter copy work (if required)                                                                         |
-| *msCopyExecution*                              | Time spent executing the Lsr GPU cross-adapter copy work (if required)                                                                                   |
-| *msGpuEndToVsync*                              | Time between Lsr GPU work completion and V-Sync                                                                                                          |
-| *msBetweenAppPresents*                         | Time between App's present and the previous one.                                                                                                         |
-| *msAppPresentToLsr*                            | Time between App's present and Lsr CPU start.<br>This column is not available when `-no_track_display` is used.                                          |
-| *HolographicFrameID*                           | App's Holographic Frame ID.<br>This column is only available when `-track_debug` is used.                                                                |
-| *msSourceReleaseFromRenderingToLsrAcquire*     | Time between composition end and Lsr acquire.<br>This column is only available when `-track_debug` is used.                                              |
-| *msAppCpuRenderFrame*                          | Time between App's CreateNextFrame() API call and PresentWithCurrentPrediction() API call.<br>This column is only available when `-track_debug` is used. |
-| *msAppMisprediction*                           | Time between App's intended pose time and the intended mid-photon frame display.<br>This column is only available when `-track_debug` is used.           |
-| *msLsrCpuRenderFrame*                          | Time between Lsr CPU render start and GPU work submit.<br>This column is only available when `-track_debug` is used.                                     |
-| *msLsrThreadWakeupToCpuRenderFrameStart*       | Time between Lsr CPU start and CPU render start.<br>This column is only available when `-track_debug` is used.                                           |
-| *msCpuRenderFrameStartToHeadPoseCallbackStart* | Time between Lsr CPU render start and pose sample.<br>This column is only available when `-track_debug` is used.                                         |
-| *msGetHeadPose*                                | Time between Lsr pose sample start and pose sample end.<br>This column is only available when `-track_debug` is used.                                    |
-| *msHeadPoseCallbackStopToInputLatch*           | Time between Lsr pose sample end and input latch.<br>This column is only available when `-track_debug` is used.                                          |
-| *msInputLatchToGpuSubmission*                  | Time between Lsr input latch and GPU work submit.<br>This column is only available when `-track_debug` is used.                                          |

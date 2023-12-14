@@ -26,7 +26,6 @@ collected data is written to the CSV file(s) is controlled by a recording state
 which is controlled from MainThread based on user input or timer.
 */
 
-#include "../PresentData/MixedRealityTraceConsumer.hpp"
 #include "../PresentData/PresentMonTraceConsumer.hpp"
 #include "../PresentData/PresentMonTraceSession.hpp"
 
@@ -59,7 +58,6 @@ struct CommandLineArgs {
     bool mTrackInput;
     bool mTrackGPU;
     bool mTrackGPUVideo;
-    bool mTrackWMR;
     bool mOutputCsvToFile;
     bool mOutputCsvToStdout;
     bool mOutputQpcTime;
@@ -89,16 +87,11 @@ struct SwapChainData {
     uint32_t mLastDisplayedPresentIndex; // UINT32_MAX if none displayed
 };
 
-struct OutputCsv {
-    FILE* mFile;
-    FILE* mWmrFile;
-};
-
 struct ProcessInfo {
     std::wstring mModuleName;
     std::unordered_map<uint64_t, SwapChainData> mSwapChain;
     HANDLE mHandle;
-    OutputCsv mOutputCsv;
+    FILE* mOutputCsv;
     bool mIsTargetProcess;
 };
 
@@ -124,7 +117,7 @@ void WaitForConsumerThreadToExit();
 
 // CsvOutput.cpp:
 void IncrementRecordingCount();
-OutputCsv GetOutputCsv(ProcessInfo* processInfo, uint32_t processId);
+FILE* GetOutputCsv(ProcessInfo* processInfo, uint32_t processId);
 void CloseOutputCsv(ProcessInfo* processInfo);
 void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, SwapChainData const& chain, PresentEvent const& p);
 const char* FinalStateToDroppedString(PresentResult res);

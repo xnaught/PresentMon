@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: MIT
 
 #include "PresentMon.hpp"
-#include "LateStageReprojectionData.hpp"
 
-static OutputCsv gSingleOutputCsv = {};
+static FILE* gSingleOutputCsv = nullptr;
 static uint32_t gRecordingCount = 1;
 
 void IncrementRecordingCount()
@@ -99,7 +98,7 @@ void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, SwapCh
     }
 
     // Early return if not outputing to CSV.
-    auto fp = GetOutputCsv(processInfo, p.ProcessId).mFile;
+    auto fp = GetOutputCsv(processInfo, p.ProcessId);
     if (fp == nullptr) {
         return;
     }
@@ -273,46 +272,41 @@ static void GenerateFilename(wchar_t* path, wchar_t const* processName, uint32_t
     #undef ADD_TO_PATH
 }
 
-static OutputCsv CreateOutputCsv(wchar_t const* processName, uint32_t processId)
+static FILE* CreateOutputCsv(wchar_t const* processName, uint32_t processId)
 {
     auto const& args = GetCommandLineArgs();
 
-    OutputCsv outputCsv = {};
+    FILE* outputCsv = nullptr;
 
     if (args.mOutputCsvToStdout) {
-        outputCsv.mFile = stdout;
-        outputCsv.mWmrFile = nullptr;       // WMR disallowed if -output_stdout
+        outputCsv = stdout;
     } else {
         wchar_t path[MAX_PATH];
         GenerateFilename(path, processName, processId);
 
-        _wfopen_s(&outputCsv.mFile, path, L"w,ccs=UTF-8");
-
-        if (args.mTrackWMR) {
-            outputCsv.mWmrFile = CreateLsrCsvFile(path);
-        }
+        _wfopen_s(&outputCsv, path, L"w,ccs=UTF-8");
     }
 
-    if (outputCsv.mFile != nullptr) {
-        WriteCsvHeader(outputCsv.mFile);
+    if (outputCsv != nullptr) {
+        WriteCsvHeader(outputCsv);
     }
 
     return outputCsv;
 }
 
-OutputCsv GetOutputCsv(ProcessInfo* processInfo, uint32_t processId)
+FILE* GetOutputCsv(ProcessInfo* processInfo, uint32_t processId)
 {
     auto const& args = GetCommandLineArgs();
 
-    // TODO: If fopen_s() fails to open mFile, we'll just keep trying here
+    // TODO: If fopen_s() fails to open we'll just keep trying here
     // every time PresentMon wants to output to the file. We should detect the
     // failure and generate an error instead.
 
-    if (args.mOutputCsvToFile && processInfo->mOutputCsv.mFile == nullptr) {
+    if (args.mOutputCsvToFile && processInfo->mOutputCsv == nullptr) {
         if (args.mMultiCsv) {
             processInfo->mOutputCsv = CreateOutputCsv(processInfo->mModuleName.c_str(), processId);
         } else {
-            if (gSingleOutputCsv.mFile == nullptr) {
+            if (gSingleOutputCsv == nullptr) {
                 gSingleOutputCsv = CreateOutputCsv(nullptr, 0);
             }
 
@@ -333,26 +327,22 @@ void CloseOutputCsv(ProcessInfo* processInfo)
     // We only actually close the FILE if we own it (we're operating on the
     // single global output CSV, or we're writing a CSV per process) and it's
     // not stdout.
-    OutputCsv* csv = nullptr;
+    FILE** pp = nullptr;
     bool closeFile = false;
     if (processInfo == nullptr) {
-        csv = &gSingleOutputCsv;
+        pp = &gSingleOutputCsv;
         closeFile = !args.mOutputCsvToStdout;
     } else {
-        csv = &processInfo->mOutputCsv;
+        pp = &processInfo->mOutputCsv;
         closeFile = !args.mOutputCsvToStdout && args.mMultiCsv;
     }
 
     if (closeFile) {
-        if (csv->mFile != nullptr) {
-            fclose(csv->mFile);
-        }
-        if (csv->mWmrFile != nullptr) {
-            fclose(csv->mWmrFile);
+        if (*pp != nullptr) {
+            fclose(*pp);
         }
     }
 
-    csv->mFile = nullptr;
-    csv->mWmrFile = nullptr;
+    *pp = nullptr;
 }
 

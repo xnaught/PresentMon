@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 
 #include "PresentMon.hpp"
-#include "LateStageReprojectionData.hpp"
 
 #include <algorithm>
 #include <shlwapi.h>
@@ -148,11 +147,10 @@ static ProcessInfo CreateProcessInfo(uint32_t processId, HANDLE handle, std::wst
     }
 
     ProcessInfo info;
-    info.mHandle             = handle;
-    info.mModuleName         = processName;
-    info.mOutputCsv.mFile    = nullptr;
-    info.mOutputCsv.mWmrFile = nullptr;
-    info.mIsTargetProcess    = isTarget;
+    info.mHandle          = handle;
+    info.mModuleName      = processName;
+    info.mOutputCsv       = nullptr;
+    info.mIsTargetProcess = isTarget;
     return info;
 }
 
@@ -299,60 +297,17 @@ static void AddPresents(
     *presentEventIndex = i;
 }
 
-static void AddPresents(LateStageReprojectionData* lsrData,
-                        std::vector<std::shared_ptr<LateStageReprojectionEvent>> const& presentEvents, size_t* presentEventIndex,
-                        bool recording, bool checkStopQpc, uint64_t stopQpc, bool* hitStopQpc)
-{
-    auto const& args = GetCommandLineArgs();
-
-    auto i = *presentEventIndex;
-    for (auto n = presentEvents.size(); i < n; ++i) {
-        auto presentEvent = presentEvents[i];
-        assert(presentEvent->Completed);
-        assert(presentEvent->Source.pHolographicFrame == nullptr ||
-               presentEvent->Source.pHolographicFrame->Completed);
-
-        // Stop processing events if we hit the next stop time.
-        if (checkStopQpc && presentEvent->QpcTime >= stopQpc) {
-            *hitStopQpc = true;
-            break;
-        }
-
-        const uint32_t appProcessId = presentEvent->GetAppProcessId();
-        auto processInfo = GetProcessInfo(appProcessId);
-        if (!processInfo->mIsTargetProcess) {
-            continue;
-        }
-
-        if (args.mTrackDisplay && (appProcessId == 0)) {
-            continue; // Incomplete event data
-        }
-
-        lsrData->AddLateStageReprojection(*presentEvent);
-
-        if (recording) {
-            UpdateLsrCsv(*lsrData, processInfo, *presentEvent);
-        }
-
-        lsrData->UpdateLateStageReprojectionInfo();
-    }
-
-    *presentEventIndex = i;
-}
-
 // Limit the present history stored in SwapChainData to 2 seconds.
 static void PruneHistory(
     PMTraceSession const& pmSession,
     std::vector<ProcessEvent> const& processEvents,
-    std::vector<std::shared_ptr<PresentEvent>> const& presentEvents,
-    std::vector<std::shared_ptr<LateStageReprojectionEvent>> const& lsrEvents)
+    std::vector<std::shared_ptr<PresentEvent>> const& presentEvents)
 {
-    assert(processEvents.size() + presentEvents.size() + lsrEvents.size() > 0);
+    assert(processEvents.size() + presentEvents.size() > 0);
 
-    auto latestQpc = std::max(std::max(
+    auto latestQpc = std::max(
         processEvents.empty() ? 0ull : processEvents.back().QpcTime,
-        presentEvents.empty() ? 0ull : presentEvents.back()->PresentStartTime),
-        lsrEvents.empty()     ? 0ull : lsrEvents.back()->QpcTime);
+        presentEvents.empty() ? 0ull : presentEvents.back()->PresentStartTime);
 
     auto minQpc = latestQpc - pmSession.MilliSecondsDeltaToQpc(2000.0);
 
@@ -380,10 +335,8 @@ static void PruneHistory(
 
 static void ProcessEvents(
     PMTraceSession const& pmSession,
-    LateStageReprojectionData* lsrData,
     std::vector<ProcessEvent> const& processEvents,
     std::vector<std::shared_ptr<PresentEvent>> const& presentEvents,
-    std::vector<std::shared_ptr<LateStageReprojectionEvent>> const& lsrEvents,
     std::vector<uint64_t>* recordingToggleHistory,
     std::vector<std::pair<uint32_t, uint64_t>>* terminatedProcesses)
 {
@@ -407,7 +360,6 @@ static void ProcessEvents(
 
     // Next, iterate through the recording toggles (if any)...
     size_t presentEventIndex = 0;
-    size_t lsrEventIndex = 0;
     size_t recordingToggleIndex = 0;
     size_t terminatedProcessIndex = 0;
     for (;;) {
@@ -431,7 +383,6 @@ static void ProcessEvents(
 
             auto hitTerminatedProcess = false;
             AddPresents(pmSession, presentEvents, &presentEventIndex, recording, true, terminatedProcessQpc, &hitTerminatedProcess);
-            AddPresents(lsrData, lsrEvents, &lsrEventIndex, recording, true, terminatedProcessQpc, &hitTerminatedProcess);
             if (!hitTerminatedProcess) {
                 goto done;
             }
@@ -443,7 +394,6 @@ static void ProcessEvents(
         // handling all the presents and any outstanding toggles will have to
         // wait for next batch of events.
         AddPresents(pmSession, presentEvents, &presentEventIndex, recording, checkRecordingToggle, nextRecordingToggleQpc, &hitNextRecordingToggle);
-        AddPresents(lsrData, lsrEvents, &lsrEventIndex, recording, checkRecordingToggle, nextRecordingToggleQpc, &hitNextRecordingToggle);
         if (!hitNextRecordingToggle) {
             break;
         }
@@ -468,7 +418,7 @@ done:
     // leave the older presents in the history buffer since they aren't used
     // for anything.
     if (args.mConsoleOutputType == ConsoleOutput::Full) {
-        PruneHistory(pmSession, processEvents, presentEvents, lsrEvents);
+        PruneHistory(pmSession, processEvents, presentEvents);
     }
 
     // Finished processing all events.  Erase the recording toggles and
@@ -485,18 +435,13 @@ void Output(PMTraceSession const* pmSession)
     auto const& args = GetCommandLineArgs();
 
     // Structures to track processes and statistics from recorded events.
-    LateStageReprojectionData lsrData;
-    lsrData.mpSession = pmSession;
-
     std::vector<ProcessEvent> processEvents;
     std::vector<std::shared_ptr<PresentEvent>> presentEvents;
     std::vector<std::shared_ptr<PresentEvent>> lostPresentEvents;
-    std::vector<std::shared_ptr<LateStageReprojectionEvent>> lsrEvents;
     std::vector<uint64_t> recordingToggleHistory;
     std::vector<std::pair<uint32_t, uint64_t>> terminatedProcesses;
     processEvents.reserve(128);
     presentEvents.reserve(4096);
-    lsrEvents.reserve(4096);
     recordingToggleHistory.reserve(16);
     terminatedProcesses.reserve(16);
 
@@ -510,18 +455,14 @@ void Output(PMTraceSession const* pmSession)
         pmSession->mPMConsumer->DequeueProcessEvents(processEvents);
         pmSession->mPMConsumer->DequeuePresentEvents(presentEvents);
         pmSession->mPMConsumer->DequeueLostPresentEvents(lostPresentEvents);
-        if (pmSession->mMRConsumer != nullptr) {
-            pmSession->mMRConsumer->DequeueLSRs(lsrEvents);
-        }
         lostPresentEvents.clear();
 
         // Process all the collected events, and update the various tracking
         // and statistics data structures.
-        if (!processEvents.empty() || !presentEvents.empty() || !lsrEvents.empty()) {
-            ProcessEvents(*pmSession, &lsrData, processEvents, presentEvents, lsrEvents, &recordingToggleHistory, &terminatedProcesses);
+        if (!processEvents.empty() || !presentEvents.empty()) {
+            ProcessEvents(*pmSession, processEvents, presentEvents, &recordingToggleHistory, &terminatedProcesses);
             processEvents.clear();
             presentEvents.clear();
-            lsrEvents.clear();
         }
 
         // Display information to console if requested.  If debug build and
@@ -547,7 +488,6 @@ void Output(PMTraceSession const* pmSession)
                 for (auto const& pair : gProcesses) {
                     UpdateConsole(*pmSession, pair.first, pair.second);
                 }
-                UpdateConsole(gProcesses, lsrData);
 
                 if (realtimeRecording) {
                     ConsolePrintLn(L"** RECORDING **");
