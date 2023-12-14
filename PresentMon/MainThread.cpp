@@ -190,8 +190,8 @@ int wmain(int argc, wchar_t** argv)
 
     auto const& args = GetCommandLineArgs();
 
-    // Special case handling for -terminate_existing
-    if (args.mTerminateExisting) {
+    // Special case handling for -terminate_existing_session
+    if (args.mTerminateExistingSession) {
         auto status = StopNamedTraceSession(args.mSessionName);
         switch (status) {
         case ERROR_SUCCESS:                return 0;

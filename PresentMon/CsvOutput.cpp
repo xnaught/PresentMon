@@ -65,11 +65,6 @@ static void WriteCsvHeader(FILE* fp)
             L",msUntilDisplayed"
             L",msBetweenDisplayChange");
     }
-    if (args.mTrackDebug) {
-        fwprintf(fp,
-            L",WasBatched"
-            L",DwmNotified");
-    }
     if (args.mTrackGPU) {
         fwprintf(fp,
             L",msUntilRenderStart"
@@ -177,11 +172,6 @@ void UpdateCsv(PMTraceSession const& pmSession, ProcessInfo* processInfo, SwapCh
             DBL_DIG - 1, msUntilRenderComplete,
             DBL_DIG - 1, msUntilDisplayed,
             DBL_DIG - 1, msBetweenDisplayChange);
-    }
-    if (args.mTrackDebug) {
-        fwprintf(fp, L",%d,%d",
-            p.DriverThreadId != 0,
-            p.DwmNotified);
     }
     if (args.mTrackGPU) {
         fwprintf(fp, L",%.*lf,%.*lf",

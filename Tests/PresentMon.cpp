@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2020-2023 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "PresentMonTests.h"
@@ -44,14 +44,18 @@ struct HeaderCollection {
     bool Validate(std::vector<wchar_t const*>* params) const
     {
         if (param_ != nullptr) {
+            bool negParam = wcsncmp(param_, L"-no_", 4) == 0;
+
             if (foundCount_ == 0) {
-                if (wcsncmp(param_, L"-no_", 4) == 0) {
+                if (negParam) {
                     params->push_back(param_);
                 }
                 return true;
             }
 
-            params->push_back(param_);
+            if (!negParam) {
+                params->push_back(param_);
+            }
         }
         return foundCount_ == required_.size();
     }
@@ -93,15 +97,12 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
                                                  Header_msUntilRenderComplete,
                                                  Header_msUntilDisplayed }),
 
-        HeaderCollection(L"-track_debug", { Header_WasBatched,
-                                            Header_DwmNotified }),
-
-        HeaderCollection(L"-track_gpu", { Header_msUntilRenderStart,
-                                          Header_msGPUActive }),
+        HeaderCollection(L"-no_track_gpu", { Header_msUntilRenderStart,
+                                             Header_msGPUActive }),
 
         HeaderCollection(L"-track_gpu_video", { Header_msGPUVideoActive }),
 
-        HeaderCollection(L"-track_input", { Header_msSinceInput }),
+        HeaderCollection(L"-no_track_input", { Header_msSinceInput }),
     };
 
     // Load the CSV
@@ -159,18 +160,24 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
         }
     }
 
-    // Prevent warning: -track_debug requires display tracking; ignoring -no_track_display
-    size_t noTrackDisplayIdx = SIZE_MAX;
-    bool trackDebug = false;
+    // Add dependencies to avoid warnings:
+    // warning: -track_gpu_video requires GPU tracking; ignoring -track_gpu_video due to -no_track_gpu.
+    // warning: GPU tracking requires display tracking; ignoring -no_track_display.
+    size_t idx_track_gpu_video = SIZE_MAX;
+    size_t idx_no_track_gpu = SIZE_MAX;
+    size_t idx_no_track_display = SIZE_MAX;
     for (size_t i = 0, n = params_.size(); i < n; ++i) {
-        if (wcscmp(params_[i], L"-track_debug") == 0) {
-            trackDebug = true;
-        } else if (wcscmp(params_[i], L"-no_track_display") == 0) {
-            noTrackDisplayIdx = i;
-        }
+             if (wcscmp(params_[i], L"-track_gpu_video")  == 0) { idx_track_gpu_video  = i; }
+        else if (wcscmp(params_[i], L"-no_track_gpu")     == 0) { idx_no_track_gpu     = i; }
+        else if (wcscmp(params_[i], L"-no_track_display") == 0) { idx_no_track_display = i; }
     }
-    if (trackDebug && noTrackDisplayIdx != SIZE_MAX) {
-        params_.erase(params_.begin() + noTrackDisplayIdx);
+    if (idx_track_gpu_video != SIZE_MAX && idx_no_track_gpu != SIZE_MAX) {
+        params_.erase(params_.begin() + idx_track_gpu_video);
+        idx_track_gpu_video = SIZE_MAX;
+    }
+    if (idx_no_track_gpu == SIZE_MAX && idx_no_track_display != SIZE_MAX) {
+        params_.erase(params_.begin() + idx_no_track_display);
+        idx_no_track_display = SIZE_MAX;
     }
 
     return true;
@@ -226,7 +233,7 @@ PresentMon::PresentMon()
 {
     cmdline_ += L'\"';
     cmdline_ += exePath_;
-    cmdline_ += L"\" -no_top";
+    cmdline_ += L"\" -no_console_stats";
 }
 
 PresentMon::~PresentMon()

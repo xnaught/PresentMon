@@ -54,7 +54,6 @@ struct CommandLineArgs {
     UINT mHotkeyVirtualKeyCode;
     ConsoleOutput mConsoleOutputType;
     bool mTrackDisplay;
-    bool mTrackDebug;
     bool mTrackInput;
     bool mTrackGPU;
     bool mTrackGPUVideo;
@@ -65,7 +64,7 @@ struct CommandLineArgs {
     bool mOutputDateTime;
     bool mScrollLockIndicator;
     bool mExcludeDropped;
-    bool mTerminateExisting;
+    bool mTerminateExistingSession;
     bool mTerminateOnProcExit;
     bool mStartTimer;
     bool mTerminateAfterTimer;

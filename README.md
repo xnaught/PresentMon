@@ -70,13 +70,12 @@ In this case, *TimeInSeconds* will represent the first time the present is obser
 
 ### Tracking GPU work with Hardware-Accelerated GPU Scheduling enabled
 
-When using `-track_gpu` on a system that uses Hardware-Accelerated GPU
-Scheduling (HWS), the GPU execution metrics are less accurate than when HWS is
-disabled resulting in *msUntilRenderStart*, *msUntilRenderComplete*,
-*msGPUActive*, and *msGPUVideoActive* measurements that are later/larger than
-they should be.  For example, in a GPU-bound scenario the frame's *msGPUActive*
-may be reported ~0.5ms larger than the true GPU work duration, though the
-specific amount of the inaccuracy will be workload- and GPU-dependent.
+GPU execution metrics are currently less accurate when running on a system that uses
+Hardware-Accelerated GPU Scheduling (HWS).  When HWS is enabled, *msUntilRenderStart*,
+*msUntilRenderComplete*, *msGPUActive*, and *msGPUVideoActive* measurements may be later/larger than
+they should be.  For example, in a GPU-bound scenario the frame's *msGPUActive* may be reported
+~0.5ms larger than the true GPU work duration, though the specific amount of the inaccuracy will be
+workload- and GPU-dependent.
 
 An improved solution is WIP.
 

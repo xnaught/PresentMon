@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2022 Intel Corporation
+// Copyright (C) 2017-2023 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
 
@@ -181,7 +181,6 @@ struct PresentEvent {
     bool WaitForMPOFlipEvent;
     bool SeenDxgkPresent;
     bool SeenWin32KEvents;
-    bool DwmNotified;
     bool SeenInFrameEvent;      // This present has gotten a Win32k TokenStateChanged event into InFrame state
     bool GpuFrameCompleted;     // This present has already seen an event that caused GpuTrace::CompleteFrame() to be called.
     bool IsCompleted;           // All expected events have been observed

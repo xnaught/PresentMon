@@ -28,25 +28,21 @@ struct PresentMonCsv
         // Optional headers:
         Header_QPCTime,
 
-        // Required headers when -track_display is used:
+        // Required headers when -no_track_display is not used:
         Header_AllowsTearing,
         Header_PresentMode,
         Header_msBetweenDisplayChange,
         Header_msUntilRenderComplete,
         Header_msUntilDisplayed,
 
-        // Required headers when -track_debug is used:
-        Header_WasBatched,
-        Header_DwmNotified,
-
-        // Required headers when -track_gpu is used:
+        // Required headers when -no_track_gpu is not used:
         Header_msUntilRenderStart,
         Header_msGPUActive,
 
         // Required headers when -track_gpu_video is used:
         Header_msGPUVideoActive,
 
-        // Required headers when -track_input is used:
+        // Required headers when -no_track_input is not used:
         Header_msSinceInput,
 
         // Special values:
@@ -73,8 +69,6 @@ struct PresentMonCsv
         case Header_msBetweenDisplayChange: return "msBetweenDisplayChange";
         case Header_msUntilRenderComplete:  return "msUntilRenderComplete";
         case Header_msUntilDisplayed:       return "msUntilDisplayed";
-        case Header_WasBatched:             return "WasBatched";
-        case Header_DwmNotified:            return "DwmNotified";
         case Header_msUntilRenderStart:     return "msUntilRenderStart";
         case Header_msGPUActive:            return "msGPUActive";
         case Header_msGPUVideoActive:       return "msGPUVideoActive";

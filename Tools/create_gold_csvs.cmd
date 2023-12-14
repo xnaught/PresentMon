@@ -24,7 +24,6 @@ set already_exists=0
 
 set pmargs=-no_top -stop_existing_session
 set pmargs=%pmargs% -qpc_time
-set pmargs=%pmargs% -track_debug
 set pmargs=%pmargs% -track_gpu
 set pmargs=%pmargs% -track_gpu_video
 set pmargs=%pmargs% -track_input

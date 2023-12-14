@@ -190,18 +190,6 @@ bool AssignHotkey(wchar_t* key, CommandLineArgs* args)
     return true;
 }
 
-void SetCaptureAll(CommandLineArgs* args)
-{
-    if (!args->mTargetProcessNames.empty()) {
-        PrintWarning(L"warning: -captureall elides all previous -process_name arguments.\n");
-        args->mTargetProcessNames.clear();
-    }
-    if (args->mTargetPid != 0) {
-        PrintWarning(L"warning: -captureall elides all previous -process_id arguments.\n");
-        args->mTargetPid = 0;
-    }
-}
-
 // Allow /ARG, -ARG, or --ARG
 bool ParseArgPrefix(wchar_t** arg)
 {
@@ -334,9 +322,8 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     args->mHotkeyModifiers = MOD_NOREPEAT;
     args->mHotkeyVirtualKeyCode = 0;
     args->mTrackDisplay = true;
-    args->mTrackDebug = false;
-    args->mTrackInput = false;
-    args->mTrackGPU = false;
+    args->mTrackInput = true;
+    args->mTrackGPU = true;
     args->mTrackGPUVideo = false;
     args->mOutputCsvToFile = true;
     args->mOutputCsvToStdout = false;
@@ -346,7 +333,7 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     args->mScrollLockIndicator = false;
     args->mExcludeDropped = false;
     args->mConsoleOutputType = ConsoleOutput::Full;
-    args->mTerminateExisting = false;
+    args->mTerminateExistingSession = false;
     args->mTerminateOnProcExit = false;
     args->mStartTimer = false;
     args->mTerminateAfterTimer = false;
@@ -354,10 +341,6 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     args->mTryToElevate = false;
     args->mMultiCsv = false;
     args->mStopExistingSession = false;
-
-    bool DEPRECATED_dontRestart = false;
-    bool DEPRECATED_simple = false;
-    bool DEPRECATED_verbose = false;
 
     bool sessionNameSet = false;
 
@@ -370,48 +353,39 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     // to work.
     for (int i = 1; i < argc; ++i) {
         // Capture target options:
-             if (ParseArg(argv[i], L"captureall"))   { SetCaptureAll(args);                                         continue; }
-        else if (ParseArg(argv[i], L"process_name")) { if (ParseValue(argv, argc, &i, &args->mTargetProcessNames))  continue; }
+             if (ParseArg(argv[i], L"process_name")) { if (ParseValue(argv, argc, &i, &args->mTargetProcessNames))  continue; }
         else if (ParseArg(argv[i], L"exclude"))      { if (ParseValue(argv, argc, &i, &args->mExcludeProcessNames)) continue; }
         else if (ParseArg(argv[i], L"process_id"))   { if (ParseValue(argv, argc, &i, &args->mTargetPid))           continue; }
         else if (ParseArg(argv[i], L"etl_file"))     { if (ParseValue(argv, argc, &i, &args->mEtlFileName))         continue; }
 
         // Output options:
-        else if (ParseArg(argv[i], L"output_file"))     { if (ParseValue(argv, argc, &i, &args->mOutputCsvFileName)) continue; }
-        else if (ParseArg(argv[i], L"output_stdout"))   { args->mOutputCsvToStdout      = true;                      continue; }
-        else if (ParseArg(argv[i], L"multi_csv"))       { args->mMultiCsv               = true;                      continue; }
-        else if (ParseArg(argv[i], L"no_csv"))          { args->mOutputCsvToFile        = false;                     continue; }
-        else if (ParseArg(argv[i], L"no_top"))          { args->mConsoleOutputType      = ConsoleOutput::Simple;     continue; }
-        else if (ParseArg(argv[i], L"qpc_time"))        { args->mOutputQpcTime          = true;                      continue; }
-        else if (ParseArg(argv[i], L"qpc_time_s"))      { args->mOutputQpcTimeInSeconds = true;                      continue; }
-        else if (ParseArg(argv[i], L"exclude_dropped")) { args->mExcludeDropped         = true;                      continue; }
+        else if (ParseArg(argv[i], L"output_file"))      { if (ParseValue(argv, argc, &i, &args->mOutputCsvFileName)) continue; }
+        else if (ParseArg(argv[i], L"output_stdout"))    { args->mOutputCsvToStdout      = true;                      continue; }
+        else if (ParseArg(argv[i], L"multi_csv"))        { args->mMultiCsv               = true;                      continue; }
+        else if (ParseArg(argv[i], L"no_csv"))           { args->mOutputCsvToFile        = false;                     continue; }
+        else if (ParseArg(argv[i], L"no_console_stats")) { args->mConsoleOutputType      = ConsoleOutput::Simple;     continue; }
+        else if (ParseArg(argv[i], L"qpc_time"))         { args->mOutputQpcTime          = true;                      continue; }
+        else if (ParseArg(argv[i], L"qpc_time_s"))       { args->mOutputQpcTimeInSeconds = true;                      continue; }
+        else if (ParseArg(argv[i], L"date_time"))        { args->mOutputDateTime         = true;                      continue; }
+        else if (ParseArg(argv[i], L"exclude_dropped"))  { args->mExcludeDropped         = true;                      continue; }
 
         // Recording options:
         else if (ParseArg(argv[i], L"hotkey"))           { if (ParseValue(argv, argc, &i) && AssignHotkey(argv[i], args)) continue; }
         else if (ParseArg(argv[i], L"delay"))            { if (ParseValue(argv, argc, &i, &args->mDelay)) continue; }
         else if (ParseArg(argv[i], L"timed"))            { if (ParseValue(argv, argc, &i, &args->mTimer)) { args->mStartTimer = true; continue; } }
         else if (ParseArg(argv[i], L"scroll_indicator")) { args->mScrollLockIndicator = true;  continue; }
+        else if (ParseArg(argv[i], L"no_track_gpu"))     { args->mTrackGPU            = false; continue; }
+        else if (ParseArg(argv[i], L"track_gpu_video"))  { args->mTrackGPUVideo       = true;  continue; }
+        else if (ParseArg(argv[i], L"no_track_input"))   { args->mTrackInput          = false; continue; }
         else if (ParseArg(argv[i], L"no_track_display")) { args->mTrackDisplay        = false; continue; }
-        else if (ParseArg(argv[i], L"track_debug"))      { args->mTrackDebug          = true;  continue; }
 
         // Execution options:
-        else if (ParseArg(argv[i], L"session_name"))           { if (ParseValue(argv, argc, &i, &args->mSessionName)) { sessionNameSet = true; continue; } }
-        else if (ParseArg(argv[i], L"stop_existing_session"))  { args->mStopExistingSession = true; continue; }
-        else if (ParseArg(argv[i], L"terminate_existing"))     { args->mTerminateExisting   = true; continue; }
-        else if (ParseArg(argv[i], L"restart_as_admin"))       { args->mTryToElevate        = true; continue; }
-        else if (ParseArg(argv[i], L"terminate_on_proc_exit")) { args->mTerminateOnProcExit = true; continue; }
-        else if (ParseArg(argv[i], L"terminate_after_timed"))  { args->mTerminateAfterTimer = true; continue; }
-
-        // Beta options:
-        else if (ParseArg(argv[i], L"date_time"))           { args->mOutputDateTime = true; continue; }
-        else if (ParseArg(argv[i], L"track_gpu"))           { args->mTrackGPU       = true; continue; }
-        else if (ParseArg(argv[i], L"track_gpu_video"))     { args->mTrackGPUVideo  = true; continue; }
-        else if (ParseArg(argv[i], L"track_input"))         { args->mTrackInput     = true; continue; }
-
-        // Deprecated options:
-        else if (ParseArg(argv[i], L"simple"))                { DEPRECATED_simple      = true; continue; }
-        else if (ParseArg(argv[i], L"verbose"))               { DEPRECATED_verbose     = true; continue; }
-        else if (ParseArg(argv[i], L"dont_restart_as_admin")) { DEPRECATED_dontRestart = true; continue; }
+        else if (ParseArg(argv[i], L"session_name"))               { if (ParseValue(argv, argc, &i, &args->mSessionName)) { sessionNameSet = true; continue; } }
+        else if (ParseArg(argv[i], L"stop_existing_session"))      { args->mStopExistingSession      = true; continue; }
+        else if (ParseArg(argv[i], L"terminate_existing_session")) { args->mTerminateExistingSession = true; continue; }
+        else if (ParseArg(argv[i], L"restart_as_admin"))           { args->mTryToElevate             = true; continue; }
+        else if (ParseArg(argv[i], L"terminate_on_proc_exit"))     { args->mTerminateOnProcExit      = true; continue; }
+        else if (ParseArg(argv[i], L"terminate_after_timed"))      { args->mTerminateAfterTimer      = true; continue; }
 
         // Hidden options:
         #if PRESENTMON_ENABLE_DEBUG_TRACE
@@ -427,30 +401,13 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         return false;
     }
 
-    // Handle deprecated command line arguments
-    if (DEPRECATED_simple) {
-        PrintWarning(L"warning: -simple command line argument has been deprecated; using -no_track_display instead.\n");
-        args->mTrackDisplay = false;
-    }
-    if (DEPRECATED_verbose) {
-        PrintWarning(L"warning: -verbose command line argument has been deprecated; using -track_debug instead.\n");
-        args->mTrackDebug = true;
-    }
-    if (DEPRECATED_dontRestart) {
-        PrintWarning(L"warning: -dont_restart_as_admin command line argument has been deprecated; it is now the default behaviour.\n");
-    }
-
     // Ignore -no_track_display if required for other requested tracking
-    if (args->mTrackDebug && !args->mTrackDisplay) {
-        PrintWarning(L"warning: -track_debug requires display tracking; ignoring -no_track_display.\n");
-        args->mTrackDisplay = true;
+    if (args->mTrackGPUVideo && !args->mTrackGPU) {
+        PrintWarning(L"warning: -track_gpu_video requires GPU tracking; ignoring -track_gpu_video due to -no_track_gpu.\n");
+        args->mTrackGPUVideo = false;
     }
     if (args->mTrackGPU && !args->mTrackDisplay) {
-        PrintWarning(L"warning: -track_gpu requires display tracking; ignoring -no_track_display.\n");
-        args->mTrackDisplay = true;
-    }
-    if (args->mTrackGPUVideo && !args->mTrackDisplay) {
-        PrintWarning(L"warning: -track_gpu_video requires display tracking; ignoring -no_track_display.\n");
+        PrintWarning(L"warning: GPU tracking requires display tracking; ignoring -no_track_display.\n");
         args->mTrackDisplay = true;
     }
 
@@ -542,17 +499,17 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     // Try to initialize the console, and warn if we're not going to be able to
     // do the advanced display as requested.
     if (args->mConsoleOutputType == ConsoleOutput::Full && !StdOutIsConsole()) {
-        PrintWarning(L"warning: could not initialize console display; continuing with -no_top.\n");
+        PrintWarning(L"warning: could not initialize console display; continuing with -no_console_stats.\n");
         args->mConsoleOutputType = ConsoleOutput::Simple;
     }
 
-    // If -terminate_existing, warn about any normal arguments since we'll just
+    // If -terminate_existing_session, warn about any normal arguments since we'll just
     // be stopping an existing session and then exiting.
-    if (args->mTerminateExisting) {
+    if (args->mTerminateExistingSession) {
         int expectedArgc = 2;
         if (sessionNameSet) expectedArgc += 1;
         if (argc != expectedArgc) {
-            PrintWarning(L"warning: -terminate_existing exits without capturing anything; ignoring all capture,\n"
+            PrintWarning(L"warning: -terminate_existing_session exits without capturing anything; ignoring all capture,\n"
                          L"         output, and recording arguments.\n");
         }
     }

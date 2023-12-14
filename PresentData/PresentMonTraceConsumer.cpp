@@ -114,7 +114,6 @@ PresentEvent::PresentEvent()
     , WaitForMPOFlipEvent(false)
     , SeenDxgkPresent(false)
     , SeenWin32KEvents(false)
-    , DwmNotified(false)
     , SeenInFrameEvent(false)
     , GpuFrameCompleted(false)
     , IsCompleted(false)
@@ -628,7 +627,6 @@ void PMTraceConsumer::HandleDxgkPresentHistoryInfo(EVENT_HEADER const& hdr, uint
         (eventIter->second->PresentMode == PresentMode::Composed_Flip && !eventIter->second->SeenWin32KEvents)) {
         mPresentsWaitingForDWM.emplace_back(eventIter->second);
         eventIter->second->PresentInDwmWaitingStruct = true;
-        eventIter->second->DwmNotified = true;
     }
 
     if (eventIter->second->PresentMode == PresentMode::Composed_Copy_GPU_GDI) {
@@ -1471,7 +1469,6 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
                 present->PresentMode == PresentMode::Composed_Copy_CPU_GDI) {
                 TRACK_PRESENT_PATH(present);
                 VerboseTraceBeforeModifyingPresent(present.get());
-                present->DwmNotified = true;
                 mPresentsWaitingForDWM.emplace_back(present);
                 present->PresentInDwmWaitingStruct = true;
             }
@@ -1528,7 +1525,6 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
 
             VerboseTraceBeforeModifyingPresent(present.get());
             present->DxgkPresentHistoryTokenData = 0;
-            present->DwmNotified = true;
 
             mLastPresentByWindow[hwnd] = present;
 
@@ -1558,7 +1554,6 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
         if (eventIter != mPresentByWin32KPresentHistoryToken.end() && eventIter->second->SeenInFrameEvent) {
             TRACK_PRESENT_PATH(eventIter->second);
             VerboseTraceBeforeModifyingPresent(eventIter->second.get());
-            eventIter->second->DwmNotified = true;
             mPresentsWaitingForDWM.emplace_back(eventIter->second);
             eventIter->second->PresentInDwmWaitingStruct = true;
         }

@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2021 Intel Corporation
+// Copyright (C) 2020-2021,2023 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include <algorithm>
@@ -40,7 +40,7 @@ void TerminateExistingTest(wchar_t const* sessionName)
     EXPECT_TRUE(pm.IsRunning(1000));
 
     PresentMon pm2;
-    pm2.Add(L"-terminate_existing");
+    pm2.Add(L"-terminate_existing_session");
     if (sessionName != nullptr) {
         pm2.Add(L" -session_name");
         pm2.Add(sessionName);
@@ -60,10 +60,8 @@ void QpcTimeTest(wchar_t const* qpcTimeArg)
     LARGE_INTEGER qpcMax = {};
     std::wstring csvPath(outDir_ + (qpcTimeArg + 1) + L".csv");
 
-    // TODO: Seems to work, but how can we make sure to capture presents during
-    // this 1 second? Do we need to also launch a presenting process?
     PresentMon pm;
-    pm.Add(L"-stop_existing_session -terminate_after_timed -timed 1 -simple");
+    pm.Add(L"-stop_existing_session -terminate_after_timed -timed 1 -no_track_gpu -no_track_input -no_track_display");
     pm.Add(qpcTimeArg);
     pm.AddCsvPath(csvPath);
 
@@ -157,7 +155,7 @@ TEST(CommandLineTests, TerminateExisting_Named)
 TEST(CommandLineTests, TerminateExisting_NotFound)
 {
     PresentMon pm;
-    pm.Add(L"-terminate_existing -session_name session_name_that_hopefully_isnt_in_use");
+    pm.Add(L"-terminate_existing_session -session_name session_name_that_hopefully_isnt_in_use");
     pm.PMSTART();
     pm.PMEXITED(1000, 7); // session name not found -> exit code = 7
 }
@@ -182,7 +180,7 @@ TEST(CommandLineTests, Input)
     // this happens and failing if not?
 
     PresentMon pm;
-    pm.Add(L"-stop_existing_session -terminate_after_timed -timed 3 -track_input");
+    pm.Add(L"-stop_existing_session -terminate_after_timed -timed 3");
     pm.AddCsvPath(csvPath);
 
     pm.PMSTART();
