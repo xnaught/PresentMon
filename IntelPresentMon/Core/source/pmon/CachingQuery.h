@@ -28,7 +28,7 @@ namespace p2c::pmon
 	{
 	public:
 		CachingQuery(uint32_t pid, double winSizeMs, double metricOffsetMs);
-		met::Metric* AddDynamicMetric(const pmapi::intro::Root& introRoot, const met::DynamicPollingMetric& requestedMetric);
+		met::Metric* AddDynamicMetric(const pmapi::intro::Root& introRoot, const met::DynamicPollingMetric& requestedMetric, uint32_t activeGpuId);
 		void Finalize(pmapi::Session& session);
 		const uint8_t* Poll(double timestamp_);
 	private:

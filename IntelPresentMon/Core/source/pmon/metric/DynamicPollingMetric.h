@@ -17,7 +17,7 @@ namespace p2c::pmon::met
     class DynamicPollingMetric : public Metric
     {
     public:
-        DynamicPollingMetric(PM_METRIC metricId_, uint32_t deviceId_, uint32_t arrayIndex_, PM_STAT stat_,
+        DynamicPollingMetric(PM_METRIC metricId_, uint32_t arrayIndex_, PM_STAT stat_,
             const pmapi::intro::Root& introRoot);
         std::wstring GetStatName() const override;
         const std::wstring& GetCategory() const override;
@@ -33,7 +33,7 @@ namespace p2c::pmon::met
     protected:
         PM_METRIC metricId;
         PM_STAT stat;
-        uint32_t deviceId;
+        uint32_t deviceId = 0;
         uint32_t arrayIndex;
         std::wstring statName;
         bool numeric = true;
@@ -46,11 +46,13 @@ namespace p2c::pmon::met
     class TypedDynamicPollingMetric : public DynamicPollingMetric
     {
     public:
-        TypedDynamicPollingMetric(const DynamicPollingMetric& mold, CachingQuery* pQuery_)
+        TypedDynamicPollingMetric(const DynamicPollingMetric& mold, CachingQuery* pQuery_, uint32_t deviceId_)
             :
             DynamicPollingMetric{ mold },
             pQuery{ pQuery_ }
-        {}
+        {
+            deviceId = deviceId_;
+        }
         std::optional<float> ReadValue(double timestamp) override
         {
             if constexpr (std::integral<T> || std::floating_point<T>) {

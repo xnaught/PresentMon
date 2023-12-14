@@ -41,7 +41,8 @@ namespace p2c::pmon
 		// Build table of available metrics using introspection
 		using namespace met;
 
-		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_DISPLAYED_FPS, 0, 0, PM_STAT_AVG, *pIntrospectionRoot));
+		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_DISPLAYED_FPS, 0, PM_STAT_AVG, *pIntrospectionRoot));
+		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_GPU_POWER, 0, PM_STAT_AVG, *pIntrospectionRoot));
 
 		// fake metrics for testing
 #ifdef _DEBUG
@@ -86,16 +87,7 @@ namespace p2c::pmon
 	void PresentMon::SetOffset(double offset_) { offset = offset_; }
 	void PresentMon::SetGpuTelemetryPeriod(uint32_t period)
 	{
-		// TODO: implement telemetry period setting
-		p2clog.info(std::format(L"Mocking call to set gpu telemetry period to {}", offset)).commit();
-		//if (auto sta = pmSetGPUTelemetryPeriod(period); sta != PM_STATUS::PM_STATUS_SUCCESS)
-		//{
-		//	p2clog.warn(std::format(L"could not set gpu telemetry sample period to {}", offset)).code(sta).commit();
-		//}
-		//else
-		//{
-		//	telemetrySamplePeriod = period;
-		//}
+		telemetrySamplePeriod = period;
 	}
 	uint32_t PresentMon::GetGpuTelemetryPeriod()
 	{
@@ -122,7 +114,6 @@ namespace p2c::pmon
 		for (auto& m : metrics)
 		{
 			info.push_back(m->GetInfo(index));
-			p2clog.info(info.back().className).commit();
 			index++;
 		}
 		return info;
@@ -144,12 +135,7 @@ namespace p2c::pmon
 	}
 	void PresentMon::SetAdapter(uint32_t id)
 	{
-		if (auto sta = pmSetActiveAdapter(id); sta != PM_STATUS::PM_STATUS_SUCCESS) {
-			p2clog.note(L"could not set active adapter").code(sta).nox().commit();
-		}
-		else {
-			selectedAdapter = id;
-		}
+		selectedAdapter = id;
 	}
 	std::optional<uint32_t> PresentMon::GetPid() const {
 		return bool(pTracker) ? pTracker->GetPid() : std::optional<uint32_t>{};

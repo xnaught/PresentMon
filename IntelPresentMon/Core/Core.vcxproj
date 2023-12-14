@@ -230,10 +230,6 @@
     <ProjectReference Include="..\PresentMonAPIWrapper\PresentMonAPIWrapper.vcxproj">
       <Project>{cee032ed-b0d3-47f8-bdae-d46757b0061b}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\PresentMonAPI\PresentMonAPI.vcxproj">
-      <Project>{811adcf0-da1d-4a94-97c7-7aa6c33b5368}</Project>
-      <LinkLibraryDependencies>true</LinkLibraryDependencies>
-    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

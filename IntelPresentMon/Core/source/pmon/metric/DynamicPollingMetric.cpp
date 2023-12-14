@@ -5,7 +5,7 @@
 namespace p2c::pmon::met
 {
     using ::pmon::util::str::ToWide;
-    DynamicPollingMetric::DynamicPollingMetric(PM_METRIC metricId_, uint32_t deviceId_, uint32_t arrayIndex_, PM_STAT stat_,
+    DynamicPollingMetric::DynamicPollingMetric(PM_METRIC metricId_, uint32_t arrayIndex_, PM_STAT stat_,
         const pmapi::intro::Root& introRoot)
         :
         Metric{
@@ -14,7 +14,6 @@ namespace p2c::pmon::met
         },
         metricId{ metricId_ },
         stat{ stat_ },
-        deviceId{ deviceId_ },
         arrayIndex{ arrayIndex_ },
         statName{ ToWide(introRoot.FindEnumKey(PM_ENUM_STAT, stat).GetShortName()) }
     {

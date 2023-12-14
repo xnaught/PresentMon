@@ -154,7 +154,10 @@ namespace p2c::kern
         const auto ResolveMetric = [this](size_t metricIndex) {
             auto pRepoMetric = pm->GetMetricByIndex(metricIndex);
             if (auto pDynamicMetric = dynamic_cast<pmon::met::DynamicPollingMetric*>(pRepoMetric)) {
-                return query.AddDynamicMetric(pm->GetIntrospectionRoot(), *pDynamicMetric);
+                // TODO: instead of hardcoding 1 in here as the default device id, derive it based
+                // on the enumerated gpu devices
+                return query.AddDynamicMetric(pm->GetIntrospectionRoot(), *pDynamicMetric,
+                    pm->GetSelectedAdapter().value_or(1));
             }
             else {
                 // use metric from repository directly if not a DynamicPollingMetric
