@@ -620,6 +620,8 @@ namespace pmon::mid
                 auto nextFramePresentStartTime = swap_chain->present_start_0;
                 auto nextFramePresentStopTime = swap_chain->present_stop_0;
                 auto nextFrameGPUDuration = swap_chain->gpu_duration_0;
+                auto nextFrameDisplayDuration = swap_chain->display_1_screen_time - swap_chain->display_0_screen_time;
+                auto nextFrameDisplayDurationValid = swap_chain->displayed_0 && swap_chain->display_count >= 2;
 
                 // Save current frame's properties into swap_chain (the new first frame)
                 swap_chain->displayed_0 = frame_data->present_event.FinalState == PresentResult::Presented;
@@ -657,7 +659,7 @@ namespace pmon::mid
                     auto cpuBusy = nextFramePresentStartTime - cpuStart;
                     auto cpuWait = nextFramePresentStopTime - nextFramePresentStartTime;
                     auto gpuBusy = nextFrameGPUDuration;
-                    auto displayBusy = swap_chain->display_1_screen_time - swap_chain->display_0_screen_time;
+                    auto displayBusy = nextFrameDisplayDuration;
 
                     auto frameTime_ms = QpcDeltaToMs(cpuBusy + cpuWait, client->GetQpcFrequency());
                     auto gpuBusy_ms = QpcDeltaToMs(gpuBusy, client->GetQpcFrequency());
@@ -669,11 +671,11 @@ namespace pmon::mid
                     swap_chain->gpu_sum_ms.push_back(gpuBusy_ms);
                     swap_chain->cpu_busy_ms.push_back(cpuBusy_ms);
                     swap_chain->cpu_wait_ms.push_back(cpuWait_ms);
-                    swap_chain->display_busy_ms.push_back(displayBusy_ms);
                     swap_chain->dropped.push_back(swap_chain->displayed_0 ? 0. : 1.);
                     swap_chain->allowsTearing.push_back(frame_data->present_event.SupportsTearing ? 1. : 0.);
 
-                    if (swap_chain->displayed_0 && swap_chain->display_count >= 2 && displayBusy > 0) {
+                    if (nextFrameDisplayDurationValid && displayBusy > 0) {
+                        swap_chain->display_busy_ms.push_back(displayBusy_ms);
                         swap_chain->displayed_fps.push_back(1000. / displayBusy_ms);
                     }
                 }
