@@ -75,7 +75,7 @@ namespace pmon::mid
 			// TODO: validate device id
 			// TODO: validate array index
 			qe.dataOffset = offset;
-			qe.dataSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetBasePtr()->polledType);
+			qe.dataSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetPolledType());
 			offset += qe.dataSize;
 		}
 

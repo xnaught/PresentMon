@@ -85,9 +85,9 @@ namespace pmon::mid
         auto deviceView = ispec.GetDevices();
         for (auto dev : deviceView)
         {
-            if (dev.GetBasePtr()->type == PM_DEVICE_TYPE_GRAPHICS_ADAPTER)
+            if (dev.GetType() == PM_DEVICE_TYPE_GRAPHICS_ADAPTER)
             {
-                cachedGpuInfo.push_back({ dev.GetBasePtr()->vendor, dev.GetName(), dev.GetId(), gpuAdapterId, 0., 0, 0 });
+                cachedGpuInfo.push_back({ dev.GetVendor(), dev.GetName(), dev.GetId(), gpuAdapterId, 0., 0, 0});
                 gpuAdapterId++;
             }
         }
@@ -533,7 +533,7 @@ namespace pmon::mid
                 throw std::runtime_error{ "Invalid stat enum" };
             }
             qe.dataOffset = offset;
-            qe.dataSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetBasePtr()->polledType);
+            qe.dataSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetPolledType());
             offset += qe.dataSize;
         }
 
@@ -729,7 +729,7 @@ namespace pmon::mid
             throw std::runtime_error{ "dynamic metric in static query poll" };
         }
 
-        auto elementSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetBasePtr()->polledType);
+        auto elementSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetPolledType());
 
         switch (element.metric)
         {

@@ -45,11 +45,10 @@ namespace p2c::pmon
 		using namespace met;
 
 		for (auto m : pIntrospectionRoot->GetMetrics()) {
-			if (std::ranges::none_of(m.GetDeviceMetricInfo(), [](auto&& i)
-				{ return i.GetBasePtr()->availability == PM_METRIC_AVAILABILITY_AVAILABLE; })) continue;
+			if (std::ranges::none_of(m.GetDeviceMetricInfo(), [](auto&& i) { return i.IsAvailable(); })) continue;
 			for (auto s : m.GetStatInfo()) {
-				if (s.GetBasePtr()->stat == PM_STAT_NONE) continue;
-				AddMetric(std::make_unique<DynamicPollingMetric>(m.GetId(), 0, s.GetBasePtr()->stat, *pIntrospectionRoot));
+				if (s.GetStat() == PM_STAT_NONE) continue;
+				AddMetric(std::make_unique<DynamicPollingMetric>(m.GetId(), 0, s.GetStat(), *pIntrospectionRoot));
 			}
 		}
 
@@ -131,7 +130,7 @@ namespace p2c::pmon
 	{
 		std::vector<AdapterInfo> infos;
 		for (const auto& info : pIntrospectionRoot->GetDevices()) {
-			if (info.GetBasePtr()->type != PM_DEVICE_TYPE_GRAPHICS_ADAPTER) {
+			if (info.GetType() != PM_DEVICE_TYPE_GRAPHICS_ADAPTER) {
 				continue;
 			}
 			infos.push_back(AdapterInfo{
