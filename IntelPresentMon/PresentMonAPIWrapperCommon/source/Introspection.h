@@ -324,7 +324,8 @@ namespace pmapi
             friend class ViewIterator<SelfType>;
             friend class MetricView;
         public:
-            EnumKeyView GetStat() const;
+            EnumKeyView IntrospectStat() const;
+            PM_STAT GetStat() const { return pBase->stat; }
             const SelfType* operator->() const
             {
                 return this;
@@ -352,22 +353,14 @@ namespace pmapi
             friend class ViewIterator<SelfType>;
             friend class Root;
         public:
-            EnumKeyView GetMetricKey() const;
-            PM_METRIC GetMetricId() const
-            {
-                return pBase->id;
-            }
-            EnumKeyView GetUnit() const;
-            EnumKeyView GetType() const;
-            std::string GetName() const;
-            DataTypeInfoView GetDataTypeInfo() const
-            {
-                return { pRoot, pBase->pTypeInfo };
-            }
-            ViewRange<StatInfoView> GetStatInfo() const
-            {
-                return { GetStatInfoBegin_(), GetStatInfoEnd_() };
-            }
+            EnumKeyView Introspect() const;
+            PM_METRIC GetId() const;
+            EnumKeyView IntrospectUnit() const;
+            PM_UNIT GetUnit() const;
+            EnumKeyView IntrospectType() const;
+            PM_METRIC_TYPE GetType() const;
+            DataTypeInfoView GetDataTypeInfo() const;
+            ViewRange<StatInfoView> GetStatInfo() const;
             ViewRange<DeviceMetricInfoView> GetDeviceMetricInfo() const
             {
                 // trying to deduce the template params for subrange causes intellisense to crash
@@ -434,7 +427,7 @@ namespace pmapi
                 }
                 // building lookup table for metrics
                 for (auto m : GetMetrics()) {
-                    metricMap[m.GetMetricId()] = m.GetBasePtr();
+                    metricMap[m.GetId()] = m.GetBasePtr();
                 }
             }
             ~Root()

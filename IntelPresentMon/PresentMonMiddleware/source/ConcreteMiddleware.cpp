@@ -725,7 +725,7 @@ namespace pmon::mid
     {
         pmapi::intro::Root ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
         auto metricView = ispec.FindMetric(element.metric);
-        if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_STATIC)) {
+        if (metricView.GetType() != int(PM_METRIC_TYPE_STATIC)) {
             throw std::runtime_error{ "dynamic metric in static query poll" };
         }
 

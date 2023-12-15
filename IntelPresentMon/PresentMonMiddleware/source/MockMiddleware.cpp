@@ -68,7 +68,7 @@ namespace pmon::mid
 		uint64_t offset = 0u;
 		for (auto& qe : queryElements) {
 			auto metricView = ispec.FindMetric(qe.metric);
-			if (!intro::MetricTypeIsDynamic((PM_METRIC_TYPE)metricView.GetType().GetValue())) {
+			if (!intro::MetricTypeIsDynamic((PM_METRIC_TYPE)metricView.GetType())) {
 				// TODO: specific exception here
 				throw std::runtime_error{ "Static metric in dynamic metric query specification" };
 			}
@@ -120,7 +120,7 @@ namespace pmon::mid
 		intro::Root ispec{ GetIntrospectionData(), [this](auto p) {FreeIntrospectionData(p); } };
 
 		auto metricView = ispec.FindMetric(element.metric);
-		if (metricView.GetType().GetValue() != int(PM_METRIC_TYPE_STATIC)) {
+		if (metricView.GetType() != PM_METRIC_TYPE_STATIC) {
 			// TODO: more specific exception
 			throw std::runtime_error{ "dynamic metric in static query poll" };
 		}

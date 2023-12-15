@@ -15,8 +15,8 @@ namespace p2c::pmon::met
         const pmapi::intro::Root& introRoot)
         :
         Metric{
-            ToWide(introRoot.FindMetric(metricId_).GetName()),
-            ToWide(introRoot.FindMetric(metricId_).GetUnit().GetShortName())
+            ToWide(introRoot.FindMetric(metricId_).Introspect().GetName()),
+            ToWide(introRoot.FindMetric(metricId_).IntrospectUnit().GetShortName())
         },
         metricId{ metricId_ },
         stat{ stat_ },

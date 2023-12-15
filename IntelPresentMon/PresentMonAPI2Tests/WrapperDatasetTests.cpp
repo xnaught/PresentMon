@@ -68,30 +68,30 @@ namespace PresentMonAPI2Mock
 		TEST_METHOD(IntrospectMetricToEnumKey)
 		{
 			using namespace std::string_literals;
-			Assert::AreEqual("Displayed FPS"s, data->GetMetrics().begin()->GetMetricKey().GetName());
+			Assert::AreEqual("Displayed FPS"s, data->GetMetrics().begin()->Introspect().GetName());
 		}
 		TEST_METHOD(IntrospectMetricUnit)
 		{
 			using namespace std::string_literals;
-			Assert::AreEqual("fps"s, data->GetMetrics().begin()->GetUnit().GetShortName());
+			Assert::AreEqual("fps"s, data->GetMetrics().begin()->IntrospectUnit().GetShortName());
 		}
 		TEST_METHOD(IntrospectMetricStats)
 		{
 			using namespace std::string_literals;
-			Assert::AreEqual("Average"s, data->GetMetrics().begin()->GetStatInfo().begin()->GetStat()->GetName());
+			Assert::AreEqual("Average"s, data->GetMetrics().begin()->GetStatInfo().begin()->IntrospectStat()->GetName());
 			Assert::AreEqual(7ull, data->GetMetrics().begin()->GetStatInfo().size());
 		}
 		TEST_METHOD(IntrospectMetricStatsWithLookup)
 		{
 			using namespace std::string_literals;
-			Assert::AreEqual("avg"s, data->GetMetrics().begin()->GetStatInfo().begin()->GetStat()->GetShortName());
+			Assert::AreEqual("avg"s, data->GetMetrics().begin()->GetStatInfo().begin()->IntrospectStat()->GetShortName());
 		}
 		TEST_METHOD(IntrospectMetricDataTypeEnum)
 		{
 			using namespace std::string_literals;
 			auto metric = data->FindMetric(PM_METRIC_PRESENT_MODE);
 			auto type = metric.GetDataTypeInfo();
-			Assert::AreEqual("Present Mode"s, metric.GetMetricKey().GetName());
+			Assert::AreEqual("Present Mode"s, metric.Introspect().GetName());
 			Assert::AreEqual((int)PM_DATA_TYPE_ENUM, type.GetPolledType().GetValue());
 			Assert::AreEqual((int)PM_DATA_TYPE_ENUM, type.GetFrameType().GetValue());
 			Assert::AreEqual("PM_PRESENT_MODE"s, type.GetEnum().GetSymbol());
@@ -101,7 +101,7 @@ namespace PresentMonAPI2Mock
 			using namespace std::string_literals;
 			auto metric = data->FindMetric(PM_METRIC_GPU_POWER_LIMITED);
 			auto type = metric.GetDataTypeInfo();
-			Assert::AreEqual("GPU Power Limited"s, metric.GetMetricKey().GetName());
+			Assert::AreEqual("GPU Power Limited"s, metric.Introspect().GetName());
 			Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, type.GetPolledType().GetValue());
 			Assert::AreEqual((int)PM_DATA_TYPE_BOOL, type.GetFrameType().GetValue());
 		}
@@ -192,8 +192,8 @@ namespace PresentMonAPI2Mock
 		{
 			using namespace std::string_literals;
 
-			Assert::AreEqual("Dynamic and Frame Event Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).GetType().GetName());
-			Assert::AreEqual("Static Metric"s, data->FindMetric(PM_METRIC_PROCESS_NAME).GetType().GetName());
+			Assert::AreEqual("Dynamic and Frame Event Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).IntrospectType().GetName());
+			Assert::AreEqual("Static Metric"s, data->FindMetric(PM_METRIC_PROCESS_NAME).IntrospectType().GetName());
 		}
 		TEST_METHOD(IntrospectStat)
 		{

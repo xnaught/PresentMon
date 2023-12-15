@@ -49,7 +49,7 @@ namespace p2c::pmon
 				{ return i.GetBasePtr()->availability == PM_METRIC_AVAILABILITY_AVAILABLE; })) continue;
 			for (auto s : m.GetStatInfo()) {
 				if (s.GetBasePtr()->stat == PM_STAT_NONE) continue;
-				AddMetric(std::make_unique<DynamicPollingMetric>(m.GetMetricId(), 0, s.GetBasePtr()->stat, *pIntrospectionRoot));
+				AddMetric(std::make_unique<DynamicPollingMetric>(m.GetId(), 0, s.GetBasePtr()->stat, *pIntrospectionRoot));
 			}
 		}
 

@@ -378,7 +378,7 @@ namespace PresentMonAPI2Mock
 				{
 					auto metric = data->FindMetric(PM_METRIC_PRESENT_MODE);
 					auto type = metric.GetDataTypeInfo();
-					Assert::AreEqual("Present Mode"s, metric.GetMetricKey().GetName());
+					Assert::AreEqual("Present Mode"s, metric.Introspect().GetName());
 					Assert::AreEqual("PM_PRESENT_MODE"s, type.GetEnum().GetSymbol());
 				}
 				{
@@ -434,8 +434,8 @@ namespace PresentMonAPI2Mock
 					}
 				}
 				{
-					Assert::AreEqual("Dynamic and Frame Event Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).GetType().GetName());
-					Assert::AreEqual("Static Metric"s, data->FindMetric(PM_METRIC_PROCESS_NAME).GetType().GetName());
+					Assert::AreEqual("Dynamic and Frame Event Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).IntrospectType().GetName());
+					Assert::AreEqual("Static Metric"s, data->FindMetric(PM_METRIC_PROCESS_NAME).IntrospectType().GetName());
 				}
 			}
 

@@ -12,34 +12,54 @@ namespace pmapi::intro
         return type == PM_METRIC_TYPE_FRAME_EVENT || type == PM_METRIC_TYPE_DYNAMIC_FRAME;
     }
 
-    EnumKeyView MetricView::GetMetricKey() const
+    EnumKeyView MetricView::Introspect() const
     {
-        return pRoot->FindEnumKey(PM_ENUM_METRIC, (int)pBase->id);
+        return pRoot->FindEnumKey(PM_ENUM_METRIC, pBase->id);
     }
 
-    EnumKeyView MetricView::GetUnit() const
+    PM_METRIC MetricView::GetId() const
     {
-        return pRoot->FindEnumKey(PM_ENUM_UNIT, (int)pBase->unit);
+        return pBase->id;
     }
 
-    EnumKeyView MetricView::GetType() const
+    EnumKeyView MetricView::IntrospectUnit() const
     {
-        return pRoot->FindEnumKey(PM_ENUM_METRIC_TYPE, (int)pBase->type);
+        return pRoot->FindEnumKey(PM_ENUM_UNIT, pBase->unit);
     }
 
-    std::string MetricView::GetName() const
+    PM_UNIT MetricView::GetUnit() const
     {
-        return pRoot->FindEnumKey(PM_ENUM_METRIC, pBase->id).GetName();
+        return pBase->unit;
+    }
+
+    EnumKeyView MetricView::IntrospectType() const
+    {
+        return pRoot->FindEnumKey(PM_ENUM_METRIC_TYPE, pBase->type);
+    }
+
+    PM_METRIC_TYPE MetricView::GetType() const
+    {
+        return pBase->type;
+    }
+
+    DataTypeInfoView MetricView::GetDataTypeInfo() const
+    {
+        return { pRoot, pBase->pTypeInfo };
+    }
+
+    ViewRange<StatInfoView> MetricView::GetStatInfo() const
+    {
+        return { GetStatInfoBegin_(), GetStatInfoEnd_() };
     }
 
     EnumKeyView DataTypeInfoView::GetPolledType() const
     {
-        return pRoot->FindEnumKey(PM_ENUM_DATA_TYPE, (int)pBase->polledType);
+        return pRoot->FindEnumKey(PM_ENUM_DATA_TYPE, pBase->polledType);
     }
 
     EnumKeyView DataTypeInfoView::GetFrameType() const
     {
-        return pRoot->FindEnumKey(PM_ENUM_DATA_TYPE, (int)pBase->frameType);
+        return pRoot->FindEnumKey(PM_ENUM_DATA_TYPE, pBase->frameType);
     }
 
     EnumView DataTypeInfoView::GetEnum() const
@@ -52,12 +72,12 @@ namespace pmapi::intro
 
     EnumKeyView DeviceView::GetType() const
     {
-        return pRoot->FindEnumKey(PM_ENUM_DEVICE_TYPE, (int)pBase->type);
+        return pRoot->FindEnumKey(PM_ENUM_DEVICE_TYPE, pBase->type);
     }
 
     EnumKeyView DeviceView::GetVendor() const
     {
-        return pRoot->FindEnumKey(PM_ENUM_DEVICE_VENDOR, (int)pBase->vendor);
+        return pRoot->FindEnumKey(PM_ENUM_DEVICE_VENDOR, pBase->vendor);
     }
 
     DeviceView DeviceMetricInfoView::GetDevice() const
@@ -67,11 +87,11 @@ namespace pmapi::intro
 
     EnumKeyView DeviceMetricInfoView::GetAvailablity() const
     {
-        return pRoot->FindEnumKey(PM_ENUM_METRIC_AVAILABILITY, (int)pBase->availability);
+        return pRoot->FindEnumKey(PM_ENUM_METRIC_AVAILABILITY, pBase->availability);
     }
 
-    EnumKeyView StatInfoView::GetStat() const
+    EnumKeyView StatInfoView::IntrospectStat() const
     {
-        return pRoot->FindEnumKey(PM_ENUM_STAT, (int)pBase->stat);
+        return pRoot->FindEnumKey(PM_ENUM_STAT, pBase->stat);
     }
 }
