@@ -156,8 +156,11 @@ namespace p2c::kern
             if (auto pDynamicMetric = dynamic_cast<pmon::met::DynamicPollingMetric*>(pRepoMetric)) {
                 // TODO: instead of hardcoding 1 in here as the default device id, derive it based
                 // on the enumerated gpu devices
-                return query.AddDynamicMetric(pm->GetIntrospectionRoot(), *pDynamicMetric,
-                    pm->GetSelectedAdapter().value_or(1));
+                const auto activeGpuId = pm->GetSelectedAdapter().value_or(1);
+                auto pUniqueRealized = pDynamicMetric->RealizeMetric(pm->GetIntrospectionRoot(), &query, activeGpuId);
+                pmon::met::Metric* pRawRealized = pUniqueRealized.get();
+                query.AddDynamicMetric(std::move(pUniqueRealized));
+                return pRawRealized;
             }
             else {
                 // use metric from repository directly if not a DynamicPollingMetric

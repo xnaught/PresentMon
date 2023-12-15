@@ -12,7 +12,11 @@
 
 namespace p2c::pmon::met
 {
-    using ::pmon::util::str::ToWide;
+    namespace
+    {
+        using EnumKeyMap = std::unordered_map<int, std::wstring>;
+        using ::pmon::util::str::ToWide;
+    }
     // TODO: derive strings using reference to intro root
     class DynamicPollingMetric : public Metric
     {
@@ -30,7 +34,11 @@ namespace p2c::pmon::met
         std::optional<float> ReadValue(double timestamp) override { return {};}
         PM_QUERY_ELEMENT MakeQueryElement() const;
         void Finalize(uint32_t offset);
+        static void InitEnumMap(const pmapi::intro::Root& introRoot);
+        std::unique_ptr<DynamicPollingMetric> RealizeMetric(const pmapi::intro::Root& introRoot,
+            CachingQuery* pQuery, uint32_t activeGpuDeviceId);
     protected:
+        // data
         PM_METRIC metricId;
         PM_STAT stat;
         uint32_t deviceId = 0;
@@ -82,5 +90,4 @@ namespace p2c::pmon::met
     private:
         CachingQuery* pQuery = nullptr;
     };
-
 }

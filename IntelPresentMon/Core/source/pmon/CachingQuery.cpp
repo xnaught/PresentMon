@@ -14,27 +14,9 @@ namespace p2c::pmon
 		metricOffsetMs{ metricOffsetMs }
 	{}
 
-	met::Metric* CachingQuery::AddDynamicMetric(const pmapi::intro::Root& introRoot, const met::DynamicPollingMetric& requestedMetric, uint32_t activeGpuId)
+	void CachingQuery::AddDynamicMetric(std::unique_ptr<met::DynamicPollingMetric> pMetric)
 	{
-		namespace rn = std::ranges;
-		const auto metricId = requestedMetric.MakeQueryElement().metric;
-		const auto metricIntro = introRoot.FindMetric(metricId);
-		const auto dataTypeId = metricIntro.GetDataTypeInfo().GetBasePtr()->polledType;
-		const bool isGpuMetric = rn::any_of(metricIntro.GetDeviceMetricInfo(), [](auto&& info) {
-			return info.GetDevice().GetBasePtr()->type == PM_DEVICE_TYPE_GRAPHICS_ADAPTER;
-			});
-		const auto deviceId = isGpuMetric ? activeGpuId : 0u;
-		std::unique_ptr<met::DynamicPollingMetric> pRealized;
-		switch (dataTypeId) {
-		case PM_DATA_TYPE_DOUBLE:
-			pRealized = std::make_unique<met::TypedDynamicPollingMetric<double>>(requestedMetric, this, deviceId);
-			break;
-		case PM_DATA_TYPE_STRING:
-			pRealized = std::make_unique<met::TypedDynamicPollingMetric<const char*>>(requestedMetric, this, deviceId);
-			break;
-		}
-		metricPtrs.push_back(std::move(pRealized));
-		return metricPtrs.back().get();
+		metricPtrs.push_back(std::move(pMetric));
 	}
 
 	void CachingQuery::Finalize(pmapi::Session& session)

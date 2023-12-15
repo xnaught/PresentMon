@@ -1,9 +1,15 @@
 #include "DynamicPollingMetric.h"
 #include <PresentMonAPIWrapper/source/PresentMonAPIWrapper.h>
 #include <CommonUtilities/source/str/String.h>
+#include <ranges>
 
 namespace p2c::pmon::met
 {
+    namespace
+    {
+        std::unordered_map<PM_ENUM, std::unique_ptr<EnumKeyMap>> enumMap;
+    }
+
     using ::pmon::util::str::ToWide;
     DynamicPollingMetric::DynamicPollingMetric(PM_METRIC metricId_, uint32_t arrayIndex_, PM_STAT stat_,
         const pmapi::intro::Root& introRoot)
@@ -50,5 +56,36 @@ namespace p2c::pmon::met
     void DynamicPollingMetric::Finalize(uint32_t offset_)
     {
         offset = offset_;
+    }
+    void DynamicPollingMetric::InitEnumMap(const pmapi::intro::Root& introRoot)
+    {
+        for (auto e : introRoot.GetEnums()) {
+            auto pKeys = std::make_unique<EnumKeyMap>(); auto& keys = *pKeys;
+            for (auto k : e.GetKeys()) {
+                keys[k.GetValue()] = ToWide(k.GetName());
+            }
+            enumMap[e.GetID()] = std::move(pKeys);
+        }
+    }
+    std::unique_ptr<DynamicPollingMetric> DynamicPollingMetric::RealizeMetric(const pmapi::intro::Root& introRoot,
+        CachingQuery* pQuery, uint32_t activeGpuDeviceId)
+    {
+        namespace rn = std::ranges;
+        const auto metricId = this->metricId;
+        const auto metricIntro = introRoot.FindMetric(metricId);
+        const auto dataTypeId = metricIntro.GetDataTypeInfo().GetBasePtr()->polledType;
+        // if we determine a metric is targeting a gpu, use the activeGpuId instead of universal device (0)
+        const bool isGpuMetric = rn::any_of(metricIntro.GetDeviceMetricInfo(), [](auto&& info) {
+            return info.GetDevice().GetBasePtr()->type == PM_DEVICE_TYPE_GRAPHICS_ADAPTER;
+        });
+        const auto deviceId = isGpuMetric ? activeGpuDeviceId : 0u;
+        switch (dataTypeId) {
+        case PM_DATA_TYPE_DOUBLE:
+            return std::make_unique<met::TypedDynamicPollingMetric<double>>(*this, pQuery, deviceId);
+        case PM_DATA_TYPE_STRING:
+            return std::make_unique<met::TypedDynamicPollingMetric<const char*>>(*this, pQuery, deviceId);
+        }
+        // TODO: maybe throw exception here?
+        return {};
     }
 }
