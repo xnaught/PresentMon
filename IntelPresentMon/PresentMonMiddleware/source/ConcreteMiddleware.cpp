@@ -367,6 +367,7 @@ namespace pmon::mid
             case PM_METRIC_CPU_WAIT_TIME:
             case PM_METRIC_DISPLAY_BUSY_TIME:
             case PM_METRIC_PROCESS_NAME:
+            case PM_METRIC_PRESENT_MODE:
                 pQuery->accumFpsData = true;
                 break;
             case PM_METRIC_GPU_POWER:
@@ -643,7 +644,7 @@ namespace pmon::mid
                 if (swap_chain->num_presents == 1) {
                     swap_chain->present_start_n = frame_data->present_event.PresentStartTime;
                     swap_chain->sync_interval = frame_data->present_event.SyncInterval;
-                    //swap_chain->present_mode = TranslatePresentMode(frame_data->present_event.PresentMode);
+                    swap_chain->present_mode = (PM_PRESENT_MODE)frame_data->present_event.PresentMode;
                 }
 
                 // Compute metrics for this frame if we've seen enough subsequent frames to have all the

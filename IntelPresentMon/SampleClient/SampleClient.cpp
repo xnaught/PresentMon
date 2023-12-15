@@ -629,6 +629,7 @@ void PollMetrics(uint32_t processId, double metricsOffset)
         PM_QUERY_ELEMENT{.metric = PM_METRIC_VRAM_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_UTILIZATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_MODE, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
     };
     auto result = pmRegisterDynamicQuery(&q, elements, std::size(elements), 2000., metricsOffset);
     if (result != PM_STATUS_SUCCESS)
@@ -735,6 +736,7 @@ void PollMetrics(uint32_t processId, double metricsOffset)
             PrintMetric("GPU Mem Frequency Avg = %f", reinterpret_cast<double&>(pBlob[elements[50].dataOffset]), true);
             PrintMetric("CPU Utilization Avg = %f", reinterpret_cast<double&>(pBlob[elements[51].dataOffset]), true);
             PrintMetric("CPU Frequency Avg = %f", reinterpret_cast<double&>(pBlob[elements[52].dataOffset]), true);
+            ConsolePrintLn("Present Mode = %i", reinterpret_cast<double&>(pBlob[elements[53].dataOffset]));
 
             CommitConsole();
         }
