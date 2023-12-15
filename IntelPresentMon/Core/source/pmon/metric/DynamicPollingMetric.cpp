@@ -23,7 +23,8 @@ namespace p2c::pmon::met
         arrayIndex{ arrayIndex_ },
         statName{ ToWide(introRoot.FindEnumKey(PM_ENUM_STAT, stat).GetShortName()) }
     {
-        if (introRoot.FindMetric(metricId).GetDataTypeInfo().GetBasePtr()->polledType == PM_DATA_TYPE_STRING) {
+        const auto type = introRoot.FindMetric(metricId).GetDataTypeInfo().GetBasePtr()->polledType;
+        if (type == PM_DATA_TYPE_STRING || type == PM_DATA_TYPE_ENUM) {
             numeric = false;
         }
     }
@@ -73,7 +74,8 @@ namespace p2c::pmon::met
         namespace rn = std::ranges;
         const auto metricId = this->metricId;
         const auto metricIntro = introRoot.FindMetric(metricId);
-        const auto dataTypeId = metricIntro.GetDataTypeInfo().GetBasePtr()->polledType;
+        const auto dataTypeInfo = metricIntro.GetDataTypeInfo();
+        const auto dataTypeId = dataTypeInfo.GetBasePtr()->polledType;
         // if we determine a metric is targeting a gpu, use the activeGpuId instead of universal device (0)
         const bool isGpuMetric = rn::any_of(metricIntro.GetDeviceMetricInfo(), [](auto&& info) {
             return info.GetDevice().GetBasePtr()->type == PM_DEVICE_TYPE_GRAPHICS_ADAPTER;
@@ -84,6 +86,9 @@ namespace p2c::pmon::met
             return std::make_unique<met::TypedDynamicPollingMetric<double>>(*this, pQuery, deviceId);
         case PM_DATA_TYPE_STRING:
             return std::make_unique<met::TypedDynamicPollingMetric<const char*>>(*this, pQuery, deviceId);
+        case PM_DATA_TYPE_ENUM:
+            return std::make_unique<met::TypedDynamicPollingMetric<PM_ENUM>>(*this, pQuery, deviceId,
+                enumMap.at(dataTypeInfo.GetBasePtr()->enumId).get());
         }
         // TODO: maybe throw exception here?
         return {};

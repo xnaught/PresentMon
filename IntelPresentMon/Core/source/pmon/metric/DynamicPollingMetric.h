@@ -48,7 +48,7 @@ namespace p2c::pmon::met
         std::optional<uint32_t> offset;
     };
 
-    // TODO: idea; don't template metric, just template a polymorphic type deserializer
+    // TODO: idea: don't template metric, just template a polymorphic type deserializer
     // then we can encapsulate the PM_DATA_TYPE => static type conversion switch here
     template<typename T>
     class TypedDynamicPollingMetric : public DynamicPollingMetric
@@ -71,7 +71,7 @@ namespace p2c::pmon::met
                 return (float)*reinterpret_cast<const T*>(&pBlob[*offset]);
             }
             else {
-                return 0.f;
+                return {};
             }
         }
         std::wstring ReadStringValue(double timestamp) override
@@ -89,5 +89,35 @@ namespace p2c::pmon::met
         }
     private:
         CachingQuery* pQuery = nullptr;
+    };
+
+    template<>
+    class TypedDynamicPollingMetric<PM_ENUM> : public DynamicPollingMetric
+    {
+    public:
+        TypedDynamicPollingMetric(const DynamicPollingMetric& mold, CachingQuery* pQuery_, uint32_t deviceId_,
+            const EnumKeyMap* pMap)
+            :
+            DynamicPollingMetric{ mold },
+            pQuery{ pQuery_ },
+            pKeyMap{ pMap }
+        {
+            deviceId = deviceId_;
+        }
+        std::optional<float> ReadValue(double timestamp) override
+        {
+            return {};
+        }
+        std::wstring ReadStringValue(double timestamp) override
+        {
+            if (!offset) {
+                throw std::runtime_error{ "Metric not finalized" };
+            }
+            auto pBlob = pQuery->Poll(timestamp);
+            return pKeyMap->at(*reinterpret_cast<const int*>(&pBlob[*offset]));
+        }
+    private:
+        CachingQuery* pQuery = nullptr;
+        const EnumKeyMap* pKeyMap = nullptr;
     };
 }

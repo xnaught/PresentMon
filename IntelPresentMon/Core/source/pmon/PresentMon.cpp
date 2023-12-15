@@ -38,11 +38,16 @@ namespace p2c::pmon
 		// acquire introspection data
 		pIntrospectionRoot = pSession->GetIntrospectionRoot();
 
+		// populate lookup for enumerations in dynamic metrics
+		met::DynamicPollingMetric::InitEnumMap(*pIntrospectionRoot);
+
 		// Build table of available metrics using introspection
 		using namespace met;
 
 		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_DISPLAYED_FPS, 0, PM_STAT_AVG, *pIntrospectionRoot));
 		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_GPU_POWER, 0, PM_STAT_AVG, *pIntrospectionRoot));
+		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_PRESENT_RUNTIME, 0, PM_STAT_RAW, *pIntrospectionRoot));
+		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_PRESENT_MODE, 0, PM_STAT_RAW, *pIntrospectionRoot));
 
 		// fake metrics for testing
 #ifdef _DEBUG
