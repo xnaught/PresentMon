@@ -373,6 +373,8 @@ namespace pmon::mid
             case PM_METRIC_DISPLAY_BUSY_TIME:
             case PM_METRIC_PROCESS_NAME:
             case PM_METRIC_PRESENT_MODE:
+            case PM_METRIC_PRESENT_RUNTIME:
+            case PM_METRIC_PRESENT_QPC:
                 pQuery->accumFpsData = true;
                 break;
             case PM_METRIC_GPU_POWER:
@@ -650,6 +652,8 @@ namespace pmon::mid
                     swap_chain->present_start_n = frame_data->present_event.PresentStartTime;
                     swap_chain->sync_interval = frame_data->present_event.SyncInterval;
                     swap_chain->present_mode = (PM_PRESENT_MODE)frame_data->present_event.PresentMode;
+                    swap_chain->runtime = (PM_GRAPHICS_RUNTIME)frame_data->present_event.Runtime;
+                    swap_chain->frameQpc = frame_data->present_event.PresentStartTime;
                 }
 
                 // Compute metrics for this frame if we've seen enough subsequent frames to have all the
@@ -861,72 +865,95 @@ namespace pmon::mid
 
     void ConcreteMiddleware::CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
     {
-        auto MillisecondsToFPS = [](double ms) { return ms == 0. ? 0. : 1000. / ms; };
-        auto& output = reinterpret_cast<double&>(pBlob[element.dataOffset]);
 
-        if (element.stat == PM_STAT_AVG) {
-            // We handle the averages for presented fps, frame times and displayed fps metrics
-            // by using the first and last frame data for the specified window. If not this combination
-            // metric and stat fall through
-            if (element.metric == PM_METRIC_PRESENTED_FPS || element.metric == PM_METRIC_FRAME_TIME)
-            {
-                if (swapChain.num_presents > 1)
-                {
-                    output = QpcDeltaToMs(swapChain.present_start_n - swapChain.present_start_0, qpcFrequency);
-                    output = output / (swapChain.num_presents - 1);
-                    if (element.metric == PM_METRIC_PRESENTED_FPS)
-                    {
-                        output = MillisecondsToFPS(output);
-                    }
-                }
-                else
-                {
-                    output = 0.;
-                }
-                return;
-            }
-            else if (element.metric == PM_METRIC_DISPLAYED_FPS)
-            {
-                if (swapChain.display_count > 1)
-                {
-                    output = QpcDeltaToMs(swapChain.display_n_screen_time - swapChain.display_0_screen_time, qpcFrequency);
-                    output = MillisecondsToFPS(output / (swapChain.display_count - 1));
-                }
-                else
-                {
-                    output = 0.;
-                }
-                return;
-            }
-        }
-
-        switch (element.metric)
+        if (element.metric == PM_METRIC_PROCESS_NAME)
         {
-        case PM_METRIC_PRESENTED_FPS:
-        case PM_METRIC_FRAME_TIME:
-            CalculateMetric(output, swapChain.frame_times_ms, element.stat, false);
-            if (element.metric == PM_METRIC_PRESENTED_FPS) {
-                output = MillisecondsToFPS(output);
+            strcpy_s(reinterpret_cast<char*>(&pBlob[element.dataOffset]), 260, swapChain.applicationName.c_str());
+        }
+        else if (element.metric == PM_METRIC_PRESENT_MODE)
+        {
+            auto& output = reinterpret_cast<PM_PRESENT_MODE&>(pBlob[element.dataOffset]);
+            output = swapChain.present_mode;
+        }
+        else if (element.metric == PM_METRIC_PRESENT_RUNTIME)
+        {
+            auto& output = reinterpret_cast<PM_GRAPHICS_RUNTIME&>(pBlob[element.dataOffset]);
+            output = swapChain.runtime;
+        }
+        else if (element.metric == PM_METRIC_PRESENT_QPC)
+        {
+            auto& output = reinterpret_cast<uint64_t&>(pBlob[element.dataOffset]);
+            output = swapChain.frameQpc;
+        }
+        else
+        {
+            auto MillisecondsToFPS = [](double ms) { return ms == 0. ? 0. : 1000. / ms; };
+            auto& output = reinterpret_cast<double&>(pBlob[element.dataOffset]);
+
+            if (element.stat == PM_STAT_AVG) {
+                // We handle the averages for presented fps, frame times and displayed fps metrics
+                // by using the first and last frame data for the specified window. If not this combination
+                // metric and stat fall through
+                if (element.metric == PM_METRIC_PRESENTED_FPS || element.metric == PM_METRIC_FRAME_TIME)
+                {
+                    if (swapChain.num_presents > 1)
+                    {
+                        output = QpcDeltaToMs(swapChain.present_start_n - swapChain.present_start_0, qpcFrequency);
+                        output = output / (swapChain.num_presents - 1);
+                        if (element.metric == PM_METRIC_PRESENTED_FPS)
+                        {
+                            output = MillisecondsToFPS(output);
+                        }
+                    }
+                    else
+                    {
+                        output = 0.;
+                    }
+                    return;
+                }
+                else if (element.metric == PM_METRIC_DISPLAYED_FPS)
+                {
+                    if (swapChain.display_count > 1)
+                    {
+                        output = QpcDeltaToMs(swapChain.display_n_screen_time - swapChain.display_0_screen_time, qpcFrequency);
+                        output = MillisecondsToFPS(output / (swapChain.display_count - 1));
+                    }
+                    else
+                    {
+                        output = 0.;
+                    }
+                    return;
+                }
             }
-            break;
-        case PM_METRIC_DISPLAYED_FPS:
-            CalculateMetric(output, swapChain.displayed_fps, element.stat);
-            break;
-        case PM_METRIC_GPU_BUSY_TIME:
-            CalculateMetric(output, swapChain.gpu_sum_ms, element.stat);
-            break;
-        case PM_METRIC_CPU_BUSY_TIME:
-            CalculateMetric(output, swapChain.cpu_busy_ms, element.stat);
-            break;
-        case PM_METRIC_CPU_WAIT_TIME:
-            CalculateMetric(output, swapChain.cpu_wait_ms, element.stat);
-            break;
-        case PM_METRIC_DISPLAY_BUSY_TIME:
-            CalculateMetric(output, swapChain.display_busy_ms, element.stat);
-            break;
-        default:
-            output = 0.;
-            break;
+
+            switch (element.metric)
+            {
+            case PM_METRIC_PRESENTED_FPS:
+            case PM_METRIC_FRAME_TIME:
+                CalculateMetric(output, swapChain.frame_times_ms, element.stat, false);
+                if (element.metric == PM_METRIC_PRESENTED_FPS) {
+                    output = MillisecondsToFPS(output);
+                }
+                break;
+            case PM_METRIC_DISPLAYED_FPS:
+                CalculateMetric(output, swapChain.displayed_fps, element.stat);
+                break;
+            case PM_METRIC_GPU_BUSY_TIME:
+                CalculateMetric(output, swapChain.gpu_sum_ms, element.stat);
+                break;
+            case PM_METRIC_CPU_BUSY_TIME:
+                CalculateMetric(output, swapChain.cpu_busy_ms, element.stat);
+                break;
+            case PM_METRIC_CPU_WAIT_TIME:
+                CalculateMetric(output, swapChain.cpu_wait_ms, element.stat);
+                break;
+            case PM_METRIC_DISPLAY_BUSY_TIME:
+                CalculateMetric(output, swapChain.display_busy_ms, element.stat);
+                break;
+            default:
+                output = 0.;
+                break;
+            }
         }
         return;
     }
@@ -1387,10 +1414,11 @@ namespace pmon::mid
                 case PM_METRIC_CPU_BUSY_TIME:
                 case PM_METRIC_CPU_WAIT_TIME:
                 case PM_METRIC_DISPLAY_BUSY_TIME:
-                    CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
-                    break;
+                case PM_METRIC_PRESENT_MODE:
+                case PM_METRIC_PRESENT_RUNTIME:
+                case PM_METRIC_PRESENT_QPC:
                 case PM_METRIC_PROCESS_NAME:
-                    strcpy_s(reinterpret_cast<char*>(&pBlob[qe.dataOffset]), 260, swapChain.applicationName.c_str());
+                    CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
                     break;
                 case PM_METRIC_CPU_VENDOR:
                 {
@@ -1423,7 +1451,9 @@ namespace pmon::mid
                 }
                     break;
                 default:
-                    CalculateGpuCpuMetric(metricInfo, qe, pBlob);
+                    if (qe.dataSize == sizeof(double)) {
+                        CalculateGpuCpuMetric(metricInfo, qe, pBlob);
+                    }
                     break;
                 }
             }

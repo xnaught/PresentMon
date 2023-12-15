@@ -41,6 +41,8 @@ namespace pmon::mid
 		// Properties of the most-recent processed frame:
 		int32_t sync_interval = 0;
 		PM_PRESENT_MODE present_mode = PM_PRESENT_MODE_UNKNOWN;
+		PM_GRAPHICS_RUNTIME runtime = PM_GRAPHICS_RUNTIME_UNKNOWN;
+		uint64_t frameQpc = 0;
 
 		// Only used by GetGfxLatencyData():
 		std::vector<double> render_latency_ms;
