@@ -8,7 +8,7 @@ namespace p2c::pmon::met
 {
 	NoisySineFakeMetric::NoisySineFakeMetric(std::wstring name, float freq, float phase, float ampli, float offset, float dev, float errScale)
 		:
-		NumericMetric{ 1.0f, std::move(name), L"fak" },
+		Metric{ std::move(name), L"fak" },
 		freq{ freq },
 		phase{ phase },
 		ampli{ ampli },
@@ -24,9 +24,15 @@ namespace p2c::pmon::met
 		data.Trim(timestamp);
 	}
 
+	const std::wstring& NoisySineFakeMetric::GetMetricClassName() const
+	{
+		static std::wstring name = L"Numeric";
+		return name;
+	}
+
 	std::optional<float> NoisySineFakeMetric::ReadValue(double timestamp)
 	{
-		return GetScalingFactor() * ampli * std::sin(float(timestamp) * 2.f * 3.14159f * freq + phase) + offset + errScale * dist(rng);
+		return ampli * std::sin(float(timestamp) * 2.f * 3.14159f * freq + phase) + offset + errScale * dist(rng);
 	}
 
 	const std::wstring& NoisySineFakeMetric::GetCategory() const

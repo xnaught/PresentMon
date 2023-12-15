@@ -7,6 +7,7 @@
 #include <Core/source/gfx/layout/ReadoutElement.h>
 #include <Core/source/pmon/PresentMon.h>
 #include <Core/source/pmon/RawFrameDataWriter.h>
+#include <Core/source/pmon/metric/DynamicPollingMetric.h>
 #include <Core/source/pmon/Timekeeper.h>
 #include <Core/source/gfx/layout/style/StyleProcessor.h>
 #include <Core/source/infra/util/rn/ToVector.h>
@@ -112,6 +113,7 @@ namespace p2c::kern
         proc{ std::move(proc_) },
         pm{ pm_ },
         pSpec{ std::move(pSpec_) },
+        query{ proc.pid, pSpec->averagingWindowSize, pSpec->metricsOffset },
         graphPacks{ std::move(graphPacks_) },
         hProcess{ OpenProcess(SYNCHRONIZE, TRUE, proc.pid) },
         moveHandlerToken{ win::EventHookManager::AddHandler(std::make_shared<WindowMoveHandler>(proc, this)) },
@@ -133,13 +135,13 @@ namespace p2c::kern
         pRoot = MakeDocument_(gfx, *pSpec, graphPacks, textPacks, pCaptureIndicatorText);
         UpdateCaptureStatusText_();
         AdjustOverlaySituation_(position);
-        pm->StartStream(proc.pid);
+        pm->StartTracking(proc.pid);
     }
 
     Overlay::~Overlay()
     {
         if (pm) {
-            try { pm->StopStream(); }
+            try { pm->StopTracking(); }
             catch (...) {}
         }
     }
@@ -148,11 +150,46 @@ namespace p2c::kern
     {
         std::set<size_t> newSet;
         textPacks.clear();
+        // helper to resolve metric type and add to dynamic query if necessary
+        const auto ResolveMetric = [this](size_t metricIndex) {
+            auto pRepoMetric = pm->GetMetricByIndex(metricIndex);
+            if (auto pDynamicMetric = dynamic_cast<pmon::met::DynamicPollingMetric*>(pRepoMetric)) {
+                // TODO: instead of hardcoding 1 in here as the default device id, derive it based
+                // on the enumerated gpu devices
+                const auto activeGpuId = pm->GetSelectedAdapter().value_or(1);
+                auto pUniqueRealized = pDynamicMetric->RealizeMetric(pm->GetIntrospectionRoot(), &query, activeGpuId);
+                pmon::met::Metric* pRawRealized = pUniqueRealized.get();
+                query.AddDynamicMetric(std::move(pUniqueRealized));
+                return pRawRealized;
+            }
+            else {
+                // use metric from repository directly if not a DynamicPollingMetric
+                return pRepoMetric;
+            }
+        };
+        // registering all requested metrics into a map
+        for (auto& w : pSpec->widgets) {
+            if (auto pGraphSpec = std::get_if<GraphSpec>(&w)) {
+                for (const auto metric : pGraphSpec->metrics) {
+                    if (!activeMetricsMap.contains(metric.index)) {
+                        activeMetricsMap[metric.index] = ResolveMetric(metric.index);
+                    }
+                }
+            }
+            else if (auto pReadoutSpec = std::get_if<ReadoutSpec>(&w)) {
+                if (!activeMetricsMap.contains(pReadoutSpec->metricIndex)) {
+                    activeMetricsMap[pReadoutSpec->metricIndex] = ResolveMetric(pReadoutSpec->metricIndex);
+                }
+            }
+        }
+        // compiling the dynamic query
+        query.Finalize(pm->GetSession());
+        // populating packs with metrics
         for (auto& w : pSpec->widgets) {
             try {
                 if (auto pGraphSpec = std::get_if<GraphSpec>(&w)) {
                     for (const auto metric : pGraphSpec->metrics) {
-                        auto pMetric = dynamic_cast<pmon::NumericMetric*>(pm->GetMetricByIndex(metric.index));
+                        auto pMetric = activeMetricsMap[metric.index];
                         // TODO: silent fail this by inserting "empty" data pack and logging 
                         assert(pMetric);
                         auto [i, inserted] = graphPacks.emplace(metric.index,
@@ -166,7 +203,10 @@ namespace p2c::kern
                     }
                 }
                 else if (auto pReadoutSpec = std::get_if<ReadoutSpec>(&w)) {
-                    textPacks.emplace_back(std::wstring{}, pm->GetMetricByIndex(pReadoutSpec->metricIndex));
+                    auto pMetric = activeMetricsMap[pReadoutSpec->metricIndex];
+                    // TODO: silent fail this by inserting "empty" data pack and logging 
+                    assert(pMetric);
+                    textPacks.emplace_back(std::wstring{}, pMetric);
                 }
                 else {
                     throw std::runtime_error{ "Bad widget variant" };
@@ -549,7 +589,7 @@ namespace p2c::kern
             pos = pWindow->GetPosition();
         }
 
-        pm->StopStream();
+        pm->StopTracking();
         auto pNewOverlay = std::make_unique<Overlay>(
             proc_,
             std::move(pSpec),

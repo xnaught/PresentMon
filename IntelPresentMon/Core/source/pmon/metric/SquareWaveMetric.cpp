@@ -8,7 +8,7 @@ namespace p2c::pmon::met
 {
 	SquareWaveMetric::SquareWaveMetric(std::wstring name, double period, float min, float max)
 		:
-		NumericMetric{ 1.0f, std::move(name), L"fak" },
+		Metric{ std::move(name), L"fak" },
 		period{ period },
 		min{ min },
 		max{ max }
@@ -18,6 +18,12 @@ namespace p2c::pmon::met
 	{
 		data.Push(gfx::lay::DataPoint{ .value = ReadValue(timestamp), .time = timestamp });
 		data.Trim(timestamp);
+	}
+
+	const std::wstring& SquareWaveMetric::GetMetricClassName() const
+	{
+		static std::wstring name = L"Numeric";
+		return name;
 	}
 
 	std::optional<float> SquareWaveMetric::ReadValue(double timestamp)

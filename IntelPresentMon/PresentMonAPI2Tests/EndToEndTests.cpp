@@ -76,10 +76,10 @@ namespace EndToEndTests
 
 			{
 				const PM_INTROSPECTION_ROOT* pRoot = nullptr;
-				const auto sta = pmEnumerateInterface(&pRoot);
+				const auto sta = pmGetIntrospectionRoot(&pRoot);
 				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta));
 
-				Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
+				Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeIntrospectionRoot(pRoot));
 			}
 
 			{
@@ -115,12 +115,12 @@ namespace EndToEndTests
 
 			{
 				const PM_INTROSPECTION_ROOT* pRoot = nullptr;
-				const auto sta = pmEnumerateInterface(&pRoot);
+				const auto sta = pmGetIntrospectionRoot(&pRoot);
 				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta));
 
 				Assert::IsNotNull(pRoot);
 				Assert::AreEqual(12ull, pRoot->pEnums->size);
-				Assert::AreEqual(14ull, pRoot->pMetrics->size);
+				Assert::AreEqual(51ull, pRoot->pMetrics->size);
 
 				// checking 7th enum (unit)
 				{
@@ -129,7 +129,7 @@ namespace EndToEndTests
 					Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
 					Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
 					Assert::AreEqual("List of all units of measure used for metrics", pEnum->pDescription->pData);
-					Assert::AreEqual(13ull, pEnum->pKeys->size);
+					Assert::AreEqual(15ull, pEnum->pKeys->size);
 					// 1st key
 					{
 						auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
@@ -143,7 +143,7 @@ namespace EndToEndTests
 					}
 					// 5th key
 					{
-						auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[4]);
+						auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[5]);
 						Assert::IsNotNull(pKey);
 						Assert::IsNotNull(pKey->pSymbol);
 						Assert::AreEqual("PM_UNIT_PERCENT", pKey->pSymbol->pData);
@@ -170,7 +170,7 @@ namespace EndToEndTests
 					Assert::IsNotNull(pMetric);
 					Assert::AreEqual((int)PM_METRIC_DISPLAYED_FPS, (int)pMetric->id);
 					Assert::AreEqual((int)PM_UNIT_FPS, (int)pMetric->unit);
-					Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
+					Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->polledType);
 					Assert::AreEqual(7ull, pMetric->pStatInfo->size);
 					// check 1st stat
 					{
@@ -193,7 +193,7 @@ namespace EndToEndTests
 					Assert::IsNotNull(pMetric);
 					Assert::AreEqual((int)PM_METRIC_GPU_FAN_SPEED, (int)pMetric->id);
 					Assert::AreEqual((int)PM_UNIT_RPM, (int)pMetric->unit);
-					Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
+					Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->polledType);
 					Assert::AreEqual(7ull, pMetric->pStatInfo->size);
 					// check 7th stat
 					{
@@ -202,7 +202,7 @@ namespace EndToEndTests
 					}
 				}
 
-				Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
+				Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeIntrospectionRoot(pRoot));
 			}
 
 			{

@@ -8,6 +8,7 @@
 #include <concepts>
 #include "StatisticsTracker.h"
 #include <PresentMonAPI/PresentMonAPI.h>
+#include <PresentMonAPI2/source/PresentMonAPI.h>
 #include <Core/source/infra/log/Logging.h>
 #include <Core/source/infra/util/Util.h>
 

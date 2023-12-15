@@ -161,6 +161,56 @@ PM_STATUS StreamClient::RecordFrame(PM_FRAME_DATA** out_frame_data) {
   }
 }
 
+PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData)
+{
+    // nullify point so that if we exit early it will be null
+    *pNsmData = nullptr;
+
+    if (is_etl_stream_client_) {
+        LOG(INFO) << "ETL Client should be using DequeueFrame instead.";
+        return PM_STATUS::PM_STATUS_SERVICE_ERROR;
+    }
+
+    auto nsm_view = GetNamedSharedMemView();
+    auto nsm_hdr = nsm_view->GetHeader();
+    if (!nsm_hdr->process_active) {
+        // Service destroyed the named shared memory.
+        return PM_STATUS::PM_STATUS_INVALID_PID;
+    }
+
+    if (recording_frame_data_ == false) {
+        // Get the current number of frames written and set it as the current
+        // dequeue frame number. This will be used to track data overruns if
+        // the client does not read data fast enough.
+        recording_frame_data_ = true;
+        current_dequeue_frame_num_ = nsm_hdr->num_frames_written;
+        next_dequeue_idx_ = GetLatestFrameIndex();
+    }
+
+    // Check to see if the number of pending read frames is greater
+    // than the maximum number of entries. If so we have lost frame
+    // data
+    uint64_t num_pending_frames = CheckPendingReadFrames();
+    if (num_pending_frames > nsm_hdr->max_entries) {
+        recording_frame_data_ = false;
+        return PM_STATUS::PM_STATUS_DATA_LOSS;
+    }
+    else if (num_pending_frames == 0) {
+        return PM_STATUS::PM_STATUS_SUCCESS;
+    }
+
+    *pNsmData = ReadFrameByIdx(next_dequeue_idx_);
+    if (pNsmData) {
+        uint64_t max_entries = nsm_view->GetHeader()->max_entries;
+        next_dequeue_idx_ = (next_dequeue_idx_ + 1) % max_entries;
+        current_dequeue_frame_num_++;
+        return PM_STATUS::PM_STATUS_SUCCESS;
+    }
+    else {
+        return PM_STATUS::PM_STATUS_FAILURE;
+    }
+}
+
 void StreamClient::CopyFrameData(uint64_t start_qpc,
                                  const PmNsmFrameData* src_frame,
                                  GpuTelemetryBitset gpu_telemetry_cap_bits,

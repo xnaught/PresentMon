@@ -27,10 +27,10 @@ namespace PresentMonAPI2Mock
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
 			const PM_INTROSPECTION_ROOT* pRoot{};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmGetIntrospectionRoot(&pRoot));
 			Assert::IsNotNull(pRoot);
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeIntrospectionRoot(pRoot));
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
@@ -40,11 +40,11 @@ namespace PresentMonAPI2Mock
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
 			const PM_INTROSPECTION_ROOT* pRoot{};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmGetIntrospectionRoot(&pRoot));
 			Assert::IsNotNull(pRoot);
 
 			// normally we would free the linked structure here via its root
-			// Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
+			// Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeIntrospectionRoot(pRoot));
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsTrue(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
@@ -53,10 +53,10 @@ namespace PresentMonAPI2Mock
 		{
 			// introspection query
 			const PM_INTROSPECTION_ROOT* pRoot{};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmEnumerateInterface(&pRoot));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmGetIntrospectionRoot(&pRoot));
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(45ull, pRoot->pMetrics->size);
+			Assert::AreEqual(51ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)
@@ -66,7 +66,7 @@ namespace PresentMonAPI2Mock
 				Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
 				Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
 				Assert::AreEqual("List of all units of measure used for metrics", pEnum->pDescription->pData);
-				Assert::AreEqual(13ull, pEnum->pKeys->size);
+				Assert::AreEqual(15ull, pEnum->pKeys->size);
 				// 1st key
 				{
 					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
@@ -80,7 +80,7 @@ namespace PresentMonAPI2Mock
 				}
 				// 5th key
 				{
-					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[4]);
+					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[5]);
 					Assert::IsNotNull(pKey);
 					Assert::IsNotNull(pKey->pSymbol);
 					Assert::AreEqual("PM_UNIT_PERCENT", pKey->pSymbol->pData);
@@ -107,7 +107,7 @@ namespace PresentMonAPI2Mock
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_DISPLAYED_FPS, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_FPS, (int)pMetric->unit);
-				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->polledType);
 				Assert::AreEqual(7ull, pMetric->pStatInfo->size);
 				// check 1st stat
 				{
@@ -130,7 +130,7 @@ namespace PresentMonAPI2Mock
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_GPU_FAN_SPEED, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_RPM, (int)pMetric->unit);
-				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->polledType);
 				Assert::AreEqual(7ull, pMetric->pStatInfo->size);
 				// check 7th stat
 				{
@@ -153,7 +153,7 @@ namespace PresentMonAPI2Mock
 				}
 			}
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeInterface(pRoot));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeIntrospectionRoot(pRoot));
 		}
 	};
 }

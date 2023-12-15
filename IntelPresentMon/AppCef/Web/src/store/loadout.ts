@@ -202,6 +202,10 @@ export class LoadoutModule extends VuexModule {
         // reset widget keys
         ResetKeySequence();
         for (const w of widgets) {
+            if (!Metrics.metrics.some(avail => w.metrics.some(req => avail.index === req.metricId))) {
+                throw new Error('Unknown metric ID encountered');
+            }
+            w.metrics[0].metricId;
             w.key = GenerateKey();
         }
         this.widgets.splice(0, this.widgets.length, ...widgets);

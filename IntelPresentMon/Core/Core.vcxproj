@@ -88,6 +88,9 @@
     <ClInclude Include="source\infra\util\rn\PairToRange.h" />
     <ClInclude Include="source\infra\util\rn\ToVector.h" />
     <ClInclude Include="source\infra\util\Util.h" />
+    <ClInclude Include="source\pmon\AdapterInfo.h" />
+    <ClInclude Include="source\pmon\CachingQuery.h" />
+    <ClInclude Include="source\pmon\metric\DynamicPollingMetric.h" />
     <ClInclude Include="source\pmon\metric\SquareWaveMetric.h" />
     <ClInclude Include="source\pmon\StatisticsTracker.h" />
     <ClInclude Include="source\win\com\ProcessSpawnSink.h" />
@@ -98,29 +101,8 @@
     <ClInclude Include="source\kernel\TextDataPack.h" />
     <ClInclude Include="source\kernel\WindowActivateHandler.h" />
     <ClInclude Include="source\kernel\WindowSpawnHandler.h" />
-    <ClInclude Include="source\pmon\AdapterInfo.h" />
-    <ClInclude Include="source\pmon\adapt\AdapterLookup.h" />
-    <ClInclude Include="source\pmon\adapt\CpuAdapter.h" />
-    <ClInclude Include="source\pmon\adapt\FpsAdapter.h" />
-    <ClInclude Include="source\pmon\adapt\GfxLatencyAdapter.h" />
-    <ClInclude Include="source\pmon\adapt\GpuAdapter.h" />
-    <ClInclude Include="source\pmon\adapt\InfoAdapter.h" />
-    <ClInclude Include="source\pmon\adapt\RawAdapter.h" />
-    <ClInclude Include="source\pmon\metric\InfoMetric.h" />
     <ClInclude Include="source\pmon\metric\Metric.h" />
     <ClInclude Include="source\pmon\metric\NoisySineFakeMetric.h" />
-    <ClInclude Include="source\pmon\metric\NumericMetric.h" />
-    <ClInclude Include="source\pmon\metric\PresentModeMetric.h" />
-    <ClInclude Include="source\pmon\metric\PsuArrayMetric.h" />
-    <ClInclude Include="source\pmon\metric\PsuTypeArrayMetric.h" />
-    <ClInclude Include="source\pmon\metric\RawArrayMetric.h" />
-    <ClInclude Include="source\pmon\metric\RawMetric.h" />
-    <ClInclude Include="source\pmon\metric\SimpleMetric.h" />
-    <ClInclude Include="source\pmon\metric\Stat.h" />
-    <ClInclude Include="source\pmon\metric\StatArrayMetric.h" />
-    <ClInclude Include="source\pmon\metric\StatMetric.h" />
-    <ClInclude Include="source\pmon\PresentMode.h" />
-    <ClInclude Include="source\pmon\PsuType.h" />
     <ClInclude Include="source\pmon\RawFrameDataWriter.h" />
     <ClInclude Include="source\meta\TypeFromMember.h" />
     <ClInclude Include="source\pmon\PresentMon.h" />
@@ -203,26 +185,17 @@
     <ClCompile Include="source\infra\util\Hash.cpp" />
     <ClCompile Include="source\infra\util\IntervalWaiter.cpp" />
     <ClCompile Include="source\infra\util\Util.cpp" />
+    <ClCompile Include="source\pmon\CachingQuery.cpp" />
+    <ClCompile Include="source\pmon\metric\DynamicPollingMetric.cpp" />
     <ClCompile Include="source\pmon\metric\SquareWaveMetric.cpp" />
     <ClCompile Include="source\pmon\StatisticsTracker.cpp" />
     <ClCompile Include="source\win\com\ProcessSpawnSink.cpp" />
     <ClCompile Include="source\kernel\OverlayContainer.cpp" />
     <ClCompile Include="source\kernel\WindowActivateHandler.cpp" />
     <ClCompile Include="source\kernel\WindowSpawnHandler.cpp" />
-    <ClCompile Include="source\pmon\adapt\CpuAdapter.cpp" />
-    <ClCompile Include="source\pmon\adapt\FpsAdapter.cpp" />
-    <ClCompile Include="source\pmon\adapt\GfxLatencyAdapter.cpp" />
-    <ClCompile Include="source\pmon\adapt\GpuAdapter.cpp" />
-    <ClCompile Include="source\pmon\adapt\InfoAdapter.cpp" />
-    <ClCompile Include="source\pmon\adapt\RawAdapter.cpp" />
     <ClCompile Include="source\pmon\metric\Metric.cpp" />
     <ClCompile Include="source\pmon\metric\NoisySineFakeMetric.cpp" />
-    <ClCompile Include="source\pmon\metric\NumericMetric.cpp" />
-    <ClCompile Include="source\pmon\metric\PresentModeMetric.cpp" />
-    <ClCompile Include="source\pmon\metric\Stat.cpp" />
-    <ClCompile Include="source\pmon\PresentMode.cpp" />
     <ClCompile Include="source\pmon\PresentMon.cpp" />
-    <ClCompile Include="source\pmon\PsuType.cpp" />
     <ClCompile Include="source\pmon\RawFrameDataWriter.cpp" />
     <ClCompile Include="source\pmon\Timekeeper.cpp" />
     <ClCompile Include="source\kernel\Kernel.cpp" />
@@ -251,9 +224,11 @@
     <None Include="cpp.hint" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\PresentMonAPI\PresentMonAPI.vcxproj">
-      <Project>{811adcf0-da1d-4a94-97c7-7aa6c33b5368}</Project>
-      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">
+      <Project>{08a704d8-ca1c-45e9-8ede-542a1a43b53e}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\PresentMonAPIWrapper\PresentMonAPIWrapper.vcxproj">
+      <Project>{cee032ed-b0d3-47f8-bdae-d46757b0061b}</Project>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">

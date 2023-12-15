@@ -30,12 +30,18 @@
     <ClInclude Include="source\DynamicQuery.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\FrameEventQuery.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\MockMiddleware.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\ConcreteMiddleware.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\FrameEventQuery.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

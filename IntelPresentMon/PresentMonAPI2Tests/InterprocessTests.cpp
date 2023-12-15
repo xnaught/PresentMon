@@ -11,6 +11,7 @@
 #include "BoostProcess.h"
 #include "../PresentMonMiddleware/source/MockCommon.h"
 #include "../PresentMonMiddleware/source/MockMiddleware.h"
+#include "../CommonUtilities/source/Memory.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -27,15 +28,15 @@ namespace PresentMonAPI2Mock
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> alloc;
 			auto pClone = root.ApiClone(alloc);
-			Assert::AreEqual(17004ull, alloc.GetTotalSize());
+			Assert::AreEqual(34132ull, alloc.GetTotalSize());
 			Assert::IsNull(pClone);
 			free((void*)pClone);
 		}
 		TEST_METHOD(Padding)
 		{
-			Assert::AreEqual(4ull, ipc::intro::GetPadding<void*>(4ull));
-			Assert::AreEqual(3ull, ipc::intro::GetPadding<PM_ENUM>(41ull));
-			Assert::AreEqual(1ull, ipc::intro::GetPadding<uint32_t>(3ull));
+			Assert::AreEqual(4ull, util::GetPadding<void*>(4ull));
+			Assert::AreEqual(3ull, util::GetPadding<PM_ENUM>(41ull));
+			Assert::AreEqual(1ull, util::GetPadding<uint32_t>(3ull));
 		}
 		TEST_METHOD(ApiBlockClone)
 		{
@@ -44,7 +45,7 @@ namespace PresentMonAPI2Mock
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> probeAlloc;
 			auto pNullClone = root.ApiClone(probeAlloc);
-			Assert::AreEqual(17004ull, probeAlloc.GetTotalSize());
+			Assert::AreEqual(34132ull, probeAlloc.GetTotalSize());
 			Assert::IsNull(pNullClone);
 
 			ipc::intro::BlockAllocator<void> blockAlloc{ probeAlloc.GetTotalSize() };
@@ -52,7 +53,7 @@ namespace PresentMonAPI2Mock
 
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(14ull, pRoot->pMetrics->size);
+			Assert::AreEqual(51ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)
@@ -62,7 +63,7 @@ namespace PresentMonAPI2Mock
 				Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
 				Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
 				Assert::AreEqual("List of all units of measure used for metrics", pEnum->pDescription->pData);
-				Assert::AreEqual(13ull, pEnum->pKeys->size);
+				Assert::AreEqual(15ull, pEnum->pKeys->size);
 				// 1st key
 				{
 					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
@@ -76,7 +77,7 @@ namespace PresentMonAPI2Mock
 				}
 				// 5th key
 				{
-					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[4]);
+					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[5]);
 					Assert::IsNotNull(pKey);
 					Assert::IsNotNull(pKey->pSymbol);
 					Assert::AreEqual("PM_UNIT_PERCENT", pKey->pSymbol->pData);
@@ -103,7 +104,7 @@ namespace PresentMonAPI2Mock
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_DISPLAYED_FPS, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_FPS, (int)pMetric->unit);
-				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->polledType);
 				Assert::AreEqual(7ull, pMetric->pStatInfo->size);
 				// check 1st stat
 				{
@@ -126,7 +127,7 @@ namespace PresentMonAPI2Mock
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_GPU_FAN_SPEED, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_RPM, (int)pMetric->unit);
-				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->polledType);
 				Assert::AreEqual(7ull, pMetric->pStatInfo->size);
 				// check 7th stat
 				{
@@ -175,7 +176,7 @@ namespace PresentMonAPI2Mock
 
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(14ull, pRoot->pMetrics->size);
+			Assert::AreEqual(51ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)
@@ -185,7 +186,7 @@ namespace PresentMonAPI2Mock
 				Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
 				Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
 				Assert::AreEqual("List of all units of measure used for metrics", pEnum->pDescription->pData);
-				Assert::AreEqual(13ull, pEnum->pKeys->size);
+				Assert::AreEqual(15ull, pEnum->pKeys->size);
 				// 1st key
 				{
 					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
@@ -199,7 +200,7 @@ namespace PresentMonAPI2Mock
 				}
 				// 5th key
 				{
-					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[4]);
+					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[5]);
 					Assert::IsNotNull(pKey);
 					Assert::IsNotNull(pKey->pSymbol);
 					Assert::AreEqual("PM_UNIT_PERCENT", pKey->pSymbol->pData);
@@ -226,7 +227,7 @@ namespace PresentMonAPI2Mock
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_DISPLAYED_FPS, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_FPS, (int)pMetric->unit);
-				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->polledType);
 				Assert::AreEqual(7ull, pMetric->pStatInfo->size);
 				// check 1st stat
 				{
@@ -249,7 +250,7 @@ namespace PresentMonAPI2Mock
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_GPU_FAN_SPEED, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_RPM, (int)pMetric->unit);
-				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->type);
+				Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)pMetric->pTypeInfo->polledType);
 				Assert::AreEqual(7ull, pMetric->pStatInfo->size);
 				// check 7th stat
 				{
@@ -304,7 +305,7 @@ namespace PresentMonAPI2Mock
 
 			{
 				pmapi::Session session;
-				auto data = session.GetIntrospectionDataset();
+				auto data = session.GetIntrospectionRoot();
 			}
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
@@ -338,8 +339,8 @@ namespace PresentMonAPI2Mock
 
 			{
 				pmapi::Session session;
-				auto datax = session.GetIntrospectionDataset();
-				auto data = &datax;
+				auto dataShared = session.GetIntrospectionRoot();
+				auto data = dataShared.get();
 
 				{
 					const std::vector expected{
@@ -357,6 +358,16 @@ namespace PresentMonAPI2Mock
 						"PM_STATUS_SUCCESS"s,
 						"PM_STATUS_FAILURE"s,
 						"PM_STATUS_SESSION_NOT_OPEN"s,
+						"PM_STATUS_SERVICE_ERROR"s,
+						"PM_STATUS_INVALID_ETL_FILE"s,
+						"PM_STATUS_DATA_LOSS"s,
+						"PM_STATUS_NO_DATA"s,
+						"PM_STATUS_INVALID_PID"s,
+						"PM_STATUS_STREAM_ALREADY_EXISTS"s,
+						"PM_STATUS_UNABLE_TO_CREATE_NSM"s,
+						"PM_STATUS_INVALID_ADAPTER_ID"s,
+						"PM_STATUS_OUT_OF_RANGE"s,
+						"PM_STATUS_INSUFFICIENT_BUFFER"s,
 					};
 					auto e = expected.begin();
 					for (auto kv : data->GetEnums().begin()->GetKeys()) {
@@ -423,7 +434,7 @@ namespace PresentMonAPI2Mock
 					}
 				}
 				{
-					Assert::AreEqual("Dynamic Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).GetType().GetName());
+					Assert::AreEqual("Dynamic and Frame Event Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).GetType().GetName());
 					Assert::AreEqual("Static Metric"s, data->FindMetric(PM_METRIC_PROCESS_NAME).GetType().GetName());
 				}
 			}

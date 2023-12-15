@@ -94,8 +94,8 @@ namespace PresentMonAPI2Concrete
 		{
 			pmSetMiddlewareAsMock_(false);
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmStartStreaming(15844));
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmStopStreaming(15844));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmStartTrackingProcess(15844));
+			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmStopTrackingProcess(15844));
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
 		}
 	};

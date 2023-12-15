@@ -1,17 +1,9 @@
 #pragma once
 #include <memory>
+#include "../../CommonUtilities/source/Memory.h"
 
 namespace pmon::ipc::intro
 {
-	template<typename T>
-	size_t GetPadding(size_t byteIndex)
-	{
-		constexpr auto alignment = alignof(T);
-		const auto partialBytes = byteIndex % alignment;
-		const auto padding = (alignment - partialBytes) % alignment;
-		return padding;
-	}
-
 	template<typename T>
 	class ProbeAllocator
 	{
@@ -26,7 +18,7 @@ namespace pmon::ipc::intro
 		{}
 		T* allocate(size_t count)
 		{
-			*pTotalSize += sizeof(T) * count + GetPadding<T>(*pTotalSize);
+			*pTotalSize += sizeof(T) * count + util::GetPadding<T>(*pTotalSize);
 			return nullptr;
 		}
 		void deallocate(T*);
@@ -53,7 +45,7 @@ namespace pmon::ipc::intro
 		{}
 		T* allocate(size_t count)
 		{
-			*pTotalSize += GetPadding<T>(*pTotalSize);
+			*pTotalSize += util::GetPadding<T>(*pTotalSize);
 			const auto pStart = reinterpret_cast<T*>(pBytes + *pTotalSize);
 			*pTotalSize += sizeof(T) * count;
 			return pStart;

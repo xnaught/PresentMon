@@ -12,14 +12,14 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace PresentMonAPI2Mock
 {
-	TEST_CLASS(WrapperDatasetTests)
+	TEST_CLASS(WrapperRootTests)
 	{
 	public:
 		TEST_METHOD_INITIALIZE(BeforeEachTestMethod)
 		{
 			pmSetMiddlewareAsMock_(true, true);
 			session.emplace();
-			data = session->GetIntrospectionDataset();
+			data = session->GetIntrospectionRoot();
 		}
 		TEST_METHOD_CLEANUP(AfterEachTestMethod)
 		{
@@ -48,6 +48,16 @@ namespace PresentMonAPI2Mock
 				"PM_STATUS_SUCCESS"s,
 				"PM_STATUS_FAILURE"s,
 				"PM_STATUS_SESSION_NOT_OPEN"s,
+				"PM_STATUS_SERVICE_ERROR"s,
+				"PM_STATUS_INVALID_ETL_FILE"s,
+				"PM_STATUS_DATA_LOSS"s,
+				"PM_STATUS_NO_DATA"s,
+				"PM_STATUS_INVALID_PID"s,
+				"PM_STATUS_STREAM_ALREADY_EXISTS"s,
+				"PM_STATUS_UNABLE_TO_CREATE_NSM"s,
+				"PM_STATUS_INVALID_ADAPTER_ID"s,
+				"PM_STATUS_OUT_OF_RANGE"s,
+				"PM_STATUS_INSUFFICIENT_BUFFER"s,
 			};
 			auto e = expected.begin();
 			for (auto kv : data->GetEnums().begin()->GetKeys()) {
@@ -76,13 +86,24 @@ namespace PresentMonAPI2Mock
 			using namespace std::string_literals;
 			Assert::AreEqual("avg"s, data->GetMetrics().begin()->GetStatInfo().begin()->GetStat()->GetShortName());
 		}
-		TEST_METHOD(IntrospectMetricDataType)
+		TEST_METHOD(IntrospectMetricDataTypeEnum)
 		{
 			using namespace std::string_literals;
 			auto metric = data->FindMetric(PM_METRIC_PRESENT_MODE);
 			auto type = metric.GetDataTypeInfo();
 			Assert::AreEqual("Present Mode"s, metric.GetMetricKey().GetName());
+			Assert::AreEqual((int)PM_DATA_TYPE_ENUM, type.GetPolledType().GetValue());
+			Assert::AreEqual((int)PM_DATA_TYPE_ENUM, type.GetFrameType().GetValue());
 			Assert::AreEqual("PM_PRESENT_MODE"s, type.GetEnum().GetSymbol());
+		}
+		TEST_METHOD(IntrospectMetricDataTypeDivergent)
+		{
+			using namespace std::string_literals;
+			auto metric = data->FindMetric(PM_METRIC_GPU_POWER_LIMITED);
+			auto type = metric.GetDataTypeInfo();
+			Assert::AreEqual("GPU Power Limited"s, metric.GetMetricKey().GetName());
+			Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, type.GetPolledType().GetValue());
+			Assert::AreEqual((int)PM_DATA_TYPE_BOOL, type.GetFrameType().GetValue());
 		}
 		TEST_METHOD(IntrospectMetricDeviceMetricInfo)
 		{
@@ -171,11 +192,19 @@ namespace PresentMonAPI2Mock
 		{
 			using namespace std::string_literals;
 
-			Assert::AreEqual("Dynamic Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).GetType().GetName());
+			Assert::AreEqual("Dynamic and Frame Event Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).GetType().GetName());
 			Assert::AreEqual("Static Metric"s, data->FindMetric(PM_METRIC_PROCESS_NAME).GetType().GetName());
+		}
+		TEST_METHOD(IntrospectStat)
+		{
+			using namespace std::string_literals;
+
+			auto shortName = data->FindEnumKey(PM_ENUM_STAT, (int)PM_STAT_AVG).GetShortName();
+
+			Assert::AreEqual("avg"s, shortName);
 		}
 	private:
 		std::optional<pmapi::Session> session;
-		std::optional<pmapi::intro::Dataset> data;
+		std::shared_ptr<pmapi::intro::Root> data;
 	};
 }

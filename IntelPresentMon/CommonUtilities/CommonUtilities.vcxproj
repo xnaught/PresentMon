@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\cli\CliFramework.h" />
+    <ClInclude Include="source\Memory.h" />
     <ClInclude Include="source\hash\Hash.h" />
     <ClInclude Include="source\str\String.h" />
   </ItemGroup>

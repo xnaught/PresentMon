@@ -45,9 +45,9 @@ namespace p2c::kern
         void PushSpec(std::unique_ptr<OverlaySpec> pSpec);
         void ClearOverlay();
         std::vector<Process> ListProcesses();
-        std::vector<pmon::Metric::Info> EnumerateMetrics() const;
+        std::vector<pmon::met::Metric::Info> EnumerateMetrics() const;
         void SetAdapter(uint32_t id);
-        std::vector<pmon::PresentMon::AdapterInfo> EnumerateAdapters() const;
+        std::vector<pmon::AdapterInfo> EnumerateAdapters() const;
         void SetCapture(bool active);
     private:
         // functions

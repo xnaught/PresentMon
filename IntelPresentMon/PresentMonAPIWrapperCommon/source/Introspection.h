@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <format>
 #include <functional>
+#include <cassert>
 
 namespace pmapi
 {
@@ -17,6 +18,9 @@ namespace pmapi
 
     namespace intro
     {
+        bool MetricTypeIsDynamic(PM_METRIC_TYPE type);
+        bool MetricTypeIsFrameEvent(PM_METRIC_TYPE type);
+
         template<class T>
         class ViewIterator
         {
@@ -29,17 +33,17 @@ namespace pmapi
             using difference_type = ptrdiff_t;
 
             ViewIterator() = default;
-            ViewIterator(const class Dataset* pDataset_, const PM_INTROSPECTION_OBJARRAY* pObjArray, difference_type offset = 0u) noexcept
+            ViewIterator(const class Root* pRoot_, const PM_INTROSPECTION_OBJARRAY* pObjArray, difference_type offset = 0u) noexcept
                 :
-                pDataset{ pDataset_ },
+                pRoot{ pRoot_ },
                 pArray{ (const base_type* const*)pObjArray->pData + offset }
             {}
-            ViewIterator(const ViewIterator& rhs) noexcept : pDataset{ rhs.pDataset }, pArray{ rhs.pArray } {}
+            ViewIterator(const ViewIterator& rhs) noexcept : pRoot{ rhs.pRoot }, pArray{ rhs.pArray } {}
             ViewIterator& operator=(const ViewIterator& rhs) noexcept
             {
                 // Self-assignment check
                 if (this != &rhs) {
-                    pDataset = rhs.pDataset;
+                    pRoot = rhs.pRoot;
                     pArray = rhs.pArray;
                 }
                 return *this;
@@ -56,7 +60,7 @@ namespace pmapi
             }
             value_type operator*() const noexcept
             {
-                return value_type{ pDataset, *pArray };
+                return value_type{ pRoot, *pArray };
             }
             value_type operator->() const noexcept
             {
@@ -64,7 +68,7 @@ namespace pmapi
             }
             value_type operator[](size_t idx) const noexcept
             {
-                return value_type{ pDataset, pArray[idx] };
+                return value_type{ pRoot, pArray[idx] };
             }
 
             ViewIterator& operator++() noexcept
@@ -103,7 +107,7 @@ namespace pmapi
         private:
             // data
             const base_type* const* pArray = nullptr;
-            const class Dataset* pDataset = nullptr;
+            const class Root* pRoot = nullptr;
         };
 
         template<class V>
@@ -114,7 +118,7 @@ namespace pmapi
             using BaseType = PM_INTROSPECTION_ENUM_KEY;
             using SelfType = EnumKeyView;
             friend class ViewIterator<SelfType>;
-            friend class Dataset;
+            friend class Root;
         public:
             int GetValue() const
             {
@@ -146,13 +150,13 @@ namespace pmapi
             }
         private:
             // functions
-            EnumKeyView(const class Dataset* pDataset_, const BaseType* pBase_)
+            EnumKeyView(const class Root* pRoot_, const BaseType* pBase_)
                 :
-                pDataset{ pDataset_ },
+                pRoot{ pRoot_ },
                 pBase{ pBase_ }
             {}
             // data
-            const class Dataset* pDataset = nullptr;
+            const class Root* pRoot = nullptr;
             const BaseType* pBase = nullptr;
         };
 
@@ -161,7 +165,7 @@ namespace pmapi
             using BaseType = PM_INTROSPECTION_ENUM;
             using SelfType = EnumView;
             friend class ViewIterator<SelfType>;
-            friend class Dataset;
+            friend class Root;
         public:
             PM_ENUM GetID() const
             {
@@ -191,21 +195,21 @@ namespace pmapi
             }
         private:
             // functions
-            EnumView(const class Dataset* pDataset_, const BaseType* pBase_)
+            EnumView(const class Root* pRoot_, const BaseType* pBase_)
                 :
-                pDataset{ pDataset_ },
+                pRoot{ pRoot_ },
                 pBase{ pBase_ }
             {}
             ViewIterator<EnumKeyView> GetKeysBegin_() const
             {
-                return { pDataset, pBase->pKeys };
+                return { pRoot, pBase->pKeys };
             }
             ViewIterator<EnumKeyView> GetKeysEnd_() const
             {
-                return { pDataset, pBase->pKeys, (int64_t)pBase->pKeys->size };
+                return { pRoot, pBase->pKeys, (int64_t)pBase->pKeys->size };
             }
             // data
-            const class Dataset* pDataset;
+            const class Root* pRoot;
             const BaseType* pBase = nullptr;
         };
 
@@ -214,7 +218,7 @@ namespace pmapi
             using BaseType = PM_INTROSPECTION_DEVICE;
             using SelfType = DeviceView;
             friend class ViewIterator<SelfType>;
-            friend class Dataset;
+            friend class Root;
             friend class DeviceMetricInfoView;
         public:
             EnumKeyView GetType() const;
@@ -237,13 +241,13 @@ namespace pmapi
             }
         private:
             // functions
-            DeviceView(const class Dataset* pDataset_, const BaseType* pBase_)
+            DeviceView(const class Root* pRoot_, const BaseType* pBase_)
                 :
-                pDataset{ pDataset_ },
+                pRoot{ pRoot_ },
                 pBase{ pBase_ }
             {}
             // data
-            const class Dataset* pDataset = nullptr;
+            const class Root* pRoot = nullptr;
             const BaseType* pBase = nullptr;
         };
 
@@ -252,7 +256,7 @@ namespace pmapi
             using BaseType = PM_INTROSPECTION_DEVICE_METRIC_INFO;
             using SelfType = DeviceMetricInfoView;
             friend class ViewIterator<SelfType>;
-            friend class Dataset;
+            friend class Root;
         public:
             DeviceView GetDevice() const;
             EnumKeyView GetAvailablity() const;
@@ -274,13 +278,13 @@ namespace pmapi
             }
         private:
             // functions
-            DeviceMetricInfoView(const class Dataset* pDataset_, const BaseType* pBase_)
+            DeviceMetricInfoView(const class Root* pRoot_, const BaseType* pBase_)
                 :
-                pDataset{ pDataset_ },
+                pRoot{ pRoot_ },
                 pBase{ pBase_ }
             {}
             // data
-            const class Dataset* pDataset;
+            const class Root* pRoot;
             const BaseType* pBase = nullptr;
         };
 
@@ -290,7 +294,8 @@ namespace pmapi
             using SelfType = DataTypeInfoView;
             friend class MetricView;
         public:
-            EnumKeyView GetType() const;
+            EnumKeyView GetPolledType() const;
+            EnumKeyView GetFrameType() const;
             EnumView GetEnum() const;
             const SelfType* operator->() const
             {
@@ -302,13 +307,13 @@ namespace pmapi
             }
         private:
             // functions
-            DataTypeInfoView(const class Dataset* pDataset_, const BaseType* pBase_)
+            DataTypeInfoView(const class Root* pRoot_, const BaseType* pBase_)
                 :
-                pDataset{ pDataset_ },
+                pRoot{ pRoot_ },
                 pBase{ pBase_ }
             {}
             // data
-            const class Dataset* pDataset = nullptr;
+            const class Root* pRoot = nullptr;
             const BaseType* pBase = nullptr;
         };
 
@@ -330,13 +335,13 @@ namespace pmapi
             }
         private:
             // functions
-            StatInfoView(const class Dataset* pDataset_, const BaseType* pBase_)
+            StatInfoView(const class Root* pRoot_, const BaseType* pBase_)
                 :
-                pDataset{ pDataset_ },
+                pRoot{ pRoot_ },
                 pBase{ pBase_ }
             {}
             // data
-            const class Dataset* pDataset = nullptr;
+            const class Root* pRoot = nullptr;
             const BaseType* pBase = nullptr;
         };
 
@@ -345,7 +350,7 @@ namespace pmapi
             using BaseType = PM_INTROSPECTION_METRIC;
             using SelfType = MetricView;
             friend class ViewIterator<SelfType>;
-            friend class Dataset;
+            friend class Root;
         public:
             EnumKeyView GetMetricKey() const;
             PM_METRIC GetMetricId() const
@@ -354,9 +359,10 @@ namespace pmapi
             }
             EnumKeyView GetUnit() const;
             EnumKeyView GetType() const;
+            std::string GetName() const;
             DataTypeInfoView GetDataTypeInfo() const
             {
-                return { pDataset, pBase->pTypeInfo };
+                return { pRoot, pBase->pTypeInfo };
             }
             ViewRange<StatInfoView> GetStatInfo() const
             {
@@ -380,39 +386,41 @@ namespace pmapi
             // functions
             ViewIterator<StatInfoView> GetStatInfoBegin_() const
             {
-                return { pDataset, pBase->pStatInfo };
+                return { pRoot, pBase->pStatInfo };
             }
             ViewIterator<StatInfoView> GetStatInfoEnd_() const
             {
-                return { pDataset, pBase->pStatInfo, (int64_t)pBase->pStatInfo->size };
+                return { pRoot, pBase->pStatInfo, (int64_t)pBase->pStatInfo->size };
             }
             ViewIterator<DeviceMetricInfoView> GetDeviceMetricInfoBegin_() const
             {
-                return { pDataset, pBase->pDeviceMetricInfo };
+                return { pRoot, pBase->pDeviceMetricInfo };
             }
             ViewIterator<DeviceMetricInfoView> GetDeviceMetricInfoEnd_() const
             {
-                return { pDataset, pBase->pDeviceMetricInfo, (int64_t)pBase->pDeviceMetricInfo->size };
+                return { pRoot, pBase->pDeviceMetricInfo, (int64_t)pBase->pDeviceMetricInfo->size };
             }
-            MetricView(const class Dataset* pDataset_, const BaseType* pBase_)
+            MetricView(const class Root* pRoot_, const BaseType* pBase_)
                 :
-                pDataset{ pDataset_ },
+                pRoot{ pRoot_ },
                 pBase{ pBase_ }
             {}
             // data
-            const class Dataset* pDataset;
+            const class Root* pRoot;
             const BaseType* pBase = nullptr;
         };
 
 
-        class Dataset
+        class Root
         {
         public:
-            Dataset(const PM_INTROSPECTION_ROOT* pRoot_, std::function<void(const PM_INTROSPECTION_ROOT*)> deleter_)
+            Root(const PM_INTROSPECTION_ROOT* pRoot_, std::function<void(const PM_INTROSPECTION_ROOT*)> deleter_)
                 :
                 pRoot{ pRoot_ },
                 deleter{ std::move(deleter_) }
             {
+                assert(pRoot);
+                assert(deleter);
                 // building lookup tables for enum/key
                 for (auto e : GetEnums()) {
                     for (auto k : e.GetKeys()) {
@@ -429,34 +437,14 @@ namespace pmapi
                     metricMap[m.GetMetricId()] = m.GetBasePtr();
                 }
             }
-            Dataset(Dataset&& rhs) noexcept
-                :
-                pRoot{ rhs.pRoot },
-                enumKeyMap{ std::move(rhs.enumKeyMap) },
-                enumMap{ std::move(rhs.enumMap) },
-                deviceMap{ std::move(rhs.deviceMap) },
-                metricMap{ std::move(rhs.metricMap) },
-                deleter{ std::move(rhs.deleter) }
-            {
-                rhs.pRoot = nullptr;
-            }
-            Dataset& operator=(Dataset&& rhs) noexcept
-            {
-                pRoot = rhs.pRoot;
-                rhs.pRoot = nullptr;
-                enumKeyMap = std::move(rhs.enumKeyMap);
-                enumMap = std::move(rhs.enumMap);
-                deviceMap = std::move(rhs.deviceMap);
-                metricMap = std::move(rhs.metricMap);
-                deleter = std::move(rhs.deleter);
-                return *this;
-            }
-            ~Dataset()
+            ~Root()
             {
                 if (pRoot) {
                     deleter(pRoot);
                 }
             }
+            Root(Root&& rhs) = delete;
+            Root& operator=(Root&& rhs) = delete;
             ViewRange<EnumView> GetEnums() const
             {
                 // trying to deduce the template params for subrange causes intellisense to crash
