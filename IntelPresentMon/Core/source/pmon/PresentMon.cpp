@@ -44,12 +44,14 @@ namespace p2c::pmon
 		// Build table of available metrics using introspection
 		using namespace met;
 
-		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_DISPLAYED_FPS, 0, PM_STAT_AVG, *pIntrospectionRoot));
-		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_GPU_POWER, 0, PM_STAT_AVG, *pIntrospectionRoot));
-		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_PRESENT_RUNTIME, 0, PM_STAT_RAW, *pIntrospectionRoot));
-		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_PRESENT_MODE, 0, PM_STAT_RAW, *pIntrospectionRoot));
-		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_PROCESS_NAME, 0, PM_STAT_RAW, *pIntrospectionRoot));
-		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_PRESENT_QPC, 0, PM_STAT_RAW, *pIntrospectionRoot));
+		for (auto m : pIntrospectionRoot->GetMetrics()) {
+			if (std::ranges::none_of(m.GetDeviceMetricInfo(), [](auto&& i)
+				{ return i.GetBasePtr()->availability == PM_METRIC_AVAILABILITY_AVAILABLE; })) continue;
+			for (auto s : m.GetStatInfo()) {
+				if (s.GetBasePtr()->stat == PM_STAT_NONE) continue;
+				AddMetric(std::make_unique<DynamicPollingMetric>(m.GetMetricId(), 0, s.GetBasePtr()->stat, *pIntrospectionRoot));
+			}
+		}
 
 		// fake metrics for testing
 #ifdef _DEBUG
