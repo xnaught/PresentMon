@@ -167,7 +167,7 @@ namespace pmapi
             friend class ViewIterator<SelfType>;
             friend class Root;
         public:
-            PM_ENUM GetID() const
+            PM_ENUM GetId() const
             {
                 return pBase->id;
             }
@@ -221,8 +221,10 @@ namespace pmapi
             friend class Root;
             friend class DeviceMetricInfoView;
         public:
-            EnumKeyView GetType() const;
-            EnumKeyView GetVendor() const;
+            EnumKeyView IntrospectType() const;
+            PM_DEVICE_TYPE GetType() const { return pBase->type; }
+            EnumKeyView IntrospectVendor() const;
+            PM_DEVICE_VENDOR GetVendor() const { return pBase->vendor; }
             uint32_t GetId() const
             {
                 return pBase->id;
@@ -259,7 +261,8 @@ namespace pmapi
             friend class Root;
         public:
             DeviceView GetDevice() const;
-            EnumKeyView GetAvailablity() const;
+            EnumKeyView IntrospectAvailablity() const;
+            PM_METRIC_AVAILABILITY GetAvailability() const { return pBase->availability; }
             uint32_t GetArraySize() const
             {
                 return pBase->arraySize;
@@ -294,9 +297,18 @@ namespace pmapi
             using SelfType = DataTypeInfoView;
             friend class MetricView;
         public:
-            EnumKeyView GetPolledType() const;
-            EnumKeyView GetFrameType() const;
-            EnumView GetEnum() const;
+            EnumKeyView IntrospectPolledType() const;
+            PM_DATA_TYPE GetPolledType() const { return pBase->polledType; }
+            EnumKeyView IntrospectFrameType() const;
+            PM_DATA_TYPE GetFrameType() const { return pBase->frameType; }
+            EnumView IntrospectEnum() const;
+            PM_ENUM GetEnumId() const
+            {
+                if (pBase->polledType != PM_DATA_TYPE_ENUM && pBase->frameType != PM_DATA_TYPE_ENUM) {
+                    throw DatatypeException{ "cannot get enum data for non-enum data type" };
+                }
+                return pBase->enumId;
+            }
             const SelfType* operator->() const
             {
                 return this;
@@ -417,9 +429,9 @@ namespace pmapi
                 // building lookup tables for enum/key
                 for (auto e : GetEnums()) {
                     for (auto k : e.GetKeys()) {
-                        enumKeyMap[MakeEnumKeyMapKey_(e.GetID(), k.GetValue())] = k.GetBasePtr();
+                        enumKeyMap[MakeEnumKeyMapKey_(e.GetId(), k.GetValue())] = k.GetBasePtr();
                     }
-                    enumMap[e.GetID()] = e.GetBasePtr();
+                    enumMap[e.GetId()] = e.GetBasePtr();
                 }
                 // building lookup table for devices
                 for (auto d : GetDevices()) {

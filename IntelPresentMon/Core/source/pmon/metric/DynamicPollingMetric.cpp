@@ -65,7 +65,7 @@ namespace p2c::pmon::met
             for (auto k : e.GetKeys()) {
                 keys[k.GetValue()] = ToWide(k.GetName());
             }
-            enumMap[e.GetID()] = std::move(pKeys);
+            enumMap[e.GetId()] = std::move(pKeys);
         }
     }
     std::unique_ptr<DynamicPollingMetric> DynamicPollingMetric::RealizeMetric(const pmapi::intro::Root& introRoot,

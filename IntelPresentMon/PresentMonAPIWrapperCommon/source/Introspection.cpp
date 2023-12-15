@@ -52,17 +52,17 @@ namespace pmapi::intro
         return { GetStatInfoBegin_(), GetStatInfoEnd_() };
     }
 
-    EnumKeyView DataTypeInfoView::GetPolledType() const
+    EnumKeyView DataTypeInfoView::IntrospectPolledType() const
     {
         return pRoot->FindEnumKey(PM_ENUM_DATA_TYPE, pBase->polledType);
     }
 
-    EnumKeyView DataTypeInfoView::GetFrameType() const
+    EnumKeyView DataTypeInfoView::IntrospectFrameType() const
     {
         return pRoot->FindEnumKey(PM_ENUM_DATA_TYPE, pBase->frameType);
     }
 
-    EnumView DataTypeInfoView::GetEnum() const
+    EnumView DataTypeInfoView::IntrospectEnum() const
     {
         if (pBase->polledType != PM_DATA_TYPE_ENUM && pBase->frameType != PM_DATA_TYPE_ENUM) {
             throw DatatypeException{ "cannot get enum data for non-enum data type" };
@@ -70,12 +70,12 @@ namespace pmapi::intro
         return pRoot->FindEnum(pBase->enumId);
     }
 
-    EnumKeyView DeviceView::GetType() const
+    EnumKeyView DeviceView::IntrospectType() const
     {
         return pRoot->FindEnumKey(PM_ENUM_DEVICE_TYPE, pBase->type);
     }
 
-    EnumKeyView DeviceView::GetVendor() const
+    EnumKeyView DeviceView::IntrospectVendor() const
     {
         return pRoot->FindEnumKey(PM_ENUM_DEVICE_VENDOR, pBase->vendor);
     }
@@ -85,7 +85,7 @@ namespace pmapi::intro
         return pRoot->FindDevice(pBase->deviceId);
     }
 
-    EnumKeyView DeviceMetricInfoView::GetAvailablity() const
+    EnumKeyView DeviceMetricInfoView::IntrospectAvailablity() const
     {
         return pRoot->FindEnumKey(PM_ENUM_METRIC_AVAILABILITY, pBase->availability);
     }

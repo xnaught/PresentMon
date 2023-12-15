@@ -379,7 +379,7 @@ namespace PresentMonAPI2Mock
 					auto metric = data->FindMetric(PM_METRIC_PRESENT_MODE);
 					auto type = metric.GetDataTypeInfo();
 					Assert::AreEqual("Present Mode"s, metric.Introspect().GetName());
-					Assert::AreEqual("PM_PRESENT_MODE"s, type.GetEnum().GetSymbol());
+					Assert::AreEqual("PM_PRESENT_MODE"s, type.IntrospectEnum().GetSymbol());
 				}
 				{
 					auto metric = data->FindMetric(PM_METRIC_GPU_FAN_SPEED);
@@ -387,12 +387,12 @@ namespace PresentMonAPI2Mock
 					Assert::AreEqual(2ull, deviceInfos.size());
 					{
 						auto deviceInfo = deviceInfos.begin()[0];
-						Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, deviceInfo.GetAvailablity().GetValue());
+						Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)deviceInfo.GetAvailability());
 						Assert::AreEqual(1u, deviceInfo.GetArraySize());
 					}
 					{
 						auto deviceInfo = deviceInfos.begin()[1];
-						Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, deviceInfo.GetAvailablity().GetValue());
+						Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)deviceInfo.GetAvailability());
 						Assert::AreEqual(2u, deviceInfo.GetArraySize());
 					}
 				}
@@ -401,23 +401,23 @@ namespace PresentMonAPI2Mock
 					Assert::AreEqual(3ull, devices.size());
 					{
 						auto device = devices.begin()[0];
-						Assert::AreEqual("Unknown"s, device.GetVendor().GetName());
+						Assert::AreEqual("Unknown"s, device.IntrospectVendor().GetName());
 						Assert::AreEqual("Device-independent"s, device.GetName());
-						Assert::AreEqual("Device Independent"s, device.GetType().GetName());
+						Assert::AreEqual("Device Independent"s, device.IntrospectType().GetName());
 						Assert::AreEqual(0u, device.GetId());
 					}
 					{
 						auto device = devices.begin()[1];
-						Assert::AreEqual("Intel"s, device.GetVendor().GetName());
+						Assert::AreEqual("Intel"s, device.IntrospectVendor().GetName());
 						Assert::AreEqual("Arc 750"s, device.GetName());
-						Assert::AreEqual("Graphics Adapter"s, device.GetType().GetName());
+						Assert::AreEqual("Graphics Adapter"s, device.IntrospectType().GetName());
 						Assert::AreEqual(1u, device.GetId());
 					}
 					{
 						auto device = devices.begin()[2];
-						Assert::AreEqual("NVIDIA"s, device.GetVendor().GetName());
+						Assert::AreEqual("NVIDIA"s, device.IntrospectVendor().GetName());
 						Assert::AreEqual("GeForce RTX 2080 ti"s, device.GetName());
-						Assert::AreEqual("Graphics Adapter"s, device.GetType().GetName());
+						Assert::AreEqual("Graphics Adapter"s, device.IntrospectType().GetName());
 						Assert::AreEqual(2u, device.GetId());
 					}
 				}
@@ -427,10 +427,10 @@ namespace PresentMonAPI2Mock
 					Assert::AreEqual(2ull, deviceInfos.size());
 					{
 						auto deviceInfo = deviceInfos.begin()[1];
-						Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, deviceInfo.GetAvailablity().GetValue());
+						Assert::AreEqual((int)PM_METRIC_AVAILABILITY_AVAILABLE, (int)deviceInfo.GetAvailability());
 						Assert::IsTrue(deviceInfo.IsAvailable());
 						Assert::AreEqual(2u, deviceInfo.GetArraySize());
-						Assert::AreEqual("NVIDIA"s, deviceInfo.GetDevice().GetVendor().GetName());
+						Assert::AreEqual("NVIDIA"s, deviceInfo.GetDevice().IntrospectVendor().GetName());
 					}
 				}
 				{

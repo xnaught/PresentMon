@@ -136,7 +136,7 @@ namespace p2c::pmon
 			}
 			infos.push_back(AdapterInfo{
 				.id = info.GetId(),
-				.vendor = info.GetVendor().GetName(),
+				.vendor = info.IntrospectVendor().GetName(),
 				.name = info.GetName(),
 			});
 		}
