@@ -82,9 +82,13 @@ namespace p2c::pmon::met
             if constexpr (std::integral<T> || std::floating_point<T>) {
                 return Metric::ReadStringValue(timestamp);
             }
-            else {
+            else if constexpr (std::same_as<T, const char*>) {
                 auto pBlob = pQuery->Poll(timestamp);
                 return ToWide(reinterpret_cast<const char*>(&pBlob[*offset]));
+            }
+            else {
+                p2clog.warn(L"Unknown type").commit();
+                return {};
             }
         }
     private:

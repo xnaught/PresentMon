@@ -82,6 +82,14 @@ namespace p2c::pmon::met
         });
         const auto deviceId = isGpuMetric ? activeGpuDeviceId : 0u;
         switch (dataTypeId) {
+        case PM_DATA_TYPE_BOOL:
+            return std::make_unique<met::TypedDynamicPollingMetric<bool>>(*this, pQuery, deviceId);
+        case PM_DATA_TYPE_INT32:
+            return std::make_unique<met::TypedDynamicPollingMetric<int32_t>>(*this, pQuery, deviceId);
+        case PM_DATA_TYPE_UINT32:
+            return std::make_unique<met::TypedDynamicPollingMetric<uint32_t>>(*this, pQuery, deviceId);
+        case PM_DATA_TYPE_UINT64:
+            return std::make_unique<met::TypedDynamicPollingMetric<uint64_t>>(*this, pQuery, deviceId);
         case PM_DATA_TYPE_DOUBLE:
             return std::make_unique<met::TypedDynamicPollingMetric<double>>(*this, pQuery, deviceId);
         case PM_DATA_TYPE_STRING:

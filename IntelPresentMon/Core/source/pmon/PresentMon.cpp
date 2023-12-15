@@ -48,6 +48,8 @@ namespace p2c::pmon
 		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_GPU_POWER, 0, PM_STAT_AVG, *pIntrospectionRoot));
 		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_PRESENT_RUNTIME, 0, PM_STAT_RAW, *pIntrospectionRoot));
 		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_PRESENT_MODE, 0, PM_STAT_RAW, *pIntrospectionRoot));
+		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_PROCESS_NAME, 0, PM_STAT_RAW, *pIntrospectionRoot));
+		AddMetric(std::make_unique<DynamicPollingMetric>(PM_METRIC_PRESENT_QPC, 0, PM_STAT_RAW, *pIntrospectionRoot));
 
 		// fake metrics for testing
 #ifdef _DEBUG
