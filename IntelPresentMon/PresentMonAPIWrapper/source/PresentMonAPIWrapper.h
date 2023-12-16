@@ -9,6 +9,31 @@ namespace pmapi
 {
     class SessionException : public Exception { using Exception::Exception; };
 
+    class FrameQuery
+    {
+        friend class Session;
+    public:
+        ~FrameQuery()
+        {
+            pmFreeFrameQuery(hQuery_);
+        }
+        size_t GetBlobSize() const
+        {
+            return blobSize_;
+        }
+        void Consume(uint32_t pid, uint8_t* pBlobs, uint32_t& numBlobsInOut)
+        {
+            pmConsumeFrames(hQuery_, pid, pBlobs, &numBlobsInOut);
+        }
+    private:
+        FrameQuery(std::span<PM_QUERY_ELEMENT> elements)
+        {
+            pmRegisterFrameQuery(&hQuery_, elements.data(), elements.size(), &blobSize_);
+        }
+        PM_FRAME_QUERY_HANDLE hQuery_ = nullptr;
+        uint32_t blobSize_ = 0ull;
+    };
+
     class DynamicQuery
     {
         friend class Session;
@@ -99,6 +124,10 @@ namespace pmapi
         std::shared_ptr<DynamicQuery> RegisterDyanamicQuery(std::span<PM_QUERY_ELEMENT> elements, double winSizeMs, double metricOffsetMs)
         {
             return std::shared_ptr<DynamicQuery>{ new DynamicQuery{ elements, winSizeMs, metricOffsetMs } };
+        }
+        std::shared_ptr<FrameQuery> RegisterFrameQuery(std::span<PM_QUERY_ELEMENT> elements)
+        {
+            return std::shared_ptr<FrameQuery>{ new FrameQuery{ elements } };
         }
     private:
         bool token_ = true;

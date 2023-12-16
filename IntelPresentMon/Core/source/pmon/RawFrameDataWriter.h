@@ -5,73 +5,37 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <concepts>
 #include "StatisticsTracker.h"
 #include <PresentMonAPI/PresentMonAPI.h>
 #include <PresentMonAPI2/source/PresentMonAPI.h>
+#include <PresentMonAPIWrapper/source/PresentMonAPIWrapper.h>
 #include <Core/source/infra/log/Logging.h>
 #include <Core/source/infra/util/Util.h>
 
 namespace p2c::pmon
 {
-    namespace adapt
-    {
-        class RawAdapter;
-    }
-
-	template<typename T>
-	concept PresentMonOptionalStrict_ =
-		std::same_as<PM_FRAME_DATA_OPT_UINT64, T> ||
-		std::same_as<PM_FRAME_DATA_OPT_DOUBLE, T> ||
-		std::same_as<PM_FRAME_DATA_OPT_INT, T> ||
-		std::same_as<PM_FRAME_DATA_OPT_PSU_TYPE, T>;
-
-	template<typename T>
-	concept PresentMonOptional = PresentMonOptionalStrict_<std::remove_cvref_t<T>>;
+	class QueryElementContainer_;
 
 	class RawFrameDataWriter
 	{
 	public:
-        RawFrameDataWriter(std::wstring path, adapt::RawAdapter* pAdapter, std::optional<std::wstring> frameStatsPath);
+        RawFrameDataWriter(std::wstring path, pmapi::Session& session,
+			std::optional<std::wstring> frameStatsPath, const pmapi::intro::Root& introRoot);
 		RawFrameDataWriter(const RawFrameDataWriter&) = delete;
 		RawFrameDataWriter& operator=(const RawFrameDataWriter&) = delete;
-		void Process(double timestamp);
+		void Process(uint32_t pid);
 		~RawFrameDataWriter();
 	private:
-		// types
-		class FileStream_
-		{
-		public:
-			FileStream_(const std::wstring& path) { file_.open(path, std::ios::trunc); }
-			template<PresentMonOptional T>
-			FileStream_& operator<<(const T& input)
-			{
-				if (!input.valid) {
-					file_ << "NA";
-				}
-				else {
-					file_ << input.data;
-				}
-				return *this;
-			}
-			template<typename T>
-			FileStream_& operator<<(T&& input)
-			{
-				file_ << std::forward<T>(input);
-				return *this;
-			}
-		private:
-			std::ofstream file_;
-		};
 		// functions
 		double GetDuration_() const;
 		void WriteStats_();
 		// data
-		adapt::RawAdapter* pAdapter;
+		static constexpr uint32_t numberOfBlobs = 150u;
+		std::unique_ptr<QueryElementContainer_> pQueryElementContainer;
 		std::optional<std::wstring> frameStatsPath;
 		std::unique_ptr<StatisticsTracker> pStatsTracker;
 		double startTime = -1.;
 		double endTime = -1.;
-		FileStream_ file;
+		std::ofstream file;
 	};
 }

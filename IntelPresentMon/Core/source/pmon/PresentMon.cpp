@@ -9,6 +9,7 @@
 #include "metric/NoisySineFakeMetric.h"
 #include "metric/SquareWaveMetric.h"
 #include "metric/DynamicPollingMetric.h"
+#include "EnumMap.h"
 #include "RawFrameDataWriter.h"
 
 namespace p2c::pmon
@@ -39,7 +40,7 @@ namespace p2c::pmon
 		pIntrospectionRoot = pSession->GetIntrospectionRoot();
 
 		// populate lookup for enumerations in dynamic metrics
-		met::DynamicPollingMetric::InitEnumMap(*pIntrospectionRoot);
+		EnumMap::Init(*pIntrospectionRoot);
 
 		// Build table of available metrics using introspection
 		using namespace met;
@@ -156,8 +157,7 @@ namespace p2c::pmon
 	}
 	std::shared_ptr<RawFrameDataWriter> PresentMon::MakeRawFrameDataWriter(std::wstring path, std::optional<std::wstring> statsPath)
 	{
-		return {};
-		// return std::make_shared<RawFrameDataWriter>(std::move(path), &rawAdaptor, std::move(statsPath));
+		return std::make_shared<RawFrameDataWriter>(std::move(path), *pSession, std::move(statsPath), *pIntrospectionRoot);
 	}
 	void PresentMon::FlushRawData()
 	{

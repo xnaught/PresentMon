@@ -447,7 +447,7 @@ namespace p2c::kern
 
         if (pWriter)
         {
-            pWriter->Process(pmon::Timekeeper::GetLockedNow());
+            pWriter->Process(proc.pid);
         }
 
         // handle hide during move logic (show if time elapsed and now otherwise hidden)

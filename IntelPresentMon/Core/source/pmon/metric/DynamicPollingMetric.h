@@ -8,15 +8,16 @@
 #include "Metric.h"
 #include "../CachingQuery.h"
 #include "../Timekeeper.h"
+#include "../EnumMap.h"
 #include <concepts>
 
 namespace p2c::pmon::met
 {
     namespace
     {
-        using EnumKeyMap = std::unordered_map<int, std::wstring>;
         using ::pmon::util::str::ToWide;
     }
+
     // TODO: derive strings using reference to intro root
     class DynamicPollingMetric : public Metric
     {
@@ -34,7 +35,6 @@ namespace p2c::pmon::met
         std::optional<float> ReadValue(double timestamp) override { return {};}
         PM_QUERY_ELEMENT MakeQueryElement() const;
         void Finalize(uint32_t offset);
-        static void InitEnumMap(const pmapi::intro::Root& introRoot);
         std::unique_ptr<DynamicPollingMetric> RealizeMetric(const pmapi::intro::Root& introRoot,
             CachingQuery* pQuery, uint32_t activeGpuDeviceId);
         static uint32_t CalculateMaxArrayIndex(PM_METRIC metricId, const pmapi::intro::Root& introRoot);
@@ -105,7 +105,7 @@ namespace p2c::pmon::met
     {
     public:
         TypedDynamicPollingMetric(const DynamicPollingMetric& mold, CachingQuery* pQuery_, uint32_t deviceId_,
-            const EnumKeyMap* pMap)
+            const EnumMap::KeyMap* pMap)
             :
             DynamicPollingMetric{ mold },
             pQuery{ pQuery_ },
@@ -127,6 +127,6 @@ namespace p2c::pmon::met
         }
     private:
         CachingQuery* pQuery = nullptr;
-        const EnumKeyMap* pKeyMap = nullptr;
+        const EnumMap::KeyMap* pKeyMap = nullptr;
     };
 }

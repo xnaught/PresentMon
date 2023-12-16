@@ -2,14 +2,10 @@
 #include <PresentMonAPIWrapper/source/PresentMonAPIWrapper.h>
 #include <CommonUtilities/source/str/String.h>
 #include <ranges>
+#include "../EnumMap.h" 
 
 namespace p2c::pmon::met
 {
-    namespace
-    {
-        std::unordered_map<PM_ENUM, std::unique_ptr<EnumKeyMap>> enumMap;
-    }
-
     using ::pmon::util::str::ToWide;
     DynamicPollingMetric::DynamicPollingMetric(PM_METRIC metricId_, uint32_t arrayIndex_, PM_STAT stat_,
         const pmapi::intro::Root& introRoot)
@@ -58,16 +54,6 @@ namespace p2c::pmon::met
     {
         offset = offset_;
     }
-    void DynamicPollingMetric::InitEnumMap(const pmapi::intro::Root& introRoot)
-    {
-        for (auto e : introRoot.GetEnums()) {
-            auto pKeys = std::make_unique<EnumKeyMap>(); auto& keys = *pKeys;
-            for (auto k : e.GetKeys()) {
-                keys[k.GetValue()] = ToWide(k.GetName());
-            }
-            enumMap[e.GetId()] = std::move(pKeys);
-        }
-    }
     std::unique_ptr<DynamicPollingMetric> DynamicPollingMetric::RealizeMetric(const pmapi::intro::Root& introRoot,
         CachingQuery* pQuery, uint32_t activeGpuDeviceId)
     {
@@ -96,7 +82,7 @@ namespace p2c::pmon::met
             return std::make_unique<met::TypedDynamicPollingMetric<const char*>>(*this, pQuery, deviceId);
         case PM_DATA_TYPE_ENUM:
             return std::make_unique<met::TypedDynamicPollingMetric<PM_ENUM>>(*this, pQuery, deviceId,
-                enumMap.at(dataTypeInfo.GetEnumId()).get());
+                EnumMap::GetMapPtr(dataTypeInfo.GetEnumId()));
         }
         // TODO: maybe throw exception here?
         return {};
