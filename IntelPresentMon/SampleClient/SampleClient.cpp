@@ -578,7 +578,7 @@ void ProcessEtl() {
 
 void PollMetrics(uint32_t processId, double metricsOffset)
 {
-    PM_DYNAMIC_QUERY_HANDLE q = nullptr;
+    PM_DYNAMIC_QUERY_HANDLE q1 = nullptr;
     PM_QUERY_ELEMENT elements[]{
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
@@ -636,14 +636,87 @@ void PollMetrics(uint32_t processId, double metricsOffset)
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_MODE, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_RUNTIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_QPC, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_SYNC_INTERVAL, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_NUM_PRESENTS, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DROPPED_FRAMES, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_ALLOWS_TEARING, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
     };
-    auto result = pmRegisterDynamicQuery(&q, elements, std::size(elements), 2000., metricsOffset);
-    if (result != PM_STATUS_SUCCESS)
+    if (auto result = pmRegisterDynamicQuery(&q1, elements, std::size(elements), 2000., metricsOffset); result != PM_STATUS_SUCCESS)
     {
         ConsolePrintLn("Invalid dynamic query specified!");
     }
+
+    PM_DYNAMIC_QUERY_HANDLE q2 = nullptr;
+    PM_QUERY_ELEMENT elements2[]{
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_WAIT_TIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_BUSY_TIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_BUSY_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_TEMPERATURE, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_VOLTAGE, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_UTILIZATION, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_POWER, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FAN_SPEED, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FAN_SPEED, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 1},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_VRAM_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_UTILIZATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_MODE, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_RUNTIME, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_QPC, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_SYNC_INTERVAL, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_NUM_PRESENTS, .stat = PM_STAT_RAW, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_DROPPED_FRAMES, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_ALLOWS_TEARING, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
+    };
+    if (auto result = pmRegisterDynamicQuery(&q2, elements2, std::size(elements2), 2000., metricsOffset);result != PM_STATUS_SUCCESS)
+    {
+        ConsolePrintLn("Invalid dynamic query specified!");
+    }
+
     auto pBlob = std::make_unique<uint8_t[]>(elements[std::size(elements) - 1].dataOffset + elements[std::size(elements) - 1].dataSize);
     uint32_t numSwapChains = 1;
+
 
     PM_QUERY_ELEMENT staticQueryElement{ .metric = PM_METRIC_PROCESS_NAME, .deviceId = 0, .arrayIndex = 0 };
     auto processName = std::make_unique<uint8_t[]>(260);
@@ -667,9 +740,19 @@ void PollMetrics(uint32_t processId, double metricsOffset)
     auto gpuMemSize = std::make_unique<uint8_t[]>(8);
     pmPollStaticQuery(&staticQueryElement, processId, gpuMemSize.get());
 
+    int numIterations = 0;
     for (;;)
     {
-        auto status = pmPollDynamicQuery(q, processId, pBlob.get(), &numSwapChains);
+        PM_STATUS status;
+        if (numIterations < 1000)
+        {
+            status = pmPollDynamicQuery(q1, processId, pBlob.get(), &numSwapChains);
+        }
+        else
+        {
+            status = pmPollDynamicQuery(q2, processId, pBlob.get(), &numSwapChains);
+        }
+        
         if (status == PM_STATUS_SUCCESS)
         {
             ConsolePrintLn("Static Process Name = %s", reinterpret_cast<char*>(processName.get()));
@@ -745,8 +828,18 @@ void PollMetrics(uint32_t processId, double metricsOffset)
             ConsolePrintLn("Present Mode = %i", reinterpret_cast<double&>(pBlob[elements[53].dataOffset]));
             ConsolePrintLn("Present Runtime = %i", reinterpret_cast<double&>(pBlob[elements[54].dataOffset]));
             ConsolePrintLn("Present QPC =  %lld", reinterpret_cast<double&>(pBlob[elements[55].dataOffset]));
+            ConsolePrintLn("Present Sync Interval = %i", reinterpret_cast<double&>(pBlob[elements[56].dataOffset]));
+            ConsolePrintLn("Num Presents =  %i", reinterpret_cast<double&>(pBlob[elements[57].dataOffset]));
+
+            PrintMetric("Dropped Frames Average = %f", reinterpret_cast<double&>(pBlob[elements[58].dataOffset]), true);
+            PrintMetric("Allows Tearing Average = %f", reinterpret_cast<double&>(pBlob[elements[59].dataOffset]), true);
 
             CommitConsole();
+            numIterations++;
+            if (numIterations >= 2000)
+            {
+                numIterations = 0;
+            }
         }
 
         if (gQuit == true) {
@@ -756,7 +849,8 @@ void PollMetrics(uint32_t processId, double metricsOffset)
         Sleep(kSleepTime);
     }
 
-    pmFreeDynamicQuery(q);
+    pmFreeDynamicQuery(q1);
+    pmFreeDynamicQuery(q2);
 
     return;
 }

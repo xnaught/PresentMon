@@ -375,6 +375,10 @@ namespace pmon::mid
             case PM_METRIC_PRESENT_MODE:
             case PM_METRIC_PRESENT_RUNTIME:
             case PM_METRIC_PRESENT_QPC:
+            case PM_METRIC_PRESENT_SYNC_INTERVAL:
+            case PM_METRIC_DROPPED_FRAMES:
+            case PM_METRIC_ALLOWS_TEARING:
+            case PM_METRIC_NUM_PRESENTS:
                 pQuery->accumFpsData = true;
                 break;
             case PM_METRIC_GPU_POWER:
@@ -885,6 +889,16 @@ namespace pmon::mid
             auto& output = reinterpret_cast<uint64_t&>(pBlob[element.dataOffset]);
             output = swapChain.frameQpc;
         }
+        else if (element.metric == PM_METRIC_PRESENT_SYNC_INTERVAL)
+        {
+            auto& output = reinterpret_cast<uint32_t&>(pBlob[element.dataOffset]);
+            output = swapChain.sync_interval;
+        }
+        else if (element.metric == PM_METRIC_NUM_PRESENTS)
+        {
+            auto& output = reinterpret_cast<uint32_t&>(pBlob[element.dataOffset]);
+            output = swapChain.num_presents;
+        }
         else
         {
             auto MillisecondsToFPS = [](double ms) { return ms == 0. ? 0. : 1000. / ms; };
@@ -949,6 +963,12 @@ namespace pmon::mid
                 break;
             case PM_METRIC_DISPLAY_BUSY_TIME:
                 CalculateMetric(output, swapChain.display_busy_ms, element.stat);
+                break;
+            case PM_METRIC_DROPPED_FRAMES:
+                CalculateMetric(output, swapChain.dropped, element.stat);
+                break;
+            case PM_METRIC_ALLOWS_TEARING:
+                CalculateMetric(output, swapChain.allowsTearing, element.stat);
                 break;
             default:
                 output = 0.;
@@ -1418,6 +1438,10 @@ namespace pmon::mid
                 case PM_METRIC_PRESENT_RUNTIME:
                 case PM_METRIC_PRESENT_QPC:
                 case PM_METRIC_PROCESS_NAME:
+                case PM_METRIC_PRESENT_SYNC_INTERVAL:
+                case PM_METRIC_DROPPED_FRAMES:
+                case PM_METRIC_ALLOWS_TEARING:
+                case PM_METRIC_NUM_PRESENTS:
                     CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
                     break;
                 case PM_METRIC_CPU_VENDOR:
