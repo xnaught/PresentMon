@@ -15,7 +15,7 @@ namespace p2c::pmon::met
         const pmapi::intro::Root& introRoot)
         :
         Metric{
-            ToWide(introRoot.FindMetric(metricId_).Introspect().GetName()),
+            MakeMetricName_(metricId_, arrayIndex_, introRoot),
             ToWide(introRoot.FindMetric(metricId_).IntrospectUnit().GetShortName())
         },
         metricId{ metricId_ },
@@ -100,5 +100,31 @@ namespace p2c::pmon::met
         }
         // TODO: maybe throw exception here?
         return {};
+    }
+    uint32_t DynamicPollingMetric::CalculateMaxArrayIndex(PM_METRIC metricId, const pmapi::intro::Root& introRoot)
+    {
+        const auto metric = introRoot.FindMetric(metricId);
+        auto name = ToWide(metric.Introspect().GetName());
+        // find max array size among all devices with availability
+        uint32_t arraySize = 0;
+        for (auto di : metric.GetDeviceMetricInfo()) {
+            if (di.IsAvailable()) {
+                arraySize = std::max(arraySize, di.GetArraySize());
+            }
+        }
+        return arraySize;
+    }
+    std::wstring DynamicPollingMetric::MakeMetricName_(PM_METRIC metricId,
+        uint32_t arrayIndex, const pmapi::intro::Root& introRoot)
+    {
+        const auto metric = introRoot.FindMetric(metricId);
+        auto name = ToWide(metric.Introspect().GetName());
+        // find max array size among all devices with availability
+        uint32_t arraySize = CalculateMaxArrayIndex(metricId, introRoot);
+        // add [i] to end of metric name if it's an array metric
+        if (arraySize > 1) {
+            name += std::format(L" [{}]", arraySize);
+        }
+        return name;
     }
 }

@@ -37,6 +37,7 @@ namespace p2c::pmon::met
         static void InitEnumMap(const pmapi::intro::Root& introRoot);
         std::unique_ptr<DynamicPollingMetric> RealizeMetric(const pmapi::intro::Root& introRoot,
             CachingQuery* pQuery, uint32_t activeGpuDeviceId);
+        static uint32_t CalculateMaxArrayIndex(PM_METRIC metricId, const pmapi::intro::Root& introRoot);
     protected:
         // data
         PM_METRIC metricId;
@@ -46,6 +47,10 @@ namespace p2c::pmon::met
         std::wstring statName;
         bool numeric = true;
         std::optional<uint32_t> offset;
+    private:
+        // functions
+        static std::wstring MakeMetricName_(PM_METRIC metricId, uint32_t arrayIndex, const pmapi::intro::Root& introRoot);
+        // data
     };
 
     // TODO: idea: don't template metric, just template a polymorphic type deserializer

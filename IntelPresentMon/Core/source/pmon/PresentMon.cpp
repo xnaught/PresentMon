@@ -45,10 +45,16 @@ namespace p2c::pmon
 		using namespace met;
 
 		for (auto m : pIntrospectionRoot->GetMetrics()) {
+			// exclude metrics when there is no device supporting them
 			if (std::ranges::none_of(m.GetDeviceMetricInfo(), [](auto&& i) { return i.IsAvailable(); })) continue;
-			for (auto s : m.GetStatInfo()) {
-				if (s.GetStat() == PM_STAT_NONE) continue;
-				AddMetric(std::make_unique<DynamicPollingMetric>(m.GetId(), 0, s.GetStat(), *pIntrospectionRoot));
+			// loop over all indexes for max array size among all available devices
+			const auto maxIndex = DynamicPollingMetric::CalculateMaxArrayIndex(m.GetId(), *pIntrospectionRoot);
+			for (uint32_t i = 0; i < maxIndex; i++) {
+				for (auto s : m.GetStatInfo()) {
+					// skip STAT_NONE (it's only for frame event data)
+					if (s.GetStat() == PM_STAT_NONE) continue;
+					AddMetric(std::make_unique<DynamicPollingMetric>(m.GetId(), i, s.GetStat(), *pIntrospectionRoot));
+				}
 			}
 		}
 
