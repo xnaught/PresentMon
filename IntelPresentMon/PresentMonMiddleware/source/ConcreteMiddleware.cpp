@@ -375,7 +375,7 @@ namespace pmon::mid
             case PM_METRIC_PRESENT_MODE:
             case PM_METRIC_PRESENT_RUNTIME:
             case PM_METRIC_PRESENT_QPC:
-            case PM_METRIC_PRESENT_SYNC_INTERVAL:
+            case PM_METRIC_SYNC_INTERVAL:
             case PM_METRIC_DROPPED_FRAMES:
             case PM_METRIC_ALLOWS_TEARING:
             case PM_METRIC_NUM_PRESENTS:
@@ -889,7 +889,7 @@ namespace pmon::mid
             auto& output = reinterpret_cast<uint64_t&>(pBlob[element.dataOffset]);
             output = swapChain.frameQpc;
         }
-        else if (element.metric == PM_METRIC_PRESENT_SYNC_INTERVAL)
+        else if (element.metric == PM_METRIC_SYNC_INTERVAL)
         {
             auto& output = reinterpret_cast<uint32_t&>(pBlob[element.dataOffset]);
             output = swapChain.sync_interval;
@@ -1438,7 +1438,7 @@ namespace pmon::mid
                 case PM_METRIC_PRESENT_RUNTIME:
                 case PM_METRIC_PRESENT_QPC:
                 case PM_METRIC_PROCESS_NAME:
-                case PM_METRIC_PRESENT_SYNC_INTERVAL:
+                case PM_METRIC_SYNC_INTERVAL:
                 case PM_METRIC_DROPPED_FRAMES:
                 case PM_METRIC_ALLOWS_TEARING:
                 case PM_METRIC_NUM_PRESENTS:
