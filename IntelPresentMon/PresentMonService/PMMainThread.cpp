@@ -145,6 +145,8 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
         }
         ptc->Repopulate();
         for (auto& adapter : ptc->GetPowerTelemetryAdapters()) {
+            // sample 2x here as workaround/kludge because Intel provider mispreports 1st sample
+            adapter->Sample();
             adapter->Sample();
             pComms->RegisterGpuDevice(adapter->GetVendor(), adapter->GetName(), adapter->GetPowerTelemetryCapBits());
         }

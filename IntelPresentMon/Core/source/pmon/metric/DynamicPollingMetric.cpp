@@ -109,7 +109,7 @@ namespace p2c::pmon::met
         uint32_t arraySize = CalculateMaxArrayIndex(metricId, introRoot);
         // add [i] to end of metric name if it's an array metric
         if (arraySize > 1) {
-            name += std::format(L" [{}]", arraySize);
+            name += std::format(L" [{}]", arrayIndex);
         }
         return name;
     }
