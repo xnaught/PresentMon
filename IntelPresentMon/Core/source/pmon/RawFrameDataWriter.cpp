@@ -6,6 +6,7 @@
 #include <CommonUtilities/source/str/String.h>
 #include "EnumMap.h"
 #include <format>
+#include <array>
 
 namespace p2c::pmon
 {
@@ -33,6 +34,14 @@ namespace p2c::pmon
         }
     };
     template<>
+    struct TypedAnnotation_<void> : public Annotation_
+    {
+        void Write(std::ostream& out, const uint8_t* pBytes) const override
+        {
+            out << "NA";
+        }
+    };
+    template<>
     struct TypedAnnotation_<PM_ENUM> : public Annotation_
     {
         TypedAnnotation_(PM_ENUM enumId) : pKeyMap{ EnumMap::GetMapPtr(enumId) } {}
@@ -55,9 +64,8 @@ namespace p2c::pmon
         case PM_DATA_TYPE_STRING: return std::make_unique<TypedAnnotation_<const char*>>();
         case PM_DATA_TYPE_ENUM: return std::make_unique<TypedAnnotation_<PM_ENUM>>(
                 metric.GetDataTypeInfo().GetEnumId());
-        // TODO: just make default: set such that it just spits out "NA"
+        default: return std::make_unique<TypedAnnotation_<void>>();
         }
-        return {};
     }
 
     class QueryElementContainer_
@@ -71,15 +79,27 @@ namespace p2c::pmon
             std::optional<uint32_t> index;
         };
         // functions
-        QueryElementContainer_(const std::vector<ElementDefinition>& elements, uint32_t nBlobsToCreate,
+        QueryElementContainer_(std::span<const ElementDefinition> elements, uint32_t nBlobsToCreate,
             pmapi::Session& session, const pmapi::intro::Root& introRoot)
             :
             nBlobs{ nBlobsToCreate }
         {
             for (auto& el : elements) {
-                annotationPtrs_.push_back(Annotation_::MakeTyped(el.metricId, el.deviceId, introRoot));
-                // doing the name composition here instead of in MakeTyped to work around compiler bug
                 const auto metric = introRoot.FindMetric(el.metricId);
+                // set availability (defaults to false, if we find matching device use its availability)
+                bool available = false;
+                for (auto di : metric.GetDeviceMetricInfo()) {
+                    if (di.GetDevice().GetId() != el.deviceId) continue;
+                    available = di.IsAvailable();
+                }
+                if (available) {
+                    annotationPtrs_.push_back(Annotation_::MakeTyped(el.metricId, el.deviceId, introRoot));
+                }
+                else {
+                    // void annotation means Not Available
+                    annotationPtrs_.push_back(std::make_unique<TypedAnnotation_<void>>());
+                }
+                // doing the name composition here instead of in MakeTyped to work around compiler bug
                 // remove space from metric name
                 annotationPtrs_.back()->columnName = metric.Introspect().GetName() |
                     std::views::filter([](char c) { return c != ' '; }) |
@@ -151,9 +171,10 @@ namespace p2c::pmon
 
         const uint32_t activeDeviceId = 1;
 
-        std::vector<Element> queryElements{
+        std::array queryElements{
             Element{.metricId = PM_METRIC_PRESENT_RUNTIME, .deviceId = 0 },
             Element{.metricId = PM_METRIC_GPU_POWER, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_TEMPERATURE_LIMITED, .deviceId = activeDeviceId },
         };
         pQueryElementContainer = std::make_unique<QueryElementContainer_>(
             queryElements, numberOfBlobs, session, introRoot);
