@@ -42,6 +42,13 @@ namespace p2c::kern
             pmon::PresentMon* pm_,
             std::map<size_t, GraphDataPack> graphPacks_ = {},
             std::optional<gfx::Vec2I> pos = {});
+        Overlay(
+            win::Process proc_,
+            std::shared_ptr<OverlaySpec> pSpec_,
+            pmon::PresentMon* pm_,
+            std::map<size_t, GraphDataPack> graphPacks_,
+            std::optional<gfx::Vec2I> pos,
+            std::unique_ptr<pmon::CachingQuery> pQuery);
         ~Overlay();
         void UpdateTargetRect(const gfx::RectI& newRect);
         void UpdateTargetOrder(bool topmost);
@@ -80,7 +87,7 @@ namespace p2c::kern
         std::shared_ptr<OverlaySpec> pSpec;
         pmon::PresentMon* pm;
         std::unordered_map<size_t, pmon::met::Metric*> activeMetricsMap;
-        pmon::CachingQuery query;
+        std::unique_ptr<pmon::CachingQuery> pQuery;
         std::map<size_t, GraphDataPack> graphPacks;
         HANDLE hProcess;
         win::EventHookManager::Token moveHandlerToken;

@@ -108,12 +108,24 @@ namespace p2c::kern
         std::shared_ptr<OverlaySpec> pSpec_,
         pmon::PresentMon* pm_,
         std::map<size_t, GraphDataPack> graphPacks_,
-        std::optional<Vec2I> pos_)
+        std::optional<gfx::Vec2I> pos_)
+        :
+        Overlay{ proc_, pSpec_, pm_, std::move(graphPacks_), std::move(pos_),
+            std::make_unique<pmon::CachingQuery>(proc_.pid, pSpec_->averagingWindowSize, pSpec_->metricsOffset) }
+    {}
+
+    Overlay::Overlay(
+        win::Process proc_,
+        std::shared_ptr<OverlaySpec> pSpec_,
+        pmon::PresentMon* pm_,
+        std::map<size_t, GraphDataPack> graphPacks_,
+        std::optional<gfx::Vec2I> pos_,
+        std::unique_ptr<pmon::CachingQuery> pQuery_)
         :
         proc{ std::move(proc_) },
         pm{ pm_ },
         pSpec{ std::move(pSpec_) },
-        query{ proc.pid, pSpec->averagingWindowSize, pSpec->metricsOffset },
+        pQuery{ std::move(pQuery_) },
         graphPacks{ std::move(graphPacks_) },
         hProcess{ OpenProcess(SYNCHRONIZE, TRUE, proc.pid) },
         moveHandlerToken{ win::EventHookManager::AddHandler(std::make_shared<WindowMoveHandler>(proc, this)) },
@@ -157,9 +169,9 @@ namespace p2c::kern
                 // TODO: instead of hardcoding 1 in here as the default device id, derive it based
                 // on the enumerated gpu devices
                 const auto activeGpuId = pm->GetSelectedAdapter().value_or(1);
-                auto pUniqueRealized = pDynamicMetric->RealizeMetric(pm->GetIntrospectionRoot(), &query, activeGpuId);
+                auto pUniqueRealized = pDynamicMetric->RealizeMetric(pm->GetIntrospectionRoot(), pQuery.get(), activeGpuId);
                 pmon::met::Metric* pRawRealized = pUniqueRealized.get();
-                query.AddDynamicMetric(std::move(pUniqueRealized));
+                pQuery->AddDynamicMetric(std::move(pUniqueRealized));
                 return pRawRealized;
             }
             else {
@@ -183,7 +195,7 @@ namespace p2c::kern
             }
         }
         // compiling the dynamic query
-        query.Finalize(pm->GetSession());
+        pQuery->Finalize(pm->GetSession());
         // populating packs with metrics
         for (auto& w : pSpec->widgets) {
             try {
@@ -555,6 +567,8 @@ namespace p2c::kern
 
     std::unique_ptr<Overlay> Overlay::SacrificeClone(std::optional<HWND> hWnd_, std::shared_ptr<OverlaySpec> pSpec_)
     {
+        p2clog.info(L"doing SacrificeClone").commit();
+
         std::optional<Vec2I> pos;
         if (pWindow->Standard()) {
             pos = pWindow->GetPosition();
@@ -571,7 +585,8 @@ namespace p2c::kern
             std::move(pSpec_),
             pm,
             std::move(graphPacks),
-            pos
+            pos,
+            std::move(pQuery)
         );
         // clear pm so that stream isn't closed when this overlay dies
         pm = nullptr;
@@ -581,6 +596,8 @@ namespace p2c::kern
     }
     std::unique_ptr<Overlay> Overlay::RetargetPidClone(win::Process proc_)
     {
+        p2clog.info(L"doing RetargetPidClone").commit();
+
         std::optional<Vec2I> pos;
         if (pWindow->Standard()) {
             pos = pWindow->GetPosition();
