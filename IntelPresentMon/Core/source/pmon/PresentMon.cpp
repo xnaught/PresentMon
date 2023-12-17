@@ -155,15 +155,11 @@ namespace p2c::pmon
 	std::optional<uint32_t> PresentMon::GetPid() const {
 		return bool(pTracker) ? pTracker->GetPid() : std::optional<uint32_t>{};
 	}
-	std::shared_ptr<RawFrameDataWriter> PresentMon::MakeRawFrameDataWriter(std::wstring path, std::optional<std::wstring> statsPath)
+	std::shared_ptr<RawFrameDataWriter> PresentMon::MakeRawFrameDataWriter(std::wstring path,
+		std::optional<std::wstring> statsPath, uint32_t pid, std::wstring procName)
 	{
-		return std::make_shared<RawFrameDataWriter>(std::move(path), *pSession, std::move(statsPath), *pIntrospectionRoot);
-	}
-	void PresentMon::FlushRawData()
-	{
-		//for (double t = -1.;; t -= 1.) {
-		//	if (rawAdaptor.Pull(t).empty()) break;
-		//}
+		return std::make_shared<RawFrameDataWriter>(std::move(path), pid, std::move(procName),
+			*pSession, std::move(statsPath), *pIntrospectionRoot);
 	}
 	std::optional<uint32_t> PresentMon::GetSelectedAdapter() const
 	{

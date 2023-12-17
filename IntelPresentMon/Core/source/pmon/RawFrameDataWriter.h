@@ -19,11 +19,11 @@ namespace p2c::pmon
 	class RawFrameDataWriter
 	{
 	public:
-        RawFrameDataWriter(std::wstring path, pmapi::Session& session,
+        RawFrameDataWriter(std::wstring path, uint32_t processId, std::wstring processName, pmapi::Session& session,
 			std::optional<std::wstring> frameStatsPath, const pmapi::intro::Root& introRoot);
 		RawFrameDataWriter(const RawFrameDataWriter&) = delete;
 		RawFrameDataWriter& operator=(const RawFrameDataWriter&) = delete;
-		void Process(uint32_t pid);
+		void Process();
 		~RawFrameDataWriter();
 	private:
 		// functions
@@ -31,6 +31,8 @@ namespace p2c::pmon
 		void WriteStats_();
 		// data
 		static constexpr uint32_t numberOfBlobs = 150u;
+		uint32_t pid;
+		std::string procName;
 		std::unique_ptr<QueryElementContainer_> pQueryElementContainer;
 		std::optional<std::wstring> frameStatsPath;
 		std::unique_ptr<StatisticsTracker> pStatsTracker;

@@ -98,7 +98,7 @@ namespace p2c::pmon
             pQuery = session.RegisterFrameQuery(queryElements_);
             pBlobs = std::make_unique<uint8_t[]>(pQuery->GetBlobSize() * nBlobs);
         }
-        void WriteFrames(uint32_t pid, std::ostream& out)
+        void WriteFrames(uint32_t pid, const std::string& procName, std::ostream& out)
         {
             auto nBlobsInOut = nBlobs;
             // if consume sets nblobs to max, it means there (might) be more, so go again
@@ -107,19 +107,15 @@ namespace p2c::pmon
                 // use outparam from Consume to determin how many blobs to loop over
                 const auto pEnd = pBlobs.get() + pQuery->GetBlobSize() * nBlobsInOut;
                 for (auto pBlob = pBlobs.get(); pBlob < pEnd; pBlob += pQuery->GetBlobSize()) {
+                    // process details are hardcoded here
+                    out << procName << ',' << pid;
                     // loop over each element (column/field) in a frame of data
-                    bool firstColumn = true;
                     for (auto&& [pAnno, query] : std::views::zip(annotationPtrs_, queryElements_)) {
-                        const auto& anno = *pAnno;
-                        // don't put separating comma before first column
-                        if (!firstColumn) {
-                            out << ',';
-                        }
+                        out << ',';
                         // using output from the query registration of get offset of column's data
                         const auto pBytes = pBlob + query.dataOffset;
                         // annotation contains polymorphic info to reinterpret and convert bytes
-                        anno.Write(out, pBytes);
-                        firstColumn = false;
+                        pAnno->Write(out, pBytes);
                     }
                     out << "\n";
                 }
@@ -128,13 +124,9 @@ namespace p2c::pmon
         }
         void WriteHeader(std::ostream& out)
         {
-            bool firstColumn = true;
+            out << "ProcessName,ProcessID";
             for (const auto& pAnno : annotationPtrs_) {
-                if (!firstColumn) {
-                    out << ',';
-                }
-                out << pAnno->columnName;
-                firstColumn = false;
+                out << ',' << pAnno->columnName;
             }
             out << std::endl;
         }
@@ -146,9 +138,11 @@ namespace p2c::pmon
         std::vector<PM_QUERY_ELEMENT> queryElements_;
     };
 
-    RawFrameDataWriter::RawFrameDataWriter(std::wstring path, pmapi::Session& session,
-        std::optional<std::wstring> frameStatsPathIn, const pmapi::intro::Root& introRoot)
+    RawFrameDataWriter::RawFrameDataWriter(std::wstring path, uint32_t processId, std::wstring processName,
+        pmapi::Session& session, std::optional<std::wstring> frameStatsPathIn, const pmapi::intro::Root& introRoot)
         :
+        pid{ processId },
+        procName{ ToNarrow(processName) },
         frameStatsPath{ std::move(frameStatsPathIn) },
         pStatsTracker{ frameStatsPath ? std::make_unique<StatisticsTracker>() : nullptr },
         file{ path }
@@ -243,9 +237,9 @@ namespace p2c::pmon
         //    "CPUTemperature[C]\n";
     }
 
-    void RawFrameDataWriter::Process(uint32_t pid)
+    void RawFrameDataWriter::Process()
     {
-        pQueryElementContainer->WriteFrames(pid, file);
+        pQueryElementContainer->WriteFrames(pid, procName, file);
     }
 
     double RawFrameDataWriter::GetDuration_() const

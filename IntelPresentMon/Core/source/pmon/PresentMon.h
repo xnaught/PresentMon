@@ -41,8 +41,8 @@ namespace p2c::pmon
 		met::Metric* GetMetricByIndex(size_t index);
 		std::vector<met::Metric::Info> EnumerateMetrics() const;
 		std::optional<uint32_t> GetPid() const;
-		std::shared_ptr<RawFrameDataWriter> MakeRawFrameDataWriter(std::wstring path, std::optional<std::wstring> statsPath);
-		void FlushRawData();
+		std::shared_ptr<RawFrameDataWriter> MakeRawFrameDataWriter(std::wstring path, std::optional<std::wstring> statsPath,
+			uint32_t pid, std::wstring procName);
 		std::optional<uint32_t> GetSelectedAdapter() const;
 		const pmapi::intro::Root& GetIntrospectionRoot() const;
 		pmapi::Session& GetSession();

@@ -445,9 +445,8 @@ namespace p2c::kern
             }
         }
 
-        if (pWriter)
-        {
-            pWriter->Process(proc.pid);
+        if (pWriter) {
+            pWriter->Process();
         }
 
         // handle hide during move logic (show if time elapsed and now otherwise hidden)
@@ -484,9 +483,7 @@ namespace p2c::kern
                     return std::nullopt;
                 }
             }();
-            // TODO: maybe allow for flushing of data with a timestamp so we don't start with a ~0.5s delay
-            pm->FlushRawData();
-            pWriter = { pm->MakeRawFrameDataWriter(std::move(fullPath), std::move(fullStatsPath)) };
+            pWriter = { pm->MakeRawFrameDataWriter(std::move(fullPath), std::move(fullStatsPath), proc.pid, proc.name) };
         }
         else if (!active && pWriter)
         {
