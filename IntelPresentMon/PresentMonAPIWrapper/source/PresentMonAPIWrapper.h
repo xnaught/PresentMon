@@ -141,6 +141,12 @@ namespace pmapi
         {
             return std::shared_ptr<FrameQuery>{ new FrameQuery{ elements } };
         }
+        void SetTelemetryPollingPeriod(uint32_t deviceId, uint32_t milliseconds)
+        {
+            if (auto sta = pmSetTelemetryPollingPeriod(deviceId, milliseconds); sta != PM_STATUS_SUCCESS) {
+                throw SessionException{ std::format("set telemetry period call failed with error id={}", (int)sta) };
+            }
+        }
     private:
         bool token_ = true;
 	};

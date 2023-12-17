@@ -102,6 +102,7 @@ namespace p2c::pmon
 	void PresentMon::SetOffset(double offset_) { offset = offset_; }
 	void PresentMon::SetGpuTelemetryPeriod(uint32_t period)
 	{
+		pSession->SetTelemetryPollingPeriod(1, period);
 		telemetrySamplePeriod = period;
 	}
 	uint32_t PresentMon::GetGpuTelemetryPeriod()
