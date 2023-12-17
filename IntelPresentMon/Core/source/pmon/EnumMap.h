@@ -23,7 +23,7 @@ namespace p2c::pmon
             for (auto e : introRoot.GetEnums()) {
                 auto pKeys = std::make_unique<KeyMap>(); auto& keys = *pKeys;
                 for (auto k : e.GetKeys()) {
-                    keys[k.GetValue()] = ::pmon::util::str::ToWide(k.GetName());
+                    keys[k.GetId()] = ::pmon::util::str::ToWide(k.GetName());
                 }
                 singleton.enumMap_[e.GetId()] = std::move(pKeys);
             }

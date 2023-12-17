@@ -73,7 +73,7 @@ namespace PresentMonAPI2Mock
 					Assert::AreEqual("Dimensionless", pKey->pName->pData);
 					Assert::AreEqual("", pKey->pShortName->pData);
 					Assert::AreEqual((int)PM_ENUM_UNIT, (int)pKey->enumId);
-					Assert::AreEqual((int)PM_UNIT_DIMENSIONLESS, pKey->value);
+					Assert::AreEqual((int)PM_UNIT_DIMENSIONLESS, pKey->id);
 				}
 				// 5th key
 				{
@@ -84,7 +84,7 @@ namespace PresentMonAPI2Mock
 					Assert::AreEqual("Percent", pKey->pName->pData);
 					Assert::AreEqual("%", pKey->pShortName->pData);
 					Assert::AreEqual((int)PM_ENUM_UNIT, (int)pKey->enumId);
-					Assert::AreEqual((int)PM_UNIT_PERCENT, pKey->value);
+					Assert::AreEqual((int)PM_UNIT_PERCENT, pKey->id);
 				}
 			}
 
@@ -196,7 +196,7 @@ namespace PresentMonAPI2Mock
 					Assert::AreEqual("Dimensionless", pKey->pName->pData);
 					Assert::AreEqual("", pKey->pShortName->pData);
 					Assert::AreEqual((int)PM_ENUM_UNIT, (int)pKey->enumId);
-					Assert::AreEqual((int)PM_UNIT_DIMENSIONLESS, pKey->value);
+					Assert::AreEqual((int)PM_UNIT_DIMENSIONLESS, pKey->id);
 				}
 				// 5th key
 				{
@@ -207,7 +207,7 @@ namespace PresentMonAPI2Mock
 					Assert::AreEqual("Percent", pKey->pName->pData);
 					Assert::AreEqual("%", pKey->pShortName->pData);
 					Assert::AreEqual((int)PM_ENUM_UNIT, (int)pKey->enumId);
-					Assert::AreEqual((int)PM_UNIT_PERCENT, pKey->value);
+					Assert::AreEqual((int)PM_UNIT_PERCENT, pKey->id);
 				}
 			}
 

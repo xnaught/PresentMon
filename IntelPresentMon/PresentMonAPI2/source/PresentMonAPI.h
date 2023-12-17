@@ -225,7 +225,7 @@ extern "C" {
 	struct PM_INTROSPECTION_ENUM_KEY
 	{
 		PM_ENUM enumId;
-		int value;
+		int id;
 		PM_INTROSPECTION_STRING* pSymbol;
 		PM_INTROSPECTION_STRING* pName;
 		PM_INTROSPECTION_STRING* pShortName;

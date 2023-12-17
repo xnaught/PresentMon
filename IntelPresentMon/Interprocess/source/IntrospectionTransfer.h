@@ -101,10 +101,10 @@ namespace pmon::ipc::intro
 
 	struct IntrospectionEnumKey
 	{
-		IntrospectionEnumKey(PM_ENUM enumId_in, int value_in, ShmString symbol_in, ShmString name_in, ShmString shortName_in, ShmString description_in)
+		IntrospectionEnumKey(PM_ENUM enumId_in, int id_in, ShmString symbol_in, ShmString name_in, ShmString shortName_in, ShmString description_in)
 			:
 			enumId_{ enumId_in},
-			value_{ value_in },
+			id_{ id_in },
 			symbol_{ std::move(symbol_in) },
 			name_{ std::move(name_in) },
 			shortName_{ std::move(shortName_in) },
@@ -122,7 +122,7 @@ namespace pmon::ipc::intro
 			auto pSelf = alloc.allocate(1);
 			// prepare contents
 			content.enumId = enumId_;
-			content.value = value_;
+			content.id = id_;
 			content.pSymbol = symbol_.ApiClone(voidAlloc);
 			content.pName = name_.ApiClone(voidAlloc);
 			content.pShortName = shortName_.ApiClone(voidAlloc);
@@ -135,7 +135,7 @@ namespace pmon::ipc::intro
 		}
 	private:
 		PM_ENUM enumId_;
-		int value_;
+		int id_;
 		IntrospectionString symbol_;
 		IntrospectionString name_;
 		IntrospectionString shortName_;

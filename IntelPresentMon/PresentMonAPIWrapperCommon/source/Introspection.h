@@ -120,9 +120,9 @@ namespace pmapi
             friend class ViewIterator<SelfType>;
             friend class Root;
         public:
-            int GetValue() const
+            int GetId() const
             {
-                return pBase->value;
+                return pBase->id;
             }
             std::string GetSymbol() const
             {
@@ -429,7 +429,7 @@ namespace pmapi
                 // building lookup tables for enum/key
                 for (auto e : GetEnums()) {
                     for (auto k : e.GetKeys()) {
-                        enumKeyMap[MakeEnumKeyMapKey_(e.GetId(), k.GetValue())] = k.GetBasePtr();
+                        enumKeyMap[MakeEnumKeyMapKey_(e.GetId(), k.GetId())] = k.GetBasePtr();
                     }
                     enumMap[e.GetId()] = e.GetBasePtr();
                 }
