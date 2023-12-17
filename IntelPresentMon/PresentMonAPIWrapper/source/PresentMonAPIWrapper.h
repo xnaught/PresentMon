@@ -23,12 +23,17 @@ namespace pmapi
         }
         void Consume(uint32_t pid, uint8_t* pBlobs, uint32_t& numBlobsInOut)
         {
-            pmConsumeFrames(hQuery_, pid, pBlobs, &numBlobsInOut);
+            if (auto sta = pmConsumeFrames(hQuery_, pid, pBlobs, &numBlobsInOut); sta != PM_STATUS_SUCCESS) {
+                throw Exception{ std::format("consume frame call failed with error id={}", (int)sta) };
+            }
         }
     private:
         FrameQuery(std::span<PM_QUERY_ELEMENT> elements)
         {
-            pmRegisterFrameQuery(&hQuery_, elements.data(), elements.size(), &blobSize_);
+            if (auto sta = pmRegisterFrameQuery(&hQuery_, elements.data(), elements.size(), &blobSize_);
+                sta != PM_STATUS_SUCCESS) {
+                throw Exception{ std::format("register frame query call failed with error id={}", (int)sta) };
+            }
         }
         PM_FRAME_QUERY_HANDLE hQuery_ = nullptr;
         uint32_t blobSize_ = 0ull;
@@ -48,12 +53,17 @@ namespace pmapi
         }
         void Poll(uint32_t pid, uint8_t* pBlob, uint32_t& numSwapChains)
         {
-            pmPollDynamicQuery(hQuery_, pid, pBlob, &numSwapChains);
+            if (auto sta = pmPollDynamicQuery(hQuery_, pid, pBlob, &numSwapChains); sta != PM_STATUS_SUCCESS) {
+                throw Exception{ std::format("dynamic poll call failed with error id={}", (int)sta) };
+            }
         }
     private:
         DynamicQuery(std::span<PM_QUERY_ELEMENT> elements, double winSizeMs, double metricOffsetMs)
         {
-            pmRegisterDynamicQuery(&hQuery_, elements.data(), elements.size(), winSizeMs, metricOffsetMs);
+            if (auto sta = pmRegisterDynamicQuery(&hQuery_, elements.data(),
+                elements.size(), winSizeMs, metricOffsetMs); sta != PM_STATUS_SUCCESS) {
+                throw Exception{ std::format("dynamic query register call failed with error id={}", (int)sta) };
+            }
             if (elements.size() > 0) {
                 blobSize_ = elements.back().dataOffset + elements.back().dataSize;
             }
@@ -77,7 +87,9 @@ namespace pmapi
     private:
         ProcessTracker(uint32_t pid) : pid_{ pid }
         {
-            pmStartTrackingProcess(pid_);
+            if (auto sta = pmStartTrackingProcess(pid_); sta != PM_STATUS_SUCCESS) {
+                throw Exception{ std::format("start process tracking call failed with error id={}", (int)sta) };
+            }
         }
         uint32_t pid_;
     };
