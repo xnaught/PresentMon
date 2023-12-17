@@ -103,6 +103,8 @@ namespace pmon::ipc
 			}
 			void FinalizeIntrospection_()
 			{
+				// sort all ordered introspection entities in their pricipal containers
+				pRoot_->Sort();
 				// release semaphore holdoff once construction is complete
 				for (int i = 0; i < 8; i++) { pIntroSemaphore_->post(); }
 			}

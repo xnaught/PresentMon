@@ -8,10 +8,20 @@
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
 #include "SharedMemoryTypes.h"
 #include <span>
+#include <utility>
 
 namespace pmon::ipc::intro
 {
 	namespace vi = std::views;
+
+	namespace
+	{
+		template<typename T>
+		concept LessThanComparable_ = requires(T a, T b) {
+			{ a < b } -> std::convertible_to<bool>;
+		};
+	}
+
 
 	struct IntrospectionString
 	{
@@ -95,6 +105,12 @@ namespace pmon::ipc::intro
 		{
 			return { buffer_ };
 		}
+		void Sort()
+		{
+			if constexpr (LessThanComparable_<T>) {
+				std::ranges::sort(buffer_, [](auto&& l, auto&& r) { return *l < *r; });
+			}
+		}
 	private:
 		ShmVector<ShmUniquePtr<T>> buffer_;
 	};
@@ -132,6 +148,10 @@ namespace pmon::ipc::intro
 				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
 			return pSelf;
+		}
+		bool operator<(const IntrospectionEnumKey& rhs) const
+		{
+			return id_ < rhs.id_;
 		}
 	private:
 		PM_ENUM enumId_;
@@ -176,6 +196,14 @@ namespace pmon::ipc::intro
 			}
 			return pSelf;
 		}
+		bool operator<(const IntrospectionEnum& rhs) const
+		{
+			return id_ < rhs.id_;
+		}
+		void Sort()
+		{
+			keys_.Sort();
+		}
 	private:
 		PM_ENUM id_;
 		IntrospectionObjArray<IntrospectionEnumKey> keys_;
@@ -212,6 +240,10 @@ namespace pmon::ipc::intro
 				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
 			return pSelf;
+		}
+		bool operator<(const IntrospectionDevice& rhs) const
+		{
+			return id_ < rhs.id_;
 		}
 	private:
 		uint32_t id_;
@@ -371,6 +403,10 @@ namespace pmon::ipc::intro
 		{
 			return id_;
 		}
+		bool operator<(const IntrospectionMetric& rhs) const
+		{
+			return id_ < rhs.id_;
+		}
 	private:
 		ShmSegmentManager* pSegmentManager_;
 		PM_METRIC id_;
@@ -424,6 +460,15 @@ namespace pmon::ipc::intro
 				std::allocator_traits<A>::construct(alloc, pSelf, content);
 			}
 			return pSelf;
+		}
+		void Sort()
+		{
+			metrics_.Sort();
+			enums_.Sort();
+			devices_.Sort();
+			for (auto& pe : enums_.GetElements()) {
+				pe->Sort();
+			}
 		}
 	private:
 		IntrospectionObjArray<IntrospectionMetric> metrics_;
