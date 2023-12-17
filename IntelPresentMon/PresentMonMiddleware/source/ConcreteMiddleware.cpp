@@ -529,7 +529,7 @@ namespace pmon::mid
             case PM_STAT_MIN:
                 stats->calcMin = true;
                 break;
-            case PM_STAT_RAW:
+            case PM_STAT_MID_POINT:
                 stats->calcRaw = true;
                 break;
             default:
@@ -1010,7 +1010,7 @@ namespace pmon::mid
                 output /= inData.size();
                 return;
             }
-            if (stat == PM_STAT_RAW)
+            if (stat == PM_STAT_MID_POINT)
             {
                 size_t middle_index = inData.size() / 2;
                 output = inData[middle_index];

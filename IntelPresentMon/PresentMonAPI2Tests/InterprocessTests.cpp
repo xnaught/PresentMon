@@ -28,7 +28,7 @@ namespace PresentMonAPI2Mock
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> alloc;
 			auto pClone = root.ApiClone(alloc);
-			Assert::AreEqual(34132ull, alloc.GetTotalSize());
+			Assert::AreEqual(36676ull, alloc.GetTotalSize());
 			Assert::IsNull(pClone);
 			free((void*)pClone);
 		}
@@ -45,7 +45,7 @@ namespace PresentMonAPI2Mock
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> probeAlloc;
 			auto pNullClone = root.ApiClone(probeAlloc);
-			Assert::AreEqual(34132ull, probeAlloc.GetTotalSize());
+			Assert::AreEqual(36676ull, probeAlloc.GetTotalSize());
 			Assert::IsNull(pNullClone);
 
 			ipc::intro::BlockAllocator<void> blockAlloc{ probeAlloc.GetTotalSize() };
@@ -53,7 +53,7 @@ namespace PresentMonAPI2Mock
 
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(51ull, pRoot->pMetrics->size);
+			Assert::AreEqual(55ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)
@@ -132,7 +132,7 @@ namespace PresentMonAPI2Mock
 				// check 7th stat
 				{
 					auto pStatInfo = static_cast<const PM_INTROSPECTION_STAT_INFO*>(pMetric->pStatInfo->pData[6]);
-					Assert::AreEqual((int)PM_STAT_RAW, (int)pStatInfo->stat);
+					Assert::AreEqual((int)PM_STAT_MID_POINT, (int)pStatInfo->stat);
 				}
 				// check device infos
 				Assert::AreEqual(2ull, pMetric->pDeviceMetricInfo->size);
@@ -176,7 +176,7 @@ namespace PresentMonAPI2Mock
 
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(51ull, pRoot->pMetrics->size);
+			Assert::AreEqual(55ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)
@@ -255,7 +255,7 @@ namespace PresentMonAPI2Mock
 				// check 7th stat
 				{
 					auto pStatInfo = static_cast<const PM_INTROSPECTION_STAT_INFO*>(pMetric->pStatInfo->pData[6]);
-					Assert::AreEqual((int)PM_STAT_RAW, (int)pStatInfo->stat);
+					Assert::AreEqual((int)PM_STAT_MID_POINT, (int)pStatInfo->stat);
 				}
 				// check device infos
 				Assert::AreEqual(2ull, pMetric->pDeviceMetricInfo->size);

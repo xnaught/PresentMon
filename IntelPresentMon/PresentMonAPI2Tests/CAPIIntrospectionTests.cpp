@@ -56,7 +56,7 @@ namespace PresentMonAPI2Mock
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmGetIntrospectionRoot(&pRoot));
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(51ull, pRoot->pMetrics->size);
+			Assert::AreEqual(55ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)
@@ -135,7 +135,7 @@ namespace PresentMonAPI2Mock
 				// check 7th stat
 				{
 					auto pStatInfo = static_cast<const PM_INTROSPECTION_STAT_INFO*>(pMetric->pStatInfo->pData[6]);
-					Assert::AreEqual((int)PM_STAT_RAW, (int)pStatInfo->stat);
+					Assert::AreEqual((int)PM_STAT_MID_POINT, (int)pStatInfo->stat);
 				}
 				// check device infos
 				Assert::AreEqual(2ull, pMetric->pDeviceMetricInfo->size);
