@@ -396,5 +396,20 @@ namespace PresentMonAPI2Mock
 
 			mid.FreeFrameEventQuery(pQuery);
 		}
+		TEST_METHOD(TestQueryDuration)
+		{
+			const PmNsmFrameData frame{
+				.present_event = {
+					.GPUDuration = 13431ull,
+				},
+			};
+			PM_QUERY_ELEMENT queryElements[]{
+				{ PM_METRIC_GPU_BUSY_TIME, PM_STAT_NONE, 0, 0 },
+			};
+			PM_FRAME_QUERY query{ queryElements };
+			auto pBlob = std::make_unique<uint8_t[]>(query.GetBlobSize());
+			query.GatherToBlob(&frame, pBlob.get(), 0ull, 0.001);
+			Assert::AreEqual(double(13431ull) * 0.001, *(double*)pBlob.get());
+		}
 	};
 }

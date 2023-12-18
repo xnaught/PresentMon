@@ -17,7 +17,7 @@ namespace pmon::mid
 	public:
 		struct Context
 		{
-			double performanceCounterPeriod;
+			double performanceCounterPeriodMs;
 			uint64_t qpcStart;
 			bool dropped;
 
@@ -102,10 +102,41 @@ namespace
 		uint16_t outputPaddingSize_;
 		uint16_t inputIndex_;
 	};
-	//class QpcDurationGatherCommand_ : public pmon::mid::GatherCommand_
-	//{
-
-	//};
+	template<uint64_t PmNsmPresentEvent::* pMember>
+	class QpcDurationGatherCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		QpcDurationGatherCommand_(size_t nextAvailableByteOffset) 		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, sizeof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context& ctx) const override
+		{
+			const auto qpcDuration = pSourceFrameData->present_event.*pMember;
+			if (qpcDuration != 0) {
+				const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			}
+			else {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+			}
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + sizeof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
 	//class QpcDifferenceGatherCommand_ : public pmon::mid::GatherCommand_
 	//{
 
@@ -153,10 +184,10 @@ PM_FRAME_QUERY::PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
 
 PM_FRAME_QUERY::~PM_FRAME_QUERY() = default;
 
-void PM_FRAME_QUERY::GatherToBlob(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, uint64_t qpcStart, double performanceCounterPeriod) const
+void PM_FRAME_QUERY::GatherToBlob(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, uint64_t qpcStart, double performanceCounterPeriodMs) const
 {
 	const mid::GatherCommand_::Context ctx{
-		.performanceCounterPeriod = performanceCounterPeriod,
+		.performanceCounterPeriodMs = performanceCounterPeriodMs,
 		.qpcStart = qpcStart,
 		.dropped = pSourceFrameData->present_event.FinalState != PresentResult::Presented,
 	};
@@ -191,6 +222,8 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 		return std::make_unique<CopyGatherCommand_<&Gpu::fan_speed_rpm>>(pos, q.arrayIndex);
 	case PM_METRIC_CPU_UTILIZATION:
 		return std::make_unique<CopyGatherCommand_<&Cpu::cpu_utilization>>(pos);
+	case PM_METRIC_GPU_BUSY_TIME:
+		return std::make_unique<QpcDurationGatherCommand_<&Pre::GPUDuration>>(pos);
 	default: return {};
 	}
 }

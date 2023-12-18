@@ -19,7 +19,7 @@ struct PM_FRAME_QUERY
 public:
 	PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements);
 	~PM_FRAME_QUERY();
-	void GatherToBlob(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, uint64_t qpcStart, double performanceCounterPeriod) const;
+	void GatherToBlob(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, uint64_t qpcStart, double performanceCounterPeriodMs) const;
 	size_t GetBlobSize() const;
 private:
 	// functions
