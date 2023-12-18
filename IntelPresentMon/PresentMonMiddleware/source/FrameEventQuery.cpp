@@ -17,8 +17,10 @@ namespace pmon::mid
 	public:
 		struct Context
 		{
+			double performanceCounterPeriod;
 			uint64_t qpcStart;
 			bool dropped;
+
 		};
 		virtual ~GatherCommand_() = default;
 		virtual void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context& ctx) const = 0;
@@ -118,18 +120,6 @@ namespace
 	//};
 }
 
-// TODO: somehow validating that all frame event metrics are covered here
-//#define METRIC_OFFSET_SIZE_LOOKUP_LIST \
-//	X_(PM_METRIC_SWAP_CHAIN, ff.present_event.SwapChainAddress) \
-//	X_(PM_METRIC_GPU_BUSY_TIME, ff.present_event.) \
-//	X_(PM_METRIC_PRESENT_QPC, present_event.PresentStartTime) \
-//	X_(PM_METRIC_PRESENT_RUNTIME, present_event.Runtime) \
-//	X_(PM_METRIC_PRESENT_MODE, present_event.PresentMode) \
-//	X_(PM_METRIC_GPU_POWER, power_telemetry.gpu_power_w) \
-//	X_(PM_METRIC_CPU_UTILIZATION, cpu_telemetry.cpu_utilization) \
-//	X_(PM_METRIC_GPU_FAN_SPEED, power_telemetry.fan_speed_rpm[0]) \
-//	X_(PM_METRIC_GPU_TEMPERATURE_LIMITED, power_telemetry.gpu_temperature_limited)
-
 PM_FRAME_QUERY::PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
 {
 	// TODO: validation
@@ -163,10 +153,15 @@ PM_FRAME_QUERY::PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
 
 PM_FRAME_QUERY::~PM_FRAME_QUERY() = default;
 
-void PM_FRAME_QUERY::GatherToBlob(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob) const
+void PM_FRAME_QUERY::GatherToBlob(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, uint64_t qpcStart, double performanceCounterPeriod) const
 {
+	const mid::GatherCommand_::Context ctx{
+		.performanceCounterPeriod = performanceCounterPeriod,
+		.qpcStart = qpcStart,
+		.dropped = pSourceFrameData->present_event.FinalState != PresentResult::Presented,
+	};
 	for (auto& cmd : gatherCommands_) {
-		cmd->Gather(pSourceFrameData, pDestBlob, pmon::mid::GatherCommand_::Context{});
+		cmd->Gather(pSourceFrameData, pDestBlob, ctx);
 	}
 }
 
@@ -175,7 +170,7 @@ size_t PM_FRAME_QUERY::GetBlobSize() const
 	return blobSize_;
 }
 
-std::unique_ptr<pmon::mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherCommand_(const PM_QUERY_ELEMENT& q, size_t pos)
+std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherCommand_(const PM_QUERY_ELEMENT& q, size_t pos)
 {
 	using Pre = PmNsmPresentEvent;
 	using Gpu = PresentMonPowerTelemetryInfo;

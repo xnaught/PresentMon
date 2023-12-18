@@ -824,9 +824,9 @@ namespace pmon::mid
         uint32_t frames_copied = 0;
         numFrames = 0;
 
-        StreamClient* pClient = nullptr;
+        StreamClient* pShmClient = nullptr;
         try {
-            pClient = presentMonStreamClients.at(processId).get();
+            pShmClient = presentMonStreamClients.at(processId).get();
         }
         catch (...) {
             LOG(INFO)
@@ -836,22 +836,24 @@ namespace pmon::mid
             throw std::runtime_error{ "Failed to find stream for pid in ConsumeFrameEvents" };
         }
 
-        const auto nsm_view = pClient->GetNamedSharedMemView();
+        const auto nsm_view = pShmClient->GetNamedSharedMemView();
         const auto nsm_hdr = nsm_view->GetHeader();
         if (!nsm_hdr->process_active) {
             StopStreaming(processId);
             throw std::runtime_error{ "Process died cannot consume frame events" };
         }
 
-        const auto last_frame_idx = pClient->GetLatestFrameIndex();
+        const auto last_frame_idx = pShmClient->GetLatestFrameIndex();
         if (last_frame_idx == UINT_MAX) {
             // There are no frames available, no error frames copied = 0
             return;
         }
 
+        const auto performanceCounterPeriod = 1.0 / pShmClient->GetQpcFrequency().QuadPart;
+
         for (uint32_t i = 0; i < frames_to_copy; i++) {
             const PmNsmFrameData* pNsmFrameData = nullptr;
-            const auto status = pClient->ConsumePtrToNextNsmFrameData(&pNsmFrameData);
+            const auto status = pShmClient->ConsumePtrToNextNsmFrameData(&pNsmFrameData);
             if (status != PM_STATUS::PM_STATUS_SUCCESS) {
                 throw std::runtime_error{ "Error while trying to get frame data from shared memory" };
             }
@@ -859,7 +861,7 @@ namespace pmon::mid
                 break;
             }
             // if we make it here, we have a ptr to frame data in nsm, time to gather to blob
-            pQuery->GatherToBlob(pNsmFrameData, pBlob);
+            pQuery->GatherToBlob(pNsmFrameData, pBlob, nsm_hdr->start_qpc, performanceCounterPeriod);
             pBlob += pQuery->GetBlobSize();
             frames_copied++;
         }
