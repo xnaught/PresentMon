@@ -27,6 +27,9 @@
     <ClInclude Include="source\hash\Hash.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\Meta.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\cli\CliFramework.cpp">

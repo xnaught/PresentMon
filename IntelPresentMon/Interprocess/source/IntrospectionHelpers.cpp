@@ -13,8 +13,7 @@ namespace pmon::ipc::intro
 	// mapping of caps to metrics
 	template<PM_METRIC metric> struct IntrospectionCapsLookup { using Universal = std::true_type; };
 	// GPU caps
-	// TODO: finish unused mappings (need to add as metrics first)
-	//template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_POWER> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::time_stamp; };
+	//template<> struct IntrospectionCapsLookup<> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::time_stamp; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_POWER> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_power; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_SUSTAINED_POWER_LIMIT> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_sustained_power_limit; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_VOLTAGE> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_voltage; };
@@ -22,11 +21,11 @@ namespace pmon::ipc::intro
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_UTILIZATION> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_utilization; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_render_compute_utilization; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_MEDIA_UTILIZATION> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_media_utilization; };
-	//template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_POWER> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_power; };
-	//template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_POWER> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_voltage; };
-	//template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_POWER> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_frequency; };
-	//template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_POWER> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_effective_frequency; };
-	//template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_POWER> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_temperature; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_VRAM_POWER> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_power; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_VRAM_VOLTAGE> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_voltage; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_VRAM_FREQUENCY> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_frequency; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_VRAM_EFFECTIVE_FREQUENCY> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_effective_frequency; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_VRAM_TEMPERATURE> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_temperature; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_FAN_SPEED> { static constexpr auto gpuCapBitArray = std::array{
 		GpuTelemetryCapBits::fan_speed_0, GpuTelemetryCapBits::fan_speed_1, GpuTelemetryCapBits::fan_speed_2, GpuTelemetryCapBits::fan_speed_3, GpuTelemetryCapBits::fan_speed_4, }; };
 	//template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_FAN_SPEED> { static constexpr auto gpuCapBitArray = std::array{
@@ -47,16 +46,21 @@ namespace pmon::ipc::intro
 	template<> struct IntrospectionCapsLookup<PM_METRIC_VRAM_VOLTAGE_LIMITED> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_voltage_limited; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_VRAM_UTILIZATION_LIMITED> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_utilization_limited; };
 	// CPU caps
-	// TODO: populate cpu cap bit mappings
 	template<> struct IntrospectionCapsLookup<PM_METRIC_CPU_UTILIZATION> { static constexpr auto cpuCapBit = CpuTelemetryCapBits::cpu_utilization; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_CPU_POWER> { static constexpr auto cpuCapBit = CpuTelemetryCapBits::cpu_power; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_CPU_TEMPERATURE> { static constexpr auto cpuCapBit = CpuTelemetryCapBits::cpu_temperature; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_CPU_FREQUENCY> { static constexpr auto cpuCapBit = CpuTelemetryCapBits::cpu_frequency; };
+	//template<> struct IntrospectionCapsLookup<PM_METRIC_CPU_CORE_UTILITY> { static constexpr auto cpuCapBit = CpuTelemetryCapBits::cpu; };
 
-	// TODO: compile-time verify that all cap bits are covered
 
 	// concepts to help determine device-metric mapping type
 	template<class T> concept IsUniversalMetric = requires { typename T::Universal; };
 	template<class T> concept IsGpuDeviceMetric = requires { T::gpuCapBit; };
 	template<class T> concept IsGpuDeviceMetricArray = requires { T::gpuCapBitArray; };
 	template<class T> concept IsCpuMetric = requires { T::cpuCapBit; };
+	
+	// TODO: compile-time verify that all cap bits are covered (how?)
+
 
 	size_t GetDataTypeSize(PM_DATA_TYPE v)
 	{
@@ -166,8 +170,9 @@ namespace pmon::ipc::intro
 					PM_METRIC_AVAILABILITY_AVAILABLE : PM_METRIC_AVAILABILITY_UNAVAILABLE;
 				(*i)->AddDeviceMetricInfo(IntrospectionDeviceMetricInfo{ 0, PM_METRIC_AVAILABILITY_AVAILABLE, 1 });
 			}
-			// TODO: log metric not found
 		}
+
+		// TODO: log metric not found
 	}
 
 	void PopulateCpu(ShmSegmentManager* pSegmentManager, IntrospectionRoot& root,

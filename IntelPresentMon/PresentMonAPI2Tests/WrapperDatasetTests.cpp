@@ -46,8 +46,6 @@ namespace PresentMonAPI2Mock
 
 			const std::vector expected{
 				"PM_STATUS_SUCCESS"s,
-				"PM_STATUS_FAILURE"s,
-				"PM_STATUS_SESSION_NOT_OPEN"s,
 				"PM_STATUS_SERVICE_ERROR"s,
 				"PM_STATUS_INVALID_ETL_FILE"s,
 				"PM_STATUS_DATA_LOSS"s,
@@ -58,6 +56,8 @@ namespace PresentMonAPI2Mock
 				"PM_STATUS_INVALID_ADAPTER_ID"s,
 				"PM_STATUS_OUT_OF_RANGE"s,
 				"PM_STATUS_INSUFFICIENT_BUFFER"s,
+				"PM_STATUS_FAILURE"s,
+				"PM_STATUS_SESSION_NOT_OPEN"s,
 			};
 			auto e = expected.begin();
 			for (auto kv : data->GetEnums().begin()->GetKeys()) {
@@ -68,23 +68,23 @@ namespace PresentMonAPI2Mock
 		TEST_METHOD(IntrospectMetricToEnumKey)
 		{
 			using namespace std::string_literals;
-			Assert::AreEqual("Displayed FPS"s, data->GetMetrics().begin()->Introspect().GetName());
+			Assert::AreEqual("Displayed FPS"s, data->GetMetrics().begin()[1].Introspect().GetName());
 		}
 		TEST_METHOD(IntrospectMetricUnit)
 		{
 			using namespace std::string_literals;
-			Assert::AreEqual("fps"s, data->GetMetrics().begin()->IntrospectUnit().GetShortName());
+			Assert::AreEqual("fps"s, data->GetMetrics().begin()[1].IntrospectUnit().GetShortName());
 		}
 		TEST_METHOD(IntrospectMetricStats)
 		{
 			using namespace std::string_literals;
-			Assert::AreEqual("Average"s, data->GetMetrics().begin()->GetStatInfo().begin()->IntrospectStat()->GetName());
-			Assert::AreEqual(7ull, data->GetMetrics().begin()->GetStatInfo().size());
+			Assert::AreEqual("Average"s, data->GetMetrics().begin()[1].GetStatInfo().begin()->IntrospectStat()->GetName());
+			Assert::AreEqual(7ull, data->GetMetrics().begin()[1].GetStatInfo().size());
 		}
 		TEST_METHOD(IntrospectMetricStatsWithLookup)
 		{
 			using namespace std::string_literals;
-			Assert::AreEqual("avg"s, data->GetMetrics().begin()->GetStatInfo().begin()->IntrospectStat()->GetShortName());
+			Assert::AreEqual("avg"s, data->GetMetrics().begin()[1].GetStatInfo().begin()->IntrospectStat()->GetShortName());
 		}
 		TEST_METHOD(IntrospectMetricDataTypeEnum)
 		{

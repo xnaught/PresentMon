@@ -56,7 +56,7 @@ namespace PresentMonAPI2Mock
 			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmGetIntrospectionRoot(&pRoot));
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(55ull, pRoot->pMetrics->size);
+			Assert::AreEqual(68ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)
@@ -101,9 +101,9 @@ namespace PresentMonAPI2Mock
 				Assert::AreEqual("Device-independent", pDevice->pName->pData);
 			}
 
-			// check metric 1st
+			// check metric 2nd
 			{
-				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[0]);
+				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[1]);
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_DISPLAYED_FPS, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_FPS, (int)pMetric->unit);
@@ -126,7 +126,7 @@ namespace PresentMonAPI2Mock
 
 			// check metric gpu array 2 device (fan)
 			{
-				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[6]);
+				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[22]);
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_GPU_FAN_SPEED, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_RPM, (int)pMetric->unit);

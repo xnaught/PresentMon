@@ -2,43 +2,133 @@
 #include "FrameEventQuery.h"
 #include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
 #include "../../CommonUtilities/source/Memory.h"
+#include "../../CommonUtilities/source/Meta.h"
 #include <algorithm>
 #include <cstddef>
 
 using namespace pmon;
 
-// TODO: some what of validating that all frame event metrics are covered here
-#define METRIC_OFFSET_SIZE_LOOKUP_LIST \
-	X_(PM_METRIC_PRESENT_QPC, present_event.PresentStartTime) \
-	X_(PM_METRIC_PRESENT_RUNTIME, present_event.Runtime) \
-	X_(PM_METRIC_PRESENT_MODE, present_event.PresentMode) \
-	X_(PM_METRIC_GPU_POWER, power_telemetry.gpu_power_w) \
-	X_(PM_METRIC_CPU_UTILIZATION, cpu_telemetry.cpu_utilization) \
-	X_(PM_METRIC_GPU_FAN_SPEED, power_telemetry.fan_speed_rpm[0]) \
-	X_(PM_METRIC_GPU_TEMPERATURE_LIMITED, power_telemetry.gpu_temperature_limited)
+PmNsmFrameData ff;
 
-constexpr uint16_t GetNsmMemberSize_(PM_METRIC metric)
+namespace pmon::mid
 {
-	constexpr PmNsmFrameData fd{};
-	switch (metric) {
-#define X_(metric, nsm) case metric: return sizeof(fd.nsm);
-		METRIC_OFFSET_SIZE_LOOKUP_LIST
-#undef X_
-			// TODO: do something with this default
-	default: return 0;
-	}
+	class GatherCommand_
+	{
+	public:
+		struct Context
+		{
+			uint64_t qpcStart;
+			bool dropped;
+		};
+		virtual ~GatherCommand_() = default;
+		virtual void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context& ctx) const = 0;
+		virtual uint32_t GetBeginOffset() const = 0;
+		virtual uint32_t GetEndOffset() const = 0;
+		virtual uint32_t GetOutputOffset() const = 0;
+		uint32_t GetDataSize() const { return GetEndOffset() - GetOutputOffset(); }
+		uint32_t GetTotalSize() const { return GetEndOffset() - GetBeginOffset(); }
+	};
 }
 
-constexpr uint32_t GetNsmMemberOffset_(PM_METRIC metric)
+namespace
 {
-	switch (metric) {
-#define X_(metric, nsm) case metric: return (uint32_t)offsetof(PmNsmFrameData, nsm);
-		METRIC_OFFSET_SIZE_LOOKUP_LIST
-#undef X_
-			// TODO: do something with this default
-	default: return 0;
+	template<auto pMember>
+	constexpr auto GetSubstructurePointer()
+	{
+		using SubstructureType = util::MemberPointerInfo<decltype(pMember)>::StructType;
+		if constexpr (std::same_as<SubstructureType, PmNsmPresentEvent>) {
+			return &PmNsmFrameData::present_event;
+		}
+		else if constexpr (std::same_as<SubstructureType, PresentMonPowerTelemetryInfo>) {
+			return &PmNsmFrameData::power_telemetry;
+		}
+		else if constexpr (std::same_as<SubstructureType, CpuTelemetryInfo>) {
+			return &PmNsmFrameData::cpu_telemetry;
+		}
 	}
+
+	template<auto pMember>
+	class CopyGatherCommand_ : public mid::GatherCommand_
+	{
+		using Type = util::MemberPointerInfo<decltype(pMember)>::MemberType;
+	public:
+		CopyGatherCommand_(size_t nextAvailableByteOffset, uint16_t index = 0)
+			:
+			inputIndex_{ index }
+		{
+			// TODO: checking that introspection type matches nsm type
+			if constexpr (std::is_array_v<Type>) {
+				using ElementType = util::ContainerElementType<Type>;
+				outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, sizeof(ElementType));
+			}
+			else {
+				outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, sizeof(Type));
+			}
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context&) const override
+		{
+			constexpr auto pSubstruct = GetSubstructurePointer<pMember>();
+			if constexpr (std::is_array_v<Type>) {
+				const auto val = (pSourceFrameData->*pSubstruct.*pMember)[inputIndex_];
+				reinterpret_cast<std::remove_const_t<decltype(val)>&>(pDestBlob[outputOffset_]) = val;
+			}
+			else {
+				const auto val = pSourceFrameData->*pSubstruct.*pMember;
+				reinterpret_cast<std::remove_const_t<decltype(val)>&>(pDestBlob[outputOffset_]) = val;
+			}
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			if constexpr (std::is_array_v<Type>) {
+				return outputOffset_ + sizeof(util::ContainerElementType<Type>);
+			}
+			else {
+				return outputOffset_ + sizeof(Type);
+			}
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+		uint16_t inputIndex_;
+	};
+	//class QpcDurationGatherCommand_ : public pmon::mid::GatherCommand_
+	//{
+
+	//};
+	//class QpcDifferenceGatherCommand_ : public pmon::mid::GatherCommand_
+	//{
+
+	//};
+	//class DroppedGatherCommand_ : public pmon::mid::GatherCommand_
+	//{
+
+	//};
+	//class DroppedQpcDifferenceGatherCommand_ : public pmon::mid::GatherCommand_
+	//{
+
+	//};
 }
+
+// TODO: somehow validating that all frame event metrics are covered here
+//#define METRIC_OFFSET_SIZE_LOOKUP_LIST \
+//	X_(PM_METRIC_SWAP_CHAIN, ff.present_event.SwapChainAddress) \
+//	X_(PM_METRIC_GPU_BUSY_TIME, ff.present_event.) \
+//	X_(PM_METRIC_PRESENT_QPC, present_event.PresentStartTime) \
+//	X_(PM_METRIC_PRESENT_RUNTIME, present_event.Runtime) \
+//	X_(PM_METRIC_PRESENT_MODE, present_event.PresentMode) \
+//	X_(PM_METRIC_GPU_POWER, power_telemetry.gpu_power_w) \
+//	X_(PM_METRIC_CPU_UTILIZATION, cpu_telemetry.cpu_utilization) \
+//	X_(PM_METRIC_GPU_FAN_SPEED, power_telemetry.fan_speed_rpm[0]) \
+//	X_(PM_METRIC_GPU_TEMPERATURE_LIMITED, power_telemetry.gpu_temperature_limited)
 
 PM_FRAME_QUERY::PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
 {
@@ -61,21 +151,22 @@ PM_FRAME_QUERY::PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
 				throw std::runtime_error{ "Cannot specify 2 different non-universal devices in the same query" };
 			}
 		}
-		copyCommands_.push_back(MapQueryElementToCopyCommand_(q, blobSize_));
-		const auto& cmd = copyCommands_.back();
-		q.dataSize = cmd.size;
-		q.dataOffset = blobSize_ + cmd.padding;
-		blobSize_ += cmd.size + cmd.padding;
+		gatherCommands_.push_back(MapQueryElementToGatherCommand_(q, blobSize_));
+		const auto& cmd = gatherCommands_.back();
+		q.dataSize = cmd->GetDataSize();
+		q.dataOffset = cmd->GetOutputOffset();
+		blobSize_ += cmd->GetTotalSize();
 	}
 	// make sure blobs are a multiple of 16 so that blobs in array always start 16-aligned
 	blobSize_ += util::GetPadding(blobSize_, 16);
 }
 
-void PM_FRAME_QUERY::GatherToBlob(const uint8_t* sourceFrameData, uint8_t* destBlob) const
+PM_FRAME_QUERY::~PM_FRAME_QUERY() = default;
+
+void PM_FRAME_QUERY::GatherToBlob(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob) const
 {
-	for (auto& cmd : copyCommands_) {
-		std::copy_n(sourceFrameData + cmd.offset, cmd.size, destBlob + cmd.padding);
-		destBlob += cmd.size + cmd.padding;
+	for (auto& cmd : gatherCommands_) {
+		cmd->Gather(pSourceFrameData, pDestBlob, pmon::mid::GatherCommand_::Context{});
 	}
 }
 
@@ -84,16 +175,27 @@ size_t PM_FRAME_QUERY::GetBlobSize() const
 	return blobSize_;
 }
 
-PM_FRAME_QUERY::CopyCommand_ PM_FRAME_QUERY::MapQueryElementToCopyCommand_(const PM_QUERY_ELEMENT& q, size_t pos)
+std::unique_ptr<pmon::mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherCommand_(const PM_QUERY_ELEMENT& q, size_t pos)
 {
-	// TODO: figure out what to do when metric is an array
-	const auto size = GetNsmMemberSize_(q.metric);
-	return CopyCommand_{
-		.offset = GetNsmMemberOffset_(q.metric) + size * q.arrayIndex,
-		// this padding will cause issues with something like char[260]
-		// TODO: calculate padding based on static type via x-macro machinery
-		// lookup from metric (not good for forward compat., maybe use intro?)
-		.padding = (uint8_t)util::GetPadding(pos, size),
-		.size = size,
-	};
+	using Pre = PmNsmPresentEvent;
+	using Gpu = PresentMonPowerTelemetryInfo;
+	using Cpu = CpuTelemetryInfo;
+
+	switch (q.metric) {
+	case PM_METRIC_PRESENT_RUNTIME:
+		return std::make_unique<CopyGatherCommand_<&Pre::Runtime>>(pos);
+	case PM_METRIC_GPU_POWER:
+		return std::make_unique<CopyGatherCommand_<&Gpu::gpu_power_w>>(pos);
+	case PM_METRIC_GPU_TEMPERATURE_LIMITED:
+		return std::make_unique<CopyGatherCommand_<&Gpu::gpu_temperature_limited>>(pos);
+	case PM_METRIC_PRESENT_MODE:
+		return std::make_unique<CopyGatherCommand_<&Pre::PresentMode>>(pos);
+	case PM_METRIC_PRESENT_QPC:
+		return std::make_unique<CopyGatherCommand_<&Pre::PresentStartTime>>(pos);
+	case PM_METRIC_GPU_FAN_SPEED:
+		return std::make_unique<CopyGatherCommand_<&Gpu::fan_speed_rpm>>(pos, q.arrayIndex);
+	case PM_METRIC_CPU_UTILIZATION:
+		return std::make_unique<CopyGatherCommand_<&Cpu::cpu_utilization>>(pos);
+	default: return {};
+	}
 }

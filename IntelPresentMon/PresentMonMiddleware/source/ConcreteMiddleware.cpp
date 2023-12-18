@@ -859,7 +859,7 @@ namespace pmon::mid
                 break;
             }
             // if we make it here, we have a ptr to frame data in nsm, time to gather to blob
-            pQuery->GatherToBlob(reinterpret_cast<const uint8_t*>(pNsmFrameData), pBlob);
+            pQuery->GatherToBlob(pNsmFrameData, pBlob);
             pBlob += pQuery->GetBlobSize();
             frames_copied++;
         }
