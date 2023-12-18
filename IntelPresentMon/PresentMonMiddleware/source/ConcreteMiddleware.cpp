@@ -379,6 +379,7 @@ namespace pmon::mid
             case PM_METRIC_DROPPED_FRAMES:
             case PM_METRIC_ALLOWS_TEARING:
             case PM_METRIC_NUM_PRESENTS:
+            case PM_METRIC_SWAP_CHAIN:
                 pQuery->accumFpsData = true;
                 break;
             case PM_METRIC_GPU_POWER:
@@ -1406,7 +1407,7 @@ namespace pmon::mid
             copyAllMetrics = false;
         }
 
-        // If the client choose to monitor frame information then this loop
+        // If the client chose to monitor frame information then this loop
         // will calculate and store all metrics.
         for (auto& pair : swapChainData) {
             auto& swapChain = pair.second;
@@ -1429,6 +1430,12 @@ namespace pmon::mid
             for (auto& qe : pQuery->elements) {
                 switch (qe.metric)
                 {
+                case PM_METRIC_SWAP_CHAIN:
+                {
+                    auto& output = reinterpret_cast<uint64_t&>(pBlob[qe.dataOffset]);
+                    output = pair.first;
+                }
+                    break;
                 case PM_METRIC_PRESENTED_FPS:
                 case PM_METRIC_DISPLAYED_FPS:
                 case PM_METRIC_FRAME_TIME:
