@@ -411,5 +411,133 @@ namespace PresentMonAPI2Mock
 			query.GatherToBlob(&frame, pBlob.get(), 0ull, 0.001);
 			Assert::AreEqual(double(13431ull) * 0.001, *(double*)pBlob.get());
 		}
+		TEST_METHOD(TestQueryDisplayChange)
+		{
+			const PmNsmFrameData frame{
+				.present_event = {
+					.ScreenTime = 23431ull,
+					.FinalState = PresentResult::Presented,
+					.last_displayed_qpc = 10000ull,
+				},
+			};
+			PM_QUERY_ELEMENT queryElements[]{
+				{ PM_METRIC_TIME_BETWEEN_DISPLAY_CHANGE, PM_STAT_NONE, 0, 0 },
+			};
+			PM_FRAME_QUERY query{ queryElements };
+			auto pBlob = std::make_unique<uint8_t[]>(query.GetBlobSize());
+			query.GatherToBlob(&frame, pBlob.get(), 0ull, 0.001);
+			Assert::AreEqual(double(13431ull) * 0.001, *(double*)pBlob.get());
+		}
+		TEST_METHOD(TestQueryDisplayChangeDropped)
+		{
+			const PmNsmFrameData frame{
+				.present_event = {
+					.ScreenTime = 23431ull,
+					.FinalState = PresentResult::Discarded,
+					.last_displayed_qpc = 10000ull,
+				},
+			};
+			PM_QUERY_ELEMENT queryElements[]{
+				{ PM_METRIC_TIME_BETWEEN_DISPLAY_CHANGE, PM_STAT_NONE, 0, 0 },
+			};
+			PM_FRAME_QUERY query{ queryElements };
+			auto pBlob = std::make_unique<uint8_t[]>(query.GetBlobSize());
+			query.GatherToBlob(&frame, pBlob.get(), 0ull, 0.001);
+			Assert::AreEqual(0., *(double*)pBlob.get());
+		}
+		TEST_METHOD(TestQueryDisplayChangeZero)
+		{
+			const PmNsmFrameData frame{
+				.present_event = {
+					.ScreenTime = 23431ull,
+					.FinalState = PresentResult::Presented,
+					.last_displayed_qpc = 0ull,
+				},
+			};
+			PM_QUERY_ELEMENT queryElements[]{
+				{ PM_METRIC_TIME_BETWEEN_DISPLAY_CHANGE, PM_STAT_NONE, 0, 0 },
+			};
+			PM_FRAME_QUERY query{ queryElements };
+			auto pBlob = std::make_unique<uint8_t[]>(query.GetBlobSize());
+			query.GatherToBlob(&frame, pBlob.get(), 0ull, 0.001);
+			Assert::AreEqual(0., *(double*)pBlob.get());
+		}
+		TEST_METHOD(TestQueryDroppedFalse)
+		{
+			const PmNsmFrameData frame{
+				.present_event = {
+					.FinalState = PresentResult::Presented,
+				},
+			};
+			PM_QUERY_ELEMENT queryElements[]{
+				{ PM_METRIC_DROPPED_FRAMES, PM_STAT_NONE, 0, 0 },
+			};
+			PM_FRAME_QUERY query{ queryElements };
+			auto pBlob = std::make_unique<uint8_t[]>(query.GetBlobSize());
+			query.GatherToBlob(&frame, pBlob.get(), 0ull, 0.001);
+			Assert::AreEqual(false, *(bool*)pBlob.get());
+		}
+		TEST_METHOD(TestQueryDroppedTrue)
+		{
+			const PmNsmFrameData frame{
+				.present_event = {
+					.FinalState = PresentResult::Discarded,
+				},
+			};
+			PM_QUERY_ELEMENT queryElements[]{
+				{ PM_METRIC_DROPPED_FRAMES, PM_STAT_NONE, 0, 0 },
+			};
+			PM_FRAME_QUERY query{ queryElements };
+			auto pBlob = std::make_unique<uint8_t[]>(query.GetBlobSize());
+			query.GatherToBlob(&frame, pBlob.get(), 0ull, 0.001);
+			Assert::AreEqual(true, *(bool*)pBlob.get());
+		}
+		TEST_METHOD(TestQueryTime)
+		{
+			const PmNsmFrameData frame{
+				.present_event = {
+					.PresentStartTime = 23431ull,
+				},
+			};
+			PM_QUERY_ELEMENT queryElements[]{
+				{ PM_METRIC_TIME, PM_STAT_NONE, 0, 0 },
+			};
+			PM_FRAME_QUERY query{ queryElements };
+			auto pBlob = std::make_unique<uint8_t[]>(query.GetBlobSize());
+			query.GatherToBlob(&frame, pBlob.get(), 10000ull, 0.001);
+			Assert::AreEqual(double(13431ull) * 0.001, *(double*)pBlob.get());
+		}
+		TEST_METHOD(TestQueryDifferenceClampZero)
+		{
+			const PmNsmFrameData frame{
+				.present_event = {
+					.PresentStartTime = 30000ull,
+					.ScreenTime = 23431ull,
+				},
+			};
+			PM_QUERY_ELEMENT queryElements[]{
+				{ PM_METRIC_TIME_IN_PRESENT_API, PM_STAT_NONE, 0, 0 },
+			};
+			PM_FRAME_QUERY query{ queryElements };
+			auto pBlob = std::make_unique<uint8_t[]>(query.GetBlobSize());
+			query.GatherToBlob(&frame, pBlob.get(), 10000ull, 0.001);
+			Assert::AreEqual(0., *(double*)pBlob.get());
+		}
+		TEST_METHOD(TestQueryDifferenceNegative)
+		{
+			const PmNsmFrameData frame{
+				.present_event = {
+					.PresentStartTime = 23431ull,
+					.GPUStartTime = 10000ull,
+				},
+			};
+			PM_QUERY_ELEMENT queryElements[]{
+				{ PM_METRIC_TIME_UNTIL_RENDER_START, PM_STAT_NONE, 0, 0 },
+			};
+			PM_FRAME_QUERY query{ queryElements };
+			auto pBlob = std::make_unique<uint8_t[]>(query.GetBlobSize());
+			query.GatherToBlob(&frame, pBlob.get(), 10000ull, 0.001);
+			Assert::AreEqual(-double(13431ull) * 0.001, *(double*)pBlob.get());
+		}
 	};
 }

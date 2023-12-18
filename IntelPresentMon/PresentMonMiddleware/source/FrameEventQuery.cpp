@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include "../../PresentMonUtils/PresentMonNamedPipe.h"
 #include "FrameEventQuery.h"
 #include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
@@ -5,6 +6,7 @@
 #include "../../CommonUtilities/source/Meta.h"
 #include <algorithm>
 #include <cstddef>
+#include <__msvc_int128.hpp>
 
 using namespace pmon;
 
@@ -137,18 +139,113 @@ namespace
 		uint32_t outputOffset_;
 		uint16_t outputPaddingSize_;
 	};
-	//class QpcDifferenceGatherCommand_ : public pmon::mid::GatherCommand_
-	//{
-
-	//};
-	//class DroppedGatherCommand_ : public pmon::mid::GatherCommand_
-	//{
-
-	//};
-	//class DroppedQpcDifferenceGatherCommand_ : public pmon::mid::GatherCommand_
-	//{
-
-	//};
+	template<uint64_t PmNsmPresentEvent::* pStart, uint64_t PmNsmPresentEvent::* pEnd, bool doZeroCheck, bool doDroppedCheck, bool allowNegative, bool clampZero>
+	class QpcDifferenceGatherCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		QpcDifferenceGatherCommand_(size_t nextAvailableByteOffset) {
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, sizeof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context& ctx) const override
+		{
+			static_assert(!allowNegative || !clampZero);
+			if constexpr (doDroppedCheck) {
+				if (ctx.dropped) {
+					return;
+				}
+			}
+			uint64_t start = pSourceFrameData->present_event.*pStart;
+			if constexpr (doZeroCheck) {
+				if (start == 0ull) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+					return;
+				}
+			}
+			if constexpr (allowNegative || clampZero) {
+				auto qpcDurationDouble = double(pSourceFrameData->present_event.*pEnd) - double(start);
+				if constexpr (clampZero) {
+					qpcDurationDouble = std::max(0., qpcDurationDouble);
+				}
+				const auto val = ctx.performanceCounterPeriodMs * qpcDurationDouble;
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			}
+			else {
+				const auto qpcDuration = pSourceFrameData->present_event.*pEnd - start;
+				const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			}
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + sizeof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
+	class DroppedGatherCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		DroppedGatherCommand_(size_t nextAvailableByteOffset) : outputOffset_{ (uint32_t)nextAvailableByteOffset } {}
+		void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context& ctx) const override
+		{
+			reinterpret_cast<bool&>(pDestBlob[outputOffset_]) = ctx.dropped;
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + sizeof(bool);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+	};
+	template<uint64_t PmNsmPresentEvent::* pEnd>
+	class StartDifferenceGatherCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		StartDifferenceGatherCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, sizeof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context& ctx) const override
+		{
+			const auto qpcDuration = pSourceFrameData->present_event.*pEnd - ctx.qpcStart;
+			const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
+			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + sizeof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
 }
 
 PM_FRAME_QUERY::PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
@@ -224,6 +321,26 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 		return std::make_unique<CopyGatherCommand_<&Cpu::cpu_utilization>>(pos);
 	case PM_METRIC_GPU_BUSY_TIME:
 		return std::make_unique<QpcDurationGatherCommand_<&Pre::GPUDuration>>(pos);
+	case PM_METRIC_GPU_VIDEO_BUSY_TIME:
+		return std::make_unique<QpcDurationGatherCommand_<&Pre::GPUVideoDuration>>(pos);
+	case PM_METRIC_TIME_BETWEEN_DISPLAY_CHANGE:
+		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::last_displayed_qpc, &Pre::ScreenTime, 1, 1, 0, 0>>(pos);
+	case PM_METRIC_DROPPED_FRAMES:
+		return std::make_unique<DroppedGatherCommand_>(pos);
+	case PM_METRIC_TIME:
+		return std::make_unique<StartDifferenceGatherCommand_<&Pre::PresentStartTime>>(pos);
+	case PM_METRIC_TIME_BETWEEN_PRESENTS:
+		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::last_present_qpc, &Pre::PresentStartTime, 0, 0, 0, 0>>(pos);
+	case PM_METRIC_TIME_UNTIL_DISPLAYED:
+		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::PresentStartTime, &Pre::ScreenTime, 0, 1, 0, 0>>(pos);
+	case PM_METRIC_TIME_SINCE_INPUT:
+		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::InputTime, &Pre::PresentStartTime, 1, 0, 0, 0>>(pos);
+	case PM_METRIC_TIME_IN_PRESENT_API:
+		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::PresentStartTime, &Pre::ScreenTime, 0, 0, 0, 1>>(pos);
+	case PM_METRIC_TIME_UNTIL_RENDER_COMPLETE:
+		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::PresentStartTime, &Pre::ReadyTime, 1, 0, 1, 0>>(pos);
+	case PM_METRIC_TIME_UNTIL_RENDER_START:
+		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::PresentStartTime, &Pre::GPUStartTime, 1, 0, 1, 0>>(pos);
 	default: return {};
 	}
 }

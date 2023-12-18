@@ -90,7 +90,8 @@ namespace pmon::ipc::intro {
 		X_(METRIC, TIME_UNTIL_DISPLAYED, "Time Until Displayed", "", "The time between the Present() call and when the frame was displayed") \
 		X_(METRIC, TIME_BETWEEN_DISPLAY_CHANGE, "Time Between Display Change", "", "Time between display scanout of previous frame and this frame") \
 		X_(METRIC, TIME_UNTIL_RENDER_START, "Time Until Render Start", "", "The time between the Present() call and when the GPU work started") \
-		X_(METRIC, TIME_SINCE_INPUT, "Time Since Input", "", "The time between the Present() call and the earliest keyboard or mouse interaction that contributed to this frame")
+		X_(METRIC, TIME_SINCE_INPUT, "Time Since Input", "", "The time between the Present() call and the earliest keyboard or mouse interaction that contributed to this frame") \
+		X_(METRIC, GPU_VIDEO_BUSY_TIME, "GPU Video Busy Time", "", "The time video encode/decode was active separate from the other engines in milliseconds")
 #define ENUM_KEY_LIST_METRIC_TYPE(X_) \
 		X_(METRIC_TYPE, DYNAMIC, "Dynamic Metric", "", "Metric that changes over time and requires polling using a registered query") \
 		X_(METRIC_TYPE, STATIC, "Static Metric", "", "Metric that never changes and can be polled without registering a query") \
@@ -250,7 +251,8 @@ namespace pmon::ipc::intro {
 		X_(PM_METRIC_TIME_UNTIL_DISPLAYED, PM_METRIC_TYPE_FRAME_EVENT, PM_UNIT_MILLISECONDS, PM_DATA_TYPE_VOID, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_NONE) \
 		X_(PM_METRIC_TIME_BETWEEN_DISPLAY_CHANGE, PM_METRIC_TYPE_FRAME_EVENT, PM_UNIT_MILLISECONDS, PM_DATA_TYPE_VOID, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_NONE) \
 		X_(PM_METRIC_TIME_UNTIL_RENDER_START, PM_METRIC_TYPE_FRAME_EVENT, PM_UNIT_MILLISECONDS, PM_DATA_TYPE_VOID, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_NONE) \
-		X_(PM_METRIC_TIME_SINCE_INPUT, PM_METRIC_TYPE_FRAME_EVENT, PM_UNIT_MILLISECONDS, PM_DATA_TYPE_VOID, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_NONE) 
+		X_(PM_METRIC_TIME_SINCE_INPUT, PM_METRIC_TYPE_FRAME_EVENT, PM_UNIT_MILLISECONDS, PM_DATA_TYPE_VOID, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_NONE) \
+		X_(PM_METRIC_GPU_VIDEO_BUSY_TIME, PM_METRIC_TYPE_FRAME_EVENT, PM_UNIT_MILLISECONDS, PM_DATA_TYPE_VOID, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_NONE) 
 // static mapping of datatype enum to static type
 	template<PM_DATA_TYPE T>
 	struct EnumToStaticType;
