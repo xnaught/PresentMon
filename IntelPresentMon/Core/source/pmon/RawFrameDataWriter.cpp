@@ -172,9 +172,40 @@ namespace p2c::pmon
         const uint32_t activeDeviceId = 1;
 
         std::array queryElements{
+            Element{.metricId = PM_METRIC_SWAP_CHAIN, .deviceId = 0 },
             Element{.metricId = PM_METRIC_PRESENT_RUNTIME, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_SYNC_INTERVAL, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_PRESENT_FLAGS, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_DROPPED_FRAMES, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_TIME, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_TIME_IN_PRESENT_API, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_TIME_BETWEEN_PRESENTS, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_ALLOWS_TEARING, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_PRESENT_MODE, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_TIME_UNTIL_RENDER_COMPLETE, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_TIME_UNTIL_DISPLAYED, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_TIME_BETWEEN_DISPLAY_CHANGE, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_TIME_UNTIL_RENDER_START, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_GPU_BUSY_TIME, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_GPU_VIDEO_BUSY_TIME, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_TIME_SINCE_INPUT, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_PRESENT_QPC, .deviceId = 0 },
+
             Element{.metricId = PM_METRIC_GPU_POWER, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_VOLTAGE, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_FREQUENCY, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_TEMPERATURE, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_FAN_SPEED, .deviceId = activeDeviceId, .index = 0 },
+            Element{.metricId = PM_METRIC_GPU_FAN_SPEED, .deviceId = activeDeviceId, .index = 1 },
+            Element{.metricId = PM_METRIC_GPU_FAN_SPEED, .deviceId = activeDeviceId, .index = 2 },
+            Element{.metricId = PM_METRIC_GPU_FAN_SPEED, .deviceId = activeDeviceId, .index = 3 },
+            Element{.metricId = PM_METRIC_GPU_POWER_LIMITED, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_TEMPERATURE_LIMITED, .deviceId = activeDeviceId },
+
+            Element{.metricId = PM_METRIC_CPU_UTILIZATION, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_CPU_POWER, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_CPU_TEMPERATURE, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_CPU_FREQUENCY, .deviceId = activeDeviceId },
         };
         pQueryElementContainer = std::make_unique<QueryElementContainer_>(
             queryElements, numberOfBlobs, session, introRoot);
