@@ -151,15 +151,15 @@ bool ParseKeyName(KeyNameCode const* valid, size_t validCount, wchar_t* name, wc
         }
     }
 
-    int col = PrintError(L"error: %s '%s'.\nValid options (case insensitive):", errorMessage, name);
+    PrintError(L"error: %s: %s\n", errorMessage, name);
 
-    size_t consoleWidth = GetConsoleWidth();
+    int width = (int) (0.8 * GetConsoleWidth());
+    int col = PrintError(L"       valid options:");
     for (size_t i = 0; i < validCount; ++i) {
-        auto len = wcslen(valid[i].mName);
-        if (col + len + 1 > consoleWidth) {
-            col = PrintError(L"\n   ") - 1;
-        }
         col += PrintError(L" %s", valid[i].mName);
+        if (col > width) {
+            col = PrintError(L"\n                     ") - 1;
+        }
     }
     PrintError(L"\n");
 
@@ -168,11 +168,11 @@ bool ParseKeyName(KeyNameCode const* valid, size_t validCount, wchar_t* name, wc
 
 bool AssignHotkey(wchar_t* key, CommandLineArgs* args)
 {
-#pragma warning(suppress: 4996)
+    #pragma warning(suppress: 4996)
     auto token = wcstok(key, L"+");
     for (;;) {
         auto prev = token;
-#pragma warning(suppress: 4996)
+        #pragma warning(suppress: 4996)
         token = wcstok(nullptr, L"+");
         if (token == nullptr) {
             if (!ParseKeyName(HOTKEY_KEYS, _countof(HOTKEY_KEYS), prev, L"invalid -hotkey key", &args->mHotkeyVirtualKeyCode)) {
@@ -357,6 +357,8 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     bool DEPRECATED_verbose = false;
     bool DEPRECATED_wmr = false;
 
+    bool sessionNameSet = false;
+
     #if PRESENTMON_ENABLE_DEBUG_TRACE
     bool verboseTrace = false;
     #endif
@@ -390,7 +392,7 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         else if (ParseArg(argv[i], L"verbose"))          { DEPRECATED_verbose         = true; continue; }
 
         // Execution options:
-        else if (ParseArg(argv[i], L"session_name"))           { if (ParseValue(argv, argc, &i, &args->mSessionName)) continue; }
+        else if (ParseArg(argv[i], L"session_name"))           { if (ParseValue(argv, argc, &i, &args->mSessionName)) { sessionNameSet = true; continue; } }
         else if (ParseArg(argv[i], L"stop_existing_session"))  { args->mStopExistingSession = true; continue; }
         else if (ParseArg(argv[i], L"terminate_existing"))     { args->mTerminateExisting   = true; continue; }
         else if (ParseArg(argv[i], L"dont_restart_as_admin"))  { DEPRECATED_dontRestart     = true; continue; }
@@ -543,16 +545,20 @@ bool ParseCommandLine(int argc, wchar_t** argv)
 
     // Try to initialize the console, and warn if we're not going to be able to
     // do the advanced display as requested.
-    if (args->mConsoleOutputType == ConsoleOutput::Full && !IsConsoleInitialized()) {
+    if (args->mConsoleOutputType == ConsoleOutput::Full && !StdOutIsConsole()) {
         PrintWarning(L"warning: could not initialize console display; continuing with -no_top.\n");
         args->mConsoleOutputType = ConsoleOutput::Simple;
     }
 
     // If -terminate_existing, warn about any normal arguments since we'll just
     // be stopping an existing session and then exiting.
-    if (args->mTerminateExisting && argc != 2) {
-        PrintWarning(L"warning: -terminate_existing exits without capturing anything; ignoring all capture,\n"
-                     L"         output, and recording arguments.\n");
+    if (args->mTerminateExisting) {
+        int expectedArgc = 2;
+        if (sessionNameSet) expectedArgc += 1;
+        if (argc != expectedArgc) {
+            PrintWarning(L"warning: -terminate_existing exits without capturing anything; ignoring all capture,\n"
+                         L"         output, and recording arguments.\n");
+        }
     }
 
     // Convert the provided process names into a canonical form used for comparison.

@@ -536,15 +536,18 @@ void Output()
             #endif
             break;
         case ConsoleOutput::Full:
-            for (auto const& pair : gProcesses) {
-                UpdateConsole(pair.first, pair.second);
-            }
-            UpdateConsole(gProcesses, lsrData);
+            if (BeginConsoleUpdate()) {
+                for (auto const& pair : gProcesses) {
+                    UpdateConsole(pair.first, pair.second);
+                }
+                UpdateConsole(gProcesses, lsrData);
 
-            if (realtimeRecording) {
-                ConsolePrintLn(L"** RECORDING **");
+                if (realtimeRecording) {
+                    ConsolePrintLn(L"** RECORDING **");
+                }
+
+                EndConsoleUpdate();
             }
-            CommitConsole();
             break;
         }
 

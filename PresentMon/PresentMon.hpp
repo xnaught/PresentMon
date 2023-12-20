@@ -108,14 +108,16 @@ bool ParseCommandLine(int argc, wchar_t** argv);
 CommandLineArgs const& GetCommandLineArgs();
 
 // Console.cpp:
-bool InitializeConsole();
-bool IsConsoleInitialized();
-int PrintWarning(wchar_t const* format, ...);
-int PrintError(wchar_t const* format, ...);
+void InitializeConsole();
+void FinalizeConsole();
+bool StdOutIsConsole();
+bool BeginConsoleUpdate();
+void EndConsoleUpdate();
 void ConsolePrint(wchar_t const* format, ...);
 void ConsolePrintLn(wchar_t const* format, ...);
-void CommitConsole();
 void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo);
+int PrintWarning(wchar_t const* format, ...);
+int PrintError(wchar_t const* format, ...);
 
 // ConsumerThread.cpp:
 void StartConsumerThread(TRACEHANDLE traceHandle);

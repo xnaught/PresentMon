@@ -2189,7 +2189,7 @@ void PMTraceConsumer::HandleProcessEvent(EVENT_RECORD* pEventRecord)
             // When run as-administrator, ImageName will be a fully-qualified path.
             // e.g.: \Device\HarddiskVolume...\...\Proces.exe.  We prune off everything other than
             // the filename here to be consistent.
-            size_t start = ImageName.find_last_of('\\') + 1;
+            size_t start = ImageName.find_last_of(L'\\') + 1;
             event.ImageFileName = ImageName.c_str() + start;
             break;
         }

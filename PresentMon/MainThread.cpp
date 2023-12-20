@@ -305,5 +305,6 @@ int wmain(int argc, wchar_t** argv)
     */
     DestroyWindow(gWnd);
     UnregisterClass(wndClass.lpszClassName, NULL);
+    FinalizeConsole();
     return 0;
 }
