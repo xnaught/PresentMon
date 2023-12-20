@@ -46,10 +46,16 @@ namespace p2c::pmon
 		using namespace met;
 
 		for (auto m : pIntrospectionRoot->GetMetrics()) {
+			// not excluding any metric to keep index stability for the time being
 			// exclude metrics when there is no device supporting them
-			if (std::ranges::none_of(m.GetDeviceMetricInfo(), [](auto&& i) { return i.IsAvailable(); })) continue;
+			// if (std::ranges::none_of(m.GetDeviceMetricInfo(), [](auto&& i) { return i.IsAvailable(); })) continue;
 			// loop over all indexes for max array size among all available devices
-			const auto maxIndex = DynamicPollingMetric::CalculateMaxArrayIndex(m.GetId(), *pIntrospectionRoot);
+			// const auto maxIndex = DynamicPollingMetric::CalculateMaxArrayIndex(m.GetId(), *pIntrospectionRoot);
+			// instead of checking index, we're going to hardcode that fan speed has 5 elements
+			// this is to keep stablitity of the metric index on the frontend
+			// TODO: give fully-configured metrics a uid OR make frontend specify widget with id/stat/index instead of
+			// just registered metric container index
+			const auto maxIndex = m.GetId() == PM_METRIC_GPU_FAN_SPEED ? 5u : 1u;
 			for (uint32_t i = 0; i < maxIndex; i++) {
 				for (auto s : m.GetStatInfo()) {
 					// skip STAT_NONE (it's only for frame event data)
@@ -177,13 +183,5 @@ namespace p2c::pmon
 	void PresentMon::AddMetric(std::unique_ptr<met::Metric> metric_)
 	{
 		metrics.push_back(std::move(metric_));
-	}
-	void PresentMon::AddMetrics(std::vector<std::unique_ptr<met::Metric>> metrics_)
-	{
-		metrics.insert(
-			metrics.end(),
-			std::make_move_iterator(metrics_.begin()),
-			std::make_move_iterator(metrics_.end())
-		);
 	}
 }

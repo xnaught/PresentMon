@@ -49,7 +49,6 @@ namespace p2c::pmon
 	private:
 		// functions
 		void AddMetric(std::unique_ptr<met::Metric> metric_);
-		void AddMetrics(std::vector<std::unique_ptr<met::Metric>> metrics_);
 		// data
 		double window = -1.;
 		double offset = -1.;

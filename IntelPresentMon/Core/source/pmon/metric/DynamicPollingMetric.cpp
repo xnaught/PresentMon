@@ -108,7 +108,10 @@ namespace p2c::pmon::met
         // find max array size among all devices with availability
         uint32_t arraySize = CalculateMaxArrayIndex(metricId, introRoot);
         // add [i] to end of metric name if it's an array metric
-        if (arraySize > 1) {
+        // we're hardcoding here that fan speed is an array
+        // due to metric index stability issues
+        // TODO: dynamically detect necessity to add index
+        if (metricId == PM_METRIC_GPU_FAN_SPEED) {
             name += std::format(L" [{}]", arrayIndex);
         }
         return name;
