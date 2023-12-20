@@ -112,8 +112,6 @@ bool InitializeConsole();
 bool IsConsoleInitialized();
 int PrintWarning(wchar_t const* format, ...);
 int PrintError(wchar_t const* format, ...);
-int PrintWarningNoNewLine(wchar_t const* format, ...);
-int PrintErrorNoNewLine(wchar_t const* format, ...);
 void ConsolePrint(wchar_t const* format, ...);
 void ConsolePrintLn(wchar_t const* format, ...);
 void CommitConsole();

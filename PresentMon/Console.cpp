@@ -241,6 +241,8 @@ namespace {
 
 int PrintColor(WORD color, wchar_t const* format, va_list val)
 {
+    wchar_t* pformat = (wchar_t*) format;
+
     CONSOLE_SCREEN_BUFFER_INFO info = {};
     auto setColor = IsConsoleInitialized() && GetConsoleScreenBufferInfo(gConsoleHandle, &info) != 0;
     if (setColor) {
@@ -249,12 +251,25 @@ int PrintColor(WORD color, wchar_t const* format, va_list val)
             color |= FOREGROUND_INTENSITY;
         }
         SetConsoleTextAttribute(gConsoleHandle, WORD(bg | color));
+
+        auto formatLen = wcslen(format);
+        if (formatLen > 0 && format[formatLen - 1] == L'\n') {
+            auto size = sizeof(wchar_t) * formatLen;
+            pformat = (wchar_t*) malloc(size);
+            memcpy(pformat, format, size);
+            pformat[formatLen - 1] = '\0';
+        }
     }
 
-    int c = vfwprintf(stderr, format, val);
+    int c = vfwprintf(stderr, pformat, val);
 
     if (setColor) {
         SetConsoleTextAttribute(gConsoleHandle, info.wAttributes);
+
+        if (pformat != format) {
+            c += fwprintf(stderr, L"\n");
+            free(pformat);
+        }
     }
 
     return c;
@@ -268,30 +283,10 @@ int PrintWarning(wchar_t const* format, ...)
     va_start(val, format);
     int c = PrintColor(FOREGROUND_RED | FOREGROUND_GREEN, format, val);
     va_end(val);
-    c += fwprintf(stderr, L"\n");
     return c;
 }
 
 int PrintError(wchar_t const* format, ...)
-{
-    va_list val;
-    va_start(val, format);
-    int c = PrintColor(FOREGROUND_RED, format, val);
-    va_end(val);
-    c += fwprintf(stderr, L"\n");
-    return c;
-}
-
-int PrintWarningNoNewLine(wchar_t const* format, ...)
-{
-    va_list val;
-    va_start(val, format);
-    int c = PrintColor(FOREGROUND_RED | FOREGROUND_GREEN, format, val);
-    va_end(val);
-    return c;
-}
-
-int PrintErrorNoNewLine(wchar_t const* format, ...)
 {
     va_list val;
     va_start(val, format);

@@ -111,17 +111,17 @@ int RestartAsAdministrator(
         GetExitCodeProcess(info.hProcess, &code);
         CloseHandle(info.hProcess);
     } else {
-        PrintErrorNoNewLine(L"error: failed to elevate privilege: ");
+        PrintError(L"error: failed to elevate privilege: ");
         int e = GetLastError();
         switch (e) {
-        case ERROR_FILE_NOT_FOUND:    PrintError(L"file not found"); break;
-        case ERROR_PATH_NOT_FOUND:    PrintError(L"path not found"); break;
-        case ERROR_DLL_NOT_FOUND:     PrintError(L"dll not found"); break;
-        case ERROR_ACCESS_DENIED:     PrintError(L"access denied"); break;
-        case ERROR_CANCELLED:         PrintError(L"cancelled"); break;
-        case ERROR_NOT_ENOUGH_MEMORY: PrintError(L"out of memory"); break;
-        case ERROR_SHARING_VIOLATION: PrintError(L"sharing violation"); break;
-        default:                      PrintError(L"error code %u", e); break;
+        case ERROR_FILE_NOT_FOUND:    PrintError(L"file not found.\n"); break;
+        case ERROR_PATH_NOT_FOUND:    PrintError(L"path not found.\n"); break;
+        case ERROR_DLL_NOT_FOUND:     PrintError(L"dll not found.\n"); break;
+        case ERROR_ACCESS_DENIED:     PrintError(L"access denied.\n"); break;
+        case ERROR_CANCELLED:         PrintError(L"cancelled.\n"); break;
+        case ERROR_NOT_ENOUGH_MEMORY: PrintError(L"out of memory.\n"); break;
+        case ERROR_SHARING_VIOLATION: PrintError(L"sharing violation.\n"); break;
+        default:                      PrintError(L"error code %u.\n", e); break;
         }
     }
 
