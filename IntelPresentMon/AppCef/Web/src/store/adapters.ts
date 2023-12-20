@@ -14,7 +14,7 @@ export class AdaptersModule extends VuexModule {
     this.adapters = adapters;
   }
 
-  @Action({ commit: 'replaceAll' })
+  @Action({rawError: true, commit: 'replaceAll' })
   async refresh() {
     return await Api.enumerateAdapters();
   }

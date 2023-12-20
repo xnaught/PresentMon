@@ -34,12 +34,12 @@ export class LoadoutModule extends VuexModule {
         return JSON.stringify(file, null, 3);
     }
 
-    @Action
+    @Action({rawError: true})
     async browseAndSerialize() {
         await Api.browseStoreSpec(this.fileContents);
     }
 
-    @Action
+    @Action({rawError: true})
     async serializeCustom() {
         // make sure we are on custom preset
         if (Preferences.preferences.selectedPreset === Preset.Custom) {
@@ -58,7 +58,7 @@ export class LoadoutModule extends VuexModule {
     addGraph_() {
         this.widgets.push(makeDefaultGraph(0));
     }
-    @Action
+    @Action({rawError: true})
     async addGraph() {
         this.context.commit('addGraph_');
         await this.serializeCustom();
@@ -67,7 +67,7 @@ export class LoadoutModule extends VuexModule {
     setGraphAttribute_<K extends keyof Graph>(payload: {index:number, attr: K, val: Graph[K]}) {
         AsGraph(this.widgets[payload.index])[payload.attr] = payload.val;
     }
-    @Action
+    @Action({rawError: true})
     async setGraphAttribute<K extends keyof Graph>(payload: {index:number, attr: K, val: Graph[K]}) {
         this.context.commit('setGraphAttribute_', payload);
         await this.serializeCustom();
@@ -76,7 +76,7 @@ export class LoadoutModule extends VuexModule {
     setGraphTypeAttribute_<K extends keyof Graph['graphType']>(payload: {index:number, attr: K, val: Graph['graphType'][K]}) {
         AsGraph(this.widgets[payload.index]).graphType[payload.attr] = payload.val;
     }
-    @Action
+    @Action({rawError: true})
     async setGraphTypeAttribute<K extends keyof Graph['graphType']>(payload: {index:number, attr: K, val: Graph['graphType'][K]}) {
         this.context.commit('setGraphTypeAttribute_', payload);
         await this.serializeCustom();
@@ -86,7 +86,7 @@ export class LoadoutModule extends VuexModule {
     addReadout_() {
         this.widgets.push(makeDefaultReadout(0));
     }
-    @Action
+    @Action({rawError: true})
     async addReadout() {
         this.context.commit('addReadout_');
         await this.serializeCustom();
@@ -95,7 +95,7 @@ export class LoadoutModule extends VuexModule {
     setReadoutAttribute_<K extends keyof Readout>(payload: {index:number, attr: K, val: Readout[K]}) {
         AsReadout(this.widgets[payload.index])[payload.attr] = payload.val;
     }
-    @Action
+    @Action({rawError: true})
     async setReadoutAttribute<K extends keyof Readout>(payload: {index:number, attr: K, val: Readout[K]}) {
         this.context.commit('setReadoutAttribute_', payload);
         await this.serializeCustom();
@@ -106,7 +106,7 @@ export class LoadoutModule extends VuexModule {
     removeWidget_(index:number) {
         this.widgets.splice(index, 1);
     }
-    @Action
+    @Action({rawError: true})
     async removeWidget(index:number) {
         this.context.commit('removeWidget_', index);
         await this.serializeCustom();
@@ -122,7 +122,7 @@ export class LoadoutModule extends VuexModule {
         }
         this.widgets[payload.index].metrics = payload.metrics;
     }
-    @Action
+    @Action({rawError: true})
     async setWidgetMetrics(payload: {index:number, metrics: WidgetMetric[]}) {
         this.context.commit('setWidgetMetrics_', payload);
         await this.serializeCustom();
@@ -136,7 +136,7 @@ export class LoadoutModule extends VuexModule {
         }
         widget.metrics.push(makeDefaultWidgetMetric(payload.metricId));
     }
-    @Action
+    @Action({rawError: true})
     async addWidgetMetric(payload: {index:number, metricId: number}) {
         this.context.commit('addWidgetMetric_', payload);
         await this.serializeCustom();
@@ -150,7 +150,7 @@ export class LoadoutModule extends VuexModule {
         }
         widget.metrics.splice(payload.metricIdIdx, 1);
     }
-    @Action
+    @Action({rawError: true})
     async removeWidgetMetric(payload: {index:number, metricIdIdx: number}) {
         this.context.commit('removeWidgetMetric_', payload);
         await this.serializeCustom();
@@ -160,7 +160,7 @@ export class LoadoutModule extends VuexModule {
         const widget = this.widgets[payload.index];
         widget.metrics.splice(payload.metricIdx, 1, payload.metric);
     }
-    @Action
+    @Action({rawError: true})
     async setWidgetMetric(payload: {index:number, metricIdx: number, metric: WidgetMetric}) {
         this.context.commit('setWidgetMetric_', payload);
         await this.serializeCustom();
@@ -181,7 +181,7 @@ export class LoadoutModule extends VuexModule {
         }
         this.widgets.splice(payload.index, 1, w);
     }
-    @Action
+    @Action({rawError: true})
     async resetWidgetAs(payload: {index: number, type: WidgetType}) {
         this.context.commit('resetWidgetAs_', payload);
         await this.serializeCustom();
@@ -191,7 +191,7 @@ export class LoadoutModule extends VuexModule {
         const movedItem = this.widgets.splice(payload.from, 1)[0];
         this.widgets.splice(payload.to, 0, movedItem);
     }
-    @Action
+    @Action({rawError: true})
     async moveWidget(payload: {from: number, to: number}) {
         this.context.commit('moveWidget_', payload);
         await this.serializeCustom();
@@ -211,7 +211,7 @@ export class LoadoutModule extends VuexModule {
         this.widgets.splice(0, this.widgets.length, ...widgets);
     }
 
-    @Action
+    @Action({rawError: true})
     async parseAndReplace(payload: {payload: string}) {
         const loadout = JSON.parse(payload.payload) as LoadoutFile;
         if (loadout.signature.code !== signature.code) throw new Error(`Bad loadout file format; expect:${signature.code} actual:${loadout.signature.code}`);

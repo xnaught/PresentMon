@@ -18,7 +18,7 @@ export class MetricsModule extends VuexModule {
     this.metrics = metrics;
   }
 
-  @Action
+  @Action({rawError: true})
   async load() {
     if (this.metrics.length === 0) {
       this.context.commit('replaceAll', await Api.enumerateMetrics());

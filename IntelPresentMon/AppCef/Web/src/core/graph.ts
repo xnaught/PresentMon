@@ -96,6 +96,12 @@ const migrations: Migration[] = [
           graph.textSize = def.textSize;
       }
   },
+  {
+      version: '0.12.0',
+      migrate: (graph: Graph) => {
+          throw new Error('Cannot migrate loadouts below version 0.12.0');
+      }
+  },
 ];
 
 migrations.sort((a, b) => compareVersions(a.version, b.version));

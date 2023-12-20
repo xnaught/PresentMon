@@ -47,6 +47,12 @@ const migrations: Migration[] = [
             readout.backgroundColor = def.backgroundColor;
         }
     },
+    {
+        version: '0.12.0',
+        migrate: (readout: Readout) => {
+            throw new Error('Cannot migrate loadouts below version 0.12.0');
+        }
+    },
 ];
 
 migrations.sort((a, b) => compareVersions(a.version, b.version));

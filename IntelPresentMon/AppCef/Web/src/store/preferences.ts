@@ -65,14 +65,14 @@ export class PreferencesModule extends VuexModule {
     this.debounceToken = null;
   }
 
-  @Action
+  @Action({rawError: true})
   async writeAdapterId(id: number) {    
     await Api.setAdapter(id);
     this.setAttribute({attr: 'adapterId', val: id});
     this.serialize();
   }
 
-  @Action
+  @Action({rawError: true})
   serialize() {
     if (this.debounceToken !== null) {
       clearTimeout(this.debounceToken);
@@ -89,7 +89,7 @@ export class PreferencesModule extends VuexModule {
     this.setDebounceToken(token);
   }
 
-  @Action
+  @Action({rawError: true})
   resetPreferences() {    
     this.setAllPreferences(makeDefaultPreferences());
     // start in slot 1
@@ -97,13 +97,13 @@ export class PreferencesModule extends VuexModule {
     this.serialize();
   }
 
-  @Action
+  @Action({rawError: true})
   async writeAttribute<K extends keyof PreferencesType>(payload: {attr: K, val: PreferencesType[K]}) {
     this.setAttribute(payload);
     this.serialize();
   }
 
-  @Action
+  @Action({rawError: true})
   async writeCapture(active: boolean) {
     if (active) {
       if (this.preferences.enableCaptureDuration) {
@@ -123,7 +123,7 @@ export class PreferencesModule extends VuexModule {
     }
   }
 
-  @Action
+  @Action({rawError: true})
   async parseAndReplaceRawPreferenceString(payload: {payload: string}) {
       const config = JSON.parse(payload.payload) as PreferenceFile;
       if (config.signature.code !== signature.code) throw new Error('Bad file format');
