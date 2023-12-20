@@ -1,7 +1,7 @@
 {
    "signature": {
       "code": "p2c-cap-load",
-      "version": "0.11.0"
+      "version": "0.12.0"
    },
    "widgets": [
       {
@@ -9,7 +9,7 @@
          "metrics": [
             {
                "key": 5,
-               "metricId": 201,
+               "metricId": 348,
                "lineColor": {
                   "r": 100,
                   "g": 255,
@@ -46,7 +46,7 @@
          "metrics": [
             {
                "key": 5,
-               "metricId": 0,
+               "metricId": 7,
                "lineColor": {
                   "r": 100,
                   "g": 255,
@@ -83,7 +83,7 @@
          "metrics": [
             {
                "key": 10,
-               "metricId": 1,
+               "metricId": 8,
                "lineColor": {
                   "r": 100,
                   "g": 255,

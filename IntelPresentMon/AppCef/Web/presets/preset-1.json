@@ -1,7 +1,7 @@
 {
    "signature": {
       "code": "p2c-cap-load",
-      "version": "0.11.0"
+      "version": "0.12.0"
    },
    "widgets": [
       {
@@ -9,7 +9,7 @@
          "metrics": [
             {
                "key": 1,
-               "metricId": 201,
+               "metricId": 348,
                "lineColor": {
                   "r": 100,
                   "g": 255,
@@ -46,7 +46,7 @@
          "metrics": [
             {
                "key": 1,
-               "metricId": 0,
+               "metricId": 7,
                "lineColor": {
                   "r": 100,
                   "g": 255,
@@ -83,7 +83,7 @@
          "metrics": [
             {
                "key": 0,
-               "metricId": 0,
+               "metricId": 7,
                "lineColor": {
                   "r": 100,
                   "g": 255,
@@ -100,7 +100,7 @@
             },
             {
                "key": 2,
-               "metricId": 1,
+               "metricId": 8,
                "lineColor": {
                   "r": 255,
                   "g": 100,
@@ -277,7 +277,7 @@
          "metrics": [
             {
                "key": 0,
-               "metricId": 73,
+               "metricId": 104,
                "lineColor": {
                   "r": 125,
                   "g": 149,
@@ -294,7 +294,7 @@
             },
             {
                "key": 4,
-               "metricId": 87,
+               "metricId": 153,
                "lineColor": {
                   "r": 24,
                   "g": 255,
@@ -371,7 +371,7 @@
          "metrics": [
             {
                "key": 1,
-               "metricId": 66,
+               "metricId": 97,
                "lineColor": {
                   "r": 255,
                   "g": 129,
@@ -388,7 +388,7 @@
             },
             {
                "key": 5,
-               "metricId": 52,
+               "metricId": 90,
                "lineColor": {
                   "r": 219,
                   "g": 219,
@@ -465,7 +465,7 @@
          "metrics": [
             {
                "key": 4,
-               "metricId": 80,
+               "metricId": 111,
                "lineColor": {
                   "r": 186,
                   "g": 223,
@@ -482,7 +482,7 @@
             },
             {
                "key": 6,
-               "metricId": 202,
+               "metricId": 118,
                "lineColor": {
                   "r": 100,
                   "g": 255,
@@ -559,7 +559,7 @@
          "metrics": [
             {
                "key": 14,
-               "metricId": 307,
+               "metricId": 209,
                "lineColor": {
                   "r": 255,
                   "g": 71,
@@ -573,23 +573,6 @@
                   "a": 0.09803921568627451
                },
                "axisAffinity": 0
-            },
-            {
-               "key": 15,
-               "metricId": 335,
-               "lineColor": {
-                  "r": 239,
-                  "g": 164,
-                  "b": 252,
-                  "a": 0.8627450980392157
-               },
-               "fillColor": {
-                  "r": 57,
-                  "g": 210,
-                  "b": 250,
-                  "a": 0.09803921568627451
-               },
-               "axisAffinity": 1
             }
          ],
          "widgetType": 0,

@@ -157,7 +157,13 @@ namespace p2c::pmon
 	}
 	void PresentMon::SetAdapter(uint32_t id)
 	{
-		selectedAdapter = id;
+		if (id == 0) {
+			p2clog.warn(L"Adapter was set to id 0; resetting").commit();
+			selectedAdapter.reset();
+		}
+		else {
+			selectedAdapter = id;
+		}
 	}
 	std::optional<uint32_t> PresentMon::GetPid() const {
 		return bool(pTracker) ? pTracker->GetPid() : std::optional<uint32_t>{};

@@ -1554,10 +1554,10 @@ namespace pmon::mid
                 }
                 break;
                 case PM_METRIC_CPU_NAME:
-                    strcpy_s(reinterpret_cast<char*>(pBlob[qe.dataOffset]), 260, cachedCpuInfo[0].deviceName.c_str());
+                    strcpy_s(reinterpret_cast<char*>(&pBlob[qe.dataOffset]), 260, cachedCpuInfo[0].deviceName.c_str());
                     break;
                 case PM_METRIC_GPU_NAME:
-                    strcpy_s(reinterpret_cast<char*>(pBlob[qe.dataOffset]), 260, cachedGpuInfo[currentGpuInfoIndex].deviceName.c_str());
+                    strcpy_s(reinterpret_cast<char*>(&pBlob[qe.dataOffset]), 260, cachedGpuInfo[currentGpuInfoIndex].deviceName.c_str());
                     break;
                 case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
                 {

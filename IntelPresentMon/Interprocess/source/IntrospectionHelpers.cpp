@@ -45,6 +45,9 @@ namespace pmon::ipc::intro
 	template<> struct IntrospectionCapsLookup<PM_METRIC_VRAM_CURRENT_LIMITED> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_current_limited; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_VRAM_VOLTAGE_LIMITED> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_voltage_limited; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_VRAM_UTILIZATION_LIMITED> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_utilization_limited; };
+	// static GPU
+	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_NAME> { using GpuDeviceStatic = std::true_type; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_VENDOR> { using GpuDeviceStatic = std::true_type; };
 	// CPU caps
 	template<> struct IntrospectionCapsLookup<PM_METRIC_CPU_UTILIZATION> { static constexpr auto cpuCapBit = CpuTelemetryCapBits::cpu_utilization; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_CPU_POWER> { static constexpr auto cpuCapBit = CpuTelemetryCapBits::cpu_power; };
@@ -57,6 +60,7 @@ namespace pmon::ipc::intro
 	template<class T> concept IsUniversalMetric = requires { typename T::Universal; };
 	template<class T> concept IsGpuDeviceMetric = requires { T::gpuCapBit; };
 	template<class T> concept IsGpuDeviceMetricArray = requires { T::gpuCapBitArray; };
+	template<class T> concept IsGpuDeviceStaticMetric = requires { typename T::GpuDeviceStatic; };
 	template<class T> concept IsCpuMetric = requires { T::cpuCapBit; };
 	
 	// TODO: compile-time verify that all cap bits are covered (how?)
@@ -129,6 +133,9 @@ namespace pmon::ipc::intro
 			const auto availability = nAvailable > 0 ?
 				PM_METRIC_AVAILABILITY_AVAILABLE : PM_METRIC_AVAILABILITY_UNAVAILABLE;
 			info.emplace(deviceId, availability, nAvailable);
+		}
+		else if constexpr (IsGpuDeviceStaticMetric<Lookup>) {
+			info.emplace(deviceId, PM_METRIC_AVAILABILITY_AVAILABLE, 1);
 		}
 		if (info) {
 			if (auto i = rn::find(root.GetMetrics(), metric, [](const ShmUniquePtr<IntrospectionMetric>& pMetric) {
