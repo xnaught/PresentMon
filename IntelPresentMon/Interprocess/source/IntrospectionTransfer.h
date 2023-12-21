@@ -348,6 +348,44 @@ namespace pmon::ipc::intro
 		PM_STAT stat_;
 	};
 
+	struct IntrospectionUnit
+	{
+		IntrospectionUnit(PM_UNIT id_in, PM_UNIT baseUnit_in, double scale_in)
+			:
+			id_{ id_in },
+			baseUnitId_{ baseUnit_in },
+			scale_{ scale_in }
+		{}
+		using ApiType = PM_INTROSPECTION_UNIT;
+		template<class V>
+		ApiType* ApiClone(V voidAlloc) const
+		{
+			// local to hold structure contents being built up
+			ApiType content;
+			// self allocation
+			using A = std::allocator_traits<V>::template rebind_alloc<ApiType>;
+			A alloc{ voidAlloc };
+			auto pSelf = alloc.allocate(1);
+			// prepare contents
+			content.id = id_;
+			content.baseUnitId = baseUnitId_;
+			content.scale = scale_;
+			// emplace to allocated self
+			if (pSelf) {
+				std::allocator_traits<A>::construct(alloc, pSelf, content);
+			}
+			return pSelf;
+		}
+		bool operator<(const IntrospectionUnit& rhs) const
+		{
+			return id_ < rhs.id_;
+		}
+	private:
+		PM_UNIT id_;
+		PM_UNIT baseUnitId_;
+		double scale_;
+	};
+
 	struct IntrospectionMetric
 	{
 		IntrospectionMetric(ShmSegmentManager* pSegmentManager_in, PM_METRIC id_in, PM_METRIC_TYPE type_in, PM_UNIT unit_in, const IntrospectionDataTypeInfo& typeInfo_in, std::vector<PM_STAT> stats_in = {})
@@ -356,6 +394,7 @@ namespace pmon::ipc::intro
 			id_{ id_in },
 			type_{ type_in },
 			unit_{ unit_in },
+			preferredUnitHint_{ unit_in },
 			pTypeInfo_{ ShmMakeUnique<IntrospectionDataTypeInfo>(pSegmentManager_in, typeInfo_in) },
 			statInfo_{ pSegmentManager_in },
 			deviceMetricInfo_{ pSegmentManager_in }
@@ -376,6 +415,10 @@ namespace pmon::ipc::intro
 		{
 			deviceMetricInfo_.PushBack(ShmMakeUnique<IntrospectionDeviceMetricInfo>(pSegmentManager_, info));
 		}
+		void SetPreferredUnitHint(PM_UNIT hint)
+		{
+			preferredUnitHint_ = hint;
+		}
 		using ApiType = PM_INTROSPECTION_METRIC;
 		template<class V>
 		ApiType* ApiClone(V voidAlloc) const
@@ -390,6 +433,7 @@ namespace pmon::ipc::intro
 			content.id = id_;
 			content.type = type_;
 			content.unit = unit_;
+			content.preferredUnitHint = preferredUnitHint_;
 			content.pTypeInfo = pTypeInfo_->ApiClone(voidAlloc);
 			content.pStatInfo = statInfo_.ApiClone(voidAlloc);
 			content.pDeviceMetricInfo = deviceMetricInfo_.ApiClone(voidAlloc);
@@ -412,6 +456,7 @@ namespace pmon::ipc::intro
 		PM_METRIC id_;
 		PM_METRIC_TYPE type_;
 		PM_UNIT unit_;
+		PM_UNIT preferredUnitHint_;
 		IntrospectionObjArray<IntrospectionStatInfo> statInfo_;
 		IntrospectionObjArray<IntrospectionDeviceMetricInfo> deviceMetricInfo_;
 		ShmUniquePtr<IntrospectionDataTypeInfo> pTypeInfo_;
@@ -423,7 +468,8 @@ namespace pmon::ipc::intro
 			:
 			metrics_{ pSegmentManager_in },
 			enums_{ pSegmentManager_in },
-			devices_{ pSegmentManager_in }
+			devices_{ pSegmentManager_in },
+			units_ { pSegmentManager_in }
 		{}
 		void AddEnum(ShmUniquePtr<IntrospectionEnum> pEnum)
 		{
@@ -436,6 +482,10 @@ namespace pmon::ipc::intro
 		void AddDevice(ShmUniquePtr<IntrospectionDevice> pDevice)
 		{
 			devices_.PushBack(std::move(pDevice));
+		}
+		void AddUnit(ShmUniquePtr<IntrospectionUnit> pUnit)
+		{
+			units_.PushBack(std::move(pUnit));
 		}
 		std::span<ShmUniquePtr<IntrospectionMetric>> GetMetrics()
 		{
@@ -455,6 +505,7 @@ namespace pmon::ipc::intro
 			content.pMetrics = metrics_.ApiClone(voidAlloc);
 			content.pEnums = enums_.ApiClone(voidAlloc);
 			content.pDevices = devices_.ApiClone(voidAlloc);
+			content.pUnits = units_.ApiClone(voidAlloc);
 			// emplace to allocated self
 			if (pSelf) {
 				std::allocator_traits<A>::construct(alloc, pSelf, content);
@@ -469,10 +520,12 @@ namespace pmon::ipc::intro
 			for (auto& pe : enums_.GetElements()) {
 				pe->Sort();
 			}
+			units_.Sort();
 		}
 	private:
 		IntrospectionObjArray<IntrospectionMetric> metrics_;
 		IntrospectionObjArray<IntrospectionEnum> enums_;
 		IntrospectionObjArray<IntrospectionDevice> devices_;
+		IntrospectionObjArray<IntrospectionUnit> units_;
 	};
 }

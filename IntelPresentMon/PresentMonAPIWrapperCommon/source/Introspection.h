@@ -358,6 +358,39 @@ namespace pmapi
             const BaseType* pBase = nullptr;
         };
 
+        class UnitView
+        {
+            using BaseType = PM_INTROSPECTION_UNIT;
+            using SelfType = UnitView;
+            friend class ViewIterator<SelfType>;
+            friend class Root;
+        public:
+            EnumKeyView Introspect() const;
+            PM_UNIT GetId() const;
+            EnumKeyView IntrospectBaseUnit() const;
+            PM_UNIT GetBaseUnit() const;
+            double GetScale() const;
+            double MakeConversionFactor(PM_UNIT destinationUnitId) const;
+            const SelfType* operator->() const
+            {
+                return this;
+            }
+            const BaseType* GetBasePtr() const
+            {
+                return pBase;
+            }
+        private:
+            // functions
+            UnitView(const class Root* pRoot_, const BaseType* pBase_)
+                :
+                pRoot{ pRoot_ },
+                pBase{ pBase_ }
+            {}
+            // data
+            const class Root* pRoot;
+            const BaseType* pBase = nullptr;
+        };
+
         class MetricView
         {
             using BaseType = PM_INTROSPECTION_METRIC;
@@ -369,6 +402,8 @@ namespace pmapi
             PM_METRIC GetId() const;
             EnumKeyView IntrospectUnit() const;
             PM_UNIT GetUnit() const;
+            EnumKeyView IntrospectPreferredUnitHint() const;
+            PM_UNIT GetPreferredUnitHint() const;
             EnumKeyView IntrospectType() const;
             PM_METRIC_TYPE GetType() const;
             DataTypeInfoView GetDataTypeInfo() const;
@@ -441,6 +476,10 @@ namespace pmapi
                 for (auto m : GetMetrics()) {
                     metricMap[m.GetId()] = m.GetBasePtr();
                 }
+                // building lookup table for units
+                for (auto u : GetUnits()) {
+                    unitMap[u.GetId()] = u.GetBasePtr();
+                }
             }
             ~Root()
             {
@@ -467,6 +506,12 @@ namespace pmapi
                 // trying to deduce the template params for subrange causes intellisense to crash
                 // workaround this by providing them explicitly as the return type (normally would use auto)
                 return { GetDevicesBegin_(), GetDevicesEnd_() };
+            }
+            ViewRange<UnitView> GetUnits() const
+            {
+                // trying to deduce the template params for subrange causes intellisense to crash
+                // workaround this by providing them explicitly as the return type (normally would use auto)
+                return { GetUnitsBegin_(), GetUnitsEnd_() };
             }
             EnumKeyView FindEnumKey(PM_ENUM enumId, int keyValue) const
             {
@@ -504,6 +549,15 @@ namespace pmapi
                     return { this, i->second };
                 }
             }
+            UnitView FindUnit(PM_UNIT unitId) const
+            {
+                if (auto i = unitMap.find(unitId); i == unitMap.end()) {
+                    throw LookupException{ std::format("unable to find unit ID={}", (int)unitId) };
+                }
+                else {
+                    return { this, i->second };
+                }
+            }
         private:
             // functions
             static uint64_t MakeEnumKeyMapKey_(PM_ENUM enumId, int keyValue)
@@ -535,6 +589,14 @@ namespace pmapi
             {
                 return ViewIterator<DeviceView>{ this, pRoot->pDevices, (int64_t)pRoot->pDevices->size };
             }
+            ViewIterator<UnitView> GetUnitsBegin_() const
+            {
+                return ViewIterator<UnitView>{ this, pRoot->pUnits };
+            }
+            ViewIterator<UnitView> GetUnitsEnd_() const
+            {
+                return ViewIterator<UnitView>{ this, pRoot->pUnits, (int64_t)pRoot->pUnits->size };
+            }
             // data
             const PM_INTROSPECTION_ROOT* pRoot = nullptr;
             std::function<void(const PM_INTROSPECTION_ROOT*)> deleter;
@@ -542,6 +604,7 @@ namespace pmapi
             std::unordered_map<PM_ENUM, const PM_INTROSPECTION_ENUM*> enumMap;
             std::unordered_map<uint32_t, const PM_INTROSPECTION_DEVICE*> deviceMap;
             std::unordered_map<PM_METRIC, const PM_INTROSPECTION_METRIC*> metricMap;
+            std::unordered_map<PM_UNIT, const PM_INTROSPECTION_UNIT*> unitMap;
         };
     }
 }

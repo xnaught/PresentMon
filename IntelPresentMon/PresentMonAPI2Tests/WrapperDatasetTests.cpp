@@ -203,6 +203,20 @@ namespace PresentMonAPI2Mock
 
 			Assert::AreEqual("avg"s, shortName);
 		}
+		TEST_METHOD(IntrospectPreferredUnit)
+		{
+			using namespace std::string_literals;
+
+			auto metric = data->FindMetric(PM_METRIC_GPU_MEM_SIZE);
+			Assert::AreEqual((int)PM_UNIT_BYTES, (int)metric.GetUnit());
+			Assert::AreEqual((int)PM_UNIT_GIGABYTES, (int)metric.GetPreferredUnitHint());
+		}
+		TEST_METHOD(IntrospectUnitUpConversion)
+		{
+			using namespace std::string_literals;
+
+			Assert::AreEqual(0.000'001, data->FindUnit(PM_UNIT_HERTZ).MakeConversionFactor(PM_UNIT_MEGAHERTZ));
+		}
 	private:
 		std::optional<pmapi::Session> session;
 		std::shared_ptr<pmapi::intro::Root> data;

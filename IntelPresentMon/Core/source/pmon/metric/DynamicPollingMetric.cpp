@@ -12,16 +12,24 @@ namespace p2c::pmon::met
         :
         Metric{
             MakeMetricName_(metricId_, arrayIndex_, introRoot),
-            ToWide(introRoot.FindMetric(metricId_).IntrospectUnit().GetShortName())
+            MakeUnitName_(metricId_, introRoot)
         },
         metricId{ metricId_ },
         stat{ stat_ },
         arrayIndex{ arrayIndex_ },
         statName{ ToWide(introRoot.FindEnumKey(PM_ENUM_STAT, stat).GetShortName()) }
     {
-        const auto type = introRoot.FindMetric(metricId).GetDataTypeInfo().GetPolledType();
+        const auto metric = introRoot.FindMetric(metricId);
+        const auto type = metric.GetDataTypeInfo().GetPolledType();
         if (type == PM_DATA_TYPE_STRING || type == PM_DATA_TYPE_ENUM) {
             numeric = false;
+        }
+        if (metricId == PM_METRIC_SWAP_CHAIN) {
+            numeric = false;
+        }
+        if (metric.GetUnit() != metric.GetPreferredUnitHint()) {
+            scale = (float)introRoot.FindUnit(metric.GetUnit())
+                .MakeConversionFactor(metric.GetPreferredUnitHint());
         }
     }
     std::wstring DynamicPollingMetric::GetStatName() const { return statName; }
@@ -115,5 +123,15 @@ namespace p2c::pmon::met
             name += std::format(L" [{}]", arrayIndex);
         }
         return name;
+    }
+
+    std::wstring DynamicPollingMetric::MakeUnitName_(PM_METRIC metricId, const pmapi::intro::Root& introRoot)
+    {
+        auto metric = introRoot.FindMetric(metricId);
+        std::wstring unitName;
+        if (metric.GetUnit() != metric.GetPreferredUnitHint()) {
+            return ToWide(metric.IntrospectPreferredUnitHint().GetShortName());
+        }
+        return ToWide(metric.IntrospectUnit().GetShortName());
     }
 }

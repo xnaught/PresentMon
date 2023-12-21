@@ -105,15 +105,36 @@ namespace pmon::ipc::intro
 
 	void PopulateMetrics(ShmSegmentManager* pSegmentManager, IntrospectionRoot& root)
 	{
+		std::unordered_map<PM_METRIC, PM_UNIT> preferredMetricOverrides;
+#define X_PREF_UNIT(metric, unit) preferredMetricOverrides[metric] = unit;
+
+		PREFERRED_UNIT_LIST(X_PREF_UNIT)
+
+#undef X_REG_METRIC
+
 #define X_REG_METRIC(metric, metric_type, unit, data_type_polled, data_type_frame, enum_id, device_type, ...) { \
 		auto pMetric = ShmMakeUnique<IntrospectionMetric>(pSegmentManager, pSegmentManager, \
 			metric, metric_type, unit, IntrospectionDataTypeInfo{ data_type_polled, data_type_frame, (PM_ENUM)enum_id }, std::vector{ __VA_ARGS__ }); \
 		RegisterUniversalMetricDeviceInfo_<metric>(pSegmentManager, root, *pMetric); \
+		if (preferredMetricOverrides.contains(metric)) pMetric->SetPreferredUnitHint(preferredMetricOverrides[metric]); \
 		root.AddMetric(std::move(pMetric)); }
 
 		METRIC_LIST(X_REG_METRIC)
 
 #undef X_REG_METRIC
+	}
+
+
+
+	void PopulateUnits(ShmSegmentManager* pSegmentManager, struct IntrospectionRoot& root)
+	{
+#define X_REG_UNIT(unit, baseUnit, scale) { \
+		auto pUnit = ShmMakeUnique<IntrospectionUnit>(pSegmentManager, unit, baseUnit, scale); \
+		root.AddUnit(std::move(pUnit)); }
+
+		UNIT_LIST(X_REG_UNIT)
+
+#undef X_REG_UNIT
 	}
 
 	template<PM_METRIC metric>

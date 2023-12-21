@@ -47,10 +47,11 @@ namespace p2c::pmon::met
         std::wstring statName;
         bool numeric = true;
         std::optional<uint32_t> offset;
+        float scale = 1.f;
     private:
         // functions
         static std::wstring MakeMetricName_(PM_METRIC metricId, uint32_t arrayIndex, const pmapi::intro::Root& introRoot);
-        // data
+        static std::wstring MakeUnitName_(PM_METRIC metricId, const pmapi::intro::Root& introRoot);
     };
 
     // TODO: idea: don't template metric, just template a polymorphic type deserializer
@@ -73,7 +74,7 @@ namespace p2c::pmon::met
                     throw std::runtime_error{ "Metric not finalized" };
                 }
                 auto pBlob = pQuery->Poll(timestamp);
-                return (float)*reinterpret_cast<const T*>(&pBlob[*offset]);
+                return scale * (float)*reinterpret_cast<const T*>(&pBlob[*offset]);
             }
             else {
                 return {};

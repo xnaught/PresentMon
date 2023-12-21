@@ -98,6 +98,7 @@ namespace pmon::ipc
 				auto charAlloc = pSegmentManager->get_allocator<char>();
 				intro::PopulateEnums(pSegmentManager, *pRoot_);
 				intro::PopulateMetrics(pSegmentManager, *pRoot_);
+				intro::PopulateUnits(pSegmentManager, *pRoot_);
 				pRoot_->AddDevice(ShmMakeUnique<intro::IntrospectionDevice>(pSegmentManager,
 					0, PM_DEVICE_TYPE_INDEPENDENT, PM_DEVICE_VENDOR_UNKNOWN, ShmString{ "Device-independent", charAlloc }));
 			}

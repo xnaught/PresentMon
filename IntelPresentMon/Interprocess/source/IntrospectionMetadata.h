@@ -118,19 +118,35 @@ namespace pmon::ipc::intro {
 		X_(PSU_TYPE, 8PIN, "8PIN", "", "Power supplied from 8-pin power connector")
 #define ENUM_KEY_LIST_UNIT(X_) \
 		X_(UNIT, DIMENSIONLESS, "Dimensionless", "", "Dimensionless numeric metric") \
+		X_(UNIT, RATIO, "Ratio", "", "Ratio of one value to another (such as used / total memory)") \
 		X_(UNIT, BOOLEAN, "Boolean", "", "Boolean value with 1 indicating present/active and 0 indicating vacant/inactive") \
-		X_(UNIT, FPS, "Frames Per Second", "fps", "Rate of application frames being presented per unit time") \
-		X_(UNIT, SECONDS, "Seconds", "s", "Time duration in seconds") \
-		X_(UNIT, MILLISECONDS, "Milliseconds", "ms", "Time duration in milliseconds") \
 		X_(UNIT, PERCENT, "Percent", "%", "Proportion or ratio represented as a fraction of 100") \
+		X_(UNIT, FPS, "Frames Per Second", "fps", "Rate of application frames being presented per unit time") \
+		X_(UNIT, MICROSECONDS, "Microseconds", "us", "Time duration in microseconds") \
+		X_(UNIT, MILLISECONDS, "Milliseconds", "ms", "Time duration in milliseconds") \
+		X_(UNIT, SECONDS, "Seconds", "s", "Time duration in seconds") \
+		X_(UNIT, MINUTES, "Minutes", "m", "Time duration in minutes") \
+		X_(UNIT, HOURS, "Hours", "h", "Time duration in hours") \
+		X_(UNIT, MILLIWATTS, "Milliwatts", "mW", "Power in milliwatts (millijoules per second)") \
 		X_(UNIT, WATTS, "Watts", "W", "Power in watts (Joules per second)") \
+		X_(UNIT, KILOWATTS, "Kilowatts", "kW", "Power in kilowatts (kilojoules per second)") \
 		X_(UNIT, SYNC_INTERVAL, "Sync Intervals", "vblk", "Value indicating a count/duration of display vsync intervals (also known as vertical blanks)") \
+		X_(UNIT, MILLIVOLTS, "Millivolts", "mV", "Electric potential 0.001 V") \
 		X_(UNIT, VOLTS, "Volts", "V", "Electric potential") \
+		X_(UNIT, HERTZ, "Hertz", "Hz", "Frequency in cycles per second") \
+		X_(UNIT, KILOHERTZ, "Kilohertz", "kHz", "Frequency in thousands of cycles per second") \
 		X_(UNIT, MEGAHERTZ, "Megahertz", "MHz", "Frequency in millions of cycles per second") \
+		X_(UNIT, GIGAHERTZ, "Gigahertz", "GHz", "Frequency in billions of cycles per second") \
 		X_(UNIT, CELSIUS, "Degrees Celsius", "C", "Temperature in degrees Celsius") \
 		X_(UNIT, RPM, "Revolutions per Minute", "RPM", "Angular speed in revolutions per minute") \
-		X_(UNIT, BPS, "Bits per Second", "bps", "Bandwidth / data throughput in bits per second") \
-		X_(UNIT, BYTES, "Bytes", "B", "Bandwidth / data throughput in bits per second") \
+		X_(UNIT, BITS_PER_SECOND, "Bits per Second", "bps", "Bandwidth / data throughput in bits per second") \
+		X_(UNIT, KILOBITS_PER_SECOND, "Kilobits per Second", "kbps", "Bandwidth / data throughput in kilobits per second") \
+		X_(UNIT, MEGABITS_PER_SECOND, "Megabits per Second", "Mbps", "Bandwidth / data throughput in megabits per second") \
+		X_(UNIT, GIGABITS_PER_SECOND, "Gigabits per Second", "Gbps", "Bandwidth / data throughput in gigabits per second") \
+		X_(UNIT, BYTES, "Bytes", "B", "Data volume in bytes") \
+		X_(UNIT, KILOBYTES, "Kilobytes", "kB", "Data volume in kilobytes") \
+		X_(UNIT, MEGABYTES, "Megabytes", "MB", "Data volume in megabytes") \
+		X_(UNIT, GIGABYTES, "Gigabytes", "GB", "Data volume in gigabytes") \
 		X_(UNIT, QPC, "High-performance timestamp", "qpc", "Timestamp obtained via QueryPerformanceCounter (or compatible)")
 #define ENUM_KEY_LIST_STAT(X_) \
 		X_(STAT, NONE, "None", "", "Null stat, typically used when querying static or consuming frame events") \
@@ -214,8 +230,8 @@ namespace pmon::ipc::intro {
 		X_(PM_METRIC_VRAM_TEMPERATURE, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_CELSIUS, PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
 		X_(PM_METRIC_GPU_MEM_USED, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_BYTES, PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_UINT64, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
 		X_(PM_METRIC_GPU_MEM_UTILIZATION, PM_METRIC_TYPE_DYNAMIC, PM_UNIT_BYTES, PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_VOID, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
-		X_(PM_METRIC_GPU_MEM_WRITE_BANDWIDTH, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_BPS, PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
-		X_(PM_METRIC_GPU_MEM_READ_BANDWIDTH, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_BPS, PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
+		X_(PM_METRIC_GPU_MEM_WRITE_BANDWIDTH, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_BITS_PER_SECOND, PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
+		X_(PM_METRIC_GPU_MEM_READ_BANDWIDTH, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_BITS_PER_SECOND, PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
 		X_(PM_METRIC_GPU_POWER_LIMITED, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_BOOLEAN, PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_BOOL, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
 		X_(PM_METRIC_GPU_TEMPERATURE_LIMITED, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_BOOLEAN, PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_BOOL, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
 		X_(PM_METRIC_GPU_CURRENT_LIMITED, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_BOOLEAN, PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_BOOL, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, FULL_STATS) \
@@ -235,7 +251,7 @@ namespace pmon::ipc::intro {
 		\
 		X_(PM_METRIC_GPU_SUSTAINED_POWER_LIMIT, PM_METRIC_TYPE_STATIC, PM_UNIT_WATTS, PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_VOID, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_STAT_MID_POINT) \
 		X_(PM_METRIC_GPU_MEM_SIZE, PM_METRIC_TYPE_STATIC, PM_UNIT_BYTES, PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_UINT64, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_STAT_MID_POINT) \
-		X_(PM_METRIC_GPU_MEM_MAX_BANDWIDTH, PM_METRIC_TYPE_STATIC, PM_UNIT_BPS, PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_UINT64, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_STAT_MID_POINT) \
+		X_(PM_METRIC_GPU_MEM_MAX_BANDWIDTH, PM_METRIC_TYPE_STATIC, PM_UNIT_BITS_PER_SECOND, PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_UINT64, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_STAT_MID_POINT) \
 		X_(PM_METRIC_CPU_POWER_LIMIT, PM_METRIC_TYPE_STATIC, PM_UNIT_WATTS, PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_VOID, 0, PM_DEVICE_TYPE_GRAPHICS_ADAPTER, PM_STAT_MID_POINT) \
 		X_(PM_METRIC_PROCESS_NAME, PM_METRIC_TYPE_STATIC, PM_UNIT_DIMENSIONLESS, PM_DATA_TYPE_STRING, PM_DATA_TYPE_VOID, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_MID_POINT) \
 		X_(PM_METRIC_CPU_VENDOR, PM_METRIC_TYPE_STATIC, PM_UNIT_DIMENSIONLESS, PM_DATA_TYPE_ENUM, PM_DATA_TYPE_VOID, PM_ENUM_DEVICE_VENDOR, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_MID_POINT) \
@@ -253,6 +269,44 @@ namespace pmon::ipc::intro {
 		X_(PM_METRIC_TIME_UNTIL_RENDER_START, PM_METRIC_TYPE_FRAME_EVENT, PM_UNIT_MILLISECONDS, PM_DATA_TYPE_VOID, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_NONE) \
 		X_(PM_METRIC_TIME_SINCE_INPUT, PM_METRIC_TYPE_FRAME_EVENT, PM_UNIT_MILLISECONDS, PM_DATA_TYPE_VOID, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_NONE) \
 		X_(PM_METRIC_GPU_VIDEO_BUSY_TIME, PM_METRIC_TYPE_FRAME_EVENT, PM_UNIT_MILLISECONDS, PM_DATA_TYPE_VOID, PM_DATA_TYPE_DOUBLE, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_NONE) 
+
+// metric preferred unit overrides
+#define PREFERRED_UNIT_LIST(X_) \
+		X_(PM_METRIC_GPU_MEM_USED, PM_UNIT_GIGABYTES) \
+		X_(PM_METRIC_GPU_MEM_WRITE_BANDWIDTH, PM_UNIT_GIGABITS_PER_SECOND) \
+		X_(PM_METRIC_GPU_MEM_READ_BANDWIDTH, PM_UNIT_GIGABITS_PER_SECOND) \
+		X_(PM_METRIC_GPU_MEM_SIZE, PM_UNIT_GIGABYTES) \
+		X_(PM_METRIC_GPU_MEM_MAX_BANDWIDTH, PM_UNIT_GIGABITS_PER_SECOND)
+
+// defining unit groups and conversions X_(id, baseId, scale) [scale: 1 of these = scale of base]
+#define UNIT_LIST(X_) \
+	X_(PM_UNIT_RATIO, PM_UNIT_RATIO, 1.)  \
+	X_(PM_UNIT_BOOLEAN, PM_UNIT_RATIO, 1.) \
+	X_(PM_UNIT_PERCENT, PM_UNIT_RATIO, 100.) \
+	X_(PM_UNIT_MICROSECONDS, PM_UNIT_SECONDS, 0.000'001) \
+	X_(PM_UNIT_MILLISECONDS, PM_UNIT_SECONDS, 0.001) \
+	X_(PM_UNIT_SECONDS, PM_UNIT_SECONDS, 1.) \
+	X_(PM_UNIT_MINUTES, PM_UNIT_SECONDS, 60.) \
+	X_(PM_UNIT_HOURS, PM_UNIT_SECONDS, 3600.) \
+	X_(PM_UNIT_MILLIWATTS, PM_UNIT_WATTS, 3600.) \
+	X_(PM_UNIT_WATTS, PM_UNIT_WATTS, 3600.) \
+	X_(PM_UNIT_KILOWATTS, PM_UNIT_WATTS, 3600.) \
+	X_(PM_UNIT_MILLIVOLTS, PM_UNIT_VOLTS, 0.001) \
+	X_(PM_UNIT_VOLTS, PM_UNIT_VOLTS, 1.) \
+	X_(PM_UNIT_HERTZ, PM_UNIT_HERTZ, 1.) \
+	X_(PM_UNIT_KILOHERTZ, PM_UNIT_HERTZ, 1'000.) \
+	X_(PM_UNIT_MEGAHERTZ, PM_UNIT_HERTZ, 1'000'000.) \
+	X_(PM_UNIT_GIGAHERTZ, PM_UNIT_HERTZ, 1'000'000'000.) \
+	X_(PM_UNIT_BITS_PER_SECOND, PM_UNIT_BITS_PER_SECOND, 1.) \
+	X_(PM_UNIT_KILOBITS_PER_SECOND, PM_UNIT_BITS_PER_SECOND, 1'024.) \
+	X_(PM_UNIT_MEGABITS_PER_SECOND, PM_UNIT_BITS_PER_SECOND, 1'048'576.) \
+	X_(PM_UNIT_GIGABITS_PER_SECOND, PM_UNIT_BITS_PER_SECOND, 1'073'741'824.) \
+	X_(PM_UNIT_BYTES, PM_UNIT_BYTES, 1.) \
+	X_(PM_UNIT_KILOBYTES, PM_UNIT_BYTES, 1'024.) \
+	X_(PM_UNIT_MEGABYTES, PM_UNIT_BYTES, 1'048'576.) \
+	X_(PM_UNIT_GIGABYTES, PM_UNIT_BYTES, 1'073'741'824.)
+
+
 // static mapping of datatype enum to static type
 	template<PM_DATA_TYPE T>
 	struct EnumToStaticType;
