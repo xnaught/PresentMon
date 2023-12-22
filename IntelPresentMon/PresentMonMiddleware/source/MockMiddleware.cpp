@@ -200,8 +200,10 @@ namespace pmon::mid
 		}
 		const auto numFramesToProcess = std::min(numFrames, (uint32_t)frames.size());
 		const auto blobSize = pQuery->GetBlobSize();
+		PM_FRAME_QUERY::Context ctx{ 0ull, 0ll };
 		for (uint32_t i = 0; i < numFramesToProcess; i++) {
-			pQuery->GatherToBlob(&frames.front(), pBlob, 0ull, 0.);
+			ctx.UpdateSourceData(&frames.front());
+			pQuery->GatherToBlob(ctx, pBlob);
 			frames.pop_front();
 			pBlob += blobSize;
 		}

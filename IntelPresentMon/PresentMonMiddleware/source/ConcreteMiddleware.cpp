@@ -850,7 +850,8 @@ namespace pmon::mid
             return;
         }
 
-        const auto performanceCounterPeriodMs = 1000.0 / pShmClient->GetQpcFrequency().QuadPart;
+        // context transmits various data that applies to each gather command in the query
+        PM_FRAME_QUERY::Context ctx{ nsm_hdr->start_qpc, pShmClient->GetQpcFrequency().QuadPart };
 
         for (uint32_t i = 0; i < frames_to_copy; i++) {
             const PmNsmFrameData* pNsmFrameData = nullptr;
@@ -862,7 +863,8 @@ namespace pmon::mid
                 break;
             }
             // if we make it here, we have a ptr to frame data in nsm, time to gather to blob
-            pQuery->GatherToBlob(pNsmFrameData, pBlob, nsm_hdr->start_qpc, performanceCounterPeriodMs);
+            ctx.UpdateSourceData(pNsmFrameData);
+            pQuery->GatherToBlob(ctx, pBlob);
             pBlob += pQuery->GetBlobSize();
             frames_copied++;
         }

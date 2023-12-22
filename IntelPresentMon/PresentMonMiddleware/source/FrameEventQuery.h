@@ -17,9 +17,27 @@ namespace pmon::mid
 struct PM_FRAME_QUERY
 {
 public:
+	// types
+	struct Context
+	{
+		// functions
+		Context(uint64_t qpcStart, long long perfCounterFrequency) : qpcStart{ qpcStart },
+			performanceCounterPeriodMs{ 1000.0 / perfCounterFrequency } {}
+		void UpdateSourceData(const PmNsmFrameData* pSourceFrameData_in)
+		{
+			pSourceFrameData = pSourceFrameData_in;
+			dropped = pSourceFrameData->present_event.FinalState != PresentResult::Presented;
+		}
+		// data
+		const PmNsmFrameData* pSourceFrameData = nullptr;
+		const double performanceCounterPeriodMs;
+		const uint64_t qpcStart;
+		bool dropped;
+	};
+	// functions
 	PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements);
 	~PM_FRAME_QUERY();
-	void GatherToBlob(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, uint64_t qpcStart, double performanceCounterPeriodMs) const;
+	void GatherToBlob(const Context& ctx, uint8_t* pDestBlob) const;
 	size_t GetBlobSize() const;
 private:
 	// functions

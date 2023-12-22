@@ -8,23 +8,15 @@
 #include <cstddef>
 
 using namespace pmon;
-
-PmNsmFrameData ff;
+using Context = PM_FRAME_QUERY::Context;
 
 namespace pmon::mid
 {
 	class GatherCommand_
 	{
 	public:
-		struct Context
-		{
-			double performanceCounterPeriodMs;
-			uint64_t qpcStart;
-			bool dropped;
-
-		};
 		virtual ~GatherCommand_() = default;
-		virtual void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context& ctx) const = 0;
+		virtual void Gather(const Context& ctx, uint8_t* pDestBlob) const = 0;
 		virtual uint32_t GetBeginOffset() const = 0;
 		virtual uint32_t GetEndOffset() const = 0;
 		virtual uint32_t GetOutputOffset() const = 0;
@@ -62,15 +54,15 @@ namespace
 			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(Type));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
-		void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context&) const override
+		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
 		{
 			constexpr auto pSubstruct = GetSubstructurePointer<pMember>();
 			if constexpr (std::is_array_v<Type>) {
-				const auto val = (pSourceFrameData->*pSubstruct.*pMember)[inputIndex_];
+				const auto val = (ctx.pSourceFrameData->*pSubstruct.*pMember)[inputIndex_];
 				reinterpret_cast<std::remove_const_t<decltype(val)>&>(pDestBlob[outputOffset_]) = val;
 			}
 			else {
-				const auto val = pSourceFrameData->*pSubstruct.*pMember;
+				const auto val = ctx.pSourceFrameData->*pSubstruct.*pMember;
 				reinterpret_cast<std::remove_const_t<decltype(val)>&>(pDestBlob[outputOffset_]) = val;
 			}
 		}
@@ -100,9 +92,9 @@ namespace
 			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
-		void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context& ctx) const override
+		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
 		{
-			const auto qpcDuration = pSourceFrameData->present_event.*pMember;
+			const auto qpcDuration = ctx.pSourceFrameData->present_event.*pMember;
 			if (qpcDuration != 0) {
 				const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
@@ -136,7 +128,7 @@ namespace
 			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
-		void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context& ctx) const override
+		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
 		{
 			static_assert(!allowNegative || !clampZero);
 			if constexpr (doDroppedCheck) {
@@ -144,7 +136,7 @@ namespace
 					return;
 				}
 			}
-			uint64_t start = pSourceFrameData->present_event.*pStart;
+			uint64_t start = ctx.pSourceFrameData->present_event.*pStart;
 			if constexpr (doZeroCheck) {
 				if (start == 0ull) {
 					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
@@ -152,7 +144,7 @@ namespace
 				}
 			}
 			if constexpr (allowNegative || clampZero) {
-				auto qpcDurationDouble = double(pSourceFrameData->present_event.*pEnd) - double(start);
+				auto qpcDurationDouble = double(ctx.pSourceFrameData->present_event.*pEnd) - double(start);
 				if constexpr (clampZero) {
 					qpcDurationDouble = std::max(0., qpcDurationDouble);
 				}
@@ -160,7 +152,7 @@ namespace
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 			}
 			else {
-				const auto qpcDuration = pSourceFrameData->present_event.*pEnd - start;
+				const auto qpcDuration = ctx.pSourceFrameData->present_event.*pEnd - start;
 				const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 			}
@@ -185,7 +177,7 @@ namespace
 	{
 	public:
 		DroppedGatherCommand_(size_t nextAvailableByteOffset) : outputOffset_{ (uint32_t)nextAvailableByteOffset } {}
-		void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context& ctx) const override
+		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
 		{
 			reinterpret_cast<bool&>(pDestBlob[outputOffset_]) = ctx.dropped;
 		}
@@ -213,9 +205,9 @@ namespace
 			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
-		void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context& ctx) const override
+		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
 		{
-			const auto qpcDuration = pSourceFrameData->present_event.*pEnd - ctx.qpcStart;
+			const auto qpcDuration = ctx.pSourceFrameData->present_event.*pEnd - ctx.qpcStart;
 			const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
 			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 		}
@@ -270,15 +262,10 @@ PM_FRAME_QUERY::PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
 
 PM_FRAME_QUERY::~PM_FRAME_QUERY() = default;
 
-void PM_FRAME_QUERY::GatherToBlob(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, uint64_t qpcStart, double performanceCounterPeriodMs) const
+void PM_FRAME_QUERY::GatherToBlob(const Context& ctx, uint8_t* pDestBlob) const
 {
-	const mid::GatherCommand_::Context ctx{
-		.performanceCounterPeriodMs = performanceCounterPeriodMs,
-		.qpcStart = qpcStart,
-		.dropped = pSourceFrameData->present_event.FinalState != PresentResult::Presented,
-	};
 	for (auto& cmd : gatherCommands_) {
-		cmd->Gather(pSourceFrameData, pDestBlob, ctx);
+		cmd->Gather(ctx, pDestBlob);
 	}
 }
 
