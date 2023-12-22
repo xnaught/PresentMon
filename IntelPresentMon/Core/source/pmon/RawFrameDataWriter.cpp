@@ -223,10 +223,10 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_VRAM_VOLTAGE_LIMITED, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_VRAM_UTILIZATION_LIMITED, .deviceId = activeDeviceId },
 
-            Element{.metricId = PM_METRIC_CPU_UTILIZATION, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_CPU_POWER, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_CPU_TEMPERATURE, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_CPU_FREQUENCY, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_CPU_UTILIZATION },
+            Element{.metricId = PM_METRIC_CPU_POWER },
+            Element{.metricId = PM_METRIC_CPU_TEMPERATURE },
+            Element{.metricId = PM_METRIC_CPU_FREQUENCY },
         };
         pQueryElementContainer = std::make_unique<QueryElementContainer_>(
             queryElements, numberOfBlobs, session, introRoot);
