@@ -98,7 +98,7 @@ namespace pmon::mid
 		PmNsmFrameData* GetFrameDataStart(StreamClient* client, uint64_t& index, uint64_t dataOffset, uint64_t& queryFrameDataDelta, double& windowSampleSizeMs);
 		uint64_t GetAdjustedQpc(uint64_t current_qpc, uint64_t frame_data_qpc, uint64_t queryMetricsOffset, LARGE_INTEGER frequency, uint64_t& queryFrameDataDelta);
 		bool DecrementIndex(NamedSharedMem* nsm_view, uint64_t& index);
-		PM_STATUS SetActiveGraphicsAdapter(uint32_t adapter_id);
+		PM_STATUS SetActiveGraphicsAdapter(uint32_t deviceId);
 		void GetStaticGpuMetrics();
 
 		void CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency);
@@ -128,6 +128,6 @@ namespace pmon::mid
 		double cachedGpuMemMaxBandwidth = 0.;
 		double cachedGpuMemSize = 0.;
 		uint32_t currentGpuInfoIndex = UINT32_MAX;
-		std::optional<uint32_t> activeAdapter;
+		std::optional<uint32_t> activeDevice;
 	};
 }

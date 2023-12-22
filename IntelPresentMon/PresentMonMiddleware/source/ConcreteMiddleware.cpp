@@ -572,7 +572,7 @@ namespace pmon::mid
             if (pQuery->cachedGpuInfoIndex.value() != currentGpuInfoIndex)
             {
                 // Set the adapter id 
-                SetActiveGraphicsAdapter(cachedGpuInfo[pQuery->cachedGpuInfoIndex.value()].adapterId.value());
+                SetActiveGraphicsAdapter(cachedGpuInfo[pQuery->cachedGpuInfoIndex.value()].deviceId);
                 // Set the current index to the queried one
                 currentGpuInfoIndex = pQuery->cachedGpuInfoIndex.value();
             }
@@ -1589,17 +1589,18 @@ namespace pmon::mid
         SaveMetricCache(pQuery, processId, pBlob);
     }
 
-    PM_STATUS ConcreteMiddleware::SetActiveGraphicsAdapter(uint32_t adapterId)
+    PM_STATUS ConcreteMiddleware::SetActiveGraphicsAdapter(uint32_t deviceId)
     {
-        if (activeAdapter && *activeAdapter == adapterId) {
+        if (activeDevice && *activeDevice == deviceId) {
             return PM_STATUS_SUCCESS;
         }
 
         MemBuffer requestBuf;
         MemBuffer responseBuf;
 
+        const auto adapterIndex = deviceId - 1;
         NamedPipeHelper::EncodeGeneralSetActionRequest(PM_ACTION::SELECT_ADAPTER,
-            &requestBuf, adapterId);
+            &requestBuf, adapterIndex);
 
         PM_STATUS status = CallPmService(&requestBuf, &responseBuf);
         if (status != PM_STATUS::PM_STATUS_SUCCESS) {
@@ -1610,7 +1611,7 @@ namespace pmon::mid
             PM_ACTION::SELECT_ADAPTER, &responseBuf);
 
         if (status == PM_STATUS_SUCCESS) {
-            activeAdapter = adapterId;
+            activeDevice = deviceId;
         }
 
         return status;
