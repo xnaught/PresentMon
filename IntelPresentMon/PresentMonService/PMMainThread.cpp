@@ -314,8 +314,10 @@ void PresentMonMainThread(Service* const pSvc)
         if (cpu) {
             cpuTelemetryThread = std::jthread{ CpuTelemetry, pSvc, &pm, cpu.get() };
             pm.SetCpu(cpu);
+            // sample once to populate the cap bits
+            cpu->Sample();
             // register cpu telemetry info with introspection
-            // TODO: get cpu vendor and pass info onto introspection
+            // TODO: set actual vendor here
             pComms->RegisterCpuDevice(PM_DEVICE_VENDOR_INTEL, cpu->GetCpuName(), cpu->GetCpuTelemetryCapBits());
         }
 
