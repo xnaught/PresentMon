@@ -286,6 +286,15 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	using Cpu = CpuTelemetryInfo;
 
 	switch (q.metric) {
+	// temporary static metric lookup via nsm
+	// only implementing the ones used by appcef right now... others available in the future
+	// TODO: implement fill for all static OR drop support for filling static
+	case PM_METRIC_GPU_MEM_SIZE:
+		return std::make_unique<CopyGatherCommand_<&Gpu::gpu_mem_total_size_b>>(pos);
+	case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
+		return std::make_unique<CopyGatherCommand_<&Gpu::gpu_mem_max_bandwidth_bps>>(pos);
+
+
 	case PM_METRIC_SWAP_CHAIN:
 		return std::make_unique<CopyGatherCommand_<&Pre::SwapChainAddress>>(pos);
 	case PM_METRIC_GPU_BUSY_TIME:

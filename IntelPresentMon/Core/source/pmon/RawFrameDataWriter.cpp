@@ -203,9 +203,9 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_VRAM_FREQUENCY, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_VRAM_EFFECTIVE_FREQUENCY, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_VRAM_TEMPERATURE, .deviceId = activeDeviceId },
-            // Element{.metricId = PM_METRIC_GPU_MEM_SIZE, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_SIZE, .deviceId = activeDeviceId }, // special case filling static
             Element{.metricId = PM_METRIC_GPU_MEM_USED, .deviceId = activeDeviceId },
-            // Element{.metricId = PM_METRIC_GPU_MEM_MAX_BANDWIDTH, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_MAX_BANDWIDTH, .deviceId = activeDeviceId }, // special case filling static
             Element{.metricId = PM_METRIC_GPU_MEM_READ_BANDWIDTH, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_MEM_WRITE_BANDWIDTH, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_FAN_SPEED, .deviceId = activeDeviceId, .index = 0 },
