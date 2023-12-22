@@ -8,6 +8,11 @@
 #include <string>
 #include "../../CommonUtilities/source/hash/Hash.h"
 
+namespace pmapi::intro
+{
+	class Root;
+}
+
 namespace pmon::mid
 {
 	// Used to calculate correct start frame based on metric offset
@@ -114,6 +119,8 @@ namespace pmon::mid
 		void SaveMetricCache(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob);
 		void CopyMetricCacheToBlob(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob);
 
+		const pmapi::intro::Root& GetIntrospectionRoot();
+
 		std::unique_ptr<void, HandleDeleter> pNamedPipeHandle;
 		uint32_t clientProcessId = 0;
 		// Stream clients mapping to process id
@@ -129,5 +136,6 @@ namespace pmon::mid
 		double cachedGpuMemSize = 0.;
 		uint32_t currentGpuInfoIndex = UINT32_MAX;
 		std::optional<uint32_t> activeDevice;
+		std::unique_ptr<pmapi::intro::Root> pIntroRoot;
 	};
 }
