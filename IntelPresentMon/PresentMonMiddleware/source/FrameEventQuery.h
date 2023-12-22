@@ -39,6 +39,7 @@ public:
 	~PM_FRAME_QUERY();
 	void GatherToBlob(const Context& ctx, uint8_t* pDestBlob) const;
 	size_t GetBlobSize() const;
+	std::optional<uint32_t> GetReferencedDevice() const;
 private:
 	// functions
 	std::unique_ptr<pmon::mid::GatherCommand_> MapQueryElementToGatherCommand_(const PM_QUERY_ELEMENT& q, size_t pos);

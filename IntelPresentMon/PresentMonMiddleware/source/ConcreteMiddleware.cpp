@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include "ConcreteMiddleware.h"
 #include <cstring>
 #include <string>

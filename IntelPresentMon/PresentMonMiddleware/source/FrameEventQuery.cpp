@@ -274,6 +274,11 @@ size_t PM_FRAME_QUERY::GetBlobSize() const
 	return blobSize_;
 }
 
+std::optional<uint32_t> PM_FRAME_QUERY::GetReferencedDevice() const
+{
+	return referencedDevice_;
+}
+
 std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherCommand_(const PM_QUERY_ELEMENT& q, size_t pos)
 {
 	using Pre = PmNsmPresentEvent;
