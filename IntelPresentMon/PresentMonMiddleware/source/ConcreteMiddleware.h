@@ -128,5 +128,6 @@ namespace pmon::mid
 		double cachedGpuMemMaxBandwidth = 0.;
 		double cachedGpuMemSize = 0.;
 		uint32_t currentGpuInfoIndex = UINT32_MAX;
+		std::optional<uint32_t> activeAdapter;
 	};
 }

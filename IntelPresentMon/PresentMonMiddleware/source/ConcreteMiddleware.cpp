@@ -851,6 +851,11 @@ namespace pmon::mid
             return;
         }
 
+        // make sure active device is the one referenced in this query
+        if (auto devId = pQuery->GetReferencedDevice()) {
+            SetActiveGraphicsAdapter(*devId);
+        }
+
         // context transmits various data that applies to each gather command in the query
         PM_FRAME_QUERY::Context ctx{ nsm_hdr->start_qpc, pShmClient->GetQpcFrequency().QuadPart };
 
@@ -1586,6 +1591,10 @@ namespace pmon::mid
 
     PM_STATUS ConcreteMiddleware::SetActiveGraphicsAdapter(uint32_t adapterId)
     {
+        if (activeAdapter && *activeAdapter == adapterId) {
+            return PM_STATUS_SUCCESS;
+        }
+
         MemBuffer requestBuf;
         MemBuffer responseBuf;
 
@@ -1599,6 +1608,10 @@ namespace pmon::mid
 
         status = NamedPipeHelper::DecodeGeneralSetActionResponse(
             PM_ACTION::SELECT_ADAPTER, &responseBuf);
+
+        if (status == PM_STATUS_SUCCESS) {
+            activeAdapter = adapterId;
+        }
 
         return status;
     }
