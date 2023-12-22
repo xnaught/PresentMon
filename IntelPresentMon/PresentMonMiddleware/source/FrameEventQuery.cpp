@@ -6,7 +6,6 @@
 #include "../../CommonUtilities/source/Meta.h"
 #include <algorithm>
 #include <cstddef>
-#include <__msvc_int128.hpp>
 
 using namespace pmon;
 
@@ -60,14 +59,7 @@ namespace
 			:
 			inputIndex_{ index }
 		{
-			// TODO: checking that introspection type matches nsm type
-			if constexpr (std::is_array_v<Type>) {
-				using ElementType = util::ContainerElementType<Type>;
-				outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, sizeof(ElementType));
-			}
-			else {
-				outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, sizeof(Type));
-			}
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(Type));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
 		void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context&) const override
@@ -88,12 +80,7 @@ namespace
 		}
 		uint32_t GetEndOffset() const override
 		{
-			if constexpr (std::is_array_v<Type>) {
-				return outputOffset_ + sizeof(util::ContainerElementType<Type>);
-			}
-			else {
-				return outputOffset_ + sizeof(Type);
-			}
+			return outputOffset_ + alignof(Type);
 		}
 		uint32_t GetOutputOffset() const override
 		{
@@ -108,8 +95,9 @@ namespace
 	class QpcDurationGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
-		QpcDurationGatherCommand_(size_t nextAvailableByteOffset) 		{
-			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, sizeof(double));
+		QpcDurationGatherCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
 		void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context& ctx) const override
@@ -129,7 +117,7 @@ namespace
 		}
 		uint32_t GetEndOffset() const override
 		{
-			return outputOffset_ + sizeof(double);
+			return outputOffset_ + alignof(double);
 		}
 		uint32_t GetOutputOffset() const override
 		{
@@ -143,8 +131,9 @@ namespace
 	class QpcDifferenceGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
-		QpcDifferenceGatherCommand_(size_t nextAvailableByteOffset) {
-			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, sizeof(double));
+		QpcDifferenceGatherCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
 		void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context& ctx) const override
@@ -182,7 +171,7 @@ namespace
 		}
 		uint32_t GetEndOffset() const override
 		{
-			return outputOffset_ + sizeof(double);
+			return outputOffset_ + alignof(double);
 		}
 		uint32_t GetOutputOffset() const override
 		{
@@ -206,7 +195,7 @@ namespace
 		}
 		uint32_t GetEndOffset() const override
 		{
-			return outputOffset_ + sizeof(bool);
+			return outputOffset_ + alignof(bool);
 		}
 		uint32_t GetOutputOffset() const override
 		{
@@ -221,7 +210,7 @@ namespace
 	public:
 		StartDifferenceGatherCommand_(size_t nextAvailableByteOffset)
 		{
-			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, sizeof(double));
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
 		void Gather(const PmNsmFrameData* pSourceFrameData, uint8_t* pDestBlob, const Context& ctx) const override
@@ -236,7 +225,7 @@ namespace
 		}
 		uint32_t GetEndOffset() const override
 		{
-			return outputOffset_ + sizeof(double);
+			return outputOffset_ + alignof(double);
 		}
 		uint32_t GetOutputOffset() const override
 		{

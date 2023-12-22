@@ -195,12 +195,33 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_GPU_VOLTAGE, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_FREQUENCY, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_TEMPERATURE, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_UTILIZATION, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEDIA_UTILIZATION, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_VRAM_POWER, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_VRAM_VOLTAGE, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_VRAM_FREQUENCY, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_VRAM_EFFECTIVE_FREQUENCY, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_VRAM_TEMPERATURE, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_SIZE, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_USED, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_MAX_BANDWIDTH, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_READ_BANDWIDTH, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_WRITE_BANDWIDTH, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_FAN_SPEED, .deviceId = activeDeviceId, .index = 0 },
             Element{.metricId = PM_METRIC_GPU_FAN_SPEED, .deviceId = activeDeviceId, .index = 1 },
             Element{.metricId = PM_METRIC_GPU_FAN_SPEED, .deviceId = activeDeviceId, .index = 2 },
             Element{.metricId = PM_METRIC_GPU_FAN_SPEED, .deviceId = activeDeviceId, .index = 3 },
             Element{.metricId = PM_METRIC_GPU_POWER_LIMITED, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_TEMPERATURE_LIMITED, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_CURRENT_LIMITED, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_VOLTAGE_LIMITED, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_UTILIZATION_LIMITED, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_VRAM_POWER_LIMITED, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_VRAM_TEMPERATURE_LIMITED, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_VRAM_CURRENT_LIMITED, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_VRAM_VOLTAGE_LIMITED, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_VRAM_UTILIZATION_LIMITED, .deviceId = activeDeviceId },
 
             Element{.metricId = PM_METRIC_CPU_UTILIZATION, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_CPU_POWER, .deviceId = activeDeviceId },
@@ -212,81 +233,6 @@ namespace p2c::pmon
                 
         // write header
         pQueryElementContainer->WriteHeader(file);
-
-        //file <<
-        //    "Application,"
-        //    "ProcessID,"
-        //    "SwapChainAddress,"
-        //    "Runtime,"
-        //    "SyncInterval,"
-        //    "PresentFlags,"
-        //    "Dropped,"
-        //    "TimeInSeconds,"
-        //    "msInPresentAPI,"
-        //    "msBetweenPresents,"
-        //    "AllowsTearing,"
-        //    "PresentMode,"
-        //    "msUntilRenderComplete,"
-        //    "msUntilDisplayed,"
-        //    "msBetweenDisplayChange,"
-        //    "msUntilRenderStart,"
-        //    "msGPUActive,"
-        //    "msGPUVideoActive,"
-        //    "msSinceInput,"
-        //    "QPCtime,"
-        //    "GPUPower[W],"
-        //    "GPUSustainedPowerLimit[W],"
-        //    "GPUVoltage[V],"
-        //    "GPUFrequency[MHz],"
-        //    "GPUTemperature[C],"
-        //    "GPUUtilization[%],"
-        //    "GPURenderComputeUtilization[%],"
-        //    "GPUMediaUtilization[%],"
-        //    "VRAMPower[W],"
-        //    "VRAMVoltage[V],"
-        //    "VRAMFrequency[Mhz],"
-        //    "VRAMEffectiveFrequency[GBps],"
-        //    "VRAMTemperature[C],"
-        //    "GPUMemTotalSize[B],"
-        //    "GPUMemUsed[B],"
-        //    "GPUMemMaxBandwidth[GBps],"
-        //    "GPUMemReadBandwidth[Bps],"
-        //    "GPUMemWriteBandwidth[Bps],"
-        //    "GPUFanSpeed0[RPM],"
-        //    "GPUFanSpeed1[RPM],"
-        //    "GPUFanSpeed2[RPM],"
-        //    "GPUFanSpeed3[RPM],"
-        //    "GPUFanSpeed4[RPM],"
-        //    "PSUType0,"
-        //    "PSUType1,"
-        //    "PSUType2,"
-        //    "PSUType3,"
-        //    "PSUType4,"
-        //    "PSUPower0[W],"
-        //    "PSUPower1[W],"
-        //    "PSUPower2[W],"
-        //    "PSUPower3[W],"
-        //    "PSUPower4[W],"
-        //    "PSUVoltage0[V],"
-        //    "PSUVoltage1[V],"
-        //    "PSUVoltage2[V],"
-        //    "PSUVoltage3[V],"
-        //    "PSUVoltage4[V],"
-        //    "GPUPowerLimited,"
-        //    "GPUTemperatureLimited,"
-        //    "GPUCurrentLimited,"
-        //    "GPUVoltageLimited,"
-        //    "GPUUtilizationLimited,"
-        //    "VRAMPowerLimited,"
-        //    "VRAMTemperatureLimited,"
-        //    "VRAMCurrentLimited,"
-        //    "VRAMVoltageLimited,"
-        //    "VRAMUtilizationLimited,"
-        //    "CPUUtilization[%],"
-        //    "CPUFrequency[MHz],"
-        //    "CPUPower[W],"
-        //    "CPUPowerLimit[W],"
-        //    "CPUTemperature[C]\n";
     }
 
     void RawFrameDataWriter::Process()
