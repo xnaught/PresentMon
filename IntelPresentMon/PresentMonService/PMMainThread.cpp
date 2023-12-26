@@ -10,6 +10,7 @@
 #include "../Interprocess/source/Interprocess.h"
 #include "CliOptions.h"
 #include "GlobalIdentifiers.h"
+#include <ranges>
 
 #define GOOGLE_GLOG_DLL_DECL
 #define GLOG_NO_ABBREVIATED_SEVERITIES
@@ -222,6 +223,8 @@ void CpuTelemetry(Service* const srv, PresentMon* const pm,
 
 void PresentMonMainThread(Service* const pSvc)
 {
+    namespace rn = std::ranges; namespace vi = rn::views;
+
     assert(pSvc);
 
     // these thread containers need to be created outside of the try scope
@@ -316,9 +319,22 @@ void PresentMonMainThread(Service* const pSvc)
             pm.SetCpu(cpu);
             // sample once to populate the cap bits
             cpu->Sample();
-            // register cpu telemetry info with introspection
-            // TODO: set actual vendor here
-            pComms->RegisterCpuDevice(PM_DEVICE_VENDOR_INTEL, cpu->GetCpuName(), cpu->GetCpuTelemetryCapBits());
+            // determine vendor based on device name
+            const auto vendor = [&] {
+                const auto lowerNameRn = cpu->GetCpuName() | vi::transform(tolower);
+                const std::string lowerName{ lowerNameRn.begin(), lowerNameRn.end() };
+                if (rn::search(lowerName, "intel")) {
+                    return PM_DEVICE_VENDOR_INTEL;
+                }
+                else if (rn::search(lowerName, "amd")) {
+                    return PM_DEVICE_VENDOR_AMD;
+                }
+                else {
+                    return PM_DEVICE_VENDOR_UNKNOWN;
+                }
+            }();
+            // register cpu
+            pComms->RegisterCpuDevice(vendor, cpu->GetCpuName(), cpu->GetCpuTelemetryCapBits());
         }
 
         while (WaitForSingleObjectEx(pSvc->GetServiceStopHandle(), INFINITE, (bool)opt.timedStop) != WAIT_OBJECT_0) {
