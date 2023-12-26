@@ -21,6 +21,9 @@ namespace p2c::pmon
 
 	void CachingQuery::Finalize(pmapi::Session& session)
 	{
+		if (metricPtrs.empty()) {
+			return;
+		}
 		std::vector<PM_QUERY_ELEMENT> queryElements;
 		for (auto& pMet : metricPtrs) {
 			queryElements.push_back(pMet->MakeQueryElement());
@@ -34,6 +37,9 @@ namespace p2c::pmon
 
 	const uint8_t* CachingQuery::Poll(double timestamp_)
 	{
+		if (!pQuery) {
+			return nullptr;
+		}
 		if (!timestamp || *timestamp != timestamp_) {
 			uint32_t numSwap = 1;
 			pQuery->Poll(pid, pBlob.get(), numSwap);
