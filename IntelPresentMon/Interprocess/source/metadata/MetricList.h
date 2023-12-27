@@ -1,5 +1,6 @@
 #pragma once
 #include "../../../PresentMonAPI2/source/PresentMonAPI.h"
+#include "StatsShortcuts.h"
 
 #define METRIC_LIST(X_) \
 		X_(PM_METRIC_SWAP_CHAIN, PM_METRIC_TYPE_DYNAMIC_FRAME, PM_UNIT_DIMENSIONLESS, PM_DATA_TYPE_UINT64, PM_DATA_TYPE_UINT64, 0, PM_DEVICE_TYPE_INDEPENDENT, PM_STAT_MID_POINT) \

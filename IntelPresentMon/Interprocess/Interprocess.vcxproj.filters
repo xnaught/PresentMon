@@ -21,7 +21,10 @@
     <ClCompile Include="source\Interprocess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\IntrospectionMacroHelpers.cpp">
+    <ClCompile Include="source\metadata\MetadataValidators.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="source\IntrospectionPopulators.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\IntrospectionHelpers.cpp">
@@ -44,7 +47,7 @@
     <ClInclude Include="source\IntrospectionMetadata.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\IntrospectionHelpers.h">
+    <ClInclude Include="source\IntrospectionPopulators.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\IntrospectionCloneAllocators.h">
@@ -99,6 +102,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\metadata\PreferredUnitList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\metadata\StatsShortcuts.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\IntrospectionCapsLookup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\IntrospectionHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\IntrospectionDataTypeMapping.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
