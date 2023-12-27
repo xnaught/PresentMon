@@ -1,5 +1,7 @@
 #pragma once
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
+#include "metadata/EnumDataType.h"
+#include <utility>
 
 namespace pmon::ipc::intro {
 	// static mapping of datatype enum to static type
@@ -19,8 +21,23 @@ namespace pmon::ipc::intro {
 
 	template<PM_DATA_TYPE T>
 	using DataTypeToStaticType_t = typename DataTypeToStaticType<T>::type;
+
 	template<PM_DATA_TYPE T>
 	constexpr size_t DataTypeToStaticType_sz = sizeof(DataTypeToStaticType_t<T>);
 	template<>
 	constexpr size_t DataTypeToStaticType_sz<PM_DATA_TYPE::PM_DATA_TYPE_VOID> = 0ull;
+
+	template<template<PM_DATA_TYPE> class F, typename...P>
+	auto BridgeDataType(PM_DATA_TYPE dataType, P&&...args)
+	{
+		switch (dataType) {
+#define HANDLE_DATA_TYPE_KEY(enumFrag, keyFrag, name, shortName, description) \
+		case PM_DATA_TYPE_##keyFrag: return F<PM_DATA_TYPE_##keyFrag>::Invoke(std::forward<P>(args)...);
+
+		ENUM_KEY_LIST_DATA_TYPE(HANDLE_DATA_TYPE_KEY)
+
+#undef HANDLE_DATA_TYPE_KEY
+		}
+		return F<PM_DATA_TYPE_VOID>::Default(std::forward<P>(args)...);
+	}
 }
