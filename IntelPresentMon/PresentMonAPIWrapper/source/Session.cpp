@@ -1,4 +1,4 @@
-#include "PresentMonAPIWrapper.h"
+#include "Session.h"
 #include "../../PresentMonAPI2/source/Internal.h"
 
 namespace pmapi
