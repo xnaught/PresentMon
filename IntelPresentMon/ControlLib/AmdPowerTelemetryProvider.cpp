@@ -68,8 +68,6 @@ AmdPowerTelemetryProvider::AmdPowerTelemetryProvider() {
           std::string adl_adapter_name = ai.strAdapterName;
           adapter_ptrs_.push_back(std::make_shared<AmdPowerTelemetryAdapter>(
               &adl_, adl_adapter_name, ai.iAdapterIndex, overdrive_version));
-          // If we are able to create a telemetry adapter we are done.
-          break;
         } catch (const std::exception& e) {
           TELE_ERR(e.what());
         } catch (...) {
