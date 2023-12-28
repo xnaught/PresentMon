@@ -4,6 +4,7 @@
 #include <format>
 #include <string>
 #include <memory>
+#include "BlobContainer.h"
 
 namespace pmapi
 {
@@ -24,6 +25,15 @@ namespace pmapi
             if (auto sta = pmPollDynamicQuery(hQuery_, pid, pBlob, &numSwapChains); sta != PM_STATUS_SUCCESS) {
                 throw Exception{ std::format("dynamic poll call failed with error id={}", (int)sta) };
             }
+        }
+        void Poll(uint32_t pid, BlobContainer& blobs)
+        {
+            assert(blobs.CheckHandle(hQuery_));
+            Poll(pid, blobs.GetFirst(), blobs.AcquireNumBlobsInRef_());
+        }
+        BlobContainer MakeBlobContainer(uint32_t nBlobs) const
+        {
+            return { hQuery_, blobSize_, nBlobs };
         }
     private:
         DynamicQuery(std::span<PM_QUERY_ELEMENT> elements, double winSizeMs, double metricOffsetMs)
