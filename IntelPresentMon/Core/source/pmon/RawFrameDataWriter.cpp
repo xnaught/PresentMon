@@ -81,8 +81,6 @@ namespace p2c::pmon
         // functions
         QueryElementContainer_(std::span<const ElementDefinition> elements, uint32_t nBlobsToCreate,
             pmapi::Session& session, const pmapi::intro::Root& introRoot)
-            :
-            nBlobs{ nBlobsToCreate }
         {
             for (auto& el : elements) {
                 const auto metric = introRoot.FindMetric(el.metricId);
@@ -116,17 +114,15 @@ namespace p2c::pmon
                 });
             }
             pQuery = session.RegisterFrameQuery(queryElements_);
-            pBlobs = std::make_unique<uint8_t[]>(pQuery->GetBlobSize() * nBlobs);
+            blobs = pQuery->MakeBlobContainer(nBlobsToCreate);
         }
         void WriteFrames(uint32_t pid, const std::string& procName, std::ostream& out)
         {
-            auto nBlobsInOut = nBlobs;
-            // if consume sets nblobs to max, it means there (might) be more, so go again
-            while (nBlobsInOut == nBlobs) {
-                pQuery->Consume(pid, pBlobs.get(), nBlobsInOut);
-                // use outparam from Consume to determin how many blobs to loop over
-                const auto pEnd = pBlobs.get() + pQuery->GetBlobSize() * nBlobsInOut;
-                for (auto pBlob = pBlobs.get(); pBlob < pEnd; pBlob += pQuery->GetBlobSize()) {
+            // continue consuming frames until none are left pending
+            do {
+                pQuery->Consume(pid, *blobs);
+                // loop over populated blobs
+                for (auto pBlob : *blobs) {
                     // process details are hardcoded here
                     out << procName << ',' << pid;
                     // loop over each element (column/field) in a frame of data
@@ -139,7 +135,7 @@ namespace p2c::pmon
                     }
                     out << "\n";
                 }
-            }
+            } while (blobs->AllBlobsPopulated()); // if container filled, means more might be left
             out << std::flush;
         }
         void WriteHeader(std::ostream& out)
@@ -152,8 +148,7 @@ namespace p2c::pmon
         }
     private:
         std::shared_ptr<pmapi::FrameQuery> pQuery;
-        std::unique_ptr<uint8_t[]> pBlobs;
-        uint32_t nBlobs;
+        std::optional<pmapi::BlobContainer> blobs;
         std::vector<std::unique_ptr<Annotation_>> annotationPtrs_;
         std::vector<PM_QUERY_ELEMENT> queryElements_;
     };

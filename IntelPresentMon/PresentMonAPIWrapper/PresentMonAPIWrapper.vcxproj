@@ -22,6 +22,7 @@
     <ClCompile Include="source\Session.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="source\BlobContainer.h" />
     <ClInclude Include="source\DynamicQuery.h" />
     <ClInclude Include="source\FrameQuery.h" />
     <ClInclude Include="source\PresentMonAPIWrapper.h" />

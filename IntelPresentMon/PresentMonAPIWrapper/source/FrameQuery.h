@@ -3,7 +3,8 @@
 #include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
 #include <format>
 #include <string>
-#include <memory>
+#include <cassert>
+#include "BlobContainer.h"
 
 namespace pmapi
 {
@@ -24,6 +25,15 @@ namespace pmapi
             if (auto sta = pmConsumeFrames(hQuery_, pid, pBlobs, &numBlobsInOut); sta != PM_STATUS_SUCCESS) {
                 throw Exception{ std::format("consume frame call failed with error id={}", (int)sta) };
             }
+        }
+        void Consume(uint32_t pid, BlobContainer& blobs)
+        {
+            assert(blobs.CheckHandle(hQuery_));
+            Consume(pid, blobs.GetFirst(), blobs.AcquireNumBlobsInRef_());
+        }
+        BlobContainer MakeBlobContainer(uint32_t nBlobs) const
+        {
+            return { hQuery_, blobSize_, nBlobs };
         }
     private:
         FrameQuery(std::span<PM_QUERY_ELEMENT> elements)
