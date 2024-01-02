@@ -106,27 +106,23 @@ PresentMonClient::~PresentMonClient() {
 }
 
 // Calculate percentile using linear interpolation between the closet ranks
-// method
+// data must be pre-sorted
 double PresentMonClient::GetPercentile(std::vector<double>& data,
                                        double percentile) {
+
+  percentile = max(percentile, 0.);
+
   double integral_part_as_double;
   double fractpart =
-      modf(((percentile * (static_cast<double>(data.size() - 1))) + 1),
+      modf(percentile * static_cast<double>(data.size()),
            &integral_part_as_double);
 
-  // Subtract off one from the integral_part as we are zero based and the
-  // calculation above is based one based
-  uint32_t integral_part = static_cast<uint32_t>(integral_part_as_double) - 1;
-  uint32_t next_idx = integral_part + 1;
-  // Before we access the vector data ensure that our calculated index values
-  // are not out of range
-  if (integral_part < data.size() || next_idx < data.size()) {
-    return data[integral_part] +
-           (fractpart * (data[next_idx] - data[integral_part]));
-  } else {
-    LOG(INFO) << "Invalid percentile calculation inputs detected.";
-    return 0.0f;
+  uint32_t idx = static_cast<uint32_t>(integral_part_as_double);
+  if (idx >= data.size() - 1) {
+    return data[data.size() - 1];
   }
+
+  return data[idx] + (fractpart * (data[idx + 1] - data[idx]));
 }
 
 PM_STATUS PresentMonClient::GetGfxLatencyData(
@@ -182,10 +178,9 @@ PM_STATUS PresentMonClient::GetGfxLatencyData(
       frame_data->present_event.PresentStartTime -
       ContvertMsToQpcTicks(window_size_in_ms, qpc_frequency.QuadPart);
 
-  bool data_gathering_complete = false;
   // Loop from the most recent frame data until we either run out of data or we
   // meet the window size requirements sent in by the client
-  for (;;) {
+  while (frame_data->present_event.PresentStartTime > end_qpc) {
     auto result = swap_chain_data.emplace(
         frame_data->present_event.SwapChainAddress, fps_swap_chain_data());
     auto swap_chain = &result.first->second;
@@ -196,8 +191,7 @@ PM_STATUS PresentMonClient::GetGfxLatencyData(
       swap_chain->render_latency_ms.clear();
       swap_chain->num_presents = 1;
     } else {
-      if (frame_data->present_event.PresentStartTime > end_qpc) {
-        if (frame_data->present_event.FinalState == PresentResult::Presented) {
+      if (frame_data->present_event.FinalState == PresentResult::Presented) {
           double current_render_latency_ms = 0.0;
           double current_display_latency_ms = 0.0;
 
@@ -230,16 +224,9 @@ PM_STATUS PresentMonClient::GetGfxLatencyData(
               frame_data->present_event.ScreenTime -
               frame_data->present_event.PresentStartTime;
           swap_chain->display_count++;
-        }
-        swap_chain->cpu_0_time = frame_data->present_event.PresentStartTime;
-        swap_chain->num_presents++;
-      } else {
-        data_gathering_complete = true;
       }
-    }
-
-    if (data_gathering_complete) {
-      break;
+      swap_chain->cpu_0_time = frame_data->present_event.PresentStartTime;
+      swap_chain->num_presents++;
     }
 
     // Get the index of the next frame
@@ -356,97 +343,78 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
   uint64_t end_qpc =
       frame_data->present_event.PresentStartTime -
       ContvertMsToQpcTicks(adjusted_window_size_in_ms, qpc_frequency.QuadPart);
-  uint64_t last_checked_qpc = frame_data->present_event.PresentStartTime;
 
-  bool data_gathering_complete = false;
+  // These are only used for logging:
+  uint64_t last_checked_qpc = frame_data->present_event.PresentStartTime;
   bool decrement_failed = false;
   bool read_frame_failed = false;
+
   // Loop from the most recent frame data until we either run out of data or
   // we meet the window size requirements sent in by the client
-  for (;;) {
+  while (frame_data->present_event.PresentStartTime > end_qpc) {
     auto result = swap_chain_data.emplace(
         frame_data->present_event.SwapChainAddress, fps_swap_chain_data());
     auto swap_chain = &result.first->second;
-    if (result.second) {
-      // Save off the QPCTime of the latest present event
-      swap_chain->cpu_n_time = frame_data->present_event.PresentStartTime;
-      swap_chain->cpu_0_time = frame_data->present_event.PresentStartTime;
-      LARGE_INTEGER temp_large{.QuadPart = qpc_frequency.QuadPart};
-      swap_chain->gpu_sum_ms.push_back(
-          QpcDeltaToSeconds(frame_data->present_event.GPUDuration, temp_large) *
-          1000.);
-      // Initialize num_presents to 1 as we have just determined that the
-      // present event is valid
-      swap_chain->num_presents = 1;
-      swap_chain->sync_interval = frame_data->present_event.SyncInterval;
-      swap_chain->present_mode =
-          TranslatePresentMode(frame_data->present_event.PresentMode);
 
-      if (frame_data->present_event.FinalState == PresentResult::Presented) {
-        swap_chain->display_n_screen_time =
-            frame_data->present_event.ScreenTime;
-        swap_chain->display_0_screen_time =
-            frame_data->present_event.ScreenTime;
-        swap_chain->display_count = 1;
-        swap_chain->dropped.push_back(0);
-      } else {
-        swap_chain->dropped.push_back(1);
-      }
-      swap_chain->presented_fps.clear();
-      swap_chain->displayed_fps.clear();
-    } else {
-      // Calculate the amount of time passed between the current and previous
-      // events and add it to our cumulative window size
-      double time_in_ms = QpcDeltaToMs(
-          swap_chain->cpu_0_time - frame_data->present_event.PresentStartTime,
-          qpc_frequency);
-      if (frame_data->present_event.PresentStartTime > end_qpc) {
-        // Save off the cpu fps
-        double fps_data = 1000.0f / time_in_ms;
-        swap_chain->presented_fps.push_back(fps_data);
-        swap_chain->frame_times_ms.push_back(time_in_ms);
-        if (frame_data->present_event.FinalState == PresentResult::Presented) {
-          if (swap_chain->display_0_screen_time != 0) {
-            time_in_ms = QpcDeltaToMs(swap_chain->display_0_screen_time -
-                                          frame_data->present_event.ScreenTime,
-                                      qpc_frequency);
-            // TODO(megalvan): PresentMon can return the same screen time for
-            // back to back frames. This is curious. Debug into PresentData
-            // and determine if this is accurate. For now only allow a
-            // max FPS of 5000
-            time_in_ms = std::fmax(time_in_ms, 0.2);
-            fps_data = 1000.0f / time_in_ms;
-            swap_chain->displayed_fps.push_back(fps_data);
-          }
-          if (swap_chain->display_count == 0) {
-            swap_chain->display_n_screen_time =
-                frame_data->present_event.ScreenTime;
-          }
-          swap_chain->display_0_screen_time =
-              frame_data->present_event.ScreenTime;
-          swap_chain->display_count++;
-          swap_chain->dropped.push_back(0);
-        } else {
-          swap_chain->dropped.push_back(1);
-        }
-        swap_chain->cpu_0_time = frame_data->present_event.PresentStartTime;
-        LARGE_INTEGER temp_large{.QuadPart = qpc_frequency.QuadPart};
-        swap_chain->gpu_sum_ms.push_back(QpcDeltaToSeconds(
-            frame_data->present_event.GPUDuration, temp_large) * 1000.);
-        swap_chain->sync_interval = frame_data->present_event.SyncInterval;
-        swap_chain->present_mode =
-            TranslatePresentMode(frame_data->present_event.PresentMode);
-        swap_chain->allows_tearing =
-            static_cast<int32_t>(frame_data->present_event.SupportsTearing);
-        swap_chain->num_presents++;
-      } else {
-        last_checked_qpc = frame_data->present_event.PresentStartTime;
-        data_gathering_complete = true;
+    // Copy swap_chain data for the previous first frame needed for calculations below
+    auto nextFramePresentStartTime     = swap_chain->cpu_0_time;
+    auto nextFramePresentStopTime      = swap_chain->present_stop_0;
+    auto nextFrameGPUDuration          = swap_chain->gpu_duration_0;
+    auto nextFrameDisplayDuration      = swap_chain->display_1_screen_time - swap_chain->display_0_screen_time;
+    auto nextFrameDisplayDurationValid = swap_chain->displayed_0 && swap_chain->display_count >= 2;
+
+    // Save current frame's properties into swap_chain (the new first frame)
+    swap_chain->displayed_0    = frame_data->present_event.FinalState == PresentResult::Presented;
+    swap_chain->cpu_0_time     = frame_data->present_event.PresentStartTime;
+    swap_chain->present_stop_0 = frame_data->present_event.PresentStopTime;
+    swap_chain->gpu_duration_0 = frame_data->present_event.GPUDuration;
+    swap_chain->num_presents   += 1;
+
+    if (swap_chain->displayed_0) {
+      swap_chain->display_1_screen_time = swap_chain->display_0_screen_time;
+      swap_chain->display_0_screen_time = frame_data->present_event.ScreenTime;
+      swap_chain->display_count         += 1;
+      if (swap_chain->display_count == 1) {
+        swap_chain->display_n_screen_time = frame_data->present_event.ScreenTime;
       }
     }
 
-    if (data_gathering_complete) {
-      break;
+    // These are only saved for the last frame:
+    if (swap_chain->num_presents == 1) {
+      swap_chain->cpu_n_time     = frame_data->present_event.PresentStartTime;
+      swap_chain->sync_interval  = frame_data->present_event.SyncInterval;
+      swap_chain->present_mode   = TranslatePresentMode(frame_data->present_event.PresentMode);
+      swap_chain->allows_tearing = static_cast<int32_t>(frame_data->present_event.SupportsTearing);
+    }
+
+    // Compute metrics for this frame if we've seen enough subsequent frames to have all the
+    // required data
+    //
+    // frame_data:      PresentStart--PresentStop--GPUDuration--ScreenTime
+    // nextFrame:                                   PresentStart--PresentStop--GPUDuration--ScreenTime
+    // nextNextFrame:                                                           PresentStart--PresentStop--GPUDuration--ScreenTime
+    //                                CPUStart
+    //                                CPUBusy------>CPUWait----------------->  GPUBusy--->  DisplayBusy---------------->
+    if (swap_chain->num_presents > 1) {
+      auto cpuStart    = frame_data->present_event.PresentStopTime;
+      auto cpuBusy     = nextFramePresentStartTime - cpuStart;
+      auto cpuWait     = nextFramePresentStopTime - nextFramePresentStartTime;
+      auto gpuBusy     = nextFrameGPUDuration;
+      auto displayBusy = nextFrameDisplayDuration;
+
+      auto frameTime_ms   = QpcDeltaToMs(cpuBusy + cpuWait, qpc_frequency);
+      auto gpuBusy_ms     = QpcDeltaToMs(gpuBusy,           qpc_frequency);
+      auto displayBusy_ms = QpcDeltaToMs(displayBusy,       qpc_frequency);
+
+      swap_chain->frame_times_ms.push_back(frameTime_ms);
+      swap_chain->gpu_sum_ms.push_back(gpuBusy_ms);
+      swap_chain->dropped.push_back(swap_chain->displayed_0 ? 0. : 1.);
+
+      if (nextFrameDisplayDurationValid && displayBusy > 0) {
+        // TODO(megalvan): displayBusy > 0 because observed cases with the same screen time for
+        // back to back frames.
+        swap_chain->displayed_fps.push_back(1000. / displayBusy_ms);
+      }
     }
 
     // Get the index of the next frame
@@ -473,38 +441,51 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
     auto chain = pair.second;
 
     // Calculate the display fps metrics.
-    CalculateMetricDoubleData(chain.displayed_fps,
-                              current_fps_data->displayed_fps);
+    CalculateMetricDoubleDataNoAvg(chain.displayed_fps,
+                                   current_fps_data->displayed_fps);
     // Calculate the average using the screen times
     if (chain.display_count > 1) {
       current_fps_data->displayed_fps.avg = QpcDeltaToMs(
           chain.display_n_screen_time - chain.display_0_screen_time,
           qpc_frequency);
-      current_fps_data->displayed_fps.avg /= (chain.display_count - 1);
+      current_fps_data->displayed_fps.avg /= chain.display_count;
       current_fps_data->displayed_fps.avg =
           (current_fps_data->displayed_fps.avg > 0.0)
               ? 1000.0 / current_fps_data->displayed_fps.avg
               : 0.0;
     }
 
-    // Calculate the presented fps metrics
-    CalculateMetricDoubleData(chain.presented_fps,
-                              current_fps_data->presented_fps);
-    // Calculate the average using the present times
-    if (chain.num_presents > 1) {
-      current_fps_data->presented_fps.avg =
-          QpcDeltaToMs(chain.cpu_n_time - chain.cpu_0_time, qpc_frequency);
-      current_fps_data->presented_fps.avg =
-          current_fps_data->presented_fps.avg / (chain.num_presents - 1);
-      current_fps_data->presented_fps.avg = 
-          (current_fps_data->presented_fps.avg > 0.0)
-              ? 1000.0 / current_fps_data->presented_fps.avg
-              : 0.0;
-    }
-
     // Calculate stats for frametimes
-    CalculateMetricDoubleData(chain.frame_times_ms,
-                              current_fps_data->frame_time_ms);
+    CalculateMetricDoubleDataNoAvg(chain.frame_times_ms,
+                                   current_fps_data->frame_time_ms);
+    if (chain.num_presents > 1) {
+      current_fps_data->frame_time_ms.avg =
+          QpcDeltaToMs(chain.cpu_n_time - chain.cpu_0_time, qpc_frequency);
+      current_fps_data->frame_time_ms.avg =
+          current_fps_data->frame_time_ms.avg / chain.num_presents;
+
+      // TODO: The below percentiles should be 0.01,0.05,0.10 but I'm leaving it wrong so that it
+      // matches the current CalculateMetricDoubleData() implementation.
+
+      auto MillisecondsToFPS = [](double ms) { return ms == 0. ? 0. : 1000. / ms; };
+      current_fps_data->presented_fps.avg           = MillisecondsToFPS(current_fps_data->frame_time_ms.avg);
+      current_fps_data->presented_fps.raw           = MillisecondsToFPS(current_fps_data->frame_time_ms.raw);
+      current_fps_data->presented_fps.low           = MillisecondsToFPS(current_fps_data->frame_time_ms.high);
+      current_fps_data->presented_fps.high          = MillisecondsToFPS(current_fps_data->frame_time_ms.low);
+      current_fps_data->presented_fps.percentile_99 = MillisecondsToFPS(GetPercentile(chain.frame_times_ms, 0.99));
+      current_fps_data->presented_fps.percentile_95 = MillisecondsToFPS(GetPercentile(chain.frame_times_ms, 0.95));
+      current_fps_data->presented_fps.percentile_90 = MillisecondsToFPS(GetPercentile(chain.frame_times_ms, 0.90));
+    } else {
+      current_fps_data->presented_fps.avg = 0.;
+      current_fps_data->presented_fps.raw = 0.;
+      current_fps_data->presented_fps.low = 0.;
+      current_fps_data->presented_fps.high = 0.;
+      current_fps_data->presented_fps.percentile_99 = 0.;
+      current_fps_data->presented_fps.percentile_95 = 0.;
+      current_fps_data->presented_fps.percentile_90 = 0.;
+    }
+    current_fps_data->presented_fps.valid = true;
+
     // Calculate stats for gpu busy
     CalculateMetricDoubleData(chain.gpu_sum_ms, current_fps_data->gpu_busy);
     // Calculate stats for dropped frames and then adjust the the avg
@@ -548,10 +529,10 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
                 << "," << last_checked_qpc << "," << chain.display_n_screen_time
                 << "," << chain.display_0_screen_time << ","
                 << adjusted_window_size_in_ms << ","
-                << current_fps_data->presented_fps.avg << ","
+                << (1000. / current_fps_data->frame_time_ms.avg) << ","
                 << current_fps_data->frame_time_ms.raw << ","
                 << current_fps_data->displayed_fps.raw << ","
-                << data_gathering_complete << "," << decrement_failed << ","
+                << decrement_failed << ","
                 << read_frame_failed << "," << using_cache;
     }
 
@@ -954,10 +935,21 @@ PM_STATUS PresentMonClient::GetCpuData(uint32_t process_id,
 void PresentMonClient::CalculateMetricDoubleData(
     std::vector<double>& in_data, PM_METRIC_DOUBLE_DATA& metric_double_data,
     bool valid) {
+  CalculateMetricDoubleDataNoAvg(in_data, metric_double_data, valid);
+
+  if (in_data.size() > 0) {
+    for (auto& element : in_data) {
+      metric_double_data.avg += element;
+    }
+    metric_double_data.avg /= in_data.size();
+  }
+}
+
+void PresentMonClient::CalculateMetricDoubleDataNoAvg(
+    std::vector<double>& in_data, PM_METRIC_DOUBLE_DATA& metric_double_data,
+    bool valid) {
   metric_double_data.avg = 0.0;
   if (in_data.size() > 1) {
-    // Before we sort the data pull out the last element from the vector
-    // for raw data
     size_t middle_index = in_data.size() / 2;
     metric_double_data.raw = in_data[middle_index];
     std::sort(in_data.begin(), in_data.end());
@@ -966,10 +958,6 @@ void PresentMonClient::CalculateMetricDoubleData(
     metric_double_data.percentile_99 = GetPercentile(in_data, 0.01);
     metric_double_data.percentile_95 = GetPercentile(in_data, 0.05);
     metric_double_data.percentile_90 = GetPercentile(in_data, 0.1);
-    for (auto& element : in_data) {
-      metric_double_data.avg += element;
-    }
-    metric_double_data.avg /= in_data.size();
   } else if (in_data.size() == 1) {
     metric_double_data.raw = in_data[0];
     metric_double_data.low = in_data[0];
@@ -977,7 +965,6 @@ void PresentMonClient::CalculateMetricDoubleData(
     metric_double_data.percentile_99 = in_data[0];
     metric_double_data.percentile_95 = in_data[0];
     metric_double_data.percentile_90 = in_data[0];
-    metric_double_data.avg = in_data[0];
   } else {
     metric_double_data.raw = 0.;
     metric_double_data.low = 0.;
@@ -985,7 +972,6 @@ void PresentMonClient::CalculateMetricDoubleData(
     metric_double_data.percentile_99 = 0.;
     metric_double_data.percentile_95 = 0.;
     metric_double_data.percentile_90 = 0.;
-    metric_double_data.avg = 0.;
   }
   metric_double_data.valid = valid;
 }

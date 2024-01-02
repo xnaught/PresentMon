@@ -2,10 +2,10 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
     <Product
         Id="*"
-        Name="Intel PresentMon"
+        Name="Intel(R) PresentMon"
         Language="1033"
         Version="0.7.0.0"
-        Manufacturer="Intel Corporation"
+        Manufacturer="Intel(R) Corporation"
         UpgradeCode="CD0D489E-0FE7-452D-90D9-F94F3F5FF410">
 
         <Package
@@ -23,7 +23,7 @@
 
         <Feature
             Id="complete_install"
-            Title="Intel PresentMon"
+            Title="Intel(R) PresentMon"
             Description="!(loc.feature_complete_install_description)"
             Display="expand">
             <ComponentRef Id="pm_license" />
@@ -74,7 +74,6 @@
         <WixVariable Id="WixUILicenseRtf" Value="license.rtf" />
 
         <MajorUpgrade Schedule="afterInstallValidate"
-                      AllowSameVersionUpgrades="yes"
                       DowngradeErrorMessage="!(loc.product_downgrade_error_message)"/>
 
         <!--
