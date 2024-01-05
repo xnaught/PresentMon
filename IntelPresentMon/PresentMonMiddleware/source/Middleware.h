@@ -2,12 +2,13 @@
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
 #include <span>
 
+struct PM_SESSION { virtual ~PM_SESSION() = default; };
+
 namespace pmon::mid
 {
-	class Middleware
+	class Middleware : public PM_SESSION
 	{
 	public:
-		virtual ~Middleware() = default;
 		virtual void Speak(char* buffer) const = 0;
 		virtual const PM_INTROSPECTION_ROOT* GetIntrospectionData() = 0;
 		virtual void FreeIntrospectionData(const PM_INTROSPECTION_ROOT* pRoot) = 0;

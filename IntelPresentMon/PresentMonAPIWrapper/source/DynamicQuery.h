@@ -36,9 +36,11 @@ namespace pmapi
             return { hQuery_, blobSize_, nBlobs };
         }
     private:
-        DynamicQuery(std::span<PM_QUERY_ELEMENT> elements, double winSizeMs, double metricOffsetMs)
+        DynamicQuery(PM_SESSION_HANDLE hSession, std::span<PM_QUERY_ELEMENT> elements, double winSizeMs, double metricOffsetMs)
+            :
+            hSession_{ hSession }
         {
-            if (auto sta = pmRegisterDynamicQuery(&hQuery_, elements.data(),
+            if (auto sta = pmRegisterDynamicQuery(hSession_, &hQuery_, elements.data(),
                 elements.size(), winSizeMs, metricOffsetMs); sta != PM_STATUS_SUCCESS) {
                 throw Exception{ std::format("dynamic query register call failed with error id={}", (int)sta) };
             }
@@ -47,6 +49,7 @@ namespace pmapi
             }
         }
         PM_DYNAMIC_QUERY_HANDLE hQuery_ = nullptr;
+        PM_SESSION_HANDLE hSession_ = nullptr;
         size_t blobSize_ = 0ull;
     };
 }

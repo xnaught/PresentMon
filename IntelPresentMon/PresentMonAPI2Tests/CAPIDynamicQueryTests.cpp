@@ -1,10 +1,12 @@
 #include "CppUnitTest.h"
+#include "../PresentMonAPI/PresentMonAPI.h"
 #include "../PresentMonAPI2/source/PresentMonAPI.h"
 #include "../PresentMonAPI2/source/Internal.h"
 #include <cstring>
 #include <vector>
 #include <optional>
 #include "Utilities.h"
+#include "StatusComparison.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -12,15 +14,17 @@ namespace PresentMonAPI2Mock
 {
 	TEST_CLASS(CAPIDynamicQueryTests)
 	{
+	private:
+		PM_SESSION_HANDLE hSession_ = nullptr;
 	public:
 		TEST_METHOD_INITIALIZE(BeforeEachTestMethod)
 		{
 			pmSetMiddlewareAsMock_(true, true);
-			pmOpenSession();
+			pmOpenSession(&hSession_);
 		}
 		TEST_METHOD_CLEANUP(AfterEachTestMethod)
 		{
-			pmCloseSession();
+			pmCloseSession(hSession_);
 		}
 		TEST_METHOD(CreateAndFreeQuery)
 		{
@@ -31,10 +35,10 @@ namespace PresentMonAPI2Mock
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_UTILIZATION, .deviceId = 0, .arrayIndex = 0},
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_POWER, .deviceId = 1, .arrayIndex = 0},
 			};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 1000.));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmRegisterDynamicQuery(hSession_, &q, elements, std::size(elements), 1000.));
 			Assert::IsNotNull(q);
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeDynamicQuery(q));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmFreeDynamicQuery(q));
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			// not sure why moving introspection root creation causes this leak
@@ -48,7 +52,7 @@ namespace PresentMonAPI2Mock
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_MODE, .deviceId = 0, .arrayIndex = 0},
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_POWER, .deviceId = 1, .arrayIndex = 0},
 			};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 1000.));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmRegisterDynamicQuery(hSession_, &q, elements, std::size(elements), 1000.));
 			Assert::IsNotNull(q);
 
 			Assert::AreEqual(0ull, elements[0].dataOffset);
@@ -58,7 +62,7 @@ namespace PresentMonAPI2Mock
 			Assert::AreEqual(12ull, elements[2].dataOffset);
 			Assert::AreEqual(8ull, elements[2].dataSize);
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeDynamicQuery(q));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmFreeDynamicQuery(q));
 		}
 		TEST_METHOD(FailToRegisterStaticQuery)
 		{
@@ -66,7 +70,7 @@ namespace PresentMonAPI2Mock
 			PM_QUERY_ELEMENT elements[]{
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_PROCESS_NAME, .deviceId = 0, .arrayIndex = 0},
 			};
-			Assert::AreEqual((int)PM_STATUS_FAILURE, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 1000.));
+			Assert::AreEqual(PM_STATUS_FAILURE, pmRegisterDynamicQuery(hSession_, &q, elements, std::size(elements), 1000.));
 			Assert::IsNull(q);
 		}
 		TEST_METHOD(PollValuesTimeZero)
@@ -77,18 +81,18 @@ namespace PresentMonAPI2Mock
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_MODE, .deviceId = 0, .arrayIndex = 0},
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_POWER, .deviceId = 1, .arrayIndex = 0},
 			};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 1000.));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmRegisterDynamicQuery(hSession_, &q, elements, std::size(elements), 1000.));
 			Assert::IsNotNull(q);
 
 			auto pBlob = std::make_unique<uint8_t[]>(elements[2].dataOffset + elements[2].dataSize);
 			uint32_t numSwapChains = 1;
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, 4004, pBlob.get(), &numSwapChains));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmPollDynamicQuery(q, 4004, pBlob.get(), &numSwapChains));
 			Assert::AreEqual((double)PM_METRIC_CPU_UTILIZATION, reinterpret_cast<double&>(pBlob[elements[0].dataOffset]));
 			Assert::AreEqual((int)PM_PRESENT_MODE_HARDWARE_LEGACY_FLIP, reinterpret_cast<int&>(pBlob[elements[1].dataOffset]));
 			Assert::AreEqual((double)PM_METRIC_GPU_POWER, reinterpret_cast<double&>(pBlob[elements[2].dataOffset]));
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeDynamicQuery(q));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmFreeDynamicQuery(q));
 		}
 		TEST_METHOD(PollValuesOverTime)
 		{
@@ -98,32 +102,32 @@ namespace PresentMonAPI2Mock
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_MODE, .deviceId = 0, .arrayIndex = 0},
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_POWER, .deviceId = 1, .arrayIndex = 0},
 			};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 1000.));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmRegisterDynamicQuery(hSession_, &q, elements, std::size(elements), 1000.));
 			Assert::IsNotNull(q);
 
 			auto pBlob = std::make_unique<uint8_t[]>(elements[2].dataOffset + elements[2].dataSize);
 			uint32_t numSwapChains = 1;
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, 4004, pBlob.get(), &numSwapChains));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmPollDynamicQuery(q, 4004, pBlob.get(), &numSwapChains));
 			Assert::AreEqual((double)PM_METRIC_CPU_UTILIZATION, reinterpret_cast<double&>(pBlob[elements[0].dataOffset]));
 			Assert::AreEqual((int)PM_PRESENT_MODE_HARDWARE_LEGACY_FLIP, reinterpret_cast<int&>(pBlob[elements[1].dataOffset]));
 			Assert::AreEqual((double)PM_METRIC_GPU_POWER, reinterpret_cast<double&>(pBlob[elements[2].dataOffset]));
 
-			pmMiddlewareAdvanceTime_(1);
+			pmMiddlewareAdvanceTime_(hSession_, 1);
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, 4004, pBlob.get(), &numSwapChains));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmPollDynamicQuery(q, 4004, pBlob.get(), &numSwapChains));
 			Assert::AreEqual(0., reinterpret_cast<double&>(pBlob[elements[0].dataOffset]));
 			Assert::AreEqual((int)PM_PRESENT_MODE_HARDWARE_INDEPENDENT_FLIP, reinterpret_cast<int&>(pBlob[elements[1].dataOffset]));
 			Assert::AreEqual(0., reinterpret_cast<double&>(pBlob[elements[2].dataOffset]));
 
-			pmMiddlewareAdvanceTime_(1);
+			pmMiddlewareAdvanceTime_(hSession_, 1);
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmPollDynamicQuery(q, 4004, pBlob.get(), &numSwapChains));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmPollDynamicQuery(q, 4004, pBlob.get(), &numSwapChains));
 			Assert::AreEqual((double)PM_METRIC_CPU_UTILIZATION, reinterpret_cast<double&>(pBlob[elements[0].dataOffset]));
 			Assert::AreEqual((int)PM_PRESENT_MODE_HARDWARE_LEGACY_FLIP, reinterpret_cast<int&>(pBlob[elements[1].dataOffset]));
 			Assert::AreEqual((double)PM_METRIC_GPU_POWER, reinterpret_cast<double&>(pBlob[elements[2].dataOffset]));
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeDynamicQuery(q));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmFreeDynamicQuery(q));
 		}
 
 		TEST_METHOD(UnsupportedMetric)
@@ -133,7 +137,7 @@ namespace PresentMonAPI2Mock
 			PM_QUERY_ELEMENT elements[]{
 				PM_QUERY_ELEMENT{.metric = (PM_METRIC)PM_METRIC_GPU_VOLTAGE, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
 			};
-			Assert::AreEqual((int)PM_STATUS_FAILURE, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 1000.));
+			Assert::AreEqual(PM_STATUS_FAILURE, pmRegisterDynamicQuery(hSession_, &q, elements, std::size(elements), 1000.));
 		}
 		
 		TEST_METHOD(FpsMetricSize)
@@ -148,7 +152,7 @@ namespace PresentMonAPI2Mock
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
 				PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
 			};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmRegisterDynamicQuery(&q, elements, std::size(elements), 1000.));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmRegisterDynamicQuery(hSession_, &q, elements, std::size(elements), 1000.));
 			Assert::IsNotNull(q);
 
 			Assert::AreEqual(0ull, elements[0].dataOffset);
@@ -158,7 +162,7 @@ namespace PresentMonAPI2Mock
 			Assert::AreEqual(16ull, elements[2].dataOffset);
 			Assert::AreEqual(8ull, elements[2].dataSize);
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeDynamicQuery(q));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmFreeDynamicQuery(q));
 		}
 	};
 }

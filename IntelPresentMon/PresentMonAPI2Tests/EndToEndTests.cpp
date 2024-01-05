@@ -1,4 +1,5 @@
 #include "CppUnitTest.h"
+#include "StatusComparison.h"
 #include "BoostProcess.h"
 #include "../PresentMonAPI2/source/Internal.h"
 
@@ -28,7 +29,7 @@ namespace EndToEndTests
 			bp::opstream in;  // Stream for writing to the process's input
 
 			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
-			const auto introName = "pm_intro_test_nsm_2"s;
+			const auto introName = "PM_intro_test_nsm_2"s;
 
 			oChild.emplace("PresentMonService.exe"s,
 				"--timed-stop"s, "4000"s,
@@ -39,12 +40,14 @@ namespace EndToEndTests
 
 			std::this_thread::sleep_for(10ms);
 
+			PM_SESSION_HANDLE hSession = nullptr;
+
 			{
-				const auto sta = pmOpenSession_(pipeName.c_str(), introName.c_str());
+				const auto sta = pmOpenSession_(&hSession, pipeName.c_str(), introName.c_str());
 				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta), L"*** Connecting to service via named pipe");
 			}
 			{
-				const auto sta = pmCloseSession();
+				const auto sta = pmCloseSession(hSession);
 				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta));
 			}
 		}
@@ -58,7 +61,7 @@ namespace EndToEndTests
 			bp::opstream in;  // Stream for writing to the process's input
 
 			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
-			const auto introName = "pm_intro_test_nsm_2"s;
+			const auto introName = "PM_intro_test_nsm_2"s;
 
 			oChild.emplace("PresentMonService.exe"s,
 				"--timed-stop"s, "4000"s,
@@ -69,21 +72,23 @@ namespace EndToEndTests
 
 			std::this_thread::sleep_for(10ms);
 
+			PM_SESSION_HANDLE hSession = nullptr;
+
 			{
-				const auto sta = pmOpenSession_(pipeName.c_str(), introName.c_str());
+				const auto sta = pmOpenSession_(&hSession, pipeName.c_str(), introName.c_str());
 				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta), L"*** Connecting to service via named pipe");
 			}
 
 			{
 				const PM_INTROSPECTION_ROOT* pRoot = nullptr;
-				const auto sta = pmGetIntrospectionRoot(&pRoot);
+				const auto sta = pmGetIntrospectionRoot(hSession, &pRoot);
 				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta));
 
-				Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeIntrospectionRoot(pRoot));
+				Assert::AreEqual(PM_STATUS_SUCCESS, pmFreeIntrospectionRoot(pRoot));
 			}
 
 			{
-				const auto sta = pmCloseSession();
+				const auto sta = pmCloseSession(hSession);
 				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta));
 			}
 		}
@@ -97,7 +102,7 @@ namespace EndToEndTests
 			bp::opstream in;  // Stream for writing to the process's input
 
 			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
-			const auto introName = "pm_intro_test_nsm_2"s;
+			const auto introName = "PM_intro_test_nsm_2"s;
 
 			oChild.emplace("PresentMonService.exe"s,
 				"--timed-stop"s, "4000"s,
@@ -108,14 +113,16 @@ namespace EndToEndTests
 
 			std::this_thread::sleep_for(10ms);
 
+			PM_SESSION_HANDLE hSession = nullptr;
+
 			{
-				const auto sta = pmOpenSession_(pipeName.c_str(), introName.c_str());
+				const auto sta = pmOpenSession_(&hSession, pipeName.c_str(), introName.c_str());
 				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta), L"*** Connecting to service via named pipe");
 			}
 
 			{
 				const PM_INTROSPECTION_ROOT* pRoot = nullptr;
-				const auto sta = pmGetIntrospectionRoot(&pRoot);
+				const auto sta = pmGetIntrospectionRoot(hSession, &pRoot);
 				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta));
 
 				Assert::IsNotNull(pRoot);
@@ -202,11 +209,11 @@ namespace EndToEndTests
 					}
 				}
 
-				Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeIntrospectionRoot(pRoot));
+				Assert::AreEqual(PM_STATUS_SUCCESS, pmFreeIntrospectionRoot(pRoot));
 			}
 
 			{
-				const auto sta = pmCloseSession();
+				const auto sta = pmCloseSession(hSession);
 				Assert::AreEqual(int(PM_STATUS_SUCCESS), int(sta));
 			}
 		}

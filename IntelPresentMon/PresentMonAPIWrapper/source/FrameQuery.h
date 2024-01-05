@@ -36,14 +36,17 @@ namespace pmapi
             return { hQuery_, blobSize_, nBlobs };
         }
     private:
-        FrameQuery(std::span<PM_QUERY_ELEMENT> elements)
+        FrameQuery(PM_SESSION_HANDLE hSession, std::span<PM_QUERY_ELEMENT> elements)
+            :
+            hSession_{ hSession }
         {
-            if (auto sta = pmRegisterFrameQuery(&hQuery_, elements.data(), elements.size(), &blobSize_);
+            if (auto sta = pmRegisterFrameQuery(hSession_, &hQuery_, elements.data(), elements.size(), &blobSize_);
                 sta != PM_STATUS_SUCCESS) {
                 throw Exception{ std::format("register frame query call failed with error id={}", (int)sta) };
             }
         }
         PM_FRAME_QUERY_HANDLE hQuery_ = nullptr;
+        PM_SESSION_HANDLE hSession_ = nullptr;
         uint32_t blobSize_ = 0ull;
     };
 }

@@ -68,7 +68,7 @@ namespace PresentMonAPI2Mock
 		TEST_METHOD(IntrospectMetricToEnumKey)
 		{
 			using namespace std::string_literals;
-			Assert::AreEqual("Displayed FPS"s, data->GetMetrics().begin()[1].Introspect().GetName());
+			Assert::AreEqual("Presented FPS"s, data->GetMetrics().begin()[1].Introspect().GetName());
 		}
 		TEST_METHOD(IntrospectMetricUnit)
 		{
@@ -199,7 +199,7 @@ namespace PresentMonAPI2Mock
 		{
 			using namespace std::string_literals;
 
-			auto shortName = data->FindEnumKey(PM_ENUM_STAT, (int)PM_STAT_AVG).GetShortName();
+			auto shortName = data->FindEnumKey(PM_ENUM_STAT, PM_STAT_AVG).GetShortName();
 
 			Assert::AreEqual("avg"s, shortName);
 		}

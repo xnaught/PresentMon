@@ -17,15 +17,16 @@ namespace pmapi
         }
         ~ProcessTracker()
         {
-            pmStopTrackingProcess(pid_);
+            pmStopTrackingProcess(hSession_, pid_);
         }
     private:
-        ProcessTracker(uint32_t pid) : pid_{ pid }
+        ProcessTracker(PM_SESSION_HANDLE hSession, uint32_t pid) : pid_{ pid }, hSession_{ hSession }
         {
-            if (auto sta = pmStartTrackingProcess(pid_); sta != PM_STATUS_SUCCESS) {
+            if (auto sta = pmStartTrackingProcess(hSession_, pid_); sta != PM_STATUS_SUCCESS) {
                 throw Exception{ std::format("start process tracking call failed with error id={}", (int)sta) };
             }
         }
         uint32_t pid_;
+        PM_SESSION_HANDLE hSession_ = nullptr;
     };
 }
