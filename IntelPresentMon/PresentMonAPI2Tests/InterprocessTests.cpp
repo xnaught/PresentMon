@@ -28,7 +28,7 @@ namespace PresentMonAPI2Mock
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> alloc;
 			auto pClone = root.ApiClone(alloc);
-			Assert::AreEqual(41316ull, alloc.GetTotalSize());
+			Assert::AreEqual(45032ull, alloc.GetTotalSize());
 			Assert::IsNull(pClone);
 			free((void*)pClone);
 		}
@@ -45,7 +45,7 @@ namespace PresentMonAPI2Mock
 			auto& root = pComm->GetIntrospectionRoot();
 			ipc::intro::ProbeAllocator<void> probeAlloc;
 			auto pNullClone = root.ApiClone(probeAlloc);
-			Assert::AreEqual(41316ull, probeAlloc.GetTotalSize());
+			Assert::AreEqual(45032ull, probeAlloc.GetTotalSize());
 			Assert::IsNull(pNullClone);
 
 			ipc::intro::BlockAllocator<void> blockAlloc{ probeAlloc.GetTotalSize() };
@@ -53,7 +53,7 @@ namespace PresentMonAPI2Mock
 
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(68ull, pRoot->pMetrics->size);
+			Assert::AreEqual(69ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)
@@ -63,7 +63,7 @@ namespace PresentMonAPI2Mock
 				Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
 				Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
 				Assert::AreEqual("List of all units of measure used for metrics", pEnum->pDescription->pData);
-				Assert::AreEqual(15ull, pEnum->pKeys->size);
+				Assert::AreEqual(31ull, pEnum->pKeys->size);
 				// 1st key
 				{
 					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
@@ -77,7 +77,7 @@ namespace PresentMonAPI2Mock
 				}
 				// 5th key
 				{
-					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[5]);
+					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[3]);
 					Assert::IsNotNull(pKey);
 					Assert::IsNotNull(pKey->pSymbol);
 					Assert::AreEqual("PM_UNIT_PERCENT", pKey->pSymbol->pData);
@@ -100,7 +100,7 @@ namespace PresentMonAPI2Mock
 
 			// check metric 2nd
 			{
-				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[1]);
+				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[0]);
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_DISPLAYED_FPS, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_FPS, (int)pMetric->unit);
@@ -176,7 +176,7 @@ namespace PresentMonAPI2Mock
 
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(68ull, pRoot->pMetrics->size);
+			Assert::AreEqual(69ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)
@@ -186,7 +186,7 @@ namespace PresentMonAPI2Mock
 				Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
 				Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
 				Assert::AreEqual("List of all units of measure used for metrics", pEnum->pDescription->pData);
-				Assert::AreEqual(15ull, pEnum->pKeys->size);
+				Assert::AreEqual(31ull, pEnum->pKeys->size);
 				// 1st key
 				{
 					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
@@ -200,7 +200,7 @@ namespace PresentMonAPI2Mock
 				}
 				// 5th key
 				{
-					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[5]);
+					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[3]);
 					Assert::IsNotNull(pKey);
 					Assert::IsNotNull(pKey->pSymbol);
 					Assert::AreEqual("PM_UNIT_PERCENT", pKey->pSymbol->pData);
@@ -223,7 +223,7 @@ namespace PresentMonAPI2Mock
 
 			// check metric 2nd
 			{
-				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[1]);
+				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[0]);
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_DISPLAYED_FPS, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_FPS, (int)pMetric->unit);

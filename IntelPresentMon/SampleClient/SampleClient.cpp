@@ -40,6 +40,8 @@ const uint32_t kSleepTime = 4;
 const uint32_t kNumFramesInBuf = 1000;
 std::vector<char> g_cpu_name;
 
+PM_SESSION_HANDLE g_hSession = nullptr;
+
     // Main menu actions
 enum MenuActions{
   kProcessETL = 1,
@@ -641,7 +643,7 @@ void PollMetrics(uint32_t processId, double metricsOffset)
         PM_QUERY_ELEMENT{.metric = PM_METRIC_DROPPED_FRAMES, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_ALLOWS_TEARING, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
     };
-    if (auto result = pmRegisterDynamicQuery(&q1, elements, std::size(elements), 2000., metricsOffset); result != PM_STATUS_SUCCESS)
+    if (auto result = pmRegisterDynamicQuery(g_hSession, &q1, elements, std::size(elements), 2000., metricsOffset); result != PM_STATUS_SUCCESS)
     {
         ConsolePrintLn("Invalid dynamic query specified!");
     }
@@ -709,7 +711,7 @@ void PollMetrics(uint32_t processId, double metricsOffset)
         PM_QUERY_ELEMENT{.metric = PM_METRIC_DROPPED_FRAMES, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_ALLOWS_TEARING, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
     };
-    if (auto result = pmRegisterDynamicQuery(&q2, elements2, std::size(elements2), 2000., metricsOffset);result != PM_STATUS_SUCCESS)
+    if (auto result = pmRegisterDynamicQuery(g_hSession, &q2, elements2, std::size(elements2), 2000., metricsOffset);result != PM_STATUS_SUCCESS)
     {
         ConsolePrintLn("Invalid dynamic query specified!");
     }
@@ -720,25 +722,25 @@ void PollMetrics(uint32_t processId, double metricsOffset)
 
     PM_QUERY_ELEMENT staticQueryElement{ .metric = PM_METRIC_PROCESS_NAME, .deviceId = 0, .arrayIndex = 0 };
     auto processName = std::make_unique<uint8_t[]>(260);
-    pmPollStaticQuery(&staticQueryElement, processId, processName.get());
+    pmPollStaticQuery(g_hSession, &staticQueryElement, processId, processName.get());
     staticQueryElement = { .metric = PM_METRIC_CPU_VENDOR, .deviceId = 0, .arrayIndex = 0 };
     auto cpuVendor = std::make_unique<uint8_t[]>(4);
-    pmPollStaticQuery(&staticQueryElement, processId, cpuVendor.get());
+    pmPollStaticQuery(g_hSession, &staticQueryElement, processId, cpuVendor.get());
     staticQueryElement = { .metric = PM_METRIC_CPU_NAME, .deviceId = 0, .arrayIndex = 0 };
     auto cpuName = std::make_unique<uint8_t[]>(260);
-    pmPollStaticQuery(&staticQueryElement, processId, cpuName.get());
+    pmPollStaticQuery(g_hSession, &staticQueryElement, processId, cpuName.get());
     staticQueryElement = { .metric = PM_METRIC_GPU_VENDOR, .deviceId = 0, .arrayIndex = 0 };
     auto gpuVendor = std::make_unique<uint8_t[]>(4);
-    pmPollStaticQuery(&staticQueryElement, processId, gpuVendor.get());
+    pmPollStaticQuery(g_hSession, &staticQueryElement, processId, gpuVendor.get());
     staticQueryElement = { .metric = PM_METRIC_GPU_NAME, .deviceId = 0, .arrayIndex = 0 };
     auto gpuName = std::make_unique<uint8_t[]>(260);
-    pmPollStaticQuery(&staticQueryElement, processId, gpuName.get());
+    pmPollStaticQuery(g_hSession, &staticQueryElement, processId, gpuName.get());
     staticQueryElement = { .metric = PM_METRIC_GPU_MEM_MAX_BANDWIDTH, .deviceId = 0, .arrayIndex = 0 };
     auto gpuMemMaxBw = std::make_unique<uint8_t[]>(8);
-    pmPollStaticQuery(&staticQueryElement, processId, gpuMemMaxBw.get());
+    pmPollStaticQuery(g_hSession, &staticQueryElement, processId, gpuMemMaxBw.get());
     staticQueryElement = { .metric = PM_METRIC_GPU_MEM_SIZE, .deviceId = 0, .arrayIndex = 0 };
     auto gpuMemSize = std::make_unique<uint8_t[]>(8);
-    pmPollStaticQuery(&staticQueryElement, processId, gpuMemSize.get());
+    pmPollStaticQuery(g_hSession, &staticQueryElement, processId, gpuMemSize.get());
 
     int numIterations = 0;
     for (;;)
@@ -887,10 +889,10 @@ int main(int argc, char* argv[])
 	PM_STATUS pmStatus{};
 	try {
 		if (opt.controlPipe) {
-			pmStatus = pmOpenSession_((*opt.controlPipe).c_str(), (*opt.introNsm).c_str());
+			pmStatus = pmOpenSession_(&g_hSession, (*opt.controlPipe).c_str(), (*opt.introNsm).c_str());
 		}
 		else {
-			pmStatus = pmOpenSession();
+			pmStatus = pmOpenSession(&g_hSession);
 		}
 		if (pmStatus != PM_STATUS::PM_STATUS_SUCCESS) {
 			PrintError(pmStatus);
@@ -922,14 +924,14 @@ int main(int argc, char* argv[])
 				return 0;
 			}
 			if (g_process_name.length() == 0) {
-				pmCloseSession();
+				pmCloseSession(g_hSession);
 				return 0;
 			}
 			gCurrentPid = FindProcessId(g_process_name);
 			if (gCurrentPid != 0) {
 				SetRecordFrames();
 				try {
-					pmStatus = pmStartTrackingProcess(gCurrentPid);
+					pmStatus = pmStartTrackingProcess(g_hSession, gCurrentPid);
 					if (pmStatus == PM_STATUS::PM_STATUS_SUCCESS) {
 						streamingStarted = true;
 					}
@@ -993,13 +995,13 @@ int main(int argc, char* argv[])
                 return 0;
             }
             if (g_process_name.length() == 0) {
-                pmCloseSession();
+                pmCloseSession(g_hSession);
                 return 0;
             }
             gCurrentPid = FindProcessId(g_process_name);
             if (gCurrentPid != 0) {
                 try {
-                    pmStatus = pmStartTrackingProcess(gCurrentPid);
+                    pmStatus = pmStartTrackingProcess(g_hSession, gCurrentPid);
                     if (pmStatus == PM_STATUS::PM_STATUS_SUCCESS) {
                         streamingStarted = true;
                     }
@@ -1041,7 +1043,7 @@ int main(int argc, char* argv[])
 
         PM_FRAME_QUERY_HANDLE hEventQuery = nullptr;
         uint32_t blobSize = 0;
-        pmRegisterFrameQuery(&hEventQuery, queryElements, std::size(queryElements), &blobSize);
+        pmRegisterFrameQuery(g_hSession, &hEventQuery, queryElements, std::size(queryElements), &blobSize);
         constexpr uint32_t maxFrames = 50;
         auto pBlobs = std::make_unique<uint8_t[]>(blobSize * maxFrames);
 
@@ -1069,8 +1071,8 @@ int main(int argc, char* argv[])
         }
     }
 
-	pmStopTrackingProcess(gCurrentPid);
-	pmCloseSession();
+	pmStopTrackingProcess(g_hSession, gCurrentPid);
+	pmCloseSession(g_hSession);
 
 	try {
 		g_csv_file.close();

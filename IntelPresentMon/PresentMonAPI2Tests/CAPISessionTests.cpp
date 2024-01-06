@@ -1,6 +1,7 @@
+#include "StatusComparison.h"
 #include "CppUnitTest.h"
 #include "../PresentMonAPI2/source/PresentMonAPI.h"
-#include "../PresentMonAPI2/source/Internal.h"
+#include "../PresentMonAPI2/source/Internal.h" 
 #include <cstring>
 #include <vector>
 #include <optional>
@@ -12,38 +13,40 @@ namespace PresentMonAPI2Mock
 {
 	TEST_CLASS(CAPISessionTests)
 	{
+	private:
+		PM_SESSION_HANDLE hSession_;
 	public:
 		TEST_METHOD_CLEANUP(AfterEachTestMethod)
 		{
-			pmCloseSession();
+			pmCloseSession(hSession_);
 		}
 		TEST_METHOD(OpenAndCloseMockSession)
 		{
 			char buffer[256]{};
 
 			pmSetMiddlewareAsMock_(true);
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmMiddlewareSpeak_(buffer));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmOpenSession(&hSession_));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmMiddlewareSpeak_(hSession_, buffer));
 			Assert::AreEqual("mock-middle", buffer);
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
-			Assert::AreEqual((int)PM_STATUS_SESSION_NOT_OPEN, (int)pmMiddlewareSpeak_(buffer));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmCloseSession(hSession_));
+			Assert::AreEqual(PM_STATUS_SESSION_NOT_OPEN, pmMiddlewareSpeak_(hSession_, buffer));
 		}
 		TEST_METHOD(FailUsingClosedSession)
 		{
 			char buffer[256]{};
 
 			pmSetMiddlewareAsMock_(true);
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
-			Assert::AreEqual((int)PM_STATUS_SESSION_NOT_OPEN, (int)pmMiddlewareSpeak_(buffer));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmOpenSession(&hSession_));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmCloseSession(hSession_));
+			Assert::AreEqual(PM_STATUS_SESSION_NOT_OPEN, pmMiddlewareSpeak_(hSession_, buffer));
 		}
 		TEST_METHOD(OpenAndCloseWithoutLeak)
 		{
 			pmSetMiddlewareAsMock_(true, true);
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmOpenSession(&hSession_));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmCloseSession(hSession_));
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
@@ -53,7 +56,7 @@ namespace PresentMonAPI2Mock
 			pmSetMiddlewareAsMock_(true, true);
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmOpenSession(&hSession_));
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsTrue(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
@@ -63,7 +66,7 @@ namespace PresentMonAPI2Mock
 			pmSetMiddlewareAsMock_(true, false);
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmOpenSession(&hSession_));
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
@@ -75,28 +78,21 @@ namespace PresentMonAPI2Concrete
 {
 	TEST_CLASS(CAPISessionTests)
 	{
+		PM_SESSION_HANDLE hSession_;
 	public:
 		TEST_METHOD_CLEANUP(AfterEachTestMethod)
 		{
-			pmCloseSession();
+			pmCloseSession(hSession_);
 		}
 		TEST_METHOD(OpenAndCloseSession)
 		{
 			char buffer[256]{};
 
 			pmSetMiddlewareAsMock_(false);
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmMiddlewareSpeak_(buffer));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmOpenSession(&hSession_));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmMiddlewareSpeak_(hSession_, buffer));
 			Assert::AreEqual("concrete-middle", buffer);
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
-		}
-		TEST_METHOD(StartAndStopStreaming)
-		{
-			pmSetMiddlewareAsMock_(false);
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmOpenSession());
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmStartTrackingProcess(15844));
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmStopTrackingProcess(15844));
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmCloseSession());
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmCloseSession(hSession_));
 		}
 	};
 }

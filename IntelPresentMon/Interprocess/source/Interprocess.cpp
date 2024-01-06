@@ -1,6 +1,6 @@
 #include "Interprocess.h"
 #include "IntrospectionTransfer.h"
-#include "IntrospectionHelpers.h"
+#include "IntrospectionPopulators.h"
 #include "SharedMemoryTypes.h"
 #include "IntrospectionCloneAllocators.h"
 #include <boost/interprocess/sync/interprocess_sharable_mutex.hpp>

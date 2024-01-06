@@ -1,4 +1,5 @@
 #include "CppUnitTest.h"
+#include "StatusComparison.h"
 #include "../PresentMonAPI2/source/PresentMonAPI.h"
 #include "../PresentMonAPI2/source/Internal.h"
 #include <cstring>
@@ -12,25 +13,27 @@ namespace PresentMonAPI2Mock
 {
 	TEST_CLASS(CAPIIntrospectionTests)
 	{
+	private:
+		PM_SESSION_HANDLE hSession_ = nullptr;
 	public:
 		TEST_METHOD_INITIALIZE(BeforeEachTestMethod)
 		{
 			pmSetMiddlewareAsMock_(true, true);
-			pmOpenSession();
+			pmOpenSession(&hSession_);
 		}
 		TEST_METHOD_CLEANUP(AfterEachTestMethod)
 		{
-			pmCloseSession();
+			pmCloseSession(hSession_);
 		}
 		TEST_METHOD(FreeIntrospectionTree)
 		{
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
 			const PM_INTROSPECTION_ROOT* pRoot{};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmGetIntrospectionRoot(&pRoot));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmGetIntrospectionRoot(hSession_, &pRoot));
 			Assert::IsNotNull(pRoot);
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeIntrospectionRoot(pRoot));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmFreeIntrospectionRoot(pRoot));
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsFalse(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
@@ -40,11 +43,11 @@ namespace PresentMonAPI2Mock
 			const auto heapBefore = pmCreateHeapCheckpoint_();
 
 			const PM_INTROSPECTION_ROOT* pRoot{};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmGetIntrospectionRoot(&pRoot));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmGetIntrospectionRoot(hSession_, &pRoot));
 			Assert::IsNotNull(pRoot);
 
 			// normally we would free the linked structure here via its root
-			// Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeIntrospectionRoot(pRoot));
+			// Assert::AreEqual(PM_STATUS_SUCCESS, pmFreeIntrospectionRoot(pRoot));
 
 			const auto heapAfter = pmCreateHeapCheckpoint_();
 			Assert::IsTrue(CrtDiffHasMemoryLeaks(heapBefore, heapAfter));
@@ -53,10 +56,10 @@ namespace PresentMonAPI2Mock
 		{
 			// introspection query
 			const PM_INTROSPECTION_ROOT* pRoot{};
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmGetIntrospectionRoot(&pRoot));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmGetIntrospectionRoot(hSession_, &pRoot));
 			Assert::IsNotNull(pRoot);
 			Assert::AreEqual(12ull, pRoot->pEnums->size);
-			Assert::AreEqual(68ull, pRoot->pMetrics->size);
+			Assert::AreEqual(69ull, pRoot->pMetrics->size);
 			Assert::AreEqual(3ull, pRoot->pDevices->size);
 
 			// checking 7th enum (unit)
@@ -66,7 +69,7 @@ namespace PresentMonAPI2Mock
 				Assert::AreEqual((int)PM_ENUM_UNIT, (int)pEnum->id);
 				Assert::AreEqual("PM_UNIT", pEnum->pSymbol->pData);
 				Assert::AreEqual("List of all units of measure used for metrics", pEnum->pDescription->pData);
-				Assert::AreEqual(15ull, pEnum->pKeys->size);
+				Assert::AreEqual(31ull, pEnum->pKeys->size);
 				// 1st key
 				{
 					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[0]);
@@ -80,7 +83,7 @@ namespace PresentMonAPI2Mock
 				}
 				// 5th key
 				{
-					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[5]);
+					auto pKey = static_cast<const PM_INTROSPECTION_ENUM_KEY*>(pEnum->pKeys->pData[3]);
 					Assert::IsNotNull(pKey);
 					Assert::IsNotNull(pKey->pSymbol);
 					Assert::AreEqual("PM_UNIT_PERCENT", pKey->pSymbol->pData);
@@ -103,7 +106,7 @@ namespace PresentMonAPI2Mock
 
 			// check metric 2nd
 			{
-				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[1]);
+				auto pMetric = static_cast<const PM_INTROSPECTION_METRIC*>(pRoot->pMetrics->pData[0]);
 				Assert::IsNotNull(pMetric);
 				Assert::AreEqual((int)PM_METRIC_DISPLAYED_FPS, (int)pMetric->id);
 				Assert::AreEqual((int)PM_UNIT_FPS, (int)pMetric->unit);
@@ -153,7 +156,7 @@ namespace PresentMonAPI2Mock
 				}
 			}
 
-			Assert::AreEqual((int)PM_STATUS_SUCCESS, (int)pmFreeIntrospectionRoot(pRoot));
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmFreeIntrospectionRoot(pRoot));
 		}
 	};
 }

@@ -1,8 +1,10 @@
 #include "../../PresentMonAPI/PresentMonAPI.h"
 #include <memory>
 #include <crtdbg.h>
+#include <unordered_map>
 #include "../../PresentMonMiddleware/source/MockMiddleware.h"
 #include "../../PresentMonMiddleware/source/ConcreteMiddleware.h"
+#include "../../PresentMonMiddleware/source/Exception.h"
 #include "Internal.h"
 #include "PresentMonAPI.h"
 
@@ -13,10 +15,45 @@ using namespace pmon::mid;
 bool useMockedMiddleware_ = false;
 bool useCrtHeapDebug_ = false;
 bool useLocalShmServer_ = false;
-std::unique_ptr<Middleware> pMiddleware_;
+// map handles (session, query, introspection) to middleware instances
+std::unordered_map<const void*, std::shared_ptr<Middleware>> handleMap_;
+
 
 // private implementation functions
+Middleware& LookupMiddleware_(const void* handle)
+{
+	try {
+		return *handleMap_.at(handle);
+	}
+	catch (...) {
+		throw Exception{ PM_STATUS_SESSION_NOT_OPEN };
+	}
+}
 
+void DestroyMiddleware_(PM_SESSION_HANDLE handle)
+{
+	try {
+		if (!handleMap_.erase(handle)) {
+			throw Exception{ PM_STATUS_SESSION_NOT_OPEN };
+		}
+	}
+	catch (...) {
+		throw Exception{ PM_STATUS_FAILURE };
+	}
+}
+
+void AddHandleMapping_(PM_SESSION_HANDLE sessionHandle, const void* dependentHandle)
+{
+	handleMap_[dependentHandle] = handleMap_[sessionHandle];
+}
+
+void RemoveHandleMapping_(const void* dependentHandle)
+{
+	if (!handleMap_.erase(dependentHandle)) {
+		// TODO: add error code to indicate a bad / missing handle (other than session handle)
+		throw Exception(PM_STATUS_ERROR);
+	}
+}
 
 // private endpoints
 PRESENTMON_API2_EXPORT void pmSetMiddlewareAsMock_(bool mocked, bool activateCrtHeapDebug, bool useLocalShmServer)
@@ -39,47 +76,45 @@ PRESENTMON_API2_EXPORT _CrtMemState pmCreateHeapCheckpoint_()
 	return s;
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareSpeak_(char* buffer)
+PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareSpeak_(PM_SESSION_HANDLE handle, char* buffer)
 {
 	try {
-		if (!pMiddleware_) {
-			return PM_STATUS_SESSION_NOT_OPEN;
-		}
-		pMiddleware_->Speak(buffer);
+		LookupMiddleware_(handle).Speak(buffer);
 		return PM_STATUS_SUCCESS;
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(uint32_t milliseconds)
+PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(PM_SESSION_HANDLE handle, uint32_t milliseconds)
 {
 	try {
-		if (!pMiddleware_) {
-			return PM_STATUS_SESSION_NOT_OPEN;
-		}
-		if (auto pMock = dynamic_cast<MockMiddleware*>(pMiddleware_.get())) {
-			pMock->AdvanceTime(milliseconds);
-		}
-		else {
-			return PM_STATUS_FAILURE;
-		}
+		Middleware& mid = LookupMiddleware_(handle);
+		dynamic_cast<MockMiddleware&>(mid).AdvanceTime(milliseconds);
 		return PM_STATUS_SUCCESS;
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(const char* pipeNameOverride, const char* introNsmOverride)
+PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, const char* pipeNameOverride, const char* introNsmOverride)
 {
-	if (pMiddleware_) {
-		return PM_STATUS_FAILURE;
-	}
 	try {
+		if (!pHandle) {
+			// TODO: add error code to indicate bad argument
+			return PM_STATUS_ERROR;
+		}
+		std::shared_ptr<Middleware> pMiddleware;
 		if (useMockedMiddleware_) {
-			pMiddleware_ = std::make_unique<MockMiddleware>(useLocalShmServer_);
+			pMiddleware = std::make_shared<MockMiddleware>(useLocalShmServer_);
 		}
 		else {
 			std::optional<std::string> pipeName;
@@ -90,9 +125,14 @@ PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(const char* pipeNameOverride, co
 			if (introNsmOverride) {
 				introNsm = std::string(introNsmOverride);
 			}
-			pMiddleware_ = std::make_unique<ConcreteMiddleware>(std::move(pipeName), std::move(introNsm));
+			pMiddleware = std::make_shared<ConcreteMiddleware>(std::move(pipeName), std::move(introNsm));
 		}
+		*pHandle = pMiddleware.get();
+		handleMap_[*pHandle] = pMiddleware;
 		return PM_STATUS_SUCCESS;
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
@@ -100,64 +140,69 @@ PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(const char* pipeNameOverride, co
 }
 
 // public endpoints
-PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession()
+PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession(PM_SESSION_HANDLE* pHandle)
 {
-	return pmOpenSession_(nullptr, nullptr);
+	return pmOpenSession_(pHandle, nullptr, nullptr);
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmCloseSession()
+PRESENTMON_API2_EXPORT PM_STATUS pmCloseSession(PM_SESSION_HANDLE handle)
 {
 	try {
-		if (!pMiddleware_) {
-			return PM_STATUS_SESSION_NOT_OPEN;
-		}
-		pMiddleware_.reset();
+		DestroyMiddleware_(handle);
 		return PM_STATUS_SUCCESS;
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmStartTrackingProcess(uint32_t processId)
+PRESENTMON_API2_EXPORT PM_STATUS pmStartTrackingProcess(PM_SESSION_HANDLE handle, uint32_t processId)
 {
 	try {
-		if (!pMiddleware_) {
-			return PM_STATUS_SESSION_NOT_OPEN;
-		}
-		pMiddleware_->StartStreaming(processId);
-		return PM_STATUS_SUCCESS;
+		// TODO: consider tracking resource usage for process tracking to validate Start/Stop pairing
+		// TODO: middleware should not return status codes
+		return LookupMiddleware_(handle).StartStreaming(processId);
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmStopTrackingProcess(uint32_t processId)
+PRESENTMON_API2_EXPORT PM_STATUS pmStopTrackingProcess(PM_SESSION_HANDLE handle, uint32_t processId)
 {
 	try {
-		if (!pMiddleware_) {
-			return PM_STATUS_SESSION_NOT_OPEN;
-		}
-		pMiddleware_->StopStreaming(processId);
-		return PM_STATUS_SUCCESS;
+		// TODO: consider tracking resource usage for process tracking to validate Start/Stop pairing
+		// TODO: middleware should not return status codes
+		return LookupMiddleware_(handle).StopStreaming(processId);
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmGetIntrospectionRoot(const PM_INTROSPECTION_ROOT** ppInterface)
+PRESENTMON_API2_EXPORT PM_STATUS pmGetIntrospectionRoot(PM_SESSION_HANDLE handle, const PM_INTROSPECTION_ROOT** ppInterface)
 {
 	try {
-		if (!pMiddleware_) {
-			return PM_STATUS_SESSION_NOT_OPEN;
-		}
 		if (!ppInterface) {
-			return PM_STATUS_FAILURE;
+			// TODO: error code to signal bad argument
+			return PM_STATUS_ERROR;
 		}
-		*ppInterface = pMiddleware_->GetIntrospectionData();
+		const auto pIntro = LookupMiddleware_(handle).GetIntrospectionData();
+		AddHandleMapping_(handle, pIntro);
+		*ppInterface = pIntro;
 		return PM_STATUS_SUCCESS;
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
@@ -167,45 +212,52 @@ PRESENTMON_API2_EXPORT PM_STATUS pmGetIntrospectionRoot(const PM_INTROSPECTION_R
 PRESENTMON_API2_EXPORT PM_STATUS pmFreeIntrospectionRoot(const PM_INTROSPECTION_ROOT* pInterface)
 {
 	try {
-		if (!pMiddleware_) {
-			return PM_STATUS_SESSION_NOT_OPEN;
-		}
 		if (!pInterface) {
 			return PM_STATUS_SUCCESS;
 		}
-		pMiddleware_->FreeIntrospectionData(pInterface);
+		auto& mid = LookupMiddleware_(pInterface);
+		RemoveHandleMapping_(pInterface);
+		mid.FreeIntrospectionData(pInterface);
 		return PM_STATUS_SUCCESS;
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmSetTelemetryPollingPeriod(uint32_t deviceId, uint32_t timeMs)
+PRESENTMON_API2_EXPORT PM_STATUS pmSetTelemetryPollingPeriod(PM_SESSION_HANDLE handle, uint32_t deviceId, uint32_t timeMs)
 {
 	try {
-		if (!pMiddleware_) {
-			return PM_STATUS_SESSION_NOT_OPEN;
-		}
-		pMiddleware_->SetTelemetryPollingPeriod(deviceId, timeMs);
+		LookupMiddleware_(handle).SetTelemetryPollingPeriod(deviceId, timeMs);
 		return PM_STATUS_SUCCESS;
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, double windowSizeMs, double metricOffsetMs)
+PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_SESSION_HANDLE sessionHandle, PM_DYNAMIC_QUERY_HANDLE* pQueryHandle,
+	PM_QUERY_ELEMENT* pElements, uint64_t numElements, double windowSizeMs, double metricOffsetMs)
 {
 	try {
-		if (!pMiddleware_) {
-			return PM_STATUS_SESSION_NOT_OPEN;
+		if (!pElements || !numElements) {
+			// TODO: error code for bad args
+			return PM_STATUS_ERROR;
 		}
-		if (!pHandle || !pElements || !numElements) {
-			return PM_STATUS_FAILURE;
-		}
-		*pHandle = pMiddleware_->RegisterDynamicQuery({pElements, numElements}, windowSizeMs, metricOffsetMs);
+		const auto queryHandle = LookupMiddleware_(sessionHandle).RegisterDynamicQuery(
+			{pElements, numElements}, windowSizeMs, metricOffsetMs);
+		AddHandleMapping_(sessionHandle, queryHandle);
+		*pQueryHandle = queryHandle;
 		return PM_STATUS_SUCCESS;
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
@@ -215,14 +267,16 @@ PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_DYNAMIC_QUERY_HANDLE*
 PRESENTMON_API2_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle)
 {
 	try {
-		if (!pMiddleware_) {
-			return PM_STATUS_SESSION_NOT_OPEN;
-		}
 		if (!handle) {
 			return PM_STATUS_SUCCESS;
 		}
-		pMiddleware_->FreeDynamicQuery(handle);
+		auto& mid = LookupMiddleware_(handle);
+		RemoveHandleMapping_(handle);
+		mid.FreeDynamicQuery(handle);
 		return PM_STATUS_SUCCESS;
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
@@ -232,48 +286,53 @@ PRESENTMON_API2_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE hand
 PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains)
 {
 	try {
-		if (!pMiddleware_) {
-			return PM_STATUS_SESSION_NOT_OPEN;
+		if (!pBlob || !numSwapChains || !*numSwapChains) {
+			// TODO: error code for bad args
+			return PM_STATUS_ERROR;
 		}
-		if (!handle || !pBlob) {
-			return PM_STATUS_FAILURE;
-		}
-		pMiddleware_->PollDynamicQuery(handle, processId, pBlob, numSwapChains);
+		LookupMiddleware_(handle).PollDynamicQuery(handle, processId, pBlob, numSwapChains);
 		return PM_STATUS_SUCCESS;
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(const PM_QUERY_ELEMENT* pElement, uint32_t processId, uint8_t* pBlob)
+PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(PM_SESSION_HANDLE sessionHandle, const PM_QUERY_ELEMENT* pElement, uint32_t processId, uint8_t* pBlob)
 {
 	try {
-		if (!pMiddleware_) {
-			return PM_STATUS_SESSION_NOT_OPEN;
-		}
 		if (!pElement || !pBlob) {
-			return PM_STATUS_FAILURE;
+			// TODO: error code for bad args
+			return PM_STATUS_ERROR;
 		}
-		pMiddleware_->PollStaticQuery(*pElement, processId, pBlob);
+		LookupMiddleware_(sessionHandle).PollStaticQuery(*pElement, processId, pBlob);
 		return PM_STATUS_SUCCESS;
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
 	}
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameQuery(PM_FRAME_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint32_t* pBlobSize)
+PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameQuery(PM_SESSION_HANDLE sessionHandle, PM_FRAME_QUERY_HANDLE* pQueryHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint32_t* pBlobSize)
 {
 	try {
-		if (!pMiddleware_) {
-			return PM_STATUS_SESSION_NOT_OPEN;
+		if (!pElements || !numElements || !pBlobSize) {
+			// TODO: error code for bad args
+			return PM_STATUS_ERROR;
 		}
-		if (!pHandle || !pElements || !numElements || !pBlobSize) {
-			return PM_STATUS_FAILURE;
-		}
-		*pHandle = pMiddleware_->RegisterFrameEventQuery({ pElements, numElements }, *pBlobSize);
+		const auto queryHandle = LookupMiddleware_(sessionHandle).RegisterFrameEventQuery({ pElements, numElements }, *pBlobSize);
+		AddHandleMapping_(sessionHandle, queryHandle);
+		*pQueryHandle = queryHandle;
 		return PM_STATUS_SUCCESS;
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
@@ -283,14 +342,15 @@ PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameQuery(PM_FRAME_QUERY_HANDLE* pHa
 PRESENTMON_API2_EXPORT PM_STATUS pmConsumeFrames(PM_FRAME_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlob, uint32_t* pNumFramesToRead)
 {
 	try {
-		if (!pMiddleware_) {
-			return PM_STATUS_SESSION_NOT_OPEN;
-		}
 		if (!handle || !pBlob) {
-			return PM_STATUS_FAILURE;
+			// TODO: error code for bad args
+			return PM_STATUS_ERROR;
 		}
-		pMiddleware_->ConsumeFrameEvents(handle, processId, pBlob, *pNumFramesToRead);
+		LookupMiddleware_(handle).ConsumeFrameEvents(handle, processId, pBlob, *pNumFramesToRead);
 		return PM_STATUS_SUCCESS;
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;
@@ -300,14 +360,13 @@ PRESENTMON_API2_EXPORT PM_STATUS pmConsumeFrames(PM_FRAME_QUERY_HANDLE handle, u
 PRESENTMON_API2_EXPORT PM_STATUS pmFreeFrameQuery(PM_FRAME_QUERY_HANDLE handle)
 {
 	try {
-		if (!pMiddleware_) {
-			return PM_STATUS_SESSION_NOT_OPEN;
-		}
-		if (!handle) {
-			return PM_STATUS_SUCCESS;
-		}
-		pMiddleware_->FreeFrameEventQuery(handle);
+		auto& mid = LookupMiddleware_(handle);
+		RemoveHandleMapping_(handle);
+		mid.FreeFrameEventQuery(handle);
 		return PM_STATUS_SUCCESS;
+	}
+	catch (const Exception& e) {
+		return e.GetErrorCode();
 	}
 	catch (...) {
 		return PM_STATUS_FAILURE;

@@ -96,6 +96,8 @@ namespace pmon::mid
         GetStaticGpuMetrics();
         GetCpuInfo();
 	}
+
+    ConcreteMiddleware::~ConcreteMiddleware() = default;
     
     const PM_INTROSPECTION_ROOT* ConcreteMiddleware::GetIntrospectionData()
     {

@@ -22,16 +22,37 @@
     <ClCompile Include="source\ExperimentalInterprocess.cpp" />
     <ClCompile Include="source\Interprocess.cpp" />
     <ClCompile Include="source\IntrospectionHelpers.cpp" />
-    <ClCompile Include="source\IntrospectionMacroHelpers.cpp" />
+    <ClCompile Include="source\IntrospectionPopulators.cpp" />
+    <ClCompile Include="source\metadata\MetadataValidators.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="source\IntrospectionCapsLookup.h" />
+    <ClInclude Include="source\IntrospectionDataTypeMapping.h" />
+    <ClInclude Include="source\IntrospectionHelpers.h" />
+    <ClInclude Include="source\metadata\EnumMetricAvailability.h" />
+    <ClInclude Include="source\metadata\EnumDeviceType.h" />
+    <ClInclude Include="source\metadata\EnumGraphicsRuntime.h" />
+    <ClInclude Include="source\metadata\EnumDataType.h" />
+    <ClInclude Include="source\metadata\EnumStat.h" />
+    <ClInclude Include="source\metadata\EnumUnit.h" />
+    <ClInclude Include="source\metadata\EnumPsuType.h" />
+    <ClInclude Include="source\metadata\EnumDeviceVendor.h" />
     <ClInclude Include="source\ExperimentalInterprocess.h" />
     <ClInclude Include="source\Interprocess.h" />
     <ClInclude Include="source\IntrospectionCloneAllocators.h" />
-    <ClInclude Include="source\IntrospectionHelpers.h" />
+    <ClInclude Include="source\IntrospectionPopulators.h" />
     <ClInclude Include="source\IntrospectionTransfer.h" />
     <ClInclude Include="source\IntrospectionMacroHelpers.h" />
     <ClInclude Include="source\IntrospectionMetadata.h" />
+    <ClInclude Include="source\metadata\EnumMetric.h" />
+    <ClInclude Include="source\metadata\EnumMetricType.h" />
+    <ClInclude Include="source\metadata\EnumPresentMode.h" />
+    <ClInclude Include="source\metadata\EnumStatus.h" />
+    <ClInclude Include="source\metadata\MasterEnumList.h" />
+    <ClInclude Include="source\metadata\MetricList.h" />
+    <ClInclude Include="source\metadata\PreferredUnitList.h" />
+    <ClInclude Include="source\metadata\StatsShortcuts.h" />
+    <ClInclude Include="source\metadata\UnitList.h" />
     <ClInclude Include="source\SharedMemoryTypes.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

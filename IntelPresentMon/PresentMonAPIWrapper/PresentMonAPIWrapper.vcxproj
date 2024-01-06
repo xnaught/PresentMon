@@ -19,10 +19,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\PresentMonAPIWrapper.cpp" />
+    <ClCompile Include="source\Session.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="source\BlobContainer.h" />
+    <ClInclude Include="source\DynamicQuery.h" />
+    <ClInclude Include="source\FrameQuery.h" />
     <ClInclude Include="source\PresentMonAPIWrapper.h" />
+    <ClInclude Include="source\ProcessTracker.h" />
+    <ClInclude Include="source\Session.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PresentMonAPI2\PresentMonAPI2.vcxproj">
@@ -93,7 +98,8 @@
     <IntDir>..\..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
-    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+    <VcpkgEnableManifest>false</VcpkgEnableManifest>
+    <VcpkgEnabled>false</VcpkgEnabled>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

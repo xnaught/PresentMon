@@ -77,6 +77,7 @@ namespace pmon::mid
 	{
 	public:
 		ConcreteMiddleware(std::optional<std::string> pipeNameOverride = {}, std::optional<std::string> introNsmOverride = {});
+		~ConcreteMiddleware() override;
 		void Speak(char* buffer) const override;
 		const PM_INTROSPECTION_ROOT* GetIntrospectionData() override;
 		void FreeIntrospectionData(const PM_INTROSPECTION_ROOT* pRoot) override;

@@ -10,6 +10,7 @@ namespace pmapi
 {
 	class Session;
 	class DynamicQuery;
+	class BlobContainer;
 	namespace intro
 	{
 		class Root;
@@ -37,7 +38,7 @@ namespace p2c::pmon
 		double metricOffsetMs;
 		std::shared_ptr<pmapi::DynamicQuery> pQuery;
 		std::vector<std::unique_ptr<met::DynamicPollingMetric>> metricPtrs;
-		std::unique_ptr<uint8_t[]> pBlob;
+		std::unique_ptr<pmapi::BlobContainer> pBlobs;
 		std::optional<double> timestamp;
 	};
 }
