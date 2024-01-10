@@ -193,9 +193,7 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
     uint64_t num_pending_frames = CheckPendingReadFrames();
     if (num_pending_frames > nsm_hdr->max_entries) {
         recording_frame_data_ = false;
-        // Todo need a way to let the stream client that we are no longer
-        // recording frames
-        return PM_STATUS::PM_STATUS_SUCCESS;
+        return PM_STATUS::PM_STATUS_DATA_LOSS;
     }
     else if (num_pending_frames == 0) {
         return PM_STATUS::PM_STATUS_SUCCESS;

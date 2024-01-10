@@ -514,20 +514,6 @@ void PresentMonSession::Output() {
     
   }
 
-  // Output warning if events were lost.
-  ULONG eventsLost = 0;
-  ULONG buffersLost = 0;
-  trace_session_.CheckLostReports(&eventsLost, &buffersLost);
-
-  if (buffersLost > 0) {
-    // TODO(megalvan): Need to add this to the debug service output
-    // fprintf(stderr, "warning: %lu ETW buffers were lost.\n", buffersLost);
-  }
-  if (eventsLost > 0) {
-    // TODO(megalvan): Need to add this to the debug service output
-    // fprintf(stderr, "warning: %lu ETW events were lost.\n", eventsLost);
-  }
-
   // Process handles
   std::lock_guard<std::mutex> lock(process_mutex_);
   for (auto& pair : processes_) {
