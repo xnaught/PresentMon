@@ -76,4 +76,8 @@
 		X_(METRIC, TIME_BETWEEN_DISPLAY_CHANGE, "Time Between Display Change", "", "Time between display scanout of previous frame and this frame") \
 		X_(METRIC, TIME_UNTIL_RENDER_START, "Time Until Render Start", "", "The time between the Present() call and when the GPU work started") \
 		X_(METRIC, TIME_SINCE_INPUT, "Time Since Input", "", "The time between the Present() call and the earliest keyboard or mouse interaction that contributed to this frame") \
-		X_(METRIC, GPU_VIDEO_BUSY_TIME, "GPU Video Busy Time", "", "The time video encode/decode was active separate from the other engines in milliseconds")
+		X_(METRIC, GPU_VIDEO_BUSY_TIME, "GPU Video Busy Time", "", "The time video encode/decode was active separate from the other engines in milliseconds") \
+		X_(METRIC, CPU_DURATION, "CPU Duration", "", "How long the CPU spent generating this frame in milliseconds. The CPU may not have been fully busy during this time") \
+		X_(METRIC, CPU_FRAME_PACING_STALL, "CPU Frame Pacing Stall", "", "How long the CPU spent waiting before it could start generating the frame in milliseconds") \
+		X_(METRIC, GPU_DURATION, "GPU Duration", "", "Total amount of time between when GPU started frame and when it finished in milliseconds. The GPU may not have been fully busy during this time") \
+		X_(METRIC, DISPLAY_DURATION, "Display Duration", "", "How long this frame was displayed on screen")

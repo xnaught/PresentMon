@@ -161,6 +161,31 @@ PM_STATUS StreamClient::RecordFrame(PM_FRAME_DATA** out_frame_data) {
   }
 }
 
+uint64_t StreamClient::PeekNextDisplayedQpc()
+{
+    if (recording_frame_data_) {
+        auto nsm_view = GetNamedSharedMemView();
+        auto nsm_hdr = nsm_view->GetHeader();
+        if (!nsm_hdr->process_active) {
+            // Service destroyed the named shared memory.
+            return PM_STATUS::PM_STATUS_INVALID_PID;
+        }
+
+        PmNsmFrameData* pNsmData = nullptr;
+        std::lock_guard<std::mutex> lock(dequeue_index_mutex_);
+        uint64_t peekIndex = next_dequeue_idx_;
+        pNsmData = ReadFrameByIdx(peekIndex);
+        while (pNsmData) {
+            if (pNsmData->present_event.ScreenTime != 0) {
+                return pNsmData->present_event.ScreenTime;
+            }
+            peekIndex = (peekIndex + 1) % nsm_view->GetHeader()->max_entries;
+            pNsmData = ReadFrameByIdx(peekIndex);
+        }
+    }
+    return 0;
+}
+
 PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData)
 {
     // nullify point so that if we exit early it will be null
@@ -177,6 +202,8 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         // Service destroyed the named shared memory.
         return PM_STATUS::PM_STATUS_INVALID_PID;
     }
+
+    std::lock_guard<std::mutex> lock(dequeue_index_mutex_);
 
     if (recording_frame_data_ == false) {
         // Get the current number of frames written and set it as the current

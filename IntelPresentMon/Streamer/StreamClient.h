@@ -35,6 +35,8 @@ class StreamClient {
                      GpuTelemetryBitset gpu_telemetry_cap_bits,
                      CpuTelemetryBitset cpu_telemetry_cap_bits,
                      PM_FRAME_DATA* dst_frame);
+  // While capturing frame data search for the NEXT frame that is displayed
+  uint64_t PeekNextDisplayedQpc();
 
   std::optional<std::bitset<
       static_cast<size_t>(GpuTelemetryCapBits::gpu_telemetry_count)>>
@@ -57,4 +59,5 @@ class StreamClient {
   bool recording_frame_data_;
   uint64_t current_dequeue_frame_num_;
   bool is_etl_stream_client_;
+  mutable std::mutex dequeue_index_mutex_;
 };

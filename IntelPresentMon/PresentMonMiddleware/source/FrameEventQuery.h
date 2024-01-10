@@ -23,16 +23,20 @@ public:
 		// functions
 		Context(uint64_t qpcStart, long long perfCounterFrequency) : qpcStart{ qpcStart },
 			performanceCounterPeriodMs{ 1000.0 / perfCounterFrequency } {}
-		void UpdateSourceData(const PmNsmFrameData* pSourceFrameData_in)
+		void UpdateSourceData(const PmNsmFrameData* pSourceFrameData_in, uint64_t nextDisplayedQpcIncoming = 0)
 		{
 			pSourceFrameData = pSourceFrameData_in;
 			dropped = pSourceFrameData->present_event.FinalState != PresentResult::Presented;
+			cpuFrameQpc = pSourceFrameData->present_event.PresentStartTime + pSourceFrameData->present_event.TimeInPresent;
+			nextDisplayedQpc = nextDisplayedQpcIncoming;
 		}
 		// data
 		const PmNsmFrameData* pSourceFrameData = nullptr;
 		const double performanceCounterPeriodMs;
 		const uint64_t qpcStart;
 		bool dropped;
+		uint64_t cpuFrameQpc = 0;
+		uint64_t nextDisplayedQpc = 0;
 	};
 	// functions
 	PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements);
