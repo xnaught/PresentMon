@@ -1,10 +1,10 @@
 /*
-ï¿½*
-ï¿½* Copyright (C) 2021 Intel Corporation
-ï¿½*
-ï¿½* SPDX-License-Identifier: MIT
-ï¿½*
-ï¿½*
+ *
+ * Copyright (C) 2021,2023 Intel Corporation
+ *
+ * SPDX-License-Identifier: MIT
+ *
+ *
  * File Name:  PresentMonNamedPipe.h
  *
  * Abstract:   Header for Intel PresentMon Named Pipe IPC
