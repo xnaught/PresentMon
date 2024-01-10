@@ -305,7 +305,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 		return std::make_unique<CopyGatherCommand_<&Pre::PresentMode>>(pos);
 	case PM_METRIC_PRESENT_RUNTIME:
 		return std::make_unique<CopyGatherCommand_<&Pre::Runtime>>(pos);
-	case PM_METRIC_PRESENT_QPC:
+	case PM_METRIC_FRAME_QPC:
 		return std::make_unique<CopyGatherCommand_<&Pre::PresentStartTime>>(pos);
 	case PM_METRIC_ALLOWS_TEARING:
 		return std::make_unique<CopyGatherCommand_<&Pre::SupportsTearing>>(pos);

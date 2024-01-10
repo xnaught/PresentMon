@@ -184,7 +184,7 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_GPU_BUSY_TIME, .deviceId = 0 },
             Element{.metricId = PM_METRIC_GPU_VIDEO_BUSY_TIME, .deviceId = 0 },
             Element{.metricId = PM_METRIC_TIME_SINCE_INPUT, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_PRESENT_QPC, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_FRAME_QPC, .deviceId = 0 },
 
             Element{.metricId = PM_METRIC_GPU_POWER, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_VOLTAGE, .deviceId = activeDeviceId },
