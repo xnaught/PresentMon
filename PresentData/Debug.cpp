@@ -226,7 +226,7 @@ void FlushModifiedPresent()
         printf("->"); \
         _Fn(gModifiedPresent->_Name); \
     }
-    FLUSH_MEMBER(PrintTime,          PresentStopTime)
+    FLUSH_MEMBER(PrintTimeDelta,     TimeInPresent)
     FLUSH_MEMBER(PrintTime,          ReadyTime)
     FLUSH_MEMBER(PrintTime,          ScreenTime)
     FLUSH_MEMBER(PrintTime,          InputTime)
@@ -247,7 +247,6 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintBool,          WaitForMPOFlipEvent)
     FLUSH_MEMBER(PrintBool,          SeenDxgkPresent)
     FLUSH_MEMBER(PrintBool,          SeenWin32KEvents)
-    FLUSH_MEMBER(PrintBool,          DwmNotified)
     FLUSH_MEMBER(PrintBool,          IsCompleted)
     FLUSH_MEMBER(PrintBool,          IsLost)
     FLUSH_MEMBER(PrintU32,           DeferredCompletionWaitCount)

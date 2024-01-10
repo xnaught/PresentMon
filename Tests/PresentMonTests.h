@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2020-2023 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #ifndef NOMINMAX
@@ -13,41 +13,46 @@
 struct PresentMonCsv
 {
     enum Header {
-        // Required headers:
+        // Common:
         Header_Application,
         Header_ProcessID,
         Header_SwapChainAddress,
         Header_Runtime,
         Header_SyncInterval,
         Header_PresentFlags,
+        Header_CPUFrameTime,
+        Header_CPUFrameQPC,
+        Header_CPUFrameQPCTime,
+        Header_CPUFrameDateTime,
+        Header_CPUDuration,
+        Header_CPUFramePacingStall,
+        Header_AllowsTearing,
+        Header_PresentMode,
+        Header_DisplayLatency,
+        Header_DisplayDuration,
+        Header_GPULatency,
+        Header_GPUDuration,
+        Header_GPUBusy,
+        Header_VideoBusy,
+        Header_InputLatency,
+
+        // --v1_metrics
         Header_Dropped,
         Header_TimeInSeconds,
         Header_msBetweenPresents,
         Header_msInPresentAPI,
-
-        // Optional headers:
-        Header_QPCTime,
-
-        // Required headers when -track_display is used:
-        Header_AllowsTearing,
-        Header_PresentMode,
         Header_msBetweenDisplayChange,
         Header_msUntilRenderComplete,
         Header_msUntilDisplayed,
-
-        // Required headers when -track_debug is used:
-        Header_WasBatched,
-        Header_DwmNotified,
-
-        // Required headers when -track_gpu is used:
         Header_msUntilRenderStart,
         Header_msGPUActive,
-
-        // Required headers when -track_gpu_video is used:
         Header_msGPUVideoActive,
-
-        // Required headers when -track_input is used:
         Header_msSinceInput,
+        Header_QPCTime,
+
+        // Deprecated
+        Header_WasBatched,
+        Header_DwmNotified,
 
         // Special values:
         KnownHeaderCount,
@@ -63,22 +68,35 @@ struct PresentMonCsv
         case Header_Runtime:                return "Runtime";
         case Header_SyncInterval:           return "SyncInterval";
         case Header_PresentFlags:           return "PresentFlags";
+        case Header_CPUFrameTime:           return "CPUFrameTime";
+        case Header_CPUFrameQPC:            return "CPUFrameQPC";
+        case Header_CPUFrameQPCTime:        return "CPUFrameQPCTime";
+        case Header_CPUFrameDateTime:       return "CPUFrameDateTime";
+        case Header_CPUDuration:            return "CPUDuration";
+        case Header_CPUFramePacingStall:    return "CPUFramePacingStall";
+        case Header_AllowsTearing:          return "AllowsTearing";
+        case Header_PresentMode:            return "PresentMode";
+        case Header_DisplayLatency:         return "DisplayLatency";
+        case Header_DisplayDuration:        return "DisplayDuration";
+        case Header_GPULatency:             return "GPULatency";
+        case Header_GPUDuration:            return "GPUDuration";
+        case Header_GPUBusy:                return "GPUBusy";
+        case Header_VideoBusy:              return "VideoBusy";
+        case Header_InputLatency:           return "InputLatency";
         case Header_Dropped:                return "Dropped";
         case Header_TimeInSeconds:          return "TimeInSeconds";
         case Header_msBetweenPresents:      return "msBetweenPresents";
         case Header_msInPresentAPI:         return "msInPresentAPI";
-        case Header_QPCTime:                return "QPCTime";
-        case Header_AllowsTearing:          return "AllowsTearing";
-        case Header_PresentMode:            return "PresentMode";
         case Header_msBetweenDisplayChange: return "msBetweenDisplayChange";
         case Header_msUntilRenderComplete:  return "msUntilRenderComplete";
         case Header_msUntilDisplayed:       return "msUntilDisplayed";
-        case Header_WasBatched:             return "WasBatched";
-        case Header_DwmNotified:            return "DwmNotified";
         case Header_msUntilRenderStart:     return "msUntilRenderStart";
         case Header_msGPUActive:            return "msGPUActive";
         case Header_msGPUVideoActive:       return "msGPUVideoActive";
         case Header_msSinceInput:           return "msSinceInput";
+        case Header_QPCTime:                return "QPCTime";
+        case Header_WasBatched:             return "WasBatched";
+        case Header_DwmNotified:            return "DwmNotified";
         }
         return "<unknown>";
     }

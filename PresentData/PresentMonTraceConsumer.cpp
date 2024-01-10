@@ -32,7 +32,7 @@ uint32_t GetDeferredCompletionWaitCount(PresentEvent const& p)
 {
     // If the present was displayed or discarded before Present_Stop, defer
     // completion for for one Present_Stop.
-    if (p.Runtime != Runtime::Other && p.PresentStopTime == 0) {
+    if (p.Runtime != Runtime::Other && p.TimeInPresent == 0) {
         return 1;
     }
 
@@ -76,7 +76,7 @@ PresentEvent::PresentEvent()
     : PresentStartTime(0)
     , ProcessId(0)
     , ThreadId(0)
-    , PresentStopTime(0)
+    , TimeInPresent(0)
     , GPUStartTime(0)
     , ReadyTime(0)
     , GPUDuration(0)
@@ -114,7 +114,6 @@ PresentEvent::PresentEvent()
     , WaitForMPOFlipEvent(false)
     , SeenDxgkPresent(false)
     , SeenWin32KEvents(false)
-    , DwmNotified(false)
     , SeenInFrameEvent(false)
     , GpuFrameCompleted(false)
     , IsCompleted(false)
@@ -628,7 +627,6 @@ void PMTraceConsumer::HandleDxgkPresentHistoryInfo(EVENT_HEADER const& hdr, uint
         (eventIter->second->PresentMode == PresentMode::Composed_Flip && !eventIter->second->SeenWin32KEvents)) {
         mPresentsWaitingForDWM.emplace_back(eventIter->second);
         eventIter->second->PresentInDwmWaitingStruct = true;
-        eventIter->second->DwmNotified = true;
     }
 
     if (eventIter->second->PresentMode == PresentMode::Composed_Copy_GPU_GDI) {
@@ -1471,7 +1469,6 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
                 present->PresentMode == PresentMode::Composed_Copy_CPU_GDI) {
                 TRACK_PRESENT_PATH(present);
                 VerboseTraceBeforeModifyingPresent(present.get());
-                present->DwmNotified = true;
                 mPresentsWaitingForDWM.emplace_back(present);
                 present->PresentInDwmWaitingStruct = true;
             }
@@ -1528,7 +1525,6 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
 
             VerboseTraceBeforeModifyingPresent(present.get());
             present->DxgkPresentHistoryTokenData = 0;
-            present->DwmNotified = true;
 
             mLastPresentByWindow[hwnd] = present;
 
@@ -1558,7 +1554,6 @@ void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
         if (eventIter != mPresentByWin32KPresentHistoryToken.end() && eventIter->second->SeenInFrameEvent) {
             TRACK_PRESENT_PATH(eventIter->second);
             VerboseTraceBeforeModifyingPresent(eventIter->second.get());
-            eventIter->second->DwmNotified = true;
             mPresentsWaitingForDWM.emplace_back(eventIter->second);
             eventIter->second->PresentInDwmWaitingStruct = true;
         }
@@ -1776,6 +1771,7 @@ void PMTraceConsumer::CompletePresentHelper(std::shared_ptr<PresentEvent> const&
             }
         }
         p->DependentPresents.clear();
+        p->DependentPresents.shrink_to_fit();
     }
 
     // If presented, remove any earlier presents made on the same swap chain.
@@ -1801,7 +1797,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
     // created but not properly tracked due to missed events.  This is
     // especially prevalent in ETLs that start runtime providers before backend
     // providers and/or start capturing while an intensive graphics application
-    // is already running.  When that happens, PresentStartTime/PresentStopTime and
+    // is already running.  When that happens, PresentStartTime/TimeInPresentAPI and
     // ReadyTime/ScreenTime times can become mis-matched, and that offset can
     // persist for the full capture.
     //
@@ -1819,6 +1815,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
                 // recursion in CompletePresentHelper(), since we know that we're
                 // completing all the presents anyway.
                 p2->DependentPresents.clear();
+                p2->DependentPresents.shrink_to_fit();
 
                 VerboseTraceBeforeModifyingPresent(p2.get());
                 p2->IsLost = true;
@@ -2061,7 +2058,7 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
         auto present = FindThreadPresent(hdr.ThreadId);
         if (present != nullptr) {
             // Check expected state (a new Present() that has only been started).
-            DebugAssert(present->PresentStopTime             == 0);
+            DebugAssert(present->TimeInPresent               == 0);
             DebugAssert(present->IsCompleted                 == false);
             DebugAssert(present->IsLost                      == false);
             DebugAssert(present->DeferredCompletionWaitCount == 0);
@@ -2097,8 +2094,8 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
                         VerboseTraceBeforeModifyingPresent(present.get());
                         present->DeferredCompletionWaitCount -= 1;
 
-                        if (!presentStopUsed && present->PresentStopTime == 0) {
-                            present->PresentStopTime = *(uint64_t*) &hdr.TimeStamp;
+                        if (!presentStopUsed && present->TimeInPresent == 0) {
+                            present->TimeInPresent = *(uint64_t*) &hdr.TimeStamp - present->PresentStartTime;
                             if (GetDeferredCompletionWaitCount(*present) == 0) {
                                 present->DeferredCompletionWaitCount = 0;
                             }
@@ -2130,7 +2127,7 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
 
         VerboseTraceBeforeModifyingPresent(present.get());
         present->Runtime = runtime;
-        present->PresentStopTime = *(uint64_t*) &hdr.TimeStamp;
+        present->TimeInPresent = *(uint64_t*) &hdr.TimeStamp - present->PresentStartTime;
 
         bool visible = false;
         switch (runtime) {
@@ -2189,11 +2186,8 @@ void PMTraceConsumer::HandleProcessEvent(EVENT_RECORD* pEventRecord)
             // When run as-administrator, ImageName will be a fully-qualified path.
             // e.g.: \Device\HarddiskVolume...\...\Proces.exe.  We prune off everything other than
             // the filename here to be consistent.
-            size_t start = ImageName.find_last_of('\\') + 1;
-            size_t size = ImageName.size() - start;
-            event.ImageFileName.resize(size + 1);
-            wcstombs_s(&size, &event.ImageFileName[0], size + 1, ImageName.c_str() + start, size);
-            event.ImageFileName.resize(size - 1);
+            size_t start = ImageName.find_last_of(L'\\') + 1;
+            event.ImageFileName = ImageName.c_str() + start;
             break;
         }
         case Microsoft_Windows_Kernel_Process::ProcessStop_Stop::Id: {
@@ -2218,7 +2212,8 @@ void PMTraceConsumer::HandleProcessEvent(EVENT_RECORD* pEventRecord)
             };
             mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
             event.ProcessId     = desc[0].GetData<uint32_t>();
-            event.ImageFileName = desc[1].GetData<std::string>();
+            std::string str     = desc[1].GetData<std::string>();
+            event.ImageFileName = std::wstring(str.begin(), str.end());
             event.IsStartEvent  = true;
         } else if (hdr.EventDescriptor.Opcode == EVENT_TRACE_TYPE_END||
                    hdr.EventDescriptor.Opcode == EVENT_TRACE_TYPE_DC_END) {

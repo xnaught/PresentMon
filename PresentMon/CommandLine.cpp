@@ -18,118 +18,118 @@ enum {
 
 struct KeyNameCode
 {
-    char const* mName;
+    wchar_t const* mName;
     UINT mCode;
 };
 
 KeyNameCode const HOTKEY_MODS[] = {
-    { "ALT",     MOD_ALT     },
-    { "CONTROL", MOD_CONTROL },
-    { "CTRL",    MOD_CONTROL },
-    { "SHIFT",   MOD_SHIFT   },
-    { "WINDOWS", MOD_WIN     },
-    { "WIN",     MOD_WIN     },
+    { L"ALT",     MOD_ALT     },
+    { L"CONTROL", MOD_CONTROL },
+    { L"CTRL",    MOD_CONTROL },
+    { L"SHIFT",   MOD_SHIFT   },
+    { L"WINDOWS", MOD_WIN     },
+    { L"WIN",     MOD_WIN     },
 };
 
 KeyNameCode const HOTKEY_KEYS[] = {
-    { "BACKSPACE", VK_BACK },
-    { "TAB", VK_TAB },
-    { "CLEAR", VK_CLEAR },
-    { "ENTER", VK_RETURN },
-    { "PAUSE", VK_PAUSE },
-    { "CAPSLOCK", VK_CAPITAL },
-    { "ESC", VK_ESCAPE },
-    { "SPACE", VK_SPACE },
-    { "PAGEUP", VK_PRIOR },
-    { "PAGEDOWN", VK_NEXT },
-    { "END", VK_END },
-    { "HOME", VK_HOME },
-    { "LEFT", VK_LEFT },
-    { "UP", VK_UP },
-    { "RIGHT", VK_RIGHT },
-    { "DOWN", VK_DOWN },
-    { "PRINTSCREEN", VK_SNAPSHOT },
-    { "INS", VK_INSERT },
-    { "DEL", VK_DELETE },
-    { "HELP", VK_HELP },
-    { "NUMLOCK", VK_NUMLOCK },
-    { "SCROLLLOCK", VK_SCROLL },
-    { "NUM0", VK_NUMPAD0 },
-    { "NUM1", VK_NUMPAD1 },
-    { "NUM2", VK_NUMPAD2 },
-    { "NUM3", VK_NUMPAD3 },
-    { "NUM4", VK_NUMPAD4 },
-    { "NUM5", VK_NUMPAD5 },
-    { "NUM6", VK_NUMPAD6 },
-    { "NUM7", VK_NUMPAD7 },
-    { "NUM8", VK_NUMPAD8 },
-    { "NUM9", VK_NUMPAD9 },
-    { "MULTIPLY", VK_MULTIPLY },
-    { "ADD", VK_ADD },
-    { "SEPARATOR", VK_SEPARATOR },
-    { "SUBTRACT", VK_SUBTRACT },
-    { "DECIMAL", VK_DECIMAL },
-    { "DIVIDE", VK_DIVIDE },
-    { "0", 0x30 },
-    { "1", 0x31 },
-    { "2", 0x32 },
-    { "3", 0x33 },
-    { "4", 0x34 },
-    { "5", 0x35 },
-    { "6", 0x36 },
-    { "7", 0x37 },
-    { "8", 0x38 },
-    { "9", 0x39 },
-    { "A", 0x41 },
-    { "B", 0x42 },
-    { "C", 0x43 },
-    { "D", 0x44 },
-    { "E", 0x45 },
-    { "F", 0x46 },
-    { "G", 0x47 },
-    { "H", 0x48 },
-    { "I", 0x49 },
-    { "J", 0x4A },
-    { "K", 0x4B },
-    { "L", 0x4C },
-    { "M", 0x4D },
-    { "N", 0x4E },
-    { "O", 0x4F },
-    { "P", 0x50 },
-    { "Q", 0x51 },
-    { "R", 0x52 },
-    { "S", 0x53 },
-    { "T", 0x54 },
-    { "U", 0x55 },
-    { "V", 0x56 },
-    { "W", 0x57 },
-    { "X", 0x58 },
-    { "Y", 0x59 },
-    { "Z", 0x5A },
-    { "F1", VK_F1 },
-    { "F2", VK_F2 },
-    { "F3", VK_F3 },
-    { "F4", VK_F4 },
-    { "F5", VK_F5 },
-    { "F6", VK_F6 },
-    { "F7", VK_F7 },
-    { "F8", VK_F8 },
-    { "F9", VK_F9 },
-    { "F10", VK_F10 },
-    { "F11", VK_F11 },
-    { "F12", VK_F12 },
-    { "F13", VK_F13 },
-    { "F14", VK_F14 },
-    { "F15", VK_F15 },
-    { "F16", VK_F16 },
-    { "F17", VK_F17 },
-    { "F18", VK_F18 },
-    { "F19", VK_F19 },
-    { "F20", VK_F20 },
-    { "F21", VK_F21 },
-    { "F22", VK_F22 },
-    { "F23", VK_F23 },
-    { "F24", VK_F24 },
+    { L"BACKSPACE", VK_BACK },
+    { L"TAB", VK_TAB },
+    { L"CLEAR", VK_CLEAR },
+    { L"ENTER", VK_RETURN },
+    { L"PAUSE", VK_PAUSE },
+    { L"CAPSLOCK", VK_CAPITAL },
+    { L"ESC", VK_ESCAPE },
+    { L"SPACE", VK_SPACE },
+    { L"PAGEUP", VK_PRIOR },
+    { L"PAGEDOWN", VK_NEXT },
+    { L"END", VK_END },
+    { L"HOME", VK_HOME },
+    { L"LEFT", VK_LEFT },
+    { L"UP", VK_UP },
+    { L"RIGHT", VK_RIGHT },
+    { L"DOWN", VK_DOWN },
+    { L"PRINTSCREEN", VK_SNAPSHOT },
+    { L"INS", VK_INSERT },
+    { L"DEL", VK_DELETE },
+    { L"HELP", VK_HELP },
+    { L"NUMLOCK", VK_NUMLOCK },
+    { L"SCROLLLOCK", VK_SCROLL },
+    { L"NUM0", VK_NUMPAD0 },
+    { L"NUM1", VK_NUMPAD1 },
+    { L"NUM2", VK_NUMPAD2 },
+    { L"NUM3", VK_NUMPAD3 },
+    { L"NUM4", VK_NUMPAD4 },
+    { L"NUM5", VK_NUMPAD5 },
+    { L"NUM6", VK_NUMPAD6 },
+    { L"NUM7", VK_NUMPAD7 },
+    { L"NUM8", VK_NUMPAD8 },
+    { L"NUM9", VK_NUMPAD9 },
+    { L"MULTIPLY", VK_MULTIPLY },
+    { L"ADD", VK_ADD },
+    { L"SEPARATOR", VK_SEPARATOR },
+    { L"SUBTRACT", VK_SUBTRACT },
+    { L"DECIMAL", VK_DECIMAL },
+    { L"DIVIDE", VK_DIVIDE },
+    { L"0", 0x30 },
+    { L"1", 0x31 },
+    { L"2", 0x32 },
+    { L"3", 0x33 },
+    { L"4", 0x34 },
+    { L"5", 0x35 },
+    { L"6", 0x36 },
+    { L"7", 0x37 },
+    { L"8", 0x38 },
+    { L"9", 0x39 },
+    { L"A", 0x41 },
+    { L"B", 0x42 },
+    { L"C", 0x43 },
+    { L"D", 0x44 },
+    { L"E", 0x45 },
+    { L"F", 0x46 },
+    { L"G", 0x47 },
+    { L"H", 0x48 },
+    { L"I", 0x49 },
+    { L"J", 0x4A },
+    { L"K", 0x4B },
+    { L"L", 0x4C },
+    { L"M", 0x4D },
+    { L"N", 0x4E },
+    { L"O", 0x4F },
+    { L"P", 0x50 },
+    { L"Q", 0x51 },
+    { L"R", 0x52 },
+    { L"S", 0x53 },
+    { L"T", 0x54 },
+    { L"U", 0x55 },
+    { L"V", 0x56 },
+    { L"W", 0x57 },
+    { L"X", 0x58 },
+    { L"Y", 0x59 },
+    { L"Z", 0x5A },
+    { L"F1", VK_F1 },
+    { L"F2", VK_F2 },
+    { L"F3", VK_F3 },
+    { L"F4", VK_F4 },
+    { L"F5", VK_F5 },
+    { L"F6", VK_F6 },
+    { L"F7", VK_F7 },
+    { L"F8", VK_F8 },
+    { L"F9", VK_F9 },
+    { L"F10", VK_F10 },
+    { L"F11", VK_F11 },
+    { L"F12", VK_F12 },
+    { L"F13", VK_F13 },
+    { L"F14", VK_F14 },
+    { L"F15", VK_F15 },
+    { L"F16", VK_F16 },
+    { L"F17", VK_F17 },
+    { L"F18", VK_F18 },
+    { L"F19", VK_F19 },
+    { L"F20", VK_F20 },
+    { L"F21", VK_F21 },
+    { L"F22", VK_F22 },
+    { L"F23", VK_F23 },
+    { L"F24", VK_F24 },
 };
 
 CommandLineArgs gCommandLineArgs;
@@ -142,46 +142,46 @@ size_t GetConsoleWidth()
         : std::max<size_t>(DEFAULT_CONSOLE_WIDTH, info.srWindow.Right - info.srWindow.Left + 1);
 }
 
-bool ParseKeyName(KeyNameCode const* valid, size_t validCount, char* name, char const* errorMessage, UINT* outKeyCode)
+bool ParseKeyName(KeyNameCode const* valid, size_t validCount, wchar_t* name, wchar_t const* errorMessage, UINT* outKeyCode)
 {
     for (size_t i = 0; i < validCount; ++i) {
-        if (_stricmp(name, valid[i].mName) == 0) {
+        if (_wcsicmp(name, valid[i].mName) == 0) {
             *outKeyCode = valid[i].mCode;
             return true;
         }
     }
 
-    int col = PrintErrorNoNewLine("error: %s '%s'.\nValid options (case insensitive):", errorMessage, name);
+    PrintError(L"error: %s: %s\n", errorMessage, name);
 
-    size_t consoleWidth = GetConsoleWidth();
+    int width = (int) (0.8 * GetConsoleWidth());
+    int col = PrintError(L"       valid options:");
     for (size_t i = 0; i < validCount; ++i) {
-        auto len = strlen(valid[i].mName);
-        if (col + len + 1 > consoleWidth) {
-            col = PrintErrorNoNewLine("\n   ") - 1;
+        col += PrintError(L" %s", valid[i].mName);
+        if (col > width) {
+            col = PrintError(L"\n                     ") - 1;
         }
-        col += PrintErrorNoNewLine(" %s", valid[i].mName);
     }
-    fprintf(stderr, "\n");
+    PrintError(L"\n");
 
     return false;
 }
 
-bool AssignHotkey(char* key, CommandLineArgs* args)
+bool AssignHotkey(wchar_t* key, CommandLineArgs* args)
 {
-#pragma warning(suppress: 4996)
-    auto token = strtok(key, "+");
+    #pragma warning(suppress: 4996)
+    auto token = wcstok(key, L"+");
     for (;;) {
         auto prev = token;
-#pragma warning(suppress: 4996)
-        token = strtok(nullptr, "+");
+        #pragma warning(suppress: 4996)
+        token = wcstok(nullptr, L"+");
         if (token == nullptr) {
-            if (!ParseKeyName(HOTKEY_KEYS, _countof(HOTKEY_KEYS), prev, "invalid -hotkey key", &args->mHotkeyVirtualKeyCode)) {
+            if (!ParseKeyName(HOTKEY_KEYS, _countof(HOTKEY_KEYS), prev, L"invalid --hotkey key", &args->mHotkeyVirtualKeyCode)) {
                 return false;
             }
             break;
         }
 
-        if (!ParseKeyName(HOTKEY_MODS, _countof(HOTKEY_MODS), prev, "invalid -hotkey modifier", &args->mHotkeyModifiers)) {
+        if (!ParseKeyName(HOTKEY_MODS, _countof(HOTKEY_MODS), prev, L"invalid --hotkey modifier", &args->mHotkeyModifiers)) {
             return false;
         }
     }
@@ -190,20 +190,8 @@ bool AssignHotkey(char* key, CommandLineArgs* args)
     return true;
 }
 
-void SetCaptureAll(CommandLineArgs* args)
-{
-    if (!args->mTargetProcessNames.empty()) {
-        PrintWarning("warning: -captureall elides all previous -process_name arguments.");
-        args->mTargetProcessNames.clear();
-    }
-    if (args->mTargetPid != 0) {
-        PrintWarning("warning: -captureall elides all previous -process_id arguments.");
-        args->mTargetPid = 0;
-    }
-}
-
 // Allow /ARG, -ARG, or --ARG
-bool ParseArgPrefix(char** arg)
+bool ParseArgPrefix(wchar_t** arg)
 {
     if (**arg == '/') {
         *arg += 1;
@@ -221,52 +209,56 @@ bool ParseArgPrefix(char** arg)
     return false;
 }
 
-bool ParseArg(char* arg, char const* option)
+bool ParseArg(wchar_t* arg, wchar_t const* option)
 {
     return
         ParseArgPrefix(&arg) &&
-        _stricmp(arg, option) == 0;
+        _wcsicmp(arg, option) == 0;
 }
 
-bool ParseValue(char** argv, int argc, int* i)
+bool ParseValue(wchar_t** argv, int argc, int* i)
 {
     if (*i + 1 < argc) {
         *i += 1;
         return true;
     }
-    PrintError("error: %s expecting argument.", argv[*i]);
+    PrintError(L"error: %s expecting argument.\n", argv[*i]);
     return false;
 }
 
-bool ParseValue(char** argv, int argc, int* i, char const** value)
+bool ParseValue(wchar_t** argv, int argc, int* i, wchar_t const** value)
 {
     if (!ParseValue(argv, argc, i)) return false;
     *value = argv[*i];
     return true;
 }
 
-bool ParseValue(char** argv, int argc, int* i, std::vector<std::string>* value)
+bool ParseValue(wchar_t** argv, int argc, int* i, std::vector<std::wstring>* value)
 {
-    char const* v = nullptr;
+    wchar_t const* v = nullptr;
     if (!ParseValue(argv, argc, i, &v)) return false;
     value->emplace_back(v);
     return true;
 }
 
-bool ParseValue(char** argv, int argc, int* i, UINT* value)
+bool ParseValue(wchar_t** argv, int argc, int* i, UINT* value)
 {
-    char const* v = nullptr;
+    wchar_t const* v = nullptr;
     if (!ParseValue(argv, argc, i, &v)) return false;
-    *value = strtoul(v, nullptr, 10);
+    *value = wcstoul(v, nullptr, 10);
     return true;
 }
 
-void PrintHelp()
+// Print command line usage help.  The command line arguments and their description
+// is extracted out of the README-ConsoleApplication.md file at compile time (see
+// Tools/generate_options_header.cmd) into command_line_options.inl, and this
+// function formats and prints them.
+void PrintUsage()
 {
-    fprintf(stderr, "PresentMon %s\n", PRESENT_MON_VERSION);
+    fwprintf(stderr, L"PresentMon %hs\n", PRESENT_MON_VERSION);
 
-    // Layout usage 
-    char* s[] = {
+    // Layout
+    wchar_t* s[] = {
         #include <generated/command_line_options.inl>
     };
     size_t argWidth = 0;
@@ -274,7 +266,7 @@ void PrintHelp()
         auto arg = s[i];
         auto desc = s[i + 1];
         if (desc != nullptr) {
-            argWidth = std::max(argWidth, strlen(arg));
+            argWidth = std::max(argWidth, wcslen(arg));
         }
     }
 
@@ -282,17 +274,17 @@ void PrintHelp()
 
     size_t descWidth = std::max<size_t>(MIN_DESC_COLUMN_WIDTH, GetConsoleWidth() - ARG_DESC_COLUMN_PADDING - argWidth);
 
-    // Print usage
+    // Print
     for (size_t i = 0; i < _countof(s); i += 2) {
         auto arg = s[i];
         auto desc = s[i + 1];
         if (desc == nullptr) {
-            fprintf(stderr, "\n%s:\n", arg);
+            fwprintf(stderr, L"\n%s:\n", arg);
         } else {
-            fprintf(stderr, "  %-*s  ", (int) argWidth, arg);
-            for (auto len = strlen(desc); len > 0; ) {
+            fwprintf(stderr, L"  %-*s  ", (int) argWidth, arg);
+            for (auto len = wcslen(desc); len > 0; ) {
                 if (len <= descWidth) {
-                    fprintf(stderr, "%s\n", desc);
+                    fwprintf(stderr, L"%s\n", desc);
                     break;
                 }
 
@@ -300,7 +292,7 @@ void PrintHelp()
                 while (desc[w] != ' ') {
                     --w;
                 }
-                fprintf(stderr, "%.*s\n%-*s", (int) w, desc, (int) (argWidth + 4), "");
+                fwprintf(stderr, L"%.*s\n%-*s", (int) w, desc, (int) (argWidth + 4), L"");
                 desc += w + 1;
                 len -= w + 1;
             }
@@ -310,12 +302,34 @@ void PrintHelp()
 
 }
 
+void PrintHotkeyError()
+{
+    auto args = &gCommandLineArgs;
+
+    PrintError(L"error: ");
+
+    for (auto const& mod : HOTKEY_MODS) {
+        if (args->mHotkeyModifiers & mod.mCode) {
+            PrintError(L"%s+", mod.mName);
+        }
+    }
+
+    for (auto const& mod : HOTKEY_KEYS) {
+        if (args->mHotkeyVirtualKeyCode == mod.mCode) {
+            PrintError(L"%s", mod.mName);
+            break;
+        }
+    }
+
+    PrintError(L" is already in use and cannot be used as a --hotkey.\n");
+}
+
 CommandLineArgs const& GetCommandLineArgs()
 {
     return gCommandLineArgs;
 }
 
-bool ParseCommandLine(int argc, char** argv)
+bool ParseCommandLine(int argc, wchar_t** argv)
 {
     auto args = &gCommandLineArgs;
 
@@ -323,213 +337,172 @@ bool ParseCommandLine(int argc, char** argv)
     args->mExcludeProcessNames.clear();
     args->mOutputCsvFileName = nullptr;
     args->mEtlFileName = nullptr;
-    args->mSessionName = "PresentMon";
+    args->mSessionName = L"PresentMon";
     args->mTargetPid = 0;
     args->mDelay = 0;
     args->mTimer = 0;
     args->mHotkeyModifiers = MOD_NOREPEAT;
     args->mHotkeyVirtualKeyCode = 0;
+    args->mConsoleOutput = ConsoleOutput::Statistics;
     args->mTrackDisplay = true;
-    args->mTrackDebug = false;
-    args->mTrackInput = false;
-    args->mTrackGPU = false;
+    args->mTrackInput = true;
+    args->mTrackGPU = true;
     args->mTrackGPUVideo = false;
-    args->mTrackWMR = false;
-    args->mOutputCsvToFile = true;
-    args->mOutputCsvToStdout = false;
-    args->mOutputQpcTime = false;
-    args->mOutputQpcTimeInSeconds = false;
-    args->mOutputDateTime = false;
     args->mScrollLockIndicator = false;
     args->mExcludeDropped = false;
-    args->mConsoleOutputType = ConsoleOutput::Full;
-    args->mTerminateExisting = false;
+    args->mTerminateExistingSession = false;
     args->mTerminateOnProcExit = false;
     args->mStartTimer = false;
     args->mTerminateAfterTimer = false;
     args->mHotkeySupport = false;
     args->mTryToElevate = false;
     args->mMultiCsv = false;
+    args->mUseV1Metrics = false;
     args->mStopExistingSession = false;
 
-    bool DEPRECATED_dontRestart = false;
-    bool DEPRECATED_simple = false;
-    bool DEPRECATED_verbose = false;
-    bool DEPRECATED_wmr = false;
+    bool sessionNameSet  = false;
+    bool csvOutputStdout = false;
+    bool csvOutputNone   = false;
+    bool qpcTime         = false;
+    bool qpcmsTime       = false;
+    bool dtTime          = false;
 
     #if PRESENTMON_ENABLE_DEBUG_TRACE
     bool verboseTrace = false;
     #endif
 
+    // Match command line arguments with known options.  These must match
+    // options listed in the README.md for documentation and for PrintUsage()
+    // to work.
     for (int i = 1; i < argc; ++i) {
         // Capture target options:
-             if (ParseArg(argv[i], "captureall"))   { SetCaptureAll(args);                                         continue; }
-        else if (ParseArg(argv[i], "process_name")) { if (ParseValue(argv, argc, &i, &args->mTargetProcessNames))  continue; }
-        else if (ParseArg(argv[i], "exclude"))      { if (ParseValue(argv, argc, &i, &args->mExcludeProcessNames)) continue; }
-        else if (ParseArg(argv[i], "process_id"))   { if (ParseValue(argv, argc, &i, &args->mTargetPid))           continue; }
-        else if (ParseArg(argv[i], "etl_file"))     { if (ParseValue(argv, argc, &i, &args->mEtlFileName))         continue; }
+             if (ParseArg(argv[i], L"process_name")) { if (ParseValue(argv, argc, &i, &args->mTargetProcessNames))  continue; }
+        else if (ParseArg(argv[i], L"exclude"))      { if (ParseValue(argv, argc, &i, &args->mExcludeProcessNames)) continue; }
+        else if (ParseArg(argv[i], L"process_id"))   { if (ParseValue(argv, argc, &i, &args->mTargetPid))           continue; }
+        else if (ParseArg(argv[i], L"etl_file"))     { if (ParseValue(argv, argc, &i, &args->mEtlFileName))         continue; }
 
         // Output options:
-        else if (ParseArg(argv[i], "output_file"))   { if (ParseValue(argv, argc, &i, &args->mOutputCsvFileName)) continue; }
-        else if (ParseArg(argv[i], "output_stdout")) { args->mOutputCsvToStdout      = true;                  continue; }
-        else if (ParseArg(argv[i], "multi_csv"))     { args->mMultiCsv               = true;                  continue; }
-        else if (ParseArg(argv[i], "no_csv"))        { args->mOutputCsvToFile        = false;                 continue; }
-        else if (ParseArg(argv[i], "no_top"))        { args->mConsoleOutputType      = ConsoleOutput::Simple; continue; }
-        else if (ParseArg(argv[i], "qpc_time"))      { args->mOutputQpcTime          = true;                  continue; }
-        else if (ParseArg(argv[i], "qpc_time_s"))    { args->mOutputQpcTimeInSeconds = true;                  continue; }
+        else if (ParseArg(argv[i], L"output_file"))      { if (ParseValue(argv, argc, &i, &args->mOutputCsvFileName)) continue; }
+        else if (ParseArg(argv[i], L"output_stdout"))    { csvOutputStdout       = true;                              continue; }
+        else if (ParseArg(argv[i], L"multi_csv"))        { args->mMultiCsv       = true;                              continue; }
+        else if (ParseArg(argv[i], L"no_csv"))           { csvOutputNone         = true;                              continue; }
+        else if (ParseArg(argv[i], L"no_console_stats")) { args->mConsoleOutput  = ConsoleOutput::Simple;             continue; }
+        else if (ParseArg(argv[i], L"qpc_time"))         { qpcTime               = true;                              continue; }
+        else if (ParseArg(argv[i], L"qpc_time_ms"))      { qpcmsTime             = true;                              continue; }
+        else if (ParseArg(argv[i], L"date_time"))        { dtTime                = true;                              continue; }
+        else if (ParseArg(argv[i], L"exclude_dropped"))  { args->mExcludeDropped = true;                              continue; }
+        else if (ParseArg(argv[i], L"v1_metrics"))       { args->mUseV1Metrics   = true;                              continue; }
 
         // Recording options:
-        else if (ParseArg(argv[i], "hotkey"))           { if (ParseValue(argv, argc, &i) && AssignHotkey(argv[i], args)) continue; }
-        else if (ParseArg(argv[i], "delay"))            { if (ParseValue(argv, argc, &i, &args->mDelay)) continue; }
-        else if (ParseArg(argv[i], "timed"))            { if (ParseValue(argv, argc, &i, &args->mTimer)) { args->mStartTimer = true; continue; } }
-        else if (ParseArg(argv[i], "exclude_dropped"))  { args->mExcludeDropped      = true; continue; }
-        else if (ParseArg(argv[i], "scroll_indicator")) { args->mScrollLockIndicator = true; continue; }
-        else if (ParseArg(argv[i], "no_track_display")) { args->mTrackDisplay        = false; continue; }
-        else if (ParseArg(argv[i], "track_debug"))      { args->mTrackDebug          = true; continue; }
-        else if (ParseArg(argv[i], "simple"))           { DEPRECATED_simple          = true; continue; }
-        else if (ParseArg(argv[i], "verbose"))          { DEPRECATED_verbose         = true; continue; }
+        else if (ParseArg(argv[i], L"hotkey"))           { if (ParseValue(argv, argc, &i) && AssignHotkey(argv[i], args)) continue; }
+        else if (ParseArg(argv[i], L"delay"))            { if (ParseValue(argv, argc, &i, &args->mDelay)) continue; }
+        else if (ParseArg(argv[i], L"timed"))            { if (ParseValue(argv, argc, &i, &args->mTimer)) { args->mStartTimer = true; continue; } }
+        else if (ParseArg(argv[i], L"scroll_indicator")) { args->mScrollLockIndicator = true;  continue; }
+        else if (ParseArg(argv[i], L"no_track_gpu"))     { args->mTrackGPU            = false; continue; }
+        else if (ParseArg(argv[i], L"track_gpu_video"))  { args->mTrackGPUVideo       = true;  continue; }
+        else if (ParseArg(argv[i], L"no_track_input"))   { args->mTrackInput          = false; continue; }
+        else if (ParseArg(argv[i], L"no_track_display")) { args->mTrackDisplay        = false; continue; }
 
         // Execution options:
-        else if (ParseArg(argv[i], "session_name"))           { if (ParseValue(argv, argc, &i, &args->mSessionName)) continue; }
-        else if (ParseArg(argv[i], "stop_existing_session"))  { args->mStopExistingSession = true; continue; }
-        else if (ParseArg(argv[i], "terminate_existing"))     { args->mTerminateExisting   = true; continue; }
-        else if (ParseArg(argv[i], "dont_restart_as_admin"))  { DEPRECATED_dontRestart     = true; continue; }
-        else if (ParseArg(argv[i], "restart_as_admin"))       { args->mTryToElevate        = true; continue; }
-        else if (ParseArg(argv[i], "terminate_on_proc_exit")) { args->mTerminateOnProcExit = true; continue; }
-        else if (ParseArg(argv[i], "terminate_after_timed"))  { args->mTerminateAfterTimer = true; continue; }
-
-        // Beta options:
-        else if (ParseArg(argv[i], "date_time"))              { args->mOutputDateTime       = true; continue; }
-        else if (ParseArg(argv[i], "track_gpu"))              { args->mTrackGPU             = true; continue; }
-        else if (ParseArg(argv[i], "track_gpu_video"))        { args->mTrackGPUVideo        = true; continue; }
-        else if (ParseArg(argv[i], "track_input"))            { args->mTrackInput           = true; continue; }
-        else if (ParseArg(argv[i], "track_mixed_reality"))    { args->mTrackWMR             = true; continue; }
-        else if (ParseArg(argv[i], "include_mixed_reality"))  { DEPRECATED_wmr              = true; continue; }
+        else if (ParseArg(argv[i], L"session_name"))               { if (ParseValue(argv, argc, &i, &args->mSessionName)) { sessionNameSet = true; continue; } }
+        else if (ParseArg(argv[i], L"stop_existing_session"))      { args->mStopExistingSession      = true; continue; }
+        else if (ParseArg(argv[i], L"terminate_existing_session")) { args->mTerminateExistingSession = true; continue; }
+        else if (ParseArg(argv[i], L"restart_as_admin"))           { args->mTryToElevate             = true; continue; }
+        else if (ParseArg(argv[i], L"terminate_on_proc_exit"))     { args->mTerminateOnProcExit      = true; continue; }
+        else if (ParseArg(argv[i], L"terminate_after_timed"))      { args->mTerminateAfterTimer      = true; continue; }
 
         // Hidden options:
         #if PRESENTMON_ENABLE_DEBUG_TRACE
-        else if (ParseArg(argv[i], "debug_verbose_trace")) { verboseTrace = true; continue; }
+        else if (ParseArg(argv[i], L"debug_verbose_trace")) { verboseTrace = true; continue; }
         #endif
 
         // Provided argument wasn't recognized
-        else if (!(ParseArg(argv[i], "?") || ParseArg(argv[i], "h") || ParseArg(argv[i], "help"))) {
-            PrintError("error: unrecognized argument '%s'.", argv[i]);
+        else if (!(ParseArg(argv[i], L"?") || ParseArg(argv[i], L"h") || ParseArg(argv[i], L"help"))) {
+            PrintError(L"error: unrecognized option '%s'.\n", argv[i]);
         }
 
-        PrintHelp();
+        PrintUsage();
         return false;
     }
 
-    // Handle deprecated command line arguments
-    if (DEPRECATED_simple) {
-        PrintWarning("warning: -simple command line argument has been deprecated; using -no_track_display instead.");
-        args->mTrackDisplay = false;
-    }
-    if (DEPRECATED_verbose) {
-        PrintWarning("warning: -verbose command line argument has been deprecated; using -track_debug instead.");
-        args->mTrackDebug = true;
-    }
-    if (DEPRECATED_wmr) {
-        PrintWarning("warning: -include_mixed_reality command line argument has been deprecated; using -track_mixed_reality instead.");
-        args->mTrackWMR = true;
-    }
-    if (DEPRECATED_dontRestart) {
-        PrintWarning("warning: -dont_restart_as_admin command line argument has been deprecated; it is now the default behaviour.");
-    }
-
-    // Ignore -no_track_display if required for other requested tracking
-    if (args->mTrackDebug && !args->mTrackDisplay) {
-        PrintWarning("warning: -track_debug requires display tracking; ignoring -no_track_display.");
-        args->mTrackDisplay = true;
-    }
-    if (args->mTrackGPU && !args->mTrackDisplay) {
-        PrintWarning("warning: -track_gpu requires display tracking; ignoring -no_track_display.");
-        args->mTrackDisplay = true;
-    }
-    if (args->mTrackGPUVideo && !args->mTrackDisplay) {
-        PrintWarning("warning: -track_gpu_video requires display tracking; ignoring -no_track_display.");
-        args->mTrackDisplay = true;
-    }
-
-    // Enable -qpc_time if only -qpc_time_s was provided, since we use that to
-    // add the column.
-    if (args->mOutputQpcTimeInSeconds) {
-        args->mOutputQpcTime = true;
-    }
-
-    // -date_time is mutually exclusive to -qpc_time and -qpc_time_s
-    if (args->mOutputDateTime && (args->mOutputQpcTime || args->mOutputQpcTimeInSeconds)) {
-        PrintError("error: -date_time and -qpc_time or -qpc_time_s cannot be used at the same time.");
-        PrintHelp();
+    // Ensure at most one of --qpc_time --qpc_time_ms --date_time.
+    if (qpcTime + qpcmsTime + dtTime > 1) {
+        PrintError(L"error: only one of the following options may be used:");
+        if (qpcTime)   PrintError(L" --qpc_time");
+        if (qpcmsTime) PrintError(L" --qpc_time_ms");
+        if (dtTime)    PrintError(L" --date_time");
+        PrintError(L"\n");
+        PrintUsage();
         return false;
     }
 
-    // Disallow hotkey of CTRL+C, CTRL+SCROLL, and F12
-    if (args->mHotkeySupport) {
-        if ((args->mHotkeyModifiers & MOD_CONTROL) != 0 && (
-            args->mHotkeyVirtualKeyCode == 0x44 /*C*/ ||
-            args->mHotkeyVirtualKeyCode == VK_SCROLL)) {
-            PrintError("error: CTRL+C or CTRL+SCROLL cannot be used as a -hotkey, they are reserved for terminating the trace.");
-            PrintHelp();
-            return false;
-        }
-
-        if (args->mHotkeyModifiers == MOD_NOREPEAT && args->mHotkeyVirtualKeyCode == VK_F12) {
-            PrintError("error: 'F12' cannot be used as a -hotkey, it is reserved for the debugger.");
-            PrintHelp();
-            return false;
-        }
+    // Disallow --hotkey that are known to be already in use:
+    // - CTRL+C, CTRL+PAUSE, and CTRL+SCROLLLOCK already used to exit PresentMon
+    // - F12 is reserved for debugger use at all times
+    if (args->mHotkeySupport && (
+            ((args->mHotkeyModifiers & MOD_CONTROL) && args->mHotkeyVirtualKeyCode == 0x43 /*C*/) ||
+            ((args->mHotkeyModifiers & MOD_CONTROL) && args->mHotkeyVirtualKeyCode == VK_SCROLL) ||
+            ((args->mHotkeyModifiers & MOD_CONTROL) && args->mHotkeyVirtualKeyCode == VK_PAUSE) ||
+            (args->mHotkeyModifiers == MOD_NOREPEAT && args->mHotkeyVirtualKeyCode == VK_F12))) {
+        PrintHotkeyError();
+        return false;
     }
 
-    // If -no_csv is used, ignore -date_time, -qpc_time, -qpc_time_s, -multi_csv,
-    // -output_file, or -output_stdout if they are also used.
-    if (!args->mOutputCsvToFile) {
-        if (args->mOutputQpcTime) {
-            PrintWarning("warning: -qpc_time and -qpc_time_s are only relevant for CSV output; ignoring due to -no_csv.");
-            args->mOutputQpcTime = false;
-            args->mOutputQpcTimeInSeconds = false;
-        }
-        if (args->mOutputDateTime) {
-            PrintWarning("warning: -date_time is only relevant for CSV output; ignoring due to -no_csv.");
-            args->mOutputDateTime = false;
-        }
-        if (args->mMultiCsv) {
-            PrintWarning("warning: -multi_csv and -no_csv arguments are not compatible; ignoring -multi_csv.");
-            args->mMultiCsv = false;
-        }
-        if (args->mOutputCsvFileName != nullptr) {
-            PrintWarning("warning: -output_file and -no_csv arguments are not compatible; ignoring -output_file.");
-            args->mOutputCsvFileName = nullptr;
-        }
-        if (args->mOutputCsvToStdout) {
-            PrintWarning("warning: -output_stdout and -no_csv arguments are not compatible; ignoring -output_stdout.");
-            args->mOutputCsvToStdout = false;
-        }
+    // Ensure only one of --output_file --output_stdout --no_csv.
+    if (csvOutputNone + csvOutputStdout + (args->mOutputCsvFileName != nullptr) > 1) {
+        PrintWarning(L"warning: only one of the following options may be used:");
+        if (csvOutputNone)                       PrintWarning(L" --no_csv");
+        if (csvOutputStdout)                     PrintWarning(L" --output_stdout");
+        if (args->mOutputCsvFileName != nullptr) PrintWarning(L" --output_file");
+
+        PrintWarning(L"\n         ignoring:");
+        if (csvOutputNone)                                          { csvOutputNone   = false; PrintWarning(L" --no_csv"); }
+        if (csvOutputStdout && args->mOutputCsvFileName != nullptr) { csvOutputStdout = false; PrintWarning(L" --output_stdout"); }
+        PrintWarning(L"\n");
     }
 
-    // If we're outputing CSV to stdout, we can't use it for console output.
+    // Ignore CSV-only options when --no_csv is used
+    if (csvOutputNone && (qpcTime || qpcmsTime || dtTime || args->mMultiCsv || args->mHotkeySupport)) {
+        PrintWarning(L"warning: ignoring CSV-related options due to --no_csv:");
+        if (qpcTime)              { qpcTime              = false; PrintWarning(L" --qpc_time"); }
+        if (qpcmsTime)            { qpcmsTime            = false; PrintWarning(L" --qpc_time_ms"); }
+        if (dtTime)               { dtTime               = false; PrintWarning(L" --date_time"); }
+        if (args->mMultiCsv)      { args->mMultiCsv      = false; PrintWarning(L" --multi_csv"); }
+        if (args->mHotkeySupport) { args->mHotkeySupport = false; PrintWarning(L" --hotkey"); }
+        PrintWarning(L"\n");
+    }
+
+    // If we're outputting CSV to stdout, we can't use it for console output.
     //
-    // Further, we're currently limited to outputing CSV to either file(s) or
-    // stdout, so disallow use of both -output_file and -output_stdout.  Also,
-    // since -output_stdout redirects all CSV output to stdout ignore
-    // -multi_csv or -track_mixed_reality in this case.
-    if (args->mOutputCsvToStdout) {
-        args->mConsoleOutputType = ConsoleOutput::None;
-
-        if (args->mOutputCsvFileName != nullptr) {
-            PrintError("error: only one of -output_file or -output_stdout arguments can be used.");
-            PrintHelp();
-            return false;
-        }
+    // Also ignore --multi_csv since it only applies to file output.
+    if (csvOutputStdout) {
+        args->mConsoleOutput = ConsoleOutput::None;
 
         if (args->mMultiCsv) {
-            PrintWarning("warning: -multi_csv and -output_stdout are not compatible; ignoring -multi_csv.");
+            PrintWarning(L"warning: ignoring --multi_csv due to --output_stdout.\n");
             args->mMultiCsv = false;
         }
+    }
 
-        if (args->mTrackWMR) {
-            PrintWarning("warning: -track_mixed_reality and -output_stdout are not compatible; ignoring -track_mixed_reality.");
-            args->mTrackWMR = false;
+    // Ignore --track_gpu_video if --no_track_gpu used
+    if (args->mTrackGPUVideo && !args->mTrackGPU) {
+        PrintWarning(L"warning: ignoring --track_gpu_video due to --no_track_gpu.\n");
+        args->mTrackGPUVideo = false;
+    }
+
+    // Ignore --no_track_display if required for other requested tracking
+    if (!args->mTrackDisplay && args->mTrackGPU) {
+        PrintWarning(L"warning: ignoring --no_track_display because display tracking is required when GPU tracking is enabled.\n");
+        args->mTrackDisplay = true;
+    }
+
+    // If --terminate_existing_session, warn about any normal arguments since we'll just
+    // be stopping an existing session and then exiting.
+    if (args->mTerminateExistingSession) {
+        int expectedArgc = 2;
+        if (sessionNameSet) expectedArgc += 1;
+        if (argc != expectedArgc) {
+            PrintWarning(L"warning: --terminate_existing_session exits without capturing anything; ignoring all other options.\n");
         }
     }
 
@@ -537,22 +510,15 @@ bool ParseCommandLine(int argc, char** argv)
     #if PRESENTMON_ENABLE_DEBUG_TRACE
     if (verboseTrace) {
         EnableVerboseTrace(true);
-        args->mConsoleOutputType = ConsoleOutput::None;
+        args->mConsoleOutput = ConsoleOutput::None;
     }
     #endif
 
     // Try to initialize the console, and warn if we're not going to be able to
     // do the advanced display as requested.
-    if (args->mConsoleOutputType == ConsoleOutput::Full && !IsConsoleInitialized()) {
-        PrintWarning("warning: could not initialize console display; continuing with -no_top.");
-        args->mConsoleOutputType = ConsoleOutput::Simple;
-    }
-
-    // If -terminate_existing, warn about any normal arguments since we'll just
-    // be stopping an existing session and then exiting.
-    if (args->mTerminateExisting && argc != 2) {
-        PrintWarning("warning: -terminate_existing exits without capturing anything; ignoring all capture,\n"
-                     "         output, and recording arguments.");
+    if (args->mConsoleOutput == ConsoleOutput::Statistics && !StdOutIsConsole()) {
+        PrintWarning(L"warning: --no_console_stats added because stdout does not support statistics reporting.\n");
+        args->mConsoleOutput = ConsoleOutput::Simple;
     }
 
     // Convert the provided process names into a canonical form used for comparison.
@@ -569,6 +535,15 @@ bool ParseCommandLine(int argc, char** argv)
     for (auto& name : args->mExcludeProcessNames) {
         CanonicalizeProcessName(&name);
     }
+
+    args->mTimeUnit = qpcTime   ? TimeUnit::QPC :
+                      qpcmsTime ? TimeUnit::QPCMilliSeconds :
+                      dtTime    ? TimeUnit::DateTime
+                                : TimeUnit::MilliSeconds;
+
+    args->mCSVOutput = csvOutputNone   ? CSVOutput::None :
+                       csvOutputStdout ? CSVOutput::Stdout
+                                       : CSVOutput::File;
 
     return true;
 }

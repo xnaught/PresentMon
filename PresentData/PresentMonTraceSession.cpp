@@ -1,10 +1,9 @@
-// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2020-2023 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "Debug.hpp"
 #include "PresentMonTraceConsumer.hpp"
-#include "MixedRealityTraceConsumer.hpp"
-#include "TraceSession.hpp"
+#include "PresentMonTraceSession.hpp"
 
 #include "ETW/Microsoft_Windows_D3D9.h"
 #include "ETW/Microsoft_Windows_Dwm_Core.h"
@@ -133,8 +132,7 @@ struct FilteredProvider {
 ULONG EnableProviders(
     TRACEHANDLE sessionHandle,
     GUID const& sessionGuid,
-    PMTraceConsumer* pmConsumer,
-    MRTraceConsumer* mrConsumer)
+    PMTraceConsumer* pmConsumer)
 {
     ULONG status = 0;
 
@@ -306,27 +304,12 @@ ULONG EnableProviders(
     status = provider.Enable(sessionHandle, Microsoft_Windows_D3D9::GUID);
     if (status != ERROR_SUCCESS) return status;
 
-    if (mrConsumer != nullptr) {
-        // DHD
-        status = EnableTraceEx2(sessionHandle, &DHD_PROVIDER_GUID, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
-                                TRACE_LEVEL_VERBOSE, 0x1C00000, 0, 0, nullptr);
-        if (status != ERROR_SUCCESS) return status;
-
-        if (!mrConsumer->mSimpleMode) {
-            // SPECTRUMCONTINUOUS
-            status = EnableTraceEx2(sessionHandle, &SPECTRUMCONTINUOUS_PROVIDER_GUID, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
-                                    TRACE_LEVEL_VERBOSE, 0x800000, 0, 0, nullptr);
-            if (status != ERROR_SUCCESS) return status;
-        }
-    }
-
     return ERROR_SUCCESS;
 }
 
 void DisableProviders(TRACEHANDLE sessionHandle)
 {
     ULONG status = 0;
-    status = EnableTraceEx2(sessionHandle, &DHD_PROVIDER_GUID,                      EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_D3D9::GUID,           EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_DXGI::GUID,           EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_Dwm_Core::GUID,       EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
@@ -335,23 +318,21 @@ void DisableProviders(TRACEHANDLE sessionHandle)
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_DxgKrnl::Win7::GUID,  EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_Kernel_Process::GUID, EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
     status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_Win32k::GUID,         EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
-    status = EnableTraceEx2(sessionHandle, &SPECTRUMCONTINUOUS_PROVIDER_GUID,       EVENT_CONTROL_CODE_DISABLE_PROVIDER, 0, 0, 0, 0, nullptr);
 }
 
 template<
-    bool SAVE_FIRST_TIMESTAMP,
+    bool IS_REALTIME_SESSION,
     bool TRACK_DISPLAY,
-    bool TRACK_INPUT,
-    bool TRACK_WMR>
+    bool TRACK_INPUT>
 void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
 {
-    auto session = (TraceSession*) pEventRecord->UserContext;
+    auto session = (PMTraceSession*) pEventRecord->UserContext;
     auto const& hdr = pEventRecord->EventHeader;
 
     #pragma warning(push)
     #pragma warning(disable: 4984) // c++17 extension
 
-    if constexpr (SAVE_FIRST_TIMESTAMP) {
+    if constexpr (!IS_REALTIME_SESSION) {
         if (session->mStartQpc.QuadPart == 0) {
             session->mStartQpc = hdr.TimeStamp;
         }
@@ -422,20 +403,6 @@ void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
             session->mPMConsumer->HandleWin7DxgkMMIOFlip(pEventRecord);
             return;
         }
-
-        if constexpr (TRACK_WMR) {
-            if (hdr.ProviderId == SPECTRUMCONTINUOUS_PROVIDER_GUID) {
-                session->mMRConsumer->HandleSpectrumContinuousEvent(pEventRecord);
-                return;
-            }
-        }
-    }
-
-    if constexpr (TRACK_WMR) {
-        if (hdr.ProviderId == DHD_PROVIDER_GUID) {
-            session->mMRConsumer->HandleDHDEvent(pEventRecord);
-            return;
-        }
     }
 
     #pragma warning(pop)
@@ -469,120 +436,80 @@ PEVENT_RECORD_CALLBACK GetEventRecordCallback(bool t1, bool t2, bool t3, bool t4
               : GetEventRecordCallback<Ts..., false>(t2, t3, t4);
 }
 
-ULONG CALLBACK BufferCallback(EVENT_TRACE_LOGFILEA* pLogFile)
+ULONG CALLBACK BufferCallback(EVENT_TRACE_LOGFILE* pLogFile)
 {
-    auto session = (TraceSession*) pLogFile->Context;
+    auto session = (PMTraceSession*) pLogFile->Context;
     return session->mContinueProcessingBuffers; // TRUE = continue processing events, FALSE = return out of ProcessTrace()
 }
 
 }
 
-ULONG TraceSession::Start(
-    PMTraceConsumer* pmConsumer,
-    MRTraceConsumer* mrConsumer,
-    char const* etlPath,
-    char const* sessionName)
+ULONG PMTraceSession::Start(
+    wchar_t const* etlPath,
+    wchar_t const* sessionName)
 {
+    assert(mPMConsumer != nullptr);
     assert(mSessionHandle == 0);
     assert(mTraceHandle == INVALID_PROCESSTRACE_HANDLE);
     mStartQpc.QuadPart = 0;
-    mPMConsumer = pmConsumer;
-    mMRConsumer = mrConsumer;
     mContinueProcessingBuffers = TRUE;
+    mIsRealtimeSession = etlPath == nullptr;
 
-    // -------------------------------------------------------------------------
-    // Configure trace properties
-    EVENT_TRACE_LOGFILEA traceProps = {};
-    traceProps.LogFileName = (char*) etlPath;
-    traceProps.ProcessTraceMode = PROCESS_TRACE_MODE_EVENT_RECORD | PROCESS_TRACE_MODE_RAW_TIMESTAMP;
-    traceProps.Context = this;
-    /* Output members (passed also to BufferCallback):
-    traceProps.CurrentTime
-    traceProps.BuffersRead
-    traceProps.CurrentEvent
-    traceProps.LogfileHeader
-    traceProps.BufferSize
-    traceProps.Filled
-    traceProps.IsKernelTrace
-    */
-
-    // Redirect to a specialized event handler based on the tracking parameters.
-    auto saveFirstTimestamp = etlPath != nullptr;
-    traceProps.EventRecordCallback = GetEventRecordCallback(
-        saveFirstTimestamp,
-        pmConsumer->mTrackDisplay,
-        pmConsumer->mTrackInput,
-        mrConsumer != nullptr);
-
-    // When processing log files, we need to use the buffer callback in case
-    // the user wants to stop processing before the entire log has been parsed.
-    if (traceProps.LogFileName != nullptr) {
-        traceProps.BufferCallback = &BufferCallback;
-    }
-
-    // -------------------------------------------------------------------------
-    // For realtime collection, start the session with the required providers
-    if (traceProps.LogFileName == nullptr) {
-        traceProps.LoggerName = (char*) sessionName;
-        traceProps.ProcessTraceMode |= PROCESS_TRACE_MODE_REAL_TIME;
-
+    // If we're not reading an ETL, start a realtime trace session with the
+    // required providers enabled.
+    if (mIsRealtimeSession) {
         TraceProperties sessionProps = {};
         sessionProps.Wnode.BufferSize = (ULONG) sizeof(TraceProperties);
-        sessionProps.Wnode.ClientContext = 1;                     // Clock resolution to use when logging the timestamp for each event; 1 == query performance counter
-        sessionProps.LogFileMode = EVENT_TRACE_REAL_TIME_MODE;    // We have a realtime consumer, not writing to a log file
-        sessionProps.LogFileNameOffset = 0;                       // 0 means no output log file
+        sessionProps.Wnode.ClientContext = 1; // 1 == use QPC for timestamp
+        sessionProps.Wnode.Flags = WNODE_FLAG_TRACED_GUID;
+        sessionProps.LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
         sessionProps.LoggerNameOffset = offsetof(TraceProperties, mSessionName);  // Location of session name; will be written by StartTrace()
-        /* Not used:
-        sessionProps.Wnode.Guid               // Only needed for private or kernel sessions, otherwise it's an output
-        sessionProps.FlushTimer               // How often in seconds buffers are flushed; 0=min (1 second)
-        sessionProps.EnableFlags              // Which kernel providers to include in trace
-        sessionProps.AgeLimit                 // n/a
-        sessionProps.BufferSize = 0;          // Size of each tracing buffer in kB (max 1MB)
-        sessionProps.MinimumBuffers = 200;    // Min tracing buffer pool size; must be at least 2 per processor
-        sessionProps.MaximumBuffers = 0;      // Max tracing buffer pool size; min+20 by default
-        sessionProps.MaximumFileSize = 0;     // Max file size in MB
-        */
-        /* The following members are output variables, set by StartTrace() and/or ControlTrace()
-        sessionProps.Wnode.HistoricalContext  // handle to the event tracing session
-        sessionProps.Wnode.TimeStamp          // time this structure was updated
-        sessionProps.Wnode.Guid               // session Guid
-        sessionProps.Wnode.Flags              // e.g., WNODE_FLAG_TRACED_GUID
-        sessionProps.NumberOfBuffers          // trace buffer pool size
-        sessionProps.FreeBuffers              // trace buffer pool free count
-        sessionProps.EventsLost               // count of events not written
-        sessionProps.BuffersWritten           // buffers written in total
-        sessionProps.LogBuffersLost           // buffers that couldn't be written to the log
-        sessionProps.RealTimeBuffersLost      // buffers that couldn't be delivered to the realtime consumer
-        sessionProps.LoggerThreadId           // tracing session identifier
-        */
 
-        auto status = StartTraceA(&mSessionHandle, sessionName, &sessionProps);
+        auto status = StartTrace(&mSessionHandle, sessionName, &sessionProps);
         if (status != ERROR_SUCCESS) {
             mSessionHandle = 0;
             return status;
         }
 
-        status = EnableProviders(mSessionHandle, sessionProps.Wnode.Guid, pmConsumer, mrConsumer);
+        status = EnableProviders(mSessionHandle, sessionProps.Wnode.Guid, mPMConsumer);
         if (status != ERROR_SUCCESS) {
             Stop();
             return status;
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Open the trace
-    mTraceHandle = OpenTraceA(&traceProps);
-    if (mTraceHandle == INVALID_PROCESSTRACE_HANDLE) {
-        auto lastError = GetLastError();
-        Stop();
-        return lastError;
+    // Open a trace to collect the session events
+    EVENT_TRACE_LOGFILE traceProps = {};
+    traceProps.ProcessTraceMode = PROCESS_TRACE_MODE_EVENT_RECORD | PROCESS_TRACE_MODE_RAW_TIMESTAMP;
+    traceProps.Context = this;
+
+    if (mIsRealtimeSession) {
+        traceProps.LoggerName = (wchar_t*) sessionName;
+        traceProps.ProcessTraceMode |= PROCESS_TRACE_MODE_REAL_TIME;
+    } else {
+        traceProps.LogFileName = (wchar_t*) etlPath;
+
+        // When processing log files, we need to use the buffer callback in
+        // case the user wants to stop processing before the entire log has
+        // been parsed.
+        traceProps.BufferCallback = &BufferCallback;
     }
 
-    // -------------------------------------------------------------------------
+    traceProps.EventRecordCallback = GetEventRecordCallback(
+        mIsRealtimeSession,         // IS_REALTIME_SESSION
+        mPMConsumer->mTrackDisplay, // TRACK_DISPLAY
+        mPMConsumer->mTrackInput);  // TRACK_INPUT
+
+    mTraceHandle = OpenTrace(&traceProps);
+    if (mTraceHandle == INVALID_PROCESSTRACE_HANDLE) {
+        auto openTraceError = GetLastError();
+        Stop();
+        return openTraceError;
+    }
+
     // Save the initial time to base capture off of.  ETL captures use the
     // time of the first event, which matches GPUVIEW usage, and realtime
     // captures are based off the timestamp here.
-
     switch (traceProps.LogfileHeader.ReservedFlags) {
     case 2: // System time
         mQpcFrequency.QuadPart = 10000000ull;
@@ -595,7 +522,7 @@ ULONG TraceSession::Start(
         break;
     }
 
-    if (etlPath == nullptr) {
+    if (mIsRealtimeSession) {
         LARGE_INTEGER qpc1 = {};
         LARGE_INTEGER qpc2 = {};
         FILETIME ft = {};
@@ -614,55 +541,94 @@ ULONG TraceSession::Start(
 
     InitializeTimestampInfo(&mStartQpc, mQpcFrequency);
 
+    mQpcPerMilliSecond  = 0.001 * mQpcFrequency.QuadPart;
+    mMilliSecondsPerQpc = 1000.0 / mQpcFrequency.QuadPart;
+
     return ERROR_SUCCESS;
 }
 
-void TraceSession::Stop()
+void PMTraceSession::Stop()
 {
     ULONG status = 0;
 
-    // If collecting realtime events, CloseTrace() will cause ProcessTrace() to
-    // stop filling buffers and it will return after it finishes processing
-    // events already in it's buffers.
-    //
-    // If collecting from a log file, ProcessTrace() will continue to process
-    // the entire file though, which is why we cancel the processing from the
-    // BufferCallback in this case.
-    mContinueProcessingBuffers = FALSE;
-
-    // Shutdown the trace and session.
-    status = CloseTrace(mTraceHandle);
-    mTraceHandle = INVALID_PROCESSTRACE_HANDLE;
-
+    // Stop the session
     if (mSessionHandle != 0) {
         DisableProviders(mSessionHandle);
 
         TraceProperties sessionProps = {};
         sessionProps.Wnode.BufferSize = (ULONG) sizeof(TraceProperties);
         sessionProps.LoggerNameOffset = offsetof(TraceProperties, mSessionName);
+
+        status = ControlTraceW(mSessionHandle, nullptr, &sessionProps, EVENT_TRACE_CONTROL_QUERY);
+        mNumEventsLost = sessionProps.EventsLost;
+        mNumBuffersLost = sessionProps.LogBuffersLost + sessionProps.RealTimeBuffersLost;
+
         status = ControlTraceW(mSessionHandle, nullptr, &sessionProps, EVENT_TRACE_CONTROL_STOP);
 
-        mSessionHandle = 0;
+        mSessionHandle = 0; // mSessionHandle is no longer valid after EVENT_TRACE_CONTROL_STOP
+    }
+
+    // Stop the trace (remains open until ProcessTrace() finishes)
+    if (mTraceHandle != INVALID_PROCESSTRACE_HANDLE) {
+        status = CloseTrace(mTraceHandle);
+        mTraceHandle = INVALID_PROCESSTRACE_HANDLE;
+    }
+
+    // If collecting realtime events, CloseTrace() will cause ProcessTrace() to
+    // stop filling buffers and it will return after it finishes processing
+    // events already in it's buffers.
+    //
+    // If collecting from a log file, ProcessTrace() normally continues to
+    // process the entire file so we cancel processing from the BufferCallback
+    // in this case.
+    if (!mIsRealtimeSession) {
+        mContinueProcessingBuffers = FALSE;
     }
 }
 
-ULONG TraceSession::StopNamedSession(char const* sessionName)
+ULONG StopNamedTraceSession(wchar_t const* sessionName)
 {
     TraceProperties sessionProps = {};
     sessionProps.Wnode.BufferSize = (ULONG) sizeof(TraceProperties);
     sessionProps.LoggerNameOffset = offsetof(TraceProperties, mSessionName);
-    return ControlTraceA((TRACEHANDLE) 0, sessionName, &sessionProps, EVENT_TRACE_CONTROL_STOP);
+    return ControlTraceW((TRACEHANDLE) 0, sessionName, &sessionProps, EVENT_TRACE_CONTROL_STOP);
 }
 
-
-ULONG TraceSession::CheckLostReports(ULONG* eventsLost, ULONG* buffersLost) const
+double PMTraceSession::QpcDeltaToMilliSeconds(uint64_t qpcDelta) const
 {
-    TraceProperties sessionProps = {};
-    sessionProps.Wnode.BufferSize = (ULONG) sizeof(TraceProperties);
-    sessionProps.LoggerNameOffset = offsetof(TraceProperties, mSessionName);
+    return mMilliSecondsPerQpc * qpcDelta;
+}
 
-    auto status = ControlTraceW(mSessionHandle, nullptr, &sessionProps, EVENT_TRACE_CONTROL_QUERY);
-    *eventsLost = sessionProps.EventsLost;
-    *buffersLost = sessionProps.RealTimeBuffersLost;
-    return status;
+double PMTraceSession::QpcDeltaToUnsignedMilliSeconds(uint64_t qpcFrom, uint64_t qpcTo) const
+{
+    return qpcFrom == 0 || qpcTo <= qpcFrom ? 0.0 : QpcDeltaToMilliSeconds(qpcTo - qpcFrom);
+}
+
+double PMTraceSession::QpcDeltaToMilliSeconds(uint64_t qpcFrom, uint64_t qpcTo) const
+{
+    return qpcFrom == 0 || qpcTo == 0 || qpcFrom == qpcTo ? 0.0 :
+        qpcTo > qpcFrom ? QpcDeltaToMilliSeconds(qpcTo - qpcFrom) :
+                         -QpcDeltaToMilliSeconds(qpcFrom - qpcTo);
+}
+
+uint64_t PMTraceSession::MilliSecondsDeltaToQpc(double millisecondsDelta) const
+{
+    return (uint64_t) (millisecondsDelta * mQpcPerMilliSecond);
+}
+
+double PMTraceSession::QpcToMilliSeconds(uint64_t qpc) const
+{
+    return QpcDeltaToMilliSeconds(qpc - mStartQpc.QuadPart);
+}
+
+void PMTraceSession::QpcToLocalSystemTime(uint64_t qpc, SYSTEMTIME* st, uint64_t* ns) const
+{
+    double   delta100nsd = QpcDeltaToMilliSeconds(mStartQpc.QuadPart, qpc) * 10000.0;
+    uint64_t delta100nsu = (uint64_t) delta100nsd;
+
+    uint64_t num100nsSinceEpoch = (*(uint64_t*) &mStartTime) + delta100nsu;
+
+    FileTimeToSystemTime((FILETIME const*) &num100nsSinceEpoch, st);
+
+    *ns = ((uint64_t) (delta100nsd * 100.0 + 0.5)) - delta100nsu;
 }
