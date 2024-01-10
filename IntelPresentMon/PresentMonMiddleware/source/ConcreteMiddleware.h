@@ -22,38 +22,34 @@ namespace pmon::mid
 	};
 
 	struct fpsSwapChainData {
-		std::vector<double> displayed_fps;
-		std::vector<double> frame_times_ms;
-		std::vector<double> gpu_sum_ms;
-		std::vector<double> cpu_busy_ms;
-		std::vector<double> cpu_wait_ms;
-		std::vector<double> display_busy_ms;
-		std::vector<double> dropped;
-		std::vector<double> allowsTearing;
+        // Per-frame metrics:
+        std::vector<uint64_t> CPUFrameQPC;
+		std::vector<double> CPUDuration;
+		std::vector<double> CPUFramePacingStall;
+		std::vector<double> GPULatency;
+		std::vector<double> GPUWait;
+		std::vector<double> GPUBusy;
+		std::vector<double> DisplayLatency;
+		std::vector<double> DisplayDuration;
+		std::vector<double> InputLatency;
 
-		uint64_t present_start_0 = 0;             // The first frame's PresentStartTime (qpc)
-		uint64_t present_start_n = 0;             // The last frame's PresentStartTime (qpc)
-		uint64_t present_stop_0 = 0;             // The first frame's PresentStopTime (qpc)
-		uint64_t gpu_duration_0 = 0;             // The first frame's GPUDuration (qpc)
+        // begin/end screen times to optimize average calculation:
 		uint64_t display_n_screen_time = 0;       // The last presented frame's ScreenTime (qpc)
 		uint64_t display_0_screen_time = 0;       // The first presented frame's ScreenTime (qpc)
-		uint64_t display_1_screen_time = 0;       // The second presented frame's ScreenTime (qpc)
 		uint32_t display_count = 0;               // The number of presented frames
-		uint32_t num_presents = 0;                // The number of frames
-		bool     displayed_0 = false;             // Whether the first frame was displayed
-		std::string applicationName;
 
 		// Properties of the most-recent processed frame:
-		int32_t sync_interval = 0;
-		PM_PRESENT_MODE present_mode = PM_PRESENT_MODE_UNKNOWN;
-		PM_GRAPHICS_RUNTIME runtime = PM_GRAPHICS_RUNTIME_UNKNOWN;
-		uint64_t frameQpc = 0;
+        uint64_t    mCPUFrameQPC = 0;
+        PresentMode mPresentMode = PresentMode::Unknown;
+        Runtime     mPresentRuntime = Runtime::Other;
+        int32_t     mPresentSyncInterval = 0;
+        uint32_t    mPresentFlags = 0;
+        bool        mPresentInfoValid = false;
+		std::string applicationName;
+		bool allows_tearing = false;
 
-		// Only used by GetGfxLatencyData():
-		std::vector<double> render_latency_ms;
-		std::vector<double> display_latency_ms;
-		uint64_t render_latency_sum = 0;
-		uint64_t display_latency_sum = 0;
+        // Pending presents waiting for the next displayed present.
+        std::vector<PmNsmPresentEvent> mPendingPresents;
 	};
 
 	struct DeviceInfo
