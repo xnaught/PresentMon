@@ -471,8 +471,7 @@ void PmFrameGenerator::GeneratePresentData() {
     pmft_frames_[i].ms_in_present_api =
         GetAlteredTimingValue(
         in_present_api_ms_, in_present_api_variation_ms_);
-    frames_[i].present_event.PresentStopTime =
-        frames_[i].present_event.PresentStartTime +
+    frames_[i].present_event.TimeInPresent =
         SecondsDeltaToQpc(pmft_frames_[i].ms_in_present_api / 1000.,
                           qpc_frequency_);
     pmft_frames_[i].ms_until_render_start = GetAlteredTimingValue(

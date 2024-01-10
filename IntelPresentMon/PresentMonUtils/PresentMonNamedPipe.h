@@ -1,10 +1,10 @@
 /*
- *
- * Copyright (C) 2021 Intel Corporation
- *
- * SPDX-License-Identifier: MIT
- *
- *
+ï¿½*
+ï¿½* Copyright (C) 2021 Intel Corporation
+ï¿½*
+ï¿½* SPDX-License-Identifier: MIT
+ï¿½*
+ï¿½*
  * File Name:  PresentMonNamedPipe.h
  *
  * Abstract:   Header for Intel PresentMon Named Pipe IPC
@@ -111,8 +111,7 @@ struct PmNsmPresentEvent {
                               // Present (D3D9, DXGI, or DXGK Present_Start)
   uint32_t ProcessId;         // ID of the process that presented
   uint32_t ThreadId;          // ID of the thread that presented
-  uint64_t
-      PresentStopTime;    // QPC duration between runtime present start and end
+  uint64_t TimeInPresent;     // QPC duration between runtime present start and end
   uint64_t GPUStartTime;  // QPC value when the frame's first DMA packet started
   uint64_t ReadyTime;    // QPC value when the frame's last DMA packet completed
 
@@ -162,7 +161,6 @@ struct PmNsmPresentEvent {
   bool WaitForMPOFlipEvent;
   bool SeenDxgkPresent;
   bool SeenWin32KEvents;
-  bool DwmNotified;
   bool SeenInFrameEvent;   // This present has gotten a Win32k TokenStateChanged
                            // event into InFrame state
   bool GpuFrameCompleted;  // This present has already seen an event that caused

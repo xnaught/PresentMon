@@ -366,7 +366,7 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
     // Save current frame's properties into swap_chain (the new first frame)
     swap_chain->displayed_0    = frame_data->present_event.FinalState == PresentResult::Presented;
     swap_chain->cpu_0_time     = frame_data->present_event.PresentStartTime;
-    swap_chain->present_stop_0 = frame_data->present_event.PresentStopTime;
+    swap_chain->present_stop_0 = frame_data->present_event.PresentStartTime + frame_data->present_event.TimeInPresent;
     swap_chain->gpu_duration_0 = frame_data->present_event.GPUDuration;
     swap_chain->num_presents   += 1;
 
@@ -396,7 +396,7 @@ PM_STATUS PresentMonClient::GetFramesPerSecondData(uint32_t process_id,
     //                                CPUStart
     //                                CPUBusy------>CPUWait----------------->  GPUBusy--->  DisplayBusy---------------->
     if (swap_chain->num_presents > 1) {
-      auto cpuStart    = frame_data->present_event.PresentStopTime;
+      auto cpuStart    = frame_data->present_event.PresentStartTime + frame_data->present_event.TimeInPresent;
       auto cpuBusy     = nextFramePresentStartTime - cpuStart;
       auto cpuWait     = nextFramePresentStopTime - nextFramePresentStartTime;
       auto gpuBusy     = nextFrameGPUDuration;

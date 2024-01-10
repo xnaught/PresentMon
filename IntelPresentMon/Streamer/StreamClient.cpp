@@ -255,15 +255,9 @@ void StreamClient::CopyFrameData(uint64_t start_qpc,
   dst_frame->time_in_seconds = QpcDeltaToSeconds(
       src_frame->present_event.PresentStartTime - start_qpc, GetQpcFrequency());
 
-  if (src_frame->present_event.PresentStopTime <
-      src_frame->present_event.PresentStartTime) {
-    dst_frame->ms_in_present_api = 0.;
-  } else {
-    dst_frame->ms_in_present_api =
-        QpcDeltaToMs(src_frame->present_event.PresentStopTime -
-                         src_frame->present_event.PresentStartTime,
+  dst_frame->ms_in_present_api =
+        QpcDeltaToMs(src_frame->present_event.TimeInPresent,
                      GetQpcFrequency());
-  }
 
   dst_frame->allows_tearing = src_frame->present_event.SupportsTearing;
   dst_frame->present_mode =

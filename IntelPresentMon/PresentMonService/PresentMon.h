@@ -11,7 +11,7 @@
 #include "../ControlLib/CpuTelemetry.h"
 #include "../Streamer/Streamer.h"
 #include "../../PresentData/PresentMonTraceConsumer.hpp"
-#include "../../PresentData/TraceSession.hpp"
+#include "../../PresentData/PresentMonTraceSession.hpp"
 #include "PowerTelemetryContainer.h"
 
 
@@ -111,7 +111,7 @@ class PresentMonSession {
   std::string pm_session_name_;
 
   std::unique_ptr<PMTraceConsumer> pm_consumer_;
-  TraceSession trace_session_;
+  PMTraceSession trace_session_;
 
   std::thread consumer_thread_;
   std::thread output_thread_;
