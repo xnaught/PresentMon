@@ -383,7 +383,7 @@ namespace pmon::mid
             case PM_METRIC_SYNC_INTERVAL:
             case PM_METRIC_ALLOWS_TEARING:
             case PM_METRIC_NUM_FRAMES:
-            case PM_METRIC_FRAME_TIME:
+            //case PM_METRIC_FRAME_TIME:
             case PM_METRIC_FRAME_QPC:
             case PM_METRIC_CPU_BUSY_TIME:
             case PM_METRIC_CPU_WAIT_TIME:
@@ -394,7 +394,7 @@ namespace pmon::mid
             case PM_METRIC_DISPLAY_BUSY_TIME:
             case PM_METRIC_INPUT_LATENCY:
             case PM_METRIC_FRAME_DURATION:
-            case PM_METRIC_CPU_FPS:
+            case PM_METRIC_PRESENTED_FPS:
             case PM_METRIC_DISPLAYED_FPS:
             case PM_METRIC_DROPPED_FRAMES:
                 pQuery->accumFpsData = true;
@@ -1055,7 +1055,7 @@ void ReportMetrics(
                 CalculateMetric(output, frame_times_ms, element.stat, true); // Invert the notion of min/max to match PM_METRIC_CPU_FPS
             }
             break;
-        case PM_METRIC_CPU_FPS:
+        case PM_METRIC_PRESENTED_FPS:
             if (element.stat == PM_STAT_AVG)
             {
                 if (swapChain.CPUFrameQPC.size() > 0)
@@ -1572,7 +1572,7 @@ void ReportMetrics(
                 }
                     break;
 
-                case PM_METRIC_FRAME_TIME:
+                //case PM_METRIC_FRAME_TIME:
                 case PM_METRIC_FRAME_QPC:
                 case PM_METRIC_PRESENT_MODE:
                 case PM_METRIC_PRESENT_RUNTIME:
@@ -1589,7 +1589,7 @@ void ReportMetrics(
                 case PM_METRIC_DISPLAY_BUSY_TIME:
                 case PM_METRIC_INPUT_LATENCY:
                 case PM_METRIC_FRAME_DURATION:
-                case PM_METRIC_CPU_FPS:
+                case PM_METRIC_PRESENTED_FPS:
                 case PM_METRIC_DISPLAYED_FPS:
                 case PM_METRIC_DROPPED_FRAMES:
                     CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
