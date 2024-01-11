@@ -44,7 +44,7 @@ PM_STATUS PresentMonSession::StartTraceSession() {
   pm_consumer_->mFilteredProcessIds = filterProcessIds;
   pm_consumer_->mTrackDisplay = true;
   pm_consumer_->mTrackGPU = true;
-  pm_consumer_->mTrackGPUVideo = true;
+  pm_consumer_->mTrackGPUVideo = false;
   pm_consumer_->mTrackInput = true;
 
   const wchar_t* etl_file_name = nullptr;
