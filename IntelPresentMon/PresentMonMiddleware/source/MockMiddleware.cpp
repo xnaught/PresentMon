@@ -124,7 +124,7 @@ namespace pmon::mid
 			// TODO: more specific exception
 			throw std::runtime_error{ "dynamic metric in static query poll" };
 		}
-		if (element.metric == PM_METRIC_PROCESS_NAME) {
+		if (element.metric == PM_METRIC_APPLICATION) {
 			strcpy_s(reinterpret_cast<char*>(pBlob), 260, "dota2.exe");
 		}
 		else {

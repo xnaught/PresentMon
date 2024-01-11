@@ -637,7 +637,7 @@ void PollMetrics(uint32_t processId, double metricsOffset)
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_MODE, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_RUNTIME, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_QPC, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FRAME_QPC, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_SYNC_INTERVAL, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_NUM_FRAMES, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_DROPPED_FRAMES, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
@@ -705,7 +705,7 @@ void PollMetrics(uint32_t processId, double metricsOffset)
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_MODE, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_RUNTIME, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_QPC, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
+        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FRAME_QPC, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_SYNC_INTERVAL, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_NUM_FRAMES, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_DROPPED_FRAMES, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
@@ -720,7 +720,7 @@ void PollMetrics(uint32_t processId, double metricsOffset)
     uint32_t numSwapChains = 1;
 
 
-    PM_QUERY_ELEMENT staticQueryElement{ .metric = PM_METRIC_PROCESS_NAME, .deviceId = 0, .arrayIndex = 0 };
+    PM_QUERY_ELEMENT staticQueryElement{ .metric = PM_METRIC_APPLICATION, .deviceId = 0, .arrayIndex = 0 };
     auto processName = std::make_unique<uint8_t[]>(260);
     pmPollStaticQuery(g_hSession, &staticQueryElement, processId, processName.get());
     staticQueryElement = { .metric = PM_METRIC_CPU_VENDOR, .deviceId = 0, .arrayIndex = 0 };
@@ -1038,7 +1038,7 @@ int main(int argc, char* argv[])
         PM_QUERY_ELEMENT queryElements[]{
             { PM_METRIC_GPU_POWER, PM_STAT_NONE, 1, 0 },
             { PM_METRIC_PRESENT_MODE, PM_STAT_NONE, 0, 0 },
-            { PM_METRIC_FRAME_QPC, PM_STAT_NONE, 0, 0 },
+            { PM_METRIC_CPU_FRAME_QPC, PM_STAT_NONE, 0, 0 },
         };
 
         PM_FRAME_QUERY_HANDLE hEventQuery = nullptr;

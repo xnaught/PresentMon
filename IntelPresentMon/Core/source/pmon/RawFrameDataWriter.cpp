@@ -140,7 +140,7 @@ namespace p2c::pmon
         }
         void WriteHeader(std::ostream& out)
         {
-            out << "ProcessName,ProcessID";
+            out << "Application,ProcessID";
             for (const auto& pAnno : annotationPtrs_) {
                 out << ',' << pAnno->columnName;
             }
@@ -167,7 +167,7 @@ namespace p2c::pmon
         const uint32_t activeDeviceId = 1;
 
         std::array queryElements{
-            Element{.metricId = PM_METRIC_SWAP_CHAIN, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_SWAP_CHAIN_ADDRESS, .deviceId = 0 },
             Element{.metricId = PM_METRIC_PRESENT_RUNTIME, .deviceId = 0 },
             Element{.metricId = PM_METRIC_SYNC_INTERVAL, .deviceId = 0 },
             Element{.metricId = PM_METRIC_PRESENT_FLAGS, .deviceId = 0 },
@@ -184,7 +184,7 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_GPU_BUSY_TIME, .deviceId = 0 },
             Element{.metricId = PM_METRIC_GPU_VIDEO_BUSY_TIME, .deviceId = 0 },
             Element{.metricId = PM_METRIC_TIME_SINCE_INPUT, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_FRAME_QPC, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_CPU_FRAME_QPC, .deviceId = 0 },
 
             Element{.metricId = PM_METRIC_GPU_POWER, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_VOLTAGE, .deviceId = activeDeviceId },

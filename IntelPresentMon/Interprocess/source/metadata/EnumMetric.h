@@ -3,7 +3,7 @@
 
 // enum annotation (enum_name_fragment, key_name_fragment, name, short_name, description)
 #define ENUM_KEY_LIST_METRIC(X_) \
-		X_(METRIC, SWAP_CHAIN, "Swap Chain Address", "", "Address of the swap chain used to present, useful as a unique identifier") \
+		X_(METRIC, SWAP_CHAIN_ADDRESS, "Swap Chain Address", "", "Address of the swap chain used to present, useful as a unique identifier") \
 		X_(METRIC, DISPLAYED_FPS, "Displayed FPS", "", "Rate of frame change measurable at display") \
 		X_(METRIC, PRESENTED_FPS, "Presented FPS", "", "Rate of application calls to a Present() function") \
 		X_(METRIC, FRAME_DURATION, "Frame Duration", "", "The total amount of time in between frames on the CPU") \
@@ -17,7 +17,7 @@
 		X_(METRIC, SYNC_INTERVAL, "Sync Interval", "", "The application's requested interval between presents measured in vertical sync/vblank events") \
 		X_(METRIC, PRESENT_MODE, "Present Mode", "", "Method used to present the frame") \
 		X_(METRIC, PRESENT_RUNTIME, "Present Runtime", "", "The graphics runtime used for the present operation (DXGI, D3D9, etc.)") \
-		X_(METRIC, FRAME_QPC, "Frame QPC Timestamp", "", "The QueryPerformanceCounter timestamp when the CPU started working on the frame") \
+		X_(METRIC, CPU_FRAME_QPC, "CPU Frame QPC", "", "The QueryPerformanceCounter timestamp when the CPU started working on the frame") \
 		X_(METRIC, ALLOWS_TEARING, "Allows Tearing", "", "Indicates if the frame allows tearing") \
 		X_(METRIC, GPU_LATENCY, "GPU Latency", "", "How long it took until GPU work for this frame started") \
 		X_(METRIC, DISPLAY_LATENCY, "Display Latency", "", "Time between frame submission and scan out to display") \
@@ -61,7 +61,7 @@
 		X_(METRIC, GPU_MEM_SIZE, "GPU Memory Size", "", "Size of the GPU memory") \
 		X_(METRIC, GPU_MEM_MAX_BANDWIDTH, "GPU Memory Max Bandwidth", "", "Maximum total GPU memory bandwidth") \
 		X_(METRIC, CPU_POWER_LIMIT, "CPU Power Limit", "", "Power limit of the CPU") \
-		X_(METRIC, PROCESS_NAME, "Process Name", "", "Name of the process being targetted") \
+		X_(METRIC, APPLICATION, "Application", "", "Name of the executable of the process being targetted") \
 		X_(METRIC, GPU_VENDOR, "GPU Vendor", "", "Vendor name of the GPU") \
 		X_(METRIC, GPU_NAME, "GPU Name", "", "Device name of the GPU") \
 		X_(METRIC, CPU_VENDOR, "CPU Vendor", "", "Vendor name of the CPU") \

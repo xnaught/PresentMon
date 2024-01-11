@@ -24,7 +24,7 @@ namespace p2c::pmon::met
         if (type == PM_DATA_TYPE_STRING || type == PM_DATA_TYPE_ENUM) {
             numeric = false;
         }
-        if (metricId == PM_METRIC_SWAP_CHAIN) {
+        if (metricId == PM_METRIC_SWAP_CHAIN_ADDRESS) {
             numeric = false;
         }
         if (metric.GetUnit() != metric.GetPreferredUnitHint()) {

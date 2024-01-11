@@ -375,8 +375,8 @@ namespace pmon::mid
 
             auto metricView = ispec.FindMetric(qe.metric);
             switch (qe.metric) {
-            case PM_METRIC_PROCESS_NAME:
-            case PM_METRIC_SWAP_CHAIN:
+            case PM_METRIC_APPLICATION:
+            case PM_METRIC_SWAP_CHAIN_ADDRESS:
             case PM_METRIC_PRESENT_MODE:
             case PM_METRIC_PRESENT_RUNTIME:
             case PM_METRIC_PRESENT_FLAGS:
@@ -384,7 +384,7 @@ namespace pmon::mid
             case PM_METRIC_ALLOWS_TEARING:
             case PM_METRIC_NUM_FRAMES:
             //case PM_METRIC_FRAME_TIME:
-            case PM_METRIC_FRAME_QPC:
+            case PM_METRIC_CPU_FRAME_QPC:
             case PM_METRIC_CPU_BUSY_TIME:
             case PM_METRIC_CPU_WAIT_TIME:
             case PM_METRIC_GPU_LATENCY:
@@ -838,7 +838,7 @@ void ReportMetrics(
             output = cachedGpuInfo[element.deviceId].deviceVendor;
         }
         break;
-        case PM_METRIC_PROCESS_NAME:
+        case PM_METRIC_APPLICATION:
             strcpy_s(reinterpret_cast<char*>(pBlob), elementSize, GetProcessName(processId).c_str());
             break;
         case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
@@ -968,7 +968,7 @@ void ReportMetrics(
 
         switch (element.metric)
         {
-        case PM_METRIC_PROCESS_NAME:
+        case PM_METRIC_APPLICATION:
             strcpy_s(reinterpret_cast<char*>(&pBlob[element.dataOffset]), 260, swapChain.applicationName.c_str());
             break;
         case PM_METRIC_PRESENT_MODE:
@@ -1568,7 +1568,7 @@ void ReportMetrics(
             for (auto& qe : pQuery->elements) {
                 switch (qe.metric)
                 {
-                case PM_METRIC_SWAP_CHAIN:
+                case PM_METRIC_SWAP_CHAIN_ADDRESS:
                 {
                     auto& output = reinterpret_cast<uint64_t&>(pBlob[qe.dataOffset]);
                     output = pair.first;
@@ -1576,7 +1576,7 @@ void ReportMetrics(
                     break;
 
                 //case PM_METRIC_FRAME_TIME:
-                case PM_METRIC_FRAME_QPC:
+                case PM_METRIC_CPU_FRAME_QPC:
                 case PM_METRIC_PRESENT_MODE:
                 case PM_METRIC_PRESENT_RUNTIME:
                 case PM_METRIC_PRESENT_FLAGS:

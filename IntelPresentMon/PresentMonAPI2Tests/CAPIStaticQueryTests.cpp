@@ -27,7 +27,7 @@ namespace PresentMonAPI2Mock
 		}
 		TEST_METHOD(PollStaticMetricString)
 		{
-			PM_QUERY_ELEMENT element{ .metric = PM_METRIC_PROCESS_NAME, .deviceId = 0, .arrayIndex = 0 };
+			PM_QUERY_ELEMENT element{ .metric = PM_METRIC_APPLICATION, .deviceId = 0, .arrayIndex = 0 };
 			auto pBlob = std::make_unique<uint8_t[]>(260);
 			Assert::AreEqual(PM_STATUS_SUCCESS, pmPollStaticQuery(hSession_, &element, 4004, pBlob.get()));
 			Assert::AreEqual("dota2.exe", (const char*)pBlob.get());

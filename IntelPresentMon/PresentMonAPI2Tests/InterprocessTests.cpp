@@ -435,7 +435,7 @@ namespace PresentMonAPI2Mock
 				}
 				{
 					Assert::AreEqual("Dynamic and Frame Event Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).IntrospectType().GetName());
-					Assert::AreEqual("Static Metric"s, data->FindMetric(PM_METRIC_PROCESS_NAME).IntrospectType().GetName());
+					Assert::AreEqual("Static Metric"s, data->FindMetric(PM_METRIC_APPLICATION).IntrospectType().GetName());
 				}
 			}
 

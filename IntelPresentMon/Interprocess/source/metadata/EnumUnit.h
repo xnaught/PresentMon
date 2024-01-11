@@ -16,7 +16,7 @@
 		X_(UNIT, MILLIWATTS, "Milliwatts", "mW", "Power in milliwatts (millijoules per second)") \
 		X_(UNIT, WATTS, "Watts", "W", "Power in watts (Joules per second)") \
 		X_(UNIT, KILOWATTS, "Kilowatts", "kW", "Power in kilowatts (kilojoules per second)") \
-		X_(UNIT, SYNC_INTERVAL, "Sync Intervals", "vblk", "Value indicating a count/duration of display vsync intervals (also known as vertical blanks)") \
+		X_(UNIT, VERTICAL_BLANKS, "Vertical Blanks", "vblk", "A count of vertical blanks (hardware display updates)") \
 		X_(UNIT, MILLIVOLTS, "Millivolts", "mV", "Electric potential 0.001 V") \
 		X_(UNIT, VOLTS, "Volts", "V", "Electric potential") \
 		X_(UNIT, HERTZ, "Hertz", "Hz", "Frequency in cycles per second") \

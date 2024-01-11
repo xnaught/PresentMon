@@ -68,7 +68,7 @@ namespace PresentMonAPI2Mock
 		{
 			PM_DYNAMIC_QUERY_HANDLE q = nullptr;
 			PM_QUERY_ELEMENT elements[]{
-				PM_QUERY_ELEMENT{.metric = PM_METRIC_PROCESS_NAME, .deviceId = 0, .arrayIndex = 0},
+				PM_QUERY_ELEMENT{.metric = PM_METRIC_APPLICATION, .deviceId = 0, .arrayIndex = 0},
 			};
 			Assert::AreEqual(PM_STATUS_FAILURE, pmRegisterDynamicQuery(hSession_, &q, elements, std::size(elements), 1000.));
 			Assert::IsNull(q);
