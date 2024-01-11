@@ -59,5 +59,4 @@ class StreamClient {
   bool recording_frame_data_;
   uint64_t current_dequeue_frame_num_;
   bool is_etl_stream_client_;
-  mutable std::mutex dequeue_index_mutex_;
 };

@@ -172,7 +172,6 @@ uint64_t StreamClient::PeekNextDisplayedQpc()
         }
 
         PmNsmFrameData* pNsmData = nullptr;
-        std::lock_guard<std::mutex> lock(dequeue_index_mutex_);
         uint64_t peekIndex = next_dequeue_idx_;
         pNsmData = ReadFrameByIdx(peekIndex);
         while (pNsmData) {
@@ -202,8 +201,6 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         // Service destroyed the named shared memory.
         return PM_STATUS::PM_STATUS_INVALID_PID;
     }
-
-    std::lock_guard<std::mutex> lock(dequeue_index_mutex_);
 
     if (recording_frame_data_ == false) {
         // Get the current number of frames written and set it as the current
