@@ -23,12 +23,26 @@ public:
 		// functions
 		Context(uint64_t qpcStart, long long perfCounterFrequency) : qpcStart{ qpcStart },
 			performanceCounterPeriodMs{ 1000.0 / perfCounterFrequency } {}
-		void UpdateSourceData(const PmNsmFrameData* pSourceFrameData_in, uint64_t nextDisplayedQpcIncoming = 0)
+		void UpdateSourceData(const PmNsmFrameData* pSourceFrameData_in,
+			const PmNsmFrameData* pNextDisplayedFrameData,
+			const PmNsmFrameData* pPreviousFrameData)
 		{
 			pSourceFrameData = pSourceFrameData_in;
 			dropped = pSourceFrameData->present_event.FinalState != PresentResult::Presented;
-			cpuFrameQpc = pSourceFrameData->present_event.PresentStartTime + pSourceFrameData->present_event.TimeInPresent;
-			nextDisplayedQpc = nextDisplayedQpcIncoming;
+			if (pPreviousFrameData) {
+				cpuFrameQpc = pPreviousFrameData->present_event.PresentStartTime + pPreviousFrameData->present_event.TimeInPresent;
+			}
+			else {
+				// TODO: log issue or invalidate related columns or drop frame (or some combination)
+				cpuFrameQpc = 0;
+			}
+			if (pNextDisplayedFrameData) {
+				nextDisplayedQpc = pNextDisplayedFrameData->present_event.ScreenTime;
+			}
+			else {
+				// TODO: log issue or invalidate related columns or drop frame (or some combination)
+				nextDisplayedQpc = 0;
+			}
 		}
 		// data
 		const PmNsmFrameData* pSourceFrameData = nullptr;

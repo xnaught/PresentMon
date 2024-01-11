@@ -36,7 +36,8 @@ class StreamClient {
                      CpuTelemetryBitset cpu_telemetry_cap_bits,
                      PM_FRAME_DATA* dst_frame);
   // While capturing frame data search for the NEXT frame that is displayed
-  uint64_t PeekNextDisplayedQpc();
+  const PmNsmFrameData* PeekNextDisplayedFrame();
+  const PmNsmFrameData* PeekPreviousFrame();
 
   std::optional<std::bitset<
       static_cast<size_t>(GpuTelemetryCapBits::gpu_telemetry_count)>>

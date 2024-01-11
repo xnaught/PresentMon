@@ -951,7 +951,9 @@ void ReportMetrics(
             }
 
             // if we make it here, we have a ptr to frame data in nsm, time to gather to blob
-            ctx.UpdateSourceData(pNsmFrameData, pShmClient->PeekNextDisplayedQpc());
+            ctx.UpdateSourceData(pNsmFrameData,
+                pShmClient->PeekNextDisplayedFrame(),
+                pShmClient->PeekPreviousFrame());
             pQuery->GatherToBlob(ctx, pBlob);
             pBlob += pQuery->GetBlobSize();
             frames_copied++;

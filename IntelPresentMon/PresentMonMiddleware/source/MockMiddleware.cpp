@@ -202,7 +202,8 @@ namespace pmon::mid
 		const auto blobSize = pQuery->GetBlobSize();
 		PM_FRAME_QUERY::Context ctx{ 0ull, 0ll };
 		for (uint32_t i = 0; i < numFramesToProcess; i++) {
-			ctx.UpdateSourceData(&frames.front());
+			// TODO: feed actual prev/next frames into this function
+			ctx.UpdateSourceData(&frames.front(), nullptr, nullptr);
 			pQuery->GatherToBlob(ctx, pBlob);
 			frames.pop_front();
 			pBlob += blobSize;

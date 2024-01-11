@@ -161,28 +161,50 @@ PM_STATUS StreamClient::RecordFrame(PM_FRAME_DATA** out_frame_data) {
   }
 }
 
-uint64_t StreamClient::PeekNextDisplayedQpc()
+const PmNsmFrameData* StreamClient::PeekNextDisplayedFrame()
 {
     if (recording_frame_data_) {
         auto nsm_view = GetNamedSharedMemView();
         auto nsm_hdr = nsm_view->GetHeader();
         if (!nsm_hdr->process_active) {
             // Service destroyed the named shared memory.
-            return PM_STATUS::PM_STATUS_INVALID_PID;
+            return nullptr;
         }
 
-        PmNsmFrameData* pNsmData = nullptr;
+        const PmNsmFrameData* pNsmData = nullptr;
         uint64_t peekIndex = next_dequeue_idx_;
         pNsmData = ReadFrameByIdx(peekIndex);
         while (pNsmData) {
             if (pNsmData->present_event.ScreenTime != 0) {
-                return pNsmData->present_event.ScreenTime;
+                return pNsmData;
             }
+            // advance to next frame with circular buffer wrapping behavior
             peekIndex = (peekIndex + 1) % nsm_view->GetHeader()->max_entries;
             pNsmData = ReadFrameByIdx(peekIndex);
         }
     }
-    return 0;
+    return nullptr;
+}
+
+const PmNsmFrameData* StreamClient::PeekPreviousFrame()
+{
+    if (recording_frame_data_) {
+        auto nsm_view = GetNamedSharedMemView();
+        auto nsm_hdr = nsm_view->GetHeader();
+        if (!nsm_hdr->process_active) {
+            // Service destroyed the named shared memory.
+            return nullptr;
+        }
+        if (next_dequeue_idx_ < 2) {
+            // too early in frame data to get previous frame
+            return nullptr;
+        }
+
+        // previous idx is 2 before next (not sure what current_dequeue_frame_num_ indicates)
+        const uint64_t peekIndex = next_dequeue_idx_ - 2;
+        return ReadFrameByIdx(peekIndex);
+    }
+    return nullptr;
 }
 
 PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData)
