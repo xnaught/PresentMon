@@ -64,17 +64,23 @@ namespace p2c::pmon
     {
         const auto metric = introRoot.FindMetric(metricId);
         const auto typeId = metric.GetDataTypeInfo().GetFrameType();
+        std::unique_ptr<Annotation_> pAnnotation;
         switch (typeId) {
-        case PM_DATA_TYPE_BOOL: return std::make_unique<TypedAnnotation_<bool>>();
-        case PM_DATA_TYPE_INT32: return std::make_unique<TypedAnnotation_<int32_t>>();
-        case PM_DATA_TYPE_UINT32: return std::make_unique<TypedAnnotation_<uint32_t>>();
-        case PM_DATA_TYPE_UINT64: return std::make_unique<TypedAnnotation_<uint64_t>>();
-        case PM_DATA_TYPE_DOUBLE: return std::make_unique<TypedAnnotation_<double>>();
-        case PM_DATA_TYPE_STRING: return std::make_unique<TypedAnnotation_<const char*>>();
-        case PM_DATA_TYPE_ENUM: return std::make_unique<TypedAnnotation_<PM_ENUM>>(
-                metric.GetDataTypeInfo().GetEnumId());
-        default: return std::make_unique<TypedAnnotation_<void>>();
+        case PM_DATA_TYPE_BOOL: pAnnotation = std::make_unique<TypedAnnotation_<bool>>(); break;
+        case PM_DATA_TYPE_INT32: pAnnotation = std::make_unique<TypedAnnotation_<int32_t>>(); break;
+        case PM_DATA_TYPE_UINT32: pAnnotation = std::make_unique<TypedAnnotation_<uint32_t>>(); break;
+        case PM_DATA_TYPE_UINT64: pAnnotation = std::make_unique<TypedAnnotation_<uint64_t>>(); break;
+        case PM_DATA_TYPE_DOUBLE: pAnnotation = std::make_unique<TypedAnnotation_<double>>(); break;
+        case PM_DATA_TYPE_STRING: pAnnotation = std::make_unique<TypedAnnotation_<const char*>>(); break;
+        case PM_DATA_TYPE_ENUM: pAnnotation = std::make_unique<TypedAnnotation_<PM_ENUM>>(
+                metric.GetDataTypeInfo().GetEnumId()); break;
+        default: pAnnotation = std::make_unique<TypedAnnotation_<void>>(); break;
         }
+        // remove spaces from metric name
+        pAnnotation->columnName = metric.Introspect().GetName() |
+            std::views::filter([](char c) { return c != ' '; }) |
+            std::ranges::to<std::basic_string>();
+        return pAnnotation;
     }
 
     class QueryElementContainer_
@@ -106,11 +112,6 @@ namespace p2c::pmon
                     // void annotation means Not Available
                     annotationPtrs_.push_back(std::make_unique<TypedAnnotation_<void>>());
                 }
-                // doing the name composition here instead of in MakeTyped to work around compiler bug
-                // remove space from metric name
-                annotationPtrs_.back()->columnName = metric.Introspect().GetName() |
-                    std::views::filter([](char c) { return c != ' '; }) |
-                    std::ranges::to<std::basic_string>();
                 // append index if array metric
                 if (el.index.has_value()) {
                     annotationPtrs_.back()->columnName += std::format("[{}]", *el.index);
