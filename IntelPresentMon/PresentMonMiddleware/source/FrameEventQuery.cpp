@@ -6,6 +6,7 @@
 #include "../../CommonUtilities/source/Meta.h"
 #include <algorithm>
 #include <cstddef>
+#include <limits>
 
 using namespace pmon;
 using Context = PM_FRAME_QUERY::Context;
@@ -133,13 +134,16 @@ namespace
 			static_assert(!allowNegative || !clampZero);
 			if constexpr (doDroppedCheck) {
 				if (ctx.dropped) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
 					return;
 				}
 			}
 			uint64_t start = ctx.pSourceFrameData->present_event.*pStart;
 			if constexpr (doZeroCheck) {
 				if (start == 0ull) {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
 					return;
 				}
 			}
@@ -263,6 +267,8 @@ namespace
 		{
 			if constexpr (doDroppedCheck) {
 				if (ctx.dropped) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
 					return;
 				}
 			}
@@ -299,6 +305,8 @@ namespace
 		{
 			if constexpr (doDroppedCheck) {
 				if (ctx.dropped) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
 					return;
 				}
 			}

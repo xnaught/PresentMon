@@ -28,6 +28,15 @@ namespace p2c::pmon
             if constexpr (std::same_as<T, const char*>) {
                 out << reinterpret_cast<T>(pBytes);
             }
+            else if constexpr (std::floating_point<T>) {
+                const auto val = *reinterpret_cast<const T*>(pBytes);
+                if (std::isnan(val)) {
+                    out << "NA";
+                }
+                else {
+                    out << val;
+                }
+            }
             else {
                 out << *reinterpret_cast<const T*>(pBytes);
             }
