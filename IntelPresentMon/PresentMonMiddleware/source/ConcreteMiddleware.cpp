@@ -397,6 +397,10 @@ namespace pmon::mid
             case PM_METRIC_PRESENTED_FPS:
             case PM_METRIC_DISPLAYED_FPS:
             case PM_METRIC_DROPPED_FRAMES:
+            case PM_METRIC_CPU_DURATION:
+            case PM_METRIC_CPU_FRAME_PACING_STALL:
+            case PM_METRIC_GPU_DURATION:
+            case PM_METRIC_DISPLAY_DURATION:
                 pQuery->accumFpsData = true;
                 break;
             case PM_METRIC_GPU_POWER:
@@ -676,6 +680,7 @@ void ReportMetrics(
     chain->GPULatency         .push_back(metrics.mGPULatency);
     chain->GPUWait            .push_back(std::max(0.0, metrics.mGPUDuration - metrics.mGPUBusy));
     chain->GPUBusy            .push_back(metrics.mGPUBusy);
+    chain->GPUDuration        .push_back(metrics.mGPUDuration);
     chain->DisplayLatency     .push_back(metrics.mDisplayLatency);
     chain->DisplayDuration    .push_back(metrics.mDisplayDuration);
     chain->InputLatency       .push_back(metrics.mInputLatency);
@@ -1117,6 +1122,19 @@ void ReportMetrics(
             CalculateMetric(output, dropped, element.stat);
         }
             break;
+        case PM_METRIC_CPU_DURATION:
+            CalculateMetric(output, swapChain.CPUDuration, element.stat, true);
+            break;
+        case PM_METRIC_CPU_FRAME_PACING_STALL:
+            CalculateMetric(output, swapChain.CPUFramePacingStall, element.stat, true);
+            break;
+        case PM_METRIC_GPU_DURATION:
+            CalculateMetric(output, swapChain.GPUDuration, element.stat, true);
+            break;
+        case PM_METRIC_DISPLAY_DURATION:
+            CalculateMetric(output, swapChain.DisplayDuration, element.stat, true);
+            break;
+
         default:
             output = 0.;
             break;
@@ -1595,6 +1613,10 @@ void ReportMetrics(
                 case PM_METRIC_PRESENTED_FPS:
                 case PM_METRIC_DISPLAYED_FPS:
                 case PM_METRIC_DROPPED_FRAMES:
+                case PM_METRIC_CPU_DURATION:
+                case PM_METRIC_CPU_FRAME_PACING_STALL:
+                case PM_METRIC_GPU_DURATION:
+                case PM_METRIC_DISPLAY_DURATION:
                     CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
                     break;
                 case PM_METRIC_CPU_VENDOR:

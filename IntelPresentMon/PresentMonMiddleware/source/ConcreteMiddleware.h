@@ -29,6 +29,7 @@ namespace pmon::mid
 		std::vector<double> GPULatency;
 		std::vector<double> GPUWait;
 		std::vector<double> GPUBusy;
+		std::vector<double> GPUDuration;
 		std::vector<double> DisplayLatency;
 		std::vector<double> DisplayDuration;
 		std::vector<double> InputLatency;
