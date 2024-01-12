@@ -389,7 +389,6 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
 		return std::make_unique<CopyGatherCommand_<&Gpu::gpu_mem_max_bandwidth_bps>>(pos);
 
-
 	case PM_METRIC_SWAP_CHAIN_ADDRESS:
 		return std::make_unique<CopyGatherCommand_<&Pre::SwapChainAddress>>(pos);
 	case PM_METRIC_GPU_BUSY_TIME:
@@ -490,13 +489,20 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_GPU_VIDEO_BUSY_TIME:
 		return std::make_unique<QpcDurationGatherCommand_<&Pre::GPUVideoDuration>>(pos);
 	case PM_METRIC_CPU_DURATION:
-		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::PresentStartTime, 1>>(pos);
+		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::PresentStartTime, 0>>(pos);
 	case PM_METRIC_CPU_FRAME_PACING_STALL:
-		return std::make_unique<CopyGatherCommand_<&Pre::TimeInPresent>>(pos);
+		return std::make_unique<QpcDurationGatherCommand_<&Pre::TimeInPresent>>(pos);
 	case PM_METRIC_GPU_DURATION:
-		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::ReadyTime, 1>>(pos);
+		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::GPUStartTime, &Pre::ReadyTime, 1, 0, 1, 0>>(pos);
 	case PM_METRIC_DISPLAY_DURATION:
-		return std::make_unique< DisplayDifferenceGatherCommand_<&Pre::ScreenTime, 1>>(pos);
+		return std::make_unique<DisplayDifferenceGatherCommand_<&Pre::ScreenTime, 1>>(pos);
+	case PM_METRIC_GPU_LATENCY:
+		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::GPUStartTime, 0>>(pos);
+	case PM_METRIC_DISPLAY_LATENCY:
+		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::ScreenTime, 1>>(pos);
+	case PM_METRIC_INPUT_LATENCY:
+		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::InputTime, &Pre::ScreenTime, 1, 0, 0, 0>>(pos);
+
 	default: return {};
 	}
 }
