@@ -94,7 +94,7 @@ namespace p2c::pmon
             std::optional<uint32_t> index;
         };
         // functions
-        QueryElementContainer_(std::span<const ElementDefinition> elements, uint32_t nBlobsToCreate,
+        QueryElementContainer_(std::span<const ElementDefinition> elements,
             pmapi::Session& session, const pmapi::intro::Root& introRoot)
         {
             for (auto& el : elements) {
@@ -124,29 +124,46 @@ namespace p2c::pmon
                 });
             }
             pQuery = session.RegisterFrameQuery(queryElements_);
-            blobs = pQuery->MakeBlobContainer(nBlobsToCreate);
-        }
-        void WriteFrames(uint32_t pid, const std::string& procName, std::ostream& out)
-        {
-            // continue consuming frames until none are left pending
-            do {
-                pQuery->Consume(pid, *blobs);
-                // loop over populated blobs
-                for (auto pBlob : *blobs) {
-                    // process details are hardcoded here
-                    out << procName << ',' << pid;
-                    // loop over each element (column/field) in a frame of data
-                    for (auto&& [pAnno, query] : std::views::zip(annotationPtrs_, queryElements_)) {
-                        out << ',';
-                        // using output from the query registration of get offset of column's data
-                        const auto pBytes = pBlob + query.dataOffset;
-                        // annotation contains polymorphic info to reinterpret and convert bytes
-                        pAnno->Write(out, pBytes);
-                    }
-                    out << "\n";
+            // populate offset caches for stats tracking extraction
+            for (auto& el : queryElements_) {
+                if (el.metric == PM_METRIC_TIME) {
+                    frameTimeOffset = el.dataOffset;
                 }
-            } while (blobs->AllBlobsPopulated()); // if container filled, means more might be left
-            out << std::flush;
+                else if (el.metric == PM_METRIC_FRAME_DURATION) {
+                    frameDurationOffset = el.dataOffset;
+                }
+            }
+        }
+        pmapi::BlobContainer MakeBlobs(uint32_t nBlobsToCreate) const
+        {
+            return pQuery->MakeBlobContainer(nBlobsToCreate);
+        }
+        void Consume(uint32_t pid, pmapi::BlobContainer& blobs) const
+        {
+            pQuery->Consume(pid, blobs);
+        }
+        double ExtractFrameTimeFromBlob(const uint8_t* pBlob) const
+        {
+            return reinterpret_cast<const double&>(pBlob[frameTimeOffset]);
+        }
+        double ExtractFrameDurationFromBlob(const uint8_t* pBlob) const
+        {
+            return reinterpret_cast<const double&>(pBlob[frameDurationOffset]);
+        }
+        void WriteFrame(uint32_t pid, const std::string& procName, std::ostream& out, const uint8_t* pBlob)
+        {
+            // TODO: use metrics from procname and pid
+            // process details are hardcoded here
+            out << procName << ',' << pid;
+            // loop over each element (column/field) in a frame of data
+            for (auto&& [pAnno, query] : std::views::zip(annotationPtrs_, queryElements_)) {
+                out << ',';
+                // using output from the query registration of get offset of column's data
+                const auto pBytes = pBlob + query.dataOffset;
+                // annotation contains polymorphic info to reinterpret and convert bytes
+                pAnno->Write(out, pBytes);
+            }
+            out << "\n";
         }
         void WriteHeader(std::ostream& out)
         {
@@ -158,9 +175,12 @@ namespace p2c::pmon
         }
     private:
         std::shared_ptr<pmapi::FrameQuery> pQuery;
-        std::optional<pmapi::BlobContainer> blobs;
         std::vector<std::unique_ptr<Annotation_>> annotationPtrs_;
         std::vector<PM_QUERY_ELEMENT> queryElements_;
+        // byte offsets to find doubles for the frame start time and the cpu_frame_duration
+        // used to extract these frame values for statistics tracking
+        uint64_t frameTimeOffset = 0;
+        uint64_t frameDurationOffset = 0;
     };
 
     RawFrameDataWriter::RawFrameDataWriter(std::wstring path, uint32_t processId, std::wstring processName,
@@ -230,8 +250,8 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_CPU_TEMPERATURE },
             Element{.metricId = PM_METRIC_CPU_FREQUENCY },
         };
-        pQueryElementContainer = std::make_unique<QueryElementContainer_>(
-            queryElements, numberOfBlobs, session, introRoot);
+        pQueryElementContainer = std::make_unique<QueryElementContainer_>(queryElements, session, introRoot);
+        blobs = pQueryElementContainer->MakeBlobs(numberOfBlobs);
                 
         // write header
         pQueryElementContainer->WriteHeader(file);
@@ -239,7 +259,27 @@ namespace p2c::pmon
 
     void RawFrameDataWriter::Process()
     {
-        pQueryElementContainer->WriteFrames(pid, procName, file);
+        // continue consuming frames until none are left pending
+        do {
+            pQueryElementContainer->Consume(pid, *blobs);
+            // loop over populated blobs
+            for (auto pBlob : *blobs) {
+                if (pStatsTracker) {
+                    // tracking trace duration
+                    if (startTime < 0.) {
+                        startTime = pQueryElementContainer->ExtractFrameTimeFromBlob(pBlob);
+                        endTime = startTime;
+                    }
+                    else {
+                        endTime = pQueryElementContainer->ExtractFrameTimeFromBlob(pBlob);
+                    }
+                    // tracking frame times
+                    pStatsTracker->Push(pQueryElementContainer->ExtractFrameDurationFromBlob(pBlob));
+                }
+                pQueryElementContainer->WriteFrame(pid, procName, file, pBlob);
+            }
+        } while (blobs->AllBlobsPopulated()); // if container filled, means more might be left
+        file << std::flush;
     }
 
     double RawFrameDataWriter::GetDuration_() const
