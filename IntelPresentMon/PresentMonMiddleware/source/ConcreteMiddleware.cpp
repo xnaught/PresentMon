@@ -811,6 +811,19 @@ void ReportMetrics(
         CalculateMetrics(pQuery, processId, pBlob, numSwapChains, client->GetQpcFrequency(), swapChainData, metricInfo);
     }
 
+    std::optional<size_t> ConcreteMiddleware::GetCachedGpuInfoIndex(uint32_t deviceId)
+    {
+        for (std::size_t i = 0; i < cachedGpuInfo.size(); ++i)
+        {
+            if (cachedGpuInfo[i].deviceId = deviceId)
+            {
+                return i;
+            }
+        }
+
+        return std::nullopt;
+    }
+
     void ConcreteMiddleware::PollStaticQuery(const PM_QUERY_ELEMENT& element, uint32_t processId, uint8_t* pBlob)
     {
         auto& ispec = GetIntrospectionRoot();
@@ -827,8 +840,14 @@ void ReportMetrics(
             strcpy_s(reinterpret_cast<char*>(pBlob), elementSize, cachedCpuInfo[0].deviceName.c_str());
             break;
         case PM_METRIC_GPU_NAME:
-            strcpy_s(reinterpret_cast<char*>(pBlob), elementSize, cachedGpuInfo[element.deviceId].deviceName.c_str());
-            break;
+        {
+            auto index = GetCachedGpuInfoIndex(element.deviceId);
+            if (index.has_value())
+            {
+                strcpy_s(reinterpret_cast<char*>(pBlob), elementSize, cachedGpuInfo[index.value()].deviceName.c_str());
+            }
+        }
+        break;
         case PM_METRIC_CPU_VENDOR:
         {
             auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[0]);
@@ -837,8 +856,12 @@ void ReportMetrics(
         break;
         case PM_METRIC_GPU_VENDOR:
         {
-            auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[0]);
-            output = cachedGpuInfo[element.deviceId].deviceVendor;
+            auto index = GetCachedGpuInfoIndex(element.deviceId);
+            if (index.has_value())
+            {
+                auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[0]);
+                output = cachedGpuInfo[index.value()].deviceVendor;
+            }
         }
         break;
         case PM_METRIC_APPLICATION:
@@ -846,37 +869,49 @@ void ReportMetrics(
             break;
         case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
         {
-            auto& output = reinterpret_cast<uint64_t&>(pBlob[0]);
-            if (cachedGpuInfo[element.deviceId].gpuMemoryMaxBandwidth.has_value()) {
-                output = cachedGpuInfo[element.deviceId].gpuMemoryMaxBandwidth.value();
-            }
-            else
+            auto index = GetCachedGpuInfoIndex(element.deviceId);
+            if (index.has_value())
             {
-                output = 0;
+                auto& output = reinterpret_cast<uint64_t&>(pBlob[0]);
+                if (cachedGpuInfo[index.value()].gpuMemoryMaxBandwidth.has_value()) {
+                    output = cachedGpuInfo[index.value()].gpuMemoryMaxBandwidth.value();
+                }
+                else
+                {
+                    output = 0;
+                }
             }
         }
         break;
         case PM_METRIC_GPU_MEM_SIZE:
         {
-            auto& output = reinterpret_cast<uint64_t&>(pBlob[0]);
-            if (cachedGpuInfo[element.deviceId].gpuMemorySize.has_value()) {
-                output = cachedGpuInfo[element.deviceId].gpuMemorySize.value();
-            }
-            else
+            auto index = GetCachedGpuInfoIndex(element.deviceId);
+            if (index.has_value())
             {
-                output = 0;
+                auto& output = reinterpret_cast<uint64_t&>(pBlob[0]);
+                if (cachedGpuInfo[index.value()].gpuMemorySize.has_value()) {
+                    output = cachedGpuInfo[index.value()].gpuMemorySize.value();
+                }
+                else
+                {
+                    output = 0;
+                }
             }
         }
         break;
         case PM_METRIC_GPU_SUSTAINED_POWER_LIMIT:
         {
-            auto& output = reinterpret_cast<double&>(pBlob[0]);
-            if (cachedGpuInfo[element.deviceId].gpuSustainedPowerLimit.has_value()) {
-                output = cachedGpuInfo[element.deviceId].gpuSustainedPowerLimit.value();
-            }
-            else
+            auto index = GetCachedGpuInfoIndex(element.deviceId);
+            if (index.has_value())
             {
-                output = 0.f;
+                auto& output = reinterpret_cast<double&>(pBlob[0]);
+                if (cachedGpuInfo[index.has_value()].gpuSustainedPowerLimit.has_value()) {
+                    output = cachedGpuInfo[index.has_value()].gpuSustainedPowerLimit.value();
+                }
+                else
+                {
+                    output = 0.f;
+                }
             }
         }
         break;
@@ -1630,13 +1665,19 @@ void ReportMetrics(
                 case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
                 {
                     auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
-                    output = cachedGpuMemMaxBandwidth;
+                    output = 0.;
+                    if (cachedGpuInfo[currentGpuInfoIndex].gpuMemoryMaxBandwidth.has_value()) {
+                        output = static_cast<double>(cachedGpuInfo[currentGpuInfoIndex].gpuMemoryMaxBandwidth.value());
+                    }
                 }
                     break;
                 case PM_METRIC_GPU_MEM_SIZE:
                 {
                     auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
-                    output = cachedGpuMemSize;
+                    output = 0.;
+                    if (cachedGpuInfo[currentGpuInfoIndex].gpuMemorySize.has_value()) {
+                        output = static_cast<double>(cachedGpuInfo[currentGpuInfoIndex].gpuMemorySize.value());
+                    }
                 }
                     break;
                 default:
@@ -1718,13 +1759,19 @@ void ReportMetrics(
                 case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
                 {
                     auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
-                    output = cachedGpuMemMaxBandwidth;
+                    output = 0.;
+                    if (cachedGpuInfo[currentGpuInfoIndex].gpuMemoryMaxBandwidth.has_value()) {
+                        output = static_cast<double>(cachedGpuInfo[currentGpuInfoIndex].gpuMemoryMaxBandwidth.value());
+                    }
                 }
                 break;
                 case PM_METRIC_GPU_MEM_SIZE:
                 {
                     auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
-                    output = cachedGpuMemSize;
+                    output = 0.;
+                    if (cachedGpuInfo[currentGpuInfoIndex].gpuMemorySize.has_value()) {
+                        output = static_cast<double>(cachedGpuInfo[currentGpuInfoIndex].gpuMemorySize.value());
+                    }
                 }
                 break;
                 default:

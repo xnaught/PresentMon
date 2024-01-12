@@ -117,6 +117,8 @@ namespace pmon::mid
 		void SaveMetricCache(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob);
 		void CopyMetricCacheToBlob(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob);
 
+		std::optional<size_t> GetCachedGpuInfoIndex(uint32_t deviceId);
+
 		const pmapi::intro::Root& GetIntrospectionRoot();
 
 		std::unique_ptr<void, HandleDeleter> pNamedPipeHandle;
@@ -130,8 +132,6 @@ namespace pmon::mid
 		std::unordered_map<std::pair<PM_DYNAMIC_QUERY*, uint32_t>, std::unique_ptr<uint8_t[]>> cachedMetricDatas;
 		std::vector<DeviceInfo> cachedGpuInfo;
 		std::vector<DeviceInfo> cachedCpuInfo;
-		double cachedGpuMemMaxBandwidth = 0.;
-		double cachedGpuMemSize = 0.;
 		uint32_t currentGpuInfoIndex = UINT32_MAX;
 		std::optional<uint32_t> activeDevice;
 		std::unique_ptr<pmapi::intro::Root> pIntroRoot;
