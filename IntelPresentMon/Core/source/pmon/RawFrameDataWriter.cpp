@@ -280,9 +280,9 @@ namespace p2c::pmon
     {
         // continue consuming frames until none are left pending
         do {
-            pQueryElementContainer->Consume(pid, *blobs);
+            pQueryElementContainer->Consume(pid, blobs);
             // loop over populated blobs
-            for (auto pBlob : *blobs) {
+            for (auto pBlob : blobs) {
                 if (pStatsTracker) {
                     // tracking trace duration
                     if (startTime < 0.) {
@@ -297,7 +297,7 @@ namespace p2c::pmon
                 }
                 pQueryElementContainer->WriteFrame(pid, procName, file, pBlob);
             }
-        } while (blobs->AllBlobsPopulated()); // if container filled, means more might be left
+        } while (blobs.AllBlobsPopulated()); // if container filled, means more might be left
         file << std::flush;
     }
 
