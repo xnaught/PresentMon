@@ -122,33 +122,51 @@ namespace p2c::pmon
                     .deviceId = el.deviceId,
                     .arrayIndex = el.index.value_or(0),
                 });
-            }
-            pQuery = session.RegisterFrameQuery(queryElements_);
-            // populate offset caches for stats tracking extraction
-            for (auto& el : queryElements_) {
-                if (el.metric == PM_METRIC_TIME) {
-                    frameTimeOffset = el.dataOffset;
+                // check if metric is one of the specially-required fields
+                if (el.metricId == PM_METRIC_TIME) {
+                    pTimeElement_ = &queryElements_.back();
                 }
-                else if (el.metric == PM_METRIC_FRAME_DURATION) {
-                    frameDurationOffset = el.dataOffset;
+                else if (el.metricId == PM_METRIC_FRAME_DURATION) {
+                    pFrameDurationElement_ = &queryElements_.back();
                 }
             }
+            // if any specially-required fields are missing, add to query (but not to annotations)
+            if (!pTimeElement_) {
+                queryElements_.push_back(PM_QUERY_ELEMENT{
+                    .metric = PM_METRIC_TIME,
+                    .stat = PM_STAT_NONE,
+                    .deviceId = 0,
+                    .arrayIndex = 0,
+                });
+                pTimeElement_ = &queryElements_.back();
+            }
+            if (!pFrameDurationElement_) {
+                queryElements_.push_back(PM_QUERY_ELEMENT{
+                    .metric = PM_METRIC_FRAME_DURATION,
+                    .stat = PM_STAT_NONE,
+                    .deviceId = 0,
+                    .arrayIndex = 0,
+                });
+                pFrameDurationElement_ = &queryElements_.back();
+            }
+            // register query
+            pQuery_ = session.RegisterFrameQuery(queryElements_);
         }
         pmapi::BlobContainer MakeBlobs(uint32_t nBlobsToCreate) const
         {
-            return pQuery->MakeBlobContainer(nBlobsToCreate);
+            return pQuery_->MakeBlobContainer(nBlobsToCreate);
         }
         void Consume(uint32_t pid, pmapi::BlobContainer& blobs) const
         {
-            pQuery->Consume(pid, blobs);
+            pQuery_->Consume(pid, blobs);
         }
         double ExtractFrameTimeFromBlob(const uint8_t* pBlob) const
         {
-            return reinterpret_cast<const double&>(pBlob[frameTimeOffset]);
+            return reinterpret_cast<const double&>(pBlob[pTimeElement_->dataOffset]);
         }
         double ExtractFrameDurationFromBlob(const uint8_t* pBlob) const
         {
-            return reinterpret_cast<const double&>(pBlob[frameDurationOffset]);
+            return reinterpret_cast<const double&>(pBlob[pFrameDurationElement_->dataOffset]);
         }
         void WriteFrame(uint32_t pid, const std::string& procName, std::ostream& out, const uint8_t* pBlob)
         {
@@ -174,13 +192,14 @@ namespace p2c::pmon
             out << std::endl;
         }
     private:
-        std::shared_ptr<pmapi::FrameQuery> pQuery;
+        std::shared_ptr<pmapi::FrameQuery> pQuery_;
+        // annotations encode logic for interpreting, post-processing, and formatting blob data for a query element
         std::vector<std::unique_ptr<Annotation_>> annotationPtrs_;
+        // all query elements to be registered with the query, maintained to store blob offset information
         std::vector<PM_QUERY_ELEMENT> queryElements_;
-        // byte offsets to find doubles for the frame start time and the cpu_frame_duration
-        // used to extract these frame values for statistics tracking
-        uint64_t frameTimeOffset = 0;
-        uint64_t frameDurationOffset = 0;
+        // query element referenced used for summary stats gathering
+        const PM_QUERY_ELEMENT* pTimeElement_ = nullptr;
+        const PM_QUERY_ELEMENT* pFrameDurationElement_ = nullptr;
     };
 
     RawFrameDataWriter::RawFrameDataWriter(std::wstring path, uint32_t processId, std::wstring processName,
@@ -261,9 +280,9 @@ namespace p2c::pmon
     {
         // continue consuming frames until none are left pending
         do {
-            pQueryElementContainer->Consume(pid, *blobs);
+            pQueryElementContainer->Consume(pid, blobs);
             // loop over populated blobs
-            for (auto pBlob : *blobs) {
+            for (auto pBlob : blobs) {
                 if (pStatsTracker) {
                     // tracking trace duration
                     if (startTime < 0.) {
@@ -278,7 +297,7 @@ namespace p2c::pmon
                 }
                 pQueryElementContainer->WriteFrame(pid, procName, file, pBlob);
             }
-        } while (blobs->AllBlobsPopulated()); // if container filled, means more might be left
+        } while (blobs.AllBlobsPopulated()); // if container filled, means more might be left
         file << std::flush;
     }
 

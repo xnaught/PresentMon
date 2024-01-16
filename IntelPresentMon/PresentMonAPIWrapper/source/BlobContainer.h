@@ -2,6 +2,7 @@
 #include <memory>
 #include <vector>
 #include <cstdint>
+#include <cassert>
 
 namespace pmapi
 {
@@ -10,6 +11,7 @@ namespace pmapi
         friend class FrameQuery;
         friend class DynamicQuery;
     public:
+        BlobContainer() = default;
         BlobContainer(const void* handle, size_t blobSize, uint32_t nBlobs)
             :
             handle_{ handle },
@@ -17,9 +19,39 @@ namespace pmapi
             nBlobs_{ nBlobs }
         {
             pBlobArrayBytes_ = std::make_unique<uint8_t[]>(GetTotalSize());
-            for (uint32_t i = 0; i < nBlobs; i++) {
-                blobPointers_.push_back((*this)[i]);
-            }
+            PopulateBlobPointers_();
+        }
+        BlobContainer(BlobContainer&& other) noexcept
+        {
+            *this = std::move(other);
+        }
+        BlobContainer(const BlobContainer& other)
+        {
+            *this = other;
+        }
+        BlobContainer& operator=(BlobContainer&& rhs) noexcept
+        {
+            handle_ = rhs.handle_;
+            blobSize_ = rhs.blobSize_;
+            nBlobs_ = rhs.nBlobs_;
+            nBlobsFilledInOut_ = rhs.nBlobsFilledInOut_;
+            pBlobArrayBytes_ = std::move(rhs.pBlobArrayBytes_);
+            blobPointers_ = std::move(rhs.blobPointers_);
+            rhs.Reset();
+            return *this;
+        }
+        BlobContainer& operator=(const BlobContainer& rhs)
+        {
+            handle_ = rhs.handle_;
+            blobSize_ = rhs.blobSize_;
+            nBlobs_ = rhs.nBlobs_;
+            nBlobsFilledInOut_ = rhs.nBlobsFilledInOut_;
+            pBlobArrayBytes_ = std::make_unique<uint8_t[]>(rhs.GetTotalSize());
+            PopulateBlobPointers_();
+            std::copy(rhs.pBlobArrayBytes_.get(),
+                rhs.pBlobArrayBytes_.get() + rhs.GetTotalSize(),
+                pBlobArrayBytes_.get());
+            return *this;
         }
         size_t GetTotalSize() const { return blobSize_ * nBlobs_; }
         size_t GetBlobSize() const { return blobSize_; }
@@ -43,16 +75,33 @@ namespace pmapi
         {
             return static_cast<const void*>(handle) == handle_;
         }
+        void Reset()
+        {
+            handle_ = nullptr;
+            blobSize_ = 0;
+            nBlobs_ = 0;
+            nBlobsFilledInOut_ = 0;
+            pBlobArrayBytes_.reset();
+            blobPointers_.clear();
+        }
     private:
+        // functions
+        void PopulateBlobPointers_()
+        {
+            for (uint32_t i = 0; i < nBlobs_; i++) {
+                blobPointers_.push_back((*this)[i]);
+            }
+        }
         uint32_t& AcquireNumBlobsInRef_()
         {
             nBlobsFilledInOut_ = nBlobs_;
             return nBlobsFilledInOut_;
         }
-        const void* handle_;
-        size_t blobSize_;
-        uint32_t nBlobs_;
-        uint32_t nBlobsFilledInOut_ = 0ull;
+        // data
+        const void* handle_ = nullptr;
+        size_t blobSize_ = 0;
+        uint32_t nBlobs_ = 0;
+        uint32_t nBlobsFilledInOut_ = 0;
         std::unique_ptr<uint8_t[]> pBlobArrayBytes_;
         std::vector<uint8_t*> blobPointers_;
     };

@@ -19,12 +19,6 @@ namespace p2c::pmon
 		metricPtrs.push_back(std::move(pMetric));
 	}
 
-	template<typename T>
-	decltype(auto) AsUnique(T&& obj)
-	{
-		return std::make_unique<T>(std::forward<T>(obj));
-	}
-
 	void CachingQuery::Finalize(pmapi::Session& session)
 	{
 		if (metricPtrs.empty()) {
@@ -38,7 +32,7 @@ namespace p2c::pmon
 		for (auto&& [e, m] : std::views::zip(queryElements, metricPtrs)) {
 			m->Finalize(uint32_t(e.dataOffset));
 		}
-		pBlobs = AsUnique(pQuery->MakeBlobContainer(1u));
+		blobs = pQuery->MakeBlobContainer(1u);
 	}
 
 	const uint8_t* CachingQuery::Poll(double timestamp_)
@@ -47,9 +41,20 @@ namespace p2c::pmon
 			return nullptr;
 		}
 		if (!timestamp || *timestamp != timestamp_) {
-			pQuery->Poll(pid, *pBlobs);
+			pQuery->Poll(pid, blobs);
 			timestamp = timestamp_;
 		}
-		return pBlobs->GetFirst();
+		return blobs.GetFirst();
+	}
+	void CachingQuery::Reset()
+	{
+		pQuery.reset();
+		metricPtrs.clear();
+		blobs.Reset();
+		timestamp.reset();
+	}
+	size_t CachingQuery::GetMetricCount() const
+	{
+		return metricPtrs.size();
 	}
 }

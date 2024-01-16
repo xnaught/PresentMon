@@ -160,8 +160,15 @@ namespace p2c::kern
 
     void Overlay::UpdateDataSets_()
     {
+        // set of new graph metrics after update, used to prune the GraphDataPacks
         std::set<size_t> newSet;
+        // clear text packs every update because they have no buffer of samples that need to be carried over
         textPacks.clear();
+        // clearing query (which owns all realized dynamic metrics) and activeMetricsMap (has non-owning pointers to all metrics)
+        // we might want to carry over metrics that are common between before and after update, but it's difficult to compare
+        // here due to differences not only in metric index, but also targetted device
+        pQuery->Reset();
+        activeMetricsMap.clear();
         // helper to resolve metric type and add to dynamic query if necessary
         const auto ResolveMetric = [this](size_t metricIndex) {
             auto pRepoMetric = pm->GetMetricByIndex(metricIndex);
@@ -228,7 +235,12 @@ namespace p2c::kern
                 p2clog.warn(L"Failed updating dataset with widget").commit();
             }
         }
+        // prune data packs that are now defunct
         std::erase_if(graphPacks, [&newSet](const auto& p) { return !newSet.contains(p.first); });
+        // all previous realized metrics were wiped out, so we need to update pointers in data packs
+        for (auto&&[idx, pack] : graphPacks) {
+            pack.pMetric = activeMetricsMap[idx];
+        }
     }
 
     std::unique_ptr<win::KernelWindow> Overlay::MakeWindow_(std::optional<Vec2I> pos_)
