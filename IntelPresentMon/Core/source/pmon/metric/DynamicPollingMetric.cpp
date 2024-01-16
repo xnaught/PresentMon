@@ -49,6 +49,12 @@ namespace p2c::pmon::met
             return cls;
         }
     }
+    void DynamicPollingMetric::PopulateData(gfx::lay::GraphData& graphData, double timestamp)
+    {
+        graphData.Push(gfx::lay::DataPoint{ .value = ReadValue(timestamp), .time = timestamp });
+        graphData.Trim(timestamp);
+    }
+    std::optional<float> DynamicPollingMetric::ReadValue(double timestamp) { return {}; }
     PM_QUERY_ELEMENT DynamicPollingMetric::MakeQueryElement() const
     {
         return PM_QUERY_ELEMENT{
@@ -61,6 +67,10 @@ namespace p2c::pmon::met
     void DynamicPollingMetric::Finalize(uint32_t offset_)
     {
         offset = offset_;
+    }
+    uint32_t DynamicPollingMetric::GetDeviceId() const
+    {
+        return deviceId;
     }
     std::unique_ptr<DynamicPollingMetric> DynamicPollingMetric::RealizeMetric(const pmapi::intro::Root& introRoot,
         CachingQuery* pQuery, uint32_t activeGpuDeviceId)

@@ -32,6 +32,7 @@ namespace p2c::pmon
 		void AddDynamicMetric(std::unique_ptr<met::DynamicPollingMetric> pMetric);
 		void Finalize(pmapi::Session& session);
 		const uint8_t* Poll(double timestamp_);
+		void Reset();
 	private:
 		uint32_t pid;
 		double winSizeMs;

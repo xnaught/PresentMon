@@ -37,11 +37,7 @@ namespace pmapi
             nBlobsFilledInOut_ = rhs.nBlobsFilledInOut_;
             pBlobArrayBytes_ = std::move(rhs.pBlobArrayBytes_);
             blobPointers_ = std::move(rhs.blobPointers_);
-            // nullify donor
-            rhs.handle_ = nullptr;
-            rhs.blobSize_ = 0;
-            rhs.nBlobs_ = 0;
-            rhs.nBlobsFilledInOut_ = 0;
+            rhs.Reset();
             return *this;
         }
         BlobContainer& operator=(const BlobContainer& rhs)
@@ -79,6 +75,15 @@ namespace pmapi
         {
             return static_cast<const void*>(handle) == handle_;
         }
+        void Reset()
+        {
+            handle_ = nullptr;
+            blobSize_ = 0;
+            nBlobs_ = 0;
+            nBlobsFilledInOut_ = 0;
+            pBlobArrayBytes_.reset();
+            blobPointers_.clear();
+        }
     private:
         // functions
         void PopulateBlobPointers_()
@@ -96,7 +101,7 @@ namespace pmapi
         const void* handle_ = nullptr;
         size_t blobSize_ = 0;
         uint32_t nBlobs_ = 0;
-        uint32_t nBlobsFilledInOut_ = 0ull;
+        uint32_t nBlobsFilledInOut_ = 0;
         std::unique_ptr<uint8_t[]> pBlobArrayBytes_;
         std::vector<uint8_t*> blobPointers_;
     };

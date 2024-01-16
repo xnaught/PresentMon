@@ -46,4 +46,11 @@ namespace p2c::pmon
 		}
 		return blobs.GetFirst();
 	}
+	void CachingQuery::Reset()
+	{
+		pQuery.reset();
+		metricPtrs.clear();
+		blobs.Reset();
+		timestamp.reset();
+	}
 }

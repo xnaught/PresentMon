@@ -27,14 +27,11 @@ namespace p2c::pmon::met
         std::wstring GetStatName() const override;
         const std::wstring& GetCategory() const override;
         const std::wstring& GetMetricClassName() const override;
-        void PopulateData(gfx::lay::GraphData& graphData, double timestamp) override
-        {
-            graphData.Push(gfx::lay::DataPoint{ .value = ReadValue(timestamp), .time = timestamp });
-            graphData.Trim(timestamp);
-        }
-        std::optional<float> ReadValue(double timestamp) override { return {};}
+        void PopulateData(gfx::lay::GraphData& graphData, double timestamp) override;
+        std::optional<float> ReadValue(double timestamp) override;
         PM_QUERY_ELEMENT MakeQueryElement() const;
         void Finalize(uint32_t offset);
+        uint32_t GetDeviceId() const;
         std::unique_ptr<DynamicPollingMetric> RealizeMetric(const pmapi::intro::Root& introRoot,
             CachingQuery* pQuery, uint32_t activeGpuDeviceId);
         static uint32_t CalculateMaxArrayIndex(PM_METRIC metricId, const pmapi::intro::Root& introRoot);
