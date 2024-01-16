@@ -53,4 +53,8 @@ namespace p2c::pmon
 		blobs.Reset();
 		timestamp.reset();
 	}
+	size_t CachingQuery::GetMetricCount() const
+	{
+		return metricPtrs.size();
+	}
 }

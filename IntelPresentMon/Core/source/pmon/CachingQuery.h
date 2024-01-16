@@ -33,6 +33,7 @@ namespace p2c::pmon
 		void Finalize(pmapi::Session& session);
 		const uint8_t* Poll(double timestamp_);
 		void Reset();
+		size_t GetMetricCount() const;
 	private:
 		uint32_t pid;
 		double winSizeMs;
