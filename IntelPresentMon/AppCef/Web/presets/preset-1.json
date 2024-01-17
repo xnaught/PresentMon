@@ -9,7 +9,7 @@
          "metrics": [
             {
                "key": 1,
-               "metricId": 348,
+               "metricId": 341,
                "lineColor": {
                   "r": 100,
                   "g": 255,
@@ -183,7 +183,7 @@
          "metrics": [
             {
                "key": 8,
-               "metricId": 14,
+               "metricId": 344,
                "lineColor": {
                   "r": 100,
                   "g": 255,
@@ -277,7 +277,7 @@
          "metrics": [
             {
                "key": 0,
-               "metricId": 104,
+               "metricId": 97,
                "lineColor": {
                   "r": 125,
                   "g": 149,
@@ -294,7 +294,7 @@
             },
             {
                "key": 4,
-               "metricId": 153,
+               "metricId": 146,
                "lineColor": {
                   "r": 24,
                   "g": 255,
@@ -371,7 +371,7 @@
          "metrics": [
             {
                "key": 1,
-               "metricId": 97,
+               "metricId": 90,
                "lineColor": {
                   "r": 255,
                   "g": 129,
@@ -388,7 +388,7 @@
             },
             {
                "key": 5,
-               "metricId": 90,
+               "metricId": 83,
                "lineColor": {
                   "r": 219,
                   "g": 219,
@@ -465,7 +465,7 @@
          "metrics": [
             {
                "key": 4,
-               "metricId": 111,
+               "metricId": 104,
                "lineColor": {
                   "r": 186,
                   "g": 223,
@@ -482,7 +482,7 @@
             },
             {
                "key": 6,
-               "metricId": 118,
+               "metricId": 111,
                "lineColor": {
                   "r": 100,
                   "g": 255,
@@ -559,7 +559,7 @@
          "metrics": [
             {
                "key": 14,
-               "metricId": 209,
+               "metricId": 202,
                "lineColor": {
                   "r": 255,
                   "g": 71,
