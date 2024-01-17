@@ -446,6 +446,11 @@ namespace pmon::mid
             case PM_METRIC_GPU_MEM_USED:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_mem_used));
                 break;
+            case PM_METRIC_GPU_MEM_UTILIZATION:
+                // Gpu mem utilization is derived from mem size and mem used.
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_mem_used));
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_mem_size));
+                break;
             case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_mem_max_bandwidth));
                 break;
@@ -1566,6 +1571,28 @@ void ReportMetrics(
         uint32_t maxSwapChainPresents = 0;
         uint32_t maxSwapChainPresentsIndex = 0;
         uint32_t currentSwapChainIndex = 0;
+        auto CalcGpuMemUtilization = [this, metricInfo](PM_STAT stat)
+            {
+                double output = 0.;
+                if (cachedGpuInfo[currentGpuInfoIndex].gpuMemorySize.has_value()) {
+                    auto gpuMemSize = static_cast<double>(cachedGpuInfo[currentGpuInfoIndex].gpuMemorySize.value());
+                    if (gpuMemSize != 0.)
+                    {
+                        std::vector<double> memoryUtilization;
+                        auto it = metricInfo.find(PM_METRIC_GPU_MEM_USED);
+                        if (it != metricInfo.end()) {
+                            auto memUsed = it->second;
+                            auto memUsedVector = memUsed.data[0];
+                            for (auto memUsed : memUsedVector) {
+                                memoryUtilization.push_back(100. * (memUsed / gpuMemSize));
+                            }
+                            CalculateMetric(output, memoryUtilization, stat);
+                        }
+                    }
+                }
+                return output;
+            };
+
         for (auto& pair : swapChainData) {
             auto& swapChain = pair.second;
             if (swapChain.CPUFrameQPC.size() > maxSwapChainPresents)
@@ -1680,6 +1707,12 @@ void ReportMetrics(
                     }
                 }
                     break;
+                case PM_METRIC_GPU_MEM_UTILIZATION:
+                {
+                    auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
+                    output = CalcGpuMemUtilization(qe.stat);
+                }
+                    break;
                 default:
                     if (qe.dataSize == sizeof(double)) {
                         CalculateGpuCpuMetric(metricInfo, qe, pBlob);
@@ -1772,6 +1805,12 @@ void ReportMetrics(
                     if (cachedGpuInfo[currentGpuInfoIndex].gpuMemorySize.has_value()) {
                         output = static_cast<double>(cachedGpuInfo[currentGpuInfoIndex].gpuMemorySize.value());
                     }
+                }
+                break;
+                case PM_METRIC_GPU_MEM_UTILIZATION:
+                {
+                    auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
+                    output = CalcGpuMemUtilization(qe.stat);
                 }
                 break;
                 default:
