@@ -204,18 +204,17 @@ ProcessInfo* PresentMonSession::GetProcessInfo(uint32_t processId) {
     // name and also periodically check if it has terminated.  This will
     // fail (with GetLastError() == ERROR_ACCESS_DENIED) if the process was
     // run on another account, unless we're running with SeDebugPrivilege.
-    wchar_t const* processName = L"<error>";
+    auto pProcessName = L"<error>";
     wchar_t path[MAX_PATH];
-    DWORD numChars = sizeof(path);
-    HANDLE handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId);
-    if (handle != NULL) {
+    const auto handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId);
+    if (handle) {
+      auto numChars = (DWORD)std::size(path);
       if (QueryFullProcessImageNameW(handle, 0, path, &numChars)) {
-        processName = PathFindFileNameW(path);
+        pProcessName = PathFindFileNameW(path);
       }
-      CloseHandle(handle);
     }
 
-    InitProcessInfo(processInfo, processId, handle, processName);
+    InitProcessInfo(processInfo, processId, handle, pProcessName);
   }
 
   return processInfo;
@@ -493,7 +492,7 @@ void PresentMonSession::Output() {
     // queued events. This ensures that we call DequeueAnalyzedInfo() at
     // least once after events have stopped being collected so that all
     // events are included.
-    auto quit = quit_output_thread_ == true ? true:false;
+    const auto quit = quit_output_thread_.load();
 
     // Copy and process all the collected events, and update the various
     // tracking and statistics data structures.
@@ -511,7 +510,6 @@ void PresentMonSession::Output() {
 
     // Sleep to reduce overhead.
     Sleep(100);
-    
   }
 
   // Process handles
@@ -523,8 +521,6 @@ void PresentMonSession::Output() {
     }
   }
   processes_.clear();
-
-  return;
 }
 
 PM_STATUS PresentMonSession::StartStreaming(uint32_t client_process_id,
