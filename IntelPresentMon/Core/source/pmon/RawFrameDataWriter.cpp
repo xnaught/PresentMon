@@ -18,11 +18,14 @@ namespace p2c::pmon
         virtual ~Annotation_() = default;
         virtual void Write(std::ostream& out, const uint8_t* pBytes) const = 0;
         std::string columnName;
-        static std::unique_ptr<Annotation_> MakeTyped(PM_METRIC metricId, uint32_t index, const pmapi::intro::Root& introRoot);
+        static std::unique_ptr<Annotation_> MakeTyped(PM_METRIC metricId, uint32_t deviceId,
+            const pmapi::intro::MetricView& metric);
     };
     template<typename T>
     struct TypedAnnotation_ : public Annotation_
     {
+    public:
+        TypedAnnotation_(bool zeroForNA = false) : zeroForNA_{ zeroForNA } {}
         void Write(std::ostream& out, const uint8_t* pBytes) const override
         {
             if constexpr (std::same_as<T, const char*>) {
@@ -31,7 +34,7 @@ namespace p2c::pmon
             else if constexpr (std::floating_point<T>) {
                 const auto val = *reinterpret_cast<const T*>(pBytes);
                 if (std::isnan(val)) {
-                    out << "NA";
+                    out << (zeroForNA_ ? "0" : "NA");
                 }
                 else {
                     out << val;
@@ -41,6 +44,8 @@ namespace p2c::pmon
                 out << *reinterpret_cast<const T*>(pBytes);
             }
         }
+    private:
+        bool zeroForNA_;
     };
     template<>
     struct TypedAnnotation_<void> : public Annotation_
@@ -60,23 +65,36 @@ namespace p2c::pmon
         }
         const EnumMap::KeyMap* pKeyMap = nullptr;
     };
-    std::unique_ptr<Annotation_> Annotation_::MakeTyped(PM_METRIC metricId, uint32_t index, const pmapi::intro::Root& introRoot)
+    std::unique_ptr<Annotation_> Annotation_::MakeTyped(PM_METRIC metricId, uint32_t deviceId,
+        const pmapi::intro::MetricView& metric)
     {
-        const auto metric = introRoot.FindMetric(metricId);
-        const auto typeId = metric.GetDataTypeInfo().GetFrameType();
-        std::unique_ptr<Annotation_> pAnnotation;
-        switch (typeId) {
-        case PM_DATA_TYPE_BOOL: pAnnotation = std::make_unique<TypedAnnotation_<bool>>(); break;
-        case PM_DATA_TYPE_INT32: pAnnotation = std::make_unique<TypedAnnotation_<int32_t>>(); break;
-        case PM_DATA_TYPE_UINT32: pAnnotation = std::make_unique<TypedAnnotation_<uint32_t>>(); break;
-        case PM_DATA_TYPE_UINT64: pAnnotation = std::make_unique<TypedAnnotation_<uint64_t>>(); break;
-        case PM_DATA_TYPE_DOUBLE: pAnnotation = std::make_unique<TypedAnnotation_<double>>(); break;
-        case PM_DATA_TYPE_STRING: pAnnotation = std::make_unique<TypedAnnotation_<const char*>>(); break;
-        case PM_DATA_TYPE_ENUM: pAnnotation = std::make_unique<TypedAnnotation_<PM_ENUM>>(
-                metric.GetDataTypeInfo().GetEnumId()); break;
-        default: pAnnotation = std::make_unique<TypedAnnotation_<void>>(); break;
+        // set availability (defaults to false, if we find matching device use its availability)
+        bool available = false;
+        for (auto di : metric.GetDeviceMetricInfo()) {
+            if (di.GetDevice().GetId() != deviceId) continue;
+            available = di.IsAvailable();
         }
-        // remove spaces from metric name
+        std::unique_ptr<Annotation_> pAnnotation;
+        if (available) {
+            const auto typeId = metric.GetDataTypeInfo().GetFrameType();
+            const bool zeroForNA = metricId == PM_METRIC_DISPLAY_DURATION || PM_METRIC_DISPLAY_LATENCY;
+            switch (typeId) {
+            case PM_DATA_TYPE_BOOL: pAnnotation = std::make_unique<TypedAnnotation_<bool>>(); break;
+            case PM_DATA_TYPE_INT32: pAnnotation = std::make_unique<TypedAnnotation_<int32_t>>(); break;
+            case PM_DATA_TYPE_UINT32: pAnnotation = std::make_unique<TypedAnnotation_<uint32_t>>(); break;
+            case PM_DATA_TYPE_UINT64: pAnnotation = std::make_unique<TypedAnnotation_<uint64_t>>(); break;
+            case PM_DATA_TYPE_DOUBLE: pAnnotation = std::make_unique<TypedAnnotation_<double>>(zeroForNA); break;
+            case PM_DATA_TYPE_STRING: pAnnotation = std::make_unique<TypedAnnotation_<const char*>>(); break;
+            case PM_DATA_TYPE_ENUM: pAnnotation = std::make_unique<TypedAnnotation_<PM_ENUM>>(
+                metric.GetDataTypeInfo().GetEnumId()); break;
+            default: pAnnotation = std::make_unique<TypedAnnotation_<void>>(); break;
+            }
+        }
+        else {
+            pAnnotation = std::make_unique<TypedAnnotation_<void>>();
+        }
+        // set the column name for the element
+        // remove spaces from metric name by range filter
         pAnnotation->columnName = metric.Introspect().GetName() |
             std::views::filter([](char c) { return c != ' '; }) |
             std::ranges::to<std::basic_string>();
@@ -99,19 +117,7 @@ namespace p2c::pmon
         {
             for (auto& el : elements) {
                 const auto metric = introRoot.FindMetric(el.metricId);
-                // set availability (defaults to false, if we find matching device use its availability)
-                bool available = false;
-                for (auto di : metric.GetDeviceMetricInfo()) {
-                    if (di.GetDevice().GetId() != el.deviceId) continue;
-                    available = di.IsAvailable();
-                }
-                if (available) {
-                    annotationPtrs_.push_back(Annotation_::MakeTyped(el.metricId, el.deviceId, introRoot));
-                }
-                else {
-                    // void annotation means Not Available
-                    annotationPtrs_.push_back(std::make_unique<TypedAnnotation_<void>>());
-                }
+                annotationPtrs_.push_back(Annotation_::MakeTyped(el.metricId, el.deviceId, metric));          
                 // append index if array metric
                 if (el.index.has_value()) {
                     annotationPtrs_.back()->columnName += std::format("[{}]", *el.index);
