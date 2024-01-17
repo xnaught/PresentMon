@@ -32,6 +32,7 @@ namespace pmon::ipc::intro
 	//	GpuTelemetryCapBits::psu_info_0, GpuTelemetryCapBits::psu_info_1, GpuTelemetryCapBits::psu_info_2, GpuTelemetryCapBits::psu_info_3, GpuTelemetryCapBits::psu_info_4, }; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_MEM_SIZE> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_mem_size; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_MEM_USED> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_mem_used; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_MEM_UTILIZATION> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_mem_used; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_MEM_MAX_BANDWIDTH> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_mem_max_bandwidth; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_MEM_WRITE_BANDWIDTH> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_mem_write_bandwidth; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_MEM_READ_BANDWIDTH> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_mem_read_bandwidth; };
