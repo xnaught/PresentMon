@@ -15,6 +15,7 @@ namespace pmon::ipc::intro
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_POWER> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_power; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_SUSTAINED_POWER_LIMIT> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_sustained_power_limit; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_VOLTAGE> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_voltage; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_TEMPERATURE> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_temperature; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_FREQUENCY> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_frequency; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_UTILIZATION> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_utilization; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_render_compute_utilization; };
