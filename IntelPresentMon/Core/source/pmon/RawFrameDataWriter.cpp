@@ -208,7 +208,7 @@ namespace p2c::pmon
         const PM_QUERY_ELEMENT* pFrameDurationElement_ = nullptr;
     };
 
-    RawFrameDataWriter::RawFrameDataWriter(std::wstring path, uint32_t processId, std::wstring processName,
+    RawFrameDataWriter::RawFrameDataWriter(std::wstring path, uint32_t processId, std::wstring processName, uint32_t activeDeviceId,
         pmapi::Session& session, std::optional<std::wstring> frameStatsPathIn, const pmapi::intro::Root& introRoot)
         :
         pid{ processId },
@@ -218,8 +218,6 @@ namespace p2c::pmon
         file{ path }
     {
         using Element = QueryElementContainer_::ElementDefinition;
-
-        const uint32_t activeDeviceId = 1;
 
         std::array queryElements{
             Element{.metricId = PM_METRIC_SWAP_CHAIN_ADDRESS, .deviceId = 0 },

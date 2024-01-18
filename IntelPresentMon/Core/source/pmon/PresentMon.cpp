@@ -157,6 +157,7 @@ namespace p2c::pmon
 	}
 	void PresentMon::SetAdapter(uint32_t id)
 	{
+		p2clog.info(std::format(L"Set active adapter to [{}]", id)).commit();
 		if (id == 0) {
 			p2clog.warn(L"Adapter was set to id 0; resetting").commit();
 			selectedAdapter.reset();
@@ -172,7 +173,7 @@ namespace p2c::pmon
 		std::optional<std::wstring> statsPath, uint32_t pid, std::wstring procName)
 	{
 		return std::make_shared<RawFrameDataWriter>(std::move(path), pid, std::move(procName),
-			*pSession, std::move(statsPath), *pIntrospectionRoot);
+			selectedAdapter.value_or(1), *pSession, std::move(statsPath), *pIntrospectionRoot);
 	}
 	std::optional<uint32_t> PresentMon::GetSelectedAdapter() const
 	{
