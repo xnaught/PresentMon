@@ -19,8 +19,8 @@ namespace p2c::pmon
 	class RawFrameDataWriter
 	{
 	public:
-        RawFrameDataWriter(std::wstring path, uint32_t processId, std::wstring processName, pmapi::Session& session,
-			std::optional<std::wstring> frameStatsPath, const pmapi::intro::Root& introRoot);
+        RawFrameDataWriter(std::wstring path, uint32_t processId, std::wstring processName, uint32_t activeDeviceId,
+			pmapi::Session& session, std::optional<std::wstring> frameStatsPath, const pmapi::intro::Root& introRoot);
 		RawFrameDataWriter(const RawFrameDataWriter&) = delete;
 		RawFrameDataWriter& operator=(const RawFrameDataWriter&) = delete;
 		void Process();
