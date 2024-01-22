@@ -509,7 +509,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_DISPLAY_LATENCY:
 		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::ScreenTime, 1>>(pos);
 	case PM_METRIC_INPUT_LATENCY:
-		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::InputTime, &Pre::ScreenTime, 1, 0, 0, 0>>(pos);
+		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::InputTime, &Pre::ScreenTime, 1, 1, 0, 0>>(pos);
 	case PM_METRIC_FRAME_DURATION:
 		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::last_present_qpc, &Pre::PresentStartTime, 0, 0, 0, 0>>(pos);
 

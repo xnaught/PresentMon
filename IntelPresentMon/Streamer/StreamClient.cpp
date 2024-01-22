@@ -3,7 +3,6 @@
 #include "StreamClient.h"
 #include "../PresentMonUtils/QPCUtils.h"
 #include "../PresentMonUtils/PresentDataUtils.h"
-#include <format>
 
 #define GOOGLE_GLOG_DLL_DECL
 #define GLOG_NO_ABBREVIATED_SEVERITIES
@@ -209,6 +208,7 @@ const PmNsmFrameData* StreamClient::PeekPreviousFrame()
                 peekIndex = (peekIndex.value() == 0) ? current_max_entries : peekIndex.value() - 1;
                 if (peekIndex.value() == nsm_hdr->head_idx) {
                     peekIndex.reset();
+                    break;
                 }
             }
         }
