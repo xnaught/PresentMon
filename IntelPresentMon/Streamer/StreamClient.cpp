@@ -3,6 +3,7 @@
 #include "StreamClient.h"
 #include "../PresentMonUtils/QPCUtils.h"
 #include "../PresentMonUtils/PresentDataUtils.h"
+#include <format>
 
 #define GOOGLE_GLOG_DLL_DECL
 #define GLOG_NO_ABBREVIATED_SEVERITIES
@@ -195,14 +196,32 @@ const PmNsmFrameData* StreamClient::PeekPreviousFrame()
             // Service destroyed the named shared memory.
             return nullptr;
         }
-        if (next_dequeue_idx_ < 2) {
-            // too early in frame data to get previous frame
-            return nullptr;
+
+        uint64_t current_max_entries =
+            (nsm_view->IsFull()) ? nsm_hdr->max_entries - 1 : nsm_hdr->tail_idx;
+
+        // previous idx is 2 before next
+        std::optional<uint64_t> peekIndex{ next_dequeue_idx_ };
+        for (int i = 0; i < 2; i++)
+        {
+            if (peekIndex.has_value())
+            {
+                peekIndex = (peekIndex.value() == 0) ? current_max_entries : peekIndex.value() - 1;
+                if (peekIndex.value() == nsm_hdr->head_idx) {
+                    peekIndex.reset();
+                }
+            }
         }
 
-        // previous idx is 2 before next (not sure what current_dequeue_frame_num_ indicates)
-        const uint64_t peekIndex = next_dequeue_idx_ - 2;
-        return ReadFrameByIdx(peekIndex);
+        if (peekIndex.has_value())
+        {
+            return ReadFrameByIdx(peekIndex.value());
+        }
+        else
+        {
+            return nullptr;
+        }
+        
     }
     return nullptr;
 }
@@ -245,10 +264,17 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         return PM_STATUS::PM_STATUS_SUCCESS;
     }
 
+    if (nsm_hdr->tail_idx < next_dequeue_idx_) {
+        if (next_dequeue_idx_ - nsm_hdr->tail_idx < 500)
+        {
+            recording_frame_data_ = false;
+            return PM_STATUS::PM_STATUS_SUCCESS;
+        }
+    }
+
     *pNsmData = ReadFrameByIdx(next_dequeue_idx_);
     if (pNsmData) {
-        uint64_t max_entries = nsm_view->GetHeader()->max_entries;
-        next_dequeue_idx_ = (next_dequeue_idx_ + 1) % max_entries;
+        next_dequeue_idx_ = (next_dequeue_idx_ + 1) % nsm_hdr->max_entries;
         current_dequeue_frame_num_++;
         return PM_STATUS::PM_STATUS_SUCCESS;
     }
