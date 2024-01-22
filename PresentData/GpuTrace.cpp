@@ -1,4 +1,4 @@
-// Copyright (C) 2021-2022 Intel Corporation
+// Copyright (C) 2021-2022,2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "PresentMonTraceConsumer.hpp"
@@ -10,15 +10,15 @@ void DebugPrintAccumulatedGpuTime(uint32_t processId, uint64_t accumulatedTime, 
     auto addedTime = endTime - startTime;
 
     if (addedTime > 0ull) {
-        printf("                             Accumulated GPU time ProcessId=%u: ", processId);
+        wprintf(L"                             Accumulated GPU time ProcessId=%u: ", processId);
         PrintTimeDelta(accumulatedTime);
-        printf(" + [");
+        wprintf(L" + [");
         PrintTime(startTime);
-        printf(", ");
+        wprintf(L", ");
         PrintTime(endTime);
-        printf("] = ");
+        wprintf(L"] = ");
         PrintTimeDelta(accumulatedTime + addedTime);
-        printf("\n");
+        wprintf(L"\n");
     }
 }
 
@@ -43,29 +43,29 @@ void GpuTrace::PrintRunningContexts() const
         auto const& node = *context.mNode;
 
         if (node.mQueueCount > 0) {
-            printf("                             hContext=0x%llx [", hContext);
+            wprintf(L"                             hContext=0x%llx [", hContext);
 
             for (uint32_t i = 0; i < node.mQueueCount; ++i) {
                 auto queueIdx = (node.mQueueIndex + i) % (uint32_t) node.mQueue.size();
                 auto const& entry = node.mQueue[queueIdx];
 
                 if (i > 0) {
-                    printf("\n                                                          ");
+                    wprintf(L"\n                                                          ");
                 }
 
-                printf(" SequenceId=%u", entry.mSequenceId);
+                wprintf(L" SequenceId=%u", entry.mSequenceId);
                 if (entry.mPacketTrace == nullptr) {
                     if (entry.mCompleted) {
-                        printf(" DONE");
+                        wprintf(L" DONE");
                     } else {
-                        printf(" WAIT");
+                        wprintf(L" WAIT");
                     }
                 } else {
-                    printf(" ProcessId=%u", LookupPacketTraceProcessId(entry.mPacketTrace));
+                    wprintf(L" ProcessId=%u", LookupPacketTraceProcessId(entry.mPacketTrace));
                 }
             }
 
-            printf(" ]\n");
+            wprintf(L" ]\n");
         }
     }
 }
@@ -226,7 +226,7 @@ void GpuTrace::StartPacket(PacketTrace* packetTrace, uint64_t timestamp) const
             packetTrace->mFirstPacketTime = timestamp;
 
             if (IsVerboseTraceEnabled()) {
-                printf("                             GPU: pid=%u frame's first work\n", LookupPacketTraceProcessId(packetTrace));
+                wprintf(L"                             GPU: pid=%u frame's first work\n", LookupPacketTraceProcessId(packetTrace));
             }
         }
     }
@@ -537,7 +537,7 @@ void GpuTrace::CompleteFrame(PresentEvent* pEvent, uint64_t timestamp)
         videoTrace->mAccumulatedPacketTime = 0;
 
         if (IsVerboseTraceEnabled()) {
-            printf("                             GPU: pid=%u completing frame\n", pEvent->ProcessId);
+            wprintf(L"                             GPU: pid=%u completing frame\n", pEvent->ProcessId);
         }
 
         // There are some cases where the QueuePacket_Stop timestamp is before
@@ -557,7 +557,7 @@ void GpuTrace::CompleteFrame(PresentEvent* pEvent, uint64_t timestamp)
                                                  pEvent->GPUDuration,
                                                  packetTrace->mRunningPacketStartTime,
                                                  timestamp);
-                    printf("                             GPU: work still running; splitting and considering as new work for next frame\n");
+                    wprintf(L"                             GPU: work still running; splitting and considering as new work for next frame\n");
                 }
 
                 pEvent->GPUDuration += accumulatedTime;
