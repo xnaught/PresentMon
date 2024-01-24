@@ -140,11 +140,11 @@ ULONG WriteEvent(
 }
 
 bool IsValid(
-    PresentMonProvider_PresentAPI presentType)
+    PresentMonProvider_PresentType presentType)
 {
-    return presentType == PresentMonProvider_PresentAPI_Unspecified ||
-           presentType == PresentMonProvider_PresentAPI_D3D9 ||
-           presentType == PresentMonProvider_PresentAPI_DXGI;
+    return presentType == PresentMonProvider_PresentType_Unspecified ||
+           presentType == PresentMonProvider_PresentType_D3D9 ||
+           presentType == PresentMonProvider_PresentType_DXGI;
 }
 
 bool IsValid(
@@ -219,7 +219,7 @@ void PresentMonProvider_ShutDown(
 
 ULONG PresentMonProvider_PresentFrameType(
     PresentMonProvider* ctxt,
-    PresentMonProvider_PresentAPI presentType,
+    PresentMonProvider_PresentType presentType,
     PresentMonProvider_FrameType frameType)
 {
     PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
