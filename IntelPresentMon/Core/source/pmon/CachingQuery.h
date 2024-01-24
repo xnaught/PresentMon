@@ -2,6 +2,7 @@
 #include <PresentMonAPI/PresentMonAPI.h>
 #include <PresentMonAPI2/source/PresentMonAPI.h>
 #include <PresentMonAPIWrapper/source/BlobContainer.h>
+#include <PresentMonAPIWrapper/source/DynamicQuery.h>
 #include <span>
 #include <memory>
 #include <vector>
@@ -38,7 +39,7 @@ namespace p2c::pmon
 		uint32_t pid;
 		double winSizeMs;
 		double metricOffsetMs;
-		std::shared_ptr<pmapi::DynamicQuery> pQuery;
+		pmapi::DynamicQuery query;
 		std::vector<std::unique_ptr<met::DynamicPollingMetric>> metricPtrs;
 		pmapi::BlobContainer blobs;
 		std::optional<double> timestamp;

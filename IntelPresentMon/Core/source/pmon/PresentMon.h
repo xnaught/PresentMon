@@ -4,6 +4,8 @@
 #include <optional>
 #include <vector>
 #include <memory>
+#include <PresentMonAPI/PresentMonAPI.h>
+#include <PresentMonAPIWrapper/source/ProcessTracker.h>
 #include "metric/Metric.h"
 #include "AdapterInfo.h"
 
@@ -56,7 +58,7 @@ namespace p2c::pmon
 		std::unique_ptr<pmapi::Session> pSession;
 		std::vector<std::unique_ptr<met::Metric>> metrics;
 		std::shared_ptr<pmapi::intro::Root> pIntrospectionRoot;
-		std::shared_ptr<pmapi::ProcessTracker> pTracker;
+		pmapi::ProcessTracker processTracker;
 		std::optional<uint32_t> selectedAdapter;
 	};
 }

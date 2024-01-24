@@ -53,10 +53,13 @@ namespace pmapi
                 pBlobArrayBytes_.get());
             return *this;
         }
+        // size of all blobs in bytes
         size_t GetTotalSize() const { return blobSize_ * nBlobs_; }
+        // size of a single blob in bytes
         size_t GetBlobSize() const { return blobSize_; }
         uint32_t GetBlobCount() const { return nBlobs_; }
         uint32_t GetNumBlobsPopulated() const { return nBlobsFilledInOut_; }
+        // get a pointer to the first byte of the first blob
         uint8_t* GetFirst() { return pBlobArrayBytes_.get(); }
         uint8_t* operator[](size_t index)
         {
@@ -67,7 +70,9 @@ namespace pmapi
         {
             return const_cast<BlobContainer&>(*this)[index];
         }
+        // beginning of populated range of blobs
         std::vector<uint8_t*>::const_iterator begin() const { return blobPointers_.begin(); }
+        // end of populated range of blobs
         std::vector<uint8_t*>::const_iterator end() const { return blobPointers_.begin() + GetNumBlobsPopulated(); }
         bool AllBlobsPopulated() const { return nBlobsFilledInOut_ == nBlobs_; }
         template<typename T>
@@ -84,6 +89,11 @@ namespace pmapi
             pBlobArrayBytes_.reset();
             blobPointers_.clear();
         }
+        bool Empty() const
+        {
+            return (bool)pBlobArrayBytes_;
+        }
+        operator bool() const { return !Empty(); }
     private:
         // functions
         void PopulateBlobPointers_()
@@ -94,8 +104,7 @@ namespace pmapi
         }
         uint32_t& AcquireNumBlobsInRef_()
         {
-            nBlobsFilledInOut_ = nBlobs_;
-            return nBlobsFilledInOut_;
+            return nBlobsFilledInOut_ = nBlobs_;
         }
         // data
         const void* handle_ = nullptr;

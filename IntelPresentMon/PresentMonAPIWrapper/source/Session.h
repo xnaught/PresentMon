@@ -32,32 +32,41 @@ namespace pmapi
         ~Session()
         {
             if (handle_) {
+                // TODO: report error noexcept
                 pmCloseSession(handle_);
             }
         }
+        bool Empty() const
+        {
+            return handle_ == nullptr;
+        }
+        operator bool() const { return !Empty(); }
         std::shared_ptr<intro::Root> GetIntrospectionRoot() const
         {
-            // throw an exception on error or non-token
+            // TODO: consider whether this should be an assertion
             if (!handle_) {
                 throw SessionException{ "introspection call failed due to empty session object" };
+            }
+            if (pIntrospectionRootCache_) {
+                return pIntrospectionRootCache_;
             }
             const PM_INTROSPECTION_ROOT* pRoot{};
             if (auto sta = pmGetIntrospectionRoot(handle_, &pRoot); sta != PM_STATUS_SUCCESS) {
                 throw SessionException{ std::format("introspection call failed with error id={}", (int)sta) };
             }
-            return std::make_shared<intro::Root>(pRoot, [](const PM_INTROSPECTION_ROOT* ptr) { pmFreeIntrospectionRoot(ptr); });
+            return pIntrospectionRootCache_ = std::make_shared<intro::Root>(pRoot, [](const PM_INTROSPECTION_ROOT* ptr) { pmFreeIntrospectionRoot(ptr); });
         }
-        std::shared_ptr<ProcessTracker> TrackProcess(uint32_t pid)
+        ProcessTracker TrackProcess(uint32_t pid)
         {
-            return std::shared_ptr<ProcessTracker>{ new ProcessTracker{ handle_, pid } };
+            return { handle_, pid };
         }
-        std::shared_ptr<DynamicQuery> RegisterDyanamicQuery(std::span<PM_QUERY_ELEMENT> elements, double winSizeMs, double metricOffsetMs)
+        DynamicQuery RegisterDyanamicQuery(std::span<PM_QUERY_ELEMENT> elements, double winSizeMs, double metricOffsetMs)
         {
-            return std::shared_ptr<DynamicQuery>{ new DynamicQuery{ handle_, elements, winSizeMs, metricOffsetMs } };
+            return { handle_, elements, winSizeMs, metricOffsetMs };
         }
-        std::shared_ptr<FrameQuery> RegisterFrameQuery(std::span<PM_QUERY_ELEMENT> elements)
+        FrameQuery RegisterFrameQuery(std::span<PM_QUERY_ELEMENT> elements)
         {
-            return std::shared_ptr<FrameQuery>{ new FrameQuery{ handle_, elements } };
+            return { handle_, elements };
         }
         void SetTelemetryPollingPeriod(uint32_t deviceId, uint32_t milliseconds)
         {
@@ -65,7 +74,13 @@ namespace pmapi
                 throw SessionException{ std::format("set telemetry period call failed with error id={}", (int)sta) };
             }
         }
+        // it is recommended to use the Session member functions instead of using this handle directly
+        PM_SESSION_HANDLE GetHandle() const
+        {
+            return handle_;
+        }
     private:
         PM_SESSION_HANDLE handle_ = nullptr;
+        mutable std::shared_ptr<intro::Root> pIntrospectionRootCache_;
     };
 }

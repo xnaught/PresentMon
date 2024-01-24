@@ -81,24 +81,24 @@ namespace p2c::pmon
 	PresentMon::~PresentMon() = default;
 	void PresentMon::StartTracking(uint32_t pid_)
 	{
-		if (pTracker) {
-			if (pTracker->GetPid() == pid_) {
+		if (processTracker) {
+			if (processTracker.GetPid() == pid_) {
 				return;
 			}
 			p2clog.warn(std::format(L"Starting stream [{}] while previous stream [{}] still active",
-				pid_, pTracker->GetPid())).commit();
+				pid_, processTracker.GetPid())).commit();
 		}
-		pTracker = pSession->TrackProcess(pid_);
+		processTracker = pSession->TrackProcess(pid_);
 		p2clog.info(std::format(L"started pmon stream for pid {}", pid_)).commit();
 	}
 	void PresentMon::StopTracking()
 	{
-		if (!pTracker) {
+		if (!processTracker) {
 			p2clog.warn(L"Cannot stop stream: no stream active").commit();
 			return;
 		}
-		const auto pid = pTracker->GetPid();
-		pTracker.reset();
+		const auto pid = processTracker.GetPid();
+		processTracker.Reset();
 		// TODO: caches cleared here maybe
 		p2clog.info(std::format(L"stopped pmon stream for pid {}", pid)).commit();
 	}
@@ -167,7 +167,7 @@ namespace p2c::pmon
 		}
 	}
 	std::optional<uint32_t> PresentMon::GetPid() const {
-		return bool(pTracker) ? pTracker->GetPid() : std::optional<uint32_t>{};
+		return bool(processTracker) ? processTracker.GetPid() : std::optional<uint32_t>{};
 	}
 	std::shared_ptr<RawFrameDataWriter> PresentMon::MakeRawFrameDataWriter(std::wstring path,
 		std::optional<std::wstring> statsPath, uint32_t pid, std::wstring procName)

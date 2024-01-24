@@ -12,9 +12,18 @@ namespace pmapi
     {
         friend class Session;
     public:
-        ~FrameQuery()
+        FrameQuery() = default;
+        ~FrameQuery() { Reset(); }
+        FrameQuery(FrameQuery&& other) noexcept
         {
-            pmFreeFrameQuery(hQuery_);
+            *this = std::move(other);
+        }
+        FrameQuery& operator=(FrameQuery&& rhs) noexcept
+        {
+            hQuery_ = rhs.hQuery_;
+            blobSize_ = rhs.blobSize_;
+            rhs.Clear_();;
+            return *this;
         }
         size_t GetBlobSize() const
         {
@@ -28,25 +37,45 @@ namespace pmapi
         }
         void Consume(uint32_t pid, BlobContainer& blobs)
         {
+            assert(!Empty());
             assert(blobs.CheckHandle(hQuery_));
             Consume(pid, blobs.GetFirst(), blobs.AcquireNumBlobsInRef_());
         }
         BlobContainer MakeBlobContainer(uint32_t nBlobs) const
         {
+            assert(!Empty());
             return { hQuery_, blobSize_, nBlobs };
         }
-    private:
-        FrameQuery(PM_SESSION_HANDLE hSession, std::span<PM_QUERY_ELEMENT> elements)
-            :
-            hSession_{ hSession }
+        void Reset() noexcept
         {
-            if (auto sta = pmRegisterFrameQuery(hSession_, &hQuery_, elements.data(), elements.size(), &blobSize_);
+            if (!Empty()) {
+                // TODO: check and report error here (nothrow)
+                pmFreeFrameQuery(hQuery_);
+            }
+            Clear_();
+        }
+        bool Empty() const
+        {
+            return hQuery_ == nullptr;
+        }
+        operator bool() const { return !Empty(); }
+    private:
+        // functions
+        FrameQuery(PM_SESSION_HANDLE hSession, std::span<PM_QUERY_ELEMENT> elements)
+        {
+            if (auto sta = pmRegisterFrameQuery(hSession, &hQuery_, elements.data(), elements.size(), &blobSize_);
                 sta != PM_STATUS_SUCCESS) {
                 throw Exception{ std::format("register frame query call failed with error id={}", (int)sta) };
             }
         }
+        // zero out members, useful after emptying via move or reset
+        void Clear_() noexcept
+        {
+            hQuery_ = nullptr;
+            blobSize_ = 0ull;
+        }
+        // data
         PM_FRAME_QUERY_HANDLE hQuery_ = nullptr;
-        PM_SESSION_HANDLE hSession_ = nullptr;
         uint32_t blobSize_ = 0ull;
     };
 }

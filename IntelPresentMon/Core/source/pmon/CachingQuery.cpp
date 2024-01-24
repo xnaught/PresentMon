@@ -28,27 +28,27 @@ namespace p2c::pmon
 		for (auto& pMet : metricPtrs) {
 			queryElements.push_back(pMet->MakeQueryElement());
 		}
-		pQuery = session.RegisterDyanamicQuery(queryElements, winSizeMs, metricOffsetMs);
+		query = session.RegisterDyanamicQuery(queryElements, winSizeMs, metricOffsetMs);
 		for (auto&& [e, m] : std::views::zip(queryElements, metricPtrs)) {
 			m->Finalize(uint32_t(e.dataOffset));
 		}
-		blobs = pQuery->MakeBlobContainer(1u);
+		blobs = query.MakeBlobContainer(1u);
 	}
 
 	const uint8_t* CachingQuery::Poll(double timestamp_)
 	{
-		if (!pQuery) {
+		if (!query) {
 			return nullptr;
 		}
 		if (!timestamp || *timestamp != timestamp_) {
-			pQuery->Poll(pid, blobs);
+			query.Poll(pid, blobs);
 			timestamp = timestamp_;
 		}
 		return blobs.GetFirst();
 	}
 	void CachingQuery::Reset()
 	{
-		pQuery.reset();
+		query.Reset();
 		metricPtrs.clear();
 		blobs.Reset();
 		timestamp.reset();
