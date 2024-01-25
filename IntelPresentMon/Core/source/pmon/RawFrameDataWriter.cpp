@@ -163,9 +163,9 @@ namespace p2c::pmon
         {
             return query_.MakeBlobContainer(nBlobsToCreate);
         }
-        void Consume(uint32_t pid, pmapi::BlobContainer& blobs)
+        void Consume(const pmapi::ProcessTracker& proc, pmapi::BlobContainer& blobs)
         {
-            query_.Consume(pid, blobs);
+            query_.Consume(proc, blobs);
         }
         double ExtractFrameTimeFromBlob(const uint8_t* pBlob) const
         {
@@ -209,10 +209,10 @@ namespace p2c::pmon
         const PM_QUERY_ELEMENT* pFrameDurationElement_ = nullptr;
     };
 
-    RawFrameDataWriter::RawFrameDataWriter(std::wstring path, uint32_t processId, std::wstring processName, uint32_t activeDeviceId,
+    RawFrameDataWriter::RawFrameDataWriter(std::wstring path, const pmapi::ProcessTracker& procTrackerIn, std::wstring processName, uint32_t activeDeviceId,
         pmapi::Session& session, std::optional<std::wstring> frameStatsPathIn, const pmapi::intro::Root& introRoot)
         :
-        pid{ processId },
+        procTracker{ procTrackerIn },
         procName{ ToNarrow(processName) },
         frameStatsPath{ std::move(frameStatsPathIn) },
         pStatsTracker{ frameStatsPath ? std::make_unique<StatisticsTracker>() : nullptr },
@@ -285,7 +285,7 @@ namespace p2c::pmon
     {
         // continue consuming frames until none are left pending
         do {
-            pQueryElementContainer->Consume(pid, blobs);
+            pQueryElementContainer->Consume(procTracker, blobs);
             // loop over populated blobs
             for (auto pBlob : blobs) {
                 if (pStatsTracker) {
@@ -300,7 +300,7 @@ namespace p2c::pmon
                     // tracking frame times
                     pStatsTracker->Push(pQueryElementContainer->ExtractFrameDurationFromBlob(pBlob));
                 }
-                pQueryElementContainer->WriteFrame(pid, procName, file, pBlob);
+                pQueryElementContainer->WriteFrame(procTracker, procName, file, pBlob);
             }
         } while (blobs.AllBlobsPopulated()); // if container filled, means more might be left
         file << std::flush;

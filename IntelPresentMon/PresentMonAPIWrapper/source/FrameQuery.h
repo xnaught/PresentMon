@@ -5,6 +5,7 @@
 #include <string>
 #include <cassert>
 #include "BlobContainer.h"
+#include "ProcessTracker.h"
 
 namespace pmapi
 {
@@ -29,17 +30,17 @@ namespace pmapi
         {
             return blobSize_;
         }
-        void Consume(uint32_t pid, uint8_t* pBlobs, uint32_t& numBlobsInOut)
+        void Consume(const ProcessTracker& tracker, uint8_t* pBlobs, uint32_t& numBlobsInOut)
         {
-            if (auto sta = pmConsumeFrames(hQuery_, pid, pBlobs, &numBlobsInOut); sta != PM_STATUS_SUCCESS) {
+            if (auto sta = pmConsumeFrames(hQuery_, tracker.GetPid(), pBlobs, &numBlobsInOut); sta != PM_STATUS_SUCCESS) {
                 throw Exception{ std::format("consume frame call failed with error id={}", (int)sta) };
             }
         }
-        void Consume(uint32_t pid, BlobContainer& blobs)
+        void Consume(const ProcessTracker& tracker, BlobContainer& blobs)
         {
             assert(!Empty());
             assert(blobs.CheckHandle(hQuery_));
-            Consume(pid, blobs.GetFirst(), blobs.AcquireNumBlobsInRef_());
+            Consume(tracker, blobs.GetFirst(), blobs.AcquireNumBlobsInRef_());
         }
         BlobContainer MakeBlobContainer(uint32_t nBlobs) const
         {

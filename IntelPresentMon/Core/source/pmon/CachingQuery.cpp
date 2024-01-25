@@ -7,9 +7,9 @@
 
 namespace p2c::pmon
 {
-	CachingQuery::CachingQuery(uint32_t pid, double winSizeMs, double metricOffsetMs)
+	CachingQuery::CachingQuery(const pmapi::ProcessTracker& procTrackerIn, double winSizeMs, double metricOffsetMs)
 		:
-		pid{ pid },
+		procTracker{ procTrackerIn },
 		winSizeMs{ winSizeMs },
 		metricOffsetMs{ metricOffsetMs }
 	{}
@@ -41,7 +41,7 @@ namespace p2c::pmon
 			return nullptr;
 		}
 		if (!timestamp || *timestamp != timestamp_) {
-			query.Poll(pid, blobs);
+			query.Poll(procTracker, blobs);
 			timestamp = timestamp_;
 		}
 		return blobs.GetFirst();

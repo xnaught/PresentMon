@@ -29,14 +29,16 @@ namespace p2c::pmon
 	class CachingQuery
 	{
 	public:
-		CachingQuery(uint32_t pid, double winSizeMs, double metricOffsetMs);
+		CachingQuery(const pmapi::ProcessTracker& procTracker, double winSizeMs, double metricOffsetMs);
+		CachingQuery(const CachingQuery&) = delete;
+		CachingQuery& operator=(const CachingQuery&) = delete;
 		void AddDynamicMetric(std::unique_ptr<met::DynamicPollingMetric> pMetric);
 		void Finalize(pmapi::Session& session);
 		const uint8_t* Poll(double timestamp_);
 		void Reset();
 		size_t GetMetricCount() const;
 	private:
-		uint32_t pid;
+		const pmapi::ProcessTracker& procTracker;
 		double winSizeMs;
 		double metricOffsetMs;
 		pmapi::DynamicQuery query;

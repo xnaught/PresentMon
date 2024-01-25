@@ -111,7 +111,7 @@ namespace p2c::kern
         std::optional<gfx::Vec2I> pos_)
         :
         Overlay{ proc_, pSpec_, pm_, std::move(graphPacks_), std::move(pos_),
-            std::make_unique<pmon::CachingQuery>(proc_.pid, pSpec_->averagingWindowSize, pSpec_->metricsOffset) }
+            std::make_unique<pmon::CachingQuery>(pm_->GetTracker(), pSpec_->averagingWindowSize, pSpec_->metricsOffset)}
     {}
 
     Overlay::Overlay(
