@@ -55,12 +55,6 @@ void PresentMonProvider_ShutDown(PresentMonProvider* ctxt);
 // event as close to the flip time as possible.  sourcePresentID should be the ID of the previous
 // app-rendered frame, and be the same ID used by MMIOFlipMultiPlaneOverlay3.
 
-enum PresentMonProvider_PresentType {
-    PresentMonProvider_PresentType_Unspecified,
-    PresentMonProvider_PresentType_D3D9,
-    PresentMonProvider_PresentType_DXGI,
-};
-
 enum PresentMonProvider_PresentIDType {
     PresentMonProvider_PresentID_MMIOFlipMultiPlaneOverlay3,
 };
@@ -74,7 +68,6 @@ enum PresentMonProvider_FrameType {
 };
 
 ULONG PresentMonProvider_PresentFrameType(PresentMonProvider* ctxt,
-                                          PresentMonProvider_PresentType presentType,
                                           PresentMonProvider_FrameType frameType);
 
 ULONG PresentMonProvider_FlipFrameType(PresentMonProvider* ctxt,

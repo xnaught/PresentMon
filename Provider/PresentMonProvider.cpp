@@ -140,14 +140,6 @@ ULONG WriteEvent(
 }
 
 bool IsValid(
-    PresentMonProvider_PresentType presentType)
-{
-    return presentType == PresentMonProvider_PresentType_Unspecified ||
-           presentType == PresentMonProvider_PresentType_D3D9 ||
-           presentType == PresentMonProvider_PresentType_DXGI;
-}
-
-bool IsValid(
     PresentMonProvider_PresentIDType presentIDType)
 {
     return presentIDType == PresentMonProvider_PresentID_MMIOFlipMultiPlaneOverlay3;
@@ -219,15 +211,12 @@ void PresentMonProvider_ShutDown(
 
 ULONG PresentMonProvider_PresentFrameType(
     PresentMonProvider* ctxt,
-    PresentMonProvider_PresentType presentType,
     PresentMonProvider_FrameType frameType)
 {
     PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
-    PRESENTMONPROVIDER_ASSERT(IsValid(presentType));
     PRESENTMONPROVIDER_ASSERT(IsValid(frameType));
 
-    return WriteEvent(ctxt, Event_PresentFrameType, (uint8_t) presentType,
-                                                    (uint8_t) frameType);
+    return WriteEvent(ctxt, Event_PresentFrameType, (uint8_t) frameType);
 }
 
 ULONG PresentMonProvider_FlipFrameType(
