@@ -100,6 +100,30 @@ namespace pmapi
 		DynamicQuery query_;
 	};
 
+	struct FrameQueryContainer : public QueryContainer_
+	{
+		template<typename...S>
+		FrameQueryContainer(Session& session, uint32_t nBlobs, S&&...slotDeviceIds)
+			:
+			QueryContainer_{ session, nBlobs, slotDeviceIds... }
+		{}
+		BlobContainer MakeBlobContainer(uint32_t nBlobs) const
+		{
+			return query_.MakeBlobContainer(nBlobs);
+		}
+		void Consume(pmapi::ProcessTracker& tracker)
+		{
+			query_.Consume(tracker, blobs_);
+		}
+	private:
+		friend class FinalizingElement;
+		// functions
+		void Finalize_();
+		// data
+		//   retained storage
+		FrameQuery query_;
+	};
+
 	template<PM_DATA_TYPE dt, typename DestType>
 	struct QEReadBridger
 	{
@@ -199,6 +223,20 @@ namespace pmapi
 		// register query
 		assert(pSession_);
 		query_ = pSession_->RegisterDyanamicQuery(rawElements_, winSizeMs_, metricOffsetMs_);
+
+		// make blobs
+		blobs_ = query_.MakeBlobContainer(nBlobs_);
+
+		FinalizationPostprocess_();
+	}
+
+	void FrameQueryContainer::Finalize_()
+	{
+		FinalizationPreprocess_();
+
+		// register query
+		assert(pSession_);
+		query_ = pSession_->RegisterFrameQuery(rawElements_);
 
 		// make blobs
 		blobs_ = query_.MakeBlobContainer(nBlobs_);

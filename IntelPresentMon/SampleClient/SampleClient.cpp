@@ -862,6 +862,7 @@ void PollMetrics(uint32_t processId, double metricsOffset)
 }
 
 #define PM_BEGIN_DYNAMIC_QUERY struct : DynamicQueryContainer { using DynamicQueryContainer::DynamicQueryContainer;
+#define PM_BEGIN_FRAME_QUERY struct : FrameQueryContainer { using FrameQueryContainer::FrameQueryContainer;
 #define PM_END_QUERY_AS(queryName) private: FinalizingElement finalizer{ this }; } queryName
 
 int WrapperTest()
@@ -871,25 +872,55 @@ int WrapperTest()
 
     try {
         auto& opt = clio::Options::Get();
+        if (!opt.pid) {
+            throw std::runtime_error{ "You need to specify a pid!" };
+        }
 
         Session session;
-
-        PM_BEGIN_DYNAMIC_QUERY
-            QueryElement fpsAvg{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_AVG };
-            QueryElement fps99{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_PERCENTILE_99 };
-            QueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_PERCENTILE_99, 1 };
-        PM_END_QUERY_AS(query) { session, 1000., 1010., 1, 1 };
-
         auto proc = session.TrackProcess(*opt.pid);
 
-        while (!_kbhit()) {
-            query.Poll(proc);
-            const double fps = query.fpsAvg;
-            const float pow = query.gpuPower;
-            std::cout << fps << ", " << query.fpsAvg.As<int>()
-                << ", " << query.fps99.As<double>()
-                << " | " << pow << std::endl;
-            std::this_thread::sleep_for(20ms);
+        if (opt.dynamic) {
+            PM_BEGIN_DYNAMIC_QUERY
+                QueryElement fpsAvg{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_AVG };
+                QueryElement fps99{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_PERCENTILE_99 };
+                QueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_PERCENTILE_99, 1 };
+            PM_END_QUERY_AS(dq) { session, 1000., 1010., 1, 1 };
+
+            while (!_kbhit()) {
+                dq.Poll(proc);
+                const double fps = dq.fpsAvg;
+                const float pow = dq.gpuPower;
+                std::cout << fps << ", " << dq.fpsAvg.As<int>()
+                    << ", " << dq.fps99.As<double>()
+                    << " | " << pow << std::endl;
+                std::this_thread::sleep_for(20ms);
+            }
+        }
+        else {
+            PM_BEGIN_FRAME_QUERY
+                QueryElement gpuDuration{ this, PM_METRIC_GPU_DURATION, PM_STAT_AVG };
+                QueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_AVG, 1 };
+            PM_END_QUERY_AS(fq) { session, 20, 1 };
+
+            while (!_kbhit()) {
+                fq.Consume(proc);
+                const auto nPopulated = fq.PeekBlobContainer().GetNumBlobsPopulated();
+                if (nPopulated == 0) {
+                    std::cout << "Consumed 0 frames, waiting..." << std::endl;
+                }
+                for (uint32_t i = 0; i < nPopulated; i++) {
+                    fq.SetActiveBlobIndex(i);
+                    std::cout << fq.gpuDuration.As<double>() << ", " << fq.gpuPower.As<double>() << std::endl;
+                }
+                if (fq.PeekBlobContainer().AllBlobsPopulated()) {
+                    std::cout << "All blobs filled in last consume call, checking if more frames still remain...\n";
+                    continue;
+                }
+                else {
+                    std::cout << "No frames remain to consume, waiting..." << std::endl;
+                }
+                std::this_thread::sleep_for(150ms);
+            }
         }
     }
     catch (const std::exception& e) {
