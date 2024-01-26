@@ -173,6 +173,20 @@ namespace pwr::nv
                 }
                 // TODO: consider logging failure (lower logging level perhaps)
             }
+
+            {// temperature
+                if (!GetPowerTelemetryCapBits().test(static_cast<size_t>(GpuTelemetryCapBits::gpu_temperature)))
+                {
+                    unsigned int temp = 0;
+                    if (nvml->Ok(nvml->DeviceGetTemperature(*hNvml, nvmlTemperatureSensors_t::NVML_TEMPERATURE_GPU, &temp)))
+                    {
+                        info.gpu_temperature_c = (double)temp;
+                        SetTelemetryCapBit(GpuTelemetryCapBits::gpu_temperature);
+                    }
+                    // TODO: consider logging failure (lower logging level perhaps)
+                }
+            }
+
         }
 
 
