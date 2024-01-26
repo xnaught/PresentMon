@@ -389,7 +389,6 @@ namespace pmon::mid
             case PM_METRIC_GPU_WAIT_TIME:
             case PM_METRIC_GPU_BUSY_TIME:
             case PM_METRIC_DISPLAY_LATENCY:
-            case PM_METRIC_DISPLAY_BUSY_TIME:
             case PM_METRIC_INPUT_LATENCY:
             case PM_METRIC_FRAME_DURATION:
             case PM_METRIC_PRESENTED_FPS:
@@ -1055,7 +1054,7 @@ void ReportMetrics(
             CalculateMetric(output, display_latency, element.stat);
         }
             break;
-        case PM_METRIC_DISPLAY_BUSY_TIME:
+        case PM_METRIC_DISPLAY_DURATION:
         {
             std::vector<double> display_duration;
             display_duration.reserve(swapChain.DisplayDuration.size());
@@ -1163,10 +1162,6 @@ void ReportMetrics(
         case PM_METRIC_GPU_DURATION:
             CalculateMetric(output, swapChain.GPUDuration, element.stat, true);
             break;
-        case PM_METRIC_DISPLAY_DURATION:
-            CalculateMetric(output, swapChain.DisplayDuration, element.stat, true);
-            break;
-
         default:
             output = 0.;
             break;
@@ -1659,7 +1654,6 @@ void ReportMetrics(
                 case PM_METRIC_GPU_WAIT_TIME:
                 case PM_METRIC_GPU_BUSY_TIME:
                 case PM_METRIC_DISPLAY_LATENCY:
-                case PM_METRIC_DISPLAY_BUSY_TIME:
                 case PM_METRIC_INPUT_LATENCY:
                 case PM_METRIC_FRAME_DURATION:
                 case PM_METRIC_PRESENTED_FPS:
@@ -1669,6 +1663,7 @@ void ReportMetrics(
                 case PM_METRIC_CPU_FRAME_PACING_STALL:
                 case PM_METRIC_GPU_DURATION:
                 case PM_METRIC_DISPLAY_DURATION:
+                case PM_METRIC_APPLICATION:
                     CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
                     break;
                 case PM_METRIC_CPU_VENDOR:

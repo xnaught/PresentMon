@@ -9,7 +9,7 @@
 		X_(METRIC, FRAME_DURATION, "Frame Duration", "", "The total amount of time in between frames on the CPU") \
 		X_(METRIC, GPU_BUSY_TIME, "GPU Busy", "", "How long the GPU spent working on this frame") \
 		X_(METRIC, GPU_WAIT_TIME, "GPU Wait", "", "How long the GPU spent waiting while working on this frame") \
-		X_(METRIC, DISPLAY_BUSY_TIME, "Display Busy", "", "Time display was busy") \
+		X_(METRIC, DISPLAY_DURATION, "Display Duration", "", "How long this frame was displayed on screen") \
 		X_(METRIC, DROPPED_FRAMES, "Dropped Frames", "", "Indicates if the frame was not displayed") \
 		X_(METRIC, NUM_FRAMES, "Number of Frames", "", "The number of frames generated") \
 		X_(METRIC, SYNC_INTERVAL, "Sync Interval", "", "The application's requested interval between presents measured in vertical sync/vblank events") \
@@ -77,5 +77,4 @@
 		X_(METRIC, GPU_VIDEO_BUSY_TIME, "GPU Video Busy Time", "", "The time video encode/decode was active separate from the other engines in milliseconds") \
 		X_(METRIC, CPU_DURATION, "CPU Duration", "", "How long the CPU spent generating this frame in milliseconds. The CPU may not have been fully busy during this time") \
 		X_(METRIC, CPU_FRAME_PACING_STALL, "CPU Frame Pacing Stall", "", "How long the CPU spent waiting before it could start generating the frame in milliseconds") \
-		X_(METRIC, GPU_DURATION, "GPU Duration", "", "Total amount of time between when GPU started frame and when it finished in milliseconds. The GPU may not have been fully busy during this time") \
-		X_(METRIC, DISPLAY_DURATION, "Display Duration", "", "How long this frame was displayed on screen")
+		X_(METRIC, GPU_DURATION, "GPU Duration", "", "Total amount of time between when GPU started frame and when it finished in milliseconds. The GPU may not have been fully busy during this time")
