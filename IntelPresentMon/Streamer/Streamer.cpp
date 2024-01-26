@@ -20,6 +20,7 @@
 #include <ctime>
 #include <cstdlib>
 #include "../PresentMonService/CliOptions.h"
+#include "../CommonUtilities/source/str/String.h"
 
 static const std::chrono::milliseconds kTimeoutLimitMs =
     std::chrono::milliseconds(500);
@@ -194,7 +195,9 @@ void Streamer::ProcessPresentEvent(
     // updated in the copy above.
     data.present_event.last_present_qpc = last_present_qpc;
     data.present_event.last_displayed_qpc = last_displayed_qpc;
-    app_name.assign(data.present_event.application, data.present_event.application + sizeof(data.present_event.application));
+    auto appNameNarrow = pmon::util::str::ToNarrow(app_name);
+    std::size_t length = appNameNarrow.copy(data.present_event.application, appNameNarrow.size());
+    data.present_event.application[length] = '\0';
     // Now copy the power telemetry data
     memcpy_s(&data.power_telemetry, sizeof(PresentMonPowerTelemetryInfo),
              power_telemetry_info, sizeof(PresentMonPowerTelemetryInfo));
