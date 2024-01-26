@@ -9,25 +9,8 @@
 
 namespace pmapi
 {
-	struct QueryContainer
+	struct QueryContainer_
 	{
-		template<typename...S>
-		QueryContainer(pmapi::Session& session, double winSizeMs, double metricOffsetMs, uint32_t nBlobs, S&&...slotDeviceIds)
-			:
-			pSession_{ &session },
-			slotDeviceIds_{ uint32_t(slotDeviceIds)... },
-			winSizeMs_{ winSizeMs },
-			metricOffsetMs_{ metricOffsetMs },
-			nBlobs_{ nBlobs }
-		{}
-		BlobContainer MakeBlobContainer(uint32_t nBlobs) const
-		{
-			return query_.MakeBlobContainer(nBlobs);
-		}
-		void Poll(pmapi::ProcessTracker& tracker)
-		{
-			query_.Poll(tracker, blobs_);
-		}
 		const BlobContainer& PeekBlobContainer() const
 		{
 			return blobs_;
@@ -56,24 +39,65 @@ namespace pmapi
 		{
 			return activeBlobIndex_;
 		}
-	private:
+	protected:
 		friend class QueryElement;
-		friend class FinalizingElement;
 		// functions
-		void Finalize_();
+		template<typename...S>
+		QueryContainer_(Session& session, uint32_t nBlobs, S&&...slotDeviceIds)
+			:
+			pSession_{ &session },
+			slotDeviceIds_{ uint32_t(slotDeviceIds)... },
+			nBlobs_{ nBlobs }
+		{}
+		void FinalizationPreprocess_()
+		{
+			// replace slot indexes with device ids
+			for (auto& e : rawElements_) {
+				if (e.deviceId > 0) {
+					e.deviceId = slotDeviceIds_.at(e.deviceId - 1);
+				}
+			}
+		}
+		void FinalizationPostprocess_();
 		// data
-		//  temporary construction storage
+		//   temporary construction storage
 		std::vector<uint32_t> slotDeviceIds_;
 		std::vector<PM_QUERY_ELEMENT> rawElements_;
 		std::vector<class QueryElement*> smartElements_;
 		Session* pSession_ = nullptr;
-		double winSizeMs_;
-		double metricOffsetMs_;
 		uint32_t nBlobs_;
-		//  retained storage
-		DynamicQuery query_;
+		//   retained storage
 		BlobContainer blobs_;
 		size_t activeBlobIndex_ = 0;
+	};
+
+	struct DynamicQueryContainer : public QueryContainer_
+	{
+		template<typename...S>
+		DynamicQueryContainer(Session& session, double winSizeMs, double metricOffsetMs, uint32_t nBlobs, S&&...slotDeviceIds)
+			:
+			QueryContainer_{ session, nBlobs, slotDeviceIds... },
+			winSizeMs_{ winSizeMs },
+			metricOffsetMs_{ metricOffsetMs }
+		{}
+		BlobContainer MakeBlobContainer(uint32_t nBlobs) const
+		{
+			return query_.MakeBlobContainer(nBlobs);
+		}
+		void Poll(pmapi::ProcessTracker& tracker)
+		{
+			query_.Poll(tracker, blobs_);
+		}
+	private:
+		friend class FinalizingElement;
+		// functions
+		void Finalize_();
+		// data
+		//   temporary construction storage
+		double winSizeMs_;
+		double metricOffsetMs_;
+		//   retained storage
+		DynamicQuery query_;
 	};
 
 	template<PM_DATA_TYPE dt, typename DestType>
@@ -104,9 +128,9 @@ namespace pmapi
 
 	class QueryElement
 	{
-		friend QueryContainer;
+		friend QueryContainer_;
 	public:
-		QueryElement(QueryContainer* pContainer, PM_METRIC metric, PM_STAT stat, uint32_t deviceSlot = 0, uint32_t index = 0)
+		QueryElement(QueryContainer_* pContainer, PM_METRIC metric, PM_STAT stat, uint32_t deviceSlot = 0, uint32_t index = 0)
 			:
 			pContainer_{ pContainer }
 		{
@@ -137,32 +161,23 @@ namespace pmapi
 			return As<T>();
 		}
 	private:
-		const QueryContainer* pContainer_ = nullptr;
+		const QueryContainer_* pContainer_ = nullptr;
 		uint64_t dataOffset_ = 0ull;
 		PM_DATA_TYPE dataType_ = PM_DATA_TYPE_VOID;
 	};
 
 	class FinalizingElement
 	{
-		friend QueryContainer;
 	public:
-		FinalizingElement(QueryContainer* pContainer)
+		template<class E>
+		FinalizingElement(E* pContainer)
 		{
 			pContainer->Finalize_();
 		}
 	};
 
-	void QueryContainer::Finalize_()
+	void QueryContainer_::FinalizationPostprocess_()
 	{
-		// replace slot indexes with device ids
-		for (auto& e : rawElements_) {
-			if (e.deviceId > 0) {
-				e.deviceId = slotDeviceIds_.at(e.deviceId - 1);
-			}
-		}
-		// register query
-		assert(pSession_);
-		query_ = pSession_->RegisterDyanamicQuery(rawElements_, winSizeMs_, metricOffsetMs_);
 		// get introspection data
 		auto pIntro = pSession_->GetIntrospectionRoot();
 		// complete smart query objects
@@ -170,12 +185,24 @@ namespace pmapi
 			smart->dataOffset_ = raw.dataOffset;
 			smart->dataType_ = pIntro->FindMetric(raw.metric).GetDataTypeInfo().GetPolledType();
 		}
-		// make blobs
-		blobs_ = query_.MakeBlobContainer(nBlobs_);
 		// cleanup temporary construction data
 		smartElements_.clear();
 		rawElements_.clear();
 		slotDeviceIds_.clear();
 		pSession_ = nullptr;
+	}
+
+	void DynamicQueryContainer::Finalize_()
+	{
+		FinalizationPreprocess_();
+
+		// register query
+		assert(pSession_);
+		query_ = pSession_->RegisterDyanamicQuery(rawElements_, winSizeMs_, metricOffsetMs_);
+
+		// make blobs
+		blobs_ = query_.MakeBlobContainer(nBlobs_);
+
+		FinalizationPostprocess_();
 	}
 }

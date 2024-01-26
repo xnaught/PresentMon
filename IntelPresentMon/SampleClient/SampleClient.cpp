@@ -861,7 +861,7 @@ void PollMetrics(uint32_t processId, double metricsOffset)
     return;
 }
 
-#define PM_BEGIN_QUERY struct : QueryContainer { using QueryContainer::QueryContainer;
+#define PM_BEGIN_DYNAMIC_QUERY struct : DynamicQueryContainer { using DynamicQueryContainer::DynamicQueryContainer;
 #define PM_END_QUERY_AS(queryName) private: FinalizingElement finalizer{ this }; } queryName
 
 int WrapperTest()
@@ -874,7 +874,7 @@ int WrapperTest()
 
         Session session;
 
-        PM_BEGIN_QUERY
+        PM_BEGIN_DYNAMIC_QUERY
             QueryElement fpsAvg{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_AVG };
             QueryElement fps99{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_PERCENTILE_99 };
             QueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_PERCENTILE_99, 1 };
