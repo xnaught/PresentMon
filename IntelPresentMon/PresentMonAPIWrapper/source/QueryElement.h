@@ -21,9 +21,37 @@ namespace pmapi
 		{
 			return query_.MakeBlobContainer(nBlobs);
 		}
-		void Poll(pmapi::ProcessTracker& tracker, BlobContainer& blobs)
+		void Poll(pmapi::ProcessTracker& tracker)
 		{
-			query_.Poll(tracker, blobs);
+			query_.Poll(tracker, blobs_);
+		}
+		const BlobContainer& PeekBlobContainer() const
+		{
+			return blobs_;
+		}
+		BlobContainer ExtractBlobContainer()
+		{
+			return std::move(blobs_);
+		}
+		void InjectBlobContainer(BlobContainer blobs)
+		{
+			blobs_ = std::move(blobs);
+		}
+		void SwapBlobContainers(BlobContainer& blobs)
+		{
+			std::swap(blobs, blobs_);
+		}
+		const uint8_t* PeekActiveBlob() const
+		{
+			return blobs_[activeBlobIndex_];;
+		}
+		void SetActiveBlobIndex(uint32_t blobIndex)
+		{
+			activeBlobIndex_ = blobIndex;
+		}
+		size_t GetActiveBlobIndex() const
+		{
+			return activeBlobIndex_;
 		}
 	private:
 		friend class QueryElement;
@@ -31,11 +59,15 @@ namespace pmapi
 		// functions
 		void Finalize_();
 		// data
+		//  temporary construction storage
 		std::vector<uint32_t> slotDeviceIds_;
 		std::vector<PM_QUERY_ELEMENT> rawElements_;
 		std::vector<class QueryElement*> smartElements_;
-		DynamicQuery query_;
 		Session* pSession_ = nullptr;
+		//  retained storage
+		DynamicQuery query_;
+		BlobContainer blobs_;
+		size_t activeBlobIndex_ = 0;
 	};
 
 	template<PM_DATA_TYPE dt, typename DestType>
@@ -69,6 +101,8 @@ namespace pmapi
 		friend QueryContainer;
 	public:
 		QueryElement(QueryContainer* pContainer, PM_METRIC metric, PM_STAT stat, uint32_t index = 0, uint32_t deviceSlot = 0)
+			:
+			pContainer_{ pContainer }
 		{
 			pContainer->rawElements_.push_back(PM_QUERY_ELEMENT{
 				.metric = metric,
@@ -79,15 +113,27 @@ namespace pmapi
 			pContainer->smartElements_.push_back(this);
 		}
 		template<typename T>
-		void Load(T& dest, const uint8_t* pBlobBytes) const
+		void Load(T& dest) const
 		{
-			pmon::ipc::intro::BridgeDataType<
-				typename QEReadBridgerAdapter<T>::Bridger
-			>(dataType_, dest, pBlobBytes, dataOffset_);
+			pmon::ipc::intro::BridgeDataType<typename QEReadBridgerAdapter<T>::Bridger>(
+				dataType_, dest, pContainer_->PeekActiveBlob(), dataOffset_);
+		}
+		template<typename T>
+		T As() const
+		{
+			T val;
+			Load(val);
+			return val;
+		}
+		template<typename T>
+		operator T() const
+		{
+			return As<T>();
 		}
 	private:
-		uint64_t dataOffset_ = 0;
-		PM_DATA_TYPE dataType_ = PM_DATA_TYPE_DOUBLE;
+		const QueryContainer* pContainer_ = nullptr;
+		uint64_t dataOffset_ = 0ull;
+		PM_DATA_TYPE dataType_ = PM_DATA_TYPE_VOID;
 	};
 
 	class FinalizingElement
@@ -118,6 +164,8 @@ namespace pmapi
 			smart->dataOffset_ = raw.dataOffset;
 			smart->dataType_ = pIntro->FindMetric(raw.metric).GetDataTypeInfo().GetPolledType();
 		}
+		// make blobs
+		blobs_ = query_.MakeBlobContainer(1);
 		// cleanup temporary construction data
 		smartElements_.clear();
 		rawElements_.clear();

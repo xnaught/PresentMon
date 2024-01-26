@@ -860,6 +860,9 @@ void PollMetrics(uint32_t processId, double metricsOffset)
     return;
 }
 
+#define PM_BEGIN_QUERY struct : QueryContainer { using QueryContainer::QueryContainer;
+#define PM_END_QUERY_AS(queryName) private: FinalizingElement finalizer{ this }; } queryName
+
 int WrapperTest()
 {
     using namespace std::chrono_literals;
@@ -868,21 +871,17 @@ int WrapperTest()
 
     Session session;
 
-#define PM_BEGIN_QUERY struct : QueryContainer { using QueryContainer::QueryContainer;
-#define PM_END_QUERY_AS(queryName, session) private: FinalizingElement finalizer{ this }; } queryName{ session };
-
     PM_BEGIN_QUERY
-        QueryElement fps{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_AVG };
-    PM_END_QUERY_AS(query, session)
+        QueryElement fpsAvg{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_AVG };
+        QueryElement fps99{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_PERCENTILE_99 };
+    PM_END_QUERY_AS(query){ session };
 
-    auto blobs = query.MakeBlobContainer(1);
     auto proc = session.TrackProcess(*opt.pid);
 
     while (true) {
-        query.Poll(proc, blobs);
-        double v;
-        query.fps.Load(v, blobs.GetFirst());
-        std::cout << v << std::endl;
+        query.Poll(proc);
+        const double v = query.fpsAvg;
+        std::cout << v << ", " << query.fpsAvg.As<float>() << ", " << query.fps99.As<double>() << std::endl;
         std::this_thread::sleep_for(20ms);
     }
 
