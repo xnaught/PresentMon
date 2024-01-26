@@ -205,13 +205,14 @@ ProcessInfo* PresentMonSession::GetProcessInfo(uint32_t processId) {
     // fail (with GetLastError() == ERROR_ACCESS_DENIED) if the process was
     // run on another account, unless we're running with SeDebugPrivilege.
     auto pProcessName = L"<error>";
-    wchar_t path[MAX_PATH];
     const auto handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId);
     if (handle) {
+      wchar_t path[MAX_PATH];
       auto numChars = (DWORD)std::size(path);
       if (QueryFullProcessImageNameW(handle, 0, path, &numChars)) {
         pProcessName = PathFindFileNameW(path);
       }
+      CloseHandle(handle);
     }
 
     InitProcessInfo(processInfo, processId, handle, pProcessName);
