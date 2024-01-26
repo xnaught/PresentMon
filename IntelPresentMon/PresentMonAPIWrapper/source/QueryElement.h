@@ -11,11 +11,14 @@ namespace pmapi
 {
 	struct QueryContainer
 	{
-		template<std::same_as<uint32_t>... D>
-		QueryContainer(pmapi::Session& session, D... slotDeviceIds)
+		template<typename...S>
+		QueryContainer(pmapi::Session& session, double winSizeMs, double metricOffsetMs, uint32_t nBlobs, S&&...slotDeviceIds)
 			:
 			pSession_{ &session },
-			slotDeviceIds_{ slotDeviceIds... }
+			slotDeviceIds_{ uint32_t(slotDeviceIds)... },
+			winSizeMs_{ winSizeMs },
+			metricOffsetMs_{ metricOffsetMs },
+			nBlobs_{ nBlobs }
 		{}
 		BlobContainer MakeBlobContainer(uint32_t nBlobs) const
 		{
@@ -64,6 +67,9 @@ namespace pmapi
 		std::vector<PM_QUERY_ELEMENT> rawElements_;
 		std::vector<class QueryElement*> smartElements_;
 		Session* pSession_ = nullptr;
+		double winSizeMs_;
+		double metricOffsetMs_;
+		uint32_t nBlobs_;
 		//  retained storage
 		DynamicQuery query_;
 		BlobContainer blobs_;
@@ -100,7 +106,7 @@ namespace pmapi
 	{
 		friend QueryContainer;
 	public:
-		QueryElement(QueryContainer* pContainer, PM_METRIC metric, PM_STAT stat, uint32_t index = 0, uint32_t deviceSlot = 0)
+		QueryElement(QueryContainer* pContainer, PM_METRIC metric, PM_STAT stat, uint32_t deviceSlot = 0, uint32_t index = 0)
 			:
 			pContainer_{ pContainer }
 		{
@@ -156,7 +162,7 @@ namespace pmapi
 		}
 		// register query
 		assert(pSession_);
-		query_ = pSession_->RegisterDyanamicQuery(rawElements_, 1000., 1010.);
+		query_ = pSession_->RegisterDyanamicQuery(rawElements_, winSizeMs_, metricOffsetMs_);
 		// get introspection data
 		auto pIntro = pSession_->GetIntrospectionRoot();
 		// complete smart query objects
@@ -165,7 +171,7 @@ namespace pmapi
 			smart->dataType_ = pIntro->FindMetric(raw.metric).GetDataTypeInfo().GetPolledType();
 		}
 		// make blobs
-		blobs_ = query_.MakeBlobContainer(1);
+		blobs_ = query_.MakeBlobContainer(nBlobs_);
 		// cleanup temporary construction data
 		smartElements_.clear();
 		rawElements_.clear();

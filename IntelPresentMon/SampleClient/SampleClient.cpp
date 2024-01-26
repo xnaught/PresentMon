@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <format>
 #include <chrono>
+#include <conio.h>
 #include "../PresentMonAPI2/source/PresentMonAPI.h"
 #include "../PresentMonAPI2/source/Internal.h"
 #include "CliOptions.h"
@@ -867,25 +868,40 @@ int WrapperTest()
 {
     using namespace std::chrono_literals;
     using namespace pmapi;
-    auto& opt = clio::Options::Get();
 
-    Session session;
+    try {
+        auto& opt = clio::Options::Get();
 
-    PM_BEGIN_QUERY
-        QueryElement fpsAvg{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_AVG };
-        QueryElement fps99{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_PERCENTILE_99 };
-    PM_END_QUERY_AS(query){ session };
+        Session session;
 
-    auto proc = session.TrackProcess(*opt.pid);
+        PM_BEGIN_QUERY
+            QueryElement fpsAvg{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_AVG };
+            QueryElement fps99{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_PERCENTILE_99 };
+            QueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_PERCENTILE_99, 1 };
+        PM_END_QUERY_AS(query) { session, 1000., 1010., 1, 1 };
 
-    while (true) {
-        query.Poll(proc);
-        const double v = query.fpsAvg;
-        std::cout << v << ", " << query.fpsAvg.As<float>() << ", " << query.fps99.As<double>() << std::endl;
-        std::this_thread::sleep_for(20ms);
+        auto proc = session.TrackProcess(*opt.pid);
+
+        while (!_kbhit()) {
+            query.Poll(proc);
+            const double fps = query.fpsAvg;
+            const float pow = query.gpuPower;
+            std::cout << fps << ", " << query.fpsAvg.As<int>()
+                << ", " << query.fps99.As<double>()
+                << " | " << pow << std::endl;
+            std::this_thread::sleep_for(20ms);
+        }
+    }
+    catch (const std::exception& e) {
+        std::cout << "Error: " << e.what() << std::endl;
+        return -1;
+    }
+    catch (...) {
+        std::cout << "Unknown Error" << std::endl;
+        return -1;
     }
 
-    return -1;
+    return 0;
 }
 
 int main(int argc, char* argv[])
