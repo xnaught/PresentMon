@@ -16,17 +16,15 @@ static MRTraceConsumer* gMRConsumer = nullptr;
 bool StartTraceSession()
 {
     auto const& args = GetCommandLineArgs();
-    auto filterProcessIds = args.mTargetPid != 0; // Does not support process names at this point
 
     // Create consumers
     gPMConsumer = new PMTraceConsumer();
-    gPMConsumer->mFilteredProcessIds = filterProcessIds;
     gPMConsumer->mTrackDisplay = args.mTrackDisplay;
     gPMConsumer->mTrackGPU = args.mTrackGPU;
     gPMConsumer->mTrackGPUVideo = args.mTrackGPUVideo;
     gPMConsumer->mTrackInput = args.mTrackInput;
 
-    if (filterProcessIds) {
+    if (args.mTargetPid != 0) {
         gPMConsumer->AddTrackedProcessForFiltering(args.mTargetPid);
     }
 
@@ -124,12 +122,10 @@ void CheckLostReports(ULONG* eventsLost, ULONG* buffersLost)
 void DequeueAnalyzedInfo(
     std::vector<ProcessEvent>* processEvents,
     std::vector<std::shared_ptr<PresentEvent>>* presentEvents,
-    std::vector<std::shared_ptr<PresentEvent>>* lostPresentEvents,
     std::vector<std::shared_ptr<LateStageReprojectionEvent>>* lsrs)
 {
     gPMConsumer->DequeueProcessEvents(*processEvents);
     gPMConsumer->DequeuePresentEvents(*presentEvents);
-    gPMConsumer->DequeueLostPresentEvents(*lostPresentEvents);
     if (gMRConsumer != nullptr) {
         gMRConsumer->DequeueLSRs(*lsrs);
     }

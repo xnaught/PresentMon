@@ -238,7 +238,7 @@ int wmain(int argc, wchar_t** argv)
     gWnd = CreateWindowExW(0, wndClass.lpszClassName, L"PresentMonWnd", 0, 0, 0, 0, 0, HWND_MESSAGE, 0, 0, nullptr);
     if (!gWnd) {
         PrintError(L"error: failed to create hotkey window.\n");
-        UnregisterClass(wndClass.lpszClassName, NULL);
+        UnregisterClassW(wndClass.lpszClassName, NULL);
         return 4;
     }
 
@@ -246,7 +246,7 @@ int wmain(int argc, wchar_t** argv)
     if (args.mHotkeySupport && !RegisterHotKey(gWnd, HOTKEY_ID, args.mHotkeyModifiers, args.mHotkeyVirtualKeyCode)) {
         PrintError(L"error: failed to register hotkey.\n");
         DestroyWindow(gWnd);
-        UnregisterClass(wndClass.lpszClassName, NULL);
+        UnregisterClassW(wndClass.lpszClassName, NULL);
         return 5;
     }
 
@@ -257,7 +257,7 @@ int wmain(int argc, wchar_t** argv)
     if (!StartTraceSession()) {
         SetConsoleCtrlHandler(HandleCtrlEvent, FALSE);
         DestroyWindow(gWnd);
-        UnregisterClass(wndClass.lpszClassName, NULL);
+        UnregisterClassW(wndClass.lpszClassName, NULL);
         return 6;
     }
 
@@ -271,7 +271,7 @@ int wmain(int argc, wchar_t** argv)
     // If the user didn't specify -hotkey, simulate a hotkey press to start the
     // recording right away.
     if (!args.mHotkeySupport) {
-        PostMessage(gWnd, WM_HOTKEY, HOTKEY_ID, args.mHotkeyModifiers & ~MOD_NOREPEAT);
+        PostMessageW(gWnd, WM_HOTKEY, HOTKEY_ID, args.mHotkeyModifiers & ~MOD_NOREPEAT);
     }
 
     // Enter the MainThread message loop.  This thread will block waiting for
@@ -304,7 +304,7 @@ int wmain(int argc, wchar_t** argv)
     SetConsoleCtrlHandler(HandleCtrlEvent, FALSE);
     */
     DestroyWindow(gWnd);
-    UnregisterClass(wndClass.lpszClassName, NULL);
+    UnregisterClassW(wndClass.lpszClassName, NULL);
     FinalizeConsole();
     return 0;
 }

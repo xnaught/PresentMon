@@ -492,7 +492,7 @@ ULONG TraceSession::Start(
 
     // -------------------------------------------------------------------------
     // Configure trace properties
-    EVENT_TRACE_LOGFILE traceProps = {};
+    EVENT_TRACE_LOGFILEW traceProps = {};
     traceProps.LogFileName = (wchar_t*) etlPath;
     traceProps.ProcessTraceMode = PROCESS_TRACE_MODE_EVENT_RECORD | PROCESS_TRACE_MODE_RAW_TIMESTAMP;
     traceProps.Context = this;
@@ -556,7 +556,7 @@ ULONG TraceSession::Start(
         sessionProps.LoggerThreadId           // tracing session identifier
         */
 
-        auto status = StartTrace(&mSessionHandle, sessionName, &sessionProps);
+        auto status = StartTraceW(&mSessionHandle, sessionName, &sessionProps);
         if (status != ERROR_SUCCESS) {
             mSessionHandle = 0;
             return status;
@@ -571,7 +571,7 @@ ULONG TraceSession::Start(
 
     // -------------------------------------------------------------------------
     // Open the trace
-    mTraceHandle = OpenTrace(&traceProps);
+    mTraceHandle = OpenTraceW(&traceProps);
     if (mTraceHandle == INVALID_PROCESSTRACE_HANDLE) {
         auto lastError = GetLastError();
         Stop();
@@ -613,6 +613,10 @@ ULONG TraceSession::Start(
     }
 
     InitializeTimestampInfo(&mStartQpc, mQpcFrequency);
+
+    if (pmConsumer->mDeferralTimeLimit == 0) {
+        pmConsumer->mDeferralTimeLimit = mQpcFrequency.QuadPart * 2; // 2 seconds
+    }
 
     return ERROR_SUCCESS;
 }

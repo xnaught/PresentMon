@@ -121,6 +121,14 @@ void PrintPresentResult(PresentResult value)
     default:                       wprintf(L"Unknown (%u)", value); assert(false); break;
     }
 }
+void PrintDeferredReason(uint32_t value)
+{
+    switch (value) {
+    case DeferredReason_None:                  wprintf(L"None"); break;
+    case DeferredReason_WaitingForPresentStop: wprintf(L"WaitingForPresentStop"); break;
+    default:                                   wprintf(L"Unknown (%u)", value); assert(false); break;
+    }
+}
 void PrintPresentHistoryModel(uint32_t model)
 {
     using namespace Microsoft_Windows_DxgKrnl;
@@ -226,31 +234,32 @@ void FlushModifiedPresent()
         wprintf(L"->"); \
         _Fn(gModifiedPresent->_Name); \
     }
-    FLUSH_MEMBER(PrintTime,          PresentStopTime)
-    FLUSH_MEMBER(PrintTime,          ReadyTime)
-    FLUSH_MEMBER(PrintTime,          ScreenTime)
-    FLUSH_MEMBER(PrintTime,          InputTime)
-    FLUSH_MEMBER(PrintTime,          GPUStartTime)
-    FLUSH_MEMBER(PrintTimeDelta,     GPUDuration)
-    FLUSH_MEMBER(PrintTimeDelta,     GPUVideoDuration)
-    FLUSH_MEMBER(PrintU64x,          SwapChainAddress)
-    FLUSH_MEMBER(PrintU32,           SyncInterval)
-    FLUSH_MEMBER(PrintU32,           PresentFlags)
-    FLUSH_MEMBER(PrintU64x,          Hwnd)
-    FLUSH_MEMBER(PrintU64x,          DxgkPresentHistoryToken)
-    FLUSH_MEMBER(PrintU32,           QueueSubmitSequence)
-    FLUSH_MEMBER(PrintU32,           DriverThreadId)
-    FLUSH_MEMBER(PrintPresentMode,   PresentMode)
-    FLUSH_MEMBER(PrintPresentResult, FinalState)
-    FLUSH_MEMBER(PrintBool,          SupportsTearing)
-    FLUSH_MEMBER(PrintBool,          WaitForFlipEvent)
-    FLUSH_MEMBER(PrintBool,          WaitForMPOFlipEvent)
-    FLUSH_MEMBER(PrintBool,          SeenDxgkPresent)
-    FLUSH_MEMBER(PrintBool,          SeenWin32KEvents)
-    FLUSH_MEMBER(PrintBool,          DwmNotified)
-    FLUSH_MEMBER(PrintBool,          IsCompleted)
-    FLUSH_MEMBER(PrintBool,          IsLost)
-    FLUSH_MEMBER(PrintU32,           DeferredCompletionWaitCount)
+    FLUSH_MEMBER(PrintTime,           PresentStopTime)
+    FLUSH_MEMBER(PrintTime,           ReadyTime)
+    FLUSH_MEMBER(PrintTime,           ScreenTime)
+    FLUSH_MEMBER(PrintTime,           InputTime)
+    FLUSH_MEMBER(PrintTime,           GPUStartTime)
+    FLUSH_MEMBER(PrintTimeDelta,      GPUDuration)
+    FLUSH_MEMBER(PrintTimeDelta,      GPUVideoDuration)
+    FLUSH_MEMBER(PrintU64x,           SwapChainAddress)
+    FLUSH_MEMBER(PrintU32,            SyncInterval)
+    FLUSH_MEMBER(PrintU32,            PresentFlags)
+    FLUSH_MEMBER(PrintU64x,           Hwnd)
+    FLUSH_MEMBER(PrintU64x,           DxgkPresentHistoryToken)
+    FLUSH_MEMBER(PrintU32,            QueueSubmitSequence)
+    FLUSH_MEMBER(PrintU32,            DriverThreadId)
+    FLUSH_MEMBER(PrintPresentMode,    PresentMode)
+    FLUSH_MEMBER(PrintPresentResult,  FinalState)
+    FLUSH_MEMBER(PrintBool,           SupportsTearing)
+    FLUSH_MEMBER(PrintBool,           WaitForFlipEvent)
+    FLUSH_MEMBER(PrintBool,           WaitForMPOFlipEvent)
+    FLUSH_MEMBER(PrintBool,           SeenDxgkPresent)
+    FLUSH_MEMBER(PrintBool,           SeenWin32KEvents)
+    FLUSH_MEMBER(PrintBool,           DwmNotified)
+    FLUSH_MEMBER(PrintBool,           IsCompleted)
+    FLUSH_MEMBER(PrintBool,           IsLost)
+    FLUSH_MEMBER(PrintBool,           PresentFailed)
+    FLUSH_MEMBER(PrintDeferredReason, DeferredReason)
 #undef FLUSH_MEMBER
 
     if (changedCount > 0) {

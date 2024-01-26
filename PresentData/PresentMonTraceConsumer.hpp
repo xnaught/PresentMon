@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2022 Intel Corporation
+// Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
 
@@ -117,6 +117,11 @@ enum class InputDeviceType {
     Keyboard = 3,
 };
 
+enum DeferredReason {
+    DeferredReason_None                  = 0,
+    DeferredReason_WaitingForPresentStop = 1 << 0,
+};
+
 struct InputEvent {
     uint64_t Time;
     InputDeviceType Type;
@@ -157,15 +162,11 @@ struct PresentEvent {
     uint64_t DxgkContext;                 // mPresentByDxgkContext
     uint64_t Hwnd;                        // mLastPresentByWindow
     uint32_t QueueSubmitSequence;         // mPresentBySubmitSequence
-    uint32_t mAllPresentsTrackingIndex;   // mAllPresents.
+    uint32_t RingIndex;                   // mTrackedPresents and mCompletedPresents
     // Note: the following index tracking structures as well but are defined elsewhere:
     //       ProcessId                 -> mOrderedPresentsByProcessId
     //       ThreadId, DriverThreadId  -> mPresentByThreadId
     //       PresentInDwmWaitingStruct -> mPresentsWaitingForDWM
-
-    // How many PresentStop events from the thread to wait for before
-    // enqueueing this present.
-    uint32_t DeferredCompletionWaitCount;
 
     // Properties deduced by watching events through present pipeline
     uint32_t DestWidth;
@@ -184,14 +185,18 @@ struct PresentEvent {
     bool DwmNotified;
     bool SeenInFrameEvent;      // This present has gotten a Win32k TokenStateChanged event into InFrame state
     bool GpuFrameCompleted;     // This present has already seen an event that caused GpuTrace::CompleteFrame() to be called.
-    bool IsCompleted;           // All expected events have been observed
-    bool IsLost;                // This PresentEvent was found in an unexpected state or is too old
+    bool IsCompleted;           // All expected events have been observed.
+    bool IsLost;                // This PresentEvent was found in an unexpected state and analysis could not continue (potentially
+                                // due to missing a critical ETW event'.
+    bool PresentFailed;         // The Present() call failed.
 
     bool PresentInDwmWaitingStruct; // Whether this PresentEvent is currently stored in
                                     // PMTraceConsumer::mPresentsWaitingForDWM
 
     // Additional transient tracking state
     std::deque<std::shared_ptr<PresentEvent>> DependentPresents;
+
+    uint32_t DeferredReason;    // The reason(s) this present is being deferred (see DeferredReason enum).
 
     // Track the path the present took through the PresentMon analysis.
     #ifdef TRACK_PRESENT_PATHS
@@ -211,131 +216,133 @@ private:
 
 struct PMTraceConsumer
 {
-    PMTraceConsumer();
+    // -------------------------------------------------------------------------------------------
+    // The following are parameters to the analysis, which can be configured prior to starting the
+    // trace session.
 
-    EventMetadata mMetadata;
+    bool mFilteredEvents = false;   // Whether the trace session was configured to filter non-PresentMon events
 
-    bool mFilteredEvents = false;       // Whether the trace session was configured to filter non-PresentMon events
-    bool mFilteredProcessIds = false;   // Whether to filter presents to specific processes
-    bool mTrackDisplay = true;          // Whether the analysis should track presents to display
-    bool mTrackGPU = false;             // Whether the analysis should track GPU work
-    bool mTrackGPUVideo = false;        // Whether the analysis should track GPU video work separately
-    bool mTrackInput = false;           // Whether to track keyboard/mouse click times
+    // Whether the analysis should track...
+    bool mTrackDisplay = true;      // ... presents to the display.
+    bool mTrackGPU = false;         // ... GPU work.
+    bool mTrackGPUVideo = false;    // ... GPU video work (separately from non-video GPU work).
+    bool mTrackInput = false;       // ... keyboard/mouse latency.
 
-    // Whether we've completed any presents yet.  This is used to indicate that
-    // all the necessary providers have started and it's safe to start tracking
-    // presents.
-    bool mHasCompletedAPresent = false;
+    // When PresentEvents are missing data that may still arrive later, they get put into a deferred
+    // state until the data arrives.  This time limit specifies how long a PresentEvent can be
+    // deferred before being considered lost.  The default of 0 means that no PresentEvents will be
+    // deferred, potentially leading to dequeued events that are missing data.
+    uint64_t mDeferralTimeLimit = 0; // QPC duration
 
-    // Store the DWM process id, and the last DWM thread id to have started a
-    // present.  This is needed to determine if a flip event is coming from
-    // DWM, but can also be useful for targetting non-DWM processes.
+
+    // -------------------------------------------------------------------------------------------
+    // These functions can be used to filter PresentEvents by process from within the consumer.
+
+    void AddTrackedProcessForFiltering(uint32_t processID);
+    void RemoveTrackedProcessForFiltering(uint32_t processID);
+    bool IsProcessTrackedForFiltering(uint32_t processID);
+
+
+    // -------------------------------------------------------------------------------------------
+    // Once the session is started the consumer will consume and analyze ETW data to produce
+    // completed process and present events.  Call Dequeue*Events() to periodically to remove these
+    // completed events.  If the functions are not called quick enough, the consumer's internal ring
+    // buffer may wrap and cause completed events to be lost.
     //
-    // mPresentsWaitingForDWM stores all in-progress presents that have been
-    // handed off to DWM.  Once the next DWM present is detected, they are
-    // added as its' DependentPresents.
+    // PresentEvents from each swapchain are ordered by their PresentStart time, but presents from
+    // separate swapchains may appear out of order.
 
-    uint32_t DwmProcessId = 0;
-    uint32_t DwmPresentThreadId = 0;
+    void DequeueProcessEvents(std::vector<ProcessEvent>& outProcessEvents);
+    void DequeuePresentEvents(std::vector<std::shared_ptr<PresentEvent>>& outPresentEvents);
 
-    std::deque<std::shared_ptr<PresentEvent>> mPresentsWaitingForDWM;
+
+    // -------------------------------------------------------------------------------------------
+    // The rest of this structure are internal data and functions for analysing the collected ETW
+    // data.
+
+    // Storage for process and present events.
+    std::vector<ProcessEvent> mProcessEvents;
+    std::vector<std::shared_ptr<PresentEvent>> mTrackedPresents;
+    std::vector<std::shared_ptr<PresentEvent>> mCompletedPresents;
+    std::mutex mProcessEventsMutex;     // Mutexs to protect consumer/dequeue access from different
+    std::mutex mDequeuePresentsMutex;   // threads.
+    uint32_t mNextFreeIndex = 0;        // The index of mTrackedPresents to use when creating the next present.
+    uint32_t mCompletedIndex = 0;       // The index of mCompletedPresents of the oldest completed present.
+    uint32_t mCompletedCount = 0;       // The total number of presents in mCompletedPresents.
+    uint32_t mReadyCount = 0;           // The number of presents in mCompletedPresents, starting at
+                                        // mCompletedIndex, that are ready to be dequeued.
+
+    // EventMetadata stores the structure of ETW events to optimize subsequent property retrieval.
+    EventMetadata mMetadata;
 
     // Limit tracking to specified processes
     std::set<uint32_t> mTrackedProcessFilter;
     std::shared_mutex mTrackedProcessFilterMutex;
+    bool mFilteredProcessIds = false;
+
+    // Whether we've completed any presents yet.  This is used to indicate that all the necessary
+    // providers have started and it's safe to start tracking presents.
+    bool mHasCompletedAPresent = false;
+
+    // Store the DWM process id, and the last DWM thread id to have started a present.  This is
+    // needed to determine if a flip event is coming from DWM, but can also be useful for targetting
+    // non-DWM processes.
+    //
+    // mPresentsWaitingForDWM stores all in-progress presents that have been handed off to DWM.
+    // Once the next DWM present is detected, they are added as its' DependentPresents.
+    std::deque<std::shared_ptr<PresentEvent>> mPresentsWaitingForDWM;
+    uint32_t DwmProcessId = 0;
+    uint32_t DwmPresentThreadId = 0;
 
     // Storage for passing present path tracking id to Handle...() functions.
     #ifdef TRACK_PRESENT_PATHS
     uint32_t mAnalysisPathID;
     #endif
 
-
-    // These store present and process events that are ready for the caller via
-    // one of the thread-safe Dequeue*Events() functions.
+    // These data structures store in-progress presents that are being processed by PMTraceConsumer.
     //
-    // Completed presents have seen all their expected events, based on the
-    // presentation path used.
+    // mTrackedPresents is a circular buffer storage for all in-progress presents.  Presents that
+    // are still in-progress when the buffer wraps are considered lost due to age.  mNextFreeIndex
+    // is the index of the element to use when creating the next present.
     //
-    // Lost presents were determined to be in an unexpected state, most-likely
-    // caused by a missed ETW event (IsLost==true).
-
-    std::mutex mPresentEventMutex;
-    std::vector<std::shared_ptr<PresentEvent>> mCompletePresentEvents;
-
-    std::mutex mLostPresentEventMutex;
-    std::vector<std::shared_ptr<PresentEvent>> mLostPresentEvents;
-
-    std::mutex mProcessEventMutex;
-    std::vector<ProcessEvent> mProcessEvents;
-
-    void DequeuePresentEvents(std::vector<std::shared_ptr<PresentEvent>>& outPresentEvents)
-    {
-        std::lock_guard<std::mutex> lock(mPresentEventMutex);
-        outPresentEvents.swap(mCompletePresentEvents);
-    }
-
-    void DequeueLostPresentEvents(std::vector<std::shared_ptr<PresentEvent>>& outPresentEvents)
-    {
-        std::lock_guard<std::mutex> lock(mLostPresentEventMutex);
-        outPresentEvents.swap(mLostPresentEvents);
-    }
-
-    void DequeueProcessEvents(std::vector<ProcessEvent>& outProcessEvents)
-    {
-        std::lock_guard<std::mutex> lock(mProcessEventMutex);
-        outProcessEvents.swap(mProcessEvents);
-    }
-
-
-    // These data structures store in-progress presents that are being
-    // processed by PMTraceConsumer.
+    // Once presents are completed, they are moved into the mCompletedPresents ring buffer.
+    // mCompletedIndex and mCompletedCount specify a list of presents are ready to be dequeued by
+    // the user.
     //
-    // mAllPresents is a circular buffer storage for all in-progress presents.
-    // Presents that are still in-progress when the buffer wraps are considered
-    // lost due to age.
+    // mPresentByThreadId stores the in-progress present that was last operated on by each thread.
+    // This is used to look up the right present for event sequences that are known to execute on
+    // the same thread.  The present should be removed once those sequences are complete.
     //
-    // mPresentByThreadId stores the in-progress present that was last operated
-    // on by each thread.  This is used to look up the right present for event
-    // sequences that are known to execute on the same thread.  The present
-    // should be removed once those sequences are complete.
+    // mOrderedPresentsByProcessId stores each process' in-progress presents in the order that they
+    // were created.  This is used to look up presents for event sequences across different threads
+    // of the process (e.g., DXGI, DXGK, driver threads).  It's also used to detect discarded
+    // presents when newer presents are displayed from the same swapchain.
     //
-    // mOrderedPresentsByProcessId stores each process' in-progress presents in
-    // the order that they were created.  This is used to look up presents for
-    // event sequences across different threads of the process (e.g., DXGI,
-    // DXGK, driver threads).  It's also used to detect discarded presents when
-    // newer presents are displayed from the same swapchain.
+    // mPresentBySubmitSequence stores presents who have had a present packet submitted on to a
+    // queue until they are completed or discarded.  It's used to associate those presents to
+    // various DXGK events (such as MMIOFlip, IndependentFlip and *SyncDPC) which reference the
+    // submit sequence id.
     //
-    // mPresentBySubmitSequence stores presents who have had a present packet
-    // submitted on to a queue until they are completed or discarded.  It's
-    // used to associate those presents to various DXGK events (such as
-    // MMIOFlip, IndependentFlip and *SyncDPC) which reference the submit
-    // sequence id.
+    // mPresentByWin32KPresentHistoryToken stores the in-progress present associated with each
+    // Win32KPresentHistoryToken, which is a unique key used to identify all flip model presents,
+    // during composition.  Presents should be removed once they have been confirmed.
     //
-    // mPresentByWin32KPresentHistoryToken stores the in-progress present
-    // associated with each Win32KPresentHistoryToken, which is a unique key
-    // used to identify all flip model presents, during composition.  Presents
-    // should be removed once they have been confirmed.
+    // mPresentByDxgkPresentHistoryToken stores the in-progress present associated with each DxgKrnl
+    // present history token, which is a unique key used to identify all windowed presents. Presents
+    // should be removed on DxgKrnl_Event_PropagatePresentHistory, which signals hand-off to DWM.
     //
-    // mPresentByDxgkPresentHistoryToken stores the in-progress present
-    // associated with each DxgKrnl present history token, which is a unique
-    // key used to identify all windowed presents. Presents should be removed
-    // on DxgKrnl_Event_PropagatePresentHistory, which signals hand-off to DWM.
+    // mPresentByDxgkPresentHistoryTokenData stores the in-progress present associated with a
+    // DxgKrnl->DWM token used only for Composed_Copy_CPU_GDI presents.
     //
-    // mPresentByDxgkPresentHistoryTokenData stores the in-progress present
-    // associated with a DxgKrnl->DWM token used only for Composed_Copy_CPU_GDI
-    // presents.
+    // mPresentByDxgkContext stores the in-progress present associated with each DxgContext.  It's
+    // only used for Hardware_Legacy_Copy_To_Front_Buffer presents on Win7, and is needed to
+    // distinguish between DWM-off fullscreen blts and the DWM-on blt to redirection bitmaps.  The
+    // present is removed on the next queue submisison.
     //
-    // mPresentByDxgkContext stores the in-progress present associated with
-    // each DxgContext.  It's only used for
-    // Hardware_Legacy_Copy_To_Front_Buffer presents on Win7, and is needed to
-    // distinguish between DWM-off fullscreen blts and the DWM-on blt to
-    // redirection bitmaps.  The present is removed on the next queue
-    // submisison.
-    //
-    // mLastPresentByWindow stores the latest in-progress present handed off to
-    // DWM from each window.  It's needed to discard some legacy blts, which
-    // don't always get a Win32K token Discarded transition.  The present is
-    // either overwritten, or removed when DWM confirms the present.
+    // mLastPresentByWindow stores the latest in-progress present handed off to DWM from each
+    // window.  It's needed to discard some legacy blts, which don't always get a Win32K token
+    // Discarded transition.  The present is either overwritten, or removed when DWM confirms the
+    // present.
 
     using OrderedPresents = std::map<uint64_t, std::shared_ptr<PresentEvent>>;
 
@@ -343,9 +350,6 @@ struct PMTraceConsumer
     struct Win32KPresentHistoryTokenHash : private std::hash<uint64_t> {
         std::size_t operator()(Win32KPresentHistoryToken const& v) const noexcept;
     };
-
-    unsigned int mAllPresentsNextIndex = 0;
-    std::vector<std::shared_ptr<PresentEvent>> mAllPresents;
 
     std::unordered_map<uint32_t, std::shared_ptr<PresentEvent>> mPresentByThreadId;                     // ThreadId -> PresentEvent
     std::unordered_map<uint32_t, OrderedPresents>               mOrderedPresentsByProcessId;            // ProcessId -> ordered PresentStartTime -> PresentEvent
@@ -359,51 +363,29 @@ struct PMTraceConsumer
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mLastPresentByWindow;                   // HWND -> PresentEvent
 
 
-    // Once an in-progress present becomes lost, discarded, or displayed, it is
-    // removed from all of the above tracking structures and moved into
-    // mDeferredCompletions.
-    //
-    // In some cases (e.g., a present being displayed before Present() returns)
-    // such presents have not yet seen all of their expected events.  When this
-    // happens, the present will remain in mDeferredCompletions for
-    // DeferredCompletionWaitCount PresentStop events from the same thread,
-    // before being enqueued for the user.
-    //
-    // When all expected events are observed, or the
-    // DeferredCompletionWaitCount expires, Presents are moved from
-    // mDeferedCompletions into either mCompletePresentEvents or
-    // mLostPresentEvents for the user to dequeue.
-
-    struct DeferredCompletions {
-        OrderedPresents mOrderedPresents;
-        uint64_t mLastEnqueuedQpcTime;
-    };
-
-    std::unordered_map<uint32_t, std::unordered_map<uint64_t,
-                                        DeferredCompletions>> mDeferredCompletions;   // ProcessId -> SwapChainAddress -> DeferredCompletions
-
-
     // mGpuTrace tracks work executed on the GPU.
     GpuTrace mGpuTrace;
 
 
     // State for tracking keyboard/mouse click times
     //
-    // mLastInputDeviceReadTime and mLastInputDeviceType are the time/type of
-    // the most-recent input event.  This is global and if multiple input
-    // events are observed, but not retrieved by any window, then older ones
-    // are lost.
+    // mLastInputDeviceReadTime and mLastInputDeviceType are the time/type of the most-recent input
+    // event.  This is global and if multiple input events are observed, but not retrieved by any
+    // window, then older ones are lost.
     //
-    // mRetrievedInput stores the time/type of the most-recent input event that
-    // has been retrieved by each process's window(s).  Once that data is
-    // applied to a present, the InputDeviceType is set to None, but the time
-    // is not changed so that we know whether mLastInputDeviceReadTime has
+    // mRetrievedInput stores the time/type of the most-recent input event that has been retrieved
+    // by each process's window(s).  Once that data is applied to a present, the InputDeviceType is
+    // set to None, but the time is not changed so that we know whether mLastInputDeviceReadTime has
     // already been retrieved or not.
-    uint64_t mLastInputDeviceReadTime;
-    InputDeviceType mLastInputDeviceType;
+    uint64_t mLastInputDeviceReadTime = 0;
+    InputDeviceType mLastInputDeviceType = InputDeviceType::None;
 
     std::unordered_map<uint32_t, std::pair<uint64_t, InputDeviceType>> mRetrievedInput; // ProcessID -> <InputTime, InputType>
 
+
+    // Functions for decoding ETW and analysing process and present events.
+
+    PMTraceConsumer();
 
     void HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool redirectedPresent);
     void HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterval, bool isMMIOFlip, bool isMPOFlip);
@@ -413,17 +395,6 @@ struct PMTraceConsumer
     void HandleDxgkSyncDPC(uint64_t timestamp, uint32_t submitSequence);
     void HandleDxgkPresentHistory(EVENT_HEADER const& hdr, uint64_t token, uint64_t tokenData, Microsoft_Windows_DxgKrnl::PresentModel presentModel);
     void HandleDxgkPresentHistoryInfo(EVENT_HEADER const& hdr, uint64_t token);
-
-    void CompletePresent(std::shared_ptr<PresentEvent> const& p);
-    void CompletePresentHelper(std::shared_ptr<PresentEvent> const& p);
-    void EnqueueDeferredCompletions(DeferredCompletions* deferredCompletions);
-    void EnqueueDeferredPresent(std::shared_ptr<PresentEvent> const& p);
-    void TrackPresent(std::shared_ptr<PresentEvent> present, OrderedPresents* presentsByThisProcess);
-    void RemoveLostPresent(std::shared_ptr<PresentEvent> present);
-    void RemovePresentFromTemporaryTrackingCollections(std::shared_ptr<PresentEvent> const& present);
-    void RemovePresentFromSubmitSequenceIdTracking(std::shared_ptr<PresentEvent> const& present);
-    void RuntimePresentStart(Runtime runtime, EVENT_HEADER const& hdr, uint64_t swapchainAddr, uint32_t dxgiPresentFlags, int32_t syncInterval);
-    void RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hdr, uint32_t result);
 
     void HandleProcessEvent(EVENT_RECORD* pEventRecord);
     void HandleDXGIEvent(EVENT_RECORD* pEventRecord);
@@ -440,12 +411,21 @@ struct PMTraceConsumer
     void HandleWin7DxgkVSyncDPC(EVENT_RECORD* pEventRecord);
     void HandleWin7DxgkMMIOFlip(EVENT_RECORD* pEventRecord);
 
-    void AddTrackedProcessForFiltering(uint32_t processID);
-    void RemoveTrackedProcessForFiltering(uint32_t processID);
-    bool IsProcessTrackedForFiltering(uint32_t processID);
 
     void SetThreadPresent(uint32_t threadId, std::shared_ptr<PresentEvent> const& present);
     std::shared_ptr<PresentEvent> FindThreadPresent(uint32_t threadId);
     std::shared_ptr<PresentEvent> FindOrCreatePresent(EVENT_HEADER const& hdr);
     std::shared_ptr<PresentEvent> FindPresentBySubmitSequence(uint32_t submitSequence);
+
+    void TrackPresent(std::shared_ptr<PresentEvent> present, OrderedPresents* presentsByThisProcess);
+    void StopTrackingPresent(std::shared_ptr<PresentEvent> const& present);
+    void RemovePresentFromSubmitSequenceIdTracking(std::shared_ptr<PresentEvent> const& present);
+
+    void RuntimePresentStart(Runtime runtime, EVENT_HEADER const& hdr, uint64_t swapchainAddr, uint32_t dxgiPresentFlags, int32_t syncInterval);
+    void RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hdr, uint32_t result);
+    void CompletePresent(std::shared_ptr<PresentEvent> const& p);
+    void RemoveLostPresent(std::shared_ptr<PresentEvent> present);
+
+    void AddPresentToCompletedList(std::shared_ptr<PresentEvent> const& present);
+    void ClearDeferredReason(std::shared_ptr<PresentEvent> const& present, uint32_t deferredReason);
 };
