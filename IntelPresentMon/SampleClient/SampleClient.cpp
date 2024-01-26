@@ -18,6 +18,9 @@
 #include "../PresentMonAPI2/source/Internal.h"
 #include "CliOptions.h"
 
+#include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
+#include "../PresentMonAPIWrapper/source/QueryElement.h"
+
 #undef ENABLE_FRAME_DATA_WRITE
 #undef ENABLE_PRESENT_MODE
 #undef ENABLE_METRICS
@@ -857,12 +860,45 @@ void PollMetrics(uint32_t processId, double metricsOffset)
     return;
 }
 
+int WrapperTest()
+{
+    using namespace std::chrono_literals;
+    using namespace pmapi;
+    auto& opt = clio::Options::Get();
+
+    Session session;
+
+#define PM_BEGIN_QUERY struct : QueryContainer { using QueryContainer::QueryContainer;
+#define PM_END_QUERY_AS(queryName, session) private: FinalizingElement finalizer{ this }; } queryName{ session };
+
+    PM_BEGIN_QUERY
+        QueryElement fps{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_AVG };
+    PM_END_QUERY_AS(query, session)
+
+    auto blobs = query.MakeBlobContainer(1);
+    auto proc = session.TrackProcess(*opt.pid);
+
+    while (true) {
+        query.Poll(proc, blobs);
+        double v;
+        query.fps.Load(v, blobs.GetFirst());
+        std::cout << v << std::endl;
+        std::this_thread::sleep_for(20ms);
+    }
+
+    return -1;
+}
+
 int main(int argc, char* argv[])
 {
 	if (auto e = clio::Options::Init(argc, argv)) {
 		return *e;
 	}
 	auto& opt = clio::Options::Get();
+    // execute wrapper codepath instead of normal codepath if requested
+    if (opt.wrapper) {
+        return WrapperTest();
+    }
 	// validate options, better to do this with CLI11 validation but framework needs upgrade...
 	if (bool(opt.controlPipe) != bool(opt.introNsm)) {
 		OutputString("Must set both control pipe and intro NSM, or neither.\n");

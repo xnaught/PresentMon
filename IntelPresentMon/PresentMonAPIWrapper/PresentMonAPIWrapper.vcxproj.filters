@@ -38,5 +38,8 @@
     <ClInclude Include="source\BlobContainer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\QueryElement.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
