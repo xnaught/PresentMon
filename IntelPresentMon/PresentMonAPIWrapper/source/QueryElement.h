@@ -84,7 +84,7 @@ namespace pmapi
 		{
 			return query_.MakeBlobContainer(nBlobs);
 		}
-		void Poll(pmapi::ProcessTracker& tracker)
+		void Poll(ProcessTracker& tracker)
 		{
 			query_.Poll(tracker, blobs_);
 		}
@@ -100,6 +100,7 @@ namespace pmapi
 		DynamicQuery query_;
 	};
 
+	template<class T>
 	struct FrameQueryContainer : public QueryContainer_
 	{
 		template<typename...S>
@@ -111,9 +112,23 @@ namespace pmapi
 		{
 			return query_.MakeBlobContainer(nBlobs);
 		}
-		void Consume(pmapi::ProcessTracker& tracker)
+		void Consume(ProcessTracker& tracker)
 		{
 			query_.Consume(tracker, blobs_);
+		}
+		size_t ForEachConsume(ProcessTracker& tracker, std::function<void(const T&)> frameHandler)
+		{
+			size_t nFramesProcessed = 0;
+			do {
+				Consume(tracker);
+				const auto nPopulated = blobs_.GetNumBlobsPopulated();
+				for (uint32_t i = 0; i < nPopulated; i++) {
+					SetActiveBlobIndex(i);
+					frameHandler(static_cast<const T&>(*this));
+				}
+				nFramesProcessed += nPopulated;
+			} while (blobs_.AllBlobsPopulated());
+			return nFramesProcessed;
 		}
 	private:
 		friend class FinalizingElement;
@@ -230,7 +245,8 @@ namespace pmapi
 		FinalizationPostprocess_();
 	}
 
-	void FrameQueryContainer::Finalize_()
+	template<class T>
+	void FrameQueryContainer<T>::Finalize_()
 	{
 		FinalizationPreprocess_();
 
