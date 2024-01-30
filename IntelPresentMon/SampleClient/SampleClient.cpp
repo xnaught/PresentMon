@@ -17,6 +17,7 @@
 #include "../PresentMonAPI2/source/PresentMonAPI.h"
 #include "../PresentMonAPI2/source/Internal.h"
 #include "CliOptions.h"
+#include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
 
 #undef ENABLE_FRAME_DATA_WRITE
 #undef ENABLE_PRESENT_MODE
@@ -40,9 +41,7 @@ const uint32_t kSleepTime = 4;
 const uint32_t kNumFramesInBuf = 1000;
 std::vector<char> g_cpu_name;
 
-PM_SESSION_HANDLE g_hSession = nullptr;
-
-    // Main menu actions
+// Main menu actions
 enum MenuActions{
   kProcessETL = 1,
   kProcessLive,
@@ -578,9 +577,8 @@ void ProcessEtl() {
 }
 #endif
 
-void PollMetrics(uint32_t processId, double metricsOffset)
+void PollMetrics(const std::unique_ptr<pmapi::Session>& pSession, pmapi::ProcessTracker& processTracker, double metricsOffset)
 {
-    PM_DYNAMIC_QUERY_HANDLE q1 = nullptr;
     PM_QUERY_ELEMENT elements[]{
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
@@ -643,83 +641,9 @@ void PollMetrics(uint32_t processId, double metricsOffset)
         PM_QUERY_ELEMENT{.metric = PM_METRIC_DROPPED_FRAMES, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_ALLOWS_TEARING, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
     };
-    if (auto result = pmRegisterDynamicQuery(g_hSession, &q1, elements, std::size(elements), 2000., metricsOffset); result != PM_STATUS_SUCCESS)
-    {
-        ConsolePrintLn("Invalid dynamic query specified!");
-    }
+    auto dynamicQuery1 = pSession->RegisterDyanamicQuery(elements, 2000., metricsOffset);
 
-    PM_DYNAMIC_QUERY_HANDLE q2 = nullptr;
-    PM_QUERY_ELEMENT elements2[]{
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_DURATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_DURATION, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_DURATION, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_DURATION, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_DURATION, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_DURATION, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_DURATION, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAYED_FPS, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FRAME_PACING_STALL, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FRAME_PACING_STALL, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FRAME_PACING_STALL, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FRAME_PACING_STALL, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FRAME_PACING_STALL, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FRAME_PACING_STALL, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FRAME_PACING_STALL, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_DURATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_DURATION, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_DURATION, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_DURATION, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_DURATION, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_DURATION, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_DURATION, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_DURATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_TEMPERATURE, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_VOLTAGE, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_UTILIZATION, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_POWER, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FAN_SPEED, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FAN_SPEED, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 1},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_VRAM_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 2, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_UTILIZATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_MODE, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_RUNTIME, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FRAME_QPC, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_SYNC_INTERVAL, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_NUM_FRAMES, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DROPPED_FRAMES, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_ALLOWS_TEARING, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-    };
-    if (auto result = pmRegisterDynamicQuery(g_hSession, &q2, elements2, std::size(elements2), 2000., metricsOffset);result != PM_STATUS_SUCCESS)
-    {
-        ConsolePrintLn("Invalid dynamic query specified!");
-    }
-
-    auto pBlob = std::make_unique<uint8_t[]>(elements[std::size(elements) - 1].dataOffset + elements[std::size(elements) - 1].dataSize);
-    uint32_t numSwapChains = 1;
-
-
+    /*
     PM_QUERY_ELEMENT staticQueryElement{ .metric = PM_METRIC_APPLICATION, .deviceId = 0, .arrayIndex = 0 };
     auto processName = std::make_unique<uint8_t[]>(260);
     pmPollStaticQuery(g_hSession, &staticQueryElement, processId, processName.get());
@@ -741,107 +665,96 @@ void PollMetrics(uint32_t processId, double metricsOffset)
     staticQueryElement = { .metric = PM_METRIC_GPU_MEM_SIZE, .deviceId = 0, .arrayIndex = 0 };
     auto gpuMemSize = std::make_unique<uint8_t[]>(8);
     pmPollStaticQuery(g_hSession, &staticQueryElement, processId, gpuMemSize.get());
+    */
 
-    int numIterations = 0;
+    auto blobs1 = dynamicQuery1.MakeBlobContainer(1u);
+
     for (;;)
     {
-        PM_STATUS status;
-        if (numIterations < 1000)
-        {
-            status = pmPollDynamicQuery(q1, processId, pBlob.get(), &numSwapChains);
-        }
-        else
-        {
-            status = pmPollDynamicQuery(q2, processId, pBlob.get(), &numSwapChains);
-        }
+        dynamicQuery1.Poll(processTracker, blobs1);
         
-        if (status == PM_STATUS_SUCCESS)
-        {
-            ConsolePrintLn("Static Process Name = %s", reinterpret_cast<char*>(processName.get()));
-            PrintDeviceVendor("Static CPU Vendor = ", reinterpret_cast<PM_DEVICE_VENDOR&>(cpuVendor[0]));
-            ConsolePrintLn("Static CPU Name = %s", reinterpret_cast<char*>(cpuName.get()));
-            PrintDeviceVendor("Static GPU Vendor = ", reinterpret_cast<PM_DEVICE_VENDOR&>(gpuVendor[0]));
-            ConsolePrintLn("Static GPU Name = %s", reinterpret_cast<char*>(gpuName.get()));
-            PrintMetric("Static GPU Memory Max Bandwidth = %f", reinterpret_cast<double&>(gpuMemMaxBw[0]), true);
-            ConsolePrintLn("Static GPU Memory Size = = %lld", reinterpret_cast<uint64_t&>(gpuMemSize[0]));
+        /*
+        ConsolePrintLn("Static Process Name = %s", reinterpret_cast<char*>(processName.get()));
+        PrintDeviceVendor("Static CPU Vendor = ", reinterpret_cast<PM_DEVICE_VENDOR&>(cpuVendor[0]));
+        ConsolePrintLn("Static CPU Name = %s", reinterpret_cast<char*>(cpuName.get()));
+        PrintDeviceVendor("Static GPU Vendor = ", reinterpret_cast<PM_DEVICE_VENDOR&>(gpuVendor[0]));
+        ConsolePrintLn("Static GPU Name = %s", reinterpret_cast<char*>(gpuName.get()));
+        PrintMetric("Static GPU Memory Max Bandwidth = %f", reinterpret_cast<double&>(gpuMemMaxBw[0]), true);
+        ConsolePrintLn("Static GPU Memory Size = = %lld", reinterpret_cast<uint64_t&>(gpuMemSize[0]));
+        */
+        for (auto pBlob : blobs1) {
+            PrintMetric("Presented FPS Average = %f", *reinterpret_cast<double*>(&pBlob[elements[0].dataOffset]), true);
+            PrintMetric("Presented FPS 90% = %f", *reinterpret_cast<double*>(&pBlob[elements[1].dataOffset]), true);
+            PrintMetric("Presented FPS 95% = %f", *reinterpret_cast<double*>(&pBlob[elements[2].dataOffset]), true);
+            PrintMetric("Presented FPS 99% = %f", *reinterpret_cast<double*>(&pBlob[elements[3].dataOffset]), true);
+            PrintMetric("Presented FPS Max = %f", *reinterpret_cast<double*>(&pBlob[elements[4].dataOffset]), true);
+            PrintMetric("Presented FPS Min = %f", *reinterpret_cast<double*>(&pBlob[elements[5].dataOffset]), true);
+            PrintMetric("Presented FPS Raw = %f", *reinterpret_cast<double*>(&pBlob[elements[6].dataOffset]), true);
 
-            PrintMetric("Presented FPS Average = %f", reinterpret_cast<double&>(pBlob[elements[0].dataOffset]), true);
-            PrintMetric("Presented FPS 90% = %f", reinterpret_cast<double&>(pBlob[elements[1].dataOffset]), true);
-            PrintMetric("Presented FPS 95% = %f", reinterpret_cast<double&>(pBlob[elements[2].dataOffset]), true);
-            PrintMetric("Presented FPS 99% = %f", reinterpret_cast<double&>(pBlob[elements[3].dataOffset]), true);
-            PrintMetric("Presented FPS Max = %f", reinterpret_cast<double&>(pBlob[elements[4].dataOffset]), true);
-            PrintMetric("Presented FPS Min = %f", reinterpret_cast<double&>(pBlob[elements[5].dataOffset]), true);
-            PrintMetric("Presented FPS Raw = %f", reinterpret_cast<double&>(pBlob[elements[6].dataOffset]), true);
+            PrintMetric("Frame Time Average = %f", *reinterpret_cast<double*>(&pBlob[elements[7].dataOffset]), true);
+            PrintMetric("Frame Time 90% = %f", *reinterpret_cast<double*>(&pBlob[elements[8].dataOffset]), true);
+            PrintMetric("Frame Time 95% = %f", *reinterpret_cast<double*>(&pBlob[elements[9].dataOffset]), true);
+            PrintMetric("Frame Time 99% = %f", *reinterpret_cast<double*>(&pBlob[elements[10].dataOffset]), true);
+            PrintMetric("Frame Time Max = %f", *reinterpret_cast<double*>(&pBlob[elements[11].dataOffset]), true);
+            PrintMetric("Frame Time Min = %f", *reinterpret_cast<double*>(&pBlob[elements[12].dataOffset]), true);
+            PrintMetric("Frame Time Raw = %f", *reinterpret_cast<double*>(&pBlob[elements[13].dataOffset]), true);
 
-            PrintMetric("Frame Time Average = %f", reinterpret_cast<double&>(pBlob[elements[7].dataOffset]), true);
-            PrintMetric("Frame Time 90% = %f", reinterpret_cast<double&>(pBlob[elements[8].dataOffset]), true);
-            PrintMetric("Frame Time 95% = %f", reinterpret_cast<double&>(pBlob[elements[9].dataOffset]), true);
-            PrintMetric("Frame Time 99% = %f", reinterpret_cast<double&>(pBlob[elements[10].dataOffset]), true);
-            PrintMetric("Frame Time Max = %f", reinterpret_cast<double&>(pBlob[elements[11].dataOffset]), true);
-            PrintMetric("Frame Time Min = %f", reinterpret_cast<double&>(pBlob[elements[12].dataOffset]), true);
-            PrintMetric("Frame Time Raw = %f", reinterpret_cast<double&>(pBlob[elements[13].dataOffset]), true);
+            PrintMetric("Displayed FPS Average = %f", *reinterpret_cast<double*>(&pBlob[elements[14].dataOffset]), true);
+            PrintMetric("Displayed FPS 90% = %f", *reinterpret_cast<double*>(&pBlob[elements[15].dataOffset]), true);
+            PrintMetric("Displayed FPS 95% = %f", *reinterpret_cast<double*>(&pBlob[elements[16].dataOffset]), true);
+            PrintMetric("Displayed FPS 99% = %f", *reinterpret_cast<double*>(&pBlob[elements[17].dataOffset]), true);
+            PrintMetric("Displayed FPS Max = %f", *reinterpret_cast<double*>(&pBlob[elements[18].dataOffset]), true);
+            PrintMetric("Displayed FPS Min = %f", *reinterpret_cast<double*>(&pBlob[elements[19].dataOffset]), true);
+            PrintMetric("Displayed FPS Raw = %f", *reinterpret_cast<double*>(&pBlob[elements[20].dataOffset]), true);
 
-            PrintMetric("Displayed FPS Average = %f", reinterpret_cast<double&>(pBlob[elements[14].dataOffset]), true);
-            PrintMetric("Displayed FPS 90% = %f", reinterpret_cast<double&>(pBlob[elements[15].dataOffset]), true);
-            PrintMetric("Displayed FPS 95% = %f", reinterpret_cast<double&>(pBlob[elements[16].dataOffset]), true);
-            PrintMetric("Displayed FPS 99% = %f", reinterpret_cast<double&>(pBlob[elements[17].dataOffset]), true);
-            PrintMetric("Displayed FPS Max = %f", reinterpret_cast<double&>(pBlob[elements[18].dataOffset]), true);
-            PrintMetric("Displayed FPS Min = %f", reinterpret_cast<double&>(pBlob[elements[19].dataOffset]), true);
-            PrintMetric("Displayed FPS Raw = %f", reinterpret_cast<double&>(pBlob[elements[20].dataOffset]), true);
+            PrintMetric("CPU Wait Time Average = %f", *reinterpret_cast<double*>(&pBlob[elements[21].dataOffset]), true);
+            PrintMetric("CPU Wait Time 90% = %f", *reinterpret_cast<double*>(&pBlob[elements[22].dataOffset]), true);
+            PrintMetric("CPU Wait Time 95% = %f", *reinterpret_cast<double*>(&pBlob[elements[23].dataOffset]), true);
+            PrintMetric("CPU Wait Time 99% = %f", *reinterpret_cast<double*>(&pBlob[elements[24].dataOffset]), true);
+            PrintMetric("CPU Wait Time Max = %f", *reinterpret_cast<double*>(&pBlob[elements[25].dataOffset]), true);
+            PrintMetric("CPU Wait Time Min = %f", *reinterpret_cast<double*>(&pBlob[elements[26].dataOffset]), true);
+            PrintMetric("CPU Wait Time Raw = %f", *reinterpret_cast<double*>(&pBlob[elements[27].dataOffset]), true);
 
-            PrintMetric("CPU Wait Time Average = %f", reinterpret_cast<double&>(pBlob[elements[21].dataOffset]), true);
-            PrintMetric("CPU Wait Time 90% = %f", reinterpret_cast<double&>(pBlob[elements[22].dataOffset]), true);
-            PrintMetric("CPU Wait Time 95% = %f", reinterpret_cast<double&>(pBlob[elements[23].dataOffset]), true);
-            PrintMetric("CPU Wait Time 99% = %f", reinterpret_cast<double&>(pBlob[elements[24].dataOffset]), true);
-            PrintMetric("CPU Wait Time Max = %f", reinterpret_cast<double&>(pBlob[elements[25].dataOffset]), true);
-            PrintMetric("CPU Wait Time Min = %f", reinterpret_cast<double&>(pBlob[elements[26].dataOffset]), true);
-            PrintMetric("CPU Wait Time Raw = %f", reinterpret_cast<double&>(pBlob[elements[27].dataOffset]), true);
+            PrintMetric("CPU Busy Time Average = %f", *reinterpret_cast<double*>(&pBlob[elements[28].dataOffset]), true);
+            PrintMetric("CPU Busy Time 90% = %f", *reinterpret_cast<double*>(&pBlob[elements[29].dataOffset]), true);
+            PrintMetric("CPU Busy Time 95% = %f", *reinterpret_cast<double*>(&pBlob[elements[30].dataOffset]), true);
+            PrintMetric("CPU Busy Time 99% = %f", *reinterpret_cast<double*>(&pBlob[elements[31].dataOffset]), true);
+            PrintMetric("CPU Busy Time Max = %f", *reinterpret_cast<double*>(&pBlob[elements[32].dataOffset]), true);
+            PrintMetric("CPU Busy Time Min = %f", *reinterpret_cast<double*>(&pBlob[elements[33].dataOffset]), true);
+            PrintMetric("CPU Busy Time Raw = %f", *reinterpret_cast<double*>(&pBlob[elements[34].dataOffset]), true);
 
-            PrintMetric("CPU Busy Time Average = %f", reinterpret_cast<double&>(pBlob[elements[28].dataOffset]), true);
-            PrintMetric("CPU Busy Time 90% = %f", reinterpret_cast<double&>(pBlob[elements[29].dataOffset]), true);
-            PrintMetric("CPU Busy Time 95% = %f", reinterpret_cast<double&>(pBlob[elements[30].dataOffset]), true);
-            PrintMetric("CPU Busy Time 99% = %f", reinterpret_cast<double&>(pBlob[elements[31].dataOffset]), true);
-            PrintMetric("CPU Busy Time Max = %f", reinterpret_cast<double&>(pBlob[elements[32].dataOffset]), true);
-            PrintMetric("CPU Busy Time Min = %f", reinterpret_cast<double&>(pBlob[elements[33].dataOffset]), true);
-            PrintMetric("CPU Busy Time Raw = %f", reinterpret_cast<double&>(pBlob[elements[34].dataOffset]), true);
+            PrintMetric("GPU Busy Time Average = %f", *reinterpret_cast<double*>(&pBlob[elements[35].dataOffset]), true);
+            PrintMetric("GPU Busy Time 90% = %f", *reinterpret_cast<double*>(&pBlob[elements[36].dataOffset]), true);
+            PrintMetric("GPU Busy Time 95% = %f", *reinterpret_cast<double*>(&pBlob[elements[37].dataOffset]), true);
+            PrintMetric("GPU Busy Time 99% = %f", *reinterpret_cast<double*>(&pBlob[elements[38].dataOffset]), true);
+            PrintMetric("GPU Busy Time Max = %f", *reinterpret_cast<double*>(&pBlob[elements[39].dataOffset]), true);
+            PrintMetric("GPU Busy Time Min = %f", *reinterpret_cast<double*>(&pBlob[elements[40].dataOffset]), true);
+            PrintMetric("GPU Busy Time Raw = %f", *reinterpret_cast<double*>(&pBlob[elements[41].dataOffset]), true);
 
-            PrintMetric("GPU Busy Time Average = %f", reinterpret_cast<double&>(pBlob[elements[35].dataOffset]), true);
-            PrintMetric("GPU Busy Time 90% = %f", reinterpret_cast<double&>(pBlob[elements[36].dataOffset]), true);
-            PrintMetric("GPU Busy Time 95% = %f", reinterpret_cast<double&>(pBlob[elements[37].dataOffset]), true);
-            PrintMetric("GPU Busy Time 99% = %f", reinterpret_cast<double&>(pBlob[elements[38].dataOffset]), true);
-            PrintMetric("GPU Busy Time Max = %f", reinterpret_cast<double&>(pBlob[elements[39].dataOffset]), true);
-            PrintMetric("GPU Busy Time Min = %f", reinterpret_cast<double&>(pBlob[elements[40].dataOffset]), true);
-            PrintMetric("GPU Busy Time Raw = %f", reinterpret_cast<double&>(pBlob[elements[41].dataOffset]), true);
+            PrintMetric("Display Busy Time Avg = %f", *reinterpret_cast<double*>(&pBlob[elements[42].dataOffset]), true);
 
-            PrintMetric("Display Busy Time Avg = %f", reinterpret_cast<double&>(pBlob[elements[42].dataOffset]), true);
+            PrintMetric("GPU Frequency Avg = %f", *reinterpret_cast<double*>(&pBlob[elements[43].dataOffset]), true);
+            PrintMetric("GPU Temperature Avg = %f", *reinterpret_cast<double*>(&pBlob[elements[44].dataOffset]), true);
+            PrintMetric("GPU Voltage Avg = %f", *reinterpret_cast<double*>(&pBlob[elements[45].dataOffset]), true);
+            PrintMetric("GPU Utilization Avg = %f", *reinterpret_cast<double*>(&pBlob[elements[46].dataOffset]), true);
+            PrintMetric("GPU Power Avg = %f", *reinterpret_cast<double*>(&pBlob[elements[47].dataOffset]), true);
 
-            PrintMetric("GPU Frequency Avg = %f", reinterpret_cast<double&>(pBlob[elements[43].dataOffset]), true);
-            PrintMetric("GPU Temperature Avg = %f", reinterpret_cast<double&>(pBlob[elements[44].dataOffset]), true);
-            PrintMetric("GPU Voltage Avg = %f", reinterpret_cast<double&>(pBlob[elements[45].dataOffset]), true);
-            PrintMetric("GPU Utilization Avg = %f", reinterpret_cast<double&>(pBlob[elements[46].dataOffset]), true);
-            PrintMetric("GPU Power Avg = %f", reinterpret_cast<double&>(pBlob[elements[47].dataOffset]), true);
+            PrintMetric("GPU Fan Speed [0] Avg = %f", *reinterpret_cast<double*>(&pBlob[elements[48].dataOffset]), true);
+            PrintMetric("GPU Fan Speed [1] Avg = %f", *reinterpret_cast<double*>(&pBlob[elements[49].dataOffset]), true);
 
-            PrintMetric("GPU Fan Speed [0] Avg = %f", reinterpret_cast<double&>(pBlob[elements[48].dataOffset]), true);
-            PrintMetric("GPU Fan Speed [1] Avg = %f", reinterpret_cast<double&>(pBlob[elements[49].dataOffset]), true);
+            PrintMetric("GPU Mem Frequency Avg = %f", *reinterpret_cast<double*>(&pBlob[elements[50].dataOffset]), true);
+            PrintMetric("CPU Utilization Avg = %f", *reinterpret_cast<double*>(&pBlob[elements[51].dataOffset]), true);
+            PrintMetric("CPU Frequency Avg = %f", *reinterpret_cast<double*>(&pBlob[elements[52].dataOffset]), true);
+            ConsolePrintLn("Present Mode = %i", *reinterpret_cast<double*>(&pBlob[elements[53].dataOffset]));
+            ConsolePrintLn("Present Runtime = %i", *reinterpret_cast<double*>(&pBlob[elements[54].dataOffset]));
+            ConsolePrintLn("Present QPC =  %lld", *reinterpret_cast<double*>(&pBlob[elements[55].dataOffset]));
+            ConsolePrintLn("Present Sync Interval = %i", *reinterpret_cast<double*>(&pBlob[elements[56].dataOffset]));
+            ConsolePrintLn("Num Presents =  %i", *reinterpret_cast<double*>(&pBlob[elements[57].dataOffset]));
 
-            PrintMetric("GPU Mem Frequency Avg = %f", reinterpret_cast<double&>(pBlob[elements[50].dataOffset]), true);
-            PrintMetric("CPU Utilization Avg = %f", reinterpret_cast<double&>(pBlob[elements[51].dataOffset]), true);
-            PrintMetric("CPU Frequency Avg = %f", reinterpret_cast<double&>(pBlob[elements[52].dataOffset]), true);
-            ConsolePrintLn("Present Mode = %i", reinterpret_cast<double&>(pBlob[elements[53].dataOffset]));
-            ConsolePrintLn("Present Runtime = %i", reinterpret_cast<double&>(pBlob[elements[54].dataOffset]));
-            ConsolePrintLn("Present QPC =  %lld", reinterpret_cast<double&>(pBlob[elements[55].dataOffset]));
-            ConsolePrintLn("Present Sync Interval = %i", reinterpret_cast<double&>(pBlob[elements[56].dataOffset]));
-            ConsolePrintLn("Num Presents =  %i", reinterpret_cast<double&>(pBlob[elements[57].dataOffset]));
-
-            PrintMetric("Dropped Frames Average = %f", reinterpret_cast<double&>(pBlob[elements[58].dataOffset]), true);
-            PrintMetric("Allows Tearing Average = %f", reinterpret_cast<double&>(pBlob[elements[59].dataOffset]), true);
+            PrintMetric("Dropped Frames Average = %f", *reinterpret_cast<double*>(&pBlob[elements[58].dataOffset]), true);
+            PrintMetric("Allows Tearing Average = %f", *reinterpret_cast<double*>(&pBlob[elements[59].dataOffset]), true);
 
             CommitConsole();
-            numIterations++;
-            if (numIterations >= 2000)
-            {
-                numIterations = 0;
-            }
         }
 
         if (gQuit == true) {
@@ -851,14 +764,46 @@ void PollMetrics(uint32_t processId, double metricsOffset)
         Sleep(kSleepTime);
     }
 
-    pmFreeDynamicQuery(q1);
-    pmFreeDynamicQuery(q2);
-
     return;
+}
+
+int DisplayAvailableSystemMetrics()
+{
+    return 0;
+}
+
+int PollMetrics()
+{
+
+    return 0;
+}
+
+int CaptureRawFrameData()
+{
+    std::unique_ptr<pmapi::Session> pSession;
+    pmapi::ProcessTracker processTracker;
+    static constexpr uint32_t numberOfBlobs = 150u;
+
+    return 0;
 }
 
 int main(int argc, char* argv[])
 {
+    if (auto e = clio::Options::Init(argc, argv)) {
+        return *e;
+    }
+    auto& opt = clio::Options::Get();
+    // validate options, better to do this with CLI11 validation but framework needs upgrade...
+    if (bool(opt.controlPipe) != bool(opt.introNsm)) {
+        OutputString("Must set both control pipe and intro NSM, or neither.\n");
+        return -1;
+    }
+
+    /*
+    std::unique_ptr<pmapi::Session> pSession;
+    pmapi::ProcessTracker processTracker;
+    static constexpr uint32_t numberOfBlobs = 150u;
+
 	if (auto e = clio::Options::Init(argc, argv)) {
 		return *e;
 	}
@@ -889,24 +834,20 @@ int main(int argc, char* argv[])
 	PM_STATUS pmStatus{};
 	try {
 		if (opt.controlPipe) {
-			pmStatus = pmOpenSession_(&g_hSession, (*opt.controlPipe).c_str(), (*opt.introNsm).c_str());
+            pSession = std::make_unique<pmapi::Session>((*opt.controlPipe).c_str(), (*opt.introNsm).c_str());
 		}
 		else {
-			pmStatus = pmOpenSession(&g_hSession);
-		}
-		if (pmStatus != PM_STATUS::PM_STATUS_SUCCESS) {
-			PrintError(pmStatus);
-			return -1;
+            pSession = std::make_unique<pmapi::Session>();
 		}
 	}
 	catch (const std::bad_array_new_length& e) {
 		std::cout
-			<< "pmOpenSession caused bad array new length exception, with message '"
+			<< "Creating a new PresentMon session caused bad array new length exception, with message '"
 			<< e.what() << "'" << std::endl;
 	}
 	catch (const std::runtime_error& e) {
 		std::cout
-			<< "pmOpenSession caused std::runtime exception '"
+			<< "Creating a new PresentMon session caused std::runtime exception '"
 			<< e.what() << "'" << std::endl;
 	}
 
@@ -924,36 +865,26 @@ int main(int argc, char* argv[])
 				return 0;
 			}
 			if (g_process_name.length() == 0) {
-				pmCloseSession(g_hSession);
 				return 0;
 			}
 			gCurrentPid = FindProcessId(g_process_name);
 			if (gCurrentPid != 0) {
 				SetRecordFrames();
-				try {
-					pmStatus = pmStartTrackingProcess(g_hSession, gCurrentPid);
-					if (pmStatus == PM_STATUS::PM_STATUS_SUCCESS) {
-						streamingStarted = true;
-					}
-					else {
-						OutputString("Process Name Not Found.\n");
-					}
-				}
-				catch (...) {
-					pmStatus = PM_STATUS::PM_STATUS_FAILURE;
-					OutputString("Unable to start stream\n");
-				}
-			}
+                try {
+                    processTracker = pSession->TrackProcess(gCurrentPid);
+                    if (processTracker) {
+                        streamingStarted = true;
+                    }
+                    else {
+                        OutputString("Process Name Not Found.\n");
+                    }
+                }
+                catch (...) {
+                    pmStatus = PM_STATUS::PM_STATUS_FAILURE;
+                    OutputString("Unable to track process\n");
+                }
+            }
 		}
-
-#ifdef ENABLE_STATIC_QUERIES
-		uint32_t cpu_name_size = 0;
-		pmStatus = pmGetCpuName(nullptr, &cpu_name_size);
-		if (cpu_name_size != 0) {
-			g_cpu_name.resize(cpu_name_size);
-			pmStatus = pmGetCpuName(g_cpu_name.data(), &cpu_name_size);
-		}
-#endif
 
 		std::string status_string;
 		try {
@@ -981,10 +912,10 @@ int main(int argc, char* argv[])
 
 		if (SetConsoleCtrlHandler(CtrlHandler, TRUE)) {
 			// Start metrics capture thread
-			std::thread pollMetricsThread(PollMetrics, gCurrentPid, g_metrics_offset);
+			//std::thread pollMetricsThread(PollMetrics, std::ref(pSession), processTracker, 1.);
 
 			// Wait for the metrics capture thread to finish
-			pollMetricsThread.join();
+			//pollMetricsThread.join();
 	    }
     }
     else if (g_menu_action == MenuActions::kChurnEvents) {
@@ -995,14 +926,13 @@ int main(int argc, char* argv[])
                 return 0;
             }
             if (g_process_name.length() == 0) {
-                pmCloseSession(g_hSession);
                 return 0;
             }
             gCurrentPid = FindProcessId(g_process_name);
             if (gCurrentPid != 0) {
                 try {
-                    pmStatus = pmStartTrackingProcess(g_hSession, gCurrentPid);
-                    if (pmStatus == PM_STATUS::PM_STATUS_SUCCESS) {
+                    processTracker = pSession->TrackProcess(gCurrentPid);
+                    if (processTracker) {
                         streamingStarted = true;
                     }
                     else {
@@ -1011,7 +941,7 @@ int main(int argc, char* argv[])
                 }
                 catch (...) {
                     pmStatus = PM_STATUS::PM_STATUS_FAILURE;
-                    OutputString("Unable to start stream\n");
+                    OutputString("Unable to track process\n");
                 }
             }
         }
@@ -1043,22 +973,19 @@ int main(int argc, char* argv[])
 
         PM_FRAME_QUERY_HANDLE hEventQuery = nullptr;
         uint32_t blobSize = 0;
-        pmRegisterFrameQuery(g_hSession, &hEventQuery, queryElements, std::size(queryElements), &blobSize);
-        constexpr uint32_t maxFrames = 50;
-        auto pBlobs = std::make_unique<uint8_t[]>(blobSize * maxFrames);
-
+        auto frameQuery = pSession->RegisterFrameQuery(queryElements);
+        auto blobs = frameQuery.MakeBlobContainer(numberOfBlobs);
         while (true) {
             std::cout << "Checking for new frames...\n";
-            uint32_t numFrames = maxFrames;
-            pmConsumeFrames(hEventQuery, gCurrentPid, pBlobs.get(), &numFrames);
-            if (numFrames == 0) {
+            uint32_t numFrames = numberOfBlobs;
+            frameQuery.Consume(processTracker, blobs);
+            if (blobs.GetNumBlobsPopulated() == 0) {
                 std::cout << "No frames pending, waiting ~200ms\n";
                 std::this_thread::sleep_for(200ms);
             }
             else {
                 std::cout << std::format("Dumping [{}] frames...\n", numFrames);
-                const auto* pBlob = pBlobs.get();
-                for (auto i = 0u; i < numFrames; i++) {
+                for (auto pBlob : blobs) {
                     const auto gpuPower     = *reinterpret_cast<const double*>(&pBlob[0]);
                     const auto presentMode  = *reinterpret_cast<const PM_PRESENT_MODE*>(&pBlob[8]);
                     const auto presentQpc   = *reinterpret_cast<const uint64_t*>(&pBlob[12]);
@@ -1071,8 +998,8 @@ int main(int argc, char* argv[])
         }
     }
 
-	pmStopTrackingProcess(g_hSession, gCurrentPid);
-	pmCloseSession(g_hSession);
+    processTracker.Reset();
+    pSession->Reset();
 
 	try {
 		g_csv_file.close();
@@ -1080,6 +1007,6 @@ int main(int argc, char* argv[])
 	catch (...) {
 		std::cout << "Unabled to close csv file" << std::endl;
 	}
-
+    */
 	return 0;
 }
