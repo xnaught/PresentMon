@@ -19,19 +19,12 @@
 #include "CliOptions.h"
 #include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
 
-#undef ENABLE_FRAME_DATA_WRITE
-#undef ENABLE_PRESENT_MODE
-#undef ENABLE_METRICS
-#undef ENABLE_ETL
-#undef ENABLE_STATIC_QUERIES
-
 using namespace std::chrono;
 using namespace std::chrono_literals;
 
 HANDLE gCloseEvent;
 bool gQuit = false;
 uint32_t gCurrentPid = 0;
-std::ofstream g_csv_file;
 std::string g_process_name;
 std::string g_etl_file_name;
 int32_t g_metrics_offset = 0;
@@ -40,16 +33,6 @@ const double kWindowSize = 2000.0;
 const uint32_t kSleepTime = 4;
 const uint32_t kNumFramesInBuf = 1000;
 std::vector<char> g_cpu_name;
-
-// Main menu actions
-enum MenuActions{
-  kProcessETL = 1,
-  kProcessLive,
-  kChurnEvents,
-  kQuit
-};
-
-int g_menu_action;
 
 void PrintError(PM_STATUS status) {
   std::string s{};
@@ -74,345 +57,55 @@ void PrintError(PM_STATUS status) {
   }
 }
 
-template<typename T>
-std::string TranslateOptionalTelemetry(T telemetry_item) {
-  std::string data;
-  data = (telemetry_item.valid == true) ? std::to_string(telemetry_item.data) : "NA";
-  return data;
-}
-
-#ifdef ENABLE_FRAME_DATA_WRITE
-void WriteToCSV(PM_FRAME_DATA* data) {
-  try {
-    g_csv_file << "\n";
-    g_csv_file << data->application << ",";
-    g_csv_file << data->process_id << ",";
-    g_csv_file << std::hex << "0x" << data->swap_chain_address << std::dec
-               << ",";
-    g_csv_file << data->runtime << ",";
-    g_csv_file << data->sync_interval << ",";
-    g_csv_file << data->present_flags << ",";
-    g_csv_file << data->dropped << ",";
-    g_csv_file << data->time_in_seconds << ",";
-    g_csv_file << data->ms_in_present_api << ",";
-    g_csv_file << data->ms_between_presents << ",";
-    g_csv_file << data->allows_tearing << ",";
-    g_csv_file << data->present_mode << ",";
-    g_csv_file << data->ms_until_render_complete << ",";
-    g_csv_file << data->ms_until_displayed << ",";
-    g_csv_file << data->ms_between_display_change << ",";
-    g_csv_file << data->ms_until_render_start << ",";
-    g_csv_file << data->ms_gpu_active << ",";
-    g_csv_file << std::to_string(data->qpc_time) << ",";
-    // power telemetry
-    g_csv_file << TranslateOptionalTelemetry(data->gpu_power_w).c_str() << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->gpu_sustained_power_limit_w).c_str() << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->gpu_voltage_v).c_str()
-               << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->gpu_frequency_mhz).c_str()
-               << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->gpu_temperature_c).c_str()
-               << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->gpu_utilization).c_str()
-               << ",";
-    g_csv_file << TranslateOptionalTelemetry(
-                      data->gpu_render_compute_utilization)
-                      .c_str()
-               << ",";
-    g_csv_file
-        << TranslateOptionalTelemetry(data->gpu_media_utilization).c_str()
-        << ",";
-
-    for (int i = 0; i < MAX_PM_FAN_COUNT; i++) {
-      g_csv_file << TranslateOptionalTelemetry(data->fan_speed_rpm[i]).c_str()
-                 << ",";
-    }
-
-    g_csv_file << TranslateOptionalTelemetry(data->vram_frequency_mhz).c_str()
-               << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->vram_effective_frequency_gbs)
-                      .c_str()
-               << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->vram_temperature_c).c_str()
-               << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->vram_power_w).c_str() << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->vram_voltage_v).c_str()
-               << ",";
-
-    for (int i = 0; i < MAX_PM_PSU_COUNT; i++) {
-      g_csv_file << TranslateOptionalTelemetry(data->psu_type[i]).c_str()
-                 << ",";
-      g_csv_file << TranslateOptionalTelemetry(data->psu_power[i]).c_str()
-                 << ",";
-      g_csv_file << TranslateOptionalTelemetry(data->psu_voltage[i]).c_str()
-                 << ",";
-    }
-
-    // Throttling flags
-    g_csv_file << TranslateOptionalTelemetry(data->gpu_power_limited).c_str()
-               << ",";
-    g_csv_file
-        << TranslateOptionalTelemetry(data->gpu_temperature_limited).c_str()
-        << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->gpu_current_limited).c_str()
-               << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->gpu_voltage_limited).c_str()
-               << ",";
-    g_csv_file
-        << TranslateOptionalTelemetry(data->gpu_utilization_limited).c_str()
-        << ",";
-
-    g_csv_file << TranslateOptionalTelemetry(data->vram_power_limited).c_str()
-               << ",";
-    g_csv_file
-        << TranslateOptionalTelemetry(data->vram_temperature_limited).c_str()
-        << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->vram_current_limited).c_str()
-               << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->vram_voltage_limited).c_str()
-               << ",";
-    g_csv_file
-        << TranslateOptionalTelemetry(data->vram_utilization_limited).c_str()
-        << ",";
-
-    g_csv_file << TranslateOptionalTelemetry(data->cpu_utilization).c_str()
-               << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->cpu_power_w).c_str() << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->cpu_power_limit_w).c_str()
-               << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->cpu_temperature_c).c_str()
-               << ",";
-    g_csv_file << TranslateOptionalTelemetry(data->cpu_frequency).c_str()
-               << ",";
-  } catch (...) {
-    std::cout << "Failed CSV output of frame data.\n";
-  }
-}
-
-void RecordFrames(bool is_etl) {
-  PM_STATUS pmStatus = PM_STATUS::PM_STATUS_SUCCESS;
-  uint32_t in_out_num_frames = 1;
-  uint32_t frames_recorded = 0;
-  PM_FRAME_DATA* out_data = new PM_FRAME_DATA[kNumFramesInBuf];
-  if (out_data == nullptr) {
-    return;
-  }
-
-  // Setup csv file
-  time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-  tm local_time;
-  localtime_s(&local_time, &now);
-  std::string csv_filename;
-  if (is_etl) {
-    std::size_t found = g_etl_file_name.find_last_of("/\\");
-    csv_filename = g_etl_file_name.substr(found+1);
-  } else {
-    csv_filename = g_process_name;
-  }
-
-  try {
-    csv_filename += "_" + std::to_string(local_time.tm_year + 1900) +
-                    std::to_string(local_time.tm_mon + 1) +
-                    std::to_string(local_time.tm_mday + 1) +
-                    std::to_string(local_time.tm_hour) +
-                    std::to_string(local_time.tm_min) +
-                    std::to_string(local_time.tm_sec) + ".csv";
-  } catch (const std::exception& e) {
-    std::cout
-        << "a standard exception was caught, with message '"
-        << e.what() << "'" << std::endl;
-    return;
-  }
-  try {
-    g_csv_file.open(csv_filename);
-  } catch (...) {
-    std::cout << "Unabled to open csv file" << std::endl;
-    return;
-  }
-
-  g_csv_file << "Application,ProcessID,SwapChainAddress,Runtime,"
-                "SyncInterval,PresentFlags,Dropped,TimeInSeconds,"
-                "msInPresentAPI, msBetweenPresents,"
-                "AllowsTearing,PresentMode,msUntilRenderComplete,"
-                "msUntilDisplayed,msBetweenDisplayChange,msUntilRenderStart,"
-                "msGPUActive,QPCTime,GpuPower,GpuSustainedPowerLimit,"
-                "GpuVoltage,GpuFrequency,"
-                "GpuTemp,GpuUtilization,GpuRenderComputeUtilization,"
-                "GpuMediaUtilization,GpuFan[0],GpuFan[1],GpuFan[2],GpuFan[3],"
-                "GpuFan[4],VramFrequency,VramEffectiveFreq,VramReadBandwidth,"
-                "VramWriteBandwidthCounter,VramTemperature,"
-                "VramPower,VramVoltage,"
-                "PsuType[0],PsuPower[0],PsuVoltage[0],"
-                "PsuType[1],PsuPower[1],PsuVoltage[1],"
-                "PsuType[2],PsuPower[2],PsuVoltage[2],"
-                "PsuType[3],PsuPower[3],PsuVoltage[3],"
-                "PsuType[4],PsuPower[4],PsuVoltage[4],"
-                "GpuPowerLimited,"
-                "GpuTemperatureLimited,GpuCurrentLimited,"
-                "GpuVoltageLimited,GpuUtilizationLimited,VramPowerLimited,"
-                "VramTemperatureLimited,VramCurrentLimited,VramVoltageLimited,"
-                "VramUtilzationLimited,CpuUtilization,CpuPower,CpuPowerLimit,"
-                "CpuTemperature,CpuFrequency";
-
-  for (;;) {
-    Sleep(kSleepTime);
-    in_out_num_frames = kNumFramesInBuf;
-    if (is_etl) {
-      pmStatus =
-          pmGetEtlFrameData(&in_out_num_frames, out_data);
-
-    } else {
-      if (g_menu_action == MenuActions::kProcessLive) {
-        pmStatus = pmGetFrameData(gCurrentPid, &in_out_num_frames, out_data);
-      } else {
-        pmStatus =
-            pmGetStreamAllFrameData(&in_out_num_frames, out_data);
-      }
-    }
-    if (pmStatus == PM_STATUS::PM_STATUS_DATA_LOSS) {
-      ConsolePrintLn("Data loss occurred during recording. Exiting...");
-      break;
-    } else if (pmStatus == PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST) {
-      if (is_etl) {
-        ConsolePrintLn("Finished processing ETL file. Exiting...");
-        
-      } else {
-        ConsolePrintLn("Process has closed. Exiting...");
-      }
-      break;
-    } else if (pmStatus == PM_STATUS::PM_STATUS_NO_DATA) {
-      // No frames were recorded, continue along
-      continue;
-    } else if (pmStatus == PM_STATUS::PM_STATUS_SUCCESS) {
-      frames_recorded += in_out_num_frames;
-      ConsolePrintLn("Total Frames Recorded: %d", frames_recorded);
-      for (uint32_t i = 0; i < in_out_num_frames; i++) {
-        WriteToCSV(&out_data[i]);
-      }
-    } else {
-      PrintError(pmStatus);
-    }
-    CommitConsole();
-    if (gQuit) {
-      ConsolePrintLn("Exiting recording mode...");
-      break;
-    }
-  }
-  CommitConsole();
-  delete[] out_data;
-}
-#endif
-
-#ifdef ENABLE_PRESENT_MODE
-void PrintPresentMode(PM_PRESENT_MODE present_mode) {
+std::string TranslatePresentMode(PM_PRESENT_MODE present_mode) {
   switch (present_mode) {
     case PM_PRESENT_MODE::PM_PRESENT_MODE_HARDWARE_LEGACY_FLIP:
-      ConsolePrintLn("Hardware: Legacy Flip");
-      break;
+      return "Hardware: Legacy Flip";
+
     case PM_PRESENT_MODE::PM_PRESENT_MODE_HARDWARE_LEGACY_COPY_TO_FRONT_BUFFER:
-      ConsolePrintLn("Hardware: Legacy Copy to front buffer");
-      break;
+        return "Hardware: Legacy Copy to front buffer";
     case PM_PRESENT_MODE::PM_PRESENT_MODE_HARDWARE_INDEPENDENT_FLIP:
-      ConsolePrintLn("Hardware: Independent Flip");
-      break;
+        return "Hardware: Independent Flip";
     case PM_PRESENT_MODE::PM_PRESENT_MODE_COMPOSED_FLIP:
-      ConsolePrintLn("Composed: Flip");
-      break;
+        return "Composed: Flip";
     case PM_PRESENT_MODE::PM_PRESENT_MODE_HARDWARE_COMPOSED_INDEPENDENT_FLIP:
-      ConsolePrintLn("Hardware Composed: Independent Flip");
-      break;
+        return "Hardware Composed: Independent Flip";
     case PM_PRESENT_MODE::PM_PRESENT_MODE_COMPOSED_COPY_WITH_GPU_GDI:
-      ConsolePrintLn("Composed: Copy with GPU GDI");
-      break;
+        return "Composed: Copy with GPU GDI";
     case PM_PRESENT_MODE::PM_PRESENT_MODE_COMPOSED_COPY_WITH_CPU_GDI:
-      ConsolePrintLn("Composed: Copy with CPU GDI");
-      break;
+        return "Composed: Copy with CPU GDI";
     default:
-      ConsolePrintLn("Present Mode: Unknown");
-      break;
-  }
-  return;
-}
-#endif
-
-#ifdef ENABLE_METRICS
-void PrintSwapChainMetrics(PM_FPS_DATA* fps_data, uint32_t num_gfx_swap_chains,
-                           PM_GFX_LATENCY_DATA* latency_data,
-                           uint32_t num_latency_swap_chains) {
-  ConsolePrintLn("pid = %i", gCurrentPid);
-  for (uint32_t i = 0; i < num_gfx_swap_chains; i++) {
-    ConsolePrintLn("Swapchain = %016llX", fps_data[i].swap_chain);
-    ConsolePrintLn("Presented fps Average = %f", fps_data[i].presented_fps.avg);
-    ConsolePrintLn("Raw Frametimes = %f ms", fps_data[i].frame_time_ms.raw);
-    if (num_gfx_swap_chains == 1) {
-      // If we only have a single swap chain print all of the available
-      // metrics.
-      ConsolePrintLn("Presented fps High = %f FPS", fps_data[i].presented_fps.high);
-      ConsolePrintLn("Presented fps Low = %f", fps_data[i].presented_fps.low);
-      ConsolePrintLn("Presented fps 90%% = %f", fps_data[i].presented_fps.percentile_90);
-      ConsolePrintLn("Presented fps 95%% = %f", fps_data[i].presented_fps.percentile_95);
-      ConsolePrintLn("Presented fps 99%% = %f", fps_data[i].presented_fps.percentile_99);
-      ConsolePrintLn("Displayed fps Average = %f", fps_data[i].displayed_fps.avg);
-      ConsolePrintLn("Displayed fps High = %f", fps_data[i].displayed_fps.high);
-      ConsolePrintLn("Displayed fps Low = %f", fps_data[i].displayed_fps.low);
-      ConsolePrintLn("Displayed fps 90%% = %f",
-                     fps_data[i].displayed_fps.percentile_90);
-      ConsolePrintLn("Displayed fps 95%% = %f",
-                     fps_data[i].displayed_fps.percentile_95);
-      ConsolePrintLn("Displayed fps 99%% = %f",
-                     fps_data[i].displayed_fps.percentile_99);
-      ConsolePrintLn("GPU busy = %f ms", fps_data[i].gpu_busy.avg);
-      ConsolePrintLn("Dropped Frames = %f %", fps_data[i].percent_dropped_frames);
-      ConsolePrintLn("Vsync = %d", fps_data[i].sync_interval);
-      PrintPresentMode(fps_data[i].present_mode);
-    }
-    for (uint32_t j = 0; j < num_latency_swap_chains; j++) {
-      // Print out the latency data with the matching swapchain if
-      // one exists
-      if (latency_data[j].swap_chain == fps_data[i].swap_chain) {
-        ConsolePrintLn("Render Latency = %f",
-                       latency_data[i].render_latency_ms.avg);
-        ConsolePrintLn("Display Latency = %f",
-                       latency_data[i].display_latency_ms.avg);
-      }
-    }
+        return("Present Mode: Unknown");
   }
 }
-#endif
 
-void PrintDeviceVendor(char const* vendorLabel, PM_DEVICE_VENDOR deviceVendor) {
-    ConsolePrint(vendorLabel);
+std::string TranslateDeviceVendor(PM_DEVICE_VENDOR deviceVendor) {
     switch (deviceVendor) {
     case PM_DEVICE_VENDOR_INTEL:
-        ConsolePrintLn("PM_DEVICE_VENDOR_INTEL");
-        break;
+        return "PM_DEVICE_VENDOR_INTEL";
     case PM_DEVICE_VENDOR_NVIDIA:
-        ConsolePrintLn("PM_DEVICE_VENDOR_NVIDIA");
-        break;
+        return "PM_DEVICE_VENDOR_NVIDIA";
     case PM_DEVICE_VENDOR_AMD:
-        ConsolePrintLn("PM_DEVICE_VENDOR_AMD");
-        break;
+        return "PM_DEVICE_VENDOR_AMD";
     case PM_DEVICE_VENDOR_UNKNOWN:
-        ConsolePrintLn("PM_DEVICE_VENDOR_UNKNOWN");
-        break;
+        return "PM_DEVICE_VENDOR_UNKNOWN";
     default:
-        ConsolePrintLn("PM_DEVICE_VENDOR_UNKNOWN");
-        break;
+        return "PM_DEVICE_VENDOR_UNKNOWN";
     }
-    return;
 }
 
-bool GetUserInput(std::string& input){
-  try {
-    std::getline(std::cin, input);
-    return true;
-  } catch (const std::exception& e) {
-    std::cout << "a standard exception was caught, with message '" << e.what()
-              << "'" << std::endl;
-    std::cout << "Exiting SampleClient" << std::endl;
-    return false;
-  }
-} 
+std::string TranslateGraphicsRuntime(PM_GRAPHICS_RUNTIME graphicsRuntime) {
+    switch (graphicsRuntime) {
+    case PM_GRAPHICS_RUNTIME_UNKNOWN:
+        return "UNKNOWN";
+    case PM_GRAPHICS_RUNTIME_DXGI:
+        return "DXGI";
+    case PM_GRAPHICS_RUNTIME_D3D9:
+        return "D3D9";
+    default:
+        return "UNKNOWN";
+    }
+}
 
 void OutputString(const char* output) {
   try {
@@ -441,116 +134,58 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType) {
   }
 }
 
-void SetRecordFrames() {
-  bool valid_selection = false;
-  std::string action;
+bool caseInsensitiveCompare(std::string str1, std::string str2) {
+    std::for_each(str1.begin(), str1.end(), [](char& c)
+    {
+        c = std::tolower(static_cast<unsigned char>(c));
+    });
+    std::for_each(str2.begin(), str2.end(), [](char& c)
+    {
+        c = std::tolower(static_cast<unsigned char>(c));
+    });
+    if (str1.compare(str2) == 0)
+        return true;
+    return false;
+}
 
-  while (valid_selection == false) {
-    OutputString("Select Action:\n");
-    OutputString("(1) Display Metrics\n");
-    OutputString("(2) Record Frames\n");
-    if (GetUserInput(action) == false) {
-      gQuit = true;
-      return;
-    }
-    if (action.length() != 0) {
-      int action_num = std::stoi(action);
-      if (action_num == 1) {
-        g_record_frames = false;
+void GetProcessInformation(std::optional<std::string>& processName, std::optional<unsigned int>& processId) {
+    if (!processName.has_value() && !processId.has_value()) {
         return;
-      }
-      if (action_num == 2) {
-        g_record_frames = true;
+    }
+
+    HANDLE processes_snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+    if (processes_snapshot == INVALID_HANDLE_VALUE) {
+        processId = std::nullopt;
+        processName = std::nullopt;
         return;
-      }
-    } else {
-      gQuit = true;
     }
-  }
-}
 
-int32_t DisplayMainMenu() {
-  bool valid_selection = false;
-  std::string action;
-  int action_num = MenuActions::kQuit;
+    PROCESSENTRY32 process_info;
+    process_info.dwSize = sizeof(process_info);
 
-  while (valid_selection == false) {
-    OutputString("Set Action:\n");
-    OutputString("(1) Process ETL File\n");
-    OutputString("(2) Real Time PresentMon for Single Process\n");
-    OutputString("(3) Churn Frame Event Data\n");
-    OutputString("(4) Quit\n");
-    if (GetUserInput(action) == false) {
-      break;
+    if (!Process32First(processes_snapshot, &process_info)) {
+        // Unable to retrieve the first process
+        CloseHandle(processes_snapshot);
+        processId = std::nullopt;
+        processName = std::nullopt;
+        return;
     }
-    if (action.length() != 0) {
-      action_num = std::stoi(action);
-      if (action_num >= MenuActions::kProcessETL &&
-          action_num <= MenuActions::kQuit) {
-        break;
-      }
-    }
-  }
-  return action_num;
-}
 
-int32_t GetMetricsOffset() {
-  bool valid_selection = false;
-  std::string action;
-  int metrics_offset;
-
-  while (valid_selection == false) {
-    OutputString("Set Metrics Offset(ms) (Enter 0 for most recent metrics):");
-    if (GetUserInput(action) == true) {
-      if (action.length() != 0) {
-        // Ensure the metric input is valid
-        try {
-          metrics_offset = std::stoi(action);
-        } catch (std::invalid_argument) {
-          OutputString("Invalid offset.\n");
-          continue;
-        } catch (std::out_of_range) {
-          OutputString("Invalid offset.\n");
-          continue;
+    do {
+        if ((processName.has_value() && caseInsensitiveCompare(process_info.szExeFile, processName.value())) ||
+            (processId.has_value() && process_info.th32ProcessID == processId.value())) {
+            CloseHandle(processes_snapshot);
+            processId = process_info.th32ProcessID;
+            processName = process_info.szExeFile;
+            return;
         }
-        // Metrics offsets must be positive
-        if (metrics_offset < 0) {
-          OutputString("Invalid offset.\n");
-          continue;
-        }
-        valid_selection = true;
-      }
-    }
-  }
-  return metrics_offset;
-}
+    } while (Process32Next(processes_snapshot, &process_info));
 
-DWORD FindProcessId(const std::string& process_name) {
-  PROCESSENTRY32 process_info;
-  process_info.dwSize = sizeof(process_info);
-
-  HANDLE processes_snapshot =
-      CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
-  if (processes_snapshot == INVALID_HANDLE_VALUE) {
-    return 0;
-  }
-
-  Process32First(processes_snapshot, &process_info);
-
-  if (strcmp(process_info.szExeFile, process_name.c_str()) == 0) {
     CloseHandle(processes_snapshot);
-    return process_info.th32ProcessID;
-  }
 
-  while (Process32Next(processes_snapshot, &process_info)) {
-    if (strcmp(process_info.szExeFile, process_name.c_str()) == 0) {
-      CloseHandle(processes_snapshot);
-      return process_info.th32ProcessID;
-    }
-  }
-
-  CloseHandle(processes_snapshot);
-  return 0;
+    // If no match found, reset optional values
+    processId = std::nullopt;
+    processName = std::nullopt;
 }
 
 #ifdef ENABLE_ETL
@@ -767,22 +402,310 @@ void PollMetrics(const std::unique_ptr<pmapi::Session>& pSession, pmapi::Process
     return;
 }
 
-int DisplayAvailableSystemMetrics()
+int ViewAvailableSystemMetrics(std::string controlPipe, std::string introspectionNsm)
 {
+    std::unique_ptr<pmapi::Session> pSession;
+    pmapi::ProcessTracker processTracker;
+    try {
+        if (controlPipe.empty() == false) {
+            pSession = std::make_unique<pmapi::Session>(controlPipe, introspectionNsm);
+        }
+        else {
+            pSession = std::make_unique<pmapi::Session>();
+        }
+    }
+    catch (const std::bad_array_new_length& e) {
+        std::cout
+            << "Creating a new PresentMon session caused bad array new length exception, with message '"
+            << e.what() << "'" << std::endl;
+        return -1;
+    }
+    catch (const std::runtime_error& e) {
+        std::cout
+            << "Creating a new PresentMon session caused std::runtime exception '"
+            << e.what() << "'" << std::endl;
+        return -1;
+    }
+
+    // Example of how to use introspection to examine ALL metrics and determine
+    // their availablity
+    auto pIntrospectionRoot = pSession->GetIntrospectionRoot();
+    auto metricEnums = pIntrospectionRoot->FindEnum(PM_ENUM_METRIC);
+
+    // Loop through ALL PresentMon metrics
+    for (auto metric : pIntrospectionRoot->GetMetrics())
+    {
+        std::string metricSymbol;
+        // Look through PM_ENUM_METRIC enums to gather the metric symbol
+        for (auto key : metricEnums.GetKeys())
+        {
+            if (key.GetId() == metric.GetId())
+            {
+                metricSymbol = key.GetSymbol();
+                break;
+            }
+        }
+
+        // Go through the device metric info to determine the metric's availability
+        auto metricInfo = metric.GetDeviceMetricInfo();
+        for (auto mi : metricInfo)
+        {
+            auto device = mi.GetDevice();
+            std::cout << std::format("Metric Id: {}, Metric Symbol: {}, Vendor Name: {}, Vendor Device Id: {}, Is Available: {}",
+                (int)metric.GetId(), metricSymbol, device.GetName(), device.GetId(), mi.IsAvailable());
+            std::cout << std::endl;
+        }
+    }
+
     return 0;
 }
 
-int PollMetrics()
+int PollMetricsThread(std::string controlPipe, std::string introspectionNsm, unsigned int processId)
 {
+    std::unique_ptr<pmapi::Session> pSession;
+    pmapi::ProcessTracker processTracker;
+    try {
+        if (controlPipe.empty() == false) {
+            pSession = std::make_unique<pmapi::Session>(controlPipe, introspectionNsm);
+        }
+        else {
+            pSession = std::make_unique<pmapi::Session>();
+        }
+    }
+    catch (const std::bad_array_new_length& e) {
+        std::cout
+            << "Creating a new PresentMon session caused bad array new length exception, with message '"
+            << e.what() << "'" << std::endl;
+        return -1;
+    }
+    catch (const std::runtime_error& e) {
+        std::cout
+            << "Creating a new PresentMon session caused std::runtime exception '"
+            << e.what() << "'" << std::endl;
+        return -1;
+    }
 
     return 0;
 }
 
-int CaptureRawFrameData()
+void WriteToCSV(std::ofstream& csvFile, const std::string& processName, const unsigned int& processId,
+    PM_QUERY_ELEMENT(&queryElements)[16], pmapi::BlobContainer& blobs)
+{
+    
+    for (auto pBlob : blobs) {
+        //const auto appName = *reinterpret_cast<const std::string*>(&pBlob[queryElements[0].dataOffset]);
+        const auto swapChain = *reinterpret_cast<const uint64_t*>(&pBlob[queryElements[0].dataOffset]);
+        const auto graphicsRuntime = *reinterpret_cast<const PM_GRAPHICS_RUNTIME*>(&pBlob[queryElements[1].dataOffset]);
+        const auto syncInterval = *reinterpret_cast<const uint32_t*>(&pBlob[queryElements[2].dataOffset]);
+        const auto presentFlags = *reinterpret_cast<const uint32_t*>(&pBlob[queryElements[3].dataOffset]);
+        const auto allowsTearing = *reinterpret_cast<const bool*>(&pBlob[queryElements[4].dataOffset]);
+        const auto presentMode = *reinterpret_cast<const PM_PRESENT_MODE*>(&pBlob[queryElements[5].dataOffset]);
+        const auto cpuFrameQpc = *reinterpret_cast<const uint64_t*>(&pBlob[queryElements[6].dataOffset]);
+        const auto cpuDuration = *reinterpret_cast<const double*>(&pBlob[queryElements[7].dataOffset]);
+        const auto cpuFramePacingStall = *reinterpret_cast<const double*>(&pBlob[queryElements[8].dataOffset]);
+        const auto gpuLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[9].dataOffset]);
+        const auto gpuDuration = *reinterpret_cast<const double*>(&pBlob[queryElements[10].dataOffset]);
+        const auto gpuBusyTime = *reinterpret_cast<const double*>(&pBlob[queryElements[11].dataOffset]);
+        const auto gpuDisplayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[12].dataOffset]);
+        const auto gpuDisplayDuration = *reinterpret_cast<const double*>(&pBlob[queryElements[13].dataOffset]);
+        const auto gpuInputLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[14].dataOffset]);
+        const auto variableMetricData = *reinterpret_cast<const double*>(&pBlob[queryElements[15].dataOffset]);
+        try {
+            csvFile << processName << ",";
+            csvFile << processId << ",";
+            csvFile << std::hex << "0x" << std::dec << swapChain << ",";
+            csvFile << TranslateGraphicsRuntime(graphicsRuntime) << ",";
+            csvFile << syncInterval << ",";
+            csvFile << presentFlags << ",";
+            csvFile << allowsTearing << ",";
+            csvFile << TranslatePresentMode(presentMode) << ",";
+            csvFile << cpuFrameQpc << ",";
+            csvFile << cpuDuration << ",";
+            csvFile << cpuFramePacingStall << ",";
+            csvFile << gpuLatency << ",";
+            csvFile << gpuDuration << ",";
+            csvFile << gpuBusyTime << ",";
+            csvFile << gpuDisplayLatency << ",";
+            csvFile << gpuDisplayDuration << ",";
+            csvFile << gpuInputLatency << ",";
+            csvFile << variableMetricData << "\n";
+        }
+        catch (...) {
+            std::cout << "Failed CSV output of frame data.\n";
+        }
+    }
+}
+
+std::optional<std::ofstream> CreateCsvFile(std::string& processName, std::string& variableMetricName)
+{
+    // Setup csv file
+    time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    tm local_time;
+    localtime_s(&local_time, &now);
+    std::ofstream csvFile;
+    std::string csvFileName = processName;
+
+    try {
+        csvFileName += "_" + std::to_string(local_time.tm_year + 1900) +
+            std::to_string(local_time.tm_mon + 1) +
+            std::to_string(local_time.tm_mday + 1) +
+            std::to_string(local_time.tm_hour) +
+            std::to_string(local_time.tm_min) +
+            std::to_string(local_time.tm_sec) + ".csv";
+    }
+    catch (const std::exception& e) {
+        std::cout
+            << "a standard exception was caught, with message '"
+            << e.what() << "'" << std::endl;
+        return std::nullopt;
+    }
+
+    try {
+        csvFile.open(csvFileName);
+    }
+    catch (...) {
+        std::cout << "Unabled to open csv file" << std::endl;
+        return std::nullopt;
+    }
+
+    csvFile << "Application,ProcessID,SwapChainAddress,PresentRuntime,"
+        "SyncInterval,PresentFlags,AllowsTearing,PresentMode,"
+        "CPUFrameQPC,CPUDuration,CPUFramePacingStall,"
+        "GPULatency,GPUDuration,GPUBusy,DisplayLatency,"
+        "DisplayDuration,InputLatency," << variableMetricName;
+    csvFile << std::endl;
+
+    return csvFile;
+}
+
+int RecordFrames(std::string controlPipe, std::string introspectionNsm, std::string processName, unsigned int processId)
 {
     std::unique_ptr<pmapi::Session> pSession;
     pmapi::ProcessTracker processTracker;
     static constexpr uint32_t numberOfBlobs = 150u;
+
+    try {
+        if (controlPipe.empty() == false) {
+            pSession = std::make_unique<pmapi::Session>(controlPipe, introspectionNsm);
+        }
+        else {
+            pSession = std::make_unique<pmapi::Session>();
+        }
+    }
+    catch (const std::bad_array_new_length& e) {
+        std::cout
+            << "Creating a new PresentMon session caused bad array new length exception, with message '"
+            << e.what() << "'" << std::endl;
+        return -1;
+    }
+    catch (const std::runtime_error& e) {
+        std::cout
+            << "Creating a new PresentMon session caused std::runtime exception '"
+            << e.what() << "'" << std::endl;
+        return -1;
+    }
+
+    // Search through introspection for first available GPU
+    // metric. If we happen to be on a machine with an unsupported GPU
+    // capture CPU utilization instead
+    auto pIntrospectionRoot = pSession->GetIntrospectionRoot();
+    auto metricEnums = pIntrospectionRoot->FindEnum(PM_ENUM_METRIC);
+    PM_METRIC variableMetric = PM_METRIC_CPU_UTILIZATION;
+    std::string variableMetricName = "CPUUtilization";
+    uint32_t variableMetricDeviceId = 0;
+
+    // Loop through ALL PresentMon metrics
+    for (auto metric : pIntrospectionRoot->GetMetrics())
+    {
+        // Go through the device metric info to determine the metric's availability
+        auto metricInfo = metric.GetDeviceMetricInfo();
+        for (auto mi : metricInfo)
+        {
+            auto device = mi.GetDevice();
+            if (device.GetId() != 0)
+            {
+                variableMetric = metric.GetId();
+                // Look through PM_ENUM_METRIC enums to gather the metric symbol
+                for (auto key : metricEnums.GetKeys())
+                {
+                    if (key.GetId() == metric.GetId())
+                    {
+                        variableMetricName = key.GetName();
+                        break;
+                    }
+                }
+                variableMetricDeviceId = device.GetId();
+                break;
+            }
+        }
+        if (variableMetricDeviceId != 0) {
+            break;
+        }
+    }
+
+    // TODO: Had to comment out the application metric because when
+    // calling RegisterFrameQuery we crash
+    PM_QUERY_ELEMENT queryElements[]{
+        //{ PM_METRIC_APPLICATION, PM_STAT_NONE, 0, 0 },
+        { PM_METRIC_SWAP_CHAIN_ADDRESS, PM_STAT_NONE, 0, 0 },
+        { PM_METRIC_PRESENT_RUNTIME, PM_STAT_NONE, 0, 0 },
+        { PM_METRIC_SYNC_INTERVAL, PM_STAT_NONE, 0, 0 },
+        { PM_METRIC_PRESENT_FLAGS, PM_STAT_NONE, 0, 0 },
+        { PM_METRIC_ALLOWS_TEARING, PM_STAT_NONE, 0, 0 },
+        { PM_METRIC_PRESENT_MODE, PM_STAT_NONE, 0, 0 },
+        { PM_METRIC_CPU_FRAME_QPC, PM_STAT_NONE, 0, 0 },
+        { PM_METRIC_CPU_DURATION, PM_STAT_NONE, 0, 0 },
+        { PM_METRIC_CPU_FRAME_PACING_STALL, PM_STAT_NONE, 0, 0 },
+        { PM_METRIC_GPU_LATENCY, PM_STAT_NONE, 0, 0 },
+        { PM_METRIC_GPU_DURATION, PM_STAT_NONE, 0, 0 },
+        { PM_METRIC_GPU_BUSY_TIME, PM_STAT_NONE, 0, 0},
+        { PM_METRIC_DISPLAY_LATENCY, PM_STAT_NONE, 0, 0 },
+        { PM_METRIC_DISPLAY_DURATION, PM_STAT_NONE, 0, 0 },
+        { PM_METRIC_INPUT_LATENCY, PM_STAT_NONE, 0, 0},
+        { variableMetric, PM_STAT_NONE, variableMetricDeviceId, 0}
+    };
+
+    PM_FRAME_QUERY_HANDLE hEventQuery = nullptr;
+    uint32_t blobSize = 0;
+    auto frameQuery = pSession->RegisterFrameQuery(queryElements);
+    auto blobs = frameQuery.MakeBlobContainer(numberOfBlobs);
+
+    try {
+        processTracker = pSession->TrackProcess(processId);
+    }
+    catch (...) {
+        std::cout
+            << "Unable to track process: "
+            << processId << std::endl;
+        return -1;
+    }
+
+    auto csvStream = CreateCsvFile(processName, variableMetricName);
+    if (!csvStream.has_value())
+    {
+        return -1;
+    }
+
+    while (true) {
+        std::cout << "Checking for new frames...\n";
+        uint32_t numFrames = numberOfBlobs;
+        frameQuery.Consume(processTracker, blobs);
+        if (blobs.GetNumBlobsPopulated() == 0) {
+            std::this_thread::sleep_for(200ms);
+        }
+        else {
+            std::cout << std::format("Dumping [{}] frames...\n", numFrames);
+            WriteToCSV(csvStream.value(), processName, processId, queryElements, blobs);
+        }
+
+        if (gQuit){
+            break;
+        }
+    }
+
+    //processTracker.Reset();
+    //pSession->Reset();
+    csvStream.value().close();
 
     return 0;
 }
@@ -799,214 +722,64 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    /*
-    std::unique_ptr<pmapi::Session> pSession;
-    pmapi::ProcessTracker processTracker;
-    static constexpr uint32_t numberOfBlobs = 150u;
+    // determine requested activity
+    if (opt.viewAvailableMetrics ^ opt.pollMetrics ^ opt.recordFrames) {
+        if (opt.viewAvailableMetrics) {
+            return ViewAvailableSystemMetrics(*opt.controlPipe, *opt.introNsm);
+        }
+        else {
+            if (bool(opt.processName) ^ bool(opt.processId)) {
+                std::optional<unsigned int> processId;
+                std::optional<std::string> processName;
+                if (bool(opt.processName))
+                {
+                    processName = *opt.processName;
+                }
+                if (bool(opt.processId))
+                {
+                    processId = *opt.processId;
+                }
+                GetProcessInformation(processName, processId);
+                if (!processName.has_value() || !processId.has_value())
+                {
+                    OutputString("Unable to track requested process.\n");
+                    return -1;
+                }
+                // Create an event
+                gCloseEvent = CreateEvent(NULL,   // default security attributes
+                    TRUE,   // manual reset event
+                    FALSE,  // not signaled
+                    NULL);  // no name
 
-	if (auto e = clio::Options::Init(argc, argv)) {
-		return *e;
-	}
-	auto& opt = clio::Options::Get();
-	// validate options, better to do this with CLI11 validation but framework needs upgrade...
-	if (bool(opt.controlPipe) != bool(opt.introNsm)) {
-		OutputString("Must set both control pipe and intro NSM, or neither.\n");
-		return -1;
-	}
-
-	bool streamingStarted = false;
-
-	// finer granularity sleeps
-	if (timeBeginPeriod(kSleepTime) != TIMERR_NOERROR) {
-		OutputString("Not able to set the Windows sleep() resolution\n");
-	}
-
-	if (InitializeConsole() == false) {
-		OutputString("\nFailed to initialize console.\n");
-		return -1;
-	}
-
-	g_menu_action = DisplayMainMenu();
-	if (g_menu_action == kQuit) {
-		return 0;
-	}
-
-	PM_STATUS pmStatus{};
-	try {
-		if (opt.controlPipe) {
-            pSession = std::make_unique<pmapi::Session>((*opt.controlPipe).c_str(), (*opt.introNsm).c_str());
-		}
-		else {
-            pSession = std::make_unique<pmapi::Session>();
-		}
-	}
-	catch (const std::bad_array_new_length& e) {
-		std::cout
-			<< "Creating a new PresentMon session caused bad array new length exception, with message '"
-			<< e.what() << "'" << std::endl;
-	}
-	catch (const std::runtime_error& e) {
-		std::cout
-			<< "Creating a new PresentMon session caused std::runtime exception '"
-			<< e.what() << "'" << std::endl;
-	}
-
-	if (g_menu_action == MenuActions::kProcessETL) {
-#ifdef ENABLE_ETL
-		ProcessEtl();
-#endif // ENABLE_ETL
-	}
-	else if (g_menu_action == MenuActions::kProcessLive) {
-		g_metrics_offset = GetMetricsOffset();
-		gQuit = false;
-		while (streamingStarted == false) {
-			OutputString("Enter Process Name to monitor: \n");
-			if (GetUserInput(g_process_name) == false) {
-				return 0;
-			}
-			if (g_process_name.length() == 0) {
-				return 0;
-			}
-			gCurrentPid = FindProcessId(g_process_name);
-			if (gCurrentPid != 0) {
-				SetRecordFrames();
-                try {
-                    processTracker = pSession->TrackProcess(gCurrentPid);
-                    if (processTracker) {
-                        streamingStarted = true;
+                if (SetConsoleCtrlHandler(CtrlHandler, TRUE)) {
+                    if (opt.pollMetrics) {
+                        std::thread pollMetricsThread(PollMetricsThread, *opt.controlPipe,
+                            *opt.introNsm, processId.value());
+                        // Wait for the metrics capture thread to finish
+                        pollMetricsThread.join();
+                        return 0;
                     }
                     else {
-                        OutputString("Process Name Not Found.\n");
+                        std::thread recordFramesThread(RecordFrames, *opt.controlPipe, *opt.introNsm,
+                            processName.value(), processId.value());
+                        // Wait for the metrics capture thread to finish
+                        recordFramesThread.join();
+                        return 0;
                     }
                 }
-                catch (...) {
-                    pmStatus = PM_STATUS::PM_STATUS_FAILURE;
-                    OutputString("Unable to track process\n");
-                }
-            }
-		}
-
-		std::string status_string;
-		try {
-			status_string = std::format("Process Name: {}\n", g_process_name);
-			OutputString(status_string.c_str());
-		}
-		catch (...) {
-			OutputString("Process Name: Unknown\n");
-		}
-		try {
-			status_string = std::format("Monitoring Process Id: {}\n", gCurrentPid);
-			OutputString(status_string.c_str());
-		}
-		catch (...) {
-			OutputString("Process Id: Unknown\n");
-		}
-
-		std::cout << "Hit Ctrl-C to exit application." << std::endl;
-
-		// Create an event
-		gCloseEvent = CreateEvent(NULL,   // default security attributes
-			TRUE,   // manual reset event
-			FALSE,  // not signaled
-			NULL);  // no name
-
-		if (SetConsoleCtrlHandler(CtrlHandler, TRUE)) {
-			// Start metrics capture thread
-			//std::thread pollMetricsThread(PollMetrics, std::ref(pSession), processTracker, 1.);
-
-			// Wait for the metrics capture thread to finish
-			//pollMetricsThread.join();
-	    }
-    }
-    else if (g_menu_action == MenuActions::kChurnEvents) {
-        gQuit = false;
-        while (streamingStarted == false) {
-            OutputString("Enter Process Name to monitor: \n");
-            if (GetUserInput(g_process_name) == false) {
-                return 0;
-            }
-            if (g_process_name.length() == 0) {
-                return 0;
-            }
-            gCurrentPid = FindProcessId(g_process_name);
-            if (gCurrentPid != 0) {
-                try {
-                    processTracker = pSession->TrackProcess(gCurrentPid);
-                    if (processTracker) {
-                        streamingStarted = true;
-                    }
-                    else {
-                        OutputString("Process Name Not Found.\n");
-                    }
-                }
-                catch (...) {
-                    pmStatus = PM_STATUS::PM_STATUS_FAILURE;
-                    OutputString("Unable to track process\n");
-                }
-            }
-        }
-
-        std::string status_string;
-        try {
-            status_string = std::format("Process Name: {}\n", g_process_name);
-            OutputString(status_string.c_str());
-        }
-        catch (...) {
-            OutputString("Process Name: Unknown\n");
-        }
-        try {
-            status_string = std::format("Monitoring Process Id: {}\n", gCurrentPid);
-            OutputString(status_string.c_str());
-        }
-        catch (...) {
-            OutputString("Process Id: Unknown\n");
-        }
-
-        std::cout << "Hit Ctrl-C to exit application." << std::endl;
-
-
-        PM_QUERY_ELEMENT queryElements[]{
-            { PM_METRIC_GPU_POWER, PM_STAT_NONE, 1, 0 },
-            { PM_METRIC_PRESENT_MODE, PM_STAT_NONE, 0, 0 },
-            { PM_METRIC_CPU_FRAME_QPC, PM_STAT_NONE, 0, 0 },
-        };
-
-        PM_FRAME_QUERY_HANDLE hEventQuery = nullptr;
-        uint32_t blobSize = 0;
-        auto frameQuery = pSession->RegisterFrameQuery(queryElements);
-        auto blobs = frameQuery.MakeBlobContainer(numberOfBlobs);
-        while (true) {
-            std::cout << "Checking for new frames...\n";
-            uint32_t numFrames = numberOfBlobs;
-            frameQuery.Consume(processTracker, blobs);
-            if (blobs.GetNumBlobsPopulated() == 0) {
-                std::cout << "No frames pending, waiting ~200ms\n";
-                std::this_thread::sleep_for(200ms);
             }
             else {
-                std::cout << std::format("Dumping [{}] frames...\n", numFrames);
-                for (auto pBlob : blobs) {
-                    const auto gpuPower     = *reinterpret_cast<const double*>(&pBlob[0]);
-                    const auto presentMode  = *reinterpret_cast<const PM_PRESENT_MODE*>(&pBlob[8]);
-                    const auto presentQpc   = *reinterpret_cast<const uint64_t*>(&pBlob[12]);
-                    std::cout << std::format("GPWR: {} PMOD: {} PQPC: {}\n",
-                        gpuPower, (int)presentMode, presentQpc
-                    );
-                    pBlob += blobSize;
-                }
+                OutputString("Must set eiter the application name or the process id:\n");
+                OutputString("--poll-metrics [--process-id id | --process-name name.exe]\n");
+                OutputString("--record-frames [--process-id id | --process-name name.exe]\n");
+                return -1;
             }
         }
+    } else {
+        OutputString("SampleClient supports one action at a time. Set one of:\n");
+        OutputString("--view-available-metrics\n");
+        OutputString("--poll-metrics [--process-id id | --process-name name.exe]\n");
+        OutputString("--record-frames [--process-id id | --process-name name.exe]\n");
+        return -1;
     }
-
-    processTracker.Reset();
-    pSession->Reset();
-
-	try {
-		g_csv_file.close();
-	}
-	catch (...) {
-		std::cout << "Unabled to close csv file" << std::endl;
-	}
-    */
-	return 0;
 }

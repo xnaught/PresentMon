@@ -3,16 +3,24 @@
   "Id": "79fe382a-c29c-4c32-a028-b8d1abdf51b0",
   "Items": [
     {
-      "Id": "a65a11dc-1caf-46bb-9e0d-f9fc68fbed44",
-      "Command": "--control-pipe \\\\.\\pipe\\debug-pipe-pmsvc"
-    },
-    {
-      "Id": "0e67d605-e10d-47ed-b5cf-14850f09be8f",
-      "Command": "--intro-nsm pm_intro_debug_nsm_111"
-    },
-    {
       "Id": "ef857247-b1e3-491c-931a-c1be6924dd90",
       "Command": "--help"
+    },
+    {
+      "Id": "4d012d46-c606-4e44-91a4-8bfa0865cfbc",
+      "Command": "--process-name valley.exe"
+    },
+    {
+      "Id": "7f6ffa38-2a9a-480c-a811-a10c76820b74",
+      "Command": "--view-available-metrics"
+    },
+    {
+      "Id": "62eef380-b3b1-4efd-81d8-6ebb3660c239",
+      "Command": "--record-frames"
+    },
+    {
+      "Id": "df9b72a0-fe65-4819-9bef-82142ab661e1",
+      "Command": "--metric-offset 1080"
     }
   ]
 }
