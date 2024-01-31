@@ -201,6 +201,7 @@
   <ItemGroup>
     <ClInclude Include="CliOptions.h" />
     <ClInclude Include="Console.h" />
+    <ClInclude Include="DynamicQuerySample.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">

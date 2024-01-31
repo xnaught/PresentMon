@@ -18,7 +18,10 @@
 #include "../PresentMonAPI2/source/PresentMonAPI.h"
 #include "../PresentMonAPI2/source/Internal.h"
 #include "CliOptions.h"
+
 #include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
+#include "../PresentMonAPIWrapper/source/QueryElement.h"
+#include "DynamicQuerySample.h"
 
 using namespace std::chrono;
 using namespace std::chrono_literals;
@@ -86,12 +89,6 @@ void OutputString(const char* output) {
   }
 }
 
-void PrintMetric(char const* format, double metric_data, bool valid) {
-  if (valid) {
-    ConsolePrintLn(format, metric_data);
-  }
-}
-
 BOOL WINAPI CtrlHandler(DWORD fdwCtrlType) {
   switch (fdwCtrlType) {
     case CTRL_C_EVENT:
@@ -103,7 +100,7 @@ BOOL WINAPI CtrlHandler(DWORD fdwCtrlType) {
   }
 }
 
-bool caseInsensitiveCompare(std::string str1, std::string str2) {
+bool CaseInsensitiveCompare(std::string str1, std::string str2) {
     std::for_each(str1.begin(), str1.end(), [](char& c)
     {
         c = std::tolower(static_cast<unsigned char>(c));
@@ -141,7 +138,7 @@ void GetProcessInformation(std::optional<std::string>& processName, std::optiona
     }
 
     do {
-        if ((processName.has_value() && caseInsensitiveCompare(process_info.szExeFile, processName.value())) ||
+        if ((processName.has_value() && CaseInsensitiveCompare(process_info.szExeFile, processName.value())) ||
             (processId.has_value() && process_info.th32ProcessID == processId.value())) {
             CloseHandle(processes_snapshot);
             processId = process_info.th32ProcessID;
@@ -256,44 +253,6 @@ int PollMetricsThread(std::string controlPipe, std::string introspectionNsm, uns
     elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_DISPLAY_DURATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
     elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_INPUT_LATENCY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
 
-    /*
-    PM_QUERY_ELEMENT elements[]{
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_DURATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_DURATION, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_DURATION, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_DURATION, .stat = PM_STAT_PERCENTILE_99, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_DURATION, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_FRAME_DURATION, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FRAME_PACING_STALL, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_DURATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DISPLAY_DURATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_TEMPERATURE, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_VOLTAGE, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_UTILIZATION, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_POWER, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FAN_SPEED, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_GPU_FAN_SPEED, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 1},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_VRAM_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 1, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_UTILIZATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FREQUENCY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_MODE, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_RUNTIME, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FRAME_QPC, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_SYNC_INTERVAL, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_NUM_FRAMES, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_DROPPED_FRAMES, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_ALLOWS_TEARING, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
-    };
-    */
-
     auto dynamicQuery = pSession->RegisterDyanamicQuery(elements, windowSize, metricOffset);
     auto blobs = dynamicQuery.MakeBlobContainer(1u);
 
@@ -364,8 +323,8 @@ int WrapperTest()
         if (opt.dynamic) {
             PM_BEGIN_DYNAMIC_QUERY(MyDynamicQuery)
                 QueryElement fpsAvg{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_AVG };
-            QueryElement fps99{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_PERCENTILE_99 };
-            QueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_PERCENTILE_99, 1 };
+                QueryElement fps99{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_PERCENTILE_99 };
+                QueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_PERCENTILE_99, 1 };
             PM_END_QUERY dq{ session, 1000., 1010., 1, 1 };
 
             while (!_kbhit()) {
@@ -381,7 +340,7 @@ int WrapperTest()
         else {
             PM_BEGIN_FRAME_QUERY(MyFrameQuery)
                 QueryElement gpuDuration{ this, PM_METRIC_GPU_DURATION, PM_STAT_AVG };
-            QueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_AVG, 1 };
+                QueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_AVG, 1 };
             PM_END_QUERY fq{ session, 20, 1 };
 
             while (!_kbhit()) {
@@ -669,6 +628,8 @@ int main(int argc, char* argv[])
 
                 if (SetConsoleCtrlHandler(CtrlHandler, TRUE)) {
                     if (opt.pollMetrics) {
+                        DynamicQuerySample(*opt.controlPipe,
+                            *opt.introNsm, processId.value(), *opt.windowSize, *opt.metricOffset);
                         std::thread pollMetricsThread(PollMetricsThread, *opt.controlPipe,
                             *opt.introNsm, processId.value(), *opt.windowSize, *opt.metricOffset);
                         // Wait for the metrics capture thread to finish

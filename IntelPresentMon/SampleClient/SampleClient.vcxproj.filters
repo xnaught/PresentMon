@@ -7,5 +7,6 @@
   <ItemGroup>
     <ClInclude Include="Console.h" />
     <ClInclude Include="CliOptions.h" />
+    <ClInclude Include="DynamicQuerySample.h" />
   </ItemGroup>
 </Project>
