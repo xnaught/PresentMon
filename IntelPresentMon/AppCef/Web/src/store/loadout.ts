@@ -6,7 +6,7 @@ import { Graph, makeDefaultGraph } from '@/core/graph'
 import { Readout } from '@/core/readout'
 import { makeDefaultReadout } from '@/core/readout'
 import { AsGraph, AsReadout, Widget, WidgetType, GenerateKey, ResetKeySequence } from '@/core/widget'
-import { Metrics } from './metrics'
+import { Introspection } from './introspection'
 import { WidgetMetric, makeDefaultWidgetMetric } from '@/core/widget-metric'
 import { LoadoutFile } from '@/core/loadout'
 import { Preferences } from './preferences'
@@ -14,6 +14,7 @@ import { signature } from '@/core/loadout'
 import { Api } from '@/core/api'
 import { Preset } from '@/core/preferences'
 import { migrateLoadout } from '@/core/loadout-migration'
+import { QualifiedMetric } from '@/core/qualified-metric'
 
 @Module({name: 'loadout', dynamic: true, store, namespaced: true})
 export class LoadoutModule extends VuexModule {
@@ -56,7 +57,7 @@ export class LoadoutModule extends VuexModule {
 
     @Mutation
     addGraph_() {
-        this.widgets.push(makeDefaultGraph(0));
+        this.widgets.push(makeDefaultGraph());
     }
     @Action({rawError: true})
     async addGraph() {
@@ -84,7 +85,7 @@ export class LoadoutModule extends VuexModule {
 
     @Mutation
     addReadout_() {
-        this.widgets.push(makeDefaultReadout(0));
+        this.widgets.push(makeDefaultReadout());
     }
     @Action({rawError: true})
     async addReadout() {
@@ -128,16 +129,16 @@ export class LoadoutModule extends VuexModule {
         await this.serializeCustom();
     }
     @Mutation
-    addWidgetMetric_(payload: {index:number, metricId: number}) {
+    addWidgetMetric_(payload: {index:number, metric: QualifiedMetric}) {
         const widget = this.widgets[payload.index];
         if (widget.widgetType !== WidgetType.Graph || (widget as Graph).graphType.name !== 'Line') {
             console.warn(`Widget #${payload.index} is not Line Graph but trying to add metric`);
             throw new Error('bad addition of metric to widget');
         }
-        widget.metrics.push(makeDefaultWidgetMetric(payload.metricId));
+        widget.metrics.push(makeDefaultWidgetMetric(payload.metric));
     }
     @Action({rawError: true})
-    async addWidgetMetric(payload: {index:number, metricId: number}) {
+    async addWidgetMetric(payload: {index:number, metric: QualifiedMetric|null}) {
         this.context.commit('addWidgetMetric_', payload);
         await this.serializeCustom();
     }
@@ -167,17 +168,17 @@ export class LoadoutModule extends VuexModule {
     }
     @Mutation
     resetWidgetAs_(payload: {index: number, type: WidgetType}) {
-        let metricId = this.widgets[payload.index].metrics[0].metricId;
+        let qualifiedMetric:QualifiedMetric|null = this.widgets[payload.index].metrics[0].metric;
         // we need to change the metric ID if we're resetting as Graph and metric is not numeric
         if (payload.type === WidgetType.Graph) {
-            if (Metrics.metrics[metricId].className !== 'Numeric') {
-                metricId = 0;
+            if (!Introspection.metrics[qualifiedMetric.metricId].numeric) {
+                qualifiedMetric = null;
             }
         }
         let w: Widget;
         switch (payload.type) {
-            case WidgetType.Graph: w = makeDefaultGraph(metricId); break;
-            case WidgetType.Readout: w = makeDefaultReadout(metricId); break;
+            case WidgetType.Graph: w = makeDefaultGraph(qualifiedMetric); break;
+            case WidgetType.Readout: w = makeDefaultReadout(qualifiedMetric); break;
         }
         this.widgets.splice(payload.index, 1, w);
     }
@@ -202,10 +203,9 @@ export class LoadoutModule extends VuexModule {
         // reset widget keys
         ResetKeySequence();
         for (const w of widgets) {
-            if (!Metrics.metrics.some(avail => w.metrics.some(req => avail.index === req.metricId))) {
+            if (!Introspection.metrics.some(avail => w.metrics.some(req => avail.id === req.metric.metricId))) {
                 throw new Error('Unknown metric ID encountered');
             }
-            w.metrics[0].metricId;
             w.key = GenerateKey();
         }
         this.widgets.splice(0, this.widgets.length, ...widgets);

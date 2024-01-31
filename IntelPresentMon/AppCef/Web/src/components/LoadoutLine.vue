@@ -17,18 +17,18 @@
     </div>
     <div class="widget-cell col-stat"> 
       <v-select
-        v-model="metricId"
-        :items="statVariationMetricIds"
-        :disabled="locked || statVariationMetricIds.length < 2"
+        v-model="stat"
+        :items="statOptions"
+        :disabled="locked || statOptions.length < 2"
         outlined
         :dense="!isMaster"
         hide-details
       >
         <template slot="selection" slot-scope="data">
-          {{ metrics[data.item].statType }}
+          {{ data.shortName }}
         </template>
         <template slot="item" slot-scope="data">
-          {{ metrics[data.item].statType }}
+          {{ data.shortName }}
         </template>
       </v-select>
     </div>
@@ -96,7 +96,10 @@
 <script lang="ts">
 import Vue from 'vue'
 import { AsGraph, Widget, WidgetType } from '@/core/widget'
-import { Metric, MetricOption } from '@/core/metric'
+import { Metric } from '@/core/metric'
+import { MetricOption } from '@/core/metric-option'
+import { QualifiedMetric } from '@/core/qualified-metric'
+import { Stat } from '@/core/stat'
 import { Loadout } from '@/store/loadout'
 import { AxisAffinity, makeDefaultWidgetMetric, WidgetMetric }  from '@/core/widget-metric'
 import ColorPicker from './ColorPicker.vue'
@@ -114,16 +117,25 @@ export default Vue.extend({
       lineIdx: {required: true, type: Number},
       widgets: {required: true, type: Array as () => Widget[]},
       metrics: {required: true, type: Array as () => Metric[]},
+      stats: {required: true, type: Array as () => Stat[]},
       metricOptions: {required: true, type: Array as () => MetricOption[]},
       locked: {default: false, type: Boolean},
     },
 
     data: () => ({
       metricOption: null as MetricOption|null,
+      stat: null as Stat|null,
     }),
 
     mounted() {
-      this.metricOption = this.metricOptions.find(o => o.metricIds.includes(this.metricId)) ?? null;
+      this.metricOption = this.metricOptions.find(o =>
+        this.qualifiedMetric.metricId === o.metricId &&
+        this.qualifiedMetric.arrayIndex === o.arrayIndex) ?? null;
+      if (this.metricOption !== null) {
+        if (this.metric.availableStatIds.includes(this.qualifiedMetric.statId)) {
+          this.stat = this.stats[this.qualifiedMetric.statId];
+        }
+      }
     },
 
     methods: {
@@ -136,29 +148,55 @@ export default Vue.extend({
       widget(): Widget {
         return this.widgets[this.widgetIdx];
       },
-      statVariationMetricIds(): number[] {
-        return this.metricOption?.metricIds ?? [];
+      widgetMetric(): WidgetMetric {
+        return this.widget.metrics[this.lineIdx];
+      },
+      // qualifiedMetric: see the computed set/get below in spec binding
+      metric(): Metric {
+        return this.metrics[this.qualifiedMetric.metricId];
       },
       widgetTypeOptions(): WidgetType[] {
         const opts = [WidgetType.Readout];
-        if (this.metric.className === 'Numeric') {
+        if (this.metric.numeric) {
           opts.push(WidgetType.Graph);
         }
         return opts;
       },
       metricOptionsFiltered(): MetricOption[] {
+        // subordinate metrics cannot choose a non-numeric metric
+        // because only graphs support multi-metrics, and only
+        // numeric metrics work with graphs
         return this.isMaster ?
           this.metricOptions :
-          this.metricOptions.filter(o => o.className === 'Numeric');
+          this.metricOptions.filter(o => this.metrics[o.metricId].numeric);
       },
       widgetSubtypeOptions(): string[] {
         return this.widget.widgetType === WidgetType.Graph ? ['Line', 'Histogram'] : [];
       },
-      metric(): Metric {
-        return this.metrics[this.metricId];
+      statOptions(): Stat[] {
+        return this.stats.filter(s => this.metric.availableStatIds.includes(s.id));
       },
-      widgetMetric(): WidgetMetric {
-        return this.widget.metrics[this.lineIdx];
+      isMaster(): boolean {
+        return this.lineIdx === 0;
+      },
+      isGraphWidget(): boolean {
+        return this.widgetType == WidgetType.Graph;
+      },
+      isLineGraphWidget(): boolean {
+        return this.isGraphWidget && AsGraph(this.widget).graphType.name === 'Line';
+      },
+      isReadoutWidget(): boolean {
+        return this.widgetType == WidgetType.Readout;
+      },
+      // spec bindings
+      qualifiedMetric: {
+        get(): QualifiedMetric {
+          return this.widgetMetric.metric;
+        },
+        set(metric: QualifiedMetric) {
+          const widgetMetric: WidgetMetric = {...this.widgetMetric, metric};
+          Loadout.setWidgetMetric({index: this.widgetIdx, metricIdx: this.lineIdx, metric: widgetMetric});
+        }
       },
       widgetType: {        
         set(type: WidgetType) {
@@ -178,28 +216,6 @@ export default Vue.extend({
         },
         get(): string {
           return this.widgetType === WidgetType.Graph ? AsGraph(this.widget).graphType.name : '';
-        }
-      },
-      isMaster(): boolean {
-        return this.lineIdx === 0;
-      },
-      isGraphWidget(): boolean {
-        return this.widgetType == WidgetType.Graph;
-      },
-      isLineGraphWidget(): boolean {
-        return this.isGraphWidget && AsGraph(this.widget).graphType.name === 'Line';
-      },
-      isReadoutWidget(): boolean {
-        return this.widgetType == WidgetType.Readout;
-      },
-      // spec bindings
-      metricId: {
-        get(): number {
-          return this.widgetMetric.metricId;
-        },
-        set(metricId: number) {
-          const metric: WidgetMetric = {...this.widgetMetric, metricId};
-          Loadout.setWidgetMetric({index: this.widgetIdx, metricIdx: this.lineIdx, metric});
         }
       },
       lineColor: {
@@ -233,16 +249,17 @@ export default Vue.extend({
     },
 
     watch: {
-      metricOption(newOption: MetricOption) {
-        // if a new option is selected, reset to first available stat-id
-        // but don't reset if current id is in the set (happens when loading file)
-        if (!newOption.metricIds.includes(this.metricId)) {
-          this.metricId = newOption.metricIds[0];
-        }
-        if (this.metric.className !== 'Numeric') {
-          this.widgetType = WidgetType.Readout;
-        }
-      },
+      // TODO: rework this binding after reading is complete
+      // metricOption(newOption: MetricOption) {
+      //   // if a new option is selected, reset to first available stat-id
+      //   // but don't reset if current id is in the set (happens when loading file)
+      //   if (!newOption.metricIds.includes(this.metricId)) {
+      //     this.metricId = newOption.metricIds[0];
+      //   }
+      //   if (this.metric.className !== 'Numeric') {
+      //     this.widgetType = WidgetType.Readout;
+      //   }
+      // },
       widgetSubtype(newSubtype: string) {
         if (newSubtype !== 'Line') {
           this.$emit('clearMulti');

@@ -107,7 +107,7 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import { Metrics } from '@/store/metrics'
+import { Introspection } from '@/store/introspection'
 import { Preferences as PrefStore } from '@/store/preferences'
 import { Preferences } from '@/core/preferences'
 import { Hotkey } from '@/store/hotkey'
@@ -135,7 +135,7 @@ export default Vue.extend({
     Api.registerOverlayDiedHandler(this.handleOverlayDied);
     Api.registerStalePidHandler(this.handleStalePid);
     await Api.launchKernel();
-    await Metrics.load();
+    await Introspection.load();
     await Hotkey.refreshOptions();
     await Adapters.refresh();
     Api.registerTargetLostHandler(this.handleTargetLost);

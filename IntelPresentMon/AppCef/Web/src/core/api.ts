@@ -1,12 +1,13 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 import { Metric } from '@/core/metric'
+import { Stat } from './stat'
+import { Unit } from './unit'
 import { Process } from '@/core/process'
 import { Adapter } from './adapter'
 import { Spec } from '@/core/spec'
 import { Binding, KeyOption, ModifierOption, Action } from '@/core/hotkey'
-import { WidgetType } from './widget'
-import { Graph } from './graph'
+
 
 /* eslint-disable no-explicit-any */
 
@@ -34,7 +35,8 @@ export class Api {
         });
     }
 
-    // async endpoints
+    //         async endpoints
+    // hotkey modifiers
     static async enumerateModifiers(): Promise<ModifierOption[]> {
         const {mods} = await this.invokeEndpointFuture('enumerateModifiers', {});
         if (!Array.isArray(mods)) {
@@ -42,6 +44,7 @@ export class Api {
         }
         return mods;
     }
+    // hotkey keys
     static async enumerateKeys(): Promise<KeyOption[]> {
         const {keys} = await this.invokeEndpointFuture('enumerateKeys', {});
         if (!Array.isArray(keys)) {
@@ -49,12 +52,12 @@ export class Api {
         }
         return keys;
     }
-    static async enumerateMetrics(): Promise<Metric[]> {
-        const {metrics} = await this.invokeEndpointFuture('enumerateMetrics', {});
-        if (!Array.isArray(metrics)) {
-            throw new Error('Bad (non-array) type returned from enumerateMetrics');
+    static async introspect(): Promise<{metrics: Metric[], stats: Stat[], units: Unit[]}> {
+        const introData = await this.invokeEndpointFuture('introspect', {});
+        if (!Array.isArray(introData.metrics) || !Array.isArray(introData.stats) || !Array.isArray(introData.units)) {
+            throw new Error('Bad (non-array) member type returned from introspect');
         }
-        return metrics;
+        return introData;
     }
     static async enumerateProcesses(): Promise<Process[]> {
         const {processes} = await this.invokeEndpointFuture('enumerateProcesses', {});

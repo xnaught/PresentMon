@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 import { Widget, WidgetType, GenerateKey } from './widget'
 import { makeDefaultWidgetMetric } from './widget-metric';
+import { QualifiedMetric } from './qualified-metric';
 import { RgbaColor } from './color';
 import { compareVersions } from './signature';
 
@@ -12,10 +13,10 @@ export interface Readout extends Widget {
     backgroundColor: RgbaColor,
 }
 
-export function makeDefaultReadout(metricId: number): Readout {
+export function makeDefaultReadout(metric: QualifiedMetric|null = null): Readout {
     return {
         key: GenerateKey(),
-        metrics: [makeDefaultWidgetMetric(metricId)],
+        metrics: [makeDefaultWidgetMetric(metric)],
         widgetType: WidgetType.Readout,
         showLabel: true,
         fontSize: 12,
@@ -43,7 +44,7 @@ const migrations: Migration[] = [
     {
         version: '0.10.0',
         migrate: (readout: Readout) => {
-            const def = makeDefaultReadout(0);
+            const def = makeDefaultReadout();
             readout.backgroundColor = def.backgroundColor;
         }
     },

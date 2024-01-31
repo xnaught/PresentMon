@@ -325,12 +325,12 @@ export default Vue.extend({
     },
 
     // v-model enablers
-    metricId: {
-      get(): number { return this.widget.metrics[0].metricId; },
-      set(metricId: number) {
-        Loadout.setWidgetMetrics({index: this.index, metrics: [makeDefaultWidgetMetric(metricId)]});
-      },
-    },
+    // metricId: { TODO: consider deleting this (necessary? replacement?)
+    //   get(): number { return this.widget.metrics[0].metricId; },
+    //   set(metricId: number) {
+    //     Loadout.setWidgetMetrics({index: this.index, metrics: [makeDefaultWidgetMetric(metricId)]});
+    //   },
+    // },
     height: {
       get(): number { return this.graph.height; },
       set(height: number) {

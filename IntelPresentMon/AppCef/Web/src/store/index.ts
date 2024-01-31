@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 import Vue from 'vue'
 import Vuex from 'vuex'
-import { MetricsModule } from './metrics'
+import { IntrospectionModule } from './introspection'
 import { ProcessesModule } from './processes'
 import { NotificationsModule } from './notifications'
 import { HotkeyModule } from './hotkey'
@@ -13,7 +13,7 @@ import { LoadoutModule } from './loadout'
 Vue.use(Vuex);
 
 interface IRootState {
-  metrics: MetricsModule,
+  introspection: IntrospectionModule,
   processes: ProcessesModule,
   notifications: NotificationsModule,
   hotkey: HotkeyModule,

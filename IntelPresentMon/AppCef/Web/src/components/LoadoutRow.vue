@@ -8,7 +8,7 @@
   </div>
   <div class="line-wrap">
     <loadout-line
-      v-for="(m, i) in metricIds" :key="lineKeys[i]"
+      v-for="(oneBased, i) in metrics.length" :key="lineKeys[i]"
       :widgetIdx="widgetIdx" :lineIdx="i" :widgets="widgets"
       :metrics="metrics" :metricOptions="metricOptions" :locked="locked"
       @delete="handleDelete" @add="handleAdd" @clearMulti="handleClearMulti"
@@ -20,7 +20,9 @@
 <script lang="ts">
 import Vue from 'vue'
 import { Widget } from '@/core/widget'
-import { Metric, MetricOption } from '@/core/metric'
+import { Metric } from '@/core/metric'
+import { MetricOption } from '@/core/metric-option'
+import { Stat } from '@/core/stat'
 import LoadoutLine from './LoadoutLine.vue'
 import { Loadout } from '@/store/loadout'
 
@@ -35,6 +37,7 @@ export default Vue.extend({
       widgetIdx: {required: true, type: Number},
       widgets: {required: true, type: Array as () => Widget[]},
       metrics: {required: true, type: Array as () => Metric[]},
+      stats: {required: true, type: Array as () => Stat[]},
       metricOptions: {required: true, type: Array as () => MetricOption[]},
       locked: {default: false, type: Boolean}
     },
@@ -45,8 +48,8 @@ export default Vue.extend({
     }),
 
     mounted() {
-      this.lineKeys = Array(this.metricIds.length).fill(0).map((n, i) => i);
-      this.nextKey = this.metricIds.length;
+      this.lineKeys = Array(this.metrics.length).fill(0).map((n, i) => i);
+      this.nextKey = this.metrics.length;
     },
 
     methods: {
@@ -63,7 +66,7 @@ export default Vue.extend({
       },
       handleAdd() {
         try {
-          Loadout.addWidgetMetric({index: this.widgetIdx, metricId: 0});
+          Loadout.addWidgetMetric({index: this.widgetIdx, metric: null});
           this.lineKeys.push(this.nextKey++);
         } catch (e) {}
       },
@@ -77,9 +80,6 @@ export default Vue.extend({
     computed: {
       widget(): Widget {
         return this.widgets[this.widgetIdx];
-      },
-      metricIds(): Number[] {
-        return this.widget.metrics.map(m => m.metricId);
       },
     }
 });
