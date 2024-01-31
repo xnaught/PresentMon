@@ -15,6 +15,7 @@ namespace clio
 		Option<double> windowSize{ this, "--window-size", 2000., "Record raw frame data frames" };
 		Option<unsigned int> processId{ this, "--process-id", 0, "Process Id to use for polling or frame data capture" };
 		Option<std::string> processName{ this, "--process-name", "", "Name of process to use for polling or frame data capture" };
+		Option<std::string> checkMetric{ this, "--check-metric", "", "Check if passed in PM_METRIC is available on the system" };
 		static constexpr const char* description = "Minimal Sample Client for Intel PresentMon service";
 		static constexpr const char* name = "SampleClient.exe";
 	};
