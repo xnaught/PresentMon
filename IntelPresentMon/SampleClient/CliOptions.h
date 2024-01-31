@@ -8,6 +8,9 @@ namespace clio
 	{
 		Option<std::string> controlPipe{ this, "--control-pipe", "", "Name of the named pipe to use for the client-service control channel" };
 		Option<std::string> introNsm{ this, "--intro-nsm", "", "Name of the NSM used for introspection data" };
+		Flag wrapper{ this, "--wrapper", "Execute wrapper code" };
+		Flag dynamic{ this, "--dynamic", "Execute dynamic polling test in wrapper (otherwise do frame consume)" };
+		Option<uint32_t> pid{ this, "--pid", 0, "Process ID to track" };
 		Flag viewAvailableMetrics{ this, "--view-available-metrics", "Example of how to view available system metrics via introspection" };
 		Flag pollMetrics{ this, "--poll-metrics", "Example of how to poll frame and gpu metrics" };
 		Flag recordFrames{ this, "--record-frames", "Example of how to record raw frame data frames" };

@@ -3,6 +3,20 @@
   "Id": "79fe382a-c29c-4c32-a028-b8d1abdf51b0",
   "Items": [
     {
+      "Id": "b8fcd112-467f-47a3-9568-cf412f0fad40",
+      "Command": "--dynamic"
+    },
+    {
+      "Id": "9bc7e8f3-d187-42c8-99a4-5c617426abcd",
+      "Command": "--wrapper"
+    },
+    {
+      "Id": "4ad79660-aa4a-4f2b-93f8-7bbc3d23e5a9",
+      "Command": "--pid 8468"
+    },
+    {
+      "Id": "a65a11dc-1caf-46bb-9e0d-f9fc68fbed44",
+      "Command": "--control-pipe \\\\.\\pipe\\debug-pipe-pmsvc"
       "Id": "ef857247-b1e3-491c-931a-c1be6924dd90",
       "Command": "--help"
     },
