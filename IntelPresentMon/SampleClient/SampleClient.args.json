@@ -21,6 +21,10 @@
     {
       "Id": "df9b72a0-fe65-4819-9bef-82142ab661e1",
       "Command": "--metric-offset 1080"
+    },
+    {
+      "Id": "615e7e6b-462e-44ae-8eb9-56b0dbc4e1bc",
+      "Command": "--poll-metrics"
     }
   ]
 }
