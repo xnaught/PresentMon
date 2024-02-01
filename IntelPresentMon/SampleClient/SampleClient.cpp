@@ -24,6 +24,7 @@
 #include "DynamicQuerySample.h"
 #include "FrameQuerySample.h"
 #include "IntrospectionSample.h"
+#include "CheckMetricSample.h"
 
 using namespace std::chrono;
 using namespace std::chrono_literals;

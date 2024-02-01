@@ -10,6 +10,6 @@
     <ClInclude Include="DynamicQuerySample.h" />
     <ClInclude Include="FrameQuerySample.h" />
     <ClInclude Include="IntrospectionSample.h" />
-    <ClInclude Include="CheckMetric.h" />
+    <ClInclude Include="CheckMetricSample.h" />
   </ItemGroup>
 </Project>

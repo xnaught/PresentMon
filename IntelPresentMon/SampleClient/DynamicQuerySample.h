@@ -67,6 +67,46 @@ int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, unsigned int 
     return 0;
 }
 
+bool FindFirstAvailableGpuMetric(pmapi::Session& pSession, PM_METRIC& gpuMetric, uint32_t& gpuMetricDeviceId, std::string& gpuMetricName)
+{
+    // Search through introspection for first available GPU
+    // metric. If we happen to be on a machine with an unsupported
+    // GPU return false
+    auto pIntrospectionRoot = pSession.GetIntrospectionRoot();
+    auto metricEnums = pIntrospectionRoot->FindEnum(PM_ENUM_METRIC);
+
+    // Loop through ALL PresentMon metrics
+    for (auto metric : pIntrospectionRoot->GetMetrics())
+    {
+        // Go through the device metric info to determine the metric's availability
+        auto metricInfo = metric.GetDeviceMetricInfo();
+        for (auto mi : metricInfo)
+        {
+            // Check to see if the returned device is non-zero and if it's
+            // available on the system. Non-zero device id's indicate this
+            // metric is associated with a device
+            if (mi.GetDevice().GetId() != 0 && mi.IsAvailable())
+            {
+                // Look through PM_ENUM_METRIC enums to gather the metric symbol
+                for (auto key : metricEnums.GetKeys())
+                {
+                    if (key.GetId() == metric.GetId())
+                    {
+                        // Save off the PM_METRIC id
+                        gpuMetric = metric.GetId();
+                        // Save off the device id associated with the PM_METRIC
+                        gpuMetricDeviceId = mi.GetDevice().GetId();
+                        gpuMetricName = key.GetName();
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+
 int PollMetrics(std::unique_ptr<pmapi::Session>&& pSession, unsigned int processId, double windowSize, double metricOffset)
 {
     pmapi::ProcessTracker processTracker;
@@ -88,11 +128,18 @@ int PollMetrics(std::unique_ptr<pmapi::Session>&& pSession, unsigned int process
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_DISPLAY_DURATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_INPUT_LATENCY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
 
+        PM_METRIC gpuMetric;
+        uint32_t gpuDeviceId;
+        std::string gpuMetricName;
+        if (FindFirstAvailableGpuMetric(*pSession, gpuMetric, gpuDeviceId, gpuMetricName)) {
+            elements.push_back(PM_QUERY_ELEMENT{ .metric = gpuMetric, .stat = PM_STAT_AVG, .deviceId = gpuDeviceId, .arrayIndex = 0 });
+        }
+
         auto dynamicQuery = pSession->RegisterDyanamicQuery(elements, windowSize, metricOffset);
         auto blobs = dynamicQuery.MakeBlobContainer(1u);
 
         if (InitializeConsole() == false) {
-            OutputString("\nFailed to initialize console.\n");
+            std::cout << "\nFailed to initialize console.\n";
             return -1;
         }
 
@@ -114,6 +161,14 @@ int PollMetrics(std::unique_ptr<pmapi::Session>&& pSession, unsigned int process
                 ConsolePrintLn("Display Latency Average = %f", *reinterpret_cast<const double*>(&pBlob[elements[11].dataOffset]));
                 ConsolePrintLn("Display Duration Average = %f", *reinterpret_cast<const double*>(&pBlob[elements[12].dataOffset]));
                 ConsolePrintLn("Input Latency Average = %f", *reinterpret_cast<const double*>(&pBlob[elements[13].dataOffset]));
+                if (gpuMetricName.length() != 0)
+                {
+                    ConsolePrintLn(
+                        std::format("{} Average = {}", 
+                            gpuMetricName, *reinterpret_cast<const double*>(&pBlob[elements[14].dataOffset])).c_str()
+                    );
+                }
+                
             }
             CommitConsole();
             Sleep(10);
