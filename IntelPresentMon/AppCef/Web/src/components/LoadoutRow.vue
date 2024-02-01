@@ -8,8 +8,8 @@
   </div>
   <div class="line-wrap">
     <loadout-line
-      v-for="(oneBased, i) in metrics.length" :key="lineKeys[i]"
-      :widgetIdx="widgetIdx" :lineIdx="i" :widgets="widgets"
+      v-for="(oneBased, i) in widgetMetrics.length" :key="lineKeys[i]"
+      :widgetIdx="widgetIdx" :lineIdx="i" :widgets="widgets" :stats="stats"
       :metrics="metrics" :metricOptions="metricOptions" :locked="locked"
       @delete="handleDelete" @add="handleAdd" @clearMulti="handleClearMulti"
     ></loadout-line>
@@ -25,6 +25,7 @@ import { MetricOption } from '@/core/metric-option'
 import { Stat } from '@/core/stat'
 import LoadoutLine from './LoadoutLine.vue'
 import { Loadout } from '@/store/loadout'
+import { WidgetMetric } from '@/core/widget-metric'
 
 export default Vue.extend({
     name: 'LoadoutRow',
@@ -81,6 +82,9 @@ export default Vue.extend({
       widget(): Widget {
         return this.widgets[this.widgetIdx];
       },
+      widgetMetrics(): WidgetMetric[] {
+        return this.widget.metrics;
+      }
     }
 });
 </script>

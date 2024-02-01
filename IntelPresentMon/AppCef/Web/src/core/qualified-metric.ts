@@ -15,9 +15,8 @@ export function makeDefaultQualifiedMetric(): QualifiedMetric {
     return {
         metricId: 0,
         arrayIndex: 0,
-        statId: 2,
+        statId: 0,
         deviceId: 0,
         desiredUnitId: 0,
-
     };
 }

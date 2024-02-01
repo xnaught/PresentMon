@@ -19,18 +19,13 @@
       <v-select
         v-model="stat"
         :items="statOptions"
+        item-text="shortName"
         :disabled="locked || statOptions.length < 2"
+        return-object
         outlined
         :dense="!isMaster"
         hide-details
-      >
-        <template slot="selection" slot-scope="data">
-          {{ data.shortName }}
-        </template>
-        <template slot="item" slot-scope="data">
-          {{ data.shortName }}
-        </template>
-      </v-select>
+      ></v-select>
     </div>
     <div class="widget-cell col-type">
       <v-select
@@ -127,10 +122,22 @@ export default Vue.extend({
       stat: null as Stat|null,
     }),
 
-    mounted() {
-      this.metricOption = this.metricOptions.find(o =>
-        this.qualifiedMetric.metricId === o.metricId &&
-        this.qualifiedMetric.arrayIndex === o.arrayIndex) ?? null;
+    beforeMount() {
+      // this.metricOption = this.metricOptions.find(o =>
+      //   this.qualifiedMetric.metricId === o.metricId &&
+      //   this.qualifiedMetric.arrayIndex === o.arrayIndex) ?? null;
+      let option: MetricOption|null = null;
+      let qualifiedMetric = this.qualifiedMetric;
+      for (const opt of this.metricOptions) {
+        let matches = true;
+        matches = matches && qualifiedMetric.metricId === opt.metricId;
+        matches = matches && qualifiedMetric.arrayIndex === opt.arrayIndex;
+        if (matches) {
+          option = opt;
+          break;
+        }
+      }
+      this.metricOption = option;
       if (this.metricOption !== null) {
         if (this.metric.availableStatIds.includes(this.qualifiedMetric.statId)) {
           this.stat = this.stats[this.qualifiedMetric.statId];
@@ -174,7 +181,8 @@ export default Vue.extend({
         return this.widget.widgetType === WidgetType.Graph ? ['Line', 'Histogram'] : [];
       },
       statOptions(): Stat[] {
-        return this.stats.filter(s => this.metric.availableStatIds.includes(s.id));
+        const opts = this.stats.filter(s => this.metric.availableStatIds.includes(s.id));
+        return opts;
       },
       isMaster(): boolean {
         return this.lineIdx === 0;
