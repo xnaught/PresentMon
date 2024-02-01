@@ -8,5 +8,8 @@
     <ClInclude Include="Console.h" />
     <ClInclude Include="CliOptions.h" />
     <ClInclude Include="DynamicQuerySample.h" />
+    <ClInclude Include="FrameQuerySample.h" />
+    <ClInclude Include="IntrospectionSample.h" />
+    <ClInclude Include="CheckMetric.h" />
   </ItemGroup>
 </Project>

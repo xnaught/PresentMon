@@ -22,12 +22,11 @@
 #include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
 #include "../PresentMonAPIWrapper/source/QueryElement.h"
 #include "DynamicQuerySample.h"
+#include "FrameQuerySample.h"
+#include "IntrospectionSample.h"
 
 using namespace std::chrono;
 using namespace std::chrono_literals;
-
-HANDLE gCloseEvent;
-bool gQuit = false;
 
 std::string TranslatePresentMode(PM_PRESENT_MODE present_mode) {
   switch (present_mode) {
@@ -89,17 +88,6 @@ void OutputString(const char* output) {
   }
 }
 
-BOOL WINAPI CtrlHandler(DWORD fdwCtrlType) {
-  switch (fdwCtrlType) {
-    case CTRL_C_EVENT:
-      SetEvent(gCloseEvent);
-      gQuit = true;
-      return TRUE;
-    default:
-      return FALSE;
-  }
-}
-
 bool CaseInsensitiveCompare(std::string str1, std::string str2) {
     std::for_each(str1.begin(), str1.end(), [](char& c)
     {
@@ -154,155 +142,6 @@ void GetProcessInformation(std::optional<std::string>& processName, std::optiona
     processName = std::nullopt;
 }
 
-int ViewAvailableSystemMetrics(std::string controlPipe, std::string introspectionNsm)
-{
-    std::unique_ptr<pmapi::Session> pSession;
-    pmapi::ProcessTracker processTracker;
-    try {
-        if (controlPipe.empty() == false) {
-            pSession = std::make_unique<pmapi::Session>(controlPipe, introspectionNsm);
-        }
-        else {
-            pSession = std::make_unique<pmapi::Session>();
-        }
-    }
-    catch (const std::bad_array_new_length& e) {
-        std::cout
-            << "Creating a new PresentMon session caused bad array new length exception, with message '"
-            << e.what() << "'" << std::endl;
-        return -1;
-    }
-    catch (const std::runtime_error& e) {
-        std::cout
-            << "Creating a new PresentMon session caused std::runtime exception '"
-            << e.what() << "'" << std::endl;
-        return -1;
-    }
-
-    // Example of how to use introspection to examine ALL metrics and determine
-    // their availablity
-    auto pIntrospectionRoot = pSession->GetIntrospectionRoot();
-    auto metricEnums = pIntrospectionRoot->FindEnum(PM_ENUM_METRIC);
-
-    // Loop through ALL PresentMon metrics
-    for (auto metric : pIntrospectionRoot->GetMetrics())
-    {
-        std::string metricSymbol;
-        // Look through PM_ENUM_METRIC enums to gather the metric symbol
-        for (auto key : metricEnums.GetKeys())
-        {
-            if (key.GetId() == metric.GetId())
-            {
-                metricSymbol = key.GetSymbol();
-                break;
-            }
-        }
-
-        // Go through the device metric info to determine the metric's availability
-        auto metricInfo = metric.GetDeviceMetricInfo();
-        for (auto mi : metricInfo)
-        {
-            auto device = mi.GetDevice();
-            std::cout << std::format("Metric Id: {}, Metric Symbol: {}, Vendor Name: {}, Vendor Device Id: {}, Is Available: {}",
-                (int)metric.GetId(), metricSymbol, device.GetName(), device.GetId(), mi.IsAvailable());
-            std::cout << std::endl;
-        }
-    }
-
-    return 0;
-}
-
-int PollMetricsThread(std::string controlPipe, std::string introspectionNsm, unsigned int processId, double windowSize, double metricOffset)
-{
-    std::unique_ptr<pmapi::Session> pSession;
-    pmapi::ProcessTracker processTracker;
-    try {
-        if (controlPipe.empty() == false) {
-            pSession = std::make_unique<pmapi::Session>(controlPipe, introspectionNsm);
-        }
-        else {
-            pSession = std::make_unique<pmapi::Session>();
-        }
-    }
-    catch (const std::bad_array_new_length& e) {
-        std::cout
-            << "Creating a new PresentMon session caused bad array new length exception, with message '"
-            << e.what() << "'" << std::endl;
-        return -1;
-    }
-    catch (const std::runtime_error& e) {
-        std::cout
-            << "Creating a new PresentMon session caused std::runtime exception '"
-            << e.what() << "'" << std::endl;
-        return -1;
-    }
-
-    std::vector<PM_QUERY_ELEMENT> elements;
-    elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_APPLICATION, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0 });
-    elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
-    elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0 });
-    elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_95, .deviceId = 0, .arrayIndex = 0 });
-    elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0 });
-    elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0 });
-    elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0 });
-    elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_FRAME_DURATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
-    elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_CPU_FRAME_PACING_STALL, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
-    elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_GPU_DURATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
-    elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
-    elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_DISPLAY_LATENCY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
-    elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_DISPLAY_DURATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
-    elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_INPUT_LATENCY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
-
-    auto dynamicQuery = pSession->RegisterDyanamicQuery(elements, windowSize, metricOffset);
-    auto blobs = dynamicQuery.MakeBlobContainer(1u);
-
-    try {
-        processTracker = pSession->TrackProcess(processId);
-    }
-    catch (...) {
-        std::cout
-            << "Unable to track process: "
-            << processId << std::endl;
-        return -1;
-    }
-
-    if (InitializeConsole() == false) {
-        OutputString("\nFailed to initialize console.\n");
-        return -1;
-    }
-
-    while (true) {
-        dynamicQuery.Poll(processTracker, blobs);
-
-        for (auto pBlob : blobs) {
-            ConsolePrintLn("Process Name = %s", *reinterpret_cast<const std::string*>(&pBlob[elements[0].dataOffset]));
-            ConsolePrintLn("Presented FPS Average = %f", *reinterpret_cast<const double*>(&pBlob[elements[1].dataOffset]));
-            ConsolePrintLn("Presented FPS 90% = %f", *reinterpret_cast<const double*>(&pBlob[elements[2].dataOffset]));
-            ConsolePrintLn("Presented FPS 95% = %f", *reinterpret_cast<const double*>(&pBlob[elements[3].dataOffset]));
-            ConsolePrintLn("Presented FPS 99% = %f", *reinterpret_cast<const double*>(&pBlob[elements[4].dataOffset]));
-            ConsolePrintLn("Presented FPS Max = %f", *reinterpret_cast<const double*>(&pBlob[elements[5].dataOffset]));
-            ConsolePrintLn("Presented FPS Min = %f", *reinterpret_cast<const double*>(&pBlob[elements[6].dataOffset]));
-            ConsolePrintLn("Frame Duration Average = %f", *reinterpret_cast<const double*>(&pBlob[elements[7].dataOffset]));
-            ConsolePrintLn("Frame Pacing Stall Average = %f", *reinterpret_cast<const double*>(&pBlob[elements[8].dataOffset]));
-            ConsolePrintLn("GPU Duration Average = %f", *reinterpret_cast<const double*>(&pBlob[elements[9].dataOffset]));
-            ConsolePrintLn("GPU Busy Time Average = %f", *reinterpret_cast<const double*>(&pBlob[elements[10].dataOffset]));
-            ConsolePrintLn("Display Latency Average = %f", *reinterpret_cast<const double*>(&pBlob[elements[11].dataOffset]));
-            ConsolePrintLn("Display Duration Average = %f", *reinterpret_cast<const double*>(&pBlob[elements[12].dataOffset]));
-            ConsolePrintLn("Input Latency Average = %f", *reinterpret_cast<const double*>(&pBlob[elements[13].dataOffset]));
-        }
-        CommitConsole();
-
-        if (gQuit) {
-            ConsolePrintLn("Exiting Metric Polling loop");
-            break;
-        }
-
-        Sleep(10);
-    }
-
-    return 0;
-}
-
 #define PM_BEGIN_DYNAMIC_QUERY(type) struct type : DynamicQueryContainer { using DynamicQueryContainer::DynamicQueryContainer;
 #define PM_BEGIN_FRAME_QUERY(type) struct type : FrameQueryContainer<type> { using FrameQueryContainer<type>::FrameQueryContainer;
 #define PM_END_QUERY private: FinalizingElement finalizer{ this }; }
@@ -314,11 +153,11 @@ int WrapperTest()
 
     try {
         auto& opt = clio::Options::Get();
-        if (!opt.pid) {
+        if (!opt.processId) {
             throw std::runtime_error{ "You need to specify a pid!" };
         }
         Session session;
-        auto proc = session.TrackProcess(*opt.pid);
+        auto proc = session.TrackProcess(*opt.processId);
 
         if (opt.dynamic) {
             PM_BEGIN_DYNAMIC_QUERY(MyDynamicQuery)
@@ -573,9 +412,9 @@ int RecordFrames(std::string controlPipe, std::string introspectionNsm, std::str
             WriteToCSV(csvStream.value(), processName, processId, queryElements, blobs);
         }
 
-        if (gQuit){
-            break;
-        }
+        //if (gQuit){
+        //    break;
+        //}
     }
 
     //processTracker.Reset();
@@ -598,9 +437,17 @@ int main(int argc, char* argv[])
     }
 
     // determine requested activity
-    if (opt.viewAvailableMetrics ^ opt.pollMetrics ^ opt.recordFrames) {
-        if (opt.viewAvailableMetrics) {
-            return ViewAvailableSystemMetrics(*opt.controlPipe, *opt.introNsm);
+    if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample) {
+        std::unique_ptr<pmapi::Session> pSession;
+        if (opt.controlPipe) {
+            pSession = std::make_unique<pmapi::Session>(*opt.controlPipe, *opt.introNsm);
+        }
+        else {
+            pSession = std::make_unique<pmapi::Session>();
+        }
+
+        if (opt.introspectionSample) {
+            return IntrospectionSample(std::move(pSession));
         }
         else {
             if (bool(opt.processName) ^ bool(opt.processId)) {
@@ -620,30 +467,13 @@ int main(int argc, char* argv[])
                     OutputString("Unable to track requested process.\n");
                     return -1;
                 }
-                // Create an event
-                gCloseEvent = CreateEvent(NULL,   // default security attributes
-                    TRUE,   // manual reset event
-                    FALSE,  // not signaled
-                    NULL);  // no name
-
-                if (SetConsoleCtrlHandler(CtrlHandler, TRUE)) {
-                    if (opt.pollMetrics) {
-                        DynamicQuerySample(*opt.controlPipe,
-                            *opt.introNsm, processId.value(), *opt.windowSize, *opt.metricOffset);
-                        std::thread pollMetricsThread(PollMetricsThread, *opt.controlPipe,
-                            *opt.introNsm, processId.value(), *opt.windowSize, *opt.metricOffset);
-                        // Wait for the metrics capture thread to finish
-                        pollMetricsThread.join();
-                        return 0;
-                    }
-                    else {
-                        std::thread recordFramesThread(RecordFrames, *opt.controlPipe, *opt.introNsm,
-                            processName.value(), processId.value());
-                        // Wait for the metrics capture thread to finish
-                        recordFramesThread.join();
-                        return 0;
-                    }
+                if (opt.dynamicQuerySample) {
+                    return DynamicQuerySample(std::move(pSession), processId.value(), *opt.windowSize, *opt.metricOffset);
                 }
+                else {
+                    return FrameQuerySample(std::move(pSession), processName.value(), processId.value());
+                }
+
             }
             else {
                 OutputString("Must set eiter the application name or the process id:\n");
