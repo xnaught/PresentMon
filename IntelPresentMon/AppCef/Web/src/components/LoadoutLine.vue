@@ -117,38 +117,21 @@ export default Vue.extend({
       locked: {default: false, type: Boolean},
     },
 
-    data: () => ({
-      metricOption: null as MetricOption|null,
-      stat: null as Stat|null,
-    }),
-
     beforeMount() {
-      // this.metricOption = this.metricOptions.find(o =>
-      //   this.qualifiedMetric.metricId === o.metricId &&
-      //   this.qualifiedMetric.arrayIndex === o.arrayIndex) ?? null;
-      let option: MetricOption|null = null;
-      let qualifiedMetric = this.qualifiedMetric;
-      for (const opt of this.metricOptions) {
-        let matches = true;
-        matches = matches && qualifiedMetric.metricId === opt.metricId;
-        matches = matches && qualifiedMetric.arrayIndex === opt.arrayIndex;
-        if (matches) {
-          option = opt;
-          break;
-        }
-      }
-      this.metricOption = option;
-      if (this.metricOption !== null) {
-        if (this.metric.availableStatIds.includes(this.qualifiedMetric.statId)) {
-          this.stat = this.stats[this.qualifiedMetric.statId];
-        }
-      }
+      // make sure that qualified metric matches an option
+      // if not, try and find highest matching index
+      // if none, fall back to default metric
+      // consider emitting delete if metric is not valid
     },
 
     methods: {
       widgetTypeToString(t: WidgetType): string {
         return WidgetType[t];
       },
+      getAvailableStatsForMetric(metricId: number): Stat[] {
+        const opts = this.stats.filter(s => this.metrics[metricId].availableStatIds.includes(s.id));
+        return opts;
+      }
     },
 
     computed: {
@@ -181,8 +164,7 @@ export default Vue.extend({
         return this.widget.widgetType === WidgetType.Graph ? ['Line', 'Histogram'] : [];
       },
       statOptions(): Stat[] {
-        const opts = this.stats.filter(s => this.metric.availableStatIds.includes(s.id));
-        return opts;
+        return this.getAvailableStatsForMetric(this.metric.id);
       },
       isMaster(): boolean {
         return this.lineIdx === 0;
@@ -196,13 +178,43 @@ export default Vue.extend({
       isReadoutWidget(): boolean {
         return this.widgetType == WidgetType.Readout;
       },
+      qualifiedMetric(): QualifiedMetric {
+        return this.widgetMetric.metric;
+      },
       // spec bindings
-      qualifiedMetric: {
-        get(): QualifiedMetric {
-          return this.widgetMetric.metric;
+      stat: {
+        get(): Stat {
+          return this.stats[this.widgetMetric.metric.statId];
         },
-        set(metric: QualifiedMetric) {
-          const widgetMetric: WidgetMetric = {...this.widgetMetric, metric};
+        set(stat: Stat) {
+          const qualifiedMetric = {...this.widgetMetric.metric, statId: stat.id};
+          const widgetMetric: WidgetMetric = {...this.widgetMetric, metric: qualifiedMetric};
+          Loadout.setWidgetMetric({index: this.widgetIdx, metricIdx: this.lineIdx, metric: widgetMetric});
+        }
+      },
+      metricOption: {
+        get(): MetricOption {
+          const option = this.metricOptions.find(o =>
+            this.qualifiedMetric.metricId === o.metricId &&
+            this.qualifiedMetric.arrayIndex === o.arrayIndex) ?? null;
+          if (option !== null) {
+            return option;
+          }
+          // TODO: possibly emit a destruction event here?
+          throw new Error('Option not found matching metricId:arrayIndex');
+        },
+        set(opt: MetricOption) {
+          const currentStatId = this.qualifiedMetric.statId;
+          const newAvailableStats = this.getAvailableStatsForMetric(opt.metricId);
+          let statId = currentStatId;
+          // if new metric doesn't support current stat, reset stat
+          if (!newAvailableStats.some(s => s.id === currentStatId)) {
+            statId = newAvailableStats[0].id;
+          }
+          const qualifiedMetric: QualifiedMetric = {
+            metricId: opt.metricId, arrayIndex: opt.arrayIndex,
+            deviceId: 0, statId, desiredUnitId: 0};
+          const widgetMetric: WidgetMetric = {...this.widgetMetric, metric: qualifiedMetric};
           Loadout.setWidgetMetric({index: this.widgetIdx, metricIdx: this.lineIdx, metric: widgetMetric});
         }
       },
@@ -252,22 +264,11 @@ export default Vue.extend({
           const axisAffinity = affinityRight ? AxisAffinity.Right : AxisAffinity.Left;
           const metric: WidgetMetric = {...this.widgetMetric, axisAffinity};
           Loadout.setWidgetMetric({index: this.widgetIdx, metricIdx: this.lineIdx, metric});
-        }
+        },
       }
     },
 
     watch: {
-      // TODO: rework this binding after reading is complete
-      // metricOption(newOption: MetricOption) {
-      //   // if a new option is selected, reset to first available stat-id
-      //   // but don't reset if current id is in the set (happens when loading file)
-      //   if (!newOption.metricIds.includes(this.metricId)) {
-      //     this.metricId = newOption.metricIds[0];
-      //   }
-      //   if (this.metric.className !== 'Numeric') {
-      //     this.widgetType = WidgetType.Readout;
-      //   }
-      // },
       widgetSubtype(newSubtype: string) {
         if (newSubtype !== 'Line') {
           this.$emit('clearMulti');
