@@ -45,10 +45,12 @@ namespace p2c::kern
         void PushSpec(std::unique_ptr<OverlaySpec> pSpec);
         void ClearOverlay();
         std::vector<Process> ListProcesses();
+        // TODO: remove this when possible, if possible
         std::vector<pmon::met::Metric::Info> EnumerateMetrics() const;
         void SetAdapter(uint32_t id);
         std::vector<pmon::AdapterInfo> EnumerateAdapters() const;
         void SetCapture(bool active);
+        const pmapi::intro::Root& GetIntrospectionRoot() const;
     private:
         // functions
         bool IsIdle_() const;

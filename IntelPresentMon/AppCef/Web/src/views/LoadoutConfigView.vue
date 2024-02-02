@@ -116,7 +116,7 @@ export default Vue.extend({
       return this.metrics.flatMap(m => 
         Array.from({ length: m.arraySize }, (_, i) => ({
           metricId: m.id,
-          name: m.name,
+          name: m.arraySize > 1 ? `${m.name} [${i}]` : m.name,
           arrayIndex: i,
         }))
       );

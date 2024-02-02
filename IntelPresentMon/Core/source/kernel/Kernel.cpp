@@ -92,6 +92,11 @@ namespace p2c::kern
         pm->SetAdapter(id);
     }
 
+    const pmapi::intro::Root& Kernel::GetIntrospectionRoot() const
+    {
+        return pm->GetIntrospectionRoot();
+    }
+
     std::vector<pmon::AdapterInfo> Kernel::EnumerateAdapters() const
     {
         std::lock_guard lk{ mtx };
