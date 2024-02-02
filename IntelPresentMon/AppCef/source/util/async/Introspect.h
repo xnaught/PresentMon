@@ -6,6 +6,7 @@
 #include "../CefValues.h"
 #include <PresentMonAPIWrapper/source/PresentMonAPIWrapper.h>
 #include <ranges>
+#include <array>
 
 namespace p2c::client::util::async
 {
@@ -28,6 +29,7 @@ namespace p2c::client::util::async
             auto& intro = kernel.GetIntrospectionRoot();
 
             // metrics
+            const std::array numericTypes{ PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_UINT32, PM_DATA_TYPE_INT32, PM_DATA_TYPE_UINT64 };
             auto metricListCef = MakeCefList(intro.GetMetrics().size());
             for (auto&&[i, m] : intro.GetMetrics() | vi::enumerate) {
                 // array size: stopgap measure to use largest among all available devices
@@ -49,7 +51,7 @@ namespace p2c::client::util::async
                 auto metricStatListCef = MakeCefList(m.GetStatInfo().size());
                 for (auto&& [i, s] : m.GetStatInfo() | vi::enumerate) {
                     metricStatListCef->SetInt(i, (int)s.GetStat());
-                }                
+                }
                 // add metric
                 metricListCef->SetValue(i, MakeCefObject(
                     CefProp{ "id", m.GetId() },
@@ -60,7 +62,7 @@ namespace p2c::client::util::async
                     CefProp{ "preferredUnitId", 0 },
                     CefProp{ "arraySize", arraySize },
                     CefProp{ "availableStatIds", CefValueDecay(std::move(metricStatListCef)) },
-                    CefProp{ "numeric", true }
+                    CefProp{ "numeric", rn::contains(numericTypes, m.GetDataTypeInfo().GetPolledType()) }
                 ));
             }
             // stats
