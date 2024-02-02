@@ -11,5 +11,6 @@
     <ClInclude Include="FrameQuerySample.h" />
     <ClInclude Include="IntrospectionSample.h" />
     <ClInclude Include="CheckMetricSample.h" />
+    <ClInclude Include="Utils.h" />
   </ItemGroup>
 </Project>

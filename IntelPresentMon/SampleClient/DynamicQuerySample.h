@@ -4,69 +4,6 @@
 #define PM_BEGIN_FRAME_QUERY(type) struct type : FrameQueryContainer<type> { using FrameQueryContainer<type>::FrameQueryContainer;
 #define PM_END_QUERY private: FinalizingElement finalizer{ this }; }
 
-int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, unsigned int processId, double windowSize, double metricOffset)
-{
-    using namespace std::chrono_literals;
-    using namespace pmapi;
-
-    try {
-        auto proc = pSession->TrackProcess(processId);
-
-        PM_BEGIN_DYNAMIC_QUERY(MyDynamicQuery)
-            QueryElement appName{ this, PM_METRIC_APPLICATION, PM_STAT_MID_POINT };
-            QueryElement fpsAvg{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_AVG };
-            QueryElement fps90{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_PERCENTILE_90 };
-            QueryElement fps95{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_PERCENTILE_95 };
-            QueryElement fps99{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_PERCENTILE_99 };
-            QueryElement fpsMin{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_MAX };
-            QueryElement fpsMax{ this, PM_METRIC_DISPLAYED_FPS, PM_STAT_MIN };
-            QueryElement frameDurationAvg{ this, PM_METRIC_FRAME_DURATION, PM_STAT_AVG };
-            QueryElement fpStallAvg{ this, PM_METRIC_CPU_FRAME_PACING_STALL, PM_STAT_AVG };
-            QueryElement gpuDurationAvg{ this, PM_METRIC_GPU_DURATION, PM_STAT_AVG };
-            QueryElement gpuBusyTimeAvg{ this, PM_METRIC_GPU_BUSY_TIME, PM_STAT_AVG };
-            QueryElement gpuDisplayLatencyAvg{ this, PM_METRIC_DISPLAY_LATENCY, PM_STAT_AVG };
-            QueryElement gpuDisplayDurationAvg{ this, PM_METRIC_DISPLAY_DURATION, PM_STAT_AVG };
-            QueryElement gpuInputLatencyAvg{ this, PM_METRIC_INPUT_LATENCY, PM_STAT_AVG };
-            QueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_AVG, 1 };
-        PM_END_QUERY dq{ *pSession, windowSize, metricOffset, 1, 1 };
-
-        if (InitializeConsole() == false) {
-            std::cout << "\nFailed to initialize console.\n";
-            return -1;
-        }
-
-        while (!_kbhit()) {
-            dq.Poll(proc);
-            ConsolePrintLn("Presented FPS Average = %f", dq.fpsAvg.As<double>());
-            ConsolePrintLn("Presented FPS 90% = %f", dq.fps90.As<double>());
-            ConsolePrintLn("Presented FPS 95% = %f", dq.fps95.As<double>());
-            ConsolePrintLn("Presented FPS 99% = %f", dq.fps99.As<double>());
-            ConsolePrintLn("Presented FPS Max = %f", dq.fpsMax.As<double>());
-            ConsolePrintLn("Presented FPS Min = %f", dq.fpsMin.As<double>());
-            ConsolePrintLn("Frame Duration Average = %f", dq.frameDurationAvg.As<double>());
-            ConsolePrintLn("Frame Pacing Stall Average = %f", dq.fpStallAvg.As<double>());
-            ConsolePrintLn("GPU Duration Average = %f", dq.gpuDisplayDurationAvg.As<double>());
-            ConsolePrintLn("GPU Busy Time Average = %f", dq.gpuBusyTimeAvg.As<double>());
-            ConsolePrintLn("Display Latency Average = %f", dq.gpuDisplayLatencyAvg.As<double>());
-            ConsolePrintLn("Display Duration Average = %f", dq.gpuDisplayDurationAvg.As<double>());
-            ConsolePrintLn("Input Latency Average = %f", dq.gpuInputLatencyAvg.As<double>());
-            ConsolePrintLn("GPU Power Average = %f", dq.gpuPower.As<double>());
-            CommitConsole();
-            std::this_thread::sleep_for(20ms);
-        }
-    }
-    catch (const std::exception& e) {
-        std::cout << "Error: " << e.what() << std::endl;
-        return -1;
-    }
-    catch (...) {
-        std::cout << "Unknown Error" << std::endl;
-        return -1;
-    }
-
-    return 0;
-}
-
 bool FindFirstAvailableGpuMetric(pmapi::Session& pSession, PM_METRIC& gpuMetric, uint32_t& gpuMetricDeviceId, std::string& gpuMetricName)
 {
     // Search through introspection for first available GPU
@@ -103,15 +40,15 @@ bool FindFirstAvailableGpuMetric(pmapi::Session& pSession, PM_METRIC& gpuMetric,
             }
         }
     }
-    
+
     return false;
 }
 
-int PollMetrics(std::unique_ptr<pmapi::Session>&& pSession, unsigned int processId, double windowSize, double metricOffset)
+int AddGpuMetric(pmapi::Session& pSession, unsigned int processId, double windowSize, double metricOffset)
 {
-    pmapi::ProcessTracker processTracker;
-
     try {
+        auto processTracker = pSession.TrackProcess(processId);
+
         std::vector<PM_QUERY_ELEMENT> elements;
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_APPLICATION, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0 });
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
@@ -131,11 +68,11 @@ int PollMetrics(std::unique_ptr<pmapi::Session>&& pSession, unsigned int process
         PM_METRIC gpuMetric;
         uint32_t gpuDeviceId;
         std::string gpuMetricName;
-        if (FindFirstAvailableGpuMetric(*pSession, gpuMetric, gpuDeviceId, gpuMetricName)) {
+        if (FindFirstAvailableGpuMetric(pSession, gpuMetric, gpuDeviceId, gpuMetricName)) {
             elements.push_back(PM_QUERY_ELEMENT{ .metric = gpuMetric, .stat = PM_STAT_AVG, .deviceId = gpuDeviceId, .arrayIndex = 0 });
         }
 
-        auto dynamicQuery = pSession->RegisterDyanamicQuery(elements, windowSize, metricOffset);
+        auto dynamicQuery = pSession.RegisterDyanamicQuery(elements, windowSize, metricOffset);
         auto blobs = dynamicQuery.MakeBlobContainer(1u);
 
         if (InitializeConsole() == false) {
@@ -164,14 +101,93 @@ int PollMetrics(std::unique_ptr<pmapi::Session>&& pSession, unsigned int process
                 if (gpuMetricName.length() != 0)
                 {
                     ConsolePrintLn(
-                        std::format("{} Average = {}", 
+                        std::format("{} Average = {}",
                             gpuMetricName, *reinterpret_cast<const double*>(&pBlob[elements[14].dataOffset])).c_str()
                     );
                 }
-                
+
             }
             CommitConsole();
             Sleep(10);
+        }
+    }
+    catch (const std::exception& e) {
+        std::cout << "Error: " << e.what() << std::endl;
+        return -1;
+    }
+    catch (...) {
+        std::cout << "Unknown Error" << std::endl;
+        return -1;
+    }
+
+    return 0;
+}
+
+int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, double windowSize, double metricOffset)
+{
+    using namespace std::chrono_literals;
+    using namespace pmapi;
+
+    try {
+        std::optional<unsigned int> processId;
+        std::optional<std::string> processName;
+        
+        GetProcessInformation(processName, processId);
+        if (!processId.has_value())
+        {
+            std::cout << "Must set valid process name or process id:\n";
+            std::cout << "--dynamic-query-sample [--process-id id | --process-name name.exe] [--add-gpu-metric]\n";
+            return -1;
+        }
+
+        auto& opt = clio::Options::Get();
+        if (opt.addGPUMetric) {
+            return AddGpuMetric(*pSession, processId.value(), windowSize, metricOffset);
+        }
+
+        auto proc = pSession->TrackProcess(processId.value());
+
+        PM_BEGIN_DYNAMIC_QUERY(MyDynamicQuery)
+            QueryElement appName{ this, PM_METRIC_APPLICATION, PM_STAT_MID_POINT };
+            QueryElement fpsAvg{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_AVG };
+            QueryElement fps90{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_PERCENTILE_90 };
+            QueryElement fps95{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_PERCENTILE_95 };
+            QueryElement fps99{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_PERCENTILE_99 };
+            QueryElement fpsMax{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_MAX };
+            QueryElement fpsMin{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_MIN };
+            QueryElement frameDurationAvg{ this, PM_METRIC_FRAME_DURATION, PM_STAT_AVG };
+            QueryElement fpStallAvg{ this, PM_METRIC_CPU_FRAME_PACING_STALL, PM_STAT_AVG };
+            QueryElement gpuDurationAvg{ this, PM_METRIC_GPU_DURATION, PM_STAT_AVG };
+            QueryElement gpuBusyTimeAvg{ this, PM_METRIC_GPU_BUSY_TIME, PM_STAT_AVG };
+            QueryElement gpuDisplayLatencyAvg{ this, PM_METRIC_DISPLAY_LATENCY, PM_STAT_AVG };
+            QueryElement gpuDisplayDurationAvg{ this, PM_METRIC_DISPLAY_DURATION, PM_STAT_AVG };
+            QueryElement gpuInputLatencyAvg{ this, PM_METRIC_INPUT_LATENCY, PM_STAT_AVG };
+            QueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_AVG, 1 };
+        PM_END_QUERY dq{ *pSession, windowSize, metricOffset, 1, 1 };
+
+        if (InitializeConsole() == false) {
+            std::cout << "\nFailed to initialize console.\n";
+            return -1;
+        }
+
+        while (!_kbhit()) {
+            dq.Poll(proc);
+            ConsolePrintLn("Presented FPS Average = %f", dq.fpsAvg.As<double>());
+            ConsolePrintLn("Presented FPS 90% = %f", dq.fps90.As<double>());
+            ConsolePrintLn("Presented FPS 95% = %f", dq.fps95.As<double>());
+            ConsolePrintLn("Presented FPS 99% = %f", dq.fps99.As<double>());
+            ConsolePrintLn("Presented FPS Max = %f", dq.fpsMax.As<double>());
+            ConsolePrintLn("Presented FPS Min = %f", dq.fpsMin.As<double>());
+            ConsolePrintLn("Frame Duration Average = %f", dq.frameDurationAvg.As<double>());
+            ConsolePrintLn("Frame Pacing Stall Average = %f", dq.fpStallAvg.As<double>());
+            ConsolePrintLn("GPU Duration Average = %f", dq.gpuDisplayDurationAvg.As<double>());
+            ConsolePrintLn("GPU Busy Time Average = %f", dq.gpuBusyTimeAvg.As<double>());
+            ConsolePrintLn("Display Latency Average = %f", dq.gpuDisplayLatencyAvg.As<double>());
+            ConsolePrintLn("Display Duration Average = %f", dq.gpuDisplayDurationAvg.As<double>());
+            ConsolePrintLn("Input Latency Average = %f", dq.gpuInputLatencyAvg.As<double>());
+            ConsolePrintLn("GPU Power Average = %f", dq.gpuPower.As<double>());
+            CommitConsole();
+            std::this_thread::sleep_for(20ms);
         }
     }
     catch (const std::exception& e) {
