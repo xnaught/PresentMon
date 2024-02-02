@@ -7,6 +7,7 @@ import { Process } from '@/core/process'
 import { Adapter } from './adapter'
 import { Spec } from '@/core/spec'
 import { Binding, KeyOption, ModifierOption, Action } from '@/core/hotkey'
+import { delayFor } from './timing'
 
 
 /* eslint-disable no-explicit-any */
@@ -53,25 +54,11 @@ export class Api {
         return keys;
     }
     static async introspect(): Promise<{metrics: Metric[], stats: Stat[], units: Unit[]}> {
-        // const introData = await this.invokeEndpointFuture('introspect', {});
-        // if (!Array.isArray(introData.metrics) || !Array.isArray(introData.stats) || !Array.isArray(introData.units)) {
-        //     throw new Error('Bad (non-array) member type returned from introspect');
-        // }
-        const introData : {metrics: Metric[], stats: Stat[], units: Unit[]} = {
-            metrics: [
-                {id: 0, name: 'chupa', description: 'itschupa', availableDeviceIds: [0], preferredUnitId: 0, arraySize: 1, availableStatIds: [0,1,2], numeric: true},
-                {id: 1, name: 'dhupa', description: 'itsdhupa', availableDeviceIds: [0], preferredUnitId: 0, arraySize: 1, availableStatIds: [0,1], numeric: true},
-                {id: 2, name: 'fhupa', description: 'itsfhupa', availableDeviceIds: [0], preferredUnitId: 0, arraySize: 1, availableStatIds: [1,2], numeric: true},
-            ],
-            stats: [
-                {id: 0, name: 'carto', shortName: 'ct', description: 'itscarto'},
-                {id: 1, name: 'carto2', shortName: 'ct2', description: 'itscarto2'},
-                {id: 2, name: 'carto3', shortName: 'ct3', description: 'itscarto3'},
-            ],
-            units: [
-                {id: 0, name: 'yiyi', shortName: 'yy', description: 'itsyiyi'},
-            ]
-        };
+        const introData = await this.invokeEndpointFuture('introspect', {});
+        if (!Array.isArray(introData.metrics) || !Array.isArray(introData.stats) || !Array.isArray(introData.units)) {
+            console.log("error intro call");
+            throw new Error('Bad (non-array) member type returned from introspect');
+        }
         return introData;
     }
     static async enumerateProcesses(): Promise<Process[]> {

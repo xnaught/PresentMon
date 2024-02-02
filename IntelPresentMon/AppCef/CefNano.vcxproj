@@ -60,7 +60,7 @@
     <ClInclude Include="source\util\async\ClearHotkey.h" />
     <ClInclude Include="source\util\async\EnumerateAdapters.h" />
     <ClInclude Include="source\util\async\EnumerateKeys.h" />
-    <ClInclude Include="source\util\async\EnumerateMetrics.h" />
+    <ClInclude Include="source\util\async\Introspect.h" />
     <ClInclude Include="source\util\async\EnumerateModifiers.h" />
     <ClInclude Include="source\util\async\EnumerateProcesses.h" />
     <ClInclude Include="source\util\async\ExploreCaptures.h" />

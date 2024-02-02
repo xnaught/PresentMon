@@ -2,16 +2,19 @@
 // SPDX-License-Identifier: MIT
 import { Metric } from "./metric"
 
+// fully-specified metric that can be used as a query element
 export interface QualifiedMetric {
     metricId: number,
     arrayIndex: number,
     statId: number,
+    // currently not directly filled by frontend -> active adapter is filled here in backend for non-universal metrics
     deviceId: number,
+    // currently not touched by frontend and ignored by backend
     desiredUnitId: number,
 }
 
 export function makeDefaultQualifiedMetric(): QualifiedMetric {
-    // HARDCODED: introspectable metric data
+    // TODO: hardcoded, make this dictated by backend OR at least derived from introspection options
     return {
         metricId: 0,
         arrayIndex: 0,
