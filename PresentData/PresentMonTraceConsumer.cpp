@@ -721,12 +721,12 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
     case Microsoft_Windows_DxgKrnl::QueuePacket_Stop::Id:
     {
         EventDataDesc desc[] = {
-            { L"SubmitSequence" },
             { L"hContext" },
+            { L"SubmitSequence" },
         };
         mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto SubmitSequence = desc[0].GetData<uint32_t>();
-        auto hContext       = desc[1].GetData<uint64_t>();
+        auto hContext       = desc[0].GetData<uint64_t>();
+        auto SubmitSequence = desc[1].GetData<uint32_t>();
 
         TRACK_PRESENT_PATH_GENERATE_ID();
         HandleDxgkQueueComplete(hdr.TimeStamp.QuadPart, hContext, SubmitSequence);
@@ -754,9 +754,9 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
             { L"FlipEntryStatusAfterFlip" }, // optional
         };
         mMetadata.GetEventData(pEventRecord, desc, _countof(desc) - (flipEntryStatusAfterFlipValid ? 0 : 1));
-        auto FlipFenceId = desc[0].GetData<uint64_t>();
+        auto FlipSubmitSequence = desc[0].GetData<uint64_t>();
 
-        auto submitSequence = (uint32_t) (FlipFenceId >> 32u);
+        auto submitSequence = (uint32_t) (FlipSubmitSequence >> 32u);
         auto present = FindPresentBySubmitSequence(submitSequence);
         if (present != nullptr) {
 
