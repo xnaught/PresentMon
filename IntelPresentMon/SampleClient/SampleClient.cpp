@@ -31,16 +31,6 @@ using namespace std::chrono;
 using namespace std::chrono_literals;
 
 
-void OutputString(const char* output) {
-  try {
-    std::cout << output;
-  } catch (const std::exception& e) {
-    std::cout << "a standard exception was caught, with message '" << e.what()
-              << "'" << std::endl;
-    return;
-  }
-}
-
 #define PM_BEGIN_DYNAMIC_QUERY(type) struct type : DynamicQueryContainer { using DynamicQueryContainer::DynamicQueryContainer;
 #define PM_BEGIN_FRAME_QUERY(type) struct type : FrameQueryContainer<type> { using FrameQueryContainer<type>::FrameQueryContainer;
 #define PM_END_QUERY private: FinalizingElement finalizer{ this }; }
@@ -114,55 +104,67 @@ int WrapperTest()
 
 int main(int argc, char* argv[])
 {
-    if (auto e = clio::Options::Init(argc, argv)) {
-        return *e;
-    }
-    auto& opt = clio::Options::Get();
+    try {
+        if (auto e = clio::Options::Init(argc, argv)) {
+            return *e;
+        }
+        auto& opt = clio::Options::Get();
 
-    // if wrapper is specified immediately 
-    if (opt.wrapper)
-    {
-        return WrapperTest();
-    }
+        // if wrapper is specified immediately 
+        if (opt.wrapper)
+        {
+            return WrapperTest();
+        }
 
-    // validate options, better to do this with CLI11 validation but framework needs upgrade...
-    if (bool(opt.controlPipe) != bool(opt.introNsm)) {
-        OutputString("Must set both control pipe and intro NSM, or neither.\n");
-        return -1;
-    }
+        // validate options, better to do this with CLI11 validation but framework needs upgrade...
+        if (bool(opt.controlPipe) != bool(opt.introNsm)) {
+            std::cout << "Must set both control pipe and intro NSM, or neither.\n";
+            return -1;
+        }
 
-    // determine requested activity
-    if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample ^ opt.checkMetricSample) {
-        std::unique_ptr<pmapi::Session> pSession;
-        if (opt.controlPipe) {
-            pSession = std::make_unique<pmapi::Session>(*opt.controlPipe, *opt.introNsm);
+        // determine requested activity
+        if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample ^ opt.checkMetricSample) {
+            std::unique_ptr<pmapi::Session> pSession;
+            if (opt.controlPipe) {
+                pSession = std::make_unique<pmapi::Session>(*opt.controlPipe, *opt.introNsm);
+            }
+            else {
+                pSession = std::make_unique<pmapi::Session>();
+            }
+
+            if (opt.introspectionSample)
+            {
+                return IntrospectionSample(std::move(pSession));
+            }
+            else if (opt.checkMetricSample)
+            {
+                return CheckMetricSample(std::move(pSession));
+            }
+            else if (opt.dynamicQuerySample)
+            {
+                return DynamicQuerySample(std::move(pSession), *opt.windowSize, *opt.metricOffset);
+            }
+            else
+            {
+                return FrameQuerySample(std::move(pSession));
+            }
         }
         else {
-            pSession = std::make_unique<pmapi::Session>();
+            std::cout << "SampleClient supports one action at a time. Select one of:\n";
+            std::cout << "--introspection-sample\n";
+            std::cout << "--dynamic-query-sample [--process-id id | --process-name name.exe] [--add-gpu-metric]\n";
+            std::cout << "--frame-query-sample [--process-id id | --process-name name.exe]  [--gen-csv]\n";
+            std::cout << "--check-metric-sample --metric PM_METRIC_*\n";
+            return -1;
         }
-
-        if (opt.introspectionSample)
-        {
-            return IntrospectionSample(std::move(pSession));
-        }
-        else if (opt.checkMetricSample)
-        {
-            return CheckMetricSample(std::move(pSession));
-        }
-        else if (opt.dynamicQuerySample)
-        {
-            return DynamicQuerySample(std::move(pSession), *opt.windowSize, *opt.metricOffset);
-        }
-        else
-        {
-            return FrameQuerySample(std::move(pSession));
-        }
-    } else {
-        OutputString("SampleClient supports one action at a time. Select one of:\n");
-        OutputString("--introspection-sample\n");
-        OutputString("--dynamic-query-sample [--process-id id | --process-name name.exe] [--add-gpu-metric]\n");
-        OutputString("--frame-query-sample [--process-id id | --process-name name.exe]  [--gen-csv]\n");
-        OutputString("--check-metric-sample --metric PM_METRIC_*\n");
+    }
+    catch (const std::exception& e) {
+        std::cout << "Error: " << e.what() << std::endl;
         return -1;
     }
+    catch (...) {
+        std::cout << "Unknown Error" << std::endl;
+        return -1;
+    }
+
 }
