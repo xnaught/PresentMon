@@ -9,7 +9,13 @@
          "metrics": [
             {
                "key": 5,
-               "metricId": 341,
+               "metric": {
+                  "metricId": 55,
+                  "arrayIndex": 0,
+                  "deviceId": 0,
+                  "statId": 7,
+                  "desiredUnitId": 0
+               },
                "lineColor": {
                   "r": 100,
                   "g": 255,
@@ -46,7 +52,13 @@
          "metrics": [
             {
                "key": 5,
-               "metricId": 7,
+               "metric": {
+                  "metricId": 1,
+                  "arrayIndex": 0,
+                  "deviceId": 0,
+                  "statId": 1,
+                  "desiredUnitId": 0
+               },
                "lineColor": {
                   "r": 100,
                   "g": 255,
@@ -83,7 +95,13 @@
          "metrics": [
             {
                "key": 10,
-               "metricId": 8,
+               "metric": {
+                  "metricId": 1,
+                  "arrayIndex": 0,
+                  "deviceId": 0,
+                  "statId": 2,
+                  "desiredUnitId": 0
+               },
                "lineColor": {
                   "r": 100,
                   "g": 255,
@@ -120,7 +138,13 @@
          "metrics": [
             {
                "key": 6,
-               "metricId": 14,
+               "metric": {
+                  "metricId": 2,
+                  "arrayIndex": 0,
+                  "deviceId": 0,
+                  "statId": 1,
+                  "desiredUnitId": 0
+               },
                "lineColor": {
                   "r": 100,
                   "g": 255,

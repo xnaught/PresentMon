@@ -92,7 +92,6 @@ export class Api {
         await this.invokeEndpointFuture('launchKernel', {});
     }
     static async pushSpecification(spec: Spec): Promise<void> {
-        console.log(JSON.stringify(spec, null, 3));
         await this.invokeEndpointFuture('pushSpecification', spec);
     }
     static async setCapture(active: boolean): Promise<void> {

@@ -200,7 +200,7 @@ export default Vue.extend({
           if (option !== null) {
             return option;
           }
-          // TODO: possibly emit a destruction event here?
+          // TODO: find a way of doing this without an error ($emit:delete not enough)
           throw new Error('Option not found matching metricId:arrayIndex');
         },
         set(opt: MetricOption) {
