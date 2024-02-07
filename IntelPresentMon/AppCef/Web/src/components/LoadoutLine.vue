@@ -118,10 +118,10 @@ export default Vue.extend({
     },
 
     beforeMount() {
-      // make sure that qualified metric matches an option
+      // ?? make sure that qualified metric matches an option
       // if not, try and find highest matching index
       // if none, fall back to default metric
-      // consider emitting delete if metric is not valid
+      // >>> (consider) emitting delete if metric is not valid
     },
 
     methods: {

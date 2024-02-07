@@ -72,16 +72,6 @@ namespace p2c::kern
         return list;
     }
 
-    std::vector<pmon::met::Metric::Info> Kernel::EnumerateMetrics() const
-    {
-        std::lock_guard lk{ mtx };
-        if (!pm) {
-            p2clog.warn(L"presentmon not initialized").commit();
-            return {};
-        }
-        return pm->EnumerateMetrics();
-    }
-
     void Kernel::SetAdapter(uint32_t id)
     {
         std::lock_guard lk{ mtx };

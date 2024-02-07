@@ -13,9 +13,7 @@
 #include "WindowMoveHandler.h"
 #include "WindowActivateHandler.h"
 #include "OverlaySpec.h"
-#include "GraphDataPack.h"
-#include "TextDataPack.h"
-#include <Core/source/pmon/CachingQuery.h>
+#include "MetricPackMapper.h"
 
 namespace p2c::gfx::lay
 {
@@ -40,15 +38,8 @@ namespace p2c::kern
             win::Process proc_,
             std::shared_ptr<OverlaySpec> pSpec_, 
             pmon::PresentMon* pm_,
-            std::map<size_t, GraphDataPack> graphPacks_ = {},
+            std::unique_ptr<MetricPackMapper> pPackMapper_,
             std::optional<gfx::Vec2I> pos = {});
-        Overlay(
-            win::Process proc_,
-            std::shared_ptr<OverlaySpec> pSpec_,
-            pmon::PresentMon* pm_,
-            std::map<size_t, GraphDataPack> graphPacks_,
-            std::optional<gfx::Vec2I> pos,
-            std::unique_ptr<pmon::CachingQuery> pQuery);
         ~Overlay();
         void UpdateTargetRect(const gfx::RectI& newRect);
         void UpdateTargetOrder(bool topmost);
@@ -86,14 +77,11 @@ namespace p2c::kern
         win::Process proc;
         std::shared_ptr<OverlaySpec> pSpec;
         pmon::PresentMon* pm;
-        std::unordered_map<size_t, pmon::met::Metric*> activeMetricsMap;
-        std::unique_ptr<pmon::CachingQuery> pQuery;
-        std::map<size_t, GraphDataPack> graphPacks;
+        pmon::MetricFetcherFactory fetcherFactory;
+        std::unique_ptr<MetricPackMapper> pPackMapper;
         HANDLE hProcess;
         win::EventHookManager::Token moveHandlerToken;
         win::EventHookManager::Token activateHandlerToken;
-        // map metric indices to DataPacks (for graphs)
-        std::vector<TextDataPack> textPacks;
         OverlaySpec::OverlayPosition position;
         float upscaleFactor = 2.f;
         gfx::DimensionsI graphicsDimensions;

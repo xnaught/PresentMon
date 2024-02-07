@@ -4,7 +4,6 @@
 #include <optional>
 #include <vector>
 #include <memory>
-#include "metric/Metric.h"
 #include "AdapterInfo.h"
 
 namespace pmapi
@@ -38,8 +37,6 @@ namespace p2c::pmon
 		std::wstring GetCpuName() const;
 		std::vector<AdapterInfo> EnumerateAdapters() const;
 		void SetAdapter(uint32_t id);
-		met::Metric* GetMetricByIndex(size_t index);
-		std::vector<met::Metric::Info> EnumerateMetrics() const;
 		std::optional<uint32_t> GetPid() const;
 		std::shared_ptr<RawFrameDataWriter> MakeRawFrameDataWriter(std::wstring path, std::optional<std::wstring> statsPath,
 			uint32_t pid, std::wstring procName);
@@ -47,14 +44,10 @@ namespace p2c::pmon
 		const pmapi::intro::Root& GetIntrospectionRoot() const;
 		pmapi::Session& GetSession();
 	private:
-		// functions
-		void AddMetric(std::unique_ptr<met::Metric> metric_);
-		// data
 		double window = -1.;
 		double offset = -1.;
 		uint32_t telemetrySamplePeriod = 0;
 		std::unique_ptr<pmapi::Session> pSession;
-		std::vector<std::unique_ptr<met::Metric>> metrics;
 		std::shared_ptr<pmapi::intro::Root> pIntrospectionRoot;
 		std::shared_ptr<pmapi::ProcessTracker> pTracker;
 		std::optional<uint32_t> selectedAdapter;

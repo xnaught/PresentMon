@@ -240,7 +240,8 @@ namespace p2c::client::util
 		}
 		CefValueTraverser operator[](const char* key);
 		CefValueTraverser operator[](size_t index);
-		CefRefPtr<CefValue> AsCefValue();
+		CefRefPtr<CefValue> AsCefValue() const &;
+		CefRefPtr<CefValue> AsCefValue() &&;
 		size_t GetArrayLength();
 		bool IsNull();
 	private:

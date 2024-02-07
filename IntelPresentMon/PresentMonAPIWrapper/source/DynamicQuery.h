@@ -20,13 +20,13 @@ namespace pmapi
         {
             return blobSize_;
         }
-        void Poll(uint32_t pid, uint8_t* pBlob, uint32_t& numSwapChains)
+        void Poll(uint32_t pid, uint8_t* pBlob, uint32_t& numSwapChains) const
         {
             if (auto sta = pmPollDynamicQuery(hQuery_, pid, pBlob, &numSwapChains); sta != PM_STATUS_SUCCESS) {
                 throw Exception{ std::format("dynamic poll call failed with error id={}", (int)sta) };
             }
         }
-        void Poll(uint32_t pid, BlobContainer& blobs)
+        void Poll(uint32_t pid, BlobContainer& blobs) const
         {
             assert(blobs.CheckHandle(hQuery_));
             Poll(pid, blobs.GetFirst(), blobs.AcquireNumBlobsInRef_());

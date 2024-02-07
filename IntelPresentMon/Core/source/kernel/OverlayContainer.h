@@ -18,7 +18,7 @@ namespace p2c::kern
 	public:
         // functions
         OverlayContainer(win::com::WbemConnection& wbemConn_, std::shared_ptr<OverlaySpec> pSpec_,
-            pmon::PresentMon* pm_, std::map<size_t, GraphDataPack> graphPacks_ = {});
+            pmon::PresentMon* pm_);
         ~OverlayContainer() = default;
         void RebuildDocument(std::shared_ptr<OverlaySpec> pSpec_);
         void InitiateClose();

@@ -58,6 +58,7 @@ namespace pmapi
         uint32_t GetBlobCount() const { return nBlobs_; }
         uint32_t GetNumBlobsPopulated() const { return nBlobsFilledInOut_; }
         uint8_t* GetFirst() { return pBlobArrayBytes_.get(); }
+        const uint8_t* GetFirst() const { return pBlobArrayBytes_.get(); }
         uint8_t* operator[](size_t index)
         {
             assert(index < nBlobs_);

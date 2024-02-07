@@ -259,25 +259,33 @@ namespace p2c::client::util
                 const auto widgetType = kern::WidgetType(Traverse(widget)["widgetType"]);
                 if (widgetType == kern::WidgetType::Graph) {
                     auto& vGraph = widget;
-                    auto widgetMetrics = Traverse(vGraph)["metrics"];
                     const auto tag = std::format("g{}", i);
-                    auto type = lay::EnumRegistry<GraphType>::ToEnum(Traverse(vGraph)["graphType"]["name"].AsWString());
-                    // create the metric specs for each line etc. in widget
-                    std::vector<kern::GraphMetricSpec> graphMetricSpecs;
+                    auto widgetMetrics = Traverse(vGraph)["metrics"];
+
                     {
-                        const auto metricIds = widgetMetrics.PluckAs<size_t>("metricId");
-                        const auto metricAxisAffinities = widgetMetrics.PluckAs<gfx::lay::AxisAffinity>("axisAffinity");
-                        for (size_t i = 0; i < metricIds.size(); i++) {
+                        auto type = lay::EnumRegistry<GraphType>::ToEnum(Traverse(vGraph)["graphType"]["name"].AsWString());
+                        // create the metric specs for each line etc. in widget
+                        std::vector<kern::GraphMetricSpec> graphMetricSpecs;
+                        for (size_t i = 0; i < widgetMetrics.GetArrayLength(); i++) {
+                            auto widgetMetric = Traverse(widgetMetrics)[i];
+                            const gfx::lay::AxisAffinity axis = widgetMetric["axisAffinity"];
+                            auto qualifiedMetric = widgetMetric["metric"];
                             graphMetricSpecs.push_back(kern::GraphMetricSpec{
-                                .index = metricIds[i],
-                                .axisAffinity = metricAxisAffinities[i],
+                                .metric = {
+                                    .metricId = qualifiedMetric["metricId"],
+                                    .statId = qualifiedMetric["statId"],
+                                    .arrayIndex = qualifiedMetric["arrayIndex"],
+                                    .deviceId = 0,
+                                    .unitId = 0,
+                                },
+                                .axisAffinity = axis,
                             });
                         }
+                        pSpec->widgets.push_back(kern::GraphSpec{
+                            .metrics = std::move(graphMetricSpecs),
+                            .type = type, .tag = tag,
+                        });
                     }
-                    pSpec->widgets.push_back(kern::GraphSpec{
-                        .metrics = std::move(graphMetricSpecs),
-                        .type = type, .tag = tag,
-                    });
 
                     {
                         using namespace gfx::lay::sty;
@@ -342,7 +350,8 @@ namespace p2c::client::util
                         sheets.back()->InsertRaw<at::borderColorRight>(at::make::Color(ColorFromV8(Traverse(vGraph)["dividerColor"])));
 
                         sheets.push_back(Stylesheet::Make({ { "$graph", "$line", tag }, {"$body-right", "$value"}}));
-                        sheets.back()->InsertRaw<at::textColor>(at::make::Color(ColorFromV8(widgetMetrics[size_t(0)]["lineColor"])));
+                        // why is this hardcoded using index 0?
+                        sheets.back()->InsertRaw<at::textColor>(at::make::Color(ColorFromV8(widgetMetrics[0ull]["lineColor"])));
 
                         const auto widgetMetricCount = widgetMetrics.GetArrayLength();
                         bool hasRightAxis = false;
@@ -400,10 +409,19 @@ namespace p2c::client::util
                     if (Traverse(vReadout)["metrics"].GetArrayLength() > 1) {
                         p2clog.warn(L"Too many metricIds for readout widget").commit();
                     }
-                    pSpec->widgets.push_back(kern::ReadoutSpec{ Traverse(vReadout)["metrics"][size_t(0)]["metricId"], { tag } });
+                    auto qualifiedMetric = Traverse(vReadout)["metrics"][0ull]["metric"];
+                    pSpec->widgets.push_back(kern::ReadoutSpec{
+                        .metric = {
+                            .metricId = qualifiedMetric["metricId"],
+                            .statId = qualifiedMetric["statId"],
+                            .arrayIndex = qualifiedMetric["arrayIndex"],
+                            .deviceId = 0,
+                            .unitId = 0,
+                        },
+                        .tag = tag,
+                    });
 
                     const double fontSize = Traverse(vReadout)["fontSize"];
-
 
                     sheets.push_back(Stylesheet::Make({ {}, { "$readout", tag } }));
                     sheets.back()->InsertRaw<at::backgroundColor>(at::make::Color(ColorFromV8(Traverse(vReadout)["backgroundColor"])));

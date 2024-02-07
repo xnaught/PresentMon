@@ -83,4 +83,8 @@ namespace p2c::gfx::lay
 	{
 		return max.GetCurrent();
 	}
+	double GraphData::GetWindowSize() const
+	{
+		return timeWindow;
+	}
 }
