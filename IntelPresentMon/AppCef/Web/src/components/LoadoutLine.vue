@@ -211,6 +211,10 @@ export default Vue.extend({
           if (!newAvailableStats.some(s => s.id === currentStatId)) {
             statId = newAvailableStats[0].id;
           }
+          // if new metric is not numeric, make sure widget type is readout
+          if (this.metrics.find(m => m.id === opt.metricId)?.numeric !== true) {
+            this.widgetType = WidgetType.Readout;
+          }
           const qualifiedMetric: QualifiedMetric = {
             metricId: opt.metricId, arrayIndex: opt.arrayIndex,
             deviceId: 0, statId, desiredUnitId: 0};
