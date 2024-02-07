@@ -67,11 +67,11 @@ namespace p2c::pmon
             }
             // add stat to name
             if (auto statAbbv = intro.FindEnumKey(PM_ENUM_STAT, qmet.statId).GetShortName(); !statAbbv.empty()) {
-                info.fullName += std::format(L" [{}]", ToWide(statAbbv));
+                info.fullName += std::format(L" ({})", ToWide(statAbbv));
             }
             // add unit abbreviation to the end if metric is not dimensionless
             if (auto&& unit = metric.GetPreferredUnitHint(); unit != PM_UNIT_DIMENSIONLESS) {
-                info.unitLabel += std::format(L" ({})", ToWide(metric.IntrospectPreferredUnitHint().GetShortName()));
+                info.unitLabel = ToWide(metric.IntrospectPreferredUnitHint().GetShortName());
             }
             const auto dataType = metric.GetDataTypeInfo().GetPolledType();
             info.isNonNumeric = dataType == PM_DATA_TYPE_ENUM || dataType == PM_DATA_TYPE_STRING;

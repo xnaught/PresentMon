@@ -40,6 +40,7 @@ namespace p2c::pmon::met
                 if (auto pBlobBytes = pQuery_->GetBlobData()) {
                     return scale_ * (float)*reinterpret_cast<const T*>(&pBlobBytes[offset_]);
                 }
+                return {};
             }
             if constexpr (std::same_as<T, const char*>) {
                 p2clog.warn(L"Reading float value from string-typed metric").commit();

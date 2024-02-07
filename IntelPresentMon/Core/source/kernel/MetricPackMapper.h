@@ -85,6 +85,7 @@ namespace p2c::kern
 		}
 		void Populate(double timestamp)
 		{
+			pQuery_->Poll();
 			for (auto&& [qmet, pPack] : metricPackMap_) {
 				pPack.Populate(timestamp);
 			}
