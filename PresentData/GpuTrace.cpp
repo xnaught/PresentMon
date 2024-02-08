@@ -263,26 +263,16 @@ void GpuTrace::EnqueueWork(Context* context, uint32_t sequenceId, uint64_t times
         return;
     }
 
+    // If the queue is too small, enlarge it by 16 entries at a time.  Typically, this will only be
+    // needed for the first packet observed on this node, which will result in sizing the queue from
+    // 0 to 16.  However, there are other cases where the queue entries can grow beyond that.  e.g.,
+    // this seems to always happen when an application closes.
     uint32_t queueSize = (uint32_t) node->mQueue.size();
     if (node->mQueueCount == queueSize) {
-        // If the queue is too small, enlarge it by 16 entries at a time.  I only expect this to
-        // happen for the first packet observed on this node, which will result in sizing the queue
-        // from 0 to 16.
-        //
-        // However, there are other cases where the queue entries seem to grow unexpectedly.  e.g.,
-        // this seems to always happen when an application closes.  So, we place a reasonable
-        // maximum limit on this to prevent unexpectedly growing the queues arbitrarily.
-        if (node->mQueueCount >= 16*10) {
-            return;
-        }
-
-        auto queueIndex = queueSize == 0
-            ? 0
-            : (node->mQueueIndex + node->mQueueCount) % queueSize;
-
         Node::EnqueuedPacket empty{};
-        node->mQueue.insert(node->mQueue.begin() + queueIndex, 16, empty);
+        node->mQueue.insert(node->mQueue.begin() + node->mQueueIndex, 16, empty);
         queueSize += 16;
+        node->mQueueIndex = (node->mQueueIndex + 16) % queueSize;
     }
 
     // Enqueue the packet.
@@ -403,8 +393,9 @@ bool GpuTrace::CompleteWork(Context* context, uint32_t sequenceId, uint64_t time
     }
 
     // Pop the completed packet from the queue, and start the next one.
+    uint32_t queueSize = (uint32_t) node->mQueue.size();
     for (;;) {
-        node->mQueueIndex = (node->mQueueIndex + 1) % (uint32_t) node->mQueue.size();
+        node->mQueueIndex = (node->mQueueIndex + 1) % queueSize;
         node->mQueueCount -= 1;
         if (node->mQueueCount == 0) {
             break;
@@ -419,6 +410,21 @@ bool GpuTrace::CompleteWork(Context* context, uint32_t sequenceId, uint64_t time
         if (!entry->mCompleted) {
             break;
         }
+    }
+
+    // Decrease queue storage in multiples of 16.
+    uint32_t N = (queueSize - node->mQueueCount) / 16;
+    if (N >= 2) {
+        N = (N - 1) * 16;
+        if (node->mQueueIndex >= N) {
+            node->mQueue.erase(node->mQueue.begin() + node->mQueueIndex - N, node->mQueue.begin() + node->mQueueIndex);
+            node->mQueueIndex -= N;
+        } else {
+            node->mQueue.erase(node->mQueue.begin() + queueSize - (N - node->mQueueIndex), node->mQueue.end());
+            node->mQueue.erase(node->mQueue.begin(), node->mQueue.begin() + node->mQueueIndex);
+            node->mQueueIndex = 0;
+        }
+        node->mQueue.shrink_to_fit();
     }
 
     return true;
