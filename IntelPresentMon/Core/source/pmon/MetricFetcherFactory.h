@@ -41,7 +41,7 @@ namespace p2c::pmon
         {
             std::wstring fullName;
             std::wstring unitLabel;
-            bool isNonNumeric;
+            bool isNonNumeric = true;
         };
         // functions
         MetricFetcherFactory(pmon::PresentMon& pm)
@@ -77,7 +77,7 @@ namespace p2c::pmon
             info.isNonNumeric = dataType == PM_DATA_TYPE_ENUM || dataType == PM_DATA_TYPE_STRING;
             return info;
         }
-        BuildResult Build(uint32_t pid, uint32_t activeGpuDeviceId, double winSizeMs, double metricOffsetMs, std::span<const kern::QualifiedMetric> qmets)
+        BuildResult Build(uint32_t pid, double winSizeMs, double metricOffsetMs, std::span<const kern::QualifiedMetric> qmets)
         {
             auto& intro = pm_.GetIntrospectionRoot();
             // construct query
@@ -93,7 +93,7 @@ namespace p2c::pmon
                         .arrayIndex = e.arrayIndex,
                         .deviceId = e.deviceId,
                     },
-                    .pFetcher = met::MakeDynamicPollingFetcher(e, intro, pQuery, activeGpuDeviceId),
+                    .pFetcher = met::MakeDynamicPollingFetcher(e, intro, pQuery)
                 });
             }
             result.pQuery = std::move(pQuery);

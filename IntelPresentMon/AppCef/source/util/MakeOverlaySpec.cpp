@@ -275,8 +275,8 @@ namespace p2c::client::util
                                     .metricId = qualifiedMetric["metricId"],
                                     .statId = qualifiedMetric["statId"],
                                     .arrayIndex = qualifiedMetric["arrayIndex"],
-                                    .deviceId = 0,
-                                    .unitId = 0,
+                                    .deviceId = qualifiedMetric["deviceId"],
+                                    .unitId = qualifiedMetric["desiredUnitId"],
                                 },
                                 .axisAffinity = axis,
                             });
@@ -415,8 +415,8 @@ namespace p2c::client::util
                             .metricId = qualifiedMetric["metricId"],
                             .statId = qualifiedMetric["statId"],
                             .arrayIndex = qualifiedMetric["arrayIndex"],
-                            .deviceId = 0,
-                            .unitId = 0,
+                            .deviceId = qualifiedMetric["deviceId"],
+                            .unitId = qualifiedMetric["desiredUnitId"],
                         },
                         .tag = tag,
                     });

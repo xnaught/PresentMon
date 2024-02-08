@@ -80,5 +80,5 @@ namespace p2c::pmon::met
     };
 
     std::shared_ptr<DynamicPollingFetcher> MakeDynamicPollingFetcher(const PM_QUERY_ELEMENT& qel,
-        const pmapi::intro::Root& introRoot, std::shared_ptr<DynamicQuery> pQuery, uint32_t activeGpuDeviceId);
+        const pmapi::intro::Root& introRoot, std::shared_ptr<DynamicQuery> pQuery);
 }

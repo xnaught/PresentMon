@@ -89,7 +89,7 @@
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import Vue, { PropType } from 'vue'
 import { AsGraph, Widget, WidgetType } from '@/core/widget'
 import { Metric } from '@/core/metric'
 import { MetricOption } from '@/core/metric-option'
@@ -115,6 +115,7 @@ export default Vue.extend({
       stats: {required: true, type: Array as () => Stat[]},
       metricOptions: {required: true, type: Array as () => MetricOption[]},
       locked: {default: false, type: Boolean},
+      adapterId: {required: true, type: null as unknown as PropType<number|null>}
     },
 
     beforeMount() {
@@ -211,13 +212,26 @@ export default Vue.extend({
           if (!newAvailableStats.some(s => s.id === currentStatId)) {
             statId = newAvailableStats[0].id;
           }
+          // find current metric and validate that it is available
+          const newMetric = this.metrics.find(m => m.id === opt.metricId);
+          if (newMetric === undefined) {
+            throw new Error('Metric in selected metric option not found in set of available metrics');
+          }
+          if (newMetric.availableDeviceIds.length === 0) {
+            throw new Error('Metric in selected metric option is not available for any device');
+          }
           // if new metric is not numeric, make sure widget type is readout
-          if (this.metrics.find(m => m.id === opt.metricId)?.numeric !== true) {
+          if (newMetric.numeric !== true) {
             this.widgetType = WidgetType.Readout;
+          }
+          // if new metric is gpu device metric, fill in active device, default to 1st device
+          let deviceId = 0;
+          if (!newMetric.availableDeviceIds.includes(0)) {
+            deviceId = this.adapterId ?? newMetric.availableDeviceIds[0];
           }
           const qualifiedMetric: QualifiedMetric = {
             metricId: opt.metricId, arrayIndex: opt.arrayIndex,
-            deviceId: 0, statId, desiredUnitId: 0};
+            deviceId, statId, desiredUnitId: newMetric.preferredUnitId };
           const widgetMetric: WidgetMetric = {...this.widgetMetric, metric: qualifiedMetric};
           Loadout.setWidgetMetric({index: this.widgetIdx, metricIdx: this.lineIdx, metric: widgetMetric});
         }

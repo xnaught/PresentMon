@@ -162,8 +162,8 @@ namespace p2c::kern
             }
         }
         // remove stale data packs, register new query, fill new fetchers
-        pPackMapper->CommitChanges(proc.pid, pm->GetSelectedAdapter().value_or(1),
-            pSpec->averagingWindowSize, pSpec->metricsOffset, fetcherFactory);
+        pPackMapper->CommitChanges(proc.pid, pSpec->averagingWindowSize,
+            pSpec->metricsOffset, fetcherFactory);
     }
 
     std::unique_ptr<win::KernelWindow> Overlay::MakeWindow_(std::optional<Vec2I> pos_)

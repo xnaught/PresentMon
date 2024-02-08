@@ -13,7 +13,7 @@
       <loadout-row
         v-for="(w, i) in widgets" :key="w.key" :stats="stats"
         :widgetIdx="i" :widgets="widgets" :metrics="metrics" 
-        :metricOptions="metricOptions" :locked="false" 
+        :metricOptions="metricOptions" :adapterId="activeAdapterId" :locked="false" 
         @delete="removeWidget" 
       ></loadout-row>
       <div class="add-btn-row">
@@ -102,6 +102,9 @@ export default Vue.extend({
   computed: {
     pref(): PrefType {
       return Preferences.preferences;
+    },
+    activeAdapterId(): number|null {
+      return this.pref.adapterId;
     },
     metrics(): Metric[] {
       return Introspection.metrics;

@@ -45,19 +45,10 @@ namespace p2c::pmon::met
     }
 
     std::shared_ptr<DynamicPollingFetcher> MakeDynamicPollingFetcher(const PM_QUERY_ELEMENT& qel,
-        const pmapi::intro::Root& introRoot, std::shared_ptr<DynamicQuery> pQuery, uint32_t activeGpuDeviceId)
+        const pmapi::intro::Root& introRoot, std::shared_ptr<DynamicQuery> pQuery)
     {
-        namespace rn = std::ranges;
-        const auto metricId = qel.metric;
-        const auto metricIntro = introRoot.FindMetric(metricId);
-        const auto dataTypeInfo = metricIntro.GetDataTypeInfo();
-        const auto dataTypeId = dataTypeInfo.GetPolledType();
-        // if we determine a metric is targeting a gpu, use the activeGpuId instead of universal device (0)
-        const bool isGpuMetric = rn::any_of(metricIntro.GetDeviceMetricInfo(), [](auto&& info) {
-            return info.GetDevice().GetType() == PM_DEVICE_TYPE_GRAPHICS_ADAPTER;
-        });
-        const auto deviceId = isGpuMetric ? activeGpuDeviceId : 0u;
-        switch (dataTypeId) {
+        const auto dataTypeInfo = introRoot.FindMetric(qel.metric).GetDataTypeInfo();
+        switch (dataTypeInfo.GetPolledType()) {
         case PM_DATA_TYPE_BOOL:
             return std::make_shared<TypedDynamicPollingFetcher<bool>>(qel, introRoot, std::move(pQuery));
         case PM_DATA_TYPE_INT32:

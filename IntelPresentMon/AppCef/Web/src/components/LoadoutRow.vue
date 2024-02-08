@@ -10,7 +10,7 @@
     <loadout-line
       v-for="(oneBased, i) in widgetMetrics.length" :key="lineKeys[i]"
       :widgetIdx="widgetIdx" :lineIdx="i" :widgets="widgets" :stats="stats"
-      :metrics="metrics" :metricOptions="metricOptions" :locked="locked"
+      :metrics="metrics" :metricOptions="metricOptions" :locked="locked" :adapterId="adapterId"
       @delete="handleDelete" @add="handleAdd" @clearMulti="handleClearMulti"
     ></loadout-line>
   </div>
@@ -18,7 +18,7 @@
 </template>
 
 <script lang="ts">
-import Vue from 'vue'
+import Vue, { PropType } from 'vue'
 import { Widget } from '@/core/widget'
 import { Metric } from '@/core/metric'
 import { MetricOption } from '@/core/metric-option'
@@ -40,7 +40,8 @@ export default Vue.extend({
       metrics: {required: true, type: Array as () => Metric[]},
       stats: {required: true, type: Array as () => Stat[]},
       metricOptions: {required: true, type: Array as () => MetricOption[]},
-      locked: {default: false, type: Boolean}
+      locked: {default: false, type: Boolean},
+      adapterId: {required: true, type: null as unknown as PropType<number|null>}
     },
 
     data: () => ({

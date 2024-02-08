@@ -34,7 +34,7 @@ namespace p2c::kern
 	class MetricPackMapper
 	{
 	public:
-		void CommitChanges(uint32_t pid, uint32_t activeGpuDeviceId, double winSizeMs, double metricOffsetMs, pmon::MetricFetcherFactory& factory)
+		void CommitChanges(uint32_t pid, double winSizeMs, double metricOffsetMs, pmon::MetricFetcherFactory& factory)
 		{
 			// eliminate data / packs which are not necessary anymore
 			for (auto&& [qmet, pPack] : metricPackMap_) {
@@ -55,8 +55,8 @@ namespace p2c::kern
 			usageMap_.clear();
 			// build vector of qmet
 			const auto qualifiedMetrics = metricPackMap_ | vi::keys | rn::to<std::vector>();
-			// build fetchers
-			auto buildResult = factory.Build(pid, activeGpuDeviceId, winSizeMs, metricOffsetMs, qualifiedMetrics);
+			// build fetchers / query
+			auto buildResult = factory.Build(pid, winSizeMs, metricOffsetMs, qualifiedMetrics);
 			// fill fetchers into map
 			for (auto&& [qmet, pFetcher] : buildResult.fetchers) {
 				metricPackMap_[qmet].pFetcher = std::move(pFetcher);
