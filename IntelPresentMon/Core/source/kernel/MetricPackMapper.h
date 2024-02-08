@@ -36,6 +36,12 @@ namespace p2c::kern
 	public:
 		void CommitChanges(uint32_t pid, double winSizeMs, double metricOffsetMs, pmon::MetricFetcherFactory& factory)
 		{
+			// if there was an empty  widget payload, just clear everyting out and bail
+			if (usageMap_.empty()) {
+				metricPackMap_.clear();
+				pQuery_.reset();
+				return;
+			}
 			// eliminate data / packs which are not necessary anymore
 			for (auto&& [qmet, pPack] : metricPackMap_) {
 				if (auto&& i = usageMap_.find(qmet); i != usageMap_.end()) {
@@ -85,9 +91,12 @@ namespace p2c::kern
 		}
 		void Populate(double timestamp)
 		{
-			pQuery_->Poll();
-			for (auto&& [qmet, pPack] : metricPackMap_) {
-				pPack.Populate(timestamp);
+			// if query is empty, don't do anything (empty loadout)
+			if (pQuery_) {
+				pQuery_->Poll();
+				for (auto&& [qmet, pPack] : metricPackMap_) {
+					pPack.Populate(timestamp);
+				}
 			}
 		}
 		DataFetchPack& operator[](const QualifiedMetric& qmet)
