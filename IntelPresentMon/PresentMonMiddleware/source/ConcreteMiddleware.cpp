@@ -768,7 +768,7 @@ void ReportMetrics(
         FakePMTraceSession pmSession;
         pmSession.mMilliSecondsPerQpc = 1000.0 / client->GetQpcFrequency().QuadPart;
 
-        for (auto frame_data : frames | std::views::reverse) {
+        for (const auto& frame_data : frames | std::views::reverse) {
             if (pQuery->accumFpsData)
             {
                 auto result = swapChainData.emplace(
