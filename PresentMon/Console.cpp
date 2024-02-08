@@ -98,6 +98,9 @@ static void VConsolePrint(wchar_t const* format, va_list val, bool newLine)
 
     CONSOLE_SCREEN_BUFFER_INFO info = {};
     GetConsoleScreenBufferInfo(console, &info);
+    if (info.dwSize.X == 0) {
+        return;
+    }
 
     COORD endPosition;
     endPosition.Y = gWritePosition.Y + (SHORT) ((numChars + gWritePosition.X) / info.dwSize.X);

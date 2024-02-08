@@ -61,6 +61,9 @@ struct FilteredProvider {
         }
     }
 
+    FilteredProvider(FilteredProvider const&);
+    FilteredProvider& operator=(FilteredProvider const&);
+
     ~FilteredProvider()
     {
         if (filterDesc_.Ptr != 0) {
@@ -522,6 +525,11 @@ ULONG PMTraceSession::Start(
     default:
         mTimestampFrequency = traceProps.LogfileHeader.PerfFreq;
         break;
+    }
+
+    // Default to systemtime frequency if the frequency didn't load correctly.
+    if (mTimestampFrequency.QuadPart == 0) {
+        mTimestampFrequency.QuadPart = 10000000ull;
     }
 
     if (mIsRealtimeSession) {

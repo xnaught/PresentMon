@@ -93,7 +93,6 @@ void GpuTrace::RegisterContext(uint64_t hContext, uint64_t hDevice, uint32_t nod
 {
     auto deviceIter = mDevices.find(hDevice);
     if (deviceIter == mDevices.end()) {
-        DebugAssert(false);
         return;
     }
     auto pDxgAdapter = deviceIter->second;

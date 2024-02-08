@@ -196,7 +196,7 @@ void AddGoldEtlCsvTests(
 
                             ::testing::RegisterTest(
                                 "GoldEtlCsvTests", name.c_str(), nullptr, nullptr, __FILE__, __LINE__,
-                                [=]() -> ::testing::Test* { return new Tests(args); });
+                                [=]() -> ::testing::Test* { return new Tests(std::move(args)); });
 
                             csvCount += 1;
                         }
