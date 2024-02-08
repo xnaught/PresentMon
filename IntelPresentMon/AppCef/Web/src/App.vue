@@ -56,7 +56,7 @@
 
         <v-list-item v-if="isDevelopment" color="primary">
           <v-list-item-content>
-            <v-btn @click="doPresetUpdate">Update Presets</v-btn>
+            <v-btn @click="doPresetUpdate">#Updt. Prest.#</v-btn>
           </v-list-item-content>
         </v-list-item>
 
@@ -214,11 +214,37 @@ export default Vue.extend({
       }
     },
     async pushSpecification() {
-        await Api.pushSpecification({
-          pid: this.pid,
-          preferences: this.pref,
-          widgets: this.widgets,
+      const widgets = JSON.parse(JSON.stringify(this.widgets)) as Widget[];
+      for (const widget of widgets) {
+        // Filter out the widgetMetrics that do not meet the condition, modify those that do
+        widget.metrics = widget.metrics.filter(widgetMetric => {
+          const metric = Introspection.metrics.find(m => m.id === widgetMetric.metric.metricId);
+          if (metric === undefined || metric.availableDeviceIds.length === 0) {
+            // If the metric is undefined, this widgetMetric will be removed, so return false
+            return false;
+          }
+          // If the metric is found, set up the deviceId and desiredUnitId as needed
+          widgetMetric.metric.deviceId = 0; // establish universal device id
+          // Check whether metric is a gpu metric, then we need non-universal device id
+          if (!metric.availableDeviceIds.includes(0)) {
+            // Set device to selected adapter, falling back to first available device if necessary
+            if (this.pref.adapterId !== null && metric.availableDeviceIds.includes(this.pref.adapterId)) {
+              widgetMetric.metric.deviceId = this.pref.adapterId;
+            } else {
+              widgetMetric.metric.deviceId = metric.availableDeviceIds[0];
+            }
+          }
+          // Fill out the unit
+          widgetMetric.metric.desiredUnitId = metric.preferredUnitId;
+          // Since the metric is defined, keep this widgetMetric by returning true
+          return true;
         });
+      }
+      await Api.pushSpecification({
+        pid: this.pid,
+        preferences: this.pref,
+        widgets: widgets.filter(w => w.metrics.length > 0),
+      });
     }
   },
 
@@ -337,7 +363,6 @@ export default Vue.extend({
           await Loadout.parseAndReplace(await Api.loadConfig('custom-auto.json'));
         }
         catch (e: any) {
-          console.log(JSON.stringify(e, null, 3));
           let errText = 'Failed to load autosave loadout file. ';
           if (e.noticeOverride) {
             errText += e.message ?? '';

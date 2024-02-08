@@ -224,14 +224,9 @@ export default Vue.extend({
           if (newMetric.numeric !== true) {
             this.widgetType = WidgetType.Readout;
           }
-          // if new metric is gpu device metric, fill in active device, default to 1st device
-          let deviceId = 0;
-          if (!newMetric.availableDeviceIds.includes(0)) {
-            deviceId = this.adapterId ?? newMetric.availableDeviceIds[0];
-          }
           const qualifiedMetric: QualifiedMetric = {
             metricId: opt.metricId, arrayIndex: opt.arrayIndex,
-            deviceId, statId, desiredUnitId: newMetric.preferredUnitId };
+            deviceId: 0, statId, desiredUnitId: newMetric.preferredUnitId };
           const widgetMetric: WidgetMetric = {...this.widgetMetric, metric: qualifiedMetric};
           Loadout.setWidgetMetric({index: this.widgetIdx, metricIdx: this.lineIdx, metric: widgetMetric});
         }
@@ -291,16 +286,6 @@ export default Vue.extend({
         if (newSubtype !== 'Line') {
           this.$emit('clearMulti');
         }
-      },
-      adapterId(newId: number|null) {
-          if (!this.metric.availableDeviceIds.includes(0)) {
-            const deviceId = newId ?? this.metric.availableDeviceIds[0];
-            if (this.qualifiedMetric.deviceId !== deviceId) {      
-              const qualifiedMetric: QualifiedMetric = {...this.qualifiedMetric, deviceId};        
-              const metric: WidgetMetric = {...this.widgetMetric, metric: qualifiedMetric};
-              Loadout.setWidgetMetric({index: this.widgetIdx, metricIdx: this.lineIdx, metric});
-            }
-          }
       }
     }
 });
