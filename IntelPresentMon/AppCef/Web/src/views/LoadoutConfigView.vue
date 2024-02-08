@@ -82,9 +82,13 @@ export default Vue.extend({
           await Loadout.parseAndReplace(browseResult);
           await Loadout.serializeCustom();
         }
-      } catch (e) {
-        await Notifications.notify({text:'Failed to load config file.'});
-        console.error(['Failed to load config file.', e]);
+      } catch (e: any) {
+        let errText = `Failed to load preset file. `;
+        if (e.noticeOverride) {
+          errText += e.message ?? '';
+        }
+        await Notifications.notify({text: errText});
+        console.error([errText, e]);
       }
     },
     addWidget() {

@@ -90,17 +90,11 @@ interface Migration {
 
 const migrations: Migration[] = [
   {
-      version: '0.11.0',
+      version: '0.13.0',
       migrate: (graph: Graph) => {
-          const def = makeDefaultGraph();
-          graph.textColor = def.textColor;
-          graph.textSize = def.textSize;
-      }
-  },
-  {
-      version: '0.12.0',
-      migrate: (graph: Graph) => {
-          throw new Error('Cannot migrate loadouts below version 0.12.0');
+          let e = new Error('Cannot migrate loadouts below version 0.13.0');
+          (e as any).noticeOverride = true;
+          throw e;
       }
   },
 ];

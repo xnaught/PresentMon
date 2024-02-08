@@ -336,9 +336,14 @@ export default Vue.extend({
         try {
           await Loadout.parseAndReplace(await Api.loadConfig('custom-auto.json'));
         }
-        catch (e) {
-          await Notifications.notify({text:`Failed to load autosave loadout file.`});
-          console.error([`Failed to load autosave loadout file.`, e]);
+        catch (e: any) {
+          console.log(JSON.stringify(e, null, 3));
+          let errText = 'Failed to load autosave loadout file. ';
+          if (e.noticeOverride) {
+            errText += e.message ?? '';
+          }
+          await Notifications.notify({text: errText});
+          console.error([errText, e]);
         }
       }
       else {
@@ -346,9 +351,13 @@ export default Vue.extend({
         try {
           await Loadout.parseAndReplace(await Api.loadPreset(presetFileName));
         }
-        catch (e) {
-          await Notifications.notify({text:`Failed to load preset file [${presetFileName}].`});
-          console.error([`Failed to load preset file [${presetFileName}].`, e]);
+        catch (e: any) {
+          let errText = `Failed to load preset file [${presetFileName}]. `;
+          if (e.noticeOverride) {
+            errText += e.message ?? '';
+          }
+          await Notifications.notify({text: errText});
+          console.error([errText, e]);
         }
       }      
     },
