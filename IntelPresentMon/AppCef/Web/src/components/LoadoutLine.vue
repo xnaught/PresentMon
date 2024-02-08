@@ -291,6 +291,16 @@ export default Vue.extend({
         if (newSubtype !== 'Line') {
           this.$emit('clearMulti');
         }
+      },
+      adapterId(newId: number|null) {
+          if (!this.metric.availableDeviceIds.includes(0)) {
+            const deviceId = newId ?? this.metric.availableDeviceIds[0];
+            if (this.qualifiedMetric.deviceId !== deviceId) {      
+              const qualifiedMetric: QualifiedMetric = {...this.qualifiedMetric, deviceId};        
+              const metric: WidgetMetric = {...this.widgetMetric, metric: qualifiedMetric};
+              Loadout.setWidgetMetric({index: this.widgetIdx, metricIdx: this.lineIdx, metric});
+            }
+          }
       }
     }
 });
