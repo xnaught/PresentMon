@@ -44,7 +44,11 @@ namespace p2c::client::util::async
 
             // try to write the file to disk
             if (confirmed && wcsnlen_s(pathBuffer, std::size(pathBuffer)) > 0) {
-                std::wofstream file{ pathBuffer };
+                std::wstring path = pathBuffer;
+                if (ofn.nFilterIndex == 2 && std::filesystem::path{ path }.extension().wstring() != L".json") {
+                    path += L".json";
+                }
+                std::wofstream file{ path };
                 file << pArgObj->GetDictionary()->GetString("payload").ToWString();
                 failed = !file.good();
                 written = true;
