@@ -76,7 +76,7 @@
       app
     >
       <div class="sta-region">
-        <div><v-icon small :color="processCogColor">mdi-cog</v-icon>&nbsp;{{ targetName }}</div>
+        <div class="pl-2">{{ targetName }}</div>
         <div><v-icon v-show="capturing" small color="red darken-1">mdi-camera-control</v-icon></div>
       </div>
       <div class="sta-region">
@@ -298,9 +298,6 @@ export default Vue.extend({
         return '';
       }
       return Processes.processes.find(p => p.pid === this.pid)?.name ?? '';
-    },
-    processCogColor(): string {
-      return this.targetName.length === 0 ? 'secondary lighten-1' : 'white';
     },
     drawRateString(): string {
       return (1000 / (this.pref.samplingPeriodMs * this.pref.samplesPerFrame)).toFixed(1);
