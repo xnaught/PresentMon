@@ -84,6 +84,7 @@ namespace p2c::kern
 
     const pmapi::intro::Root& Kernel::GetIntrospectionRoot() const
     {
+        std::lock_guard g{ mtx };
         return pm->GetIntrospectionRoot();
     }
 
