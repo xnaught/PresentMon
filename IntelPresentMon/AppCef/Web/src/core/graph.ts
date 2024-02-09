@@ -92,7 +92,7 @@ const migrations: Migration[] = [
   {
       version: '0.13.0',
       migrate: (graph: Graph) => {
-          let e = new Error('Cannot migrate loadouts below version 0.13.0');
+          let e = new Error('Loadout file version too old to migrate (<0.13.0).');
           (e as any).noticeOverride = true;
           throw e;
       }
