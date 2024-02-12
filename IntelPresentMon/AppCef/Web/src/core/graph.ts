@@ -4,6 +4,7 @@ import { RgbaColor } from "./color"
 import { compareVersions } from "./signature";
 import { Widget, WidgetType, GenerateKey } from './widget'
 import { makeDefaultWidgetMetric } from "./widget-metric";
+import { QualifiedMetric } from "./qualified-metric";
 
 export interface Graph extends Widget {
     height: number;
@@ -28,10 +29,10 @@ export interface Graph extends Widget {
     textSize: number;
 }
 
-export function makeDefaultGraph(metricId: number): Graph {
+export function makeDefaultGraph(metric: QualifiedMetric|null = null): Graph {
     return {
         key: GenerateKey(),
-        metrics: [makeDefaultWidgetMetric(metricId)],
+        metrics: [makeDefaultWidgetMetric(metric)],
         widgetType: WidgetType.Graph,
         height: 80,
         vDivs: 4,
@@ -89,17 +90,11 @@ interface Migration {
 
 const migrations: Migration[] = [
   {
-      version: '0.11.0',
+      version: '0.13.0',
       migrate: (graph: Graph) => {
-          const def = makeDefaultGraph(0);
-          graph.textColor = def.textColor;
-          graph.textSize = def.textSize;
-      }
-  },
-  {
-      version: '0.12.0',
-      migrate: (graph: Graph) => {
-          throw new Error('Cannot migrate loadouts below version 0.12.0');
+          let e = new Error('Loadout file version too old to migrate (<0.13.0).');
+          (e as any).noticeOverride = true;
+          throw e;
       }
   },
 ];

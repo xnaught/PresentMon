@@ -768,9 +768,7 @@ void ReportMetrics(
         FakePMTraceSession pmSession;
         pmSession.mMilliSecondsPerQpc = 1000.0 / client->GetQpcFrequency().QuadPart;
 
-        std::reverse(frames.begin(), frames.end());
-
-        for (auto frame_data : frames) {
+        for (const auto& frame_data : frames | std::views::reverse) {
             if (pQuery->accumFpsData)
             {
                 auto result = swapChainData.emplace(
@@ -1091,7 +1089,7 @@ void ReportMetrics(
                 for (size_t i = 0; i < swapChain.CPUDuration.size(); ++i) {
                     frame_times_ms[i] = swapChain.CPUDuration[i] + swapChain.CPUFramePacingStall[i];
                 }
-                CalculateMetric(output, frame_times_ms, element.stat, true); // Invert the notion of min/max to match PM_METRIC_CPU_FPS
+                CalculateMetric(output, frame_times_ms, element.stat, false); // Invert the notion of min/max to match PM_METRIC_CPU_FPS
             }
             break;
         case PM_METRIC_PRESENTED_FPS:

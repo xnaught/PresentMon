@@ -197,9 +197,13 @@ namespace p2c::client::util
 		}
 	}
 
-	CefRefPtr<CefValue> CefValueTraverser::AsCefValue()
+	CefRefPtr<CefValue> CefValueTraverser::AsCefValue() const &
 	{
-		using infra::util::ToWide;
+		return pCefValue;
+	}
+
+	CefRefPtr<CefValue> CefValueTraverser::AsCefValue() &&
+	{
 		return std::move(pCefValue);
 	}
 

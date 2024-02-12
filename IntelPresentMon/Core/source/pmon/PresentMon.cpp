@@ -6,9 +6,6 @@
 #include <PresentMonAPI2/source/PresentMonAPI.h>
 #include <PresentMonAPIWrapper/source/PresentMonAPIWrapper.h>
 #include <Core/source/infra/util/Util.h>
-#include "metric/NoisySineFakeMetric.h"
-#include "metric/SquareWaveMetric.h"
-#include "metric/DynamicPollingMetric.h"
 #include "EnumMap.h"
 #include "RawFrameDataWriter.h"
 
@@ -41,37 +38,6 @@ namespace p2c::pmon
 
 		// populate lookup for enumerations in dynamic metrics
 		EnumMap::Init(*pIntrospectionRoot);
-
-		// Build table of available metrics using introspection
-		using namespace met;
-
-		for (auto m : pIntrospectionRoot->GetMetrics()) {
-			// not excluding any metric to keep index stability for the time being
-			// exclude metrics when there is no device supporting them
-			// if (std::ranges::none_of(m.GetDeviceMetricInfo(), [](auto&& i) { return i.IsAvailable(); })) continue;
-			// loop over all indexes for max array size among all available devices
-			// const auto maxIndex = DynamicPollingMetric::CalculateMaxArrayIndex(m.GetId(), *pIntrospectionRoot);
-			// instead of checking index, we're going to hardcode that fan speed has 5 elements
-			// this is to keep stablitity of the metric index on the frontend
-			// TODO: give fully-configured metrics a uid OR make frontend specify widget with id/stat/index instead of
-			// just registered metric container index
-			const auto maxIndex = m.GetId() == PM_METRIC_GPU_FAN_SPEED ? 5u : 1u;
-			for (uint32_t i = 0; i < maxIndex; i++) {
-				for (auto s : m.GetStatInfo()) {
-					// skip STAT_NONE (it's only for frame event data)
-					if (s.GetStat() == PM_STAT_NONE) continue;
-					AddMetric(std::make_unique<DynamicPollingMetric>(m.GetId(), i, s.GetStat(), *pIntrospectionRoot));
-				}
-			}
-		}
-
-		// fake metrics for testing
-#ifdef _DEBUG
-		AddMetric(std::make_unique<NoisySineFakeMetric>(L"Fake Noisy Sinusoid", 0.1f, 0.f, 30.f, 50.f, 3.f, 3.f));
-		AddMetric(std::make_unique<NoisySineFakeMetric>(L"Fake Pure Sinusoid", 2.f, 0.f, 40.f, 50.f, 3.f, 0.f));
-		AddMetric(std::make_unique<NoisySineFakeMetric>(L"Fake Slow Sinusoid", 0.05f, 0.f, 40.f, 50.f, 3.f, 0.f));
-		AddMetric(std::make_unique<SquareWaveMetric>(L"Fake Square Wave", 1., 0.f, 100.f));
-#endif
 
 		// establish initial sampling / window / processing setting values
 		SetWindow(window_in);
@@ -128,18 +94,6 @@ namespace p2c::pmon
 		}
 		return infra::util::ToWide(std::string{ buffer, bufferSize });
 	}
-	met::Metric* PresentMon::GetMetricByIndex(size_t index) { return metrics.at(index).get(); };
-	std::vector<met::Metric::Info> PresentMon::EnumerateMetrics() const
-	{
-		std::vector<met::Metric::Info> info;
-		size_t index = 0;
-		for (auto& m : metrics)
-		{
-			info.push_back(m->GetInfo(index));
-			index++;
-		}
-		return info;
-	}
 	std::vector<AdapterInfo> PresentMon::EnumerateAdapters() const
 	{
 		std::vector<AdapterInfo> infos;
@@ -190,9 +144,5 @@ namespace p2c::pmon
 	pmapi::Session& PresentMon::GetSession()
 	{
 		return *pSession;
-	}
-	void PresentMon::AddMetric(std::unique_ptr<met::Metric> metric_)
-	{
-		metrics.push_back(std::move(metric_));
 	}
 }

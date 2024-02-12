@@ -56,7 +56,7 @@
 
         <v-list-item v-if="isDevelopment" color="primary">
           <v-list-item-content>
-            <v-btn @click="doPresetUpdate">Update Presets</v-btn>
+            <v-btn @click="doPresetUpdate">#Updt. Prest.#</v-btn>
           </v-list-item-content>
         </v-list-item>
 
@@ -76,7 +76,7 @@
       app
     >
       <div class="sta-region">
-        <div><v-icon small :color="processCogColor">mdi-cog</v-icon>&nbsp;{{ targetName }}</div>
+        <div class="pl-2">{{ targetName }}</div>
         <div><v-icon v-show="capturing" small color="red darken-1">mdi-camera-control</v-icon></div>
       </div>
       <div class="sta-region">
@@ -107,7 +107,7 @@
 
 <script lang="ts">
 import Vue from 'vue'
-import { Metrics } from '@/store/metrics'
+import { Introspection } from '@/store/introspection'
 import { Preferences as PrefStore } from '@/store/preferences'
 import { Preferences } from '@/core/preferences'
 import { Hotkey } from '@/store/hotkey'
@@ -135,7 +135,7 @@ export default Vue.extend({
     Api.registerOverlayDiedHandler(this.handleOverlayDied);
     Api.registerStalePidHandler(this.handleStalePid);
     await Api.launchKernel();
-    await Metrics.load();
+    await Introspection.load();
     await Hotkey.refreshOptions();
     await Adapters.refresh();
     Api.registerTargetLostHandler(this.handleTargetLost);
@@ -214,11 +214,37 @@ export default Vue.extend({
       }
     },
     async pushSpecification() {
-        await Api.pushSpecification({
-          pid: this.pid,
-          preferences: this.pref,
-          widgets: this.widgets,
+      const widgets = JSON.parse(JSON.stringify(this.widgets)) as Widget[];
+      for (const widget of widgets) {
+        // Filter out the widgetMetrics that do not meet the condition, modify those that do
+        widget.metrics = widget.metrics.filter(widgetMetric => {
+          const metric = Introspection.metrics.find(m => m.id === widgetMetric.metric.metricId);
+          if (metric === undefined || metric.availableDeviceIds.length === 0) {
+            // If the metric is undefined, this widgetMetric will be removed, so return false
+            return false;
+          }
+          // If the metric is found, set up the deviceId and desiredUnitId as needed
+          widgetMetric.metric.deviceId = 0; // establish universal device id
+          // Check whether metric is a gpu metric, then we need non-universal device id
+          if (!metric.availableDeviceIds.includes(0)) {
+            // Set device to selected adapter, falling back to first available device if necessary
+            if (this.pref.adapterId !== null && metric.availableDeviceIds.includes(this.pref.adapterId)) {
+              widgetMetric.metric.deviceId = this.pref.adapterId;
+            } else {
+              widgetMetric.metric.deviceId = metric.availableDeviceIds[0];
+            }
+          }
+          // Fill out the unit
+          widgetMetric.metric.desiredUnitId = metric.preferredUnitId;
+          // Since the metric is defined, keep this widgetMetric by returning true
+          return true;
         });
+      }
+      await Api.pushSpecification({
+        pid: this.pid,
+        preferences: this.pref,
+        widgets: widgets.filter(w => w.metrics.length > 0),
+      });
     }
   },
 
@@ -272,9 +298,6 @@ export default Vue.extend({
         return '';
       }
       return Processes.processes.find(p => p.pid === this.pid)?.name ?? '';
-    },
-    processCogColor(): string {
-      return this.targetName.length === 0 ? 'secondary lighten-1' : 'white';
     },
     drawRateString(): string {
       return (1000 / (this.pref.samplingPeriodMs * this.pref.samplesPerFrame)).toFixed(1);
@@ -336,9 +359,13 @@ export default Vue.extend({
         try {
           await Loadout.parseAndReplace(await Api.loadConfig('custom-auto.json'));
         }
-        catch (e) {
-          await Notifications.notify({text:`Failed to load autosave loadout file.`});
-          console.error([`Failed to load autosave loadout file.`, e]);
+        catch (e: any) {
+          let errText = 'Failed to load autosave loadout file. ';
+          if (e.noticeOverride) {
+            errText += e.message ?? '';
+          }
+          await Notifications.notify({text: errText});
+          console.error([errText, e]);
         }
       }
       else {
@@ -346,9 +373,13 @@ export default Vue.extend({
         try {
           await Loadout.parseAndReplace(await Api.loadPreset(presetFileName));
         }
-        catch (e) {
-          await Notifications.notify({text:`Failed to load preset file [${presetFileName}].`});
-          console.error([`Failed to load preset file [${presetFileName}].`, e]);
+        catch (e: any) {
+          let errText = `Failed to load preset file [${presetFileName}]. `;
+          if (e.noticeOverride) {
+            errText += e.message ?? '';
+          }
+          await Notifications.notify({text: errText});
+          console.error([errText, e]);
         }
       }      
     },
