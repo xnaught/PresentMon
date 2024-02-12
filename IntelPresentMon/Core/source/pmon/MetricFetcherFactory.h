@@ -81,7 +81,7 @@ namespace p2c::pmon
         {
             auto& intro = pm_.GetIntrospectionRoot();
             // construct query
-            auto pQuery = std::make_shared<DynamicQuery>(pm_.GetSession(), pid, winSizeMs, metricOffsetMs, qmets);
+            auto pQuery = std::make_shared<DynamicQuery>(pm_.GetSession(), winSizeMs, metricOffsetMs, qmets);
             // construct fetchers from filled query elements and return result
             const auto elements = pQuery->ExtractElements();
             BuildResult result;

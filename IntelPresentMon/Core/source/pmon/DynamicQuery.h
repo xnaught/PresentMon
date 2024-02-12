@@ -2,6 +2,7 @@
 #include <PresentMonAPI/PresentMonAPI.h>
 #include <PresentMonAPI2/source/PresentMonAPI.h>
 #include <PresentMonAPIWrapper/source/BlobContainer.h>
+#include <PresentMonAPIWrapper/source/DynamicQuery.h>
 #include <span>
 #include <memory>
 #include <vector>
@@ -11,7 +12,7 @@
 namespace pmapi
 {
 	class Session;
-	class DynamicQuery;
+	class ProcessTracker;
 }
 
 namespace p2c::pmon
@@ -19,13 +20,12 @@ namespace p2c::pmon
 	class DynamicQuery
 	{
 	public:
-		DynamicQuery(pmapi::Session& session, uint32_t pid, double winSizeMs, double metricOffsetMs, std::span<const kern::QualifiedMetric> qmet);
-		void Poll();
+		DynamicQuery(pmapi::Session& session, double winSizeMs, double metricOffsetMs, std::span<const kern::QualifiedMetric> qmet);
+		void Poll(const pmapi::ProcessTracker& tracker);
 		const uint8_t* GetBlobData() const;
 		std::vector<PM_QUERY_ELEMENT> ExtractElements();
 	private:
-		uint32_t pid;
-		std::shared_ptr<pmapi::DynamicQuery> pQuery;
+		pmapi::DynamicQuery query;
 		std::vector<PM_QUERY_ELEMENT> elements;
 		pmapi::BlobContainer blobs;
 	};

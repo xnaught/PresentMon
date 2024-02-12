@@ -259,7 +259,7 @@ namespace p2c::kern
         if (!IsTargetLive()) {
             throw TargetLostException{};
         }
-        pPackMapper->Populate(timestamp);
+        pPackMapper->Populate(pm->GetTracker(), timestamp);
     }
 
     void Overlay::UpdateTargetRect(const RectI& newRect)

@@ -5,11 +5,12 @@
 #include <vector>
 #include <memory>
 #include "AdapterInfo.h"
+#include <PresentMonAPI\PresentMonAPI.h>
+#include <PresentMonAPIWrapper/source/ProcessTracker.h>
 
 namespace pmapi
 {
 	class Session;
-	class ProcessTracker;
 	namespace intro
 	{
 		class Root;

@@ -89,11 +89,11 @@ namespace p2c::kern
 			}
 			usageMap_[qmet].text = true;
 		}
-		void Populate(double timestamp)
+		void Populate(const pmapi::ProcessTracker& tracker, double timestamp)
 		{
 			// if query is empty, don't do anything (empty loadout)
 			if (pQuery_) {
-				pQuery_->Poll();
+				pQuery_->Poll(tracker);
 				for (auto&& [qmet, pPack] : metricPackMap_) {
 					pPack.Populate(timestamp);
 				}
