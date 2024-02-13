@@ -1,6 +1,7 @@
 #pragma once
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
 #include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
+#include "../../Interprocess/source/IntrospectionDataTypeMapping.h"
 #include <format>
 #include <string>
 #include <memory>
@@ -45,7 +46,10 @@ namespace pmapi
         operator bool() const { return !Empty(); }
     private:
         // functions
-        ProcessTracker(PM_SESSION_HANDLE hSession, uint32_t pid) : pid_{ pid }, hSession_{ hSession }
+        ProcessTracker(PM_SESSION_HANDLE hSession, uint32_t pid)
+            :
+            pid_{ pid },
+            hSession_{ hSession }
         {
             if (auto sta = pmStartTrackingProcess(hSession_, pid_); sta != PM_STATUS_SUCCESS) {
                 throw Exception{ std::format("start process tracking call failed with error id={}", (int)sta) };

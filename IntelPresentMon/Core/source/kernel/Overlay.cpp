@@ -22,6 +22,7 @@
 #include <cassert>
 #include "TargetLostException.h"
 #include "MetricPackMapper.h"
+#include <PresentMonAPIWrapper/source/StaticQuery.h>
 
 
 namespace p2c::kern
@@ -256,6 +257,11 @@ namespace p2c::kern
 
     void Overlay::UpdateGraphData_(double timestamp)
     {
+        bool wonk = false;
+        if (wonk) {
+            const std::string sz = pmapi::PollStatic(pm->GetSession(), pm->GetTracker(), PM_METRIC_APPLICATION);
+            const auto b = sz + 'A';
+        }
         if (!IsTargetLive()) {
             throw TargetLostException{};
         }
