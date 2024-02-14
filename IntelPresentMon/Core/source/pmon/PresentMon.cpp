@@ -5,6 +5,7 @@
 #include <PresentMonAPI/PresentMonAPI.h>
 #include <PresentMonAPI2/source/PresentMonAPI.h>
 #include <PresentMonAPIWrapper/source/PresentMonAPIWrapper.h>
+#include <PresentMonAPIWrapperCommon/source/EnumMap.h>
 #include <Core/source/infra/util/Util.h>
 #include "EnumMap.h"
 #include "RawFrameDataWriter.h"
@@ -38,6 +39,7 @@ namespace p2c::pmon
 
 		// populate lookup for enumerations in dynamic metrics
 		EnumMap::Init(*pIntrospectionRoot);
+		pmapi::EnumMap::Refresh(*pIntrospectionRoot);
 
 		// establish initial sampling / window / processing setting values
 		SetWindow(window_in);

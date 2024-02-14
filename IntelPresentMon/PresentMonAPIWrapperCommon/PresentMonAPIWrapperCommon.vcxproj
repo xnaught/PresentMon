@@ -19,9 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="source\Exception.cpp" />
     <ClCompile Include="source\Introspection.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="source\EnumMap.h" />
     <ClInclude Include="source\Exception.h" />
     <ClInclude Include="source\Introspection.h" />
   </ItemGroup>

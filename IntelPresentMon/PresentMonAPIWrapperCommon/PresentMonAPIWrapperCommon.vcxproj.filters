@@ -18,12 +18,18 @@
     <ClCompile Include="source\Introspection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\Exception.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\Introspection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\Exception.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\EnumMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

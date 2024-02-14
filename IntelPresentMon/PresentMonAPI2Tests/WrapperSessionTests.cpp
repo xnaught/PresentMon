@@ -36,7 +36,7 @@ namespace PresentMonAPI2Mock
 			using namespace std::string_literals;
 
 			pmapi::Session session1;
-			Assert::ExpectException<pmapi::SessionException>([] {
+			Assert::ExpectException<pmapi::ApiErrorException>([] {
 				pmapi::Session session2;
 			});
 		}

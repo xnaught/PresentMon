@@ -1,6 +1,7 @@
 #pragma once
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
 #include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
+#include "../../PresentMonAPIWrapperCommon/source/Exception.h"
 #include <format>
 #include <string>
 #include <cassert>
@@ -32,8 +33,9 @@ namespace pmapi
         }
         void Consume(const ProcessTracker& tracker, uint8_t* pBlobs, uint32_t& numBlobsInOut)
         {
-            if (auto sta = pmConsumeFrames(hQuery_, tracker.GetPid(), pBlobs, &numBlobsInOut); sta != PM_STATUS_SUCCESS) {
-                throw Exception{ std::format("consume frame call failed with error id={}", (int)sta) };
+            if (auto sta = pmConsumeFrames(hQuery_, tracker.GetPid(), pBlobs, &numBlobsInOut);
+                sta != PM_STATUS_SUCCESS) {
+                throw ApiErrorException{ sta, "consume frame call failed" };
             }
         }
         void Consume(const ProcessTracker& tracker, BlobContainer& blobs)
@@ -66,7 +68,7 @@ namespace pmapi
         {
             if (auto sta = pmRegisterFrameQuery(hSession, &hQuery_, elements.data(), elements.size(), &blobSize_);
                 sta != PM_STATUS_SUCCESS) {
-                throw Exception{ std::format("register frame query call failed with error id={}", (int)sta) };
+                throw ApiErrorException{ sta, "register frame query call failed" };
             }
         }
         // zero out members, useful after emptying via move or reset

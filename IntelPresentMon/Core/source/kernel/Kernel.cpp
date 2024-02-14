@@ -170,8 +170,14 @@ namespace p2c::kern
                         pHandler->OnStalePidSelected();
                     }
                 }
-                catch (...)
-                {
+                catch (const std::exception& e) {
+                    pHandler->OnOverlayDied();
+                    auto note = std::format(L"Overlay died with error: {}", pmon::ToWide(e.what()));
+                    p2clog.note(std::move(note)).nox().notrace().commit();
+                    pOverlayContainer.reset();
+                    pPushedSpec.reset();
+                }
+                catch (...) {
                     pHandler->OnOverlayDied();
                     p2clog.note(L"Overlay died").nox().notrace().commit();
                     pOverlayContainer.reset();

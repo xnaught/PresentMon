@@ -6,7 +6,7 @@ namespace pmapi
     Session::Session()
     {
         if (auto sta = pmOpenSession(&handle_); sta != PM_STATUS_SUCCESS) {
-            throw SessionException{ std::format("error opening session errid={}", (int)sta) };
+            throw ApiErrorException{ sta, "error opening session" };
         }
     }
 
@@ -14,8 +14,8 @@ namespace pmapi
     {
         if (auto sta = pmOpenSession_(&handle_, controlPipe.c_str(), introspectionNsm.c_str());
             sta != PM_STATUS_SUCCESS) {
-            throw SessionException{ std::format("error opening session errid={} ctrl={} intro={}",
-                (int)sta, controlPipe, introspectionNsm) };
+            throw ApiErrorException{ sta, std::format("error opening session ctrl={} intro={}",
+                controlPipe, introspectionNsm) };
         }
     }
 }

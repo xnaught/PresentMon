@@ -1,6 +1,7 @@
 #pragma once
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
 #include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
+#include "../../PresentMonAPIWrapperCommon/source/Exception.h"
 #include <format>
 #include <string>
 #include <memory>
@@ -10,8 +11,6 @@
 
 namespace pmapi
 {
-    class SessionException : public Exception { using Exception::Exception; };
-
     class Session
     {
     public:
@@ -51,7 +50,7 @@ namespace pmapi
             }
             const PM_INTROSPECTION_ROOT* pRoot{};
             if (auto sta = pmGetIntrospectionRoot(handle_, &pRoot); sta != PM_STATUS_SUCCESS) {
-                throw SessionException{ std::format("introspection call failed with error id={}", (int)sta) };
+                throw ApiErrorException{ sta, "introspection call failed" };
             }
             return pIntrospectionRootCache_ = std::make_shared<intro::Root>(pRoot, [](const PM_INTROSPECTION_ROOT* ptr) { pmFreeIntrospectionRoot(ptr); });
         }
@@ -74,7 +73,7 @@ namespace pmapi
         {
             assert(handle_);
             if (auto sta = pmSetTelemetryPollingPeriod(handle_, deviceId, milliseconds); sta != PM_STATUS_SUCCESS) {
-                throw SessionException{ std::format("set telemetry period call failed with error id={}", (int)sta) };
+                throw ApiErrorException{ sta, "set telemetry period call failed" };
             }
         }
         // it is recommended to use the Session member functions instead of using this handle directly

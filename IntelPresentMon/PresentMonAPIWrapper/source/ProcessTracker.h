@@ -1,6 +1,7 @@
 #pragma once
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
 #include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
+#include "../../PresentMonAPIWrapperCommon/source/Exception.h"
 #include "../../Interprocess/source/IntrospectionDataTypeMapping.h"
 #include <format>
 #include <string>
@@ -52,7 +53,7 @@ namespace pmapi
             hSession_{ hSession }
         {
             if (auto sta = pmStartTrackingProcess(hSession_, pid_); sta != PM_STATUS_SUCCESS) {
-                throw Exception{ std::format("start process tracking call failed with error id={}", (int)sta) };
+                throw ApiErrorException{ sta, "start process tracking call failed" };
             }
         }
         // zero out members, useful after emptying via move or reset

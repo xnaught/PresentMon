@@ -1,6 +1,7 @@
 #pragma once
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
 #include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
+#include "../../PresentMonAPIWrapperCommon/source/Exception.h"
 #include <format>
 #include <string>
 #include <memory>
@@ -32,8 +33,9 @@ namespace pmapi
         }
         void Poll(const ProcessTracker& tracker, uint8_t* pBlob, uint32_t& numSwapChains) const
         {
-            if (auto sta = pmPollDynamicQuery(hQuery_, tracker.GetPid(), pBlob, &numSwapChains); sta != PM_STATUS_SUCCESS) {
-                throw Exception{ std::format("dynamic poll call failed with error id={}", (int)sta) };
+            if (auto sta = pmPollDynamicQuery(hQuery_, tracker.GetPid(), pBlob, &numSwapChains);
+                sta != PM_STATUS_SUCCESS) {
+                throw ApiErrorException{ sta, "dynamic poll call failed" };
             }
         }
         void Poll(const ProcessTracker& tracker, BlobContainer& blobs) const
@@ -66,7 +68,7 @@ namespace pmapi
         {
             if (auto sta = pmRegisterDynamicQuery(hSession, &hQuery_, elements.data(),
                 elements.size(), winSizeMs, metricOffsetMs); sta != PM_STATUS_SUCCESS) {
-                throw Exception{ std::format("dynamic query register call failed with error id={}", (int)sta) };
+                throw ApiErrorException{ sta, "dynamic query register call failed" };
             }
             if (elements.size() > 0) {
                 blobSize_ = elements.back().dataOffset + elements.back().dataSize;
