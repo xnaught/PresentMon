@@ -1,6 +1,7 @@
 #pragma once
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
 #include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
+#include "../../PresentMonAPIWrapperCommon/source/Exception.h"
 #include "../../Interprocess/source/IntrospectionDataTypeMapping.h"
 #include "../../CommonUtilities/source/str/String.h"
 #include "Session.h"
@@ -27,10 +28,10 @@ namespace pmapi
             }
             else if constexpr (dt == PM_DATA_TYPE_STRING) {
                 if constexpr (std::same_as<DestType, std::string>) {
-                    dest = (const char*)pBlobBytes;
+                    dest = reinterpret_cast<const char*>(pBlobBytes);
                 }
                 else if constexpr (std::same_as<DestType, std::wstring>) {
-                    dest = pmon::util::str::ToWide((const char*)pBlobBytes);
+                    dest = pmon::util::str::ToWide(reinterpret_cast<const char*>(pBlobBytes));
                 }
                 else {
                     // TODO: log or assert?
@@ -78,6 +79,18 @@ namespace pmapi
         {
             return As<std::remove_reference_t<std::remove_const_t<T>>>();
         }
+        // intended for use with strcpy etc. do not cache the pointer returned because it is invalid
+        // as soon as the temporary returned from PollStatic goes out of scope
+        // usage example: strcpy_s(str, PollStatic(session, proc, PM_METRIC_APPLICATION).CStr());
+        const char* CStr()
+        {
+            if (dataType_ != PM_DATA_TYPE_STRING) {
+                // TODO: log warning / error about wrong type access
+                // turn buffer into a zero-length string to avoid issues
+                blob_[0] = 0;
+            }
+            return reinterpret_cast<const char*>(blob_.data());
+        }
     private:
         // functions
         StaticQueryResult(PM_DATA_TYPE dataType) : dataType_{ dataType } {}
@@ -102,7 +115,10 @@ namespace pmapi
             .deviceId = deviceId,
             .arrayIndex = arrayIndex,
         };
-        pmPollStaticQuery(session.GetHandle(), &element, process.GetPid(), result.blob_.data());
+        if (const auto err = pmPollStaticQuery(session.GetHandle(), &element, process.GetPid(), result.blob_.data());
+            err != PM_STATUS_SUCCESS) {
+            throw ApiErrorException{ err, "Error polling static query" };
+        }
         return result;
     }
 }

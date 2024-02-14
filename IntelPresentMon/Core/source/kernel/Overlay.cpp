@@ -259,8 +259,10 @@ namespace p2c::kern
     {
         bool wonk = false;
         if (wonk) {
-            const std::string sz = pmapi::PollStatic(pm->GetSession(), pm->GetTracker(), PM_METRIC_APPLICATION);
-            const auto b = sz + 'A';
+            char app[500];
+            strcpy_s(app,
+                pmapi::PollStatic(pm->GetSession(), pm->GetTracker(), PM_METRIC_APPLICATION).CStr());
+            const auto b = app[89] = 'A';
         }
         if (!IsTargetLive()) {
             throw TargetLostException{};

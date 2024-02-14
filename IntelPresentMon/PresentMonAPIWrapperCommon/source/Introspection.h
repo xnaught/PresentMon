@@ -5,17 +5,13 @@
 #include <ranges>
 #include <memory>
 #include <unordered_map>
-#include <stdexcept>
 #include <format>
 #include <functional>
 #include <cassert>
+#include "Exception.h"
 
 namespace pmapi
 {
-    class Exception : public std::runtime_error { using runtime_error::runtime_error; };
-    class DatatypeException : public Exception { using Exception::Exception; };
-    class LookupException : public Exception { using Exception::Exception; };
-
     namespace intro
     {
         bool MetricTypeIsDynamic(PM_METRIC_TYPE type);

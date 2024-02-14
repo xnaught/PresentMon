@@ -22,6 +22,7 @@
     <ClCompile Include="source\Introspection.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="source\Exception.h" />
     <ClInclude Include="source\Introspection.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

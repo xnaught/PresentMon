@@ -23,5 +23,8 @@
     <ClInclude Include="source\Introspection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\Exception.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
