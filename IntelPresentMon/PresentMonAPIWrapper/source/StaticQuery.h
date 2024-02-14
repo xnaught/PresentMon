@@ -15,10 +15,11 @@
 namespace pmapi
 {
     // this static functor converts static types when bridged with runtime PM_DATA_TYPE info
-    template<PM_DATA_TYPE dt, typename DestType>
+    template<PM_DATA_TYPE dt, typename DestType, size_t blobSize>
     struct SQReadBridger
     {
         using SourceType = typename pmon::ipc::intro::DataTypeToStaticType<dt>::type;
+        static_assert(sizeof(SourceType) < blobSize, "Inadequate blob size detected");
         static void Invoke(DestType& dest, const uint8_t* pBlobBytes)
         {
             // if src is convertible to dest, then doit
@@ -52,10 +53,10 @@ namespace pmapi
     // adapter to convert template taking 2 arguments to template taking 1
     // (we need this because you cannot define templates within a function
     // and the static info is only available inside the templated function)
-    template<typename T>
+    template<typename T, size_t blobSize>
     struct SQReadBridgerAdapter {
         template<PM_DATA_TYPE dt>
-        using Bridger = SQReadBridger<dt, T>;
+        using Bridger = SQReadBridger<dt, T, blobSize>;
     };
 
     class StaticQueryResult
@@ -71,7 +72,7 @@ namespace pmapi
             // the bridge will execute the bridger with the correct blob/source static type based
             // on the runtime PM_DATA_TYPE value passed in, and the bridger will convert that to
             // the requested type T and store in val
-            BridgeDataType<typename SQReadBridgerAdapter<T>::Bridger>(dataType_, val, blob_.data());
+            BridgeDataType<typename SQReadBridgerAdapter<T, blob_.size()>::Bridger>(dataType_, val, blob_.data());
             return val;
         }
         template<typename T>
