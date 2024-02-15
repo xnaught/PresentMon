@@ -18,3 +18,4 @@
 #include "metadata/MetricList.h"
 #include "metadata/UnitList.h"
 #include "metadata/PreferredUnitList.h"
+#include "metadata/EnumNullEnum.h"

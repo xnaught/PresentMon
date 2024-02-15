@@ -235,6 +235,9 @@ extern "C" {
 		PM_METRIC_AVAILABILITY_UNAVAILABLE,
 	};
 
+	// this is required but has no external use
+	enum PM_NULL_ENUM {};
+
 	enum PM_ENUM
 	{
 		PM_ENUM_STATUS,
@@ -249,6 +252,7 @@ extern "C" {
 		PM_ENUM_GRAPHICS_RUNTIME,
 		PM_ENUM_DEVICE_TYPE,
 		PM_ENUM_METRIC_AVAILABILITY,
+		PM_ENUM_NULL_ENUM,
 	};
 
 	struct PM_INTROSPECTION_STRING

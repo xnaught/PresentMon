@@ -257,13 +257,6 @@ namespace p2c::kern
 
     void Overlay::UpdateGraphData_(double timestamp)
     {
-        bool wonk = false;
-        if (wonk) {
-            char app[500];
-            strcpy_s(app,
-                pmapi::PollStatic(pm->GetSession(), pm->GetTracker(), PM_METRIC_APPLICATION).CStr());
-            const auto b = app[89] = 'A';
-        }
         if (!IsTargetLive()) {
             throw TargetLostException{};
         }

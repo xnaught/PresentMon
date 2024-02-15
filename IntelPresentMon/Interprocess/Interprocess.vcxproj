@@ -33,6 +33,7 @@
     <ClInclude Include="source\metadata\EnumDeviceType.h" />
     <ClInclude Include="source\metadata\EnumGraphicsRuntime.h" />
     <ClInclude Include="source\metadata\EnumDataType.h" />
+    <ClInclude Include="source\metadata\EnumNullEnum.h" />
     <ClInclude Include="source\metadata\EnumStat.h" />
     <ClInclude Include="source\metadata\EnumUnit.h" />
     <ClInclude Include="source\metadata\EnumPsuType.h" />
