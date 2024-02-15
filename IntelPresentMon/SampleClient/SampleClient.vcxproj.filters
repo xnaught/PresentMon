@@ -12,5 +12,6 @@
     <ClInclude Include="IntrospectionSample.h" />
     <ClInclude Include="CheckMetricSample.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="WrapperStaticQuery.h" />
   </ItemGroup>
 </Project>

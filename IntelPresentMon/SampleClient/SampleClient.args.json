@@ -3,6 +3,10 @@
   "Id": "79fe382a-c29c-4c32-a028-b8d1abdf51b0",
   "Items": [
     {
+      "Id": "55055cc7-7bbb-4db3-8f8f-27f1b5994bd2",
+      "Command": "--wrapper-static-query-sample"
+    },
+    {
       "Id": "aec2f3f0-8119-42e8-a154-f0362d3a79bc",
       "Command": "--gen-csv"
     },
@@ -40,7 +44,7 @@
     },
     {
       "Id": "4d012d46-c606-4e44-91a4-8bfa0865cfbc",
-      "Command": "--process-name valley.exe"
+      "Command": "--process-name factorio.exe"
     },
     {
       "Id": "7f6ffa38-2a9a-480c-a811-a10c76820b74",

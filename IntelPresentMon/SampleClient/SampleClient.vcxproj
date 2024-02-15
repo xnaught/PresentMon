@@ -206,6 +206,7 @@
     <ClInclude Include="FrameQuerySample.h" />
     <ClInclude Include="IntrospectionSample.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="WrapperStaticQuery.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">

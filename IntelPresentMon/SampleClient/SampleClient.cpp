@@ -26,6 +26,7 @@
 #include "FrameQuerySample.h"
 #include "IntrospectionSample.h"
 #include "CheckMetricSample.h"
+#include "WrapperStaticQuery.h"
 
 
 int main(int argc, char* argv[])
@@ -43,7 +44,7 @@ int main(int argc, char* argv[])
         }
 
         // determine requested activity
-        if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample ^ opt.checkMetricSample) {
+        if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample ^ opt.checkMetricSample ^ opt.wrapperStaticQuerySample) {
             std::unique_ptr<pmapi::Session> pSession;
             if (opt.controlPipe) {
                 pSession = std::make_unique<pmapi::Session>(*opt.controlPipe, *opt.introNsm);
@@ -52,26 +53,29 @@ int main(int argc, char* argv[])
                 pSession = std::make_unique<pmapi::Session>();
             }
 
-            if (opt.introspectionSample)
-            {
+            // initialize the map of enum values to string data
+            pmapi::EnumMap::Refresh(*pSession->GetIntrospectionRoot());
+
+            if (opt.introspectionSample) {
                 return IntrospectionSample(std::move(pSession));
             }
-            else if (opt.checkMetricSample)
-            {
+            else if (opt.checkMetricSample) {
                 return CheckMetricSample(std::move(pSession));
             }
-            else if (opt.dynamicQuerySample)
-            {
+            else if (opt.dynamicQuerySample) {
                 return DynamicQuerySample(std::move(pSession), *opt.windowSize, *opt.metricOffset);
             }
-            else
-            {
+            else if (opt.wrapperStaticQuerySample) {
+                return WrapperStaticQuerySample(std::move(pSession));
+            }
+            else {
                 return FrameQuerySample(std::move(pSession));
             }
         }
         else {
             std::cout << "SampleClient supports one action at a time. Select one of:\n";
             std::cout << "--introspection-sample\n";
+            std::cout << "--wrapper-static-query-sample\n";
             std::cout << "--dynamic-query-sample [--process-id id | --process-name name.exe] [--add-gpu-metric]\n";
             std::cout << "--frame-query-sample [--process-id id | --process-name name.exe]  [--gen-csv]\n";
             std::cout << "--check-metric-sample --metric PM_METRIC_*\n";

@@ -300,9 +300,6 @@ namespace pmapi
             EnumView IntrospectEnum() const;
             PM_ENUM GetEnumId() const
             {
-                if (pBase->polledType != PM_DATA_TYPE_ENUM && pBase->frameType != PM_DATA_TYPE_ENUM) {
-                    throw DatatypeException{ "cannot get enum data for non-enum data type" };
-                }
                 return pBase->enumId;
             }
             const SelfType* operator->() const

@@ -102,13 +102,12 @@ namespace pmapi
         template<typename T>
         T As() const
         {
-            using pmon::ipc::intro::BridgeDataTypeWithEnum;
             T val;
             // the bridge will execute the bridger with the correct blob/source static type based
             // on the runtime PM_DATA_TYPE value passed in, and the bridger will convert that to
             // the requested type T and store in val
-            BridgeDataTypeWithEnum
-                <typename SQReadBridgerAdapter<T, 260>::Bridger>
+            pmon::ipc::intro::BridgeDataTypeWithEnum
+                <typename SQReadBridgerAdapter<T, blobSize_>::Bridger>
                 (dataType_, enumId_, val, blob_.data());
             return val;
         }
@@ -125,9 +124,10 @@ namespace pmapi
         StaticQueryResult(const StaticQueryResult&) = default;
         // data
         // 260 bytes is the maximum possible size for query element data
-        std::array<uint8_t, 260> blob_;
+        static constexpr size_t blobSize_ = 260;
+        std::array<uint8_t, blobSize_> blob_;
         PM_DATA_TYPE dataType_;
-        PM_ENUM enumId_ = PM_ENUM_NULL_ENUM;
+        PM_ENUM enumId_;
     };
 
     StaticQueryResult PollStatic(const Session& session, const ProcessTracker& process,
@@ -136,7 +136,7 @@ namespace pmapi
         const auto pIntro = session.GetIntrospectionRoot();
         const auto dti = pIntro->FindMetric(metric).GetDataTypeInfo();
         StaticQueryResult result{ dti.GetFrameType(), dti.GetEnumId() };
-        // TODO: make sure the blob size is adequate (use introspection or pass in blob size)
+        
         const PM_QUERY_ELEMENT element{
             .metric = metric,
             .stat = PM_STAT_NONE,

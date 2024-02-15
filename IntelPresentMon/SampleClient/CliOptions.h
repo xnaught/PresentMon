@@ -12,6 +12,7 @@ namespace clio
 		Flag dynamicQuerySample{ this, "--dynamic-query-sample", "Example of how to use a dynamic query to poll metric data" };
 		Flag frameQuerySample{ this, "--frame-query-sample", "Example of how to use a frame query to consume raw frame data" };
 		Flag checkMetricSample{ this, "--check-metric-sample", "Example of how to check metric availability for a single metric" };
+		Flag wrapperStaticQuerySample{ this, "--wrapper-static-query-sample", "Example of using the wrapper to poll static metric data" };
 		Flag genCsv{ this, "--gen-csv", "Example of creating a csv file from consumed raw frame data" };
 		Flag addGPUMetric{ this, "--add-gpu-metric", "Example of how to search for an available GPU metric and add it to a dynamic query" };
 		Option<double> metricOffset{ this, "--metric-offset", 1000., "Offset from top for frame data. Used in --dynamic-query-sample" };
