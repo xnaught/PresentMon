@@ -130,7 +130,7 @@ namespace pmon::ipc::intro
 			}); i != root.GetMetrics().end()) {
 				const auto availability = cpuCaps[size_t(Lookup::cpuCapBit)] ?
 					PM_METRIC_AVAILABILITY_AVAILABLE : PM_METRIC_AVAILABILITY_UNAVAILABLE;
-				(*i)->AddDeviceMetricInfo(IntrospectionDeviceMetricInfo{ 0, PM_METRIC_AVAILABILITY_AVAILABLE, 1 });
+				(*i)->AddDeviceMetricInfo(IntrospectionDeviceMetricInfo{ 0, availability, 1 });
 			}
 		}
 
