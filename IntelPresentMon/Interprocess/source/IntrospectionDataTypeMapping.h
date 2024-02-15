@@ -52,6 +52,22 @@ namespace pmon::ipc::intro {
 		return F<PM_DATA_TYPE_VOID>::Default(std::forward<P>(args)...);
 	}
 
+	namespace
+	{
+		template<template<PM_DATA_TYPE, PM_ENUM> class F, typename...P>
+		auto BridgeEnum_(PM_ENUM enumId, P&&...args)
+		{
+			switch (enumId) {
+#define HANDLE_ENUM(enumFrag, keyFrag, name, shortName, description) case PM_ENUM_##keyFrag: return F<PM_DATA_TYPE_ENUM, PM_ENUM_##keyFrag>::Invoke(enumId, std::forward<P>(args)...);
+
+				ENUM_KEY_LIST_ENUM(HANDLE_ENUM)
+
+#undef HANDLE_ENUM
+			}
+			return F<PM_DATA_TYPE_ENUM, PM_ENUM_NULL_ENUM>::Invoke(enumId, std::forward<P>(args)...);
+		}
+	}
+
 	// behavior: if datatype is not found, Default is invoked with void/null
 	// if datatype is enum, we switch on enumId, id not found => invoke enum/null
 	// first parameter of Invoke() must be PM_ENUM type
@@ -59,17 +75,15 @@ namespace pmon::ipc::intro {
 	auto BridgeDataTypeWithEnum(PM_DATA_TYPE dataType, PM_ENUM enumId, P&&...args)
 	{
 		switch (dataType) {
-#define HANDLE_ENUM(enumFrag, keyFrag, name, shortName, description) case PM_ENUM_##keyFrag: return F<PM_DATA_TYPE_ENUM, PM_ENUM_##keyFrag>::Invoke(PM_ENUM_NULL_ENUM, std::forward<P>(args)...);
 #define HANDLE_DATA_TYPE_KEY(enumFrag, keyFrag, name, shortName, description) \
 		case PM_DATA_TYPE_##keyFrag: if constexpr (PM_DATA_TYPE_##keyFrag == PM_DATA_TYPE_ENUM) {\
-			switch (enumId) { ENUM_KEY_LIST_ENUM(HANDLE_ENUM) } \
-		} \
+				return BridgeEnum_<F>(enumId, std::forward<P>(args)...); \
+			} \
 			return F<PM_DATA_TYPE_##keyFrag, PM_ENUM_NULL_ENUM>::Invoke(enumId, std::forward<P>(args)...);
 
 			ENUM_KEY_LIST_DATA_TYPE(HANDLE_DATA_TYPE_KEY)
 
 #undef HANDLE_DATA_TYPE_KEY
-#undef HANDLE_ENUM
 		}
 		return F<PM_DATA_TYPE_VOID, PM_ENUM_NULL_ENUM>::Default(std::forward<P>(args)...);
 	}
