@@ -4,6 +4,7 @@
 #include "../../PresentMonAPIWrapperCommon/source/Exception.h"
 #include "../../Interprocess/source/IntrospectionDataTypeMapping.h"
 #include "../../CommonUtilities/source/str/String.h"
+#include "../../CommonUtilities/source/Meta.h"
 #include "../../PresentMonAPIWrapperCommon/source/EnumMap.h"
 #include "Session.h"
 #include "ProcessTracker.h"
@@ -17,23 +18,12 @@ namespace pmapi
 {
     namespace
     {
-        // Constexpr function to get the size of a type, or 0 for void
-        template<typename T>
-        constexpr std::size_t SafeSizeof() {
-            if constexpr (std::is_void_v<T>) {
-                return 0;
-            }
-            else {
-                return sizeof(T);
-            }
-        }
-
         // this static functor converts static types when bridged with runtime PM_DATA_TYPE info
         template<PM_DATA_TYPE dt, PM_ENUM staticEnumId, typename DestType, size_t blobSize>
         struct SQReadBridger
         {
             using SourceType = typename pmon::ipc::intro::DataTypeToStaticType<dt, staticEnumId>::type;
-            static_assert(SafeSizeof<SourceType>() <= blobSize, "Inadequate blob size detected");
+            static_assert(pmon::util::VoidableSizeof<SourceType>() <= blobSize, "Inadequate blob size detected");
             static void Invoke(PM_ENUM enumId, DestType& dest, const uint8_t* pBlobBytes)
             {
                 // void types are not handleable and generally should not occur

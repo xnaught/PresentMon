@@ -1,9 +1,5 @@
 #pragma once
 
-#define PM_BEGIN_DYNAMIC_QUERY(type) struct type : DynamicQueryContainer { using DynamicQueryContainer::DynamicQueryContainer;
-#define PM_BEGIN_FRAME_QUERY(type) struct type : FrameQueryContainer<type> { using FrameQueryContainer<type>::FrameQueryContainer;
-#define PM_END_QUERY private: FinalizingElement finalizer{ this }; }
-
 void WriteToCSV(std::ofstream& csvFile, const std::string& processName, const unsigned int& processId,
     PM_QUERY_ELEMENT(&queryElements)[15], pmapi::BlobContainer& blobs)
 {
