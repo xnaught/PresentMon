@@ -187,19 +187,19 @@ int FrameQuerySample(std::unique_ptr<pmapi::Session>&& pSession)
 
         auto processTracker = pSession->TrackProcess(processId.value());
 
-        PM_BEGIN_FRAME_QUERY(MyFrameQuery)
-            QueryElement swapChain{ this, PM_METRIC_SWAP_CHAIN_ADDRESS, PM_STAT_NONE };
-            QueryElement cpuFrameQpc{ this, PM_METRIC_CPU_FRAME_QPC, PM_STAT_NONE };
-            QueryElement cpuDuration{ this, PM_METRIC_CPU_DURATION, PM_STAT_NONE };
-            QueryElement cpuFpStall{ this, PM_METRIC_CPU_FRAME_PACING_STALL, PM_STAT_NONE };
-            QueryElement gpuLatency{ this, PM_METRIC_GPU_LATENCY, PM_STAT_NONE };
-            QueryElement gpuDuration{ this, PM_METRIC_GPU_DURATION, PM_STAT_NONE };
-            QueryElement gpuBusyTime{ this, PM_METRIC_GPU_BUSY_TIME, PM_STAT_NONE };
-            QueryElement gpuDisplayLatency{ this, PM_METRIC_DISPLAY_LATENCY, PM_STAT_NONE };
-            QueryElement gpuDisplayDuration{ this, PM_METRIC_DISPLAY_DURATION, PM_STAT_NONE};
-            QueryElement inputLatency{ this, PM_METRIC_DISPLAY_DURATION, PM_STAT_NONE };
-            QueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_NONE, 1 };
-        PM_END_QUERY fq{ *pSession, 20, 1};
+        PM_BEGIN_FIXED_FRAME_QUERY(MyFrameQuery)
+            FixedQueryElement swapChain{ this, PM_METRIC_SWAP_CHAIN_ADDRESS, PM_STAT_NONE };
+            FixedQueryElement cpuFrameQpc{ this, PM_METRIC_CPU_FRAME_QPC, PM_STAT_NONE };
+            FixedQueryElement cpuDuration{ this, PM_METRIC_CPU_DURATION, PM_STAT_NONE };
+            FixedQueryElement cpuFpStall{ this, PM_METRIC_CPU_FRAME_PACING_STALL, PM_STAT_NONE };
+            FixedQueryElement gpuLatency{ this, PM_METRIC_GPU_LATENCY, PM_STAT_NONE };
+            FixedQueryElement gpuDuration{ this, PM_METRIC_GPU_DURATION, PM_STAT_NONE };
+            FixedQueryElement gpuBusyTime{ this, PM_METRIC_GPU_BUSY_TIME, PM_STAT_NONE };
+            FixedQueryElement gpuDisplayLatency{ this, PM_METRIC_DISPLAY_LATENCY, PM_STAT_NONE };
+            FixedQueryElement gpuDisplayDuration{ this, PM_METRIC_DISPLAY_DURATION, PM_STAT_NONE};
+            FixedQueryElement inputLatency{ this, PM_METRIC_DISPLAY_DURATION, PM_STAT_NONE };
+            FixedQueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_NONE, 1 };
+        PM_END_FIXED_QUERY fq{ *pSession, 20, 1 };
 
         while (!_kbhit()) {
             std::cout << "Consuming frames...";

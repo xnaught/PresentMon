@@ -19,7 +19,7 @@
     <ClInclude Include="source\FrameQuery.h" />
     <ClInclude Include="source\PresentMonAPIWrapper.h" />
     <ClInclude Include="source\ProcessTracker.h" />
-    <ClInclude Include="source\QueryElement.h" />
+    <ClInclude Include="source\FixedQuery.h" />
     <ClInclude Include="source\Session.h" />
     <ClInclude Include="source\StaticQuery.h" />
   </ItemGroup>

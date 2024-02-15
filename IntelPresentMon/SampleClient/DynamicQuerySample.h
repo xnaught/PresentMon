@@ -143,23 +143,23 @@ int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, double window
 
         auto proc = pSession->TrackProcess(processId.value());
 
-        PM_BEGIN_DYNAMIC_QUERY(MyDynamicQuery)
-            QueryElement appName{ this, PM_METRIC_APPLICATION, PM_STAT_MID_POINT };
-            QueryElement fpsAvg{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_AVG };
-            QueryElement fps90{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_PERCENTILE_90 };
-            QueryElement fps95{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_PERCENTILE_95 };
-            QueryElement fps99{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_PERCENTILE_99 };
-            QueryElement fpsMax{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_MAX };
-            QueryElement fpsMin{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_MIN };
-            QueryElement frameDurationAvg{ this, PM_METRIC_FRAME_DURATION, PM_STAT_AVG };
-            QueryElement fpStallAvg{ this, PM_METRIC_CPU_FRAME_PACING_STALL, PM_STAT_AVG };
-            QueryElement gpuDurationAvg{ this, PM_METRIC_GPU_DURATION, PM_STAT_AVG };
-            QueryElement gpuBusyTimeAvg{ this, PM_METRIC_GPU_BUSY_TIME, PM_STAT_AVG };
-            QueryElement gpuDisplayLatencyAvg{ this, PM_METRIC_DISPLAY_LATENCY, PM_STAT_AVG };
-            QueryElement gpuDisplayDurationAvg{ this, PM_METRIC_DISPLAY_DURATION, PM_STAT_AVG };
-            QueryElement gpuInputLatencyAvg{ this, PM_METRIC_INPUT_LATENCY, PM_STAT_AVG };
-            QueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_AVG, 1 };
-        PM_END_QUERY dq{ *pSession, windowSize, metricOffset, 1, 1 };
+        PM_BEGIN_FIXED_DYNAMIC_QUERY(MyDynamicQuery)
+            FixedQueryElement appName{ this, PM_METRIC_APPLICATION, PM_STAT_MID_POINT };
+            FixedQueryElement fpsAvg{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_AVG };
+            FixedQueryElement fps90{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_PERCENTILE_90 };
+            FixedQueryElement fps95{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_PERCENTILE_95 };
+            FixedQueryElement fps99{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_PERCENTILE_99 };
+            FixedQueryElement fpsMax{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_MAX };
+            FixedQueryElement fpsMin{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_MIN };
+            FixedQueryElement frameDurationAvg{ this, PM_METRIC_FRAME_DURATION, PM_STAT_AVG };
+            FixedQueryElement fpStallAvg{ this, PM_METRIC_CPU_FRAME_PACING_STALL, PM_STAT_AVG };
+            FixedQueryElement gpuDurationAvg{ this, PM_METRIC_GPU_DURATION, PM_STAT_AVG };
+            FixedQueryElement gpuBusyTimeAvg{ this, PM_METRIC_GPU_BUSY_TIME, PM_STAT_AVG };
+            FixedQueryElement gpuDisplayLatencyAvg{ this, PM_METRIC_DISPLAY_LATENCY, PM_STAT_AVG };
+            FixedQueryElement gpuDisplayDurationAvg{ this, PM_METRIC_DISPLAY_DURATION, PM_STAT_AVG };
+            FixedQueryElement gpuInputLatencyAvg{ this, PM_METRIC_INPUT_LATENCY, PM_STAT_AVG };
+            FixedQueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_AVG, 1 };
+        PM_END_FIXED_QUERY dq{ *pSession, windowSize, metricOffset, 1, 1 };
 
         if (InitializeConsole() == false) {
             std::cout << "\nFailed to initialize console.\n";

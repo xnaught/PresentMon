@@ -9,7 +9,7 @@
 
 namespace pmapi
 {
-	struct QueryContainer_
+	struct FixedQueryContainer_
 	{
 		const BlobContainer& PeekBlobContainer() const
 		{
@@ -40,10 +40,10 @@ namespace pmapi
 			return activeBlobIndex_;
 		}
 	protected:
-		friend class QueryElement;
+		friend class FixedQueryElement;
 		// functions
 		template<typename...S>
-		QueryContainer_(Session& session, uint32_t nBlobs, S&&...slotDeviceIds)
+		FixedQueryContainer_(Session& session, uint32_t nBlobs, S&&...slotDeviceIds)
 			:
 			pSession_{ &session },
 			slotDeviceIds_{ uint32_t(slotDeviceIds)... },
@@ -63,7 +63,7 @@ namespace pmapi
 		//   temporary construction storage
 		std::vector<uint32_t> slotDeviceIds_;
 		std::vector<PM_QUERY_ELEMENT> rawElements_;
-		std::vector<class QueryElement*> smartElements_;
+		std::vector<class FixedQueryElement*> smartElements_;
 		Session* pSession_ = nullptr;
 		uint32_t nBlobs_;
 		//   retained storage
@@ -71,12 +71,12 @@ namespace pmapi
 		size_t activeBlobIndex_ = 0;
 	};
 
-	struct DynamicQueryContainer : public QueryContainer_
+	struct FixedDynamicQueryContainer : public FixedQueryContainer_
 	{
 		template<typename...S>
-		DynamicQueryContainer(Session& session, double winSizeMs, double metricOffsetMs, uint32_t nBlobs, S&&...slotDeviceIds)
+		FixedDynamicQueryContainer(Session& session, double winSizeMs, double metricOffsetMs, uint32_t nBlobs, S&&...slotDeviceIds)
 			:
-			QueryContainer_{ session, nBlobs, slotDeviceIds... },
+			FixedQueryContainer_{ session, nBlobs, slotDeviceIds... },
 			winSizeMs_{ winSizeMs },
 			metricOffsetMs_{ metricOffsetMs }
 		{}
@@ -101,12 +101,12 @@ namespace pmapi
 	};
 
 	template<class T>
-	struct FrameQueryContainer : public QueryContainer_
+	struct FixedFrameQueryContainer : public FixedQueryContainer_
 	{
 		template<typename...S>
-		FrameQueryContainer(Session& session, uint32_t nBlobs, S&&...slotDeviceIds)
+		FixedFrameQueryContainer(Session& session, uint32_t nBlobs, S&&...slotDeviceIds)
 			:
-			QueryContainer_{ session, nBlobs, slotDeviceIds... }
+			FixedQueryContainer_{ session, nBlobs, slotDeviceIds... }
 		{}
 		BlobContainer MakeBlobContainer(uint32_t nBlobs) const
 		{
@@ -135,7 +135,6 @@ namespace pmapi
 		// functions
 		void Finalize_();
 		// data
-		//   retained storage
 		FrameQuery query_;
 	};
 
@@ -165,11 +164,12 @@ namespace pmapi
 		using Bridger = QEReadBridger<dt, T>;
 	};
 
-	class QueryElement
+	class FixedQueryElement
 	{
-		friend QueryContainer_;
+		friend FixedQueryContainer_;
 	public:
-		QueryElement(QueryContainer_* pContainer, PM_METRIC metric, PM_STAT stat, uint32_t deviceSlot = 0, uint32_t index = 0)
+		FixedQueryElement(FixedQueryContainer_* pContainer, PM_METRIC metric,
+			PM_STAT stat, uint32_t deviceSlot = 0, uint32_t index = 0)
 			:
 			pContainer_{ pContainer }
 		{
@@ -200,7 +200,7 @@ namespace pmapi
 			return As<T>();
 		}
 	private:
-		const QueryContainer_* pContainer_ = nullptr;
+		const FixedQueryContainer_* pContainer_ = nullptr;
 		uint64_t dataOffset_ = 0ull;
 		PM_DATA_TYPE dataType_ = PM_DATA_TYPE_VOID;
 	};
@@ -215,7 +215,7 @@ namespace pmapi
 		}
 	};
 
-	void QueryContainer_::FinalizationPostprocess_()
+	void FixedQueryContainer_::FinalizationPostprocess_()
 	{
 		// get introspection data
 		auto pIntro = pSession_->GetIntrospectionRoot();
@@ -231,7 +231,7 @@ namespace pmapi
 		pSession_ = nullptr;
 	}
 
-	void DynamicQueryContainer::Finalize_()
+	void FixedDynamicQueryContainer::Finalize_()
 	{
 		FinalizationPreprocess_();
 
@@ -246,7 +246,7 @@ namespace pmapi
 	}
 
 	template<class T>
-	void FrameQueryContainer<T>::Finalize_()
+	void FixedFrameQueryContainer<T>::Finalize_()
 	{
 		FinalizationPreprocess_();
 
@@ -261,6 +261,6 @@ namespace pmapi
 	}
 }
 
-#define PM_BEGIN_DYNAMIC_QUERY(type) struct type : DynamicQueryContainer { using DynamicQueryContainer::DynamicQueryContainer;
-#define PM_BEGIN_FRAME_QUERY(type) struct type : FrameQueryContainer<type> { using FrameQueryContainer<type>::FrameQueryContainer;
-#define PM_END_QUERY private: FinalizingElement finalizer{ this }; }
+#define PM_BEGIN_FIXED_DYNAMIC_QUERY(type) struct type : FixedDynamicQueryContainer { using FixedDynamicQueryContainer::FixedDynamicQueryContainer;
+#define PM_BEGIN_FIXED_FRAME_QUERY(type) struct type : FixedFrameQueryContainer<type> { using FixedFrameQueryContainer<type>::FixedFrameQueryContainer;
+#define PM_END_FIXED_QUERY private: FinalizingElement finalizer{ this }; }

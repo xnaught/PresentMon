@@ -38,7 +38,7 @@
     <ClInclude Include="source\BlobContainer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\QueryElement.h">
+    <ClInclude Include="source\FixedQuery.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\StaticQuery.h">

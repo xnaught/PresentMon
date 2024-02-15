@@ -20,7 +20,7 @@
 #include "CliOptions.h"
 
 #include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
-#include "../PresentMonAPIWrapper/source/QueryElement.h"
+#include "../PresentMonAPIWrapper/source/FixedQuery.h"
 #include "Utils.h"
 #include "DynamicQuerySample.h"
 #include "FrameQuerySample.h"
