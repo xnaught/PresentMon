@@ -28,10 +28,19 @@ namespace p2c::client::util::async
 
             auto& intro = kernel.GetIntrospectionRoot();
 
-            // metrics
+            //  --- metrics ---
+            // set of types that are numeric, used to generate numeric flag that the frontend uses
             const std::array numericTypes{ PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_UINT32, PM_DATA_TYPE_INT32, PM_DATA_TYPE_UINT64 };
-            auto metricListCef = MakeCefList(intro.GetMetrics().size());
-            for (auto&&[i, m] : intro.GetMetrics() | vi::enumerate) {
+            // filter predicate to only pick up metrics usable in dynamic queries
+            const auto filterPred = [](const pmapi::intro::MetricView& m) { const auto type = m.GetType();
+                return  type == PM_METRIC_TYPE_DYNAMIC ||
+                        type == PM_METRIC_TYPE_DYNAMIC_FRAME ||
+                        type == PM_METRIC_TYPE_STATIC;
+            };
+            // we must know the size of the array up-front for a cef list, so we traverse filtered range
+            auto metricListCef = MakeCefList(rn::distance(intro.GetMetrics() | vi::filter(filterPred)));
+            // now process each applicable metric, filtering ones not usable for dynamic queries
+            for (auto&&[i, m] : intro.GetMetrics() | vi::filter(filterPred) | vi::enumerate) {
                 // array size: stopgap measure to use largest among all available devices
                 // will replace this with per-device size when loadout per-line device selection
                 // and per-line array index selection is implemented
@@ -65,7 +74,7 @@ namespace p2c::client::util::async
                     CefProp{ "numeric", rn::contains(numericTypes, m.GetDataTypeInfo().GetPolledType()) }
                 ));
             }
-            // stats
+            // --- stats ---
             auto&& statRange = intro.FindEnum(PM_ENUM_STAT).GetKeys();
             auto statListCef = MakeCefList(statRange.size());
             for (auto&& [i, s] : statRange | vi::enumerate) {
@@ -76,7 +85,7 @@ namespace p2c::client::util::async
                     CefProp{ "description", s.GetDescription() }
                 ));
             }
-            // units (empty/dummy because not used yet)
+            // --- units --- (empty/dummy because not used yet)
             auto unitListCef = MakeCefList(0);
 
             return { true, MakeCefObject(
