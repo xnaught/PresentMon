@@ -1151,7 +1151,7 @@ void ReportMetrics(
             CalculateMetric(output, dropped, element.stat);
         }
             break;
-        case PM_METRIC_CPU_DURATION:
+        case PM_METRIC_FRAME_TIME:
             CalculateMetric(output, swapChain.CPUDuration, element.stat, true);
             break;
         case PM_METRIC_CPU_FRAME_PACING_STALL:

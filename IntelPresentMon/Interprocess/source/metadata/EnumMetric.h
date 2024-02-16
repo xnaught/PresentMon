@@ -6,12 +6,11 @@
 		X_(METRIC, SWAP_CHAIN_ADDRESS, "Swap Chain Address", "", "Address of the swap chain used to present, useful as a unique identifier") \
 		X_(METRIC, DISPLAYED_FPS, "Displayed FPS", "", "Rate of frame change measurable at display") \
 		X_(METRIC, PRESENTED_FPS, "Presented FPS", "", "Rate of application calls to a Present() function") \
-		X_(METRIC, FRAME_DURATION, "Frame Duration", "", "The total amount of time in between frames on the CPU") \
-		X_(METRIC, GPU_BUSY_TIME, "GPU Busy", "", "How long the GPU spent working on this frame") \
-		X_(METRIC, GPU_WAIT_TIME, "GPU Wait", "", "How long the GPU spent waiting while working on this frame") \
-		X_(METRIC, DISPLAY_DURATION, "Display Duration", "", "How long this frame was displayed on screen") \
+		X_(METRIC, FRAME_TIME, "Frame Time", "", "The total amount of time in between frames on the CPU") \
+		X_(METRIC, GPU_BUSY, "GPU Busy", "", "How long the GPU spent working on this frame") \
+		X_(METRIC, GPU_WAIT, "GPU Wait", "", "How long the GPU spent waiting while working on this frame") \
+		X_(METRIC, DISPLAYED_TIME, "Displayed Time", "", "How long this frame was displayed on screen") \
 		X_(METRIC, DROPPED_FRAMES, "Dropped Frames", "", "Indicates if the frame was not displayed") \
-		X_(METRIC, NUM_FRAMES, "Number of Frames", "", "The number of frames generated") \
 		X_(METRIC, SYNC_INTERVAL, "Sync Interval", "", "The application's requested interval between presents measured in vertical sync/vblank events") \
 		X_(METRIC, PRESENT_MODE, "Present Mode", "", "Method used to present the frame") \
 		X_(METRIC, PRESENT_RUNTIME, "Present Runtime", "", "The graphics runtime used for the present operation (DXGI, D3D9, etc.)") \
@@ -19,7 +18,8 @@
 		X_(METRIC, ALLOWS_TEARING, "Allows Tearing", "", "Indicates if the frame allows tearing") \
 		X_(METRIC, GPU_LATENCY, "GPU Latency", "", "How long it took until GPU work for this frame started") \
 		X_(METRIC, DISPLAY_LATENCY, "Display Latency", "", "Time between frame submission and scan out to display") \
-		X_(METRIC, INPUT_LATENCY, "Input Latency", "", "Time between input and display (click to photon)") \
+		X_(METRIC, CLICK_TO_PHOTON_LATENCY, "Click to Photon Latency", "", "Time between input and display") \
+		X_(METRIC, INPUT_LATENCY, "Input to Frame Start Latency", "", "Time between input and display") \
 		\
 		X_(METRIC, GPU_POWER, "GPU Power", "", "Power consumed by the graphics adapter") \
 		X_(METRIC, GPU_VOLTAGE, "GPU Voltage", "", "Voltage consumet by the graphics adapter") \
@@ -75,6 +75,5 @@
 		X_(METRIC, TIME_UNTIL_RENDER_START, "Time Until Render Start", "", "The time between the Present() call and when the GPU work started") \
 		X_(METRIC, TIME_SINCE_INPUT, "Time Since Input", "", "The time between the Present() call and the earliest keyboard or mouse interaction that contributed to this frame") \
 		X_(METRIC, GPU_VIDEO_BUSY_TIME, "GPU Video Busy Time", "", "The time video encode/decode was active separate from the other engines in milliseconds") \
-		X_(METRIC, CPU_DURATION, "CPU Duration", "", "How long the CPU spent generating this frame in milliseconds. The CPU may not have been fully busy during this time") \
-		X_(METRIC, CPU_FRAME_PACING_STALL, "CPU Frame Pacing Stall", "", "How long the CPU spent waiting before it could start generating the frame in milliseconds") \
-		X_(METRIC, GPU_DURATION, "GPU Duration", "", "Total amount of time between when GPU started frame and when it finished in milliseconds. The GPU may not have been fully busy during this time")
+		X_(METRIC, CPU_WAIT, "CPU Wait", "", "How long the CPU spent waiting before it could start generating the frame in milliseconds") \
+		X_(METRIC, GPU_TIME, "GPU Time", "", "Total amount of time between when GPU started frame and when it finished in milliseconds. The GPU may not have been fully busy during this time")
