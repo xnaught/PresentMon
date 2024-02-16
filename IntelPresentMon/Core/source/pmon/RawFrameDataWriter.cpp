@@ -132,7 +132,7 @@ namespace p2c::pmon
                 if (el.metricId == PM_METRIC_TIME) {
                     pTimeElement_ = &queryElements_.back();
                 }
-                else if (el.metricId == PM_METRIC_FRAME_TIME) {
+                else if (el.metricId == PM_METRIC_FRAME_DURATION) {
                     pFrameDurationElement_ = &queryElements_.back();
                 }
             }
@@ -148,7 +148,7 @@ namespace p2c::pmon
             }
             if (!pFrameDurationElement_) {
                 queryElements_.push_back(PM_QUERY_ELEMENT{
-                    .metric = PM_METRIC_FRAME_TIME,
+                    .metric = PM_METRIC_FRAME_DURATION,
                     .stat = PM_STAT_NONE,
                     .deviceId = 0,
                     .arrayIndex = 0,
