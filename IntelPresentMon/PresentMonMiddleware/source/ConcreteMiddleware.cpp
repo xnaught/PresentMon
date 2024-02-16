@@ -382,7 +382,6 @@ namespace pmon::mid
             case PM_METRIC_PRESENT_FLAGS:
             case PM_METRIC_SYNC_INTERVAL:
             case PM_METRIC_ALLOWS_TEARING:
-            case PM_METRIC_NUM_FRAMES:
             //case PM_METRIC_FRAME_TIME:
             case PM_METRIC_CPU_FRAME_QPC:
             case PM_METRIC_GPU_LATENCY:
@@ -1026,9 +1025,6 @@ void ReportMetrics(
         case PM_METRIC_ALLOWS_TEARING:
             reinterpret_cast<bool&>(pBlob[element.dataOffset]) = swapChain.allows_tearing;
             break;
-        case PM_METRIC_NUM_FRAMES:
-            reinterpret_cast<uint32_t&>(pBlob[element.dataOffset]) = (uint32_t)swapChain.CPUFrameQPC.size();
-            break;
         // no statistics on PM_METRIC_FRAME_TIME
         // no statistics on PM_METRIC_FRAME_QPC
         case PM_METRIC_GPU_LATENCY:
@@ -1623,7 +1619,6 @@ void ReportMetrics(
                 case PM_METRIC_PRESENT_FLAGS:
                 case PM_METRIC_SYNC_INTERVAL:
                 case PM_METRIC_ALLOWS_TEARING:
-                case PM_METRIC_NUM_FRAMES:
                 case PM_METRIC_GPU_LATENCY:
                 case PM_METRIC_GPU_WAIT_TIME:
                 case PM_METRIC_GPU_BUSY_TIME:

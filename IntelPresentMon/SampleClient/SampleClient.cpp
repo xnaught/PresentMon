@@ -639,7 +639,6 @@ void PollMetrics(uint32_t processId, double metricsOffset)
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_RUNTIME, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FRAME_QPC, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_SYNC_INTERVAL, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_NUM_FRAMES, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_DROPPED_FRAMES, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_ALLOWS_TEARING, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
     };
@@ -707,7 +706,6 @@ void PollMetrics(uint32_t processId, double metricsOffset)
         PM_QUERY_ELEMENT{.metric = PM_METRIC_PRESENT_RUNTIME, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_CPU_FRAME_QPC, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_SYNC_INTERVAL, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
-        PM_QUERY_ELEMENT{.metric = PM_METRIC_NUM_FRAMES, .stat = PM_STAT_MID_POINT, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_DROPPED_FRAMES, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
         PM_QUERY_ELEMENT{.metric = PM_METRIC_ALLOWS_TEARING, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0},
     };
