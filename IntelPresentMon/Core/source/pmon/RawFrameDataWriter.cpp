@@ -231,7 +231,7 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_CPU_FRAME_PACING_STALL, .deviceId = 0 },
             Element{.metricId = PM_METRIC_GPU_LATENCY, .deviceId = 0 },
             Element{.metricId = PM_METRIC_GPU_DURATION, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_GPU_BUSY_TIME, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_GPU_BUSY, .deviceId = 0 },
             Element{.metricId = PM_METRIC_DISPLAY_LATENCY, .deviceId = 0 },
             Element{.metricId = PM_METRIC_DISPLAY_DURATION, .deviceId = 0 },
             Element{.metricId = PM_METRIC_INPUT_LATENCY, .deviceId = 0 },

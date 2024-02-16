@@ -417,7 +417,7 @@ namespace PresentMonAPI2Mock
 		//		},
 		//	};
 		//	PM_QUERY_ELEMENT queryElements[]{
-		//		{ PM_METRIC_GPU_BUSY_TIME, PM_STAT_NONE, 0, 0 },
+		//		{ PM_METRIC_GPU_BUSY, PM_STAT_NONE, 0, 0 },
 		//	};
 		//	PM_FRAME_QUERY query{ queryElements };
 		//	auto pBlob = std::make_unique<uint8_t[]>(query.GetBlobSize());

@@ -399,7 +399,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 
 	case PM_METRIC_SWAP_CHAIN_ADDRESS:
 		return std::make_unique<CopyGatherCommand_<&Pre::SwapChainAddress>>(pos);
-	case PM_METRIC_GPU_BUSY_TIME:
+	case PM_METRIC_GPU_BUSY:
 		return std::make_unique<QpcDurationGatherCommand_<&Pre::GPUDuration>>(pos);
 	case PM_METRIC_DROPPED_FRAMES:
 		return std::make_unique<DroppedGatherCommand_>(pos);
