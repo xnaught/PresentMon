@@ -132,30 +132,30 @@ namespace p2c::pmon
                 // these fields are required because they are used for summary stats
                 // we need pointers to these specific ones to read for generating those stats
                 if (el.metricId == PM_METRIC_TIME) {
-                    pTimeElement_ = &queryElements_.back();
+                    totalTimeElementIdx_ = int(queryElements_.size() - 1);
                 }
                 else if (el.metricId == PM_METRIC_FRAME_TIME) {
-                    pFrameDurationElement_ = &queryElements_.back();
+                    frametimeElementIdx_ = int(queryElements_.size() - 1);
                 }
             }
             // if any specially-required fields are missing, add to query (but not to annotations)
-            if (!pTimeElement_) {
+            if (totalTimeElementIdx_ < 0) {
                 queryElements_.push_back(PM_QUERY_ELEMENT{
                     .metric = PM_METRIC_TIME,
                     .stat = PM_STAT_NONE,
                     .deviceId = 0,
                     .arrayIndex = 0,
                 });
-                pTimeElement_ = &queryElements_.back();
+                totalTimeElementIdx_ = int(queryElements_.size() - 1);
             }
-            if (!pFrameDurationElement_) {
+            if (frametimeElementIdx_ < 0) {
                 queryElements_.push_back(PM_QUERY_ELEMENT{
                     .metric = PM_METRIC_FRAME_TIME,
                     .stat = PM_STAT_NONE,
                     .deviceId = 0,
                     .arrayIndex = 0,
                 });
-                pFrameDurationElement_ = &queryElements_.back();
+                frametimeElementIdx_ = int(queryElements_.size() - 1);
             }
             // register query
             pQuery_ = session.RegisterFrameQuery(queryElements_);
@@ -168,13 +168,13 @@ namespace p2c::pmon
         {
             pQuery_->Consume(pid, blobs);
         }
+        double ExtractTotalTimeFromBlob(const uint8_t* pBlob) const
+        {
+            return reinterpret_cast<const double&>(pBlob[queryElements_[totalTimeElementIdx_].dataOffset]);
+        }
         double ExtractFrameTimeFromBlob(const uint8_t* pBlob) const
         {
-            return reinterpret_cast<const double&>(pBlob[pTimeElement_->dataOffset]);
-        }
-        double ExtractFrameDurationFromBlob(const uint8_t* pBlob) const
-        {
-            return reinterpret_cast<const double&>(pBlob[pFrameDurationElement_->dataOffset]);
+            return reinterpret_cast<const double&>(pBlob[queryElements_[frametimeElementIdx_].dataOffset]);
         }
         void WriteFrame(uint32_t pid, const std::string& procName, std::ostream& out, const uint8_t* pBlob)
         {
@@ -205,9 +205,9 @@ namespace p2c::pmon
         std::vector<std::unique_ptr<Annotation_>> annotationPtrs_;
         // all query elements to be registered with the query, maintained to store blob offset information
         std::vector<PM_QUERY_ELEMENT> queryElements_;
-        // query element referenced used for summary stats gathering
-        const PM_QUERY_ELEMENT* pTimeElement_ = nullptr;
-        const PM_QUERY_ELEMENT* pFrameDurationElement_ = nullptr;
+        // query elements referenced used for summary stats gathering
+        int totalTimeElementIdx_ = -1;
+        int frametimeElementIdx_ = -1;
     };
 
     RawFrameDataWriter::RawFrameDataWriter(std::wstring path, uint32_t processId, std::wstring processName, uint32_t activeDeviceId,
@@ -292,14 +292,14 @@ namespace p2c::pmon
                 if (pStatsTracker) {
                     // tracking trace duration
                     if (startTime < 0.) {
-                        startTime = pQueryElementContainer->ExtractFrameTimeFromBlob(pBlob);
+                        startTime = pQueryElementContainer->ExtractTotalTimeFromBlob(pBlob);
                         endTime = startTime;
                     }
                     else {
-                        endTime = pQueryElementContainer->ExtractFrameTimeFromBlob(pBlob);
+                        endTime = pQueryElementContainer->ExtractTotalTimeFromBlob(pBlob);
                     }
                     // tracking frame times
-                    pStatsTracker->Push(pQueryElementContainer->ExtractFrameDurationFromBlob(pBlob));
+                    pStatsTracker->Push(pQueryElementContainer->ExtractFrameTimeFromBlob(pBlob));
                 }
                 pQueryElementContainer->WriteFrame(pid, procName, file, pBlob);
             }
