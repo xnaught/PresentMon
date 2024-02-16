@@ -480,29 +480,13 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 		return std::make_unique<CopyGatherCommand_<&Pre::PresentFlags>>(pos);
 	case PM_METRIC_TIME:
 		return std::make_unique<StartDifferenceGatherCommand_<&Pre::PresentStartTime>>(pos);
-	case PM_METRIC_TIME_IN_PRESENT_API:
-		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::PresentStartTime, &Pre::ScreenTime, 0, 0, 0, 1>>(pos);
-	case PM_METRIC_TIME_BETWEEN_PRESENTS:
-		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::last_present_qpc, &Pre::PresentStartTime, 0, 0, 0, 0>>(pos);
-	case PM_METRIC_TIME_UNTIL_RENDER_COMPLETE:
-		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::PresentStartTime, &Pre::ReadyTime, 1, 0, 1, 0>>(pos);
-	case PM_METRIC_TIME_UNTIL_DISPLAYED:
-		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::PresentStartTime, &Pre::ScreenTime, 0, 1, 0, 0>>(pos);
-	case PM_METRIC_TIME_BETWEEN_DISPLAY_CHANGE:
-		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::last_displayed_qpc, &Pre::ScreenTime, 1, 1, 0, 0>>(pos);
-	case PM_METRIC_TIME_UNTIL_RENDER_START:
-		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::PresentStartTime, &Pre::GPUStartTime, 1, 0, 1, 0>>(pos);
-	case PM_METRIC_TIME_SINCE_INPUT:
-		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::InputTime, &Pre::PresentStartTime, 1, 0, 0, 0>>(pos);
-	case PM_METRIC_GPU_VIDEO_BUSY_TIME:
-		return std::make_unique<QpcDurationGatherCommand_<&Pre::GPUVideoDuration>>(pos);
 	case PM_METRIC_CPU_DURATION:
 		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::PresentStartTime, 0>>(pos);
 	case PM_METRIC_CPU_FRAME_PACING_STALL:
 		return std::make_unique<QpcDurationGatherCommand_<&Pre::TimeInPresent>>(pos);
 	case PM_METRIC_GPU_TIME:
 		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::GPUStartTime, &Pre::ReadyTime, 1, 0, 1, 0>>(pos);
-	case PM_METRIC_DISPLAY_DURATION:
+	case PM_METRIC_DISPLAYED_TIME:
 		return std::make_unique<DisplayDifferenceGatherCommand_<&Pre::ScreenTime, 1>>(pos);
 	case PM_METRIC_GPU_LATENCY:
 		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::GPUStartTime, 0>>(pos);

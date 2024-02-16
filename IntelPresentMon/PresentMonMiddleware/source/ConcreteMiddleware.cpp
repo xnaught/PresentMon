@@ -396,7 +396,7 @@ namespace pmon::mid
             case PM_METRIC_CPU_DURATION:
             case PM_METRIC_CPU_FRAME_PACING_STALL:
             case PM_METRIC_GPU_TIME:
-            case PM_METRIC_DISPLAY_DURATION:
+            case PM_METRIC_DISPLAYED_TIME:
                 pQuery->accumFpsData = true;
                 break;
             case PM_METRIC_GPU_POWER:
@@ -1631,7 +1631,7 @@ void ReportMetrics(
                 case PM_METRIC_CPU_DURATION:
                 case PM_METRIC_CPU_FRAME_PACING_STALL:
                 case PM_METRIC_GPU_TIME:
-                case PM_METRIC_DISPLAY_DURATION:
+                case PM_METRIC_DISPLAYED_TIME:
                 case PM_METRIC_APPLICATION:
                     CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
                     break;

@@ -77,7 +77,7 @@ namespace p2c::pmon
         std::unique_ptr<Annotation_> pAnnotation;
         if (available) {
             const auto typeId = metric.GetDataTypeInfo().GetFrameType();
-            const bool zeroForNA = metricId == PM_METRIC_DISPLAY_DURATION || PM_METRIC_DISPLAY_LATENCY;
+            const bool zeroForNA = metricId == PM_METRIC_DISPLAYED_TIME || PM_METRIC_DISPLAY_LATENCY;
             switch (typeId) {
             case PM_DATA_TYPE_BOOL: pAnnotation = std::make_unique<TypedAnnotation_<bool>>(); break;
             case PM_DATA_TYPE_INT32: pAnnotation = std::make_unique<TypedAnnotation_<int32_t>>(); break;
@@ -233,7 +233,7 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_GPU_TIME, .deviceId = 0 },
             Element{.metricId = PM_METRIC_GPU_BUSY, .deviceId = 0 },
             Element{.metricId = PM_METRIC_DISPLAY_LATENCY, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_DISPLAY_DURATION, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_DISPLAYED_TIME, .deviceId = 0 },
             Element{.metricId = PM_METRIC_INPUT_LATENCY, .deviceId = 0 },
 
             Element{.metricId = PM_METRIC_GPU_POWER, .deviceId = activeDeviceId },
