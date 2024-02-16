@@ -424,19 +424,19 @@ namespace pmon::mid
             case PM_METRIC_GPU_MEDIA_UTILIZATION:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_media_utilization));
                 break;
-            case PM_METRIC_VRAM_POWER:
+            case PM_METRIC_GPU_MEM_POWER:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::vram_power));
                 break;
-            case PM_METRIC_VRAM_VOLTAGE:
+            case PM_METRIC_GPU_MEM_VOLTAGE:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::vram_voltage));
                 break;
-            case PM_METRIC_VRAM_FREQUENCY:
+            case PM_METRIC_GPU_MEM_FREQUENCY:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::vram_frequency));
                 break;
-            case PM_METRIC_VRAM_EFFECTIVE_FREQUENCY:
+            case PM_METRIC_GPU_MEM_EFFECTIVE_FREQUENCY:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::vram_effective_frequency));
                 break;
-            case PM_METRIC_VRAM_TEMPERATURE:
+            case PM_METRIC_GPU_MEM_TEMPERATURE:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::vram_temperature));
                 break;
             case PM_METRIC_GPU_MEM_SIZE:
@@ -474,19 +474,19 @@ namespace pmon::mid
             case PM_METRIC_GPU_UTILIZATION_LIMITED:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_utilization_limited));
                 break;
-            case PM_METRIC_VRAM_POWER_LIMITED:
+            case PM_METRIC_GPU_MEM_POWER_LIMITED:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::vram_power_limited));
                 break;
-            case PM_METRIC_VRAM_TEMPERATURE_LIMITED:
+            case PM_METRIC_GPU_MEM_TEMPERATURE_LIMITED:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::vram_temperature_limited));
                 break;
-            case PM_METRIC_VRAM_CURRENT_LIMITED:
+            case PM_METRIC_GPU_MEM_CURRENT_LIMITED:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::vram_current_limited));
                 break;
-            case PM_METRIC_VRAM_VOLTAGE_LIMITED:
+            case PM_METRIC_GPU_MEM_VOLTAGE_LIMITED:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::vram_voltage_limited));
                 break;
-            case PM_METRIC_VRAM_UTILIZATION_LIMITED:
+            case PM_METRIC_GPU_MEM_UTILIZATION_LIMITED:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::vram_utilization_limited));
                 break;
             case PM_METRIC_GPU_FAN_SPEED:
@@ -1034,10 +1034,10 @@ void ReportMetrics(
         case PM_METRIC_GPU_LATENCY:
             CalculateMetric(output, swapChain.GPULatency, element.stat);
             break;
-        case PM_METRIC_GPU_WAIT_TIME:
+        case PM_METRIC_GPU_WAIT:
             CalculateMetric(output, swapChain.GPUWait, element.stat);
             break;
-        case PM_METRIC_GPU_BUSY_TIME:
+        case PM_METRIC_GPU_BUSY:
             CalculateMetric(output, swapChain.GPUBusy, element.stat);
             break;
         case PM_METRIC_DISPLAY_LATENCY:
@@ -1052,7 +1052,7 @@ void ReportMetrics(
             CalculateMetric(output, display_latency, element.stat);
         }
             break;
-        case PM_METRIC_DISPLAY_DURATION:
+        case PM_METRIC_DISPLAYED_TIME:
         {
             std::vector<double> display_duration;
             display_duration.reserve(swapChain.DisplayDuration.size());
@@ -1068,30 +1068,6 @@ void ReportMetrics(
             CalculateMetric(output, swapChain.InputLatency, element.stat);
             break;
 
-        case PM_METRIC_FRAME_DURATION:
-            if (element.stat == PM_STAT_AVG)
-            {
-                if (swapChain.CPUFrameQPC.size() > 0)
-                {
-                    output = (QpcDeltaToMs(swapChain.CPUFrameQPC.back(), qpcFrequency) +
-                              swapChain.CPUDuration.back() +
-                              swapChain.CPUFramePacingStall.back() -
-                              QpcDeltaToMs(swapChain.CPUFrameQPC[0], qpcFrequency)) / swapChain.CPUFrameQPC.size();
-                }
-                else
-                {
-                    output = 0.;
-                }
-            }
-            else
-            {
-                std::vector<double> frame_times_ms(swapChain.CPUDuration.size());
-                for (size_t i = 0; i < swapChain.CPUDuration.size(); ++i) {
-                    frame_times_ms[i] = swapChain.CPUDuration[i] + swapChain.CPUFramePacingStall[i];
-                }
-                CalculateMetric(output, frame_times_ms, element.stat, false); // Invert the notion of min/max to match PM_METRIC_CPU_FPS
-            }
-            break;
         case PM_METRIC_PRESENTED_FPS:
             if (element.stat == PM_STAT_AVG)
             {
@@ -1152,12 +1128,12 @@ void ReportMetrics(
         }
             break;
         case PM_METRIC_FRAME_TIME:
-            CalculateMetric(output, swapChain.CPUDuration, element.stat, true);
+            CalculateMetric(output, swapChain.CPUDuration, element.stat, false);
             break;
-        case PM_METRIC_CPU_FRAME_PACING_STALL:
+        case PM_METRIC_CPU_WAIT:
             CalculateMetric(output, swapChain.CPUFramePacingStall, element.stat, true);
             break;
-        case PM_METRIC_GPU_DURATION:
+        case PM_METRIC_GPU_TIME:
             CalculateMetric(output, swapChain.GPUDuration, element.stat, true);
             break;
         default:
@@ -1418,19 +1394,19 @@ void ReportMetrics(
             metricInfo[PM_METRIC_GPU_MEDIA_UTILIZATION].data[0].emplace_back(power_telemetry_info.gpu_media_utilization);
             break;
         case GpuTelemetryCapBits::vram_power:
-            metricInfo[PM_METRIC_VRAM_POWER].data[0].emplace_back(power_telemetry_info.vram_power_w);
+            metricInfo[PM_METRIC_GPU_MEM_POWER].data[0].emplace_back(power_telemetry_info.vram_power_w);
             break;
         case GpuTelemetryCapBits::vram_voltage:
-            metricInfo[PM_METRIC_VRAM_VOLTAGE].data[0].emplace_back(power_telemetry_info.vram_voltage_v);
+            metricInfo[PM_METRIC_GPU_MEM_VOLTAGE].data[0].emplace_back(power_telemetry_info.vram_voltage_v);
             break;
         case GpuTelemetryCapBits::vram_frequency:
-            metricInfo[PM_METRIC_VRAM_FREQUENCY].data[0].emplace_back(power_telemetry_info.vram_frequency_mhz);
+            metricInfo[PM_METRIC_GPU_MEM_FREQUENCY].data[0].emplace_back(power_telemetry_info.vram_frequency_mhz);
             break;
         case GpuTelemetryCapBits::vram_effective_frequency:
-            metricInfo[PM_METRIC_VRAM_EFFECTIVE_FREQUENCY].data[0].emplace_back(power_telemetry_info.vram_effective_frequency_gbps);
+            metricInfo[PM_METRIC_GPU_MEM_EFFECTIVE_FREQUENCY].data[0].emplace_back(power_telemetry_info.vram_effective_frequency_gbps);
             break;
         case GpuTelemetryCapBits::vram_temperature:
-            metricInfo[PM_METRIC_VRAM_TEMPERATURE].data[0].emplace_back(power_telemetry_info.vram_temperature_c);
+            metricInfo[PM_METRIC_GPU_MEM_TEMPERATURE].data[0].emplace_back(power_telemetry_info.vram_temperature_c);
             break;
         case GpuTelemetryCapBits::fan_speed_0:
             metricInfo[PM_METRIC_GPU_FAN_SPEED].data[0].emplace_back(power_telemetry_info.fan_speed_rpm[0]);
@@ -1478,19 +1454,19 @@ void ReportMetrics(
             metricInfo[PM_METRIC_GPU_UTILIZATION_LIMITED].data[0].emplace_back(power_telemetry_info.gpu_utilization_limited);
             break;
         case GpuTelemetryCapBits::vram_power_limited:
-            metricInfo[PM_METRIC_VRAM_POWER_LIMITED].data[0].emplace_back(power_telemetry_info.vram_power_limited);
+            metricInfo[PM_METRIC_GPU_MEM_POWER_LIMITED].data[0].emplace_back(power_telemetry_info.vram_power_limited);
             break;
         case GpuTelemetryCapBits::vram_temperature_limited:
-            metricInfo[PM_METRIC_VRAM_TEMPERATURE_LIMITED].data[0].emplace_back(power_telemetry_info.vram_temperature_limited);
+            metricInfo[PM_METRIC_GPU_MEM_TEMPERATURE_LIMITED].data[0].emplace_back(power_telemetry_info.vram_temperature_limited);
             break;
         case GpuTelemetryCapBits::vram_current_limited:
-            metricInfo[PM_METRIC_VRAM_CURRENT_LIMITED].data[0].emplace_back(power_telemetry_info.vram_current_limited);
+            metricInfo[PM_METRIC_GPU_MEM_CURRENT_LIMITED].data[0].emplace_back(power_telemetry_info.vram_current_limited);
             break;
         case GpuTelemetryCapBits::vram_voltage_limited:
-            metricInfo[PM_METRIC_VRAM_VOLTAGE_LIMITED].data[0].emplace_back(power_telemetry_info.vram_voltage_limited);
+            metricInfo[PM_METRIC_GPU_MEM_VOLTAGE_LIMITED].data[0].emplace_back(power_telemetry_info.vram_voltage_limited);
             break;
         case GpuTelemetryCapBits::vram_utilization_limited:
-            metricInfo[PM_METRIC_VRAM_UTILIZATION_LIMITED].data[0].emplace_back(power_telemetry_info.vram_utilization_limited);
+            metricInfo[PM_METRIC_GPU_MEM_UTILIZATION_LIMITED].data[0].emplace_back(power_telemetry_info.vram_utilization_limited);
             break;
         default:
             validGpuMetric = false;
