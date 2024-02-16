@@ -480,7 +480,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 		return std::make_unique<CopyGatherCommand_<&Pre::PresentFlags>>(pos);
 	case PM_METRIC_TIME:
 		return std::make_unique<StartDifferenceGatherCommand_<&Pre::PresentStartTime>>(pos);
-	case PM_METRIC_CPU_DURATION:
+	case PM_METRIC_FRAME_TIME:
 		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::PresentStartTime, 0>>(pos);
 	case PM_METRIC_CPU_WAIT:
 		return std::make_unique<QpcDurationGatherCommand_<&Pre::TimeInPresent>>(pos);

@@ -227,7 +227,7 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_ALLOWS_TEARING, .deviceId = 0 },
             Element{.metricId = PM_METRIC_PRESENT_MODE, .deviceId = 0 },
             Element{.metricId = PM_METRIC_CPU_FRAME_QPC, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_CPU_DURATION, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_FRAME_TIME, .deviceId = 0 },
             Element{.metricId = PM_METRIC_CPU_WAIT, .deviceId = 0 },
             Element{.metricId = PM_METRIC_GPU_LATENCY, .deviceId = 0 },
             Element{.metricId = PM_METRIC_GPU_TIME, .deviceId = 0 },
