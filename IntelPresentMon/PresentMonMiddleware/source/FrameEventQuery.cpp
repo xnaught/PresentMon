@@ -430,15 +430,15 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 		return std::make_unique<CopyGatherCommand_<&Gpu::gpu_render_compute_utilization>>(pos);
 	case PM_METRIC_GPU_MEDIA_UTILIZATION:
 		return std::make_unique<CopyGatherCommand_<&Gpu::gpu_media_utilization>>(pos);
-	case PM_METRIC_VRAM_POWER:
+	case PM_METRIC_GPU_MEM_POWER:
 		return std::make_unique<CopyGatherCommand_<&Gpu::vram_power_w>>(pos);
-	case PM_METRIC_VRAM_VOLTAGE:
+	case PM_METRIC_GPU_MEM_VOLTAGE:
 		return std::make_unique<CopyGatherCommand_<&Gpu::vram_voltage_v>>(pos);
-	case PM_METRIC_VRAM_FREQUENCY:
+	case PM_METRIC_GPU_MEM_FREQUENCY:
 		return std::make_unique<CopyGatherCommand_<&Gpu::vram_frequency_mhz>>(pos);
-	case PM_METRIC_VRAM_EFFECTIVE_FREQUENCY:
+	case PM_METRIC_GPU_MEM_EFFECTIVE_FREQUENCY:
 		return std::make_unique<CopyGatherCommand_<&Gpu::vram_effective_frequency_gbps>>(pos);
-	case PM_METRIC_VRAM_TEMPERATURE:
+	case PM_METRIC_GPU_MEM_TEMPERATURE:
 		return std::make_unique<CopyGatherCommand_<&Gpu::vram_temperature_c>>(pos);
 	case PM_METRIC_GPU_MEM_USED:
 		return std::make_unique<CopyGatherCommand_<&Gpu::gpu_mem_used_b>>(pos);
@@ -456,15 +456,15 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 		return std::make_unique<CopyGatherCommand_<&Gpu::gpu_voltage_limited>>(pos);
 	case PM_METRIC_GPU_UTILIZATION_LIMITED:
 		return std::make_unique<CopyGatherCommand_<&Gpu::gpu_utilization_limited>>(pos);
-	case PM_METRIC_VRAM_POWER_LIMITED:
+	case PM_METRIC_GPU_MEM_POWER_LIMITED:
 		return std::make_unique<CopyGatherCommand_<&Gpu::vram_power_limited>>(pos);
-	case PM_METRIC_VRAM_TEMPERATURE_LIMITED:
+	case PM_METRIC_GPU_MEM_TEMPERATURE_LIMITED:
 		return std::make_unique<CopyGatherCommand_<&Gpu::vram_temperature_limited>>(pos);
-	case PM_METRIC_VRAM_CURRENT_LIMITED:
+	case PM_METRIC_GPU_MEM_CURRENT_LIMITED:
 		return std::make_unique<CopyGatherCommand_<&Gpu::vram_current_limited>>(pos);
-	case PM_METRIC_VRAM_VOLTAGE_LIMITED:
+	case PM_METRIC_GPU_MEM_VOLTAGE_LIMITED:
 		return std::make_unique<CopyGatherCommand_<&Gpu::vram_voltage_limited>>(pos);
-	case PM_METRIC_VRAM_UTILIZATION_LIMITED:
+	case PM_METRIC_GPU_MEM_UTILIZATION_LIMITED:
 		return std::make_unique<CopyGatherCommand_<&Gpu::vram_utilization_limited>>(pos);
 
 	case PM_METRIC_CPU_UTILIZATION:

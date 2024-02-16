@@ -1709,11 +1709,11 @@ void ReportMetrics(
                 case PM_METRIC_GPU_UTILIZATION:
                 case PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION:
                 case PM_METRIC_GPU_MEDIA_UTILIZATION:
-                case PM_METRIC_VRAM_POWER:
-                case PM_METRIC_VRAM_VOLTAGE:
-                case PM_METRIC_VRAM_FREQUENCY:
-                case PM_METRIC_VRAM_EFFECTIVE_FREQUENCY:
-                case PM_METRIC_VRAM_TEMPERATURE:
+                case PM_METRIC_GPU_MEM_POWER:
+                case PM_METRIC_GPU_MEM_VOLTAGE:
+                case PM_METRIC_GPU_MEM_FREQUENCY:
+                case PM_METRIC_GPU_MEM_EFFECTIVE_FREQUENCY:
+                case PM_METRIC_GPU_MEM_TEMPERATURE:
                 case PM_METRIC_GPU_MEM_USED:
                 case PM_METRIC_GPU_MEM_WRITE_BANDWIDTH:
                 case PM_METRIC_GPU_MEM_READ_BANDWIDTH:
@@ -1722,11 +1722,11 @@ void ReportMetrics(
                 case PM_METRIC_GPU_CURRENT_LIMITED:
                 case PM_METRIC_GPU_VOLTAGE_LIMITED:
                 case PM_METRIC_GPU_UTILIZATION_LIMITED:
-                case PM_METRIC_VRAM_POWER_LIMITED:
-                case PM_METRIC_VRAM_TEMPERATURE_LIMITED:
-                case PM_METRIC_VRAM_CURRENT_LIMITED:
-                case PM_METRIC_VRAM_VOLTAGE_LIMITED:
-                case PM_METRIC_VRAM_UTILIZATION_LIMITED:
+                case PM_METRIC_GPU_MEM_POWER_LIMITED:
+                case PM_METRIC_GPU_MEM_TEMPERATURE_LIMITED:
+                case PM_METRIC_GPU_MEM_CURRENT_LIMITED:
+                case PM_METRIC_GPU_MEM_VOLTAGE_LIMITED:
+                case PM_METRIC_GPU_MEM_UTILIZATION_LIMITED:
                 case PM_METRIC_CPU_UTILIZATION:
                 case PM_METRIC_CPU_POWER:
                 case PM_METRIC_CPU_POWER_LIMIT:
