@@ -389,7 +389,7 @@ namespace pmon::mid
             case PM_METRIC_GPU_BUSY_TIME:
             case PM_METRIC_DISPLAY_LATENCY:
             case PM_METRIC_INPUT_LATENCY:
-            case PM_METRIC_FRAME_DURATION:
+            case PM_METRIC_FRAME_TIME:
             case PM_METRIC_PRESENTED_FPS:
             case PM_METRIC_DISPLAYED_FPS:
             case PM_METRIC_DROPPED_FRAMES:
@@ -1624,7 +1624,7 @@ void ReportMetrics(
                 case PM_METRIC_GPU_BUSY_TIME:
                 case PM_METRIC_DISPLAY_LATENCY:
                 case PM_METRIC_INPUT_LATENCY:
-                case PM_METRIC_FRAME_DURATION:
+                case PM_METRIC_FRAME_TIME:
                 case PM_METRIC_PRESENTED_FPS:
                 case PM_METRIC_DISPLAYED_FPS:
                 case PM_METRIC_DROPPED_FRAMES:
