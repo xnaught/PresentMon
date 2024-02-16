@@ -394,7 +394,7 @@ namespace pmon::mid
             case PM_METRIC_DISPLAYED_FPS:
             case PM_METRIC_DROPPED_FRAMES:
             case PM_METRIC_CPU_DURATION:
-            case PM_METRIC_CPU_FRAME_PACING_STALL:
+            case PM_METRIC_CPU_WAIT:
             case PM_METRIC_GPU_TIME:
             case PM_METRIC_DISPLAYED_TIME:
                 pQuery->accumFpsData = true;
@@ -1629,7 +1629,7 @@ void ReportMetrics(
                 case PM_METRIC_DISPLAYED_FPS:
                 case PM_METRIC_DROPPED_FRAMES:
                 case PM_METRIC_CPU_DURATION:
-                case PM_METRIC_CPU_FRAME_PACING_STALL:
+                case PM_METRIC_CPU_WAIT:
                 case PM_METRIC_GPU_TIME:
                 case PM_METRIC_DISPLAYED_TIME:
                 case PM_METRIC_APPLICATION:
