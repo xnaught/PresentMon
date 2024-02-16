@@ -388,7 +388,7 @@ namespace pmon::mid
             case PM_METRIC_GPU_WAIT:
             case PM_METRIC_GPU_BUSY:
             case PM_METRIC_DISPLAY_LATENCY:
-            case PM_METRIC_INPUT_LATENCY:
+            case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
             case PM_METRIC_PRESENTED_FPS:
             case PM_METRIC_DISPLAYED_FPS:
             case PM_METRIC_DROPPED_FRAMES:
@@ -1059,7 +1059,7 @@ void ReportMetrics(
             CalculateMetric(output, display_duration, element.stat, true); // Invert the notion of min/max to match PM_METRIC_DISPLAYED_FPS
         }
             break;
-        case PM_METRIC_INPUT_LATENCY:
+        case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
             CalculateMetric(output, swapChain.InputLatency, element.stat);
             break;
 
@@ -1622,7 +1622,7 @@ void ReportMetrics(
                 case PM_METRIC_GPU_WAIT:
                 case PM_METRIC_GPU_BUSY:
                 case PM_METRIC_DISPLAY_LATENCY:
-                case PM_METRIC_INPUT_LATENCY:
+                case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
                 case PM_METRIC_PRESENTED_FPS:
                 case PM_METRIC_DISPLAYED_FPS:
                 case PM_METRIC_DROPPED_FRAMES:

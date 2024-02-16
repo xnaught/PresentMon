@@ -129,6 +129,8 @@ namespace p2c::pmon
                     .arrayIndex = el.index.value_or(0),
                 });
                 // check if metric is one of the specially-required fields
+                // these fields are required because they are used for summary stats
+                // we need pointers to these specific ones to read for generating those stats
                 if (el.metricId == PM_METRIC_TIME) {
                     pTimeElement_ = &queryElements_.back();
                 }
@@ -234,7 +236,7 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_GPU_BUSY, .deviceId = 0 },
             Element{.metricId = PM_METRIC_DISPLAY_LATENCY, .deviceId = 0 },
             Element{.metricId = PM_METRIC_DISPLAYED_TIME, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_INPUT_LATENCY, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_CLICK_TO_PHOTON_LATENCY, .deviceId = 0 },
 
             Element{.metricId = PM_METRIC_GPU_POWER, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_VOLTAGE, .deviceId = activeDeviceId },
