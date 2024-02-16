@@ -500,7 +500,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::PresentStartTime, 0>>(pos);
 	case PM_METRIC_CPU_FRAME_PACING_STALL:
 		return std::make_unique<QpcDurationGatherCommand_<&Pre::TimeInPresent>>(pos);
-	case PM_METRIC_GPU_DURATION:
+	case PM_METRIC_GPU_TIME:
 		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::GPUStartTime, &Pre::ReadyTime, 1, 0, 1, 0>>(pos);
 	case PM_METRIC_DISPLAY_DURATION:
 		return std::make_unique<DisplayDifferenceGatherCommand_<&Pre::ScreenTime, 1>>(pos);
