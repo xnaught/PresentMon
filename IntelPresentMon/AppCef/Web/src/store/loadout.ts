@@ -57,7 +57,16 @@ export class LoadoutModule extends VuexModule {
 
     @Mutation
     addGraph_() {
-        this.widgets.push(makeDefaultGraph());
+        const metric = Introspection.metrics.find(m => m.numeric);
+        if (metric === undefined) throw new Error('No available numeric metrics');
+        const qualifiedMetric: QualifiedMetric = {
+            metricId: metric.id,
+            arrayIndex: 0,
+            statId: metric.availableStatIds[0],
+            deviceId: 0,
+            desiredUnitId: 0
+        };
+        this.widgets.push(makeDefaultGraph(qualifiedMetric));
     }
     @Action({rawError: true})
     async addGraph() {
@@ -85,7 +94,15 @@ export class LoadoutModule extends VuexModule {
 
     @Mutation
     addReadout_() {
-        this.widgets.push(makeDefaultReadout());
+        const metric = Introspection.metrics[0];
+        const qualifiedMetric: QualifiedMetric = {
+            metricId: metric.id,
+            arrayIndex: 0,
+            statId: metric.availableStatIds[0],
+            deviceId: 0,
+            desiredUnitId: 0
+        };
+        this.widgets.push(makeDefaultReadout(qualifiedMetric));
     }
     @Action({rawError: true})
     async addReadout() {
