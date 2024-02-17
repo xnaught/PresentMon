@@ -129,10 +129,15 @@ export default Vue.extend({
       widgetTypeToString(t: WidgetType): string {
         return WidgetType[t];
       },
+      findMetricById(metricId: number): Metric {
+        const metric = this.metrics.find(m => m.id === metricId);
+        if (metric === undefined) throw new Error(`Metric ID ${metricId} not found`);
+        return metric;
+      },
       getAvailableStatsForMetric(metricId: number): Stat[] {
-        const opts = this.stats.filter(s => this.metrics[metricId].availableStatIds.includes(s.id));
+        const opts = this.stats.filter(s => this.findMetricById(metricId).availableStatIds.includes(s.id));
         return opts;
-      }
+      },
     },
 
     computed: {
@@ -144,7 +149,7 @@ export default Vue.extend({
       },
       // qualifiedMetric: see the computed set/get below in spec binding
       metric(): Metric {
-        return this.metrics[this.qualifiedMetric.metricId];
+        return this.findMetricById(this.qualifiedMetric.metricId);
       },
       widgetTypeOptions(): WidgetType[] {
         const opts = [WidgetType.Readout];
@@ -159,7 +164,7 @@ export default Vue.extend({
         // numeric metrics work with graphs
         return this.isMaster ?
           this.metricOptions :
-          this.metricOptions.filter(o => this.metrics[o.metricId].numeric);
+          this.metricOptions.filter(o => this.findMetricById(o.metricId).numeric);
       },
       widgetSubtypeOptions(): string[] {
         return this.widget.widgetType === WidgetType.Graph ? ['Line', 'Histogram'] : [];
@@ -185,7 +190,9 @@ export default Vue.extend({
       // spec bindings
       stat: {
         get(): Stat {
-          return this.stats[this.widgetMetric.metric.statId];
+          const stat = this.stats.find(s => s.id === this.widgetMetric.metric.statId);
+          if (stat === undefined) throw new Error(`Stat ID ${this.widgetMetric.metric.statId} not found`);
+          return stat;
         },
         set(stat: Stat) {
           const qualifiedMetric = {...this.widgetMetric.metric, statId: stat.id};
@@ -213,10 +220,7 @@ export default Vue.extend({
             statId = newAvailableStats[0].id;
           }
           // find current metric and validate that it is available
-          const newMetric = this.metrics.find(m => m.id === opt.metricId);
-          if (newMetric === undefined) {
-            throw new Error('Metric in selected metric option not found in set of available metrics');
-          }
+          const newMetric = this.findMetricById(opt.metricId);
           if (newMetric.availableDeviceIds.length === 0) {
             throw new Error('Metric in selected metric option is not available for any device');
           }
