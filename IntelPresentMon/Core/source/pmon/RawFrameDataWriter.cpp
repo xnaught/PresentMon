@@ -11,6 +11,8 @@
 namespace p2c::pmon
 {
     using ::pmon::util::str::ToNarrow;
+    namespace rn = std::ranges;
+    namespace vi = rn::views;
 
     // TODO: output NA for metrics without availability
     struct Annotation_
@@ -96,8 +98,8 @@ namespace p2c::pmon
         // set the column name for the element
         // remove spaces from metric name by range filter
         pAnnotation->columnName = metric.Introspect().GetName() |
-            std::views::filter([](char c) { return c != ' '; }) |
-            std::ranges::to<std::basic_string>();
+            vi::filter([](char c) { return c != ' '; }) |
+            rn::to<std::basic_string>();
         return pAnnotation;
     }
 
@@ -275,6 +277,8 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_CPU_TEMPERATURE },
             Element{.metricId = PM_METRIC_CPU_FREQUENCY },
         };
+        // we want the order in the output csv to match the order of the metric ids
+        rn::sort(queryElements, {}, &Element::metricId);
         pQueryElementContainer = std::make_unique<QueryElementContainer_>(queryElements, session, introRoot);
         blobs = pQueryElementContainer->MakeBlobs(numberOfBlobs);
                 
