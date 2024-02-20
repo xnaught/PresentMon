@@ -14,6 +14,7 @@
 		X_(METRIC, TIME, "Time", "", "Time elapsed since the start of ETW event tracing") \
 		X_(METRIC, CPU_FRAME_QPC, "CPU Frame QPC", "", "The QueryPerformanceCounter timestamp when the CPU started working on the frame") \
 		X_(METRIC, FRAME_TIME, "Frame Time", "", "The total amount of time in between frames on the CPU") \
+		X_(METRIC, CPU_BUSY, "CPU Busy", "", "How long the CPU was generating the frame in milliseconds") \
 		X_(METRIC, CPU_WAIT, "CPU Wait", "", "How long the CPU spent waiting before it could start generating the frame in milliseconds") \
 \
 		X_(METRIC, DISPLAYED_FPS, "Displayed FPS", "", "Rate of frame change measurable at display") \
