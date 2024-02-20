@@ -14,7 +14,7 @@ namespace p2c::win
     class StandardWindow : public KernelWindow
     {
     public:
-        StandardWindow(int x, int y, gfx::DimensionsI clientDimensions, std::wstring name);
+        StandardWindow(int x, int y, gfx::DimensionsI clientDimensions, std::wstring name, bool bringToFront = true);
         ~StandardWindow() override;
         std::optional<LRESULT> CustomHandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) override;
         bool Standard() const override;

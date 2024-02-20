@@ -175,24 +175,29 @@ namespace p2c::kern
             // TODO: connect this more assuredly to the cef control window
             // tried CefBrowserHost::GetWindowHandle, but it causes crashes for some unknown reason
             // should make this at least less brittle with respect to window classname / title
-            Vec2I iPos{ CW_USEDEFAULT, CW_USEDEFAULT };
-            if (auto hWndControl = FindWindowA("BrowserWindowClass", "Intel PresentMon")) {
-                RECT controlRect{};
-                if (GetWindowRect(hWndControl, &controlRect)) {
-                    iPos = { controlRect.left + 25, controlRect.top + 25 };
+            bool bringToFrontOnCreation = false;
+            if (!pos_) {
+                bringToFrontOnCreation = true;
+                pos_ = Vec2I{ CW_USEDEFAULT, CW_USEDEFAULT };
+                if (auto hWndControl = FindWindowA("BrowserWindowClass", "Intel PresentMon")) {
+                    RECT controlRect{};
+                    if (GetWindowRect(hWndControl, &controlRect)) {
+                        pos_ = Vec2I{ controlRect.left + 25, controlRect.top + 25 };
+                    }
+                    else {
+                        p2clog.warn(L"failed to get rect of control window").hr().commit();
+                    }
                 }
                 else {
-                    p2clog.warn(L"failed to get rect of control window").hr().commit();
+                    p2clog.warn(L"failed to find control window").commit();
                 }
-            }
-            else {
-                p2clog.warn(L"failed to find control window").commit();
             }
             // make the metrics window
             pWindow = std::make_unique<win::StandardWindow>(
-                iPos.x, iPos.y,
+                pos_->x, pos_->y,
                 windowDimensions,
-                L"PresentMon Data Display"
+                L"PresentMon Data Display",
+                bringToFrontOnCreation
             );
         }
         else {
