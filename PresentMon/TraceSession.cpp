@@ -38,8 +38,8 @@ bool StartTraceSession()
     // If a session with this same name is already running, we either exit or
     // stop it and start a new session.  This is useful if a previous process
     // failed to properly shut down the session for some reason.
-    auto status = gSession.Start(gPMConsumer, gMRConsumer, args.mEtlFileName, args.mSessionName);
-
+    auto timestampType = args.mOutputDateTime ? TraceSession::TIMESTAMP_TYPE_SYSTEM_TIME : TraceSession::TIMESTAMP_TYPE_QPC;
+    auto status = gSession.Start(gPMConsumer, gMRConsumer, args.mEtlFileName, args.mSessionName, timestampType);
     if (status == ERROR_ALREADY_EXISTS) {
         if (args.mStopExistingSession) {
             PrintWarning(
@@ -61,7 +61,7 @@ bool StartTraceSession()
 
         status = TraceSession::StopNamedSession(args.mSessionName);
         if (status == ERROR_SUCCESS) {
-            status = gSession.Start(gPMConsumer, gMRConsumer, args.mEtlFileName, args.mSessionName);
+            status = gSession.Start(gPMConsumer, gMRConsumer, args.mEtlFileName, args.mSessionName, timestampType);
         }
     }
 
@@ -135,39 +135,41 @@ void DequeueAnalyzedInfo(
     }
 }
 
-double QpcDeltaToSeconds(uint64_t qpcDelta)
+double TimestampDeltaToSeconds(uint64_t timestampDelta)
 {
-    return (double) qpcDelta / gSession.mQpcFrequency.QuadPart;
+    return (double) timestampDelta / gSession.mTimestampFrequency.QuadPart;
 }
 
-double PositiveQpcDeltaToSeconds(uint64_t qpcFrom, uint64_t qpcTo)
+double PositiveTimestampDeltaToSeconds(uint64_t timestampFrom, uint64_t timestampTo)
 {
-    return qpcFrom == 0 || qpcTo <= qpcFrom ? 0.0 : QpcDeltaToSeconds(qpcTo - qpcFrom);
+    return timestampFrom == 0 || timestampTo <= timestampFrom ? 0.0 : TimestampDeltaToSeconds(timestampTo - timestampFrom);
 }
 
-double QpcDeltaToSeconds(uint64_t qpcFrom, uint64_t qpcTo)
+double TimestampDeltaToSeconds(uint64_t timestampFrom, uint64_t timestampTo)
 {
-    return qpcFrom == 0 || qpcTo == 0 || qpcFrom == qpcTo ? 0.0 :
-        qpcTo > qpcFrom ? QpcDeltaToSeconds(qpcTo - qpcFrom) :
-                         -QpcDeltaToSeconds(qpcFrom - qpcTo);
+    return timestampFrom == 0 || timestampTo == 0 || timestampFrom == timestampTo ? 0.0 :
+        timestampTo > timestampFrom ? TimestampDeltaToSeconds(timestampTo - timestampFrom) :
+                         -TimestampDeltaToSeconds(timestampFrom - timestampTo);
 }
 
-uint64_t SecondsDeltaToQpc(double secondsDelta)
+uint64_t SecondsDeltaToTimestamp(double secondsDelta)
 {
-    return (uint64_t) (secondsDelta * gSession.mQpcFrequency.QuadPart);
+    return (uint64_t) (secondsDelta * gSession.mTimestampFrequency.QuadPart);
 }
 
-double QpcToSeconds(uint64_t qpc)
+double TimestampToSeconds(uint64_t timestamp)
 {
-    return QpcDeltaToSeconds(qpc - gSession.mStartQpc.QuadPart);
+    return TimestampDeltaToSeconds(timestamp - gSession.mStartTimestamp.QuadPart);
 }
 
-void QpcToLocalSystemTime(uint64_t qpc, SYSTEMTIME* st, uint64_t* ns)
+void TimestampToLocalSystemTime(uint64_t timestamp, SYSTEMTIME* st, uint64_t* ns)
 {
-    auto tns = (qpc - gSession.mStartQpc.QuadPart) * 1000000000ull / gSession.mQpcFrequency.QuadPart;
-    auto t100ns = tns / 100;
-    auto ft = (*(uint64_t*) &gSession.mStartTime) + t100ns;
-
+    /* if not TIMESTAMP_TYPE_SYSTEM_TIME
+    auto tns = (timestamp - gSession.mStartTimestamp.QuadPart) * 1000000000ull / gSession.mTimestampFrequency.QuadPart;
+    auto ft = gSession.mStartFileTime + (tns / 100);
     FileTimeToSystemTime((FILETIME const*) &ft, st);
-    *ns = (ft - (ft / 10000000ull) * 10000000ull) * 100ull + (tns - t100ns * 100ull);
+    *ns = tns % 1000000000;
+    */
+    FileTimeToSystemTime((FILETIME const*) &timestamp, st);
+    *ns = (timestamp % 10000000) * 100;
 }

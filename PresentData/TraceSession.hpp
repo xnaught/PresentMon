@@ -5,20 +5,27 @@ struct PMTraceConsumer;
 struct MRTraceConsumer;
 
 struct TraceSession {
-    LARGE_INTEGER mStartQpc = {};
-    LARGE_INTEGER mQpcFrequency = {};
-    FILETIME mStartTime = {};
+    LARGE_INTEGER mStartTimestamp = {};
+    LARGE_INTEGER mTimestampFrequency = {};
+    uint64_t mStartFileTime = 0;
     PMTraceConsumer* mPMConsumer = nullptr;
     MRTraceConsumer* mMRConsumer = nullptr;
     TRACEHANDLE mSessionHandle = 0;                         // invalid session handles are 0
     TRACEHANDLE mTraceHandle = INVALID_PROCESSTRACE_HANDLE; // invalid trace handles are INVALID_PROCESSTRACE_HANDLE
     ULONG mContinueProcessingBuffers = TRUE;
 
+    enum TimestampType {
+        TIMESTAMP_TYPE_QPC = 1,
+        TIMESTAMP_TYPE_SYSTEM_TIME = 2,
+        TIMESTAMP_TYPE_CPU_CYCLE_COUNTER = 3,
+    };
+
     ULONG Start(
-        PMTraceConsumer* pmConsumer, // Required PMTraceConsumer instance
-        MRTraceConsumer* mrConsumer, // If nullptr, no WinMR tracing
-        wchar_t const* etlPath,         // If nullptr, live/realtime tracing session
-        wchar_t const* sessionName);    // Required session name
+        PMTraceConsumer* pmConsumer,  // Required PMTraceConsumer instance
+        MRTraceConsumer* mrConsumer,  // If nullptr, no WinMR tracing
+        wchar_t const* etlPath,       // If nullptr, live/realtime tracing session
+        wchar_t const* sessionName,   // Required session name
+        TimestampType timestampType); // Which timestamp type to use
 
     void Stop();
 

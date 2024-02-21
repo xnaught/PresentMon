@@ -155,9 +155,9 @@ void DequeueAnalyzedInfo(
     std::vector<std::shared_ptr<PresentEvent>>* presentEvents,
     std::vector<std::shared_ptr<PresentEvent>>* lostPresentEvents,
     std::vector<std::shared_ptr<LateStageReprojectionEvent>>* lsrs);
-double QpcDeltaToSeconds(uint64_t qpcDelta);
-double QpcDeltaToSeconds(uint64_t qpcFrom, uint64_t qpcTo);
-double PositiveQpcDeltaToSeconds(uint64_t qpcFrom, uint64_t qpcTo);
-uint64_t SecondsDeltaToQpc(double secondsDelta);
-double QpcToSeconds(uint64_t qpc);
-void QpcToLocalSystemTime(uint64_t qpc, SYSTEMTIME* st, uint64_t* ns);
+double TimestampDeltaToSeconds(uint64_t timestampDelta);
+double TimestampDeltaToSeconds(uint64_t timestampFrom, uint64_t timestampTo);
+double PositiveTimestampDeltaToSeconds(uint64_t timestampFrom, uint64_t timestampTo);
+uint64_t SecondsDeltaToTimestamp(double secondsDelta);
+double TimestampToSeconds(uint64_t timestamp);
+void TimestampToLocalSystemTime(uint64_t timestamp, SYSTEMTIME* st, uint64_t* ns);

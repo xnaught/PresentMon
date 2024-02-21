@@ -345,12 +345,12 @@ static void PruneHistory(
 {
     assert(processEvents.size() + presentEvents.size() + lsrEvents.size() > 0);
 
-    auto latestQpc = std::max(std::max(
+    auto latestTimestamp = std::max(std::max(
         processEvents.empty() ? 0ull : processEvents.back().QpcTime,
         presentEvents.empty() ? 0ull : presentEvents.back()->PresentStartTime),
         lsrEvents.empty()     ? 0ull : lsrEvents.back()->QpcTime);
 
-    auto minQpc = latestQpc - SecondsDeltaToQpc(2.0);
+    auto minTimestamp = latestTimestamp - SecondsDeltaToTimestamp(2.0);
 
     for (auto& pair : gProcesses) {
         auto processInfo = &pair.second;
@@ -361,7 +361,7 @@ static void PruneHistory(
             for (; count > 0; --count) {
                 auto index = swapChain->mNextPresentIndex - count;
                 auto const& presentEvent = swapChain->mPresentHistory[index % SwapChainData::PRESENT_HISTORY_MAX_COUNT];
-                if (presentEvent->PresentStartTime >= minQpc) {
+                if (presentEvent->PresentStartTime >= minTimestamp) {
                     break;
                 }
                 if (index == swapChain->mLastDisplayedPresentIndex) {

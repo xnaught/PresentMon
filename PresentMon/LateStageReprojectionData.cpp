@@ -14,7 +14,7 @@ enum {
 void LateStageReprojectionData::PruneDeque(std::deque<LateStageReprojectionEvent> &lsrHistory, uint32_t msTimeDiff, uint32_t maxHistLen) {
     while (!lsrHistory.empty() && (
         lsrHistory.size() > maxHistLen ||
-        1000.0 * QpcDeltaToSeconds(lsrHistory.back().QpcTime - lsrHistory.front().QpcTime) > msTimeDiff)) {
+        1000.0 * TimestampDeltaToSeconds(lsrHistory.back().QpcTime - lsrHistory.front().QpcTime) > msTimeDiff)) {
         lsrHistory.pop_front();
     }
 }
@@ -63,7 +63,7 @@ double LateStageReprojectionData::ComputeHistoryTime(const std::deque<LateStageR
 
     auto start = lsrHistory.front().QpcTime;
     auto end = lsrHistory.back().QpcTime;
-    return QpcDeltaToSeconds(end - start);
+    return TimestampDeltaToSeconds(end - start);
 }
 
 size_t LateStageReprojectionData::ComputeHistorySize() const
@@ -89,7 +89,7 @@ double LateStageReprojectionData::ComputeFps(const std::deque<LateStageReproject
     auto end = lsrHistory.back().QpcTime;
     auto count = lsrHistory.size() - 1;
 
-    return count / QpcDeltaToSeconds(end - start);
+    return count / TimestampDeltaToSeconds(end - start);
 }
 
 double LateStageReprojectionData::ComputeSourceFps() const
@@ -168,8 +168,8 @@ LateStageReprojectionRuntimeStats LateStageReprojectionData::ComputeRuntimeStats
     stats.mAppProcessId = mLSRHistory[count - 1].GetAppProcessId();
     stats.mLsrProcessId = mLSRHistory[count - 1].ProcessId;
 
-    stats.mAppSourceCpuRenderTimeInMs = 1000.0 * QpcDeltaToSeconds(totalAppSourceCpuRenderTime);
-    stats.mAppSourceReleaseToLsrAcquireInMs = 1000.0 * QpcDeltaToSeconds(totalAppSourceReleaseToLsrAcquireTime);
+    stats.mAppSourceCpuRenderTimeInMs = 1000.0 * TimestampDeltaToSeconds(totalAppSourceCpuRenderTime);
+    stats.mAppSourceReleaseToLsrAcquireInMs = 1000.0 * TimestampDeltaToSeconds(totalAppSourceReleaseToLsrAcquireTime);
 
     stats.mAppSourceReleaseToLsrAcquireInMs /= count;
     stats.mAppSourceCpuRenderTimeInMs /= count;
@@ -249,8 +249,8 @@ void UpdateLsrCsv(LateStageReprojectionData& lsr, ProcessInfo* proc, LateStageRe
 
     auto& curr = lsr.mLSRHistory[len - 1];
     auto& prev = lsr.mLSRHistory[len - 2];
-    const double deltaMilliseconds = 1000.0 * QpcDeltaToSeconds(curr.QpcTime - prev.QpcTime);
-    const double timeInSeconds = QpcToSeconds(p.QpcTime);
+    const double deltaMilliseconds = 1000.0 * TimestampDeltaToSeconds(curr.QpcTime - prev.QpcTime);
+    const double timeInSeconds = TimestampToSeconds(p.QpcTime);
 
     fprintf(fp, "%ws,%d,%d", proc->mModuleName.c_str(), curr.GetAppProcessId(), curr.ProcessId);
     if (args.mTrackDebug) {
@@ -262,18 +262,18 @@ void UpdateLsrCsv(LateStageReprojectionData& lsr, ProcessInfo* proc, LateStageRe
         double appPresentToLsrMilliseconds = 0.0;
         if (curr.IsValidAppFrame()) {
             const uint64_t currAppPresentTime = curr.GetAppPresentTime();
-            appPresentToLsrMilliseconds = 1000.0 * QpcDeltaToSeconds(curr.QpcTime - currAppPresentTime);
+            appPresentToLsrMilliseconds = 1000.0 * TimestampDeltaToSeconds(curr.QpcTime - currAppPresentTime);
 
             if (prev.IsValidAppFrame() && (curr.GetAppProcessId() == prev.GetAppProcessId())) {
                 const uint64_t prevAppPresentTime = prev.GetAppPresentTime();
-                appPresentDeltaMilliseconds = 1000.0 * QpcDeltaToSeconds(currAppPresentTime - prevAppPresentTime);
+                appPresentDeltaMilliseconds = 1000.0 * TimestampDeltaToSeconds(currAppPresentTime - prevAppPresentTime);
             }
         }
         fprintf(fp, ",%.6lf,%.6lf", appPresentDeltaMilliseconds, appPresentToLsrMilliseconds);
     }
     fprintf(fp, ",%.6lf,%d,%d", deltaMilliseconds, !curr.NewSourceLatched, curr.MissedVsyncCount);
     if (args.mTrackDebug) {
-        fprintf(fp, ",%.6lf,%.6lf", 1000 * QpcDeltaToSeconds(curr.Source.GetReleaseFromRenderingToAcquireForPresentationTime()), 1000.0 * QpcDeltaToSeconds(curr.GetAppCpuRenderFrameTime()));
+        fprintf(fp, ",%.6lf,%.6lf", 1000 * TimestampDeltaToSeconds(curr.Source.GetReleaseFromRenderingToAcquireForPresentationTime()), 1000.0 * TimestampDeltaToSeconds(curr.GetAppCpuRenderFrameTime()));
     }
     fprintf(fp, ",%.6lf", curr.AppPredictionLatencyMs);
     if (args.mTrackDebug) {
