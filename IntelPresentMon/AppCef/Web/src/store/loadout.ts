@@ -57,12 +57,10 @@ export class LoadoutModule extends VuexModule {
 
     @Mutation
     addGraph_() {
-        const metric = Introspection.metrics.find(m => m.numeric);
-        if (metric === undefined) throw new Error('No available numeric metrics');
         const qualifiedMetric: QualifiedMetric = {
-            metricId: metric.id,
+            metricId: 8,
             arrayIndex: 0,
-            statId: metric.availableStatIds[0],
+            statId: 1,
             deviceId: 0,
             desiredUnitId: 0
         };

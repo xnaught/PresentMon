@@ -92,7 +92,7 @@ export default Vue.extend({
       }
     },
     addWidget() {
-      Loadout.addReadout();
+      Loadout.addGraph();
     },
     removeWidget(widgetIdx: number) {
       Loadout.removeWidget(widgetIdx);
