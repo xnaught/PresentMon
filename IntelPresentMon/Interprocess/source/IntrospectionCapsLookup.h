@@ -55,6 +55,8 @@ namespace pmon::ipc::intro
 	template<> struct IntrospectionCapsLookup<PM_METRIC_CPU_TEMPERATURE> { static constexpr auto cpuCapBit = CpuTelemetryCapBits::cpu_temperature; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_CPU_FREQUENCY> { static constexpr auto cpuCapBit = CpuTelemetryCapBits::cpu_frequency; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_CPU_CORE_UTILITY> { using ManualDisable = std::true_type; };
+	// static CPU
+	template<> struct IntrospectionCapsLookup<PM_METRIC_CPU_POWER_LIMIT> { static constexpr auto cpuCapBit = CpuTelemetryCapBits::cpu_power_limit; };
 
 
 	// concepts to help determine device-metric mapping type
