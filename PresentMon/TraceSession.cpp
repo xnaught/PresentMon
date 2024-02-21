@@ -34,12 +34,17 @@ bool StartTraceSession()
         gMRConsumer = new MRTraceConsumer(args.mTrackDisplay);
     }
 
+    if (args.mOutputDateTime) {
+       gSession.mTimestampType = TraceSession::TIMESTAMP_TYPE_SYSTEM_TIME;
+    } else {
+       gSession.mTimestampType = TraceSession::TIMESTAMP_TYPE_QPC;
+    }
+
     // Start the session;
     // If a session with this same name is already running, we either exit or
     // stop it and start a new session.  This is useful if a previous process
     // failed to properly shut down the session for some reason.
-    auto timestampType = args.mOutputDateTime ? TraceSession::TIMESTAMP_TYPE_SYSTEM_TIME : TraceSession::TIMESTAMP_TYPE_QPC;
-    auto status = gSession.Start(gPMConsumer, gMRConsumer, args.mEtlFileName, args.mSessionName, timestampType);
+    auto status = gSession.Start(gPMConsumer, gMRConsumer, args.mEtlFileName, args.mSessionName);
     if (status == ERROR_ALREADY_EXISTS) {
         if (args.mStopExistingSession) {
             PrintWarning(
@@ -61,7 +66,7 @@ bool StartTraceSession()
 
         status = TraceSession::StopNamedSession(args.mSessionName);
         if (status == ERROR_SUCCESS) {
-            status = gSession.Start(gPMConsumer, gMRConsumer, args.mEtlFileName, args.mSessionName, timestampType);
+            status = gSession.Start(gPMConsumer, gMRConsumer, args.mEtlFileName, args.mSessionName);
         }
     }
 
@@ -164,12 +169,13 @@ double TimestampToSeconds(uint64_t timestamp)
 
 void TimestampToLocalSystemTime(uint64_t timestamp, SYSTEMTIME* st, uint64_t* ns)
 {
-    /* if not TIMESTAMP_TYPE_SYSTEM_TIME
-    auto tns = (timestamp - gSession.mStartTimestamp.QuadPart) * 1000000000ull / gSession.mTimestampFrequency.QuadPart;
-    auto ft = gSession.mStartFileTime + (tns / 100);
-    FileTimeToSystemTime((FILETIME const*) &ft, st);
-    *ns = tns % 1000000000;
-    */
-    FileTimeToSystemTime((FILETIME const*) &timestamp, st);
+    if (gSession.mTimestampType != TraceSession::TIMESTAMP_TYPE_SYSTEM_TIME) {
+        auto delta100ns = (timestamp - gSession.mStartTimestamp.QuadPart) * 10000000ull / gSession.mTimestampFrequency.QuadPart;
+        timestamp = gSession.mStartFileTime + delta100ns;
+    }
+
+    FILETIME lft{};
+    FileTimeToLocalFileTime((FILETIME*) &timestamp, &lft);
+    FileTimeToSystemTime(&lft, st);
     *ns = (timestamp % 10000000) * 100;
 }

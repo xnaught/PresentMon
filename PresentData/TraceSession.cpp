@@ -481,8 +481,7 @@ ULONG TraceSession::Start(
     PMTraceConsumer* pmConsumer,
     MRTraceConsumer* mrConsumer,
     wchar_t const* etlPath,
-    wchar_t const* sessionName,
-    TimestampType timestampType)
+    wchar_t const* sessionName)
 {
     assert(mSessionHandle == 0);
     assert(mTraceHandle == INVALID_PROCESSTRACE_HANDLE);
@@ -529,7 +528,7 @@ ULONG TraceSession::Start(
 
         TraceProperties sessionProps = {};
         sessionProps.Wnode.BufferSize = (ULONG) sizeof(TraceProperties);
-        sessionProps.Wnode.ClientContext = timestampType;         // Clock resolution to use when logging the timestamp for each event
+        sessionProps.Wnode.ClientContext = mTimestampType;        // Clock resolution to use when logging the timestamp for each event
         sessionProps.LogFileMode = EVENT_TRACE_REAL_TIME_MODE;    // We have a realtime consumer, not writing to a log file
         sessionProps.LogFileNameOffset = 0;                       // 0 means no output log file
         sessionProps.LoggerNameOffset = offsetof(TraceProperties, mSessionName);  // Location of session name; will be written by StartTrace()
@@ -584,7 +583,8 @@ ULONG TraceSession::Start(
     // time of the first event, which matches GPUVIEW usage, and realtime
     // captures are based off the timestamp here.
 
-    switch (traceProps.LogfileHeader.ReservedFlags) {
+    mTimestampType = (TimestampType) traceProps.LogfileHeader.ReservedFlags;
+    switch (mTimestampType) {
     case TIMESTAMP_TYPE_SYSTEM_TIME:
         mTimestampFrequency.QuadPart = 10000000ull;
         break;
