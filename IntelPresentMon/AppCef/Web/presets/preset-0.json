@@ -10,7 +10,7 @@
             {
                "key": 5,
                "metric": {
-                  "metricId": 55,
+                  "metricId": 3,
                   "arrayIndex": 0,
                   "deviceId": 0,
                   "statId": 7,
@@ -53,7 +53,7 @@
             {
                "key": 5,
                "metric": {
-                  "metricId": 1,
+                  "metricId": 12,
                   "arrayIndex": 0,
                   "deviceId": 0,
                   "statId": 1,
@@ -96,7 +96,7 @@
             {
                "key": 10,
                "metric": {
-                  "metricId": 1,
+                  "metricId": 12,
                   "arrayIndex": 0,
                   "deviceId": 0,
                   "statId": 2,
@@ -139,7 +139,7 @@
             {
                "key": 6,
                "metric": {
-                  "metricId": 2,
+                  "metricId": 8,
                   "arrayIndex": 0,
                   "deviceId": 0,
                   "statId": 1,
