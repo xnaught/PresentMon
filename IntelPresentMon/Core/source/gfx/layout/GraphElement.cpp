@@ -265,7 +265,7 @@ namespace p2c::gfx::lay
 					}
 					else {
 						const auto v = *vopt;
-						const auto digitsBeforeDecimal = int(log10(std::abs(v)));
+						const auto digitsBeforeDecimal = std::max(int(log10(std::abs(v))), 0);
 						const int maxFractionalDigits = 2;
 						auto text = std::format(L"{:.{}f}", v, std::max(maxFractionalDigits - digitsBeforeDecimal, 0));
 						readout.SetText(std::move(text));
