@@ -382,9 +382,9 @@ namespace pmon::mid
             case PM_METRIC_PRESENT_FLAGS:
             case PM_METRIC_SYNC_INTERVAL:
             case PM_METRIC_ALLOWS_TEARING:
-            //case PM_METRIC_FRAME_TIME:
             case PM_METRIC_CPU_FRAME_QPC:
             case PM_METRIC_GPU_LATENCY:
+            case PM_METRIC_GPU_TIME:
             case PM_METRIC_GPU_WAIT:
             case PM_METRIC_GPU_BUSY:
             case PM_METRIC_DISPLAY_LATENCY:
@@ -393,8 +393,8 @@ namespace pmon::mid
             case PM_METRIC_DISPLAYED_FPS:
             case PM_METRIC_DROPPED_FRAMES:
             case PM_METRIC_FRAME_TIME:
+            case PM_METRIC_CPU_BUSY:
             case PM_METRIC_CPU_WAIT:
-            case PM_METRIC_GPU_TIME:
             case PM_METRIC_DISPLAYED_TIME:
                 pQuery->accumFpsData = true;
                 break;
@@ -1024,7 +1024,6 @@ void ReportMetrics(
         case PM_METRIC_ALLOWS_TEARING:
             reinterpret_cast<bool&>(pBlob[element.dataOffset]) = swapChain.allows_tearing;
             break;
-        // no statistics on PM_METRIC_FRAME_TIME
         // no statistics on PM_METRIC_FRAME_QPC
         case PM_METRIC_GPU_LATENCY:
             CalculateMetric(output, swapChain.GPULatency, element.stat);
@@ -1064,54 +1063,25 @@ void ReportMetrics(
             break;
 
         case PM_METRIC_PRESENTED_FPS:
-            if (element.stat == PM_STAT_AVG)
-            {
-                if (swapChain.CPUFrameQPC.size() > 0)
-                {
-                    double avg = (QpcDeltaToMs(swapChain.CPUFrameQPC.back(), qpcFrequency) +
-                                  swapChain.CPUDuration.back() +
-                                  swapChain.CPUFramePacingStall.back() -
-                                  QpcDeltaToMs(swapChain.CPUFrameQPC[0], qpcFrequency)) / swapChain.CPUFrameQPC.size();
-                    output = avg == 0.0 ? 0.0 : 1000.0 / avg;
-                }
-                else
-                {
-                    output = 0.;
-                }
+        {
+            std::vector<double> cpu_fps(swapChain.CPUDuration.size());
+            for (size_t i = 0; i < swapChain.CPUDuration.size(); ++i) {
+                cpu_fps[i] = 1000.0 / (swapChain.CPUDuration[i] + swapChain.CPUFramePacingStall[i]);
             }
-            else
-            {
-                std::vector<double> cpu_fps(swapChain.CPUDuration.size());
-                for (size_t i = 0; i < swapChain.CPUDuration.size(); ++i) {
-                    cpu_fps[i] = 1000.0 / (swapChain.CPUDuration[i] + swapChain.CPUFramePacingStall[i]);
-                }
-                CalculateMetric(output, cpu_fps, element.stat, true);
-            }
+            CalculateMetric(output, cpu_fps, element.stat, true);
+        }
             break;
         case PM_METRIC_DISPLAYED_FPS:
-            if (element.stat == PM_STAT_AVG)
-            {
-                if (swapChain.display_count > 1)
-                {
-                    double avg = QpcDeltaToMs(swapChain.display_n_screen_time - swapChain.display_0_screen_time, qpcFrequency) / (swapChain.display_count - 1);
-                    output = avg == 0.0 ? 0.0 : 1000.0 / avg;
-                }
-                else
-                {
-                    output = 0.;
+        {
+            std::vector<double> displayed_fps;
+            displayed_fps.reserve(swapChain.DisplayDuration.size());
+            for (size_t i = 0; i < swapChain.DisplayDuration.size(); ++i) {
+                if (swapChain.DisplayDuration[i] != 0.0) {
+                    displayed_fps.push_back(1000.0 / swapChain.DisplayDuration[i]);
                 }
             }
-            else
-            {
-                std::vector<double> displayed_fps;
-                displayed_fps.reserve(swapChain.DisplayDuration.size());
-                for (size_t i = 0; i < swapChain.DisplayDuration.size(); ++i) {
-                    if (swapChain.DisplayDuration[i] != 0.0) {
-                        displayed_fps.push_back(1000.0 / swapChain.DisplayDuration[i]);
-                    }
-                }
-                CalculateMetric(output, displayed_fps, element.stat, true);
-            }
+            CalculateMetric(output, displayed_fps, element.stat, true);
+        }
             break;
         case PM_METRIC_DROPPED_FRAMES:
         {
@@ -1123,6 +1093,15 @@ void ReportMetrics(
         }
             break;
         case PM_METRIC_FRAME_TIME:
+        {
+            std::vector<double> frame_times(swapChain.CPUDuration.size());
+            for (size_t i = 0; i < swapChain.CPUDuration.size(); ++i) {
+                frame_times[i] = swapChain.CPUDuration[i] + swapChain.CPUFramePacingStall[i];
+            }
+            CalculateMetric(output, frame_times, element.stat, true);
+        }
+            break;
+        case PM_METRIC_CPU_BUSY:
             CalculateMetric(output, swapChain.CPUDuration, element.stat, false);
             break;
         case PM_METRIC_CPU_WAIT:
@@ -1611,7 +1590,6 @@ void ReportMetrics(
                 }
                     break;
 
-                //case PM_METRIC_FRAME_TIME:
                 case PM_METRIC_CPU_FRAME_QPC:
                 case PM_METRIC_PRESENT_MODE:
                 case PM_METRIC_PRESENT_RUNTIME:
@@ -1627,6 +1605,7 @@ void ReportMetrics(
                 case PM_METRIC_DISPLAYED_FPS:
                 case PM_METRIC_DROPPED_FRAMES:
                 case PM_METRIC_FRAME_TIME:
+                case PM_METRIC_CPU_BUSY:
                 case PM_METRIC_CPU_WAIT:
                 case PM_METRIC_GPU_TIME:
                 case PM_METRIC_DISPLAYED_TIME:

@@ -330,6 +330,59 @@ namespace
 		uint32_t outputOffset_;
 		uint16_t outputPaddingSize_;
 	};
+	class CpuFrameQpcFrameTimeCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		CpuFrameQpcFrameTimeCommand_(size_t nextAvailableByteOffset) : outputOffset_{ (uint32_t)nextAvailableByteOffset } {}
+		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		{
+			const auto qpcDuration = (ctx.pSourceFrameData->present_event.PresentStartTime - ctx.cpuFrameQpc) + 
+				ctx.pSourceFrameData->present_event.TimeInPresent;
+			const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
+			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + alignof(uint64_t);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+	};
+	class GpuWaitGatherCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		GpuWaitGatherCommand_(size_t nextAvailableByteOffset) : outputOffset_{ (uint32_t)nextAvailableByteOffset } {}
+		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		{
+			const auto qpcDuration = (ctx.pSourceFrameData->present_event.ReadyTime - ctx.pSourceFrameData->present_event.GPUStartTime) -
+				ctx.pSourceFrameData->present_event.GPUDuration;
+			const auto val = std::max(0., ctx.performanceCounterPeriodMs * double(qpcDuration));
+			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + alignof(uint64_t);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+	};
+
 }
 
 PM_FRAME_QUERY::PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
@@ -481,11 +534,15 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_TIME:
 		return std::make_unique<StartDifferenceGatherCommand_<&Pre::PresentStartTime>>(pos);
 	case PM_METRIC_FRAME_TIME:
+		return std::make_unique<CpuFrameQpcFrameTimeCommand_>(pos);
+	case PM_METRIC_CPU_BUSY:
 		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::PresentStartTime, 0>>(pos);
 	case PM_METRIC_CPU_WAIT:
 		return std::make_unique<QpcDurationGatherCommand_<&Pre::TimeInPresent>>(pos);
 	case PM_METRIC_GPU_TIME:
 		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::GPUStartTime, &Pre::ReadyTime, 1, 0, 1, 0>>(pos);
+	case PM_METRIC_GPU_WAIT:
+		return std::make_unique<GpuWaitGatherCommand_>(pos);
 	case PM_METRIC_DISPLAYED_TIME:
 		return std::make_unique<DisplayDifferenceGatherCommand_<&Pre::ScreenTime, 1>>(pos);
 	case PM_METRIC_GPU_LATENCY:
