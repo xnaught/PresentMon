@@ -16,7 +16,7 @@ export interface QualifiedMetric {
 export function makeDefaultQualifiedMetric(): QualifiedMetric {
     // TODO: hardcoded, make this dictated by backend OR at least derived from introspection options
     return {
-        metricId: 0,
+        metricId: 8,
         arrayIndex: 0,
         statId: 1,
         deviceId: 0,
