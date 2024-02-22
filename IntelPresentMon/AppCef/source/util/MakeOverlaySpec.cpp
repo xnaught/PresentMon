@@ -183,7 +183,7 @@ namespace p2c::client::util
             sheets.back()->InsertRaw<at::flexGrow>(1.);
 
             sheets.push_back(Stylesheet::Make({ {"$graph"}, {"$footer-center-left"} }));
-            sheets.back()->InsertRaw<at::width>(24.);
+            sheets.back()->InsertRaw<at::width>(48.);
 
             sheets.push_back(Stylesheet::Make({ {"$graph"}, {"$footer-center-right"} }));
             sheets.back()->InsertRaw<at::textJustification>(at::make::Enum(gfx::prim::Justification::Right));
