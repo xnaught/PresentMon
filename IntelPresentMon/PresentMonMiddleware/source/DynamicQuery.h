@@ -6,17 +6,6 @@
 #include "../../ControlLib/CpuTelemetryInfo.h"
 #include "../../ControlLib/PresentMonPowerTelemetry.h"
 
-struct CompiledStats
-{
-	bool calcAvg = false;
-	bool calcPercentile99 = false;
-	bool calcPercentile95 = false;
-	bool calcPercentile90 = false;
-	bool calcMax = false;
-	bool calcMin = false;
-	bool calcRaw = false;
-};
-
 struct PM_DYNAMIC_QUERY
 {
 	std::vector<PM_QUERY_ELEMENT> elements;
@@ -29,7 +18,6 @@ struct PM_DYNAMIC_QUERY
 	std::bitset<static_cast<size_t>(GpuTelemetryCapBits::gpu_telemetry_count)> accumGpuBits;
 	std::bitset<static_cast<size_t>(CpuTelemetryCapBits::cpu_telemetry_count)> accumCpuBits;
 	// Data used to calculate the requested metrics
-	std::map<PM_METRIC, CompiledStats> compiledMetrics;
 	double windowSizeMs = 0;
 	double metricOffsetMs = 0.;
 	PM_DYNAMIC_QUERY* dynamicQueryHandle = nullptr;

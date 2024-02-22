@@ -401,9 +401,6 @@ namespace pmon::mid
             case PM_METRIC_GPU_POWER:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_power));
                 break;
-            case PM_METRIC_GPU_SUSTAINED_POWER_LIMIT:
-                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_sustained_power_limit));
-                break;
             case PM_METRIC_GPU_VOLTAGE:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_voltage));
                 break;
@@ -437,9 +434,6 @@ namespace pmon::mid
             case PM_METRIC_GPU_MEM_TEMPERATURE:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::vram_temperature));
                 break;
-            case PM_METRIC_GPU_MEM_SIZE:
-                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_mem_size));
-                break;
             case PM_METRIC_GPU_MEM_USED:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_mem_used));
                 break;
@@ -447,9 +441,6 @@ namespace pmon::mid
                 // Gpu mem utilization is derived from mem size and mem used.
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_mem_used));
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_mem_size));
-                break;
-            case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:
-                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_mem_max_bandwidth));
                 break;
             case PM_METRIC_GPU_MEM_WRITE_BANDWIDTH:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_mem_write_bandwidth));
@@ -529,35 +520,6 @@ namespace pmon::mid
                 break;
             }
 
-            auto result = pQuery->compiledMetrics.emplace(qe.metric, CompiledStats());
-            auto stats = &result.first->second;
-            switch (qe.stat)
-            {
-            case PM_STAT_AVG:
-                stats->calcAvg = true;
-                break;
-            case PM_STAT_PERCENTILE_99:
-                stats->calcPercentile99 = true;
-                break;
-            case PM_STAT_PERCENTILE_95:
-                stats->calcPercentile95 = true;
-                break;
-            case PM_STAT_PERCENTILE_90:
-                stats->calcPercentile90 = true;
-                break;
-            case PM_STAT_MAX:
-                stats->calcMax = true;
-                break;
-            case PM_STAT_MIN:
-                stats->calcMin = true;
-                break;
-            case PM_STAT_MID_POINT:
-                stats->calcRaw = true;
-                break;
-            default:
-                // Invalid stat enum
-                throw std::runtime_error{ "Invalid stat enum" };
-            }
             qe.dataOffset = offset;
             qe.dataSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetPolledType());
             offset += qe.dataSize;
@@ -905,8 +867,8 @@ void ReportMetrics(
             if (index.has_value())
             {
                 auto& output = reinterpret_cast<double&>(pBlob[0]);
-                if (cachedGpuInfo[index.has_value()].gpuSustainedPowerLimit.has_value()) {
-                    output = cachedGpuInfo[index.has_value()].gpuSustainedPowerLimit.value();
+                if (cachedGpuInfo[index.value()].gpuSustainedPowerLimit.has_value()) {
+                    output = cachedGpuInfo[index.value()].gpuSustainedPowerLimit.value();
                 }
                 else
                 {
@@ -1346,9 +1308,6 @@ void ReportMetrics(
         case GpuTelemetryCapBits::gpu_power:
             metricInfo[PM_METRIC_GPU_POWER].data[0].emplace_back(power_telemetry_info.gpu_power_w);
             break;
-        case GpuTelemetryCapBits::gpu_sustained_power_limit:
-            metricInfo[PM_METRIC_GPU_SUSTAINED_POWER_LIMIT].data[0].emplace_back(power_telemetry_info.gpu_sustained_power_limit_w);
-            break;
         case GpuTelemetryCapBits::gpu_voltage:
             metricInfo[PM_METRIC_GPU_VOLTAGE].data[0].emplace_back(power_telemetry_info.gpu_voltage_v);
             break;
@@ -1397,14 +1356,8 @@ void ReportMetrics(
         case GpuTelemetryCapBits::fan_speed_4:
             metricInfo[PM_METRIC_GPU_FAN_SPEED].data[4].emplace_back(power_telemetry_info.fan_speed_rpm[4]);
             break;
-        case GpuTelemetryCapBits::gpu_mem_size:
-            metricInfo[PM_METRIC_GPU_MEM_SIZE].data[0].emplace_back(static_cast<double>(power_telemetry_info.gpu_mem_total_size_b));
-            break;
         case GpuTelemetryCapBits::gpu_mem_used:
             metricInfo[PM_METRIC_GPU_MEM_USED].data[0].emplace_back(static_cast<double>(power_telemetry_info.gpu_mem_used_b));
-            break;
-        case GpuTelemetryCapBits::gpu_mem_max_bandwidth:
-            metricInfo[PM_METRIC_GPU_MEM_MAX_BANDWIDTH].data[0].emplace_back(static_cast<double>(power_telemetry_info.gpu_mem_max_bandwidth_bps));
             break;
         case GpuTelemetryCapBits::gpu_mem_write_bandwidth:
             metricInfo[PM_METRIC_GPU_MEM_WRITE_BANDWIDTH].data[0].emplace_back(power_telemetry_info.gpu_mem_write_bandwidth_bps);
@@ -1654,6 +1607,15 @@ void ReportMetrics(
                     output = CalcGpuMemUtilization(qe.stat);
                 }
                     break;
+                case PM_METRIC_GPU_SUSTAINED_POWER_LIMIT:
+                {
+                    auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
+                    output = 0.;
+                    if (cachedGpuInfo[currentGpuInfoIndex].gpuSustainedPowerLimit.has_value()) {
+                        output = static_cast<double>(cachedGpuInfo[currentGpuInfoIndex].gpuSustainedPowerLimit.value());
+                    }
+                }
+                    break;
                 default:
                     if (qe.dataSize == sizeof(double)) {
                         CalculateGpuCpuMetric(metricInfo, qe, pBlob);
@@ -1679,7 +1641,6 @@ void ReportMetrics(
                 {
                 case PM_METRIC_GPU_POWER:
                 case PM_METRIC_GPU_FAN_SPEED:
-                case PM_METRIC_GPU_SUSTAINED_POWER_LIMIT:
                 case PM_METRIC_GPU_VOLTAGE:
                 case PM_METRIC_GPU_FREQUENCY:
                 case PM_METRIC_GPU_TEMPERATURE:
@@ -1752,6 +1713,15 @@ void ReportMetrics(
                 {
                     auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
                     output = CalcGpuMemUtilization(qe.stat);
+                }
+                break;
+                case PM_METRIC_GPU_SUSTAINED_POWER_LIMIT:
+                {
+                    auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
+                    output = 0.;
+                    if (cachedGpuInfo[currentGpuInfoIndex].gpuSustainedPowerLimit.has_value()) {
+                        output = static_cast<double>(cachedGpuInfo[currentGpuInfoIndex].gpuSustainedPowerLimit.value());
+                    }
                 }
                 break;
                 default:
