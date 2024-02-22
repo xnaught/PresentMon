@@ -177,7 +177,7 @@ namespace p2c::gfx::lay
 		// value range is x-axis for histogram, otherwise (line plot) y-axis
 		if (dynamic_cast<HistogramPlotElement*>(pPlot.get()))
 		{
-			SetBottomAxisLabels_(float(min), float(max));
+			SetBottomAxisLabels_(float(min), float(max), packs.front()->units);
 		}
 		else // line plot
 		{
@@ -229,12 +229,17 @@ namespace p2c::gfx::lay
 		}
 	}
 
-	void GraphElement::SetBottomAxisLabels_(float left, float right)
+	void GraphElement::SetBottomAxisLabels_(float left, float right, std::optional<std::wstring> units)
 	{
-		if (pBottomLeft && pBottomRight)
-		{
-			pBottomLeft->SetText(std::format(L"{:.0f}", left));
-			pBottomRight->SetText(std::format(L"{:.0f}", right));
+		if (pBottomLeft && pBottomRight) {
+			if (!units) {
+				pBottomLeft->SetText(std::format(L"{:.0f}", left));
+				pBottomRight->SetText(std::format(L"{:.0f}", right));
+			}
+			else {
+				pBottomLeft->SetText(std::format(L"{:.0f}{}", left, *units));
+				pBottomRight->SetText(std::format(L"{:.0f}{}", right, *units));
+			}
 		}
 	}
 
