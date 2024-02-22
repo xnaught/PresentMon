@@ -225,6 +225,8 @@ namespace p2c::gfx
             const UINT flags = tearingActive ? DXGI_PRESENT_ALLOW_TEARING : 0;
             p2chrlog << pSwapChain->Present(interval, flags);
         }
+
+        fastRenderer->ResizeGeometryBuffersIfNecessary(*pDevice);
     }
 
     const DimensionsI& Graphics::GetDimensions() const
