@@ -127,7 +127,7 @@
         </v-col>
       </v-row>
 
-      <v-expand-transition><div v-show="typeName === 'Histogram'">
+      <div v-show="typeName === 'Histogram'">
 
         <v-row class="mt-8">       
           <v-col cols="3">
@@ -196,8 +196,24 @@
           <v-switch v-model="autoCount" hide-details></v-switch>
         </v-col>
       </v-row>
+
+      <v-row v-if="typeName !== 'Line'" class="mt-3">       
+        <v-col cols="3">
+          Total Count
+          <p class="text--secondary text-sm-caption mb-0">Total expected data points being counted into bins</p>
+        </v-col>
+        <v-col cols="9">
+          <p class="text--secondary text-sm-caption">
+          The total count of data points displayed is controlled by <span style="color: orange;">Time Scale</span>
+          (<router-link :to="{name: 'overlay-config'}">Settings > Overlay</router-link>) divided by the <span style="color: orange;">Sampling Period</span>
+          (<router-link :to="{name: 'metric-processing'}">Settings > Data Processing</router-link>). <br> Currently it is
+          <span style="color: green;">{{ timeRange }}s</span> / <span style="color: green;">{{ samplePeriodMs }}ms</span> =
+          <span style="color: violet;">{{ totalCount }}</span> data points.
+          </p>
+        </v-col>
+      </v-row>
         
-      </div></v-expand-transition>
+      </div>
 
   </v-card>
 
@@ -298,6 +314,7 @@ import { Graph } from '@/core/graph'
 import { Widget, AsGraph, WidgetType } from '@/core/widget'
 import { makeDefaultWidgetMetric } from '@/core/widget-metric'
 import { Loadout } from '@/store/loadout'
+import { Preferences } from '@/store/preferences'
 
 export default Vue.extend({
   name: 'WidgetConfig',
@@ -323,14 +340,17 @@ export default Vue.extend({
     graph(): Graph {
       return AsGraph(this.widget);
     },
+    samplePeriodMs(): number {
+      return Preferences.preferences.samplingPeriodMs;
+    },
+    timeRange(): number {
+      return Preferences.preferences.timeRange;
+    },
+    totalCount(): number {
+      return 1000 * this.timeRange / this.samplePeriodMs;
+    },
 
     // v-model enablers
-    // metricId: { TODO: consider deleting this (necessary? replacement?)
-    //   get(): number { return this.widget.metrics[0].metricId; },
-    //   set(metricId: number) {
-    //     Loadout.setWidgetMetrics({index: this.index, metrics: [makeDefaultWidgetMetric(metricId)]});
-    //   },
-    // },
     height: {
       get(): number { return this.graph.height; },
       set(height: number) {
