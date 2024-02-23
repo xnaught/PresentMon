@@ -12,94 +12,123 @@
 namespace p2c::pmon
 {
     using ::pmon::util::str::ToNarrow;
+    namespace rn = std::ranges;
+    namespace vi = rn::views;
 
-    // TODO: output NA for metrics without availability
-    struct Annotation_
+    namespace
     {
-        virtual ~Annotation_() = default;
-        virtual void Write(std::ostream& out, const uint8_t* pBytes) const = 0;
-        std::string columnName;
-        static std::unique_ptr<Annotation_> MakeTyped(PM_METRIC metricId, uint32_t deviceId,
-            const pmapi::intro::MetricView& metric);
-    };
-    template<typename T>
-    struct TypedAnnotation_ : public Annotation_
-    {
-    public:
-        TypedAnnotation_(bool zeroForNA = false) : zeroForNA_{ zeroForNA } {}
-        void Write(std::ostream& out, const uint8_t* pBytes) const override
+        // type to activate special templatate specialization for time
+        struct TimeAnnotationType_{};
+
+        struct Annotation_
         {
-            if constexpr (std::same_as<T, const char*>) {
-                out << reinterpret_cast<T>(pBytes);
-            }
-            else if constexpr (std::floating_point<T>) {
-                const auto val = *reinterpret_cast<const T*>(pBytes);
-                if (std::isnan(val)) {
-                    out << (zeroForNA_ ? "0" : "NA");
+            virtual ~Annotation_() = default;
+            virtual void Write(std::ostream& out, const uint8_t* pBytes) const = 0;
+            std::string columnName;
+            static std::unique_ptr<Annotation_> MakeTyped(PM_METRIC metricId, uint32_t deviceId,
+                const pmapi::intro::MetricView& metric);
+        };
+        template<typename T>
+        struct TypedAnnotation_ : public Annotation_
+        {
+        public:
+            TypedAnnotation_(bool zeroForNA = false) : zeroForNA_{ zeroForNA } {}
+            void Write(std::ostream& out, const uint8_t* pBytes) const override
+            {
+                if constexpr (std::same_as<T, const char*>) {
+                    out << reinterpret_cast<T>(pBytes);
+                }
+                else if constexpr (std::floating_point<T>) {
+                    const auto val = *reinterpret_cast<const T*>(pBytes);
+                    if (std::isnan(val)) {
+                        out << (zeroForNA_ ? "0" : "NA");
+                    }
+                    else {
+                        out << val;
+                    }
                 }
                 else {
-                    out << val;
+                    out << *reinterpret_cast<const T*>(pBytes);
+                }
+            }
+        private:
+            bool zeroForNA_;
+        };
+        template<>
+        struct TypedAnnotation_<void> : public Annotation_
+        {
+            void Write(std::ostream& out, const uint8_t* pBytes) const override
+            {
+                out << "NA";
+            }
+        };
+        template<>
+        struct TypedAnnotation_<PM_ENUM> : public Annotation_
+        {
+            TypedAnnotation_(PM_ENUM enumId) : pKeyMap{ EnumMap::GetMapPtr(enumId) } {}
+            void Write(std::ostream& out, const uint8_t* pBytes) const override
+            {
+                out << ToNarrow(pKeyMap->at(*reinterpret_cast<const int*>(pBytes)));
+            }
+            const EnumMap::KeyMap* pKeyMap = nullptr;
+        };
+        template<>
+        struct TypedAnnotation_<TimeAnnotationType_> : public Annotation_
+        {
+            void Write(std::ostream& out, const uint8_t* pBytes) const override
+            {
+                if (startTime) {
+                    out << (*reinterpret_cast<const double*>(pBytes) - *startTime) * 0.001;
+                }
+                else {
+                    startTime = *reinterpret_cast<const double*>(pBytes);
+                    out << 0.;
+                }
+            }
+            mutable std::optional<double> startTime;
+        };
+        std::unique_ptr<Annotation_> Annotation_::MakeTyped(PM_METRIC metricId, uint32_t deviceId,
+            const pmapi::intro::MetricView& metric)
+        {
+            // set availability (defaults to false, if we find matching device use its availability)
+            bool available = false;
+            for (auto di : metric.GetDeviceMetricInfo()) {
+                if (di.GetDevice().GetId() != deviceId) continue;
+                available = di.IsAvailable();
+            }
+            std::unique_ptr<Annotation_> pAnnotation;
+            if (available) {
+                const auto typeId = metric.GetDataTypeInfo().GetFrameType();
+                // DISPLAYED_TIME and DISPLAY_LATENCY should just show zeros when NaN is encountered
+                const bool zeroForNA = metricId == PM_METRIC_DISPLAYED_TIME || PM_METRIC_DISPLAY_LATENCY;
+                // special case for TIME, it needs to be relative to TIME of first frame and scaled ms => s
+                if (metricId == PM_METRIC_TIME) {
+                    pAnnotation = std::make_unique<TypedAnnotation_<TimeAnnotationType_>>();
+                }
+                else {
+                    switch (typeId) {
+                    case PM_DATA_TYPE_BOOL: pAnnotation = std::make_unique<TypedAnnotation_<bool>>(); break;
+                    case PM_DATA_TYPE_INT32: pAnnotation = std::make_unique<TypedAnnotation_<int32_t>>(); break;
+                    case PM_DATA_TYPE_UINT32: pAnnotation = std::make_unique<TypedAnnotation_<uint32_t>>(); break;
+                    case PM_DATA_TYPE_UINT64: pAnnotation = std::make_unique<TypedAnnotation_<uint64_t>>(); break;
+                    case PM_DATA_TYPE_DOUBLE: pAnnotation = std::make_unique<TypedAnnotation_<double>>(zeroForNA); break;
+                    case PM_DATA_TYPE_STRING: pAnnotation = std::make_unique<TypedAnnotation_<const char*>>(); break;
+                    case PM_DATA_TYPE_ENUM: pAnnotation = std::make_unique<TypedAnnotation_<PM_ENUM>>(
+                        metric.GetDataTypeInfo().GetEnumId()); break;
+                    default: pAnnotation = std::make_unique<TypedAnnotation_<void>>(); break;
+                    }
                 }
             }
             else {
-                out << *reinterpret_cast<const T*>(pBytes);
+                pAnnotation = std::make_unique<TypedAnnotation_<void>>();
             }
+            // set the column name for the element
+            // remove spaces from metric name by range filter
+            pAnnotation->columnName = metric.Introspect().GetName() |
+                vi::filter([](char c) { return c != ' '; }) |
+                rn::to<std::basic_string>();
+            return pAnnotation;
         }
-    private:
-        bool zeroForNA_;
-    };
-    template<>
-    struct TypedAnnotation_<void> : public Annotation_
-    {
-        void Write(std::ostream& out, const uint8_t* pBytes) const override
-        {
-            out << "NA";
-        }
-    };
-    template<>
-    struct TypedAnnotation_<PM_ENUM> : public Annotation_
-    {
-        TypedAnnotation_(PM_ENUM enumId) : pKeyMap{ EnumMap::GetMapPtr(enumId) } {}
-        void Write(std::ostream& out, const uint8_t* pBytes) const override
-        {
-            out << ToNarrow(pKeyMap->at(*reinterpret_cast<const int*>(pBytes)));
-        }
-        const EnumMap::KeyMap* pKeyMap = nullptr;
-    };
-    std::unique_ptr<Annotation_> Annotation_::MakeTyped(PM_METRIC metricId, uint32_t deviceId,
-        const pmapi::intro::MetricView& metric)
-    {
-        // set availability (defaults to false, if we find matching device use its availability)
-        bool available = false;
-        for (auto di : metric.GetDeviceMetricInfo()) {
-            if (di.GetDevice().GetId() != deviceId) continue;
-            available = di.IsAvailable();
-        }
-        std::unique_ptr<Annotation_> pAnnotation;
-        if (available) {
-            const auto typeId = metric.GetDataTypeInfo().GetFrameType();
-            const bool zeroForNA = metricId == PM_METRIC_DISPLAY_DURATION || PM_METRIC_DISPLAY_LATENCY;
-            switch (typeId) {
-            case PM_DATA_TYPE_BOOL: pAnnotation = std::make_unique<TypedAnnotation_<bool>>(); break;
-            case PM_DATA_TYPE_INT32: pAnnotation = std::make_unique<TypedAnnotation_<int32_t>>(); break;
-            case PM_DATA_TYPE_UINT32: pAnnotation = std::make_unique<TypedAnnotation_<uint32_t>>(); break;
-            case PM_DATA_TYPE_UINT64: pAnnotation = std::make_unique<TypedAnnotation_<uint64_t>>(); break;
-            case PM_DATA_TYPE_DOUBLE: pAnnotation = std::make_unique<TypedAnnotation_<double>>(zeroForNA); break;
-            case PM_DATA_TYPE_STRING: pAnnotation = std::make_unique<TypedAnnotation_<const char*>>(); break;
-            case PM_DATA_TYPE_ENUM: pAnnotation = std::make_unique<TypedAnnotation_<PM_ENUM>>(
-                metric.GetDataTypeInfo().GetEnumId()); break;
-            default: pAnnotation = std::make_unique<TypedAnnotation_<void>>(); break;
-            }
-        }
-        else {
-            pAnnotation = std::make_unique<TypedAnnotation_<void>>();
-        }
-        // set the column name for the element
-        // remove spaces from metric name by range filter
-        pAnnotation->columnName = metric.Introspect().GetName() |
-            std::views::filter([](char c) { return c != ' '; }) |
-            std::ranges::to<std::basic_string>();
-        return pAnnotation;
     }
 
     class QueryElementContainer_
@@ -130,31 +159,33 @@ namespace p2c::pmon
                     .arrayIndex = el.index.value_or(0),
                 });
                 // check if metric is one of the specially-required fields
+                // these fields are required because they are used for summary stats
+                // we need pointers to these specific ones to read for generating those stats
                 if (el.metricId == PM_METRIC_TIME) {
-                    pTimeElement_ = &queryElements_.back();
+                    totalTimeElementIdx_ = int(queryElements_.size() - 1);
                 }
-                else if (el.metricId == PM_METRIC_FRAME_DURATION) {
-                    pFrameDurationElement_ = &queryElements_.back();
+                else if (el.metricId == PM_METRIC_FRAME_TIME) {
+                    frametimeElementIdx_ = int(queryElements_.size() - 1);
                 }
             }
             // if any specially-required fields are missing, add to query (but not to annotations)
-            if (!pTimeElement_) {
+            if (totalTimeElementIdx_ < 0) {
                 queryElements_.push_back(PM_QUERY_ELEMENT{
                     .metric = PM_METRIC_TIME,
                     .stat = PM_STAT_NONE,
                     .deviceId = 0,
                     .arrayIndex = 0,
                 });
-                pTimeElement_ = &queryElements_.back();
+                totalTimeElementIdx_ = int(queryElements_.size() - 1);
             }
-            if (!pFrameDurationElement_) {
+            if (frametimeElementIdx_ < 0) {
                 queryElements_.push_back(PM_QUERY_ELEMENT{
-                    .metric = PM_METRIC_FRAME_DURATION,
+                    .metric = PM_METRIC_FRAME_TIME,
                     .stat = PM_STAT_NONE,
                     .deviceId = 0,
                     .arrayIndex = 0,
                 });
-                pFrameDurationElement_ = &queryElements_.back();
+                frametimeElementIdx_ = int(queryElements_.size() - 1);
             }
             // register query
             query_ = session.RegisterFrameQuery(queryElements_);
@@ -167,13 +198,13 @@ namespace p2c::pmon
         {
             query_.Consume(proc, blobs);
         }
+        double ExtractTotalTimeFromBlob(const uint8_t* pBlob) const
+        {
+            return reinterpret_cast<const double&>(pBlob[queryElements_[totalTimeElementIdx_].dataOffset]);
+        }
         double ExtractFrameTimeFromBlob(const uint8_t* pBlob) const
         {
-            return reinterpret_cast<const double&>(pBlob[pTimeElement_->dataOffset]);
-        }
-        double ExtractFrameDurationFromBlob(const uint8_t* pBlob) const
-        {
-            return reinterpret_cast<const double&>(pBlob[pFrameDurationElement_->dataOffset]);
+            return reinterpret_cast<const double&>(pBlob[queryElements_[frametimeElementIdx_].dataOffset]);
         }
         void WriteFrame(uint32_t pid, const std::string& procName, std::ostream& out, const uint8_t* pBlob)
         {
@@ -204,9 +235,9 @@ namespace p2c::pmon
         std::vector<std::unique_ptr<Annotation_>> annotationPtrs_;
         // all query elements to be registered with the query, maintained to store blob offset information
         std::vector<PM_QUERY_ELEMENT> queryElements_;
-        // query element referenced used for summary stats gathering
-        const PM_QUERY_ELEMENT* pTimeElement_ = nullptr;
-        const PM_QUERY_ELEMENT* pFrameDurationElement_ = nullptr;
+        // query elements referenced used for summary stats gathering
+        int totalTimeElementIdx_ = -1;
+        int frametimeElementIdx_ = -1;
     };
 
     RawFrameDataWriter::RawFrameDataWriter(std::wstring path, const pmapi::ProcessTracker& procTrackerIn, std::wstring processName, uint32_t activeDeviceId,
@@ -221,6 +252,7 @@ namespace p2c::pmon
         using Element = QueryElementContainer_::ElementDefinition;
 
         std::array queryElements{
+            Element{.metricId = PM_METRIC_TIME, .deviceId = 0 },
             Element{.metricId = PM_METRIC_SWAP_CHAIN_ADDRESS, .deviceId = 0 },
             Element{.metricId = PM_METRIC_PRESENT_RUNTIME, .deviceId = 0 },
             Element{.metricId = PM_METRIC_SYNC_INTERVAL, .deviceId = 0 },
@@ -228,14 +260,16 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_ALLOWS_TEARING, .deviceId = 0 },
             Element{.metricId = PM_METRIC_PRESENT_MODE, .deviceId = 0 },
             Element{.metricId = PM_METRIC_CPU_FRAME_QPC, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_CPU_DURATION, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_CPU_FRAME_PACING_STALL, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_FRAME_TIME, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_CPU_BUSY, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_CPU_WAIT, .deviceId = 0 },
             Element{.metricId = PM_METRIC_GPU_LATENCY, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_GPU_DURATION, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_GPU_BUSY_TIME, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_GPU_TIME, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_GPU_BUSY, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_GPU_WAIT, .deviceId = 0 },
             Element{.metricId = PM_METRIC_DISPLAY_LATENCY, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_DISPLAY_DURATION, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_INPUT_LATENCY, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_DISPLAYED_TIME, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_CLICK_TO_PHOTON_LATENCY, .deviceId = 0 },
 
             Element{.metricId = PM_METRIC_GPU_POWER, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_VOLTAGE, .deviceId = activeDeviceId },
@@ -244,11 +278,11 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_GPU_UTILIZATION, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_MEDIA_UTILIZATION, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_VRAM_POWER, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_VRAM_VOLTAGE, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_VRAM_FREQUENCY, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_VRAM_EFFECTIVE_FREQUENCY, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_VRAM_TEMPERATURE, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_POWER, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_VOLTAGE, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_FREQUENCY, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_EFFECTIVE_FREQUENCY, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_TEMPERATURE, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_MEM_SIZE, .deviceId = activeDeviceId }, // special case filling static
             Element{.metricId = PM_METRIC_GPU_MEM_USED, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_MEM_MAX_BANDWIDTH, .deviceId = activeDeviceId }, // special case filling static
@@ -263,17 +297,19 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_GPU_CURRENT_LIMITED, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_VOLTAGE_LIMITED, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_UTILIZATION_LIMITED, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_VRAM_POWER_LIMITED, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_VRAM_TEMPERATURE_LIMITED, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_VRAM_CURRENT_LIMITED, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_VRAM_VOLTAGE_LIMITED, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_VRAM_UTILIZATION_LIMITED, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_POWER_LIMITED, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_TEMPERATURE_LIMITED, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_CURRENT_LIMITED, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_VOLTAGE_LIMITED, .deviceId = activeDeviceId },
+            Element{.metricId = PM_METRIC_GPU_MEM_UTILIZATION_LIMITED, .deviceId = activeDeviceId },
 
             Element{.metricId = PM_METRIC_CPU_UTILIZATION },
             Element{.metricId = PM_METRIC_CPU_POWER },
             Element{.metricId = PM_METRIC_CPU_TEMPERATURE },
             Element{.metricId = PM_METRIC_CPU_FREQUENCY },
         };
+        // we want the order in the output csv to match the order of the metric ids
+        rn::sort(queryElements, {}, &Element::metricId);
         pQueryElementContainer = std::make_unique<QueryElementContainer_>(queryElements, session, introRoot);
         blobs = pQueryElementContainer->MakeBlobs(numberOfBlobs);
                 
@@ -291,14 +327,14 @@ namespace p2c::pmon
                 if (pStatsTracker) {
                     // tracking trace duration
                     if (startTime < 0.) {
-                        startTime = pQueryElementContainer->ExtractFrameTimeFromBlob(pBlob);
+                        startTime = pQueryElementContainer->ExtractTotalTimeFromBlob(pBlob);
                         endTime = startTime;
                     }
                     else {
-                        endTime = pQueryElementContainer->ExtractFrameTimeFromBlob(pBlob);
+                        endTime = pQueryElementContainer->ExtractTotalTimeFromBlob(pBlob);
                     }
                     // tracking frame times
-                    pStatsTracker->Push(pQueryElementContainer->ExtractFrameDurationFromBlob(pBlob));
+                    pStatsTracker->Push(pQueryElementContainer->ExtractFrameTimeFromBlob(pBlob));
                 }
                 pQueryElementContainer->WriteFrame(procTracker, procName, file, pBlob);
             }

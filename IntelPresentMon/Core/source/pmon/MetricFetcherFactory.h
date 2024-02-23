@@ -65,12 +65,14 @@ namespace p2c::pmon
             if (arraySize > 1) {
                 info.fullName += std::format(L" [{}]", qmet.arrayIndex);
             }
-            // add stat to name
-            if (auto statAbbv = intro.FindEnumKey(PM_ENUM_STAT, qmet.statId).GetShortName(); !statAbbv.empty()) {
-                info.fullName += std::format(L" ({})", ToWide(statAbbv));
+            // add stat to name (but exclude midpoint (mpt)
+            if (qmet.statId != PM_STAT_MID_POINT) {
+                if (auto statAbbv = intro.FindEnumKey(PM_ENUM_STAT, qmet.statId).GetShortName(); !statAbbv.empty()) {
+                    info.fullName += std::format(L" ({})", ToWide(statAbbv));
+                }
             }
             // add unit abbreviation to the end if metric is not dimensionless
-            if (auto&& unit = metric.GetPreferredUnitHint(); unit != PM_UNIT_DIMENSIONLESS) {
+            if (auto&& unit = metric.GetPreferredUnitHint(); unit != PM_UNIT_DIMENSIONLESS && unit) {
                 info.unitLabel = ToWide(metric.IntrospectPreferredUnitHint().GetShortName());
             }
             const auto dataType = metric.GetDataTypeInfo().GetPolledType();

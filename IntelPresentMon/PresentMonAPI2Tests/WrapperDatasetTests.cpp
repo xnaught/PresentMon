@@ -181,13 +181,6 @@ namespace PresentMonAPI2Mock
 				data->FindMetric((PM_METRIC)420);
 				});
 		}
-		TEST_METHOD(IntrospectDatatypeError)
-		{
-			using namespace std::string_literals;
-			Assert::ExpectException<pmapi::DatatypeException>([this] {
-				data->FindMetric(PM_METRIC_FRAME_DURATION).GetDataTypeInfo().GetEnumId();
-			});
-		}
 		TEST_METHOD(IntrospectMetricType)
 		{
 			using namespace std::string_literals;

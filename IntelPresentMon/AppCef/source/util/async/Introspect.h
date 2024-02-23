@@ -31,11 +31,16 @@ namespace p2c::client::util::async
             //  --- metrics ---
             // set of types that are numeric, used to generate numeric flag that the frontend uses
             const std::array numericTypes{ PM_DATA_TYPE_DOUBLE, PM_DATA_TYPE_UINT32, PM_DATA_TYPE_INT32, PM_DATA_TYPE_UINT64 };
-            // filter predicate to only pick up metrics usable in dynamic queries
+            // filter predicate to only pick up metrics usable in dynamic queries (plus hardcoded blacklist)
             const auto filterPred = [](const pmapi::intro::MetricView& m) { const auto type = m.GetType();
-                return  type == PM_METRIC_TYPE_DYNAMIC ||
+                return
+                    (   m.GetId() != PM_METRIC_GPU_LATENCY &&
+                        m.GetId() != PM_METRIC_DISPLAY_LATENCY &&
+                        m.GetId() != PM_METRIC_INPUT_LATENCY)
+                    &&
+                    (   type == PM_METRIC_TYPE_DYNAMIC ||
                         type == PM_METRIC_TYPE_DYNAMIC_FRAME ||
-                        type == PM_METRIC_TYPE_STATIC;
+                        type == PM_METRIC_TYPE_STATIC);
             };
             // we must know the size of the array up-front for a cef list, so we traverse filtered range
             auto metricListCef = MakeCefList(rn::distance(intro.GetMetrics() | vi::filter(filterPred)));

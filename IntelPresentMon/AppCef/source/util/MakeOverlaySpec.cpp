@@ -183,7 +183,7 @@ namespace p2c::client::util
             sheets.back()->InsertRaw<at::flexGrow>(1.);
 
             sheets.push_back(Stylesheet::Make({ {"$graph"}, {"$footer-center-left"} }));
-            sheets.back()->InsertRaw<at::width>(24.);
+            sheets.back()->InsertRaw<at::width>(48.);
 
             sheets.push_back(Stylesheet::Make({ {"$graph"}, {"$footer-center-right"} }));
             sheets.back()->InsertRaw<at::textJustification>(at::make::Enum(gfx::prim::Justification::Right));
@@ -304,7 +304,6 @@ namespace p2c::client::util
                         sheets.back()->InsertRaw<at::graphMinCount>((double)Traverse(vGraph)["graphType"]["countRange"][(size_t)0]);
                         sheets.back()->InsertRaw<at::graphMaxCount>((double)Traverse(vGraph)["graphType"]["countRange"][1]);
                         sheets.back()->InsertRaw<at::backgroundColor>(backgroundColor);
-                        sheets.push_back(Stylesheet::Make({ {}, {"$graph"} }));
                         sheets.back()->InsertRaw<at::textColor>(at::make::Color(ColorFromV8(Traverse(vGraph)["textColor"])));
                         // since border is 0px, these settings do nothing
                         // sheets.back()->InsertRaw<at::borderColorLeft>(borderColor);

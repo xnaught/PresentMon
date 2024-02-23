@@ -24,6 +24,7 @@ namespace p2c::win
         gfx::Vec2I GetPosition() const;
         void Move(gfx::Vec2I pos);
         void Reorder(HWND base);
+        void ReorderBehind(HWND base);
         void SetTopmost();
         void ClearTopmost();
         void Close();

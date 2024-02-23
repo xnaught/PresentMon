@@ -65,6 +65,14 @@ namespace p2c::win
         }
     }
 
+    void Window::ReorderBehind(HWND base)
+    {
+        p2cvlog(v::window).note(std::format(L"hwnd:{:8x}", (uint64_t)base)).commit();
+        if (SetWindowPos(hWnd, base, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE) {
+            p2clog.hr().warn(std::format(L"failed to reorder window {} behind", GetTitle())).commit();
+        }
+    }
+
     void Window::SetTopmost()
     {
         p2cvlog(v::window).commit();

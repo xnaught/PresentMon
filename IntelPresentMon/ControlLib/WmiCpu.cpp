@@ -76,7 +76,7 @@ WmiCpu::WmiCpu() {
   QueryPerformanceCounter(&next_sample_qpc_);
   // To calculate the next time we should sample take the just sampled
   // performance counter and the frequency.
-  next_sample_qpc_.QuadPart += frequency_.QuadPart;
+  // next_sample_qpc_.QuadPart += frequency_.QuadPart;
 }
 
 bool WmiCpu::Sample() noexcept {

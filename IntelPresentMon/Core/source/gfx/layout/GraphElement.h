@@ -33,7 +33,7 @@ namespace p2c::gfx::lay
 		// functions
 		void SetAxisLabelsLeft_(float bottom, float top);
 		void SetAxisLabelsRight_(float bottom, float top);
-		void SetBottomAxisLabels_(float left, float right);
+		void SetBottomAxisLabels_(float left, float right, std::optional<std::wstring> units = {});
 		double GetCurrentTime_() const;
 		// data
 		std::shared_ptr<PlotElement> pPlot;

@@ -26,7 +26,7 @@
       color="#030308"
       class="pt-3"
     >
-      <router-link :to="{name: 'simple'}" class="nav-back"><v-icon class="nav-back-arrow">mdi-arrow-left</v-icon> Back</router-link>
+      <router-link :to="{name: 'simple'}" class="nav-back"><v-icon class="nav-back-arrow">mdi-arrow-left</v-icon> Top</router-link>
 
       <v-list nav>
 

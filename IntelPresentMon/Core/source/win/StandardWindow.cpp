@@ -11,7 +11,7 @@ namespace p2c::win
     namespace vvv = infra::log::v;
     using namespace p2c::gfx;
 
-    StandardWindow::StandardWindow(int x, int y, DimensionsI clientDimensions, std::wstring name)
+    StandardWindow::StandardWindow(int x, int y, DimensionsI clientDimensions, std::wstring name, bool bringToFront)
         :
         KernelWindow{ std::move(name), WS_VISIBLE | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU }
     {
@@ -35,7 +35,9 @@ namespace p2c::win
             p2clog.hr().commit();
         }
         // bring to front
-        SetForegroundWindow(GetHandle());
+        if (bringToFront) {
+            SetForegroundWindow(GetHandle());
+        }
     }
 
     StandardWindow::~StandardWindow()
