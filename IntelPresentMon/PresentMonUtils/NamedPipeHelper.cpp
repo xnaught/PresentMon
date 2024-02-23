@@ -58,8 +58,8 @@ bool NamedPipeHelper::ValidatePayloadRequestSize(PM_ACTION action,
       break;
     }
     case PM_ACTION::ENUMERATE_ADAPTERS:
-    case PM_ACTION::GET_CPU_NAME: {
-      // Enumeration of GPUs and getting the CPU name only requires the request
+    case PM_ACTION::GET_STATIC_CPU_METRICS: {
+      // Enumeration of GPUs and getting static CPU metrics only requires the request
       // header.
       if ((header_payload_size != 0)) {
         return false;
@@ -120,11 +120,11 @@ bool NamedPipeHelper::ValidatePayloadResponseSize(PM_ACTION action,
       }
       return true;
     }
-    case PM_ACTION::GET_CPU_NAME: {
-      // The get cpu name response consists of the header and
-      // returned cpu name response structure
+    case PM_ACTION::GET_STATIC_CPU_METRICS: {
+      // The get static cpu metrics response consists of the header and
+      // returned static cpu metrics response structure
       if (rsp_buf->GetCurrentSize() !=
-          sizeof(IPMSMResponseHeader) + sizeof(IPMCpuNameResponse)){
+          sizeof(IPMSMResponseHeader) + sizeof(IPMStaticCpuMetrics)){
         return false;      
       }
       size_t bufPayloadSize =
@@ -199,7 +199,7 @@ const BYTE* NamedPipeHelper::GetResponsePayloadPtr(MemBuffer* rqst_buf,
   switch (action) {
     case PM_ACTION::START_STREAM:
     case PM_ACTION::ENUMERATE_ADAPTERS: 
-    case PM_ACTION::GET_CPU_NAME: {
+    case PM_ACTION::GET_STATIC_CPU_METRICS: {
       payloadPtr = payloadPtr + sizeof(IPMSMResponseHeader);
     } break;
 
@@ -364,17 +364,17 @@ PM_STATUS NamedPipeHelper::DecodeGeneralSetActionResponse(
   return response->result;
 }
 
-PM_STATUS NamedPipeHelper::DecodeCpuNameResponse(
-    MemBuffer* rsp_buf, IPMCpuNameResponse* cpu_name_info) {
-  if (!ValidateResponse(rsp_buf, PM_ACTION::GET_CPU_NAME)) {
+PM_STATUS NamedPipeHelper::DecodeStaticCpuMetricsResponse(
+    MemBuffer* rsp_buf, IPMStaticCpuMetrics* staticCpuMetrics) {
+  if (!ValidateResponse(rsp_buf, PM_ACTION::GET_STATIC_CPU_METRICS)) {
     return PM_STATUS::PM_STATUS_SERVICE_ERROR;
   }
 
   const IPMSMResponseHeader* response = GetResponseHeader(rsp_buf);
   if (response->result == PM_STATUS::PM_STATUS_SUCCESS) {
-    memcpy_s(cpu_name_info, sizeof(IPMCpuNameResponse),
-             GetResponsePayloadPtr(rsp_buf, PM_ACTION::GET_CPU_NAME),
-             sizeof(IPMCpuNameResponse));
+    memcpy_s(staticCpuMetrics, sizeof(IPMStaticCpuMetrics),
+             GetResponsePayloadPtr(rsp_buf, PM_ACTION::GET_STATIC_CPU_METRICS),
+             sizeof(IPMStaticCpuMetrics));
   }
 
   return response->result;

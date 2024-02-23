@@ -62,6 +62,7 @@ namespace pmon::mid
 		std::optional<double> gpuSustainedPowerLimit;
 		std::optional<uint64_t> gpuMemorySize;
 		std::optional<uint64_t> gpuMemoryMaxBandwidth;
+		std::optional<double> cpuPowerLimit;
 	};
 
 	struct MetricInfo
@@ -110,7 +111,7 @@ namespace pmon::mid
 		double GetPercentile(std::vector<double>& data, double percentile);
 		bool GetGpuMetricData(size_t telemetry_item_bit, PresentMonPowerTelemetryInfo& power_telemetry_info, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo);
 		bool GetCpuMetricData(size_t telemetryBit, CpuTelemetryInfo& cpuTelemetry, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo);
-		void GetCpuInfo();
+		void GetStaticCpuMetrics();
 		std::string GetProcessName(uint32_t processId);
 
 		void CalculateMetrics(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains, LARGE_INTEGER qpcFrequency, std::unordered_map<uint64_t, fpsSwapChainData>& swapChainData, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo);

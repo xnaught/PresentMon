@@ -94,7 +94,7 @@ namespace pmon::mid
         }
         // Update the static GPU metric data from the service
         GetStaticGpuMetrics();
-        GetCpuInfo();
+        GetStaticCpuMetrics();
 	}
     
     ConcreteMiddleware::~ConcreteMiddleware() = default;
@@ -250,22 +250,22 @@ namespace pmon::mid
         return status;
     }
 
-    void ConcreteMiddleware::GetCpuInfo()
+    void ConcreteMiddleware::GetStaticCpuMetrics()
     {
         MemBuffer requestBuffer;
         MemBuffer responseBuffer;
 
-        NamedPipeHelper::EncodeRequestHeader(&requestBuffer, PM_ACTION::GET_CPU_NAME);
+        NamedPipeHelper::EncodeRequestHeader(&requestBuffer, PM_ACTION::GET_STATIC_CPU_METRICS);
 
         PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
         if (status != PM_STATUS::PM_STATUS_SUCCESS) {
             return;
         }
 
-        IPMCpuNameResponse cpu_name{};
-        status = NamedPipeHelper::DecodeCpuNameResponse(&responseBuffer, &cpu_name);
+        IPMStaticCpuMetrics staticCpuMetrics{};
+        status = NamedPipeHelper::DecodeStaticCpuMetricsResponse(&responseBuffer, &staticCpuMetrics);
         if (status != PM_STATUS::PM_STATUS_SUCCESS ||
-            cpu_name.cpu_name_length > MAX_PM_CPU_NAME) {
+            staticCpuMetrics.cpuNameLength > MAX_PM_CPU_NAME) {
             return;
         }
 
@@ -275,7 +275,7 @@ namespace pmon::mid
                     [](char c1, char c2) { return std::tolower(c1) == std::tolower(c2); }) != str.end();
             };
 
-        std::string cpuName = cpu_name.cpu_name;
+        std::string cpuName = staticCpuMetrics.cpuName;
         PM_DEVICE_VENDOR deviceVendor;
         if (ContainsString(cpuName, "intel"))
         {
@@ -289,7 +289,14 @@ namespace pmon::mid
         {
             deviceVendor = PM_DEVICE_VENDOR_UNKNOWN;
         }
-        cachedCpuInfo.push_back({ deviceVendor, cpuName });
+
+        cachedCpuInfo.push_back(
+            { 
+                .deviceVendor = deviceVendor,
+                .deviceName = cpuName,
+                .cpuPowerLimit = staticCpuMetrics.cpuPowerLimit
+            }
+        );
     }
 
     std::string ConcreteMiddleware::GetProcessName(uint32_t processId)
@@ -503,9 +510,6 @@ namespace pmon::mid
                 break;
             case PM_METRIC_CPU_POWER:
                 pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_power));
-                break;
-            case PM_METRIC_CPU_POWER_LIMIT:
-                pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_power_limit));
                 break;
             case PM_METRIC_CPU_TEMPERATURE:
                 pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_temperature));
@@ -814,6 +818,14 @@ void ReportMetrics(
         {
             auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[0]);
             output = cachedCpuInfo[0].deviceVendor;
+        }
+        break;
+        case PM_METRIC_CPU_POWER_LIMIT:
+        {
+            auto& output = reinterpret_cast<double&>(pBlob[0]);
+            if (cachedCpuInfo[0].cpuPowerLimit.has_value()) {
+                output = cachedCpuInfo[0].cpuPowerLimit.value();
+            }
         }
         break;
         case PM_METRIC_GPU_VENDOR:
@@ -1414,9 +1426,6 @@ void ReportMetrics(
         case CpuTelemetryCapBits::cpu_power:
             metricInfo[PM_METRIC_CPU_POWER].data[0].emplace_back(cpuTelemetry.cpu_power_w);
             break;
-        case CpuTelemetryCapBits::cpu_power_limit:
-            metricInfo[PM_METRIC_CPU_POWER_LIMIT].data[0].emplace_back(cpuTelemetry.cpu_power_limit_w);
-            break;
         case CpuTelemetryCapBits::cpu_temperature:
             metricInfo[PM_METRIC_CPU_TEMPERATURE].data[0].emplace_back(cpuTelemetry.cpu_temperature);
             break;
@@ -1571,6 +1580,14 @@ void ReportMetrics(
                     output = cachedCpuInfo[0].deviceVendor;
                 }
                     break;
+                case PM_METRIC_CPU_POWER_LIMIT:
+                {
+                    auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
+                    if (cachedCpuInfo[0].cpuPowerLimit.has_value()) {
+                        output = cachedCpuInfo[0].cpuPowerLimit.value();
+                    }
+                }
+                break;
                 case PM_METRIC_GPU_VENDOR:
                 {
                     auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[qe.dataOffset]);
@@ -1667,7 +1684,6 @@ void ReportMetrics(
                 case PM_METRIC_GPU_MEM_UTILIZATION_LIMITED:
                 case PM_METRIC_CPU_UTILIZATION:
                 case PM_METRIC_CPU_POWER:
-                case PM_METRIC_CPU_POWER_LIMIT:
                 case PM_METRIC_CPU_TEMPERATURE:
                 case PM_METRIC_CPU_FREQUENCY:
                 case PM_METRIC_CPU_CORE_UTILITY:
@@ -1677,6 +1693,14 @@ void ReportMetrics(
                 {
                     auto& output = reinterpret_cast<PM_DEVICE_VENDOR&>(pBlob[qe.dataOffset]);
                     output = cachedCpuInfo[0].deviceVendor;
+                }
+                break;
+                case PM_METRIC_CPU_POWER_LIMIT:
+                {
+                    auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
+                    if (cachedCpuInfo[0].cpuPowerLimit.has_value()) {
+                        output = cachedCpuInfo[0].cpuPowerLimit.value();
+                    }
                 }
                 break;
                 case PM_METRIC_GPU_VENDOR:
