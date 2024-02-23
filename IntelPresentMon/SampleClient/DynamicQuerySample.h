@@ -53,12 +53,12 @@ int AddGpuMetric(pmapi::Session& pSession, unsigned int processId, double window
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0 });
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0 });
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0 });
-        elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_FRAME_DURATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
-        elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_CPU_FRAME_PACING_STALL, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
-        elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_GPU_DURATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
-        elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_GPU_BUSY_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
+        elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
+        elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_CPU_WAIT, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
+        elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_GPU_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
+        elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_GPU_BUSY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_DISPLAY_LATENCY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
-        elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_DISPLAY_DURATION, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
+        elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_DISPLAYED_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_INPUT_LATENCY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
 
         PM_METRIC gpuMetric;
@@ -151,12 +151,12 @@ int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, double window
             FixedQueryElement fps99{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_PERCENTILE_99 };
             FixedQueryElement fpsMax{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_MAX };
             FixedQueryElement fpsMin{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_MIN };
-            FixedQueryElement frameDurationAvg{ this, PM_METRIC_FRAME_DURATION, PM_STAT_AVG };
-            FixedQueryElement fpStallAvg{ this, PM_METRIC_CPU_FRAME_PACING_STALL, PM_STAT_AVG };
-            FixedQueryElement gpuDurationAvg{ this, PM_METRIC_GPU_DURATION, PM_STAT_AVG };
-            FixedQueryElement gpuBusyTimeAvg{ this, PM_METRIC_GPU_BUSY_TIME, PM_STAT_AVG };
+            FixedQueryElement frameDurationAvg{ this, PM_METRIC_FRAME_TIME, PM_STAT_AVG };
+            FixedQueryElement fpStallAvg{ this, PM_METRIC_CPU_WAIT, PM_STAT_AVG };
+            FixedQueryElement gpuDurationAvg{ this, PM_METRIC_GPU_TIME, PM_STAT_AVG };
+            FixedQueryElement gpuBusyTimeAvg{ this, PM_METRIC_GPU_BUSY, PM_STAT_AVG };
             FixedQueryElement gpuDisplayLatencyAvg{ this, PM_METRIC_DISPLAY_LATENCY, PM_STAT_AVG };
-            FixedQueryElement gpuDisplayDurationAvg{ this, PM_METRIC_DISPLAY_DURATION, PM_STAT_AVG };
+            FixedQueryElement gpuDisplayDurationAvg{ this, PM_METRIC_DISPLAYED_TIME, PM_STAT_AVG };
             FixedQueryElement gpuInputLatencyAvg{ this, PM_METRIC_INPUT_LATENCY, PM_STAT_AVG };
             FixedQueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_AVG, 1 };
         PM_END_FIXED_QUERY dq{ *pSession, windowSize, metricOffset, 1, 1 };

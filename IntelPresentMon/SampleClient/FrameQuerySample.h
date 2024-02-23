@@ -112,13 +112,13 @@ int GenCsv(pmapi::Session& pSession, std::string processName, unsigned int proce
             { PM_METRIC_ALLOWS_TEARING, PM_STAT_NONE, 0, 0 },
             { PM_METRIC_PRESENT_MODE, PM_STAT_NONE, 0, 0 },
             { PM_METRIC_CPU_FRAME_QPC, PM_STAT_NONE, 0, 0 },
-            { PM_METRIC_CPU_DURATION, PM_STAT_NONE, 0, 0 },
-            { PM_METRIC_CPU_FRAME_PACING_STALL, PM_STAT_NONE, 0, 0 },
+            { PM_METRIC_FRAME_TIME, PM_STAT_NONE, 0, 0 },
+            { PM_METRIC_CPU_WAIT, PM_STAT_NONE, 0, 0 },
             { PM_METRIC_GPU_LATENCY, PM_STAT_NONE, 0, 0 },
-            { PM_METRIC_GPU_DURATION, PM_STAT_NONE, 0, 0 },
-            { PM_METRIC_GPU_BUSY_TIME, PM_STAT_NONE, 0, 0},
+            { PM_METRIC_GPU_TIME, PM_STAT_NONE, 0, 0 },
+            { PM_METRIC_GPU_BUSY, PM_STAT_NONE, 0, 0},
             { PM_METRIC_DISPLAY_LATENCY, PM_STAT_NONE, 0, 0 },
-            { PM_METRIC_DISPLAY_DURATION, PM_STAT_NONE, 0, 0 },
+            { PM_METRIC_DISPLAYED_TIME, PM_STAT_NONE, 0, 0 },
             { PM_METRIC_INPUT_LATENCY, PM_STAT_NONE, 0, 0}
         };
 
@@ -190,14 +190,14 @@ int FrameQuerySample(std::unique_ptr<pmapi::Session>&& pSession)
         PM_BEGIN_FIXED_FRAME_QUERY(MyFrameQuery)
             FixedQueryElement swapChain{ this, PM_METRIC_SWAP_CHAIN_ADDRESS, PM_STAT_NONE };
             FixedQueryElement cpuFrameQpc{ this, PM_METRIC_CPU_FRAME_QPC, PM_STAT_NONE };
-            FixedQueryElement cpuDuration{ this, PM_METRIC_CPU_DURATION, PM_STAT_NONE };
-            FixedQueryElement cpuFpStall{ this, PM_METRIC_CPU_FRAME_PACING_STALL, PM_STAT_NONE };
+            FixedQueryElement cpuDuration{ this, PM_METRIC_FRAME_TIME, PM_STAT_NONE };
+            FixedQueryElement cpuFpStall{ this, PM_METRIC_CPU_WAIT, PM_STAT_NONE };
             FixedQueryElement gpuLatency{ this, PM_METRIC_GPU_LATENCY, PM_STAT_NONE };
-            FixedQueryElement gpuDuration{ this, PM_METRIC_GPU_DURATION, PM_STAT_NONE };
-            FixedQueryElement gpuBusyTime{ this, PM_METRIC_GPU_BUSY_TIME, PM_STAT_NONE };
+            FixedQueryElement gpuDuration{ this, PM_METRIC_GPU_TIME, PM_STAT_NONE };
+            FixedQueryElement gpuBusyTime{ this, PM_METRIC_GPU_BUSY, PM_STAT_NONE };
             FixedQueryElement gpuDisplayLatency{ this, PM_METRIC_DISPLAY_LATENCY, PM_STAT_NONE };
-            FixedQueryElement gpuDisplayDuration{ this, PM_METRIC_DISPLAY_DURATION, PM_STAT_NONE};
-            FixedQueryElement inputLatency{ this, PM_METRIC_DISPLAY_DURATION, PM_STAT_NONE };
+            FixedQueryElement gpuDisplayDuration{ this, PM_METRIC_DISPLAYED_TIME, PM_STAT_NONE};
+            FixedQueryElement inputLatency{ this, PM_METRIC_CLICK_TO_PHOTON_LATENCY, PM_STAT_NONE };
             FixedQueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_NONE, 1 };
         PM_END_FIXED_QUERY fq{ *pSession, 20, 1 };
 
