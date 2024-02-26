@@ -781,9 +781,13 @@ void ReportMetrics(
     {
         for (std::size_t i = 0; i < cachedGpuInfo.size(); ++i)
         {
-            if (cachedGpuInfo[i].deviceId = deviceId)
+            if (cachedGpuInfo[i].deviceId == deviceId)
             {
-                return i;
+                if (cachedGpuInfo[i].adapterId.has_value())
+                    return cachedGpuInfo[i].adapterId.value();
+                else {
+                    return std::nullopt;
+                }
             }
         }
 
@@ -1683,9 +1687,13 @@ void ReportMetrics(
         MemBuffer requestBuf;
         MemBuffer responseBuf;
 
-        const auto adapterIndex = deviceId - 1;
+        const auto adapterIndex = GetCachedGpuInfoIndex(deviceId);
+        if (!adapterIndex.has_value()) {
+            return PM_STATUS_INVALID_ADAPTER_ID;
+        }
+
         NamedPipeHelper::EncodeGeneralSetActionRequest(PM_ACTION::SELECT_ADAPTER,
-            &requestBuf, adapterIndex);
+            &requestBuf, static_cast<uint32_t>(adapterIndex.value()));
 
         PM_STATUS status = CallPmService(&requestBuf, &responseBuf);
         if (status != PM_STATUS::PM_STATUS_SUCCESS) {
