@@ -356,32 +356,16 @@ export default Vue.extend({
     // preset change watcher
     async selectedPreset(presetNew: Preset, presetOld: Preset|null) {
       if (presetNew === Preset.Custom) {
-        try {
-          await Loadout.parseAndReplace(await Api.loadConfig('custom-auto.json'));
-        }
-        catch (e: any) {
-          let errText = 'Failed to load autosave loadout file. ';
-          if (e.noticeOverride) {
-            errText += e.message ?? '';
-          }
-          await Notifications.notify({text: errText});
-          console.error([errText, e]);
-        }
+        const {payload} = await Api.loadConfig('custom-auto.json');
+        const err = 'Failed to load autosave loadout file. ';
+        await Loadout.loadConfigFromPayload({ payload, err });
       }
       else {
         const presetFileName = `preset-${presetNew}.json`;
-        try {
-          await Loadout.parseAndReplace(await Api.loadPreset(presetFileName));
-        }
-        catch (e: any) {
-          let errText = `Failed to load preset file [${presetFileName}]. `;
-          if (e.noticeOverride) {
-            errText += e.message ?? '';
-          }
-          await Notifications.notify({text: errText});
-          console.error([errText, e]);
-        }
-      }      
+        const {payload} = await Api.loadPreset(presetFileName);
+        const err = `Failed to load preset file [${presetFileName}]. `;
+        await Loadout.loadConfigFromPayload({ payload, err });
+      }
     },
   }
 });

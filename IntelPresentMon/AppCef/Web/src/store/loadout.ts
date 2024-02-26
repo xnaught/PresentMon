@@ -15,6 +15,7 @@ import { Api } from '@/core/api'
 import { Preset } from '@/core/preferences'
 import { migrateLoadout } from '@/core/loadout-migration'
 import { QualifiedMetric } from '@/core/qualified-metric'
+import { Notifications } from './notifications'
 
 @Module({name: 'loadout', dynamic: true, store, namespaced: true})
 export class LoadoutModule extends VuexModule {
@@ -235,6 +236,21 @@ export class LoadoutModule extends VuexModule {
             console.info(`loadout migrated to ${signature.version}`);
         }
         this.context.commit('replaceWidgets_', loadout.widgets);
+    }
+
+    @Action({rawError: true})
+    async loadConfigFromPayload(pay: {payload: string, err: string}) {
+        let {payload, err} = pay;
+        try {
+          await Loadout.parseAndReplace({ payload });
+        }
+        catch (e: any) {
+          if (e.noticeOverride) {
+            err += e.message ?? '';
+          }
+          await Notifications.notify({text: err});
+          console.error([err, e]);
+        }
     }
 }
 

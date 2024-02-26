@@ -75,20 +75,12 @@ export default Vue.extend({
       }
     },
     async load() {
-      try {
-        const browseResult = await Api.browseReadSpec();
-        // zero length result means user canceled out of dialog
-        if (browseResult.payload.length > 0) {
-          await Loadout.parseAndReplace(browseResult);
-          await Loadout.serializeCustom();
-        }
-      } catch (e: any) {
-        let errText = `Failed to load preset file. `;
-        if (e.noticeOverride) {
-          errText += e.message ?? '';
-        }
-        await Notifications.notify({text: errText});
-        console.error([errText, e]);
+      const {payload} = await Api.browseReadSpec();
+      // zero length result means user canceled out of dialog
+      if (payload.length > 0) {
+        const err = 'Failed to load preset file. ';
+        await Loadout.loadConfigFromPayload({ payload, err });
+        await Loadout.serializeCustom();
       }
     },
     addWidget() {
