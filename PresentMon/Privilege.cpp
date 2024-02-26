@@ -67,19 +67,45 @@ bool EnableDebugPrivilege()
         adjustError != ERROR_NOT_ALL_ASSIGNED;
 }
 
+static bool IsRestartAsAdminArg(wchar_t const* s)
+{
+    size_t n = wcslen(s);
+    if (n == 0) {
+        return false;
+    }
+    switch (*s) {
+    case L'/':
+        s++;
+        n--;
+        break;
+    case L'-':
+        s++;
+        n--;
+        if (n > 0 && *s == L'-') {
+            s++;
+            n--;
+        }
+        break;
+    default:
+        return false;
+    }
+
+    return _wcsicmp(s, L"restart_as_admin") == 0;
+}
+
 int RestartAsAdministrator(
     int argc,
     wchar_t** argv)
 {
     // Get the exe path
     wchar_t exe_path[MAX_PATH] = {};
-    GetModuleFileName(NULL, exe_path, _countof(exe_path));
+    GetModuleFileNameW(NULL, exe_path, _countof(exe_path));
 
-    // Combine arguments into single string and remove -restart_as_admin to
+    // Combine arguments into single string and remove --restart_as_admin to
     // prevent an endless loop if the escalation fails.
     std::wstring args;
     for (int i = 1; i < argc; ++i) {
-        if (_wcsicmp(argv[i], L"-restart_as_admin") == 0) continue;
+        if (IsRestartAsAdminArg(argv[i])) continue;
 
         auto addQuotes = argv[i][0] != L'\"' && wcschr(argv[i], L' ') != nullptr;
         if (addQuotes) {

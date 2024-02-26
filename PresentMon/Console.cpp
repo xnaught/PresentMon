@@ -241,6 +241,11 @@ void EndConsoleUpdate()
     delete[] buffer;
 }
 
+static float CalculateFPSForPrintf(float duration)
+{
+    return duration == 0.f ? 0.f : ((1000.f / duration) + 0.05f);
+}
+
 void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
 {
     auto const& args = GetCommandLineArgs();
@@ -258,79 +263,36 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
         auto address = pair.first;
         auto const& chain = pair.second;
 
-        // Only show swapchain data if there at least two presents in the
-        // history.
-        if (chain.mPresentHistoryCount < 2) {
-            continue;
-        }
-
-        auto const& present0 = *chain.mPresentHistory[(chain.mNextPresentIndex - chain.mPresentHistoryCount) % SwapChainData::PRESENT_HISTORY_MAX_COUNT];
-        auto const& presentN = *chain.mPresentHistory[(chain.mNextPresentIndex - 1) % SwapChainData::PRESENT_HISTORY_MAX_COUNT];
-        auto cpuAvg = TimestampDeltaToSeconds(presentN.PresentStartTime - present0.PresentStartTime) / (chain.mPresentHistoryCount - 1);
-        auto gpuAvg = 0.0;
-        auto dspAvg = 0.0;
-        auto latAvg = 0.0;
-
-        PresentEvent* displayN = nullptr;
-        if (args.mTrackDisplay) {
-            uint64_t display0ScreenTime = 0;
-            uint64_t gpuSum = 0;
-            uint64_t latSum = 0;
-            uint32_t displayCount = 0;
-            for (uint32_t i = 0; i < chain.mPresentHistoryCount; ++i) {
-                auto const& p = chain.mPresentHistory[(chain.mNextPresentIndex - chain.mPresentHistoryCount + i) % SwapChainData::PRESENT_HISTORY_MAX_COUNT];
-
-                gpuSum += p->GPUDuration;
-
-                if (p->FinalState == PresentResult::Presented) {
-                    if (displayCount == 0) {
-                        display0ScreenTime = p->ScreenTime;
-                    }
-                    displayN = p.get();
-                    latSum += p->ScreenTime - p->PresentStartTime;
-                    displayCount += 1;
-                }
-            }
-
-            gpuAvg = TimestampDeltaToSeconds(gpuSum) / (chain.mPresentHistoryCount - 1);
-
-            if (displayCount >= 2) {
-                dspAvg = TimestampDeltaToSeconds(displayN->ScreenTime - display0ScreenTime) / (displayCount - 1);
-            }
-
-            if (displayCount >= 1) {
-                latAvg = TimestampDeltaToSeconds(latSum) / displayCount;
-            }
-        }
-
         if (empty) {
             empty = false;
             ConsolePrintLn(L"%s[%d]:", processInfo.mModuleName.c_str(), processId);
         }
 
-        ConsolePrint(L"    %016llX (%hs): SyncInterval=%d Flags=%d CPU%hs%hs=%.2lf",
-            address,
-            RuntimeToString(presentN.Runtime),
-            presentN.SyncInterval,
-            presentN.PresentFlags,
-            gpuAvg > 0.0 ? "/GPU" : "",
-            dspAvg > 0.0 ? "/Display" : "",
-            1000.0 * cpuAvg);
+        ConsolePrint(L"    %016llX", address);
 
-        if (gpuAvg > 0.0) ConsolePrint(L"/%.2lf", 1000.0 * gpuAvg);
-        if (dspAvg > 0.0) ConsolePrint(L"/%.2lf", 1000.0 * dspAvg);
+        if (chain.mPresentInfoValid) {
+            ConsolePrint(L" (%hs): SyncInterval=%d Flags=%d CPU=%.3fms (%.1f fps)",
+                RuntimeToString(chain.mPresentRuntime),
+                chain.mPresentSyncInterval,
+                chain.mPresentFlags,
+                chain.mAvgCPUBusy,
+                CalculateFPSForPrintf(chain.mAvgCPUBusy));
 
-        ConsolePrint(L"ms (%.1lf", 1.0 / cpuAvg);
-        if (gpuAvg > 0.0) ConsolePrint(L"/%.1lf", 1.0 / gpuAvg);
-        if (dspAvg > 0.0) ConsolePrint(L"/%.1lf", 1.0 / dspAvg);
-        ConsolePrint(L" fps)");
+            if (args.mTrackDisplay) {
+                ConsolePrint(L" Display=%.3fms (%.1f fps)",
+                    chain.mAvgDisplayedTime,
+                    CalculateFPSForPrintf(chain.mAvgDisplayedTime));
+            }
 
-        if (latAvg > 0.0) {
-            ConsolePrint(L" latency=%.2lfms", 1000.0 * latAvg);
-        }
+            if (args.mTrackGPU) {
+                ConsolePrint(L" GPU=%.3fms", chain.mAvgGPUDuration);
+            }
 
-        if (displayN != nullptr) {
-            ConsolePrint(L" %hs", PresentModeToString(displayN->PresentMode));
+            if (args.mTrackDisplay) {
+                ConsolePrint(L" Latency=%.3fms %hs",
+                    chain.mAvgDisplayLatency,
+                    PresentModeToString(chain.mPresentMode));
+            }
         }
 
         ConsolePrintLn(L"");

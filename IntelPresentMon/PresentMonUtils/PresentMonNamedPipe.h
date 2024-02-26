@@ -1,6 +1,6 @@
 /*
  *
- * Copyright (C) 2021 Intel Corporation
+ * Copyright (C) 2021,2023 Intel Corporation
  *
  * SPDX-License-Identifier: MIT
  *
@@ -161,7 +161,6 @@ struct PmNsmPresentEvent {
   bool WaitForMPOFlipEvent;
   bool SeenDxgkPresent;
   bool SeenWin32KEvents;
-  bool DwmNotified;
   bool SeenInFrameEvent;   // This present has gotten a Win32k TokenStateChanged
                            // event into InFrame state
   bool GpuFrameCompleted;  // This present has already seen an event that caused

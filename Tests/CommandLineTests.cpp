@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2021 Intel Corporation
+// Copyright (C) 2020-2021,2023 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include <algorithm>
@@ -20,7 +20,7 @@ void TerminateAfterTimedTest(uint32_t timed, DWORD timeoutMilliseconds)
     _snwprintf_s(timedArg, _TRUNCATE, L"%u", timed);
 
     PresentMon pm;
-    pm.Add(L"-stop_existing_session -terminate_after_timed -timed");
+    pm.Add(L"--stop_existing_session --terminate_after_timed --timed");
     pm.Add(timedArg);
     pm.PMSTART();
     pm.PMEXITED(timeoutMilliseconds, 0);
@@ -31,18 +31,18 @@ void TerminateAfterTimedTest(uint32_t timed, DWORD timeoutMilliseconds)
 void TerminateExistingTest(wchar_t const* sessionName)
 {
     PresentMon pm;
-    pm.Add(L"-stop_existing_session -no_csv");
+    pm.Add(L"--stop_existing_session --no_csv");
     if (sessionName != nullptr) {
-        pm.Add(L" -session_name");
+        pm.Add(L" --session_name");
         pm.Add(sessionName);
     }
     pm.PMSTART();
     EXPECT_TRUE(pm.IsRunning(1000));
 
     PresentMon pm2;
-    pm2.Add(L"-terminate_existing");
+    pm2.Add(L"--terminate_existing_session");
     if (sessionName != nullptr) {
-        pm2.Add(L" -session_name");
+        pm2.Add(L" --session_name");
         pm2.Add(sessionName);
     }
     pm2.PMSTART();
@@ -51,20 +51,22 @@ void TerminateExistingTest(wchar_t const* sessionName)
 }
 
 template<typename T>
-void QpcTimeTest(wchar_t const* qpcTimeArg)
+void QpcTimeTest(bool qpc)
 {
     LARGE_INTEGER freq = {};
     QueryPerformanceFrequency(&freq);
 
     LARGE_INTEGER qpcMin = {};
     LARGE_INTEGER qpcMax = {};
-    std::wstring csvPath(outDir_ + (qpcTimeArg + 1) + L".csv");
+    std::wstring csvPath(outDir_ + (qpc ? L"qpc_time" : L"qpc_time_ms") + L".csv");
 
-    // TODO: Seems to work, but how can we make sure to capture presents during
-    // this 1 second? Do we need to also launch a presenting process?
     PresentMon pm;
-    pm.Add(L"-stop_existing_session -terminate_after_timed -timed 1 -simple");
-    pm.Add(qpcTimeArg);
+    pm.Add(L"--stop_existing_session --terminate_after_timed --timed 1 --no_track_gpu --no_track_input --no_track_display --v1_metrics");
+    if (qpc) {
+        pm.Add(L"--qpc_time");
+    } else {
+        pm.Add(L"--qpc_time_ms");
+    }
     pm.AddCsvPath(csvPath);
 
     QueryPerformanceCounter(&qpcMin);
@@ -157,22 +159,15 @@ TEST(CommandLineTests, TerminateExisting_Named)
 TEST(CommandLineTests, TerminateExisting_NotFound)
 {
     PresentMon pm;
-    pm.Add(L"-terminate_existing -session_name session_name_that_hopefully_isnt_in_use");
+    pm.Add(L"--terminate_existing_session --session_name session_name_that_hopefully_isnt_in_use");
     pm.PMSTART();
     pm.PMEXITED(1000, 7); // session name not found -> exit code = 7
 }
 
-TEST(CommandLineTests, QPCTime)
-{
-    QpcTimeTest<uint64_t>(L"-qpc_time");
-}
+TEST(CommandLineTests, QPCTime)               { QpcTimeTest<uint64_t>(true); }
+TEST(CommandLineTests, QPCTimeInMilliSeconds) { QpcTimeTest<double>(false); }
 
-TEST(CommandLineTests, QPCTimeInSeconds)
-{
-    QpcTimeTest<double>(L"-qpc_time_s");
-}
-
-TEST(CommandLineTests, Input)
+void InputTest(uint32_t v)
 {
     std::wstring csvPath(outDir_ + L"input.csv");
 
@@ -182,7 +177,10 @@ TEST(CommandLineTests, Input)
     // this happens and failing if not?
 
     PresentMon pm;
-    pm.Add(L"-stop_existing_session -terminate_after_timed -timed 3 -track_input");
+    pm.Add(L"--stop_existing_session --terminate_after_timed --timed 3");
+    if (v == 1) {
+        pm.Add(L"--v1_metrics");
+    }
     pm.AddCsvPath(csvPath);
 
     pm.PMSTART();
@@ -198,13 +196,17 @@ TEST(CommandLineTests, Input)
         return;
     }
 
-    auto idxmsSinceInput = csv.GetColumnIndex("msSinceInput");
-    ASSERT_NE(idxmsSinceInput, SIZE_MAX) << "    Output missing required column: msSinceInput";
+    char const* inputHeader = v == 1 ? "msSinceInput" : "ClickToPhotonLatency";
+
+    auto idxInputHeader = csv.GetColumnIndex(inputHeader);
+    if (idxInputHeader == SIZE_MAX) {
+       FAIL() << "    Output missing required column: " << inputHeader;
+    }
 
     uint32_t nonZeroInputRowCount = 0;
     while (!::testing::Test::HasFailure() && csv.ReadRow()) {
-        auto msSinceInput = strtod(csv.cols_[idxmsSinceInput], nullptr);
-        if (msSinceInput != 0) {
+        auto inputValue = strtod(csv.cols_[idxInputHeader], nullptr);
+        if (inputValue != 0) {
             nonZeroInputRowCount += 1;
         }
     }
@@ -223,3 +225,5 @@ TEST(CommandLineTests, Input)
     }
 }
 
+TEST(CommandLineTests, Input_v1) { InputTest(1); }
+TEST(CommandLineTests, Input_v2) { InputTest(2); }
