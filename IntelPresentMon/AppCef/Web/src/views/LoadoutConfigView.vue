@@ -50,7 +50,7 @@ export default Vue.extend({
   },
 
   data: () => ({
-  }),
+  }),  
 
   mounted() {
     new Sortable(document.querySelector('#sortable-row-container')!, {
@@ -112,13 +112,7 @@ export default Vue.extend({
       return Loadout.widgets;
     },
     metricOptions(): MetricOption[] {
-      return this.metrics.flatMap(m => 
-        Array.from({ length: m.arraySize }, (_, i) => ({
-          metricId: m.id,
-          name: m.arraySize > 1 ? `${m.name} [${i}]` : m.name,
-          arrayIndex: i,
-        }))
-      );
+      return Introspection.metricOptions;
     },
     selectedPreset: {
       set(preset: number|null) {
