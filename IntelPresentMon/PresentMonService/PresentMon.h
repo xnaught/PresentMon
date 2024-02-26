@@ -66,6 +66,14 @@ class PresentMonSession {
       return std::string{"UNKOWN_CPU"};
     }
   }
+  double GetCpuPowerLimit() {
+      if (cpu_) {
+          return cpu_->GetCpuPowerLimit();
+      }
+      else {
+          return 0.;
+      }
+  }
 
   PM_STATUS SelectAdapter(uint32_t adapter_id);
   PM_STATUS SetGpuTelemetryPeriod(uint32_t period_ms);
@@ -169,6 +177,7 @@ class PresentMon {
 
   std::vector<std::shared_ptr<pwr::PowerTelemetryAdapter>> EnumerateAdapters();
   std::string GetCpuName() { return real_time_session_.GetCpuName(); }
+  double GetCpuPowerLimit() { return real_time_session_.GetCpuPowerLimit(); }
 
   PM_STATUS SelectAdapter(uint32_t adapter_id);
   

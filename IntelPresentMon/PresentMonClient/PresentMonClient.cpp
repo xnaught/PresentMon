@@ -1262,17 +1262,17 @@ PM_STATUS PresentMonClient::GetCpuName(char* cpu_name_buffer,
     return PM_STATUS::PM_STATUS_INSUFFICIENT_BUFFER;
   }
 
-  NamedPipeHelper::EncodeRequestHeader(&rqst_buf, PM_ACTION::GET_CPU_NAME);
+  NamedPipeHelper::EncodeRequestHeader(&rqst_buf, PM_ACTION::GET_STATIC_CPU_METRICS);
 
   PM_STATUS status = CallPmService(&rqst_buf, &rsp_buf);
   if (status != PM_STATUS::PM_STATUS_SUCCESS) {
     return status;
   }
 
-  IPMCpuNameResponse cpu_name{};
-  status = NamedPipeHelper::DecodeCpuNameResponse(&rsp_buf, &cpu_name);
+  IPMStaticCpuMetrics static_cpu_metrics{};
+  status = NamedPipeHelper::DecodeStaticCpuMetricsResponse(&rsp_buf, &static_cpu_metrics);
   if (status != PM_STATUS::PM_STATUS_SUCCESS ||
-      cpu_name.cpu_name_length > MAX_PM_CPU_NAME) {
+      static_cpu_metrics.cpuNameLength > MAX_PM_CPU_NAME) {
     return status;
   }
 
@@ -1280,18 +1280,18 @@ PM_STATUS PresentMonClient::GetCpuName(char* cpu_name_buffer,
     // Service returns back the cpu name length without a
     // NULL terminator. Increase by one as client present mon client
     // will return a size including null terminator
-    *buffer_size = cpu_name.cpu_name_length + 1;
+    *buffer_size = static_cpu_metrics.cpuNameLength + 1;
     return PM_STATUS::PM_STATUS_INSUFFICIENT_BUFFER;
   } else {
-    std::string temp_string = cpu_name.cpu_name;
+    std::string temp_string = static_cpu_metrics.cpuName;
     try {
       temp_string.copy(cpu_name_buffer, (size_t)*buffer_size - 1, 0);
       // Add a null terminator manually
-      cpu_name_buffer[cpu_name.cpu_name_length] = '\0';
+      cpu_name_buffer[static_cpu_metrics.cpuNameLength] = '\0';
       // Update the buffer size to the size of the cpu name +
       // the null terminator
-      *buffer_size = cpu_name.cpu_name_length + 1;
-      if (cpu_name.cpu_name_length + 1 > *buffer_size) {
+      *buffer_size = static_cpu_metrics.cpuNameLength + 1;
+      if (static_cpu_metrics.cpuNameLength + 1 > *buffer_size) {
         return PM_STATUS::PM_STATUS_INSUFFICIENT_BUFFER;
       } else {
         return PM_STATUS::PM_STATUS_SUCCESS;

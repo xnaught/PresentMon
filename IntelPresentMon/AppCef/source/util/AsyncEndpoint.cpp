@@ -24,4 +24,11 @@ namespace p2c::client::util
 	}
 
 	AsyncEndpoint::Environment AsyncEndpoint::GetEnvironment() const { return env; }
+
+	AsyncEndpoint::Result AsyncEndpoint::MakeStringErrorResult(std::wstring errorString)
+	{
+		auto str = CefValue::Create();
+		str->SetString(errorString);
+		return { false, std::move(str) };
+	}
 }

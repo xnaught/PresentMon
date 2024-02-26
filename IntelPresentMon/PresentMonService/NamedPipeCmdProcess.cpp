@@ -102,23 +102,23 @@ bool EncodeEnumerateAdapters(PresentMon* pm, MemBuffer* rspBuf) {
   return true;
 }
 
-bool EncodeGetCpuName(PresentMon* pm, MemBuffer* rspBuf) {
+bool EncodeGetStaticCpuMetrics(PresentMon* pm, MemBuffer* rspBuf) {
 
   IPMSMResponseHeader response = {};
-  IPMCpuNameResponse cpu_name_info = {};
-
-  auto cpu_name = pm->GetCpuName();
+  IPMStaticCpuMetrics staticCpuMetrics = {};
 
   NamedPipeHelper::PopulateResponseHeader(
-      response, PM_ACTION::GET_CPU_NAME, 1,
-      static_cast<DWORD>(sizeof(IPMCpuNameResponse)),
+      response, PM_ACTION::GET_STATIC_CPU_METRICS, 1,
+      static_cast<DWORD>(sizeof(IPMStaticCpuMetrics)),
       PM_STATUS::PM_STATUS_SUCCESS);
 
-  cpu_name.copy(cpu_name_info.cpu_name, sizeof(cpu_name_info.cpu_name), 0);
-  cpu_name_info.cpu_name_length = (uint32_t)cpu_name.size();
+  auto cpu_name = pm->GetCpuName();
+  cpu_name.copy(staticCpuMetrics.cpuName, sizeof(staticCpuMetrics.cpuName), 0);
+  staticCpuMetrics.cpuNameLength = (uint32_t)cpu_name.size();
+  staticCpuMetrics.cpuPowerLimit = pm->GetCpuPowerLimit();
 
   rspBuf->AddItem(&response, sizeof(IPMSMResponseHeader));
-  rspBuf->AddItem(&cpu_name_info, sizeof(IPMCpuNameResponse));
+  rspBuf->AddItem(&staticCpuMetrics, sizeof(IPMStaticCpuMetrics));
   return true;
 }
 
@@ -177,8 +177,8 @@ void ProcessRequests(PresentMon* pm, MemBuffer* rqstBuf, MemBuffer* rspBuf) {
         validRequest =
             EncodeGeneralRequestSetAction(request->action, pm, rqstBuf, rspBuf);
         break;
-      case PM_ACTION::GET_CPU_NAME:
-        validRequest = EncodeGetCpuName(pm, rspBuf);
+      case PM_ACTION::GET_STATIC_CPU_METRICS:
+        validRequest = EncodeGetStaticCpuMetrics(pm, rspBuf);
         break;
       default:
         validRequest = FALSE;

@@ -30,7 +30,8 @@ class CpuTelemetry {
   }
 
   std::string GetCpuName();
-
+  double GetCpuPowerLimit() { return 0.; }
+  
   // constants
   static constexpr size_t defaultHistorySize = 300;
   // data

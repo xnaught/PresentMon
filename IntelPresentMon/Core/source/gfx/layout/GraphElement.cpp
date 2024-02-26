@@ -78,7 +78,7 @@ namespace p2c::gfx::lay
 				}, { "$label-wrap-left" });
 				if (showCurrentValues) {
 					// value
-					metricValueReadouts[i] = TextElement::Make(L"0000", { "$label-value", std::format("$metric-{}", i) });
+					metricValueReadouts[i] = TextElement::Make(L"0000.", { "$label-value", std::format("$metric-{}", i) });
 					titleFlex->AddChild(metricValueReadouts[i]);
 					// units
 					titleFlex->AddChild(TextElement::Make(pack.units, { "$label-units", std::format("$metric-{}", i) }));
@@ -89,7 +89,7 @@ namespace p2c::gfx::lay
 				auto titleFlex = FlexElement::Make({}, { "$label-wrap-right" });
 				if (showCurrentValues) {
 					// units
-					metricValueReadouts[i] = TextElement::Make(L"0000", { "$label-value", std::format("$metric-{}", i) });
+					metricValueReadouts[i] = TextElement::Make(L"0000.", { "$label-value", std::format("$metric-{}", i) });
 					titleFlex->AddChild(metricValueReadouts[i]);
 					// units
 					titleFlex->AddChild(TextElement::Make(pack.units, { "$label-units", std::format("$metric-{}", i) }));

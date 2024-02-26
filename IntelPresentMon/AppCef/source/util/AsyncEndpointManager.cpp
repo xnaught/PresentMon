@@ -10,6 +10,7 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "CefValues.h"
 #include <include/wrapper/cef_helpers.h>
+#include <CommonUtilities\source\str\String.h>
 
 
 namespace p2c::client::util
@@ -19,8 +20,7 @@ namespace p2c::client::util
 		CEF_REQUIRE_RENDERER_THREAD();
 
 		// execute endpoint
-		if (auto pEndpoint = endpoints.Find(key))
-		{
+		if (auto pEndpoint = endpoints.Find(key)) {
 			std::unique_lock lck{ mtx };
 			const auto uid = nextUid++;
 			auto&&[iInvoke, inserted] = invocations.emplace(std::piecewise_construct,
@@ -38,19 +38,29 @@ namespace p2c::client::util
 					msg->GetArgumentList()->SetInt(1, (int)uid);
 					msg->GetArgumentList()->SetDictionary(2, V8ToCefValue(*pObj)->GetDictionary());
 					browser.GetMainFrame()->SendProcessMessage(PID_BROWSER, std::move(msg));
+					// resolve is invoked in the handler for the return message from browser process
 				}
 				break;
 			case AsyncEndpoint::Environment::RenderImmediate:
 				pEndpoint->ExecuteOnRenderAccessor(uid, V8ToCefValue(*pObj), accessor);
+				// resolve is invoked in ExecuteOnRenderAccessor
 				break;
 			case AsyncEndpoint::Environment::KernelTask:
-				iInvoke->second.taskFuture = std::async([&kernel, uid, pArgObj = V8ToCefValue(*pObj), pEndpoint, this]() mutable {
+				iInvoke->second.taskFuture = std::async([&kernel, key, uid, pArgObj = V8ToCefValue(*pObj), pEndpoint, this]() mutable {
 					AsyncEndpoint::Result result;
 					try {
 						// run the async command procudure on the std::async thread pool
 						result = pEndpoint->ExecuteOnKernelTask(uid, std::move(pArgObj), kernel);
-					} catch (...) {
-						result = { false, CefValueNull() };
+					}
+					catch (const std::exception& e) {
+						result = AsyncEndpoint::MakeStringErrorResult(pmon::util::str::ToWide(
+							std::format("Error in async API endpoint dispatch (kernel environment) [{}]: {}", key, e.what())
+						));
+					}
+					catch (...) {
+						result = AsyncEndpoint::MakeStringErrorResult(pmon::util::str::ToWide(
+							std::format("Error in async API endpoint dispatch (kernel environment) [{}]", key)
+						));
 					}
 					// pass results and run the resolve logic (V8 conversion etc.) on the renderer thread
 					CefPostTask(TID_RENDERER, base::BindOnce(
@@ -61,8 +71,7 @@ namespace p2c::client::util
 				break;
 			}
 		}
-		else
-		{
+		else {
 			p2clog.note(std::format(L"Key [{}] does not have an async endpoint registered", infra::util::ToWide(key)))
 				.nox().notrace().commit();
 		}
