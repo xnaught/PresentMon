@@ -38,7 +38,7 @@ enum class PM_ACTION
 	ENUMERATE_ADAPTERS,
 	SELECT_ADAPTER,
 	SET_GPU_TELEMETRY_PERIOD,
-	GET_CPU_NAME,
+	GET_STATIC_CPU_METRICS,
 	INVALID_REQUEST
 };
 
@@ -223,6 +223,12 @@ struct IPMCpuNameResponse
   uint32_t cpu_name_length;
 };
 
+struct IPMStaticCpuMetrics
+{
+	char cpuName[256];
+	uint32_t cpuNameLength;
+	double cpuPowerLimit;
+};
 
 #ifdef __cplusplus
 } // extern "C"
