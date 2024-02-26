@@ -1,6 +1,8 @@
 #pragma once
 #include "../../PresentMonAPI2/source/PresentMonAPI.h"
 #include "../../Interprocess/source/IntrospectionDataTypeMapping.h"
+#include "../../CommonUtilities/source/str/String.h"
+#include "../../PresentMonAPIWrapperCommon/source/EnumMap.h"
 #include "Session.h"
 #include "BlobContainer.h"
 #include <vector>
@@ -58,7 +60,7 @@ namespace pmapi
 				}
 			}
 		}
-		void FinalizationPostprocess_();
+		void FinalizationPostprocess_(bool isPolled);
 		// data
 		//   temporary construction storage
 		std::vector<uint32_t> slotDeviceIds_;
@@ -138,31 +140,82 @@ namespace pmapi
 		FrameQuery query_;
 	};
 
-	template<PM_DATA_TYPE dt, typename DestType>
-	struct QEReadBridger
+	namespace
 	{
-		using SourceType = typename pmon::ipc::intro::DataTypeToStaticType<dt>::type;
-		static void Invoke(DestType& dest, const uint8_t* pBlobBytes, uint64_t dataOffset)
+		// this static functor converts static types when bridged with runtime PM_DATA_TYPE info
+		template<PM_DATA_TYPE dt, PM_ENUM staticEnumId, typename DestType>
+		struct FQReadBridger
 		{
-			// if src is convertible to dest, then doit
-			if constexpr (dt == PM_DATA_TYPE_VOID) {
-				return;
+			using SourceType = typename pmon::ipc::intro::DataTypeToStaticType<dt, staticEnumId>::type;
+			static void Invoke(PM_ENUM enumId, DestType& dest, const uint8_t* pBlobBytes)
+			{
+				// void types are not handleable and generally should not occur
+				if constexpr (dt == PM_DATA_TYPE_VOID) {
+					assert(false && "trying to convert void type");
+				}
+				// strings (char array) can convert to std::basic_string types
+				else if constexpr (dt == PM_DATA_TYPE_STRING) {
+					if constexpr (std::same_as<DestType, std::string>) {
+						dest = reinterpret_cast<const char*>(pBlobBytes);
+					}
+					else if constexpr (std::same_as<DestType, std::wstring>) {
+						dest = pmon::util::str::ToWide(reinterpret_cast<const char*>(pBlobBytes));
+					}
+					else {
+						assert(false && "failure to convert enum type");
+					}
+				}
+				// enums can convert to numeric types or string types
+				else if constexpr (dt == PM_DATA_TYPE_ENUM) {
+					if constexpr (std::same_as<DestType, std::string>) {
+						try {
+							const auto keyId = *reinterpret_cast<const int*>(pBlobBytes);
+							dest = EnumMap::GetKeyMap(enumId)->at(keyId).narrowName;
+						}
+						catch (...) { dest = "Invalid"; }
+					}
+					else if constexpr (std::same_as<DestType, std::wstring>) {
+						try {
+							const auto keyId = *reinterpret_cast<const int*>(pBlobBytes);
+							dest = EnumMap::GetKeyMap(enumId)->at(keyId).wideName;
+						}
+						catch (...) { dest = L"Invalid"; }
+					}
+					else if constexpr (
+						std::is_integral_v<DestType> ||
+						std::is_floating_point_v<DestType> ||
+						std::same_as<DestType, SourceType>) {
+						dest = DestType(*reinterpret_cast<const int*>(pBlobBytes));
+					}
+					else {
+						assert(false && "failure to convert enum type");
+					}
+				}
+				// what's left is actual numeric types
+				else {
+					// don't output if the dest is string type
+					if constexpr (!std::same_as<DestType, std::string> && !std::same_as<DestType, std::wstring>) {
+						dest = static_cast<DestType>(reinterpret_cast<const SourceType&>(*pBlobBytes));
+					}
+					else {
+						assert(false && "failure to convert numeric type");
+					}
+				}
 			}
-			else if constexpr (dt == PM_DATA_TYPE_STRING) {
-				return;
+			static void Default(DestType& dest, const uint8_t* pBlobBytes) {
+				assert(false && "failure to convert unknown type");
 			}
-			else {
-				dest = static_cast<DestType>(reinterpret_cast<const SourceType&>(pBlobBytes[dataOffset]));
-			}
-		}
-		static void Default(DestType& dest, const uint8_t* pBlobBytes, uint64_t dataOffset) {}
-	};
+		};
 
-	template<typename T>
-	struct QEReadBridgerAdapter {
-		template<PM_DATA_TYPE dt>
-		using Bridger = QEReadBridger<dt, T>;
-	};
+		// adapter to convert template taking 4 arguments to template taking 2
+		// (we need this because you cannot define templates within a function
+		// and the static info is only available inside the templated function)
+		template<typename T>
+		struct FQReadBridgerAdapter {
+			template<PM_DATA_TYPE dt, PM_ENUM enumId>
+			using Bridger = FQReadBridger<dt, enumId, T>;
+		};
+	}
 
 	class FixedQueryElement
 	{
@@ -184,8 +237,8 @@ namespace pmapi
 		template<typename T>
 		void Load(T& dest) const
 		{
-			pmon::ipc::intro::BridgeDataType<typename QEReadBridgerAdapter<T>::Bridger>(
-				dataType_, dest, pContainer_->PeekActiveBlob(), dataOffset_);
+			pmon::ipc::intro::BridgeDataTypeWithEnum<typename FQReadBridgerAdapter<T>::Bridger>(
+				dataType_, enumId_, dest, pContainer_->PeekActiveBlob() + dataOffset_);
 		}
 		template<typename T>
 		T As() const
@@ -203,6 +256,7 @@ namespace pmapi
 		const FixedQueryContainer_* pContainer_ = nullptr;
 		uint64_t dataOffset_ = 0ull;
 		PM_DATA_TYPE dataType_ = PM_DATA_TYPE_VOID;
+		PM_ENUM enumId_ = PM_ENUM_NULL_ENUM;
 	};
 
 	class FinalizingElement
@@ -215,14 +269,16 @@ namespace pmapi
 		}
 	};
 
-	void FixedQueryContainer_::FinalizationPostprocess_()
+	void FixedQueryContainer_::FinalizationPostprocess_(bool isPolled)
 	{
 		// get introspection data
 		auto pIntro = pSession_->GetIntrospectionRoot();
 		// complete smart query objects
 		for (auto&& [raw, smart] : std::views::zip(rawElements_, smartElements_)) {
 			smart->dataOffset_ = raw.dataOffset;
-			smart->dataType_ = pIntro->FindMetric(raw.metric).GetDataTypeInfo().GetPolledType();
+			const auto dti = pIntro->FindMetric(raw.metric).GetDataTypeInfo();
+			smart->dataType_ = isPolled ? dti.GetPolledType() : dti.GetFrameType();
+			smart->enumId_ = dti.GetEnumId();
 		}
 		// cleanup temporary construction data
 		smartElements_.clear();
@@ -242,7 +298,7 @@ namespace pmapi
 		// make blobs
 		blobs_ = query_.MakeBlobContainer(nBlobs_);
 
-		FinalizationPostprocess_();
+		FinalizationPostprocess_(true);
 	}
 
 	template<class T>
@@ -257,7 +313,7 @@ namespace pmapi
 		// make blobs
 		blobs_ = query_.MakeBlobContainer(nBlobs_);
 
-		FinalizationPostprocess_();
+		FinalizationPostprocess_(false);
 	}
 }
 

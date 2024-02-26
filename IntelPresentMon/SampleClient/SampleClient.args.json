@@ -23,10 +23,6 @@
       "Command": "--metric PM_METRIC_GPU_MEM_MAX_BANDWIDTH"
     },
     {
-      "Id": "5671c87e-b7bc-4682-b330-18d5f96e34d1",
-      "Command": "--wrapper"
-    },
-    {
       "Id": "c3af5374-64e9-40e0-ae04-a5e3142e0bc7",
       "Command": "--frame-query-sample"
     },
@@ -44,7 +40,7 @@
     },
     {
       "Id": "4d012d46-c606-4e44-91a4-8bfa0865cfbc",
-      "Command": "--process-name factorio.exe"
+      "Command": "--process-name Balatro.exe"
     },
     {
       "Id": "7f6ffa38-2a9a-480c-a811-a10c76820b74",
