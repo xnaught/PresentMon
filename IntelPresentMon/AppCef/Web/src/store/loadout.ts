@@ -227,17 +227,33 @@ export class LoadoutModule extends VuexModule {
         this.widgets.splice(0, this.widgets.length, ...widgets);
     }
 
+    // call loadConfigFromPayload instead of this unless you know what you're doing
     @Action({rawError: true})
     async parseAndReplace(payload: {payload: string}) {
+        // parse string to js object
         const loadout = JSON.parse(payload.payload) as LoadoutFile;
+        // handle versioning
         if (loadout.signature.code !== signature.code) throw new Error(`Bad loadout file format; expect:${signature.code} actual:${loadout.signature.code}`);
         if (loadout.signature.version !== signature.version) {
             migrateLoadout(loadout);
             console.info(`loadout migrated to ${signature.version}`);
         }
+        // remove unsupported metrics from widgets
+        const options = Introspection.metricOptions;
+        for (const w of loadout.widgets) {
+            w.metrics = w.metrics.filter(m => options.find(o =>
+                o.metricId === m.metric.metricId &&
+                o.arrayIndex === m.metric.arrayIndex
+            ) !== undefined);
+        }
+        // remove empty widgets
+        // possible corner case: can get empty loadout if original only includes non-option metrics
+        loadout.widgets = loadout.widgets.filter(w => w.metrics.length > 0);
+        // commit the mutation to replace widgets
         this.context.commit('replaceWidgets_', loadout.widgets);
     }
 
+    // wraps exceptions to properly notify of migration issues
     @Action({rawError: true})
     async loadConfigFromPayload(pay: {payload: string, err: string}) {
         let {payload, err} = pay;
