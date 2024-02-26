@@ -262,10 +262,10 @@ void PresentMonSession::AddPresents(
     uint64_t stopQpc, bool* hitStopQpc) {
   auto i = *presentEventIndex;
 
-  if (trace_session_.mStartQpc.QuadPart != 0) {
-    // If mStartQpc contains a value an etl file is being processed.
+  if (trace_session_.mStartTimestamp.QuadPart != 0) {
+    // If mStartTimestamp contains a value an etl file is being processed.
     // Set this value in the streamer to have the correct start time.
-    streamer_.SetStartQpc(trace_session_.mStartQpc.QuadPart);
+    streamer_.SetStartQpc(trace_session_.mStartTimestamp.QuadPart);
   }
 
   for (auto n = presentEvents.size(); i < n; ++i) {
