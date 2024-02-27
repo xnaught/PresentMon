@@ -186,8 +186,9 @@ export class LoadoutModule extends VuexModule {
     resetWidgetAs_(payload: {index: number, type: WidgetType}) {
         let qualifiedMetric:QualifiedMetric|null = this.widgets[payload.index].metrics[0].metric;
         // we need to change the metric ID if we're resetting as Graph and metric is not numeric
-        if (payload.type === WidgetType.Graph) {
-            if (!Introspection.metrics[qualifiedMetric.metricId].numeric) {
+        if (qualifiedMetric !== null && payload.type === WidgetType.Graph) {
+            const metric = Introspection.metrics.find(m => m.id === qualifiedMetric!.metricId)
+            if (!metric || !metric.numeric) {
                 qualifiedMetric = null;
             }
         }
