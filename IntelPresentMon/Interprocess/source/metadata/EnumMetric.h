@@ -71,8 +71,8 @@
 		X_(METRIC, GPU_MEM_POWER_LIMITED, "GPU Memory Power Limited", "", "Memory frequency is being limited because the memory modules are exceeding the maximum power limits") \
 		X_(METRIC, GPU_MEM_TEMPERATURE_LIMITED, "GPU Memory Temperature Limited", "", "Memory frequency is being limited because the memory modules are exceeding the maximum temperature limits") \
 		X_(METRIC, GPU_MEM_CURRENT_LIMITED, "GPU Memory Current Limited", "", "Memory frequency is being limited because the memory modules are exceeding the maximum current limits") \
-		X_(METRIC, GPU_MEM_VOLTAGE_LIMITED, "GPU Memory Voltage", "", "Memory frequency is being limited because the memory modules are exceeding the maximum voltage limits") \
-		X_(METRIC, GPU_MEM_UTILIZATION_LIMITED, "VRAM Utilization Limited", "", "Memory frequency is being limited due to low memory traffic") \
+		X_(METRIC, GPU_MEM_VOLTAGE_LIMITED, "GPU Memory Voltage Limited", "", "Memory frequency is being limited because the memory modules are exceeding the maximum voltage limits") \
+		X_(METRIC, GPU_MEM_UTILIZATION_LIMITED, "GPU Memory Utilization Limited", "", "Memory frequency is being limited due to low memory traffic") \
 		\
 		X_(METRIC, CPU_UTILIZATION, "CPU Utilization", "", "Amount of CPU processing capacity being used") \
 		X_(METRIC, CPU_POWER_LIMIT, "CPU Power Limit", "", "Power limit of the CPU") \
