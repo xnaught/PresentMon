@@ -43,7 +43,7 @@ bool AmdPowerTelemetryAdapter::GetVideoMemoryInfo(uint64_t& gpu_mem_size, uint64
   if (adl2_->Ok(result)) {
     // iMemoryBandwidthX2 does not specify size but iMemoryBandwith
     // returns megabytes per second. Assuming they are the same.
-    gpu_mem_max_bandwidth = static_cast<uint64_t>(memory_info.iMemoryBandwidthX2) * 1000000;
+    gpu_mem_max_bandwidth = static_cast<uint64_t>(memory_info.iMemoryBandwidth) * 1000000;
     // iMemorySize is the memory size in bytes
     gpu_mem_size = static_cast<uint64_t>(memory_info.iMemorySize);
     success = true;

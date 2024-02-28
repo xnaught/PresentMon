@@ -528,6 +528,7 @@ namespace pwr::intel
         const ctl_mem_bandwidth_t& mem_bandwidth,
         PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info) {
         pm_gpu_power_telemetry_info.gpu_mem_max_bandwidth_bps = mem_bandwidth.maxBandwidth;
+        gpu_mem_max_bw_cache_value_bps_ = mem_bandwidth.maxBandwidth;
         SetTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_max_bandwidth);
         return;
     }
@@ -596,6 +597,18 @@ namespace pwr::intel
               pm_telemetry_value =
                   static_cast<double>(data_delta) / time_delta_;
               SetTelemetryCapBit(telemetry_cap_bit);
+              // TODO: File issue with control lib to determine why read bandwidth
+              // occasionally returns what appears to be an invalid counter value. If the currently monotomic value
+              // is less than the previous value OR the calculated bandwidth is greater then the max bandwidth
+              // return back the cached value
+              if (telemetry_cap_bit == GpuTelemetryCapBits::gpu_mem_read_bandwidth) {
+                if ((current_telemetry_item.value.datau64 < previous_telemetry_item.value.datau64) ||
+                    ((current_telemetry_item.value.datau64 - previous_telemetry_item.value.datau64) > gpu_mem_max_bw_cache_value_bps_)) {
+                  pm_telemetry_value = gpu_mem_read_bw_cache_value_bps_;
+                } else {
+                  gpu_mem_read_bw_cache_value_bps_ = pm_telemetry_value;
+                }
+              }
             }
             else {
                 // Expecting a double return type here
