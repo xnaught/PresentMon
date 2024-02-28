@@ -7,7 +7,6 @@
 #include <PresentMonAPIWrapper/source/PresentMonAPIWrapper.h>
 #include <PresentMonAPIWrapperCommon/source/EnumMap.h>
 #include <Core/source/infra/util/Util.h>
-#include "EnumMap.h"
 #include "RawFrameDataWriter.h"
 
 namespace p2c::pmon
@@ -37,8 +36,7 @@ namespace p2c::pmon
 		// acquire introspection data
 		pIntrospectionRoot = pSession->GetIntrospectionRoot();
 
-		// populate lookup for enumerations in dynamic metrics
-		EnumMap::Init(*pIntrospectionRoot);
+		// populate lookup for enumerations
 		pmapi::EnumMap::Refresh(*pIntrospectionRoot);
 
 		// establish initial sampling / window / processing setting values

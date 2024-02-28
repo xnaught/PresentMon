@@ -5,7 +5,7 @@
 #include <Core/source/infra/util/Assert.h>
 #include <CommonUtilities/source/str/String.h>
 #include <PresentMonAPIWrapper/source/FrameQuery.h>
-#include "EnumMap.h"
+#include <PresentMonAPIWrapperCommon/source/EnumMap.h>
 #include <format>
 #include <array>
 
@@ -65,12 +65,12 @@ namespace p2c::pmon
         template<>
         struct TypedAnnotation_<PM_ENUM> : public Annotation_
         {
-            TypedAnnotation_(PM_ENUM enumId) : pKeyMap{ EnumMap::GetMapPtr(enumId) } {}
+            TypedAnnotation_(PM_ENUM enumId) : pKeyMap{ pmapi::EnumMap::GetKeyMap(enumId) } {}
             void Write(std::ostream& out, const uint8_t* pBytes) const override
             {
-                out << ToNarrow(pKeyMap->at(*reinterpret_cast<const int*>(pBytes)));
+                out << pKeyMap->at(*reinterpret_cast<const int*>(pBytes)).narrowName;
             }
-            const EnumMap::KeyMap* pKeyMap = nullptr;
+            std::shared_ptr<const pmapi::EnumMap::KeyMap> pKeyMap;
         };
         template<>
         struct TypedAnnotation_<TimeAnnotationType_> : public Annotation_
