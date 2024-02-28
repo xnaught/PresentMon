@@ -144,7 +144,7 @@ int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, double window
         auto proc = pSession->TrackProcess(processId.value());
 
         PM_BEGIN_FIXED_DYNAMIC_QUERY(MyDynamicQuery)
-            FixedQueryElement appName{ this, PM_METRIC_APPLICATION, PM_STAT_MID_POINT };
+            FixedQueryElement appName{ this, PM_METRIC_APPLICATION, PM_STAT_NONE };
             FixedQueryElement fpsAvg{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_AVG };
             FixedQueryElement fps90{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_PERCENTILE_90 };
             FixedQueryElement fps95{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_PERCENTILE_95 };
@@ -160,7 +160,7 @@ int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, double window
             FixedQueryElement gpuInputLatencyAvg{ this, PM_METRIC_INPUT_LATENCY, PM_STAT_AVG };
             FixedQueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_AVG, 1 };
             FixedQueryElement presentMode{ this, PM_METRIC_PRESENT_MODE, PM_STAT_MID_POINT };
-            FixedQueryElement gpuName{ this, PM_METRIC_GPU_NAME, PM_STAT_MID_POINT, 1 };
+            FixedQueryElement gpuName{ this, PM_METRIC_GPU_NAME, PM_STAT_NONE, 1 };
         PM_END_FIXED_QUERY dq{ *pSession, windowSize, metricOffset, 1, 1 };
 
         if (InitializeConsole() == false) {
@@ -170,6 +170,7 @@ int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, double window
 
         while (!_kbhit()) {
             dq.Poll(proc);
+            ConsolePrintLn("App Name = %s", dq.appName.As<std::string>().c_str());
             ConsolePrintLn("Presented FPS Average = %f", dq.fpsAvg.As<double>());
             ConsolePrintLn("Presented FPS 90% = %f", dq.fps90.As<double>());
             ConsolePrintLn("Presented FPS 95% = %f", dq.fps95.As<double>());
