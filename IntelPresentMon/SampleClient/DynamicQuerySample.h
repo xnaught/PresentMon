@@ -157,10 +157,11 @@ int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, double window
             FixedQueryElement gpuBusyTimeAvg{ this, PM_METRIC_GPU_BUSY, PM_STAT_AVG };
             FixedQueryElement gpuDisplayLatencyAvg{ this, PM_METRIC_DISPLAY_LATENCY, PM_STAT_AVG };
             FixedQueryElement gpuDisplayDurationAvg{ this, PM_METRIC_DISPLAYED_TIME, PM_STAT_AVG };
-            FixedQueryElement gpuInputLatencyAvg{ this, PM_METRIC_INPUT_LATENCY, PM_STAT_AVG };
+            FixedQueryElement gpuPhotonLatencyAvg{ this, PM_METRIC_CLICK_TO_PHOTON_LATENCY, PM_STAT_AVG };
             FixedQueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_AVG, 1 };
             FixedQueryElement presentMode{ this, PM_METRIC_PRESENT_MODE, PM_STAT_MID_POINT };
             FixedQueryElement gpuName{ this, PM_METRIC_GPU_NAME, PM_STAT_NONE, 1 };
+            FixedQueryElement fanSpeed{ this, PM_METRIC_GPU_FAN_SPEED, PM_STAT_AVG, 1 };
         PM_END_FIXED_QUERY dq{ *pSession, windowSize, metricOffset, 1, 1 };
 
         if (InitializeConsole() == false) {
@@ -183,10 +184,16 @@ int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, double window
             ConsolePrintLn("GPU Busy Time Average = %f", dq.gpuBusyTimeAvg.As<double>());
             ConsolePrintLn("Display Latency Average = %f", dq.gpuDisplayLatencyAvg.As<double>());
             ConsolePrintLn("Display Duration Average = %f", dq.gpuDisplayDurationAvg.As<double>());
-            ConsolePrintLn("Input Latency Average = %f", dq.gpuInputLatencyAvg.As<double>());
+            ConsolePrintLn("Input Latency Average = %f", dq.gpuPhotonLatencyAvg.As<double>());
             ConsolePrintLn("GPU Power Average = %f", dq.gpuPower.As<double>());
             ConsolePrintLn("Present Mode = %s", dq.presentMode.As<std::string>().c_str());
             ConsolePrintLn("GPU Name = %s", dq.gpuName.As<std::string>().c_str());
+            if (dq.fanSpeed.IsAvailable()) {
+                ConsolePrintLn("GPU Fan Speed = %f", dq.fanSpeed.As<int>());
+            }
+            else {
+                ConsolePrintLn("GPU Fan Speed = Unavailable");
+            }
             CommitConsole();
             std::this_thread::sleep_for(20ms);
         }

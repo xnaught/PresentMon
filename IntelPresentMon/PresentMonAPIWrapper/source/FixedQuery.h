@@ -48,6 +48,7 @@ namespace pmapi
 		FixedQueryContainer_(Session& session, uint32_t nBlobs, S&&...slotDeviceIds)
 			:
 			pSession_{ &session },
+			pIntrospection_{ session.GetIntrospectionRoot() },
 			slotDeviceIds_{ uint32_t(slotDeviceIds)... },
 			nBlobs_{ nBlobs }
 		{}
@@ -55,9 +56,16 @@ namespace pmapi
 		{
 			// replace slot indexes with device ids
 			for (auto& e : rawElements_) {
-				if (e.deviceId > 0) {
-					e.deviceId = slotDeviceIds_.at(e.deviceId - 1);
-				}
+				e.deviceId = MapDeviceId_(e.deviceId);
+			}
+		}
+		uint32_t MapDeviceId_(uint32_t deviceSlot) const
+		{
+			if (deviceSlot == 0) {
+				return 0;
+			}
+			else {
+				return slotDeviceIds_[deviceSlot - 1];
 			}
 		}
 		void FinalizationPostprocess_(bool isPolled);
@@ -67,12 +75,13 @@ namespace pmapi
 		std::vector<PM_QUERY_ELEMENT> rawElements_;
 		std::vector<class FixedQueryElement*> smartElements_;
 		Session* pSession_ = nullptr;
+		std::shared_ptr<pmapi::intro::Root> pIntrospection_;
 		uint32_t nBlobs_;
 		//   retained storage
 		BlobContainer blobs_;
 		size_t activeBlobIndex_ = 0;
 	};
-
+	
 	struct FixedDynamicQueryContainer : public FixedQueryContainer_
 	{
 		template<typename...S>
@@ -226,17 +235,33 @@ namespace pmapi
 			:
 			pContainer_{ pContainer }
 		{
-			pContainer->rawElements_.push_back(PM_QUERY_ELEMENT{
-				.metric = metric,
-				.stat = stat,
-				.deviceId = deviceSlot,
-				.arrayIndex = index,
-			});
-			pContainer->smartElements_.push_back(this);
+			const auto deviceId = pContainer_->MapDeviceId_(deviceSlot);
+			// check whether the metric specified by this element is available
+			bool available = false;
+			for (auto&& dmi : pContainer_->pIntrospection_->FindMetric(metric).GetDeviceMetricInfo()) {
+				if (dmi.GetDevice().GetId() == deviceId) {
+					available = dmi.IsAvailable() && index < dmi.GetArraySize();
+					break;
+				}
+			}
+			// do not register element if not available
+			// default datatype void will signal its omission
+			// consider registering in some way while keeping out of rawElements
+			// to enable enumeration etc. even for unavailable elements
+			if (available) {
+				pContainer->rawElements_.push_back(PM_QUERY_ELEMENT{
+					.metric = metric,
+					.stat = stat,
+					.deviceId = deviceSlot,
+					.arrayIndex = index,
+				});
+				pContainer->smartElements_.push_back(this);
+			}
 		}
 		template<typename T>
 		void Load(T& dest) const
 		{
+			assert(IsAvailable());
 			pmon::ipc::intro::BridgeDataTypeWithEnum<typename FQReadBridgerAdapter<T>::Bridger>(
 				dataType_, enumId_, dest, pContainer_->PeekActiveBlob() + dataOffset_);
 		}
@@ -251,6 +276,10 @@ namespace pmapi
 		operator T() const
 		{
 			return As<T>();
+		}
+		bool IsAvailable() const
+		{
+			return dataType_ != PM_DATA_TYPE_VOID;
 		}
 	private:
 		const FixedQueryContainer_* pContainer_ = nullptr;
@@ -271,12 +300,10 @@ namespace pmapi
 
 	void FixedQueryContainer_::FinalizationPostprocess_(bool isPolled)
 	{
-		// get introspection data
-		auto pIntro = pSession_->GetIntrospectionRoot();
 		// complete smart query objects
 		for (auto&& [raw, smart] : std::views::zip(rawElements_, smartElements_)) {
 			smart->dataOffset_ = raw.dataOffset;
-			const auto dti = pIntro->FindMetric(raw.metric).GetDataTypeInfo();
+			const auto dti = pIntrospection_->FindMetric(raw.metric).GetDataTypeInfo();
 			smart->dataType_ = isPolled ? dti.GetPolledType() : dti.GetFrameType();
 			smart->enumId_ = dti.GetEnumId();
 		}

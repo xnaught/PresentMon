@@ -200,10 +200,11 @@ int FrameQuerySample(std::unique_ptr<pmapi::Session>&& pSession)
             FixedQueryElement inputLatency{ this, PM_METRIC_CLICK_TO_PHOTON_LATENCY, PM_STAT_NONE };
             FixedQueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_NONE, 1 };
             FixedQueryElement presentRuntime{ this, PM_METRIC_PRESENT_RUNTIME, PM_STAT_NONE };
+            FixedQueryElement fanSpeed{ this, PM_METRIC_GPU_FAN_SPEED, PM_STAT_NONE, 1 };
         PM_END_FIXED_QUERY fq{ *pSession, 20, 1 };
 
         while (!_kbhit()) {
-            std::cout << "Consuming frames...";
+            std::cout << "Consuming frames...\n";
             const auto nProcessed = fq.ForEachConsume(processTracker, [processName, processId](const MyFrameQuery& q) {
                 std::cout << processName.value() << ",";
                 std::cout << processId.value() << ",";
@@ -218,7 +219,13 @@ int FrameQuerySample(std::unique_ptr<pmapi::Session>&& pSession)
                 std::cout << q.gpuDisplayDuration.As<double>() << ",";
                 std::cout << q.inputLatency.As<double>() << ",";
                 std::cout << q.gpuPower.As<double>() << ",";
-                std::cout << q.presentRuntime.As<std::string>() << "\n";
+                std::cout << q.presentRuntime.As<std::string>() << ",";
+                if (q.fanSpeed.IsAvailable()) {
+                    std::cout << q.fanSpeed.As<int>() << "\n";
+                }
+                else {
+                    std::cout << "NA\n";
+                }
             });
             std::cout << "Processed " << nProcessed << " frames, sleeping..." << std::endl;
             std::this_thread::sleep_for(150ms);
