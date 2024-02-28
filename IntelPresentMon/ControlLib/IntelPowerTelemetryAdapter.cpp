@@ -401,11 +401,6 @@ namespace pwr::intel
             GpuTelemetryCapBits::gpu_mem_read_bandwidth);
         if (result != CTL_RESULT_SUCCESS) {
           return result;
-        } else
-        {
-            if (pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps > 10000000000.) {
-              OutputDebugStringA("Wow! That's some nice bandwidth! Possibly too much?\n");
-            }
         }
 
         result = GetPowerTelemetryItemUsage(
