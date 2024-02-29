@@ -13,16 +13,23 @@
 #include <Core/source/win/ProcessMapBuilder.h>
 #include <Core/source/win/com/WbemConnection.h>
 #include <Core/source/infra/opt/Options.h>
+#include <CommonUtilities\source\str\String.h>
 
 using namespace std::literals;
 
 namespace p2c::kern
 {
-    Kernel::Kernel(KernelHandler* pHandler) noexcept
+    using ::pmon::util::str::ToWide;
+
+    Kernel::Kernel(KernelHandler* pHandler)
         :
         pHandler{ pHandler },
+        constructionSemaphore{ 0 },
         thread{ &Kernel::ThreadProcedure_, this }
-    {}
+    {
+        constructionSemaphore.acquire();
+        HandleMarshalledException_();
+    }
 
     Kernel::~Kernel()
     {
@@ -35,6 +42,7 @@ namespace p2c::kern
 
     void Kernel::PushSpec(std::unique_ptr<OverlaySpec> pSpec)
     {
+        HandleMarshalledException_();
         {
             std::lock_guard lk{ mtx };
             pPushedSpec = std::move(pSpec);
@@ -44,16 +52,20 @@ namespace p2c::kern
 
     void Kernel::ClearOverlay()
     {
-        std::lock_guard lk{ mtx };
-        if (pOverlayContainer)
+        HandleMarshalledException_();
         {
-            clearRequested = true;
-            pPushedSpec.reset();
+            std::lock_guard lk{ mtx };
+            if (pOverlayContainer) {
+                clearRequested = true;
+                pPushedSpec.reset();
+            }
         }
+        cv.notify_one();
     }
 
     std::vector<Process> Kernel::ListProcesses()
     {
+        HandleMarshalledException_();
         win::ProcessMapBuilder builder;
         builder.FillWindowHandles();
         builder.FilterHavingWindow();
@@ -74,6 +86,7 @@ namespace p2c::kern
 
     void Kernel::SetAdapter(uint32_t id)
     {
+        HandleMarshalledException_();
         std::lock_guard lk{ mtx };
         if (!pm) {
             p2clog.warn(L"presentmon not initialized").commit();
@@ -84,23 +97,29 @@ namespace p2c::kern
 
     const pmapi::intro::Root& Kernel::GetIntrospectionRoot() const
     {
+        HandleMarshalledException_();
         std::lock_guard g{ mtx };
         return pm->GetIntrospectionRoot();
     }
 
     std::vector<pmon::AdapterInfo> Kernel::EnumerateAdapters() const
     {
+        HandleMarshalledException_();
         std::lock_guard lk{ mtx };
         if (!pm) {
             p2clog.warn(L"presentmon not initialized").commit();
             return {};
         }
         try { return pm->EnumerateAdapters(); }
-        catch (...) { return {}; }
+        catch (...) { 
+            p2clog.warn(L"failed to enumerate adapters, returning empty set").commit();
+            return {};
+        }
     }
 
     void Kernel::SetCapture(bool active)
     {
+        HandleMarshalledException_();
         std::lock_guard lk{ mtx };
         pushedCaptureActive = active;
     }
@@ -116,12 +135,19 @@ namespace p2c::kern
         return std::move(pPushedSpec);
     }
 
+    void Kernel::HandleMarshalledException_() const
+    {
+        if (hasMarshalledException) {
+            std::rethrow_exception(marshalledException);
+        }
+    }
+
     void Kernel::ThreadProcedure_()
     {
         try {
             // mutex that prevents frontend from accessing before pmon is connected
             std::unique_lock startLck{ mtx };
-            p2clog.info(L"== kernel thread started ==").pid().tid().commit();
+            p2clog.info(L"== kernel thread starting ==").pid().tid().commit();
 
             // command line options
             auto& opt = infra::opt::get();
@@ -138,6 +164,7 @@ namespace p2c::kern
             }
 
             startLck.unlock();
+            constructionSemaphore.release();
 
             while (!dying)
             {
@@ -159,6 +186,8 @@ namespace p2c::kern
                         RunOverlayLoop_();
                     }
                 }
+                // this catch section handles target lost and overlay crashes
+                // control app will still work, can attempt to instance another overlay
                 catch (const TargetLostException&)
                 {
                     if (pOverlayContainer) {
@@ -189,10 +218,22 @@ namespace p2c::kern
 
             p2clog.info(L"== core thread exiting ==").pid().commit();
         }
-        catch (...)
-        {
-            p2clog.note(L"Exiting kernel thread due to uncaught exception").nox().notrace().commit();
+        // this catch section handles failures to initialize kernel, or rare error that escape the main loop catch
+        // possibility to marshall exceptions to js whenever an interface function is called (async rejection path)
+        catch (const std::exception& e) {
+            // TODO: instead of duplicating for std::ex+..., just catch ... and use a function that can throw/catch
+            // std::current_exception to extract useful info, if any
+            auto msg = std::format("Exception in PresentMon Kernel thread [{}]: {}", typeid(e).name(), e.what());
+            p2clog.note(ToWide(msg)).nox().notrace().commit();
+            marshalledException = std::current_exception();
+            hasMarshalledException.store(true);
         }
+        catch (...) {
+            p2clog.note(L"Unknown exception in PresentMon Kernel thread").nox().notrace().commit();
+            marshalledException = std::current_exception();
+            hasMarshalledException.store(true);
+        }
+        constructionSemaphore.release();
     }
 
     void Kernel::RunOverlayLoop_()
@@ -230,6 +271,7 @@ namespace p2c::kern
                 }
                 else if (pushedCaptureActive)
                 {
+                    throw std::runtime_error{ "henlo" };
                     std::wstring path;
                     if (auto pFolder = infra::svc::Services::ResolveOrNull<infra::util::FolderResolver>()) {
                         path = pFolder->Resolve(infra::util::FolderResolver::Folder::Documents) + L"\\Captures\\";

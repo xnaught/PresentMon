@@ -7,6 +7,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <semaphore>
 #include <Core/source/win/Process.h>
 #include <Core/source/pmon/PresentMon.h>
 #include "OverlaySpec.h"
@@ -38,7 +39,7 @@ namespace p2c::kern
     class Kernel
     {
     public:
-        Kernel(KernelHandler* pHandler) noexcept;
+        Kernel(KernelHandler* pHandler);
         Kernel(const Kernel&) = delete;
         Kernel& operator=(const Kernel&) = delete;
         ~Kernel();
@@ -53,6 +54,7 @@ namespace p2c::kern
         // functions
         bool IsIdle_() const;
         std::unique_ptr<OverlaySpec> PullSpec_();
+        void HandleMarshalledException_() const;
         // top level root acts like state machine for spawning/running overlay
         void ThreadProcedure_();
         // loop runs while overlay window active, holds message pump etc.
@@ -69,6 +71,9 @@ namespace p2c::kern
         std::unique_ptr<OverlayContainer> pOverlayContainer;
         mutable std::condition_variable cv;
         mutable std::mutex mtx;
+        std::binary_semaphore constructionSemaphore;
+        std::exception_ptr marshalledException;
+        std::atomic<bool> hasMarshalledException = false;
         std::jthread thread;
     };
 }

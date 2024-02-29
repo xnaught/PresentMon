@@ -15,6 +15,8 @@
 
 namespace p2c::client::util
 {
+	using ::pmon::util::str::ToWide;
+
 	void AsyncEndpointManager::DispatchInvocation(const std::string& key, CallbackContext ctx, CefRefPtr<CefV8Value> pObj, CefBrowser& browser, cef::DataBindAccessor& accessor, kern::Kernel& kernel)
 	{
 		CEF_REQUIRE_RENDERER_THREAD();
@@ -53,12 +55,12 @@ namespace p2c::client::util
 						result = pEndpoint->ExecuteOnKernelTask(uid, std::move(pArgObj), kernel);
 					}
 					catch (const std::exception& e) {
-						result = AsyncEndpoint::MakeStringErrorResult(pmon::util::str::ToWide(
+						result = AsyncEndpoint::MakeStringErrorResult(ToWide(
 							std::format("Error in async API endpoint dispatch (kernel environment) [{}]: {}", key, e.what())
 						));
 					}
 					catch (...) {
-						result = AsyncEndpoint::MakeStringErrorResult(pmon::util::str::ToWide(
+						result = AsyncEndpoint::MakeStringErrorResult(ToWide(
 							std::format("Error in async API endpoint dispatch (kernel environment) [{}]", key)
 						));
 					}

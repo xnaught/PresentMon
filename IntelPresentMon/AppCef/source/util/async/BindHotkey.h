@@ -26,7 +26,13 @@ namespace p2c::client::util::async
     private:
         static void Resolve_(uint64_t uid, bool succeeded, CefRefPtr<cef::DataBindAccessor> pAccessor)
         {
-            pAccessor->ResolveAsyncEndpoint(uid, succeeded, CefValueNull());
+            if (succeeded) {
+                pAccessor->ResolveAsyncEndpoint(uid, true, CefValueNull());
+            }
+            else {
+                auto result = AsyncEndpoint::MakeStringErrorResult(L"Async API endpoint [bindHotkey] failed");
+                pAccessor->ResolveAsyncEndpoint(uid, result.succeeded, std::move(result.pArgs));
+            }
         }
 	};
 }
