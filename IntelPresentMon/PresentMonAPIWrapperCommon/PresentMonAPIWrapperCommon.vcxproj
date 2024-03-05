@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="EnumMap.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="Introspection.cpp" />
   </ItemGroup>
