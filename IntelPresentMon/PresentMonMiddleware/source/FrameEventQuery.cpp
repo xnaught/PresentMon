@@ -2,8 +2,8 @@
 #include "../../PresentMonUtils/PresentMonNamedPipe.h"
 #include "FrameEventQuery.h"
 #include "../../PresentMonAPIWrapperCommon/Introspection.h"
-#include "../../CommonUtilities/source/Memory.h"
-#include "../../CommonUtilities/source/Meta.h"
+#include "../../CommonUtilities//Memory.h"
+#include "../../CommonUtilities//Meta.h"
 #include <algorithm>
 #include <cstddef>
 #include <limits>

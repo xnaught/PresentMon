@@ -1,6 +1,6 @@
 #pragma once
 #include "../PresentMonAPI2/PresentMonAPI.h"
-#include "../CommonUtilities/source/str/String.h"
+#include "../CommonUtilities/str/String.h"
 #include "Introspection.h"
 #include <unordered_map>
 #include <string>

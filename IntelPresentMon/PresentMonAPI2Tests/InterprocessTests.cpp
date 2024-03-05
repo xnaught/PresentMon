@@ -11,7 +11,7 @@
 #include "BoostProcess.h"
 #include "../PresentMonMiddleware/source/MockCommon.h"
 #include "../PresentMonMiddleware/source/MockMiddleware.h"
-#include "../CommonUtilities/source/Memory.h"
+#include "../CommonUtilities//Memory.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 

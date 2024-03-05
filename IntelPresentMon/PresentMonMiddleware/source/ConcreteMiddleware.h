@@ -6,7 +6,7 @@
 #include "../../Streamer/StreamClient.h"
 #include <optional>
 #include <string>
-#include "../../CommonUtilities/source/hash/Hash.h"
+#include "../../CommonUtilities/Hash.h"
 
 namespace pmapi::intro
 {

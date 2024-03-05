@@ -1,7 +1,7 @@
 #pragma once
 #include "../PresentMonAPI2/PresentMonAPI.h"
 #include "../Interprocess/source/IntrospectionDataTypeMapping.h"
-#include "../CommonUtilities/source/str/String.h"
+#include "../CommonUtilities//str/String.h"
 #include "../PresentMonAPIWrapperCommon/EnumMap.h"
 #include "Session.h"
 #include "BlobContainer.h"

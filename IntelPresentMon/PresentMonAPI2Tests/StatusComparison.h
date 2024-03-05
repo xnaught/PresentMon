@@ -5,7 +5,7 @@
 #include "../PresentMonAPI2/PresentMonAPI.h"
 #include "../Interprocess/source/metadata/EnumStatus.h"
 #include "../Interprocess/source/IntrospectionMacroHelpers.h"
-#include "../CommonUtilities/source/str/String.h"
+#include "../CommonUtilities//str/String.h"
 
 namespace Microsoft::VisualStudio::CppUnitTestFramework
 {

@@ -13,7 +13,7 @@
 #include <Core/source/win/ProcessMapBuilder.h>
 #include <Core/source/win/com/WbemConnection.h>
 #include <Core/source/infra/opt/Options.h>
-#include <CommonUtilities\source\str\String.h>
+#include <CommonUtilities\str\String.h>
 
 using namespace std::literals;
 

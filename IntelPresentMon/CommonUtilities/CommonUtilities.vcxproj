@@ -19,16 +19,16 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\cli\CliFramework.h" />
-    <ClInclude Include="source\Memory.h" />
-    <ClInclude Include="source\hash\Hash.h" />
-    <ClInclude Include="source\Meta.h" />
-    <ClInclude Include="source\str\String.h" />
+    <ClInclude Include="cli\CliFramework.h" />
+    <ClInclude Include="Memory.h" />
+    <ClInclude Include="Hash.h" />
+    <ClInclude Include="Meta.h" />
+    <ClInclude Include="str\String.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\cli\CliFramework.cpp" />
-    <ClCompile Include="source\hash\Hash.cpp" />
-    <ClCompile Include="source\str\String.cpp" />
+    <ClCompile Include="cli\CliFramework.cpp" />
+    <ClCompile Include="Hash.cpp" />
+    <ClCompile Include="str\String.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

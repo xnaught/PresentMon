@@ -10,7 +10,7 @@
 #include <format>
 #include <algorithm>
 #include <shlobj.h>
-#include "../CommonUtilities/source/str/String.h"
+#include "../CommonUtilities//str/String.h"
 #include "../PresentMonService/GlobalIdentifiers.h"
 
 #define GOOGLE_GLOG_DLL_DECL

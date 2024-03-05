@@ -5,7 +5,7 @@
 #include "../../DataBindAccessor.h"
 #include <Core/source/infra/log/Logging.h>
 #include "../CefValues.h"
-#include <CommonUtilities\source\str\String.h>
+#include <CommonUtilities\str\String.h>
 
 namespace p2c::client::util::async
 {
