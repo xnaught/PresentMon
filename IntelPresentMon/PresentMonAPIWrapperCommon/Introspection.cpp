@@ -12,6 +12,8 @@ namespace pmapi::intro
         return type == PM_METRIC_TYPE_FRAME_EVENT || type == PM_METRIC_TYPE_DYNAMIC_FRAME;
     }
 
+
+
     EnumKeyView MetricView::Introspect() const
     {
         return pRoot->FindEnumKey(PM_ENUM_METRIC, pBase->id);
@@ -62,6 +64,8 @@ namespace pmapi::intro
         return { GetStatInfoBegin_(), GetStatInfoEnd_() };
     }
 
+
+
     EnumKeyView DataTypeInfoView::IntrospectPolledType() const
     {
         return pRoot->FindEnumKey(PM_ENUM_DATA_TYPE, pBase->polledType);
@@ -80,6 +84,8 @@ namespace pmapi::intro
         return pRoot->FindEnum(pBase->enumId);
     }
 
+
+
     EnumKeyView DeviceView::IntrospectType() const
     {
         return pRoot->FindEnumKey(PM_ENUM_DEVICE_TYPE, pBase->type);
@@ -89,6 +95,8 @@ namespace pmapi::intro
     {
         return pRoot->FindEnumKey(PM_ENUM_DEVICE_VENDOR, pBase->vendor);
     }
+
+
 
     DeviceView DeviceMetricInfoView::GetDevice() const
     {
@@ -100,10 +108,14 @@ namespace pmapi::intro
         return pRoot->FindEnumKey(PM_ENUM_METRIC_AVAILABILITY, pBase->availability);
     }
 
+
+
     EnumKeyView StatInfoView::IntrospectStat() const
     {
         return pRoot->FindEnumKey(PM_ENUM_STAT, pBase->stat);
     }
+
+
 
     EnumKeyView UnitView::Introspect() const
     {

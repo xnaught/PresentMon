@@ -95,11 +95,10 @@ namespace pmapi
             }
 
             bool operator==(const ViewIterator& rhs) const noexcept { return pArray == rhs.pArray; }
-            bool operator!=(const ViewIterator& rhs) const noexcept { return pArray != rhs.pArray; }
-            bool operator>(const ViewIterator& rhs) const noexcept { return pArray > rhs.pArray; }
-            bool operator<(const ViewIterator& rhs) const noexcept { return pArray < rhs.pArray; }
-            bool operator>=(const ViewIterator& rhs) const noexcept { return pArray >= rhs.pArray; }
-            bool operator<=(const ViewIterator& rhs) const noexcept { return pArray <= rhs.pArray; }
+            std::strong_ordering operator<=>(const ViewIterator& rhs) const noexcept
+            {
+                return pArray <=> rhs.pArray;
+            }
         private:
             // data
             const base_type* const* pArray = nullptr;
