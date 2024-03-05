@@ -1,7 +1,7 @@
 #define NOMINMAX
 #include "../../PresentMonUtils/PresentMonNamedPipe.h"
 #include "FrameEventQuery.h"
-#include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
+#include "../../PresentMonAPIWrapperCommon/Introspection.h"
 #include "../../CommonUtilities/source/Memory.h"
 #include "../../CommonUtilities/source/Meta.h"
 #include <algorithm>

@@ -96,12 +96,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="source\dllmain.cpp" />
-    <ClCompile Include="source\PresentMonAPI.cpp" />
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="PresentMonAPI.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\Internal.h" />
-    <ClInclude Include="source\PresentMonAPI.h" />
+    <ClInclude Include="Internal.h" />
+    <ClInclude Include="PresentMonAPI.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">

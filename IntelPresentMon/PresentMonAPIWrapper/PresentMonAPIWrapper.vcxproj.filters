@@ -15,33 +15,33 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\Session.cpp">
+    <ClCompile Include="Session.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\PresentMonAPIWrapper.h">
+    <ClInclude Include="PresentMonAPIWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\FrameQuery.h">
+    <ClInclude Include="FrameQuery.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\DynamicQuery.h">
+    <ClInclude Include="DynamicQuery.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\ProcessTracker.h">
+    <ClInclude Include="ProcessTracker.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\Session.h">
+    <ClInclude Include="Session.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\BlobContainer.h">
+    <ClInclude Include="BlobContainer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\FixedQuery.h">
+    <ClInclude Include="FixedQuery.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\StaticQuery.h">
+    <ClInclude Include="StaticQuery.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -4,8 +4,8 @@
 #include <Core/source/infra/util/Util.h>
 #include <Core/source/infra/util/Assert.h>
 #include <CommonUtilities/source/str/String.h>
-#include <PresentMonAPIWrapper/source/FrameQuery.h>
-#include <PresentMonAPIWrapperCommon/source/EnumMap.h>
+#include <PresentMonAPIWrapper/FrameQuery.h>
+#include <PresentMonAPIWrapperCommon/EnumMap.h>
 #include <format>
 #include <array>
 

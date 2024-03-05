@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include <PresentMonAPI/PresentMonAPI.h>
-#include <PresentMonAPI2/source/PresentMonAPI.h>
-#include <PresentMonAPIWrapperCommon/source/EnumMap.h>
+#include <PresentMonAPI2/PresentMonAPI.h>
+#include <PresentMonAPIWrapperCommon/EnumMap.h>
 #include <Core/source/kernel/OverlaySpec.h>
 #include "MetricFetcher.h"
 #include "../DynamicQuery.h"

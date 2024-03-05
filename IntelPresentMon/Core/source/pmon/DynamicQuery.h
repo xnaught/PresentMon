@@ -1,8 +1,8 @@
 #pragma once
 #include <PresentMonAPI/PresentMonAPI.h>
-#include <PresentMonAPI2/source/PresentMonAPI.h>
-#include <PresentMonAPIWrapper/source/BlobContainer.h>
-#include <PresentMonAPIWrapper/source/DynamicQuery.h>
+#include <PresentMonAPI2/PresentMonAPI.h>
+#include <PresentMonAPIWrapper/BlobContainer.h>
+#include <PresentMonAPIWrapper/DynamicQuery.h>
 #include <span>
 #include <memory>
 #include <vector>

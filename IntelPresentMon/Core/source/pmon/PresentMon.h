@@ -6,7 +6,7 @@
 #include <memory>
 #include "AdapterInfo.h"
 #include <PresentMonAPI\PresentMonAPI.h>
-#include <PresentMonAPIWrapper/source/ProcessTracker.h>
+#include <PresentMonAPIWrapper/ProcessTracker.h>
 
 namespace pmapi
 {

@@ -1,10 +1,10 @@
-#include "../../PresentMonAPI/PresentMonAPI.h"
+#include "../PresentMonAPI/PresentMonAPI.h"
 #include <memory>
 #include <crtdbg.h>
 #include <unordered_map>
-#include "../../PresentMonMiddleware/source/MockMiddleware.h"
-#include "../../PresentMonMiddleware/source/ConcreteMiddleware.h"
-#include "../../PresentMonMiddleware/source/Exception.h"
+#include "../PresentMonMiddleware/source/MockMiddleware.h"
+#include "../PresentMonMiddleware/source/ConcreteMiddleware.h"
+#include "../PresentMonMiddleware/source/Exception.h"
 #include "Internal.h"
 #include "PresentMonAPI.h"
 

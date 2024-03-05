@@ -1,5 +1,5 @@
 #pragma once
-#include "../../../PresentMonAPI2/source/PresentMonAPI.h"
+#include "../../../PresentMonAPI2/PresentMonAPI.h"
 
 #define ENUM_KEY_LIST_ENUM(X_) \
 		X_(ENUM, STATUS, "Statuses", "", "List of all status/error codes returned by API functions") \

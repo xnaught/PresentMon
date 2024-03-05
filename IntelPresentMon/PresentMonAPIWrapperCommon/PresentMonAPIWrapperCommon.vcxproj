@@ -19,13 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\Exception.cpp" />
-    <ClCompile Include="source\Introspection.cpp" />
+    <ClCompile Include="Exception.cpp" />
+    <ClCompile Include="Introspection.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\EnumMap.h" />
-    <ClInclude Include="source\Exception.h" />
-    <ClInclude Include="source\Introspection.h" />
+    <ClInclude Include="EnumMap.h" />
+    <ClInclude Include="Exception.h" />
+    <ClInclude Include="Introspection.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

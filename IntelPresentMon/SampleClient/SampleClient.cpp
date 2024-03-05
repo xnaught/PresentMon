@@ -15,12 +15,12 @@
 #include <format>
 #include <chrono>
 #include <conio.h>
-#include "../PresentMonAPI2/source/PresentMonAPI.h"
-#include "../PresentMonAPI2/source/Internal.h"
+#include "../PresentMonAPI2/PresentMonAPI.h"
+#include "../PresentMonAPI2/Internal.h"
 #include "CliOptions.h"
 
-#include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
-#include "../PresentMonAPIWrapper/source/FixedQuery.h"
+#include "../PresentMonAPIWrapper/PresentMonAPIWrapper.h"
+#include "../PresentMonAPIWrapper/FixedQuery.h"
 #include "Utils.h"
 #include "DynamicQuerySample.h"
 #include "FrameQuerySample.h"

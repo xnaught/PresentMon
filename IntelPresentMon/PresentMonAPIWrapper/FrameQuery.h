@@ -1,7 +1,7 @@
 #pragma once
-#include "../../PresentMonAPI2/source/PresentMonAPI.h"
-#include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
-#include "../../PresentMonAPIWrapperCommon/source/Exception.h"
+#include "../PresentMonAPI2/PresentMonAPI.h"
+#include "../PresentMonAPIWrapperCommon/Introspection.h"
+#include "../PresentMonAPIWrapperCommon/Exception.h"
 #include <format>
 #include <string>
 #include <cassert>

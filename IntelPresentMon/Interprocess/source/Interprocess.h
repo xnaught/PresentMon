@@ -4,7 +4,7 @@
 #include <memory>
 #include "../../ControlLib/PresentMonPowerTelemetry.h"
 #include "../../ControlLib/CpuTelemetryInfo.h"
-#include "../../PresentMonAPI2/source/PresentMonAPI.h"
+#include "../../PresentMonAPI2/PresentMonAPI.h"
 
 struct PM_INTROSPECTION_ROOT;
 

@@ -2,7 +2,7 @@
 #include <vector>
 #include <bitset>
 #include <map>
-#include "../../PresentMonAPI2/source/PresentMonAPI.h"
+#include "../../PresentMonAPI2/PresentMonAPI.h"
 #include "../../ControlLib/CpuTelemetryInfo.h"
 #include "../../ControlLib/PresentMonPowerTelemetry.h"
 

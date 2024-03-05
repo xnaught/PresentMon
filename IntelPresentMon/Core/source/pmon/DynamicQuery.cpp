@@ -1,6 +1,6 @@
 #pragma once
 #include "DynamicQuery.h"
-#include <PresentMonAPIWrapper/source/PresentMonAPIWrapper.h>
+#include <PresentMonAPIWrapper/PresentMonAPIWrapper.h>
 #include <ranges>
 
 

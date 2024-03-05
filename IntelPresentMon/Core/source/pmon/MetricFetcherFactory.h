@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include <PresentMonAPI/PresentMonAPI.h>
-#include <PresentMonAPIWrapper/source/PresentMonAPIWrapper.h>
+#include <PresentMonAPIWrapper/PresentMonAPIWrapper.h>
 #include "metric/MetricFetcher.h"
 #include "metric/DynamicPollingFetcher.h"
 #include "DynamicQuery.h"

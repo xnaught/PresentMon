@@ -18,7 +18,7 @@
 #include <bitset>
 #include "../../PresentData/PresentMonTraceConsumer.hpp"
 #include "../PresentMonAPI/PresentMonAPI.h"
-#include "../PresentMonAPI2/source/PresentMonAPI.h"
+#include "../PresentMonAPI2/PresentMonAPI.h"
 #include "../ControlLib/PowerTelemetryProvider.h"
 #include "../ControlLib/CpuTelemetryInfo.h"
 

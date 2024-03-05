@@ -1,5 +1,5 @@
 #pragma once
-#include "../PresentMonAPIWrapper/source/StaticQuery.h"
+#include "../PresentMonAPIWrapper/StaticQuery.h"
 #include <locale>
 
 int WrapperStaticQuerySample(std::unique_ptr<pmapi::Session>&& pSession)

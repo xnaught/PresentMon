@@ -3,9 +3,9 @@
 #include "PresentMon.h"
 #include <Core/source/infra/log/Logging.h>
 #include <PresentMonAPI/PresentMonAPI.h>
-#include <PresentMonAPI2/source/PresentMonAPI.h>
-#include <PresentMonAPIWrapper/source/PresentMonAPIWrapper.h>
-#include <PresentMonAPIWrapperCommon/source/EnumMap.h>
+#include <PresentMonAPI2/PresentMonAPI.h>
+#include <PresentMonAPIWrapper/PresentMonAPIWrapper.h>
+#include <PresentMonAPIWrapperCommon/EnumMap.h>
 #include <Core/source/infra/util/Util.h>
 #include "RawFrameDataWriter.h"
 

@@ -1,5 +1,5 @@
 #include "Session.h"
-#include "../../PresentMonAPI2/source/Internal.h"
+#include "../PresentMonAPI2/Internal.h"
 
 namespace pmapi
 {

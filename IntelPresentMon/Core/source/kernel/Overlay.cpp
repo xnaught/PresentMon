@@ -22,7 +22,7 @@
 #include <cassert>
 #include "TargetLostException.h"
 #include "MetricPackMapper.h"
-#include <PresentMonAPIWrapper/source/StaticQuery.h>
+#include <PresentMonAPIWrapper/StaticQuery.h>
 
 
 namespace p2c::kern

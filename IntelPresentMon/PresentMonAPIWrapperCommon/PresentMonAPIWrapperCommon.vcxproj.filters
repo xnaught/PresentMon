@@ -15,21 +15,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\Introspection.cpp">
+    <ClCompile Include="Introspection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\Exception.cpp">
+    <ClCompile Include="Exception.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\Introspection.h">
+    <ClInclude Include="Introspection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\Exception.h">
+    <ClInclude Include="Exception.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\EnumMap.h">
+    <ClInclude Include="EnumMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

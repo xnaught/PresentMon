@@ -7,9 +7,9 @@
 #include <string>
 #include "StatisticsTracker.h"
 #include <PresentMonAPI/PresentMonAPI.h>
-#include <PresentMonAPI2/source/PresentMonAPI.h>
-#include <PresentMonAPIWrapper/source/Session.h>
-#include <PresentMonAPIWrapper/source/BlobContainer.h>
+#include <PresentMonAPI2/PresentMonAPI.h>
+#include <PresentMonAPIWrapper/Session.h>
+#include <PresentMonAPIWrapper/BlobContainer.h>
 #include <Core/source/infra/log/Logging.h>
 #include <Core/source/infra/util/Util.h>
 
