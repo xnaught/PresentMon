@@ -1,12 +1,12 @@
 #include "CppUnitTest.h"
-#include "../PresentMonAPI2/source/PresentMonAPI.h"
-#include "../PresentMonAPI2/source/Internal.h"
+#include "../PresentMonAPI2/PresentMonAPI.h"
+#include "../PresentMonAPI2/Internal.h"
 #include <cstring>
 #include <vector>
 #include <optional>
 #include "Utilities.h"
 
-#include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
+#include "../PresentMonAPIWrapper/PresentMonAPIWrapper.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -36,7 +36,7 @@ namespace PresentMonAPI2Mock
 			using namespace std::string_literals;
 
 			pmapi::Session session1;
-			Assert::ExpectException<pmapi::SessionException>([] {
+			Assert::ExpectException<pmapi::ApiErrorException>([] {
 				pmapi::Session session2;
 			});
 		}

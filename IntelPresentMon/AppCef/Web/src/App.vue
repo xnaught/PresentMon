@@ -131,24 +131,32 @@ export default Vue.extend({
   }),
 
   async created() {
-    Api.registerPresentmonInitFailedHandler(this.handlePresentmonInitFailed);
-    Api.registerOverlayDiedHandler(this.handleOverlayDied);
-    Api.registerStalePidHandler(this.handleStalePid);
-    await Api.launchKernel();
-    await Introspection.load();
-    await Hotkey.refreshOptions();
-    await Adapters.refresh();
-    Api.registerTargetLostHandler(this.handleTargetLost);
-    await Hotkey.initBindings();
-    Api.registerHotkeyHandler(this.handleHotkeyFired);
-    await this.initPreferences();
-    PrefStore.writeAttribute({
-      attr: 'samplesPerFrame',
-      val: this.calculateSamplesPerFrame(this.desiredDrawRate, this.samplePeriod),
-    });
-    await LoadBlocklists();
-    if (PrefStore.preferences.enableAutotargetting) {
-      launchAutotargetting();
+    try {
+      Api.registerPresentmonInitFailedHandler(this.handlePresentmonInitFailed);
+      Api.registerOverlayDiedHandler(this.handleOverlayDied);
+      Api.registerStalePidHandler(this.handleStalePid);
+      await Api.launchKernel();
+      await Introspection.load();
+      await Hotkey.refreshOptions();
+      await Adapters.refresh();
+      Api.registerTargetLostHandler(this.handleTargetLost);
+      await Hotkey.initBindings();
+      Api.registerHotkeyHandler(this.handleHotkeyFired);
+      await this.initPreferences();
+      PrefStore.writeAttribute({
+        attr: 'samplesPerFrame',
+        val: this.calculateSamplesPerFrame(this.desiredDrawRate, this.samplePeriod),
+      });
+      await LoadBlocklists();
+      if (PrefStore.preferences.enableAutotargetting) {
+        launchAutotargetting();
+      }
+    } catch (e) {
+      this.fatalError = {
+        title: 'Fatal Frontend Initialization Error',
+        text: 'An error has occurred while initializing the control UI frontend.'
+      };
+      console.error('exception in App Created() hook: ' + e);
     }
   },
 

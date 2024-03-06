@@ -5,11 +5,11 @@
 #include <vector>
 #include <memory>
 #include "AdapterInfo.h"
+#include <PresentMonAPIWrapper/ProcessTracker.h>
 
 namespace pmapi
 {
 	class Session;
-	class ProcessTracker;
 	namespace intro
 	{
 		class Root;
@@ -34,10 +34,11 @@ namespace p2c::pmon
 		void SetOffset(double offset_);
 		void SetGpuTelemetryPeriod(uint32_t period);
 		uint32_t GetGpuTelemetryPeriod();
-		std::wstring GetCpuName() const;
+		// std::wstring GetCpuName() const;
 		std::vector<AdapterInfo> EnumerateAdapters() const;
 		void SetAdapter(uint32_t id);
 		std::optional<uint32_t> GetPid() const;
+		const pmapi::ProcessTracker& GetTracker() const;
 		std::shared_ptr<RawFrameDataWriter> MakeRawFrameDataWriter(std::wstring path, std::optional<std::wstring> statsPath,
 			uint32_t pid, std::wstring procName);
 		std::optional<uint32_t> GetSelectedAdapter() const;
@@ -49,7 +50,7 @@ namespace p2c::pmon
 		uint32_t telemetrySamplePeriod = 0;
 		std::unique_ptr<pmapi::Session> pSession;
 		std::shared_ptr<pmapi::intro::Root> pIntrospectionRoot;
-		std::shared_ptr<pmapi::ProcessTracker> pTracker;
+		pmapi::ProcessTracker processTracker;
 		std::optional<uint32_t> selectedAdapter;
 	};
 }

@@ -17,10 +17,10 @@
 #include <tchar.h>
 #include <bitset>
 #include "../../PresentData/PresentMonTraceConsumer.hpp"
-#include "../PresentMonAPI/PresentMonAPI.h"
-#include "../PresentMonAPI2/source/PresentMonAPI.h"
+#include "../PresentMonAPI2/PresentMonAPI.h"
 #include "../ControlLib/PowerTelemetryProvider.h"
 #include "../ControlLib/CpuTelemetryInfo.h"
+#include "LegacyAPIDefines.h"
 
 // We use system reserved pid (0: System Idle Process, 4: System) that will
 // never show up in present mon for StreamAll and ETL PIDs

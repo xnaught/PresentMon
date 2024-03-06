@@ -1,15 +1,15 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <PresentMonAPI/PresentMonAPI.h>
-#include <PresentMonAPI2/source/PresentMonAPI.h>
+#include <PresentMonAPI2/PresentMonAPI.h>
+#include <PresentMonAPIWrapperCommon/EnumMap.h>
 #include <Core/source/kernel/OverlaySpec.h>
 #include "MetricFetcher.h"
 #include "../DynamicQuery.h"
-#include "../EnumMap.h"
-#include <CommonUtilities/source/str/String.h>
+#include <CommonUtilities//str/String.h>
 #include <concepts>
 #include <limits>
+
 
 namespace p2c::pmon::met
 {
@@ -72,11 +72,11 @@ namespace p2c::pmon::met
     {
     public:
         TypedDynamicPollingFetcher(const PM_QUERY_ELEMENT& qel, const pmapi::intro::Root& introRoot,
-            std::shared_ptr<DynamicQuery> pQuery, const EnumMap::KeyMap& map);
+            std::shared_ptr<DynamicQuery> pQuery, std::shared_ptr<const pmapi::EnumMap::KeyMap> pKeyMap);
         std::wstring ReadStringValue() override;
         std::optional<float> ReadValue() override;
     private:
-        const EnumMap::KeyMap& keyMap_;
+        std::shared_ptr<const pmapi::EnumMap::KeyMap> pKeyMap_;
     };
 
     std::shared_ptr<DynamicPollingFetcher> MakeDynamicPollingFetcher(const PM_QUERY_ELEMENT& qel,

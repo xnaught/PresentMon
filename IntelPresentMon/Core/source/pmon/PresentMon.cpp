@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: MIT
 #include "PresentMon.h"
 #include <Core/source/infra/log/Logging.h>
-#include <PresentMonAPI/PresentMonAPI.h>
-#include <PresentMonAPI2/source/PresentMonAPI.h>
-#include <PresentMonAPIWrapper/source/PresentMonAPIWrapper.h>
+#include <PresentMonAPI2/PresentMonAPI.h>
+#include <PresentMonAPIWrapper/PresentMonAPIWrapper.h>
+#include <PresentMonAPIWrapperCommon/EnumMap.h>
 #include <Core/source/infra/util/Util.h>
-#include "EnumMap.h"
 #include "RawFrameDataWriter.h"
 
 namespace p2c::pmon
@@ -36,8 +35,8 @@ namespace p2c::pmon
 		// acquire introspection data
 		pIntrospectionRoot = pSession->GetIntrospectionRoot();
 
-		// populate lookup for enumerations in dynamic metrics
-		EnumMap::Init(*pIntrospectionRoot);
+		// populate lookup for enumerations
+		pmapi::EnumMap::Refresh(*pIntrospectionRoot);
 
 		// establish initial sampling / window / processing setting values
 		SetWindow(window_in);
@@ -47,24 +46,24 @@ namespace p2c::pmon
 	PresentMon::~PresentMon() = default;
 	void PresentMon::StartTracking(uint32_t pid_)
 	{
-		if (pTracker) {
-			if (pTracker->GetPid() == pid_) {
+		if (processTracker) {
+			if (processTracker.GetPid() == pid_) {
 				return;
 			}
 			p2clog.warn(std::format(L"Starting stream [{}] while previous stream [{}] still active",
-				pid_, pTracker->GetPid())).commit();
+				pid_, processTracker.GetPid())).commit();
 		}
-		pTracker = pSession->TrackProcess(pid_);
+		processTracker = pSession->TrackProcess(pid_);
 		p2clog.info(std::format(L"started pmon stream for pid {}", pid_)).commit();
 	}
 	void PresentMon::StopTracking()
 	{
-		if (!pTracker) {
+		if (!processTracker) {
 			p2clog.warn(L"Cannot stop stream: no stream active").commit();
 			return;
 		}
-		const auto pid = pTracker->GetPid();
-		pTracker.reset();
+		const auto pid = processTracker.GetPid();
+		processTracker.Reset();
 		// TODO: caches cleared here maybe
 		p2clog.info(std::format(L"stopped pmon stream for pid {}", pid)).commit();
 	}
@@ -81,19 +80,20 @@ namespace p2c::pmon
 	{
 		return telemetrySamplePeriod;
 	}
-	std::wstring PresentMon::GetCpuName() const
-	{
-		char buffer[512];
-		uint32_t bufferSize = sizeof(buffer);
-		if (auto sta = pmGetCpuName(buffer, &bufferSize); sta != PM_STATUS_SUCCESS) {
-			p2clog.warn(L"could not get cpu name").code(sta).commit();
-			return {};
-		}
-		if (bufferSize >= sizeof(buffer)) {
-			p2clog.warn(std::format(L"insufficient buffer size to get cpu name. written: {}", bufferSize)).commit();
-		}
-		return infra::util::ToWide(std::string{ buffer, bufferSize });
-	}
+	//std::wstring PresentMon::GetCpuName() const
+	//{
+	//	char buffer[512];
+	//	uint32_t bufferSize = sizeof(buffer);
+	//	if (auto sta = pmGetCpuName(buffer, &bufferSize); sta != PM_STATUS_SUCCESS) {
+	//		p2clog.warn(L"could not get cpu name").code(sta).commit();
+	//		return {};
+	//	}
+	//	pmapi::PollStatic(*pSession, )
+	//	if (bufferSize >= sizeof(buffer)) {
+	//		p2clog.warn(std::format(L"insufficient buffer size to get cpu name. written: {}", bufferSize)).commit();
+	//	}
+	//	return infra::util::ToWide(std::string{ buffer, bufferSize });
+	//}
 	std::vector<AdapterInfo> PresentMon::EnumerateAdapters() const
 	{
 		std::vector<AdapterInfo> infos;
@@ -121,12 +121,16 @@ namespace p2c::pmon
 		}
 	}
 	std::optional<uint32_t> PresentMon::GetPid() const {
-		return bool(pTracker) ? pTracker->GetPid() : std::optional<uint32_t>{};
+		return bool(processTracker) ? processTracker.GetPid() : std::optional<uint32_t>{};
+	}
+	const pmapi::ProcessTracker& PresentMon::GetTracker() const
+	{
+		return processTracker;
 	}
 	std::shared_ptr<RawFrameDataWriter> PresentMon::MakeRawFrameDataWriter(std::wstring path,
 		std::optional<std::wstring> statsPath, uint32_t pid, std::wstring procName)
 	{
-		return std::make_shared<RawFrameDataWriter>(std::move(path), pid, std::move(procName),
+		return std::make_shared<RawFrameDataWriter>(std::move(path), processTracker, std::move(procName),
 			selectedAdapter.value_or(1), *pSession, std::move(statsPath), *pIntrospectionRoot);
 	}
 	std::optional<uint32_t> PresentMon::GetSelectedAdapter() const

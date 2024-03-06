@@ -15,18 +15,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\dllmain.cpp">
+    <ClCompile Include="dllmain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\PresentMonAPI.cpp">
+    <ClCompile Include="PresentMonAPI.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\PresentMonAPI.h">
+    <ClInclude Include="PresentMonAPI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\Internal.h">
+    <ClInclude Include="Internal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

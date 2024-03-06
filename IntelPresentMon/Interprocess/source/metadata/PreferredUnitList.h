@@ -1,5 +1,5 @@
 #pragma once
-#include "../../../PresentMonAPI2/source/PresentMonAPI.h"
+#include "../../../PresentMonAPI2/PresentMonAPI.h"
 
 #define PREFERRED_UNIT_LIST(X_) \
 		X_(PM_METRIC_GPU_MEM_USED, PM_UNIT_GIGABYTES) \

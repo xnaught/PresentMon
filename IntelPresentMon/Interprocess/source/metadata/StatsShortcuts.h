@@ -1,5 +1,5 @@
 #pragma once
-#include "../../../PresentMonAPI2/source/PresentMonAPI.h"
+#include "../../../PresentMonAPI2/PresentMonAPI.h"
 
 #define FULL_STATS PM_STAT_AVG, PM_STAT_PERCENTILE_99, PM_STAT_PERCENTILE_95, \
 	PM_STAT_PERCENTILE_90, PM_STAT_MAX, PM_STAT_MIN, PM_STAT_MID_POINT

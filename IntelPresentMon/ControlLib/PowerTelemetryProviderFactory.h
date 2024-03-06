@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include "PowerTelemetryProvider.h"
-#include "../PresentMonAPI2/source/PresentMonAPI.h"
+#include "../PresentMonAPI2/PresentMonAPI.h"
 #include <memory>
 
 namespace pwr

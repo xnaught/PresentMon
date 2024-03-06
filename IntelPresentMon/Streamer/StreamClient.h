@@ -6,8 +6,8 @@
 #include <string>
 #include <map>
 #include "../PresentMonUtils/PresentMonNamedPipe.h"
+#include "../PresentMonUtils/LegacyAPIDefines.h"
 #include "NamedSharedMemory.h"
-#include "../PresentMonAPI/PresentMonAPI.h"
 
 class StreamClient {
  public:

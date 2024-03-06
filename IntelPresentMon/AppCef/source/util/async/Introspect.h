@@ -4,7 +4,7 @@
 #include "../AsyncEndpoint.h"
 #include <Core/source/kernel/Kernel.h>
 #include "../CefValues.h"
-#include <PresentMonAPIWrapper/source/PresentMonAPIWrapper.h>
+#include <PresentMonAPIWrapper/PresentMonAPIWrapper.h>
 #include <ranges>
 #include <array>
 

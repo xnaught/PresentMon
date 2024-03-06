@@ -7,7 +7,7 @@
 #include <thread>
 #include "NamedPipeCmdProcess.h"
 #include "..\PresentMonUtils\NamedPipeHelper.h"
-#include "..\CommonUtilities\source\str\String.h"
+#include "..\CommonUtilities\str\String.h"
 #include "GlobalIdentifiers.h"
 #include "sddl.h"
 

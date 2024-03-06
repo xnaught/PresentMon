@@ -5,7 +5,7 @@
 #include <span>
 #include <ranges>
 #include <cstring>
-#include "../../PresentMonAPI2/source/PresentMonAPI.h"
+#include "../../PresentMonAPI2/PresentMonAPI.h"
 #include "SharedMemoryTypes.h"
 #include <span>
 #include <utility>

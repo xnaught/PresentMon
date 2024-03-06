@@ -15,30 +15,30 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\cli\CliFramework.h">
+    <ClInclude Include="cli\CliFramework.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\str\String.h">
+    <ClInclude Include="str\String.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\Memory.h">
+    <ClInclude Include="Memory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\hash\Hash.h">
+    <ClInclude Include="Hash.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\Meta.h">
+    <ClInclude Include="Meta.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\cli\CliFramework.cpp">
+    <ClCompile Include="cli\CliFramework.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\str\String.cpp">
+    <ClCompile Include="str\String.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\hash\Hash.cpp">
+    <ClCompile Include="Hash.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

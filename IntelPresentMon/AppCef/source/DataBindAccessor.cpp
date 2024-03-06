@@ -100,7 +100,7 @@ namespace p2c::client::cef
                         arguments[1],
                         *pBrowser,
                         *this,
-                        * pKernelWrapper->pKernel
+                        *pKernelWrapper->pKernel
                     );
                 }
                 else
@@ -167,8 +167,7 @@ namespace p2c::client::cef
     void DataBindAccessor::LaunchKernel()
     {
         std::shared_lock lk{ kernelMtx };
-        if (pKernelWrapper)
-        {
+        if (pKernelWrapper) {
             if (pKernelWrapper->pKernel)
             {
                 p2clog.warn(L"launchKernel called but kernel already exists").commit();

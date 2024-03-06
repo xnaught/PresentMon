@@ -9,8 +9,8 @@
 #include <Shlwapi.h>
 #include "../../PresentMonUtils/NamedPipeHelper.h"
 #include "../../PresentMonUtils/QPCUtils.h"
-#include "../../PresentMonAPI2/source/Internal.h"
-#include "../../PresentMonAPIWrapperCommon/source/Introspection.h"
+#include "../../PresentMonAPI2/Internal.h"
+#include "../../PresentMonAPIWrapperCommon/Introspection.h"
 // TODO: don't need transfer if we can somehow get the PM_ struct generation working without inheritance
 // needed right now because even if we forward declare, we don't have the inheritance info
 #include "../../Interprocess/source/IntrospectionTransfer.h"

@@ -1,5 +1,5 @@
 #pragma once
-#include "../../../PresentMonAPI2/source/PresentMonAPI.h"
+#include "../../../PresentMonAPI2/PresentMonAPI.h"
 
 // defining unit groups and conversions X_(id, baseId, scale)
 #define UNIT_LIST(X_) \

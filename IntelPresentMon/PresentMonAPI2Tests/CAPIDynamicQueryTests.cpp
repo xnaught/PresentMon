@@ -1,7 +1,6 @@
 #include "CppUnitTest.h"
-#include "../PresentMonAPI/PresentMonAPI.h"
-#include "../PresentMonAPI2/source/PresentMonAPI.h"
-#include "../PresentMonAPI2/source/Internal.h"
+#include "../PresentMonAPI2/PresentMonAPI.h"
+#include "../PresentMonAPI2/Internal.h"
 #include <cstring>
 #include <vector>
 #include <optional>

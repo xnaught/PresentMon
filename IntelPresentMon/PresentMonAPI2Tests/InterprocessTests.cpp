@@ -6,12 +6,12 @@
 #include "../Interprocess/source/Interprocess.h"
 #include "../Interprocess/source/IntrospectionTransfer.h"
 #include "../Interprocess/source/IntrospectionCloneAllocators.h"
-#include "../PresentMonAPIWrapper/source/PresentMonAPIWrapper.h"
-#include "../PresentMonAPI2/source/Internal.h"
+#include "../PresentMonAPIWrapper/PresentMonAPIWrapper.h"
+#include "../PresentMonAPI2/Internal.h"
 #include "BoostProcess.h"
 #include "../PresentMonMiddleware/source/MockCommon.h"
 #include "../PresentMonMiddleware/source/MockMiddleware.h"
-#include "../CommonUtilities/source/Memory.h"
+#include "../CommonUtilities//Memory.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 

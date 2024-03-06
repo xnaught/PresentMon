@@ -20,7 +20,7 @@
 #include <ctime>
 #include <cstdlib>
 #include "../PresentMonService/CliOptions.h"
-#include "../CommonUtilities/source/str/String.h"
+#include "../CommonUtilities//str/String.h"
 
 static const std::chrono::milliseconds kTimeoutLimitMs =
     std::chrono::milliseconds(500);

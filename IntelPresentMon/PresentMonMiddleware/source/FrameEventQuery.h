@@ -1,5 +1,5 @@
 #pragma once
-#include "../../PresentMonAPI2/source/PresentMonAPI.h"
+#include "../../PresentMonAPI2/PresentMonAPI.h"
 #include <vector>
 #include <span>
 #include <memory>

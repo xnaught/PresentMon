@@ -3,8 +3,9 @@
 #include "RawFrameDataWriter.h"
 #include <Core/source/infra/util/Util.h>
 #include <Core/source/infra/util/Assert.h>
-#include <CommonUtilities/source/str/String.h>
-#include "EnumMap.h"
+#include <CommonUtilities//str/String.h>
+#include <PresentMonAPIWrapper/FrameQuery.h>
+#include <PresentMonAPIWrapperCommon/EnumMap.h>
 #include <format>
 #include <array>
 
@@ -64,12 +65,12 @@ namespace p2c::pmon
         template<>
         struct TypedAnnotation_<PM_ENUM> : public Annotation_
         {
-            TypedAnnotation_(PM_ENUM enumId) : pKeyMap{ EnumMap::GetMapPtr(enumId) } {}
+            TypedAnnotation_(PM_ENUM enumId) : pKeyMap{ pmapi::EnumMap::GetKeyMap(enumId) } {}
             void Write(std::ostream& out, const uint8_t* pBytes) const override
             {
-                out << ToNarrow(pKeyMap->at(*reinterpret_cast<const int*>(pBytes)));
+                out << pKeyMap->at(*reinterpret_cast<const int*>(pBytes)).narrowName;
             }
-            const EnumMap::KeyMap* pKeyMap = nullptr;
+            std::shared_ptr<const pmapi::EnumMap::KeyMap> pKeyMap;
         };
         template<>
         struct TypedAnnotation_<TimeAnnotationType_> : public Annotation_
@@ -187,15 +188,15 @@ namespace p2c::pmon
                 frametimeElementIdx_ = int(queryElements_.size() - 1);
             }
             // register query
-            pQuery_ = session.RegisterFrameQuery(queryElements_);
+            query_ = session.RegisterFrameQuery(queryElements_);
         }
         pmapi::BlobContainer MakeBlobs(uint32_t nBlobsToCreate) const
         {
-            return pQuery_->MakeBlobContainer(nBlobsToCreate);
+            return query_.MakeBlobContainer(nBlobsToCreate);
         }
-        void Consume(uint32_t pid, pmapi::BlobContainer& blobs) const
+        void Consume(const pmapi::ProcessTracker& proc, pmapi::BlobContainer& blobs)
         {
-            pQuery_->Consume(pid, blobs);
+            query_.Consume(proc, blobs);
         }
         double ExtractTotalTimeFromBlob(const uint8_t* pBlob) const
         {
@@ -229,7 +230,7 @@ namespace p2c::pmon
             out << std::endl;
         }
     private:
-        std::shared_ptr<pmapi::FrameQuery> pQuery_;
+        pmapi::FrameQuery query_;
         // annotations encode logic for interpreting, post-processing, and formatting blob data for a query element
         std::vector<std::unique_ptr<Annotation_>> annotationPtrs_;
         // all query elements to be registered with the query, maintained to store blob offset information
@@ -239,10 +240,10 @@ namespace p2c::pmon
         int frametimeElementIdx_ = -1;
     };
 
-    RawFrameDataWriter::RawFrameDataWriter(std::wstring path, uint32_t processId, std::wstring processName, uint32_t activeDeviceId,
+    RawFrameDataWriter::RawFrameDataWriter(std::wstring path, const pmapi::ProcessTracker& procTrackerIn, std::wstring processName, uint32_t activeDeviceId,
         pmapi::Session& session, std::optional<std::wstring> frameStatsPathIn, const pmapi::intro::Root& introRoot)
         :
-        pid{ processId },
+        procTracker{ procTrackerIn },
         procName{ ToNarrow(processName) },
         frameStatsPath{ std::move(frameStatsPathIn) },
         pStatsTracker{ frameStatsPath ? std::make_unique<StatisticsTracker>() : nullptr },
@@ -320,7 +321,7 @@ namespace p2c::pmon
     {
         // continue consuming frames until none are left pending
         do {
-            pQueryElementContainer->Consume(pid, blobs);
+            pQueryElementContainer->Consume(procTracker, blobs);
             // loop over populated blobs
             for (auto pBlob : blobs) {
                 if (pStatsTracker) {
@@ -335,7 +336,7 @@ namespace p2c::pmon
                     // tracking frame times
                     pStatsTracker->Push(pQueryElementContainer->ExtractFrameTimeFromBlob(pBlob));
                 }
-                pQueryElementContainer->WriteFrame(pid, procName, file, pBlob);
+                pQueryElementContainer->WriteFrame(procTracker, procName, file, pBlob);
             }
         } while (blobs.AllBlobsPopulated()); // if container filled, means more might be left
         file << std::flush;

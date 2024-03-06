@@ -1,14 +1,12 @@
 #pragma once
 #include "DynamicQuery.h"
-#include <PresentMonAPIWrapper/source/PresentMonAPIWrapper.h>
+#include <PresentMonAPIWrapper/PresentMonAPIWrapper.h>
 #include <ranges>
 
 
 namespace p2c::pmon
 {
-	DynamicQuery::DynamicQuery(pmapi::Session& session, uint32_t pid, double winSizeMs, double metricOffsetMs, std::span<const kern::QualifiedMetric> qmets)
-		:
-		pid{ pid }
+	DynamicQuery::DynamicQuery(pmapi::Session& session, double winSizeMs, double metricOffsetMs, std::span<const kern::QualifiedMetric> qmets)
 	{
 		for (auto& qmet : qmets) {
 			elements.push_back(PM_QUERY_ELEMENT{
@@ -18,8 +16,8 @@ namespace p2c::pmon
 				.arrayIndex = qmet.arrayIndex,
 			});
 		}
-		pQuery = session.RegisterDyanamicQuery(elements, winSizeMs, metricOffsetMs);
-		blobs = pQuery->MakeBlobContainer(1u);
+		query = session.RegisterDyanamicQuery(elements, winSizeMs, metricOffsetMs);
+		blobs = query.MakeBlobContainer(1u);
 	}
 
 	std::vector<PM_QUERY_ELEMENT> DynamicQuery::ExtractElements()
@@ -27,10 +25,13 @@ namespace p2c::pmon
 		return std::move(elements);
 	}
 
-	void DynamicQuery::Poll()
+	void DynamicQuery::Poll(const pmapi::ProcessTracker& tracker)
 	{
-		if (pQuery) {
-			pQuery->Poll(pid, blobs);
+		if (query) {
+			query.Poll(tracker, blobs);
+		}
+		else {
+			p2clog.warn(L"Polling empty dynamic query").commit();
 		}
 	}
 
