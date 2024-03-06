@@ -1,12 +1,8 @@
 #pragma once
 #include "../PresentMonAPI2/PresentMonAPI.h"
-#include "../PresentMonAPIWrapperCommon/Introspection.h"
-#include "../PresentMonAPIWrapperCommon/Exception.h"
-#include <format>
-#include <string>
-#include <cassert>
 #include "BlobContainer.h"
 #include "ProcessTracker.h"
+#include <span>
 
 namespace pmapi
 {
@@ -15,68 +11,21 @@ namespace pmapi
         friend class Session;
     public:
         FrameQuery() = default;
-        ~FrameQuery() { Reset(); }
-        FrameQuery(FrameQuery&& other) noexcept
-        {
-            *this = std::move(other);
-        }
-        FrameQuery& operator=(FrameQuery&& rhs) noexcept
-        {
-            hQuery_ = rhs.hQuery_;
-            blobSize_ = rhs.blobSize_;
-            rhs.Clear_();;
-            return *this;
-        }
-        size_t GetBlobSize() const
-        {
-            return blobSize_;
-        }
-        void Consume(const ProcessTracker& tracker, uint8_t* pBlobs, uint32_t& numBlobsInOut)
-        {
-            if (auto sta = pmConsumeFrames(hQuery_, tracker.GetPid(), pBlobs, &numBlobsInOut);
-                sta != PM_STATUS_SUCCESS) {
-                throw ApiErrorException{ sta, "consume frame call failed" };
-            }
-        }
-        void Consume(const ProcessTracker& tracker, BlobContainer& blobs)
-        {
-            assert(!Empty());
-            assert(blobs.CheckHandle(hQuery_));
-            Consume(tracker, blobs.GetFirst(), blobs.AcquireNumBlobsInRef_());
-        }
-        BlobContainer MakeBlobContainer(uint32_t nBlobs) const
-        {
-            assert(!Empty());
-            return { hQuery_, blobSize_, nBlobs };
-        }
-        void Reset() noexcept
-        {
-            if (!Empty()) {
-                // TODO: check and report error here (nothrow)
-                pmFreeFrameQuery(hQuery_);
-            }
-            Clear_();
-        }
-        bool Empty() const
-        {
-            return hQuery_ == nullptr;
-        }
-        operator bool() const { return !Empty(); }
+        ~FrameQuery();
+        FrameQuery(FrameQuery&& other) noexcept;
+        FrameQuery& operator=(FrameQuery&& rhs) noexcept;
+        size_t GetBlobSize() const;
+        void Consume(const ProcessTracker& tracker, uint8_t* pBlobs, uint32_t& numBlobsInOut);
+        void Consume(const ProcessTracker& tracker, BlobContainer& blobs);
+        BlobContainer MakeBlobContainer(uint32_t nBlobs) const;
+        void Reset() noexcept;
+        bool Empty() const;
+        operator bool() const;
     private:
         // functions
-        FrameQuery(PM_SESSION_HANDLE hSession, std::span<PM_QUERY_ELEMENT> elements)
-        {
-            if (auto sta = pmRegisterFrameQuery(hSession, &hQuery_, elements.data(), elements.size(), &blobSize_);
-                sta != PM_STATUS_SUCCESS) {
-                throw ApiErrorException{ sta, "register frame query call failed" };
-            }
-        }
+        FrameQuery(PM_SESSION_HANDLE hSession, std::span<PM_QUERY_ELEMENT> elements);
         // zero out members, useful after emptying via move or reset
-        void Clear_() noexcept
-        {
-            hQuery_ = nullptr;
-            blobSize_ = 0ull;
-        }
+        void Clear_() noexcept;
         // data
         PM_FRAME_QUERY_HANDLE hQuery_ = nullptr;
         uint32_t blobSize_ = 0ull;

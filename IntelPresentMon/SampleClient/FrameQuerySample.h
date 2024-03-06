@@ -205,23 +205,23 @@ int FrameQuerySample(std::unique_ptr<pmapi::Session>&& pSession)
 
         while (!_kbhit()) {
             std::cout << "Consuming frames...\n";
-            const auto nProcessed = fq.ForEachConsume(processTracker, [processName, processId](const MyFrameQuery& q) {
+            const auto nProcessed = fq.ForEachConsume(processTracker, [processName, processId, &fq] {
                 std::cout << processName.value() << ",";
                 std::cout << processId.value() << ",";
-                std::cout << std::hex << "0x" << q.swapChain.As<uint64_t>() << std::dec << ",";
-                std::cout << q.cpuFrameQpc.As<uint64_t>() << ",";
-                std::cout << q.cpuDuration.As<double>() << ",";
-                std::cout << q.cpuFpStall.As<double>() << ",";
-                std::cout << q.gpuLatency.As<double>() << ",";
-                std::cout << q.gpuDuration.As<double>() << ",";
-                std::cout << q.gpuBusyTime.As<double>() << ",";
-                std::cout << q.gpuDisplayLatency.As<double>() << ",";
-                std::cout << q.gpuDisplayDuration.As<double>() << ",";
-                std::cout << q.inputLatency.As<double>() << ",";
-                std::cout << q.gpuPower.As<double>() << ",";
-                std::cout << q.presentRuntime.As<std::string>() << ",";
-                if (q.fanSpeed.IsAvailable()) {
-                    std::cout << q.fanSpeed.As<int>() << "\n";
+                std::cout << std::hex << "0x" << fq.swapChain.As<uint64_t>() << std::dec << ",";
+                std::cout << fq.cpuFrameQpc.As<uint64_t>() << ",";
+                std::cout << fq.cpuDuration.As<double>() << ",";
+                std::cout << fq.cpuFpStall.As<double>() << ",";
+                std::cout << fq.gpuLatency.As<double>() << ",";
+                std::cout << fq.gpuDuration.As<double>() << ",";
+                std::cout << fq.gpuBusyTime.As<double>() << ",";
+                std::cout << fq.gpuDisplayLatency.As<double>() << ",";
+                std::cout << fq.gpuDisplayDuration.As<double>() << ",";
+                std::cout << fq.inputLatency.As<double>() << ",";
+                std::cout << fq.gpuPower.As<double>() << ",";
+                std::cout << fq.presentRuntime.As<std::string>() << ",";
+                if (fq.fanSpeed.IsAvailable()) {
+                    std::cout << fq.fanSpeed.As<int>() << "\n";
                 }
                 else {
                     std::cout << "NA\n";

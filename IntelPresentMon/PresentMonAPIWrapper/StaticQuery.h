@@ -1,14 +1,12 @@
 #pragma once
 #include "../PresentMonAPI2/PresentMonAPI.h"
 #include "../PresentMonAPIWrapperCommon/Introspection.h"
-#include "../PresentMonAPIWrapperCommon/Exception.h"
 #include "../PresentMonAPIWrapperCommon/EnumMap.h"
 #include "../Interprocess/source/IntrospectionDataTypeMapping.h"
-#include "../CommonUtilities//str/String.h"
-#include "../CommonUtilities//Meta.h"
+#include "../CommonUtilities/str/String.h"
+#include "../CommonUtilities/Meta.h"
 #include "Session.h"
 #include "ProcessTracker.h"
-#include <format>
 #include <string>
 #include <memory>
 #include <cassert>
@@ -131,22 +129,5 @@ namespace pmapi
     };
 
     StaticQueryResult PollStatic(const Session& session, const ProcessTracker& process,
-        PM_METRIC metric, uint32_t deviceId = 0, uint32_t arrayIndex = 0)
-    {
-        const auto pIntro = session.GetIntrospectionRoot();
-        const auto dti = pIntro->FindMetric(metric).GetDataTypeInfo();
-        StaticQueryResult result{ dti.GetFrameType(), dti.GetEnumId() };
-        
-        const PM_QUERY_ELEMENT element{
-            .metric = metric,
-            .stat = PM_STAT_NONE,
-            .deviceId = deviceId,
-            .arrayIndex = arrayIndex,
-        };
-        if (const auto err = pmPollStaticQuery(session.GetHandle(), &element, process.GetPid(), result.blob_.data());
-            err != PM_STATUS_SUCCESS) {
-            throw ApiErrorException{ err, "Error polling static query" };
-        }
-        return result;
-    }
+        PM_METRIC metric, uint32_t deviceId = 0, uint32_t arrayIndex = 0);
 }

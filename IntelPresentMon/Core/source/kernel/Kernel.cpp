@@ -271,7 +271,6 @@ namespace p2c::kern
                 }
                 else if (pushedCaptureActive)
                 {
-                    throw std::runtime_error{ "henlo" };
                     std::wstring path;
                     if (auto pFolder = infra::svc::Services::ResolveOrNull<infra::util::FolderResolver>()) {
                         path = pFolder->Resolve(infra::util::FolderResolver::Folder::Documents) + L"\\Captures\\";

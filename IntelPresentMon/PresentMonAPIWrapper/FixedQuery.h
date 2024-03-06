@@ -8,39 +8,19 @@
 #include <vector>
 #include <ranges>
 #include <array>
+#include <cassert>
 
 namespace pmapi
 {
 	struct FixedQueryContainer_
 	{
-		const BlobContainer& PeekBlobContainer() const
-		{
-			return blobs_;
-		}
-		BlobContainer ExtractBlobContainer()
-		{
-			return std::move(blobs_);
-		}
-		void InjectBlobContainer(BlobContainer blobs)
-		{
-			blobs_ = std::move(blobs);
-		}
-		void SwapBlobContainers(BlobContainer& blobs)
-		{
-			std::swap(blobs, blobs_);
-		}
-		const uint8_t* PeekActiveBlob() const
-		{
-			return blobs_[activeBlobIndex_];;
-		}
-		void SetActiveBlobIndex(uint32_t blobIndex)
-		{
-			activeBlobIndex_ = blobIndex;
-		}
-		size_t GetActiveBlobIndex() const
-		{
-			return activeBlobIndex_;
-		}
+		const BlobContainer& PeekBlobContainer() const;
+		BlobContainer ExtractBlobContainer();
+		void InjectBlobContainer(BlobContainer blobs);
+		void SwapBlobContainers(BlobContainer& blobs);
+		const uint8_t* PeekActiveBlob() const;
+		void SetActiveBlobIndex(uint32_t blobIndex);
+		size_t GetActiveBlobIndex() const;
 	protected:
 		friend class FixedQueryElement;
 		// functions
@@ -52,22 +32,8 @@ namespace pmapi
 			slotDeviceIds_{ uint32_t(slotDeviceIds)... },
 			nBlobs_{ nBlobs }
 		{}
-		void FinalizationPreprocess_()
-		{
-			// replace slot indexes with device ids
-			for (auto& e : rawElements_) {
-				e.deviceId = MapDeviceId_(e.deviceId);
-			}
-		}
-		uint32_t MapDeviceId_(uint32_t deviceSlot) const
-		{
-			if (deviceSlot == 0) {
-				return 0;
-			}
-			else {
-				return slotDeviceIds_[deviceSlot - 1];
-			}
-		}
+		void FinalizationPreprocess_();
+		uint32_t MapDeviceId_(uint32_t deviceSlot) const;
 		void FinalizationPostprocess_(bool isPolled);
 		// data
 		//   temporary construction storage
@@ -91,14 +57,8 @@ namespace pmapi
 			winSizeMs_{ winSizeMs },
 			metricOffsetMs_{ metricOffsetMs }
 		{}
-		BlobContainer MakeBlobContainer(uint32_t nBlobs) const
-		{
-			return query_.MakeBlobContainer(nBlobs);
-		}
-		void Poll(ProcessTracker& tracker)
-		{
-			query_.Poll(tracker, blobs_);
-		}
+		BlobContainer MakeBlobContainer(uint32_t nBlobs) const;
+		void Poll(ProcessTracker& tracker);
 	private:
 		friend class FinalizingElement;
 		// functions
@@ -111,7 +71,6 @@ namespace pmapi
 		DynamicQuery query_;
 	};
 
-	template<class T>
 	struct FixedFrameQueryContainer : public FixedQueryContainer_
 	{
 		template<typename...S>
@@ -119,28 +78,9 @@ namespace pmapi
 			:
 			FixedQueryContainer_{ session, nBlobs, slotDeviceIds... }
 		{}
-		BlobContainer MakeBlobContainer(uint32_t nBlobs) const
-		{
-			return query_.MakeBlobContainer(nBlobs);
-		}
-		void Consume(ProcessTracker& tracker)
-		{
-			query_.Consume(tracker, blobs_);
-		}
-		size_t ForEachConsume(ProcessTracker& tracker, std::function<void(const T&)> frameHandler)
-		{
-			size_t nFramesProcessed = 0;
-			do {
-				Consume(tracker);
-				const auto nPopulated = blobs_.GetNumBlobsPopulated();
-				for (uint32_t i = 0; i < nPopulated; i++) {
-					SetActiveBlobIndex(i);
-					frameHandler(static_cast<const T&>(*this));
-				}
-				nFramesProcessed += nPopulated;
-			} while (blobs_.AllBlobsPopulated());
-			return nFramesProcessed;
-		}
+		BlobContainer MakeBlobContainer(uint32_t nBlobs) const;
+		void Consume(ProcessTracker& tracker);
+		size_t ForEachConsume(ProcessTracker& tracker, std::function<void()> frameHandler);
 	private:
 		friend class FinalizingElement;
 		// functions
@@ -152,6 +92,8 @@ namespace pmapi
 	namespace
 	{
 		// this static functor converts static types when bridged with runtime PM_DATA_TYPE info
+		// enables the |F|ixed |Q|uery elements to choose correct conversion based on both runtime PM_DATA_TYPE
+		// and compile-time type of the type to convert to
 		template<PM_DATA_TYPE dt, PM_ENUM staticEnumId, typename DestType>
 		struct FQReadBridger
 		{
@@ -231,33 +173,7 @@ namespace pmapi
 		friend FixedQueryContainer_;
 	public:
 		FixedQueryElement(FixedQueryContainer_* pContainer, PM_METRIC metric,
-			PM_STAT stat, uint32_t deviceSlot = 0, uint32_t index = 0)
-			:
-			pContainer_{ pContainer }
-		{
-			const auto deviceId = pContainer_->MapDeviceId_(deviceSlot);
-			// check whether the metric specified by this element is available
-			bool available = false;
-			for (auto&& dmi : pContainer_->pIntrospection_->FindMetric(metric).GetDeviceMetricInfo()) {
-				if (dmi.GetDevice().GetId() == deviceId) {
-					available = dmi.IsAvailable() && index < dmi.GetArraySize();
-					break;
-				}
-			}
-			// do not register element if not available
-			// default datatype void will signal its omission
-			// consider registering in some way while keeping out of rawElements
-			// to enable enumeration etc. even for unavailable elements
-			if (available) {
-				pContainer->rawElements_.push_back(PM_QUERY_ELEMENT{
-					.metric = metric,
-					.stat = stat,
-					.deviceId = deviceSlot,
-					.arrayIndex = index,
-				});
-				pContainer->smartElements_.push_back(this);
-			}
-		}
+			PM_STAT stat, uint32_t deviceSlot = 0, uint32_t index = 0);
 		template<typename T>
 		void Load(T& dest) const
 		{
@@ -277,10 +193,7 @@ namespace pmapi
 		{
 			return As<T>();
 		}
-		bool IsAvailable() const
-		{
-			return dataType_ != PM_DATA_TYPE_VOID;
-		}
+		bool IsAvailable() const;
 	private:
 		const FixedQueryContainer_* pContainer_ = nullptr;
 		uint64_t dataOffset_ = 0ull;
@@ -297,53 +210,8 @@ namespace pmapi
 			pContainer->Finalize_();
 		}
 	};
-
-	void FixedQueryContainer_::FinalizationPostprocess_(bool isPolled)
-	{
-		// complete smart query objects
-		for (auto&& [raw, smart] : std::views::zip(rawElements_, smartElements_)) {
-			smart->dataOffset_ = raw.dataOffset;
-			const auto dti = pIntrospection_->FindMetric(raw.metric).GetDataTypeInfo();
-			smart->dataType_ = isPolled ? dti.GetPolledType() : dti.GetFrameType();
-			smart->enumId_ = dti.GetEnumId();
-		}
-		// cleanup temporary construction data
-		smartElements_.clear();
-		rawElements_.clear();
-		slotDeviceIds_.clear();
-		pSession_ = nullptr;
-	}
-
-	void FixedDynamicQueryContainer::Finalize_()
-	{
-		FinalizationPreprocess_();
-
-		// register query
-		assert(pSession_);
-		query_ = pSession_->RegisterDyanamicQuery(rawElements_, winSizeMs_, metricOffsetMs_);
-
-		// make blobs
-		blobs_ = query_.MakeBlobContainer(nBlobs_);
-
-		FinalizationPostprocess_(true);
-	}
-
-	template<class T>
-	void FixedFrameQueryContainer<T>::Finalize_()
-	{
-		FinalizationPreprocess_();
-
-		// register query
-		assert(pSession_);
-		query_ = pSession_->RegisterFrameQuery(rawElements_);
-
-		// make blobs
-		blobs_ = query_.MakeBlobContainer(nBlobs_);
-
-		FinalizationPostprocess_(false);
-	}
 }
 
 #define PM_BEGIN_FIXED_DYNAMIC_QUERY(type) struct type : FixedDynamicQueryContainer { using FixedDynamicQueryContainer::FixedDynamicQueryContainer;
-#define PM_BEGIN_FIXED_FRAME_QUERY(type) struct type : FixedFrameQueryContainer<type> { using FixedFrameQueryContainer<type>::FixedFrameQueryContainer;
+#define PM_BEGIN_FIXED_FRAME_QUERY(type) struct type : FixedFrameQueryContainer { using FixedFrameQueryContainer::FixedFrameQueryContainer;
 #define PM_END_FIXED_QUERY private: FinalizingElement finalizer{ this }; }

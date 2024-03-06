@@ -179,7 +179,7 @@ namespace PresentMonAPI2Mock
 			using namespace std::string_literals;
 			Assert::ExpectException<pmapi::LookupException>([this] {
 				data->FindMetric((PM_METRIC)420);
-				});
+			});
 		}
 		TEST_METHOD(IntrospectMetricType)
 		{
