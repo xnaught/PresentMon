@@ -2,7 +2,7 @@
 
 namespace pmon::util
 {
-	inline size_t GetPadding(size_t byteIndex, size_t alignment)
+	inline constexpr size_t GetPadding(size_t byteIndex, size_t alignment)
 	{
 		const auto partialBytes = byteIndex % alignment;
 		const auto padding = (alignment - partialBytes) % alignment;
@@ -10,7 +10,7 @@ namespace pmon::util
 	}
 
 	template<typename T>
-	size_t GetPadding(size_t byteIndex)
+	constexpr size_t GetPadding(size_t byteIndex)
 	{
 		return GetPadding(byteIndex, alignof(T));
 	}
