@@ -71,9 +71,6 @@
     <ClInclude Include="source\metadata\EnumPresentMode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\metadata\EnumPsuType.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="source\metadata\EnumUnit.h">
       <Filter>Header Files</Filter>
     </ClInclude>

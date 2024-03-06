@@ -44,7 +44,6 @@
                 <ComponentGroupRef Id="pm_app_web_js" />
                 <ComponentGroupRef Id="shortcuts" />
                 <ComponentGroupRef Id="desktop_shortcut" />
-                <ComponentGroupRef Id="sdk_files" />
                 <!--- <ComponentGroupRef Id="cli_files" /> -->
             </Feature>
             <?if $(var.has_console_app) = "true" ?>
@@ -215,40 +214,6 @@
             </Component>
         </DirectoryRef>
         <ComponentGroup
-            Id="sdk_files"
-            Directory="sdk_folder">
-            <Component
-                Id="present_mon_api_dll"
-                Guid="A65E5F7D-5F89-457B-98FB-2D61FACC80CB">
-                <File
-                    Id="present_mon_api_dll"
-                    Name="$(var.PresentMonAPI.TargetFileName)"
-                    Source="$(var.PresentMonAPI.TargetPath)"
-                    KeyPath="yes">
-                </File>
-            </Component>
-            <Component
-                Id="present_mon_api_lib"
-                Guid="15B7CA91-2725-4D8F-8AC6-FE17A30DF437">
-                <File
-                    Id="present_mon_api_lib"
-                    Name="PresentMonAPI.lib"
-                    Source="$(var.PresentMonAPI.TargetDir)PresentMonAPI.lib"
-                    KeyPath="yes">
-                </File>
-            </Component>
-            <Component
-                Id="present_mon_api_header"
-                Guid="F60E2F1D-FC4F-4F6F-ACC6-80D544632DEC">
-                <File
-                    Id="present_mon_api_header"
-                    Name="PresentMonAPI.h"
-                    Source="$(var.PresentMonAPI.ProjectDir)\PresentMonAPI.h"
-                    KeyPath="yes">
-                </File>
-            </Component>
-        </ComponentGroup>
-        <ComponentGroup
             Id="service_files"
             Directory="service_folder">
             <Component
@@ -407,16 +372,6 @@
                     Id="pm_app_vulkan_1_dll"
                     Name="vulkan-1.dll"
                     Source="$(var.PresentMon.TargetDir)vulkan-1.dll"
-                    KeyPath="yes">
-                </File>
-            </Component>
-            <Component
-                Id="pm_app_present_mon_api_dll"
-                Guid="141EF065-F3DC-4095-9EEC-F74EEE4AFCAD">
-                <File
-                    Id="pm_app_present_mon_api_dll"
-                    Name="$(var.PresentMonAPI.TargetFileName)"
-                    Source="$(var.PresentMonAPI.TargetPath)"
                     KeyPath="yes">
                 </File>
             </Component>

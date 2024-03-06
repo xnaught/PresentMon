@@ -1,7 +1,6 @@
 #pragma once
 #include <iostream>
 #include "../../PresentData/PresentMonTraceConsumer.hpp"
-#include "../PresentMonAPI/PresentMonAPI.h"
 #include "../PresentMonAPI2/PresentMonAPI.h"
 #include "../ControlLib/PresentMonPowerTelemetry.h"
 

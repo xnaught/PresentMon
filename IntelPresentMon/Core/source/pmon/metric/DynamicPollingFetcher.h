@@ -1,7 +1,6 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <PresentMonAPI/PresentMonAPI.h>
 #include <PresentMonAPI2/PresentMonAPI.h>
 #include <PresentMonAPIWrapperCommon/EnumMap.h>
 #include <Core/source/kernel/OverlaySpec.h>

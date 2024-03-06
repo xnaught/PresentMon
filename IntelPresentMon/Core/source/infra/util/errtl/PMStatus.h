@@ -3,7 +3,8 @@
 #pragma once
 #include <Core/source/infra/util/ErrorCode.h>
 #include <Core/source/win/WinAPI.h>
-#include <PresentMonAPI/PresentMonAPI.h>
+#include <PresentMonAPIWrapperCommon/EnumMap.h>
+
 
 namespace p2c::infra::util::errtl
 {
@@ -14,5 +15,10 @@ namespace p2c::infra::util::errtl
 		std::wstring GetSymbol(const ErrorCode& code) const override;
 		std::wstring GetName(const ErrorCode& code) const override;
 		std::wstring GetDescription(const ErrorCode& code) const override;
+	private:
+		// functions
+		const pmapi::EnumKeyStrings* GetStrings_(PM_STATUS statusCode) const noexcept;
+		// data
+		mutable std::shared_ptr<const pmapi::EnumMap::KeyMap> pStatusMap_;
 	};
 }

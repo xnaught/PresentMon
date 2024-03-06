@@ -7,7 +7,6 @@
 		X_(ENUM, METRIC_TYPE, "Metric Types", "", "List of all metric types (dynamic polled, static, etc.)") \
 		X_(ENUM, DEVICE_VENDOR, "Vendors", "", "List of all known hardware vendors (IHVs) for GPUs and other hardware") \
 		X_(ENUM, PRESENT_MODE, "Present Modes", "", "List of all known modes of frame presentation") \
-		X_(ENUM, PSU_TYPE, "PSU Types", "", "Type of power supply used by GPUs") \
 		X_(ENUM, UNIT, "Units", "", "List of all units of measure used for metrics") \
 		X_(ENUM, STAT, "Statistics", "", "List of all statistical variations of the data (average, 99th percentile, etc.)") \
 		X_(ENUM, DATA_TYPE, "Data Types", "", "List of all C++ language data types used for metrics") \

@@ -36,7 +36,6 @@
     <ClInclude Include="source\metadata\EnumNullEnum.h" />
     <ClInclude Include="source\metadata\EnumStat.h" />
     <ClInclude Include="source\metadata\EnumUnit.h" />
-    <ClInclude Include="source\metadata\EnumPsuType.h" />
     <ClInclude Include="source\metadata\EnumDeviceVendor.h" />
     <ClInclude Include="source\ExperimentalInterprocess.h" />
     <ClInclude Include="source\Interprocess.h" />

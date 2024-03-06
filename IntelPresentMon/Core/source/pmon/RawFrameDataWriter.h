@@ -6,7 +6,6 @@
 #include <optional>
 #include <string>
 #include "StatisticsTracker.h"
-#include <PresentMonAPI/PresentMonAPI.h>
 #include <PresentMonAPI2/PresentMonAPI.h>
 #include <PresentMonAPIWrapper/Session.h>
 #include <PresentMonAPIWrapper/BlobContainer.h>

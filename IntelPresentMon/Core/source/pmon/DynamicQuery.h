@@ -1,5 +1,4 @@
 #pragma once
-#include <PresentMonAPI/PresentMonAPI.h>
 #include <PresentMonAPI2/PresentMonAPI.h>
 #include <PresentMonAPIWrapper/BlobContainer.h>
 #include <PresentMonAPIWrapper/DynamicQuery.h>

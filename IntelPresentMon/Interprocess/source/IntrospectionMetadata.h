@@ -10,7 +10,6 @@
 #include "metadata/EnumMetricAvailability.h"
 #include "metadata/EnumMetricType.h"
 #include "metadata/EnumPresentMode.h"
-#include "metadata/EnumPsuType.h"
 #include "metadata/EnumStat.h"
 #include "metadata/EnumStatus.h"
 #include "metadata/EnumUnit.h"

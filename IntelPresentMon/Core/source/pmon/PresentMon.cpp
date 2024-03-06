@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 #include "PresentMon.h"
 #include <Core/source/infra/log/Logging.h>
-#include <PresentMonAPI/PresentMonAPI.h>
 #include <PresentMonAPI2/PresentMonAPI.h>
 #include <PresentMonAPIWrapper/PresentMonAPIWrapper.h>
 #include <PresentMonAPIWrapperCommon/EnumMap.h>
@@ -81,19 +80,20 @@ namespace p2c::pmon
 	{
 		return telemetrySamplePeriod;
 	}
-	std::wstring PresentMon::GetCpuName() const
-	{
-		char buffer[512];
-		uint32_t bufferSize = sizeof(buffer);
-		if (auto sta = pmGetCpuName(buffer, &bufferSize); sta != PM_STATUS_SUCCESS) {
-			p2clog.warn(L"could not get cpu name").code(sta).commit();
-			return {};
-		}
-		if (bufferSize >= sizeof(buffer)) {
-			p2clog.warn(std::format(L"insufficient buffer size to get cpu name. written: {}", bufferSize)).commit();
-		}
-		return infra::util::ToWide(std::string{ buffer, bufferSize });
-	}
+	//std::wstring PresentMon::GetCpuName() const
+	//{
+	//	char buffer[512];
+	//	uint32_t bufferSize = sizeof(buffer);
+	//	if (auto sta = pmGetCpuName(buffer, &bufferSize); sta != PM_STATUS_SUCCESS) {
+	//		p2clog.warn(L"could not get cpu name").code(sta).commit();
+	//		return {};
+	//	}
+	//	pmapi::PollStatic(*pSession, )
+	//	if (bufferSize >= sizeof(buffer)) {
+	//		p2clog.warn(std::format(L"insufficient buffer size to get cpu name. written: {}", bufferSize)).commit();
+	//	}
+	//	return infra::util::ToWide(std::string{ buffer, bufferSize });
+	//}
 	std::vector<AdapterInfo> PresentMon::EnumerateAdapters() const
 	{
 		std::vector<AdapterInfo> infos;

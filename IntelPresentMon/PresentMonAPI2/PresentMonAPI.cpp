@@ -1,4 +1,3 @@
-#include "../PresentMonAPI/PresentMonAPI.h"
 #include <memory>
 #include <crtdbg.h>
 #include <unordered_map>
@@ -51,7 +50,7 @@ void RemoveHandleMapping_(const void* dependentHandle)
 {
 	if (!handleMap_.erase(dependentHandle)) {
 		// TODO: add error code to indicate a bad / missing handle (other than session handle)
-		throw Exception(PM_STATUS_ERROR);
+		throw Exception{ PM_STATUS_FAILURE };
 	}
 }
 
@@ -110,7 +109,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, cons
 	try {
 		if (!pHandle) {
 			// TODO: add error code to indicate bad argument
-			return PM_STATUS_ERROR;
+			return PM_STATUS_FAILURE;
 		}
 		std::shared_ptr<Middleware> pMiddleware;
 		if (useMockedMiddleware_) {
@@ -194,7 +193,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmGetIntrospectionRoot(PM_SESSION_HANDLE handle
 	try {
 		if (!ppInterface) {
 			// TODO: error code to signal bad argument
-			return PM_STATUS_ERROR;
+			return PM_STATUS_FAILURE;
 		}
 		const auto pIntro = LookupMiddleware_(handle).GetIntrospectionData();
 		AddHandleMapping_(handle, pIntro);
@@ -248,7 +247,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_SESSION_HANDLE sessio
 	try {
 		if (!pElements || !numElements) {
 			// TODO: error code for bad args
-			return PM_STATUS_ERROR;
+			return PM_STATUS_FAILURE;
 		}
 		const auto queryHandle = LookupMiddleware_(sessionHandle).RegisterDynamicQuery(
 			{pElements, numElements}, windowSizeMs, metricOffsetMs);
@@ -288,7 +287,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE hand
 	try {
 		if (!pBlob || !numSwapChains || !*numSwapChains) {
 			// TODO: error code for bad args
-			return PM_STATUS_ERROR;
+			return PM_STATUS_FAILURE;
 		}
 		LookupMiddleware_(handle).PollDynamicQuery(handle, processId, pBlob, numSwapChains);
 		return PM_STATUS_SUCCESS;
@@ -306,7 +305,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(PM_SESSION_HANDLE sessionHand
 	try {
 		if (!pElement || !pBlob) {
 			// TODO: error code for bad args
-			return PM_STATUS_ERROR;
+			return PM_STATUS_FAILURE;
 		}
 		LookupMiddleware_(sessionHandle).PollStaticQuery(*pElement, processId, pBlob);
 		return PM_STATUS_SUCCESS;
@@ -324,7 +323,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameQuery(PM_SESSION_HANDLE sessionH
 	try {
 		if (!pElements || !numElements || !pBlobSize) {
 			// TODO: error code for bad args
-			return PM_STATUS_ERROR;
+			return PM_STATUS_FAILURE;
 		}
 		const auto queryHandle = LookupMiddleware_(sessionHandle).RegisterFrameEventQuery({ pElements, numElements }, *pBlobSize);
 		AddHandleMapping_(sessionHandle, queryHandle);
@@ -344,7 +343,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmConsumeFrames(PM_FRAME_QUERY_HANDLE handle, u
 	try {
 		if (!handle || !pBlob) {
 			// TODO: error code for bad args
-			return PM_STATUS_ERROR;
+			return PM_STATUS_FAILURE;
 		}
 		LookupMiddleware_(handle).ConsumeFrameEvents(handle, processId, pBlob, *pNumFramesToRead);
 		return PM_STATUS_SUCCESS;

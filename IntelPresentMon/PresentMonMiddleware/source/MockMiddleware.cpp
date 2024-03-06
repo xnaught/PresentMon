@@ -1,5 +1,4 @@
 #define NOMINMAX
-#include "../../PresentMonAPI/PresentMonAPI.h"
 #include "MockMiddleware.h"
 #include <cstring>
 #include <string>

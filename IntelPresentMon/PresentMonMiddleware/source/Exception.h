@@ -1,7 +1,6 @@
 #pragma once
 #include <stdexcept>
 #include <string>
-#include "../../PresentMonAPI/PresentMonAPI.h"
 #include "../../PresentMonAPI2/PresentMonAPI.h"
 
 namespace pmon::mid

@@ -1,7 +1,6 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <PresentMonAPI/PresentMonAPI.h>
 #include <PresentMonAPIWrapper/PresentMonAPIWrapper.h>
 #include "metric/MetricFetcher.h"
 #include "metric/DynamicPollingFetcher.h"

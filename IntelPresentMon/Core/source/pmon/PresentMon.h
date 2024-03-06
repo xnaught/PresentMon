@@ -5,7 +5,6 @@
 #include <vector>
 #include <memory>
 #include "AdapterInfo.h"
-#include <PresentMonAPI\PresentMonAPI.h>
 #include <PresentMonAPIWrapper/ProcessTracker.h>
 
 namespace pmapi
@@ -35,7 +34,7 @@ namespace p2c::pmon
 		void SetOffset(double offset_);
 		void SetGpuTelemetryPeriod(uint32_t period);
 		uint32_t GetGpuTelemetryPeriod();
-		std::wstring GetCpuName() const;
+		// std::wstring GetCpuName() const;
 		std::vector<AdapterInfo> EnumerateAdapters() const;
 		void SetAdapter(uint32_t id);
 		std::optional<uint32_t> GetPid() const;

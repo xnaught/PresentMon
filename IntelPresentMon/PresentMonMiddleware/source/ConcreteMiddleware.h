@@ -1,5 +1,4 @@
 #pragma once
-#include "../../PresentMonAPI/PresentMonAPI.h"
 #include "Middleware.h"
 #include "../../Interprocess/source/Interprocess.h"
 #include "../../PresentMonUtils/MemBuffer.h"

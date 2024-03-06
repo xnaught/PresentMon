@@ -7,7 +7,6 @@
 #include <optional>
 #include <bitset>
 #include "PresentMonPowerTelemetry.h"
-#include "../PresentMonAPI/PresentMonAPI.h"
 #include "../PresentMonAPI2/PresentMonAPI.h"
 
 namespace pwr

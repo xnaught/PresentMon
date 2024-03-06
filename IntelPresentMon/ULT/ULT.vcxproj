@@ -169,12 +169,6 @@
     <ProjectReference Include="..\ControlLib\ControlLib.vcxproj">
       <Project>{3c39c9bc-0e85-42c0-894c-3561bb93e87f}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\PresentMonAPI\PresentMonAPI.vcxproj">
-      <Project>{811adcf0-da1d-4a94-97c7-7aa6c33b5368}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\PresentMonClient\PresentMonClient.vcxproj">
-      <Project>{564b17e0-987f-4b08-b867-654af9cfc022}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\PresentMonUtils\PresentMonUtils.vcxproj">
       <Project>{66e9f6c5-28db-4218-81b9-31e0e146ecc0}</Project>
     </ProjectReference>
