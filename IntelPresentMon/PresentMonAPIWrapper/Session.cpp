@@ -16,6 +16,8 @@ namespace pmapi
         Initialize_();
     }
 
+    Session::Session(EmptyTag) noexcept {}
+
     Session::Session(std::string controlPipe, std::string introspectionNsm)
     {
         if (auto sta = pmOpenSession_(&handle_, controlPipe.c_str(), introspectionNsm.c_str());

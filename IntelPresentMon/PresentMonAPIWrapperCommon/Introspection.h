@@ -11,7 +11,9 @@ namespace pmapi
 {
     namespace intro
     {
+        // check if a metric type can be used with dynamic queries
         bool MetricTypeIsDynamic(PM_METRIC_TYPE type);
+        // check if a metric type can be used with frame queries
         bool MetricTypeIsFrameEvent(PM_METRIC_TYPE type);
 
         template<class T>
@@ -105,6 +107,7 @@ namespace pmapi
         template<class V>
         using ViewRange = std::ranges::subrange<ViewIterator<V>, ViewIterator<V>>;
 
+        // information about the key values in a specific enumeration
         class EnumKeyView
         {            
             using BaseType = PM_INTROSPECTION_ENUM_KEY;
@@ -127,6 +130,7 @@ namespace pmapi
             const BaseType* pBase = nullptr;
         };
 
+        // information about an enumeration, such as PM_METRIC or PM_PRESENT_MODE
         class EnumView
         {
             using BaseType = PM_INTROSPECTION_ENUM;
@@ -150,6 +154,10 @@ namespace pmapi
             const BaseType* pBase = nullptr;
         };
 
+        // information about a hardware device
+        // device 0 is a special device used for metrics not tied to any
+        // specific hardware device, and thus for metrics which are (typically)
+        // always available
         class DeviceView
         {
             using BaseType = PM_INTROSPECTION_DEVICE;
@@ -174,6 +182,7 @@ namespace pmapi
             const BaseType* pBase = nullptr;
         };
 
+        // information about metric availability per-device
         class DeviceMetricInfoView
         {
             using BaseType = PM_INTROSPECTION_DEVICE_METRIC_INFO;
@@ -196,6 +205,7 @@ namespace pmapi
             const BaseType* pBase = nullptr;
         };
 
+        // information about the data type used to encode a metric value
         class DataTypeInfoView
         {
             using BaseType = PM_INTROSPECTION_DATA_TYPE_INFO;
@@ -218,6 +228,7 @@ namespace pmapi
             const BaseType* pBase = nullptr;
         };
 
+        // information about stat used to aggregate frame data for a dynamic metric
         class StatInfoView
         {
             using BaseType = PM_INTROSPECTION_STAT_INFO;
@@ -237,6 +248,7 @@ namespace pmapi
             const BaseType* pBase = nullptr;
         };
 
+        // information about a unit of measure used for metrics
         class UnitView
         {
             using BaseType = PM_INTROSPECTION_UNIT;
@@ -260,6 +272,7 @@ namespace pmapi
             const BaseType* pBase = nullptr;
         };
 
+        // get information about a metric
         class MetricView
         {
             using BaseType = PM_INTROSPECTION_METRIC;
@@ -267,16 +280,23 @@ namespace pmapi
             friend class ViewIterator<SelfType>;
             friend class Root;
         public:
+            // introspect calls get string metadata
             EnumKeyView Introspect() const;
             PM_METRIC GetId() const;
             EnumKeyView IntrospectUnit() const;
+            // unit that the value is natively expressed in
             PM_UNIT GetUnit() const;
             EnumKeyView IntrospectPreferredUnitHint() const;
+            // unit recommended for user display
             PM_UNIT GetPreferredUnitHint() const;
             EnumKeyView IntrospectType() const;
+            // metric type (static, dynamic, frame)
             PM_METRIC_TYPE GetType() const;
+            // the datatype this metric is encoded as
             DataTypeInfoView GetDataTypeInfo() const;
+            // list of supported stats (avg, 99%, etc.)
             ViewRange<StatInfoView> GetStatInfo() const;
+            // which devices support this metric
             ViewRange<DeviceMetricInfoView> GetDeviceMetricInfo() const;
             const SelfType* operator->() const;
             const BaseType* GetBasePtr() const;
@@ -292,7 +312,9 @@ namespace pmapi
             const BaseType* pBase = nullptr;
         };
 
-
+        // provides access to all introspection exposed by the service
+        // including enums, metrics, hardware devices, units of measure
+        // can iterate or perform lookup via id
         class Root
         {
         public:
