@@ -224,6 +224,9 @@
     <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">
       <Project>{08a704d8-ca1c-45e9-8ede-542a1a43b53e}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\PresentMonAPI2\PresentMonAPI2.vcxproj">
+      <Project>{5ddba061-53a0-4835-8aaf-943f403f924f}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\PresentMonAPIWrapperCommon\PresentMonAPIWrapperCommon.vcxproj">
       <Project>{2b343210-86ab-4153-9a6c-945e4af54c7c}</Project>
     </ProjectReference>
@@ -304,7 +307,8 @@
     </Link>
     <Lib>
       <AdditionalLibraryDirectories>..\..\build\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>PresentMonAPI.lib</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -329,7 +333,8 @@
     </Link>
     <Lib>
       <AdditionalLibraryDirectories>..\..\build\$(Configuration);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>PresentMonAPI.lib</AdditionalDependencies>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
