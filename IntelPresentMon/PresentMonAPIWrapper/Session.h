@@ -1,6 +1,5 @@
 #pragma once
 #include "../PresentMonAPI2/PresentMonAPI.h"
-#include "../PresentMonAPIWrapperCommon/Introspection.h"
 #include "ProcessTracker.h"
 #include "FrameQuery.h"
 #include "DynamicQuery.h"
@@ -10,6 +9,11 @@
 
 namespace pmapi
 {
+    namespace intro
+    {
+        class Root;
+    }
+
     class Session
     {
     public:
@@ -21,7 +25,7 @@ namespace pmapi
         void Reset() noexcept;
         bool Empty() const;
         operator bool() const;
-        std::shared_ptr<intro::Root> GetIntrospectionRoot() const;
+        std::shared_ptr<intro::Root> GetIntrospectionRoot(bool forceRefresh = false) const;
         ProcessTracker TrackProcess(uint32_t pid);
         DynamicQuery RegisterDyanamicQuery(std::span<PM_QUERY_ELEMENT> elements, double winSizeMs, double metricOffsetMs);
         FrameQuery RegisterFrameQuery(std::span<PM_QUERY_ELEMENT> elements);
@@ -32,6 +36,7 @@ namespace pmapi
         // functions
         // zero out members, useful after emptying via move or reset
         void Clear_() noexcept;
+        void Initialize_();
         // data
         PM_SESSION_HANDLE handle_ = nullptr;
         mutable std::shared_ptr<intro::Root> pIntrospectionRootCache_;

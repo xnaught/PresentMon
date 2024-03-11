@@ -6,6 +6,7 @@
 #include <string>
 #include <memory>
 #include <shared_mutex>
+#include <atomic>
 
 namespace pmapi
 {
@@ -27,12 +28,13 @@ namespace pmapi
         using KeyMap = std::unordered_map<int, EnumKeyStrings>;
         static std::shared_ptr<const KeyMap> GetKeyMap(PM_ENUM enumId);
         static void Refresh(const pmapi::intro::Root& introRoot);
+        static bool Initialized();
     private:
         // functions
         static EnumMap& Get_();
         // data
         std::shared_mutex mtx_;
         std::unordered_map<PM_ENUM, std::shared_ptr<KeyMap>> enumMap_;
-        bool initialized_ = false;
+        std::atomic<bool> initialized_ = false;
     };
 }
