@@ -65,7 +65,10 @@ namespace p2c::kern
 			auto buildResult = factory.Build(pid, winSizeMs, metricOffsetMs, qualifiedMetrics);
 			// fill fetchers into map
 			for (auto& [qmet, pFetcher] : buildResult.fetchers) {
+#pragma warning(push)
+#pragma warning(disable : 26800) // false positive here since pFetcher from the pair is never used after this iteration
 				metricPackMap_[qmet].pFetcher = std::move(pFetcher);
+#pragma warning(pop)
 			}
 			// move query
 			pQuery_ = std::move(buildResult.pQuery);

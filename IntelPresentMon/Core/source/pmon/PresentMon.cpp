@@ -35,9 +35,6 @@ namespace p2c::pmon
 		// acquire introspection data
 		pIntrospectionRoot = pSession->GetIntrospectionRoot();
 
-		// populate lookup for enumerations
-		pmapi::EnumMap::Refresh(*pIntrospectionRoot);
-
 		// establish initial sampling / window / processing setting values
 		SetWindow(window_in);
 		SetOffset(offset_in);

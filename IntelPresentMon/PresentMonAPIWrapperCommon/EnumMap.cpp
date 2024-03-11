@@ -41,6 +41,11 @@ namespace pmapi
         singleton.initialized_ = true;
     }
 
+    bool EnumMap::Initialized()
+    {
+        return Get_().initialized_.load();
+    }
+
     EnumMap& EnumMap::Get_()
     {
         // exception if not initialized

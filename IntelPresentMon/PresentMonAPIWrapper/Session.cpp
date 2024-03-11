@@ -1,6 +1,8 @@
 #include "Session.h"
 #include "../PresentMonAPI2/Internal.h"
 #include "../PresentMonAPIWrapperCommon/Exception.h"
+#include "../PresentMonAPIWrapperCommon/EnumMap.h"
+#include "../PresentMonAPIWrapperCommon/Introspection.h"
 #include <cassert>
 #include <format>
 
@@ -11,7 +13,10 @@ namespace pmapi
         if (auto sta = pmOpenSession(&handle_); sta != PM_STATUS_SUCCESS) {
             throw ApiErrorException{ sta, "error opening session" };
         }
+        Initialize_();
     }
+
+    Session::Session(EmptyTag) noexcept {}
 
     Session::Session(std::string controlPipe, std::string introspectionNsm)
     {
@@ -20,6 +25,7 @@ namespace pmapi
             throw ApiErrorException{ sta, std::format("error opening session ctrl={} intro={}",
                 controlPipe, introspectionNsm) };
         }
+        Initialize_();
     }
 
     Session::Session(Session&& rhs) noexcept
@@ -57,10 +63,10 @@ namespace pmapi
         return !Empty();
     }
 
-    std::shared_ptr<intro::Root> Session::GetIntrospectionRoot() const
+    std::shared_ptr<intro::Root> Session::GetIntrospectionRoot(bool forceRefresh) const
     {
         assert(handle_);
-        if (pIntrospectionRootCache_) {
+        if (!forceRefresh && pIntrospectionRootCache_) {
             return pIntrospectionRootCache_;
         }
         const PM_INTROSPECTION_ROOT* pRoot{};
@@ -104,5 +110,11 @@ namespace pmapi
     void Session::Clear_() noexcept
     {
         handle_ = nullptr;
+    }
+
+    void Session::Initialize_()
+    {
+        // initialize the enum map so that it doesn't need to be initialized explicitly
+        EnumMap::Refresh(*GetIntrospectionRoot());
     }
 }

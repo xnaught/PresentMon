@@ -53,9 +53,6 @@ int main(int argc, char* argv[])
                 pSession = std::make_unique<pmapi::Session>();
             }
 
-            // initialize the map of enum values to string data
-            pmapi::EnumMap::Refresh(*pSession->GetIntrospectionRoot());
-
             if (opt.introspectionSample) {
                 return IntrospectionSample(std::move(pSession));
             }

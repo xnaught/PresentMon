@@ -18,7 +18,7 @@ namespace pmapi
     {
         // this static functor converts static types when bridged with runtime PM_DATA_TYPE info
         template<PM_DATA_TYPE dt, PM_ENUM staticEnumId, typename DestType, size_t blobSize>
-        struct SQReadBridger
+        struct SQReadBridger_
         {
             using SourceType = typename pmon::ipc::intro::DataTypeToStaticType<dt, staticEnumId>::type;
             static_assert(pmon::util::VoidableSizeof<SourceType>() <= blobSize, "Inadequate blob size detected");
@@ -86,17 +86,23 @@ namespace pmapi
         // (we need this because you cannot define templates within a function
         // and the static info is only available inside the templated function)
         template<typename T, size_t blobSize>
-        struct SQReadBridgerAdapter {
+        struct SQReadBridger_Adapter_ {
             template<PM_DATA_TYPE dt, PM_ENUM enumId>
-            using Bridger = SQReadBridger<dt, enumId, T, blobSize>;
+            using Bridger = SQReadBridger_<dt, enumId, T, blobSize>;
         };
     }
 
+    // smart StaticQueryResult object that can automatically interpret
+    // query result data blobs and convert to the desired type when conversion is possible
     class StaticQueryResult
     {
         friend StaticQueryResult PollStatic(const Session& session, const ProcessTracker& process,
             PM_METRIC metric, uint32_t deviceId, uint32_t arrayIndex);
     public:
+        // access this result as a specific static data type
+        // this will perform the conversion based on the runtime information about the metric's type
+        // enum types will use the introspection system to generate human-readable strings
+        // wide/narrow string conversion will also be performed
         template<typename T>
         T As() const
         {
@@ -105,10 +111,11 @@ namespace pmapi
             // on the runtime PM_DATA_TYPE value passed in, and the bridger will convert that to
             // the requested type T and store in val
             pmon::ipc::intro::BridgeDataTypeWithEnum
-                <typename SQReadBridgerAdapter<T, blobSize_>::Bridger>
+                <typename SQReadBridger_Adapter_<T, blobSize_>::Bridger>
                 (dataType_, enumId_, val, blob_.data());
             return val;
         }
+        // uses the As<T>() member function for perform implicit conversion
         template<typename T>
         operator T() const
         {
@@ -123,11 +130,15 @@ namespace pmapi
         // data
         // 260 bytes is the maximum possible size for query element data
         static constexpr size_t blobSize_ = 260;
-        std::array<uint8_t, blobSize_> blob_;
+        std::array<uint8_t, blobSize_> blob_{};
         PM_DATA_TYPE dataType_;
         PM_ENUM enumId_;
     };
 
+    // poll a static metric (metric which will not change for the life of a process)
+    // static metrics include: process exe name, gpu name, gpu maximum memory, etc.
+    // function returns a smart StaticQueryResult object that can automatically interpret
+    // query result data blobs and convert to the desired type when conversion is possible
     StaticQueryResult PollStatic(const Session& session, const ProcessTracker& process,
         PM_METRIC metric, uint32_t deviceId = 0, uint32_t arrayIndex = 0);
 }

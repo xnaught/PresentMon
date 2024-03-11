@@ -555,3 +555,23 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	default: return {};
 	}
 }
+
+void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFrameData_in, const PmNsmFrameData* pNextDisplayedFrameData, const PmNsmFrameData* pPreviousFrameData)
+{
+	pSourceFrameData = pSourceFrameData_in;
+	dropped = pSourceFrameData->present_event.FinalState != PresentResult::Presented;
+	if (pPreviousFrameData) {
+		cpuFrameQpc = pPreviousFrameData->present_event.PresentStartTime + pPreviousFrameData->present_event.TimeInPresent;
+	}
+	else {
+		// TODO: log issue or invalidate related columns or drop frame (or some combination)
+		cpuFrameQpc = 0;
+	}
+	if (pNextDisplayedFrameData) {
+		nextDisplayedQpc = pNextDisplayedFrameData->present_event.ScreenTime;
+	}
+	else {
+		// TODO: log issue or invalidate related columns or drop frame (or some combination)
+		nextDisplayedQpc = 0;
+	}
+}
