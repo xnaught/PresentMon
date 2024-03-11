@@ -130,7 +130,7 @@ namespace pmapi
         // data
         // 260 bytes is the maximum possible size for query element data
         static constexpr size_t blobSize_ = 260;
-        std::array<uint8_t, blobSize_> blob_;
+        std::array<uint8_t, blobSize_> blob_{};
         PM_DATA_TYPE dataType_;
         PM_ENUM enumId_;
     };
