@@ -85,9 +85,12 @@ bool EncodeEnumerateAdapters(PresentMon* pm, MemBuffer* rspBuf) {
 
   for (uint32_t i = 0; i < adapter_info.num_adapters; i++) {
     adapter_info.adapters[i].id = i;
-    adapter_info.adapters[i].vendor = adapter_infos.at(i)->GetVendor();
+    adapter_info.adapters[i].vendor = (PM_GPU_VENDOR)adapter_infos.at(i)->GetVendor();
     strcpy_s(adapter_info.adapters[i].name, MAX_PM_ADAPTER_NAME,
              adapter_infos.at(i)->GetName().c_str());
+    adapter_info.adapters[i].gpuMemorySize = adapter_infos.at(i)->GetDedicatedVideoMemory();
+    adapter_info.adapters[i].gpuMemoryMaxBandwidth = adapter_infos.at(i)->GetVideoMemoryMaxBandwidth();
+    adapter_info.adapters[i].gpuSustainedPowerLimit = adapter_infos.at(i)->GetSustainedPowerLimit();
   }
 
   NamedPipeHelper::PopulateResponseHeader(
@@ -99,23 +102,23 @@ bool EncodeEnumerateAdapters(PresentMon* pm, MemBuffer* rspBuf) {
   return true;
 }
 
-bool EncodeGetCpuName(PresentMon* pm, MemBuffer* rspBuf) {
+bool EncodeGetStaticCpuMetrics(PresentMon* pm, MemBuffer* rspBuf) {
 
   IPMSMResponseHeader response = {};
-  IPMCpuNameResponse cpu_name_info = {};
-
-  auto cpu_name = pm->GetCpuName();
+  IPMStaticCpuMetrics staticCpuMetrics = {};
 
   NamedPipeHelper::PopulateResponseHeader(
-      response, PM_ACTION::GET_CPU_NAME, 1,
-      static_cast<DWORD>(sizeof(IPMCpuNameResponse)),
+      response, PM_ACTION::GET_STATIC_CPU_METRICS, 1,
+      static_cast<DWORD>(sizeof(IPMStaticCpuMetrics)),
       PM_STATUS::PM_STATUS_SUCCESS);
 
-  cpu_name.copy(cpu_name_info.cpu_name, sizeof(cpu_name_info.cpu_name), 0);
-  cpu_name_info.cpu_name_length = (uint32_t)cpu_name.size();
+  auto cpu_name = pm->GetCpuName();
+  cpu_name.copy(staticCpuMetrics.cpuName, sizeof(staticCpuMetrics.cpuName), 0);
+  staticCpuMetrics.cpuNameLength = (uint32_t)cpu_name.size();
+  staticCpuMetrics.cpuPowerLimit = pm->GetCpuPowerLimit();
 
   rspBuf->AddItem(&response, sizeof(IPMSMResponseHeader));
-  rspBuf->AddItem(&cpu_name_info, sizeof(IPMCpuNameResponse));
+  rspBuf->AddItem(&staticCpuMetrics, sizeof(IPMStaticCpuMetrics));
   return true;
 }
 
@@ -127,7 +130,7 @@ bool EncodeGeneralRequestSetAction(PM_ACTION action, PresentMon* pm,
     return false;
   }
 
-  PM_STATUS rsp_status = PM_STATUS_ERROR;
+  PM_STATUS rsp_status = PM_STATUS_FAILURE;
   switch (action) {
     case PM_ACTION::SELECT_ADAPTER:
       rsp_status = pm->SelectAdapter(genRqstInfo->adapterId);
@@ -174,8 +177,8 @@ void ProcessRequests(PresentMon* pm, MemBuffer* rqstBuf, MemBuffer* rspBuf) {
         validRequest =
             EncodeGeneralRequestSetAction(request->action, pm, rqstBuf, rspBuf);
         break;
-      case PM_ACTION::GET_CPU_NAME:
-        validRequest = EncodeGetCpuName(pm, rspBuf);
+      case PM_ACTION::GET_STATIC_CPU_METRICS:
+        validRequest = EncodeGetStaticCpuMetrics(pm, rspBuf);
         break;
       default:
         validRequest = FALSE;
@@ -186,7 +189,7 @@ void ProcessRequests(PresentMon* pm, MemBuffer* rqstBuf, MemBuffer* rspBuf) {
     _tcscpy_s(response.idString, 6, ipmsmIdString);
     response.action = PM_ACTION::INVALID_REQUEST;
     response.version = 1;
-    response.result = PM_STATUS::PM_STATUS_ERROR;
+    response.result = PM_STATUS::PM_STATUS_FAILURE;
     response.payloadSize = 0;
     rspBuf->AddItem(&response, sizeof(response));
   }

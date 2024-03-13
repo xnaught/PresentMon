@@ -29,6 +29,7 @@ namespace p2c::gfx::impl
         void EmitLineRect(const Rect& rect, Color c);
         void EmitLineRectTop(const Rect& rect, Color c);
         void Resize(const DimensionsI& dims);
+        void ResizeGeometryBuffersIfNecessary(ID3D11Device& device);
     private:
         // types
         class FastDimensions
@@ -66,13 +67,15 @@ namespace p2c::gfx::impl
         void StartBatch(const RectI& clip, D3D11_PRIMITIVE_TOPOLOGY topology, bool anti);
         void WriteVertex(Vec2 pt);
         void WriteIndex(UINT32 i);
+        void MakeVertexBuffer(ID3D11Device& device);
+        void MakeIndexBuffer(ID3D11Device& device);
         // converts pixel coordinates to ndc
         Vec2 ConvertPoint(Vec2 pt) const;
         // data
         FastDimensions dims;
-        UINT vertexBufferSize = 0x1'0000;
+        UINT vertexBufferSize = 0x2'0000;
         UINT nVertices = 0;
-        UINT indexBufferSize = 0x2'0000;
+        UINT indexBufferSize = 0x4'0000;
         UINT nIndices = 0;
         std::optional<Batch> activeBatch; // current batch being built, also serves to indicate whether a batch is open
         std::vector<Batch> batches;
@@ -92,7 +95,7 @@ namespace p2c::gfx::impl
         ComPtr<ID3D11DepthStencilState> pDepthStencil;
         ComPtr<ID3D11BlendState> pBlender;
         // logging tripwires
-        bool vertexLimitExceededTripwire = false;
-        bool indexLimitExceededTripwire = false;
+        std::optional<UINT> vertexLimitExceededAmount;
+        std::optional<UINT> indexLimitExceededAmount;
     };
 }

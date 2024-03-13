@@ -8,28 +8,52 @@
 #include <thread>
 #include <vector>
 #include <atomic>
+#include <optional>
 
 const int MaxBufferLength = MAX_PATH;
 const int NumReportEventStrings = 2;
 
-class Service {
- public:
-  Service(const TCHAR* serviceName);
+class Service
+{
+public:
+	void SignalServiceStop(std::optional<int> errCode = {});
+	std::optional<int> GetErrorCode() const;
+	virtual HANDLE GetServiceStopHandle() = 0;
+	virtual HANDLE GetResetPowerTelemetryHandle() = 0;
+private:
+	std::optional<int> errCode_;
+};
 
-  VOID WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
+class ConsoleDebugMockService : public Service
+{
+public:
+	static ConsoleDebugMockService& Get();
+	void Run();
+	HANDLE GetServiceStopHandle() override;
+	HANDLE GetResetPowerTelemetryHandle() override;
+private:
+	ConsoleDebugMockService();
+	~ConsoleDebugMockService();
+	static BOOL WINAPI ConsoleHandler(DWORD signal);
+	HANDLE stopEvent_;
+	HANDLE resetTelemetryEvent_;
+};
 
-  SIZE_T GetNumArguments() { return mArgv.size(); }
-  std::vector<std::wstring> GetArguments() {
-    return mArgv;
-  };
-  HANDLE GetServiceStopHandle() { return mServiceStopEventHandle; }
-  HANDLE GetResetPowerTelemetryHandle() {
-    return mResetPowerTelemetryEventHandle;
+class ConcreteService : public Service
+{
+public:
+	ConcreteService(const TCHAR* serviceName);
+
+  void ServiceMain();
+
+  HANDLE GetServiceStopHandle() override { return mServiceStopEventHandle; }
+  HANDLE GetResetPowerTelemetryHandle() override {
+	  return mResetPowerTelemetryEventHandle;
   }
-  VOID ReportServiceStatus(DWORD currentState, DWORD win32ExitCode,
+  void ReportServiceStatus(DWORD currentState, DWORD win32ExitCode,
                                   DWORD waitHint);
  private:
-  VOID ServiceInit(DWORD argc, LPTSTR* argv);
+  void ServiceInit();
 
   SERVICE_STATUS mServiceStatus{};
   SERVICE_STATUS_HANDLE mServiceStatusHandle{};
@@ -40,9 +64,4 @@ class Service {
   HDEVNOTIFY mDeviceNotifyHandle = nullptr;
   DWORD mCheckPoint = 1;
   std::atomic<bool> mResetProviders = true;
-
-  // Incoming arguments from Service Main.
-  std::vector<std::wstring> mArgv;
 };
-
-DWORD WINAPI PresentMonMainThread(LPVOID lpParam);

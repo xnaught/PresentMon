@@ -19,9 +19,23 @@
 #include <chrono>
 #include <ctime>
 #include <cstdlib>
+#include "../PresentMonService/CliOptions.h"
+#include "../CommonUtilities//str/String.h"
 
 static const std::chrono::milliseconds kTimeoutLimitMs =
     std::chrono::milliseconds(500);
+
+Streamer::Streamer()
+    : shared_mem_size_(kBufSize),
+    start_qpc_(0),
+    stream_mode_(StreamMode::kDefault),
+    write_timedout_(false),
+    mapfileNamePrefix_{ kGlobalPrefix }
+{
+    if (clio::Options::IsInitialized()) {
+        mapfileNamePrefix_ = clio::Options::Get().nsmPrefix.AsOptional().value_or(mapfileNamePrefix_);
+    }
+}
 
 void Streamer::WriteFrameData(
     uint32_t process_id, PmNsmFrameData* data,
@@ -64,10 +78,11 @@ void Streamer::CopyFromPresentMonPresentEvent(
     nsm_present_event->PresentStartTime = present_event->PresentStartTime;
     nsm_present_event->ProcessId = present_event->ProcessId;
     nsm_present_event->ThreadId = present_event->ThreadId;
-    nsm_present_event->PresentStopTime = present_event->PresentStartTime + present_event->TimeInPresent;
+    nsm_present_event->TimeInPresent = present_event->TimeInPresent;
     nsm_present_event->GPUStartTime = present_event->GPUStartTime;
     nsm_present_event->ReadyTime = present_event->ReadyTime;
     nsm_present_event->ScreenTime = present_event->ScreenTime;
+    nsm_present_event->InputTime = present_event->InputTime;
     nsm_present_event->SwapChainAddress = present_event->SwapChainAddress;
     nsm_present_event->SyncInterval = present_event->SyncInterval;
     nsm_present_event->PresentFlags = present_event->PresentFlags;
@@ -180,7 +195,9 @@ void Streamer::ProcessPresentEvent(
     // updated in the copy above.
     data.present_event.last_present_qpc = last_present_qpc;
     data.present_event.last_displayed_qpc = last_displayed_qpc;
-    app_name.assign(data.present_event.application, data.present_event.application + sizeof(data.present_event.application));
+    auto appNameNarrow = pmon::util::str::ToNarrow(app_name);
+    std::size_t length = appNameNarrow.copy(data.present_event.application, appNameNarrow.size());
+    data.present_event.application[length] = '\0';
     // Now copy the power telemetry data
     memcpy_s(&data.power_telemetry, sizeof(PresentMonPowerTelemetryInfo),
              power_telemetry_info, sizeof(PresentMonPowerTelemetryInfo));
@@ -374,9 +391,7 @@ void Streamer::StopAllStreams() {
 
 bool Streamer::CreateNamedSharedMemory(DWORD process_id,
                                        uint64_t nsm_size_in_bytes) {
-  std::string mapfile_name;
-
-  mapfile_name = kGlobalPrefix + std::to_string(process_id);
+  const std::string mapfile_name = mapfileNamePrefix_ + std::to_string(process_id);
 
   std::lock_guard<std::mutex> lock(nsm_map_mutex_);
   auto iter = process_shared_mem_map_.find(process_id);

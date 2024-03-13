@@ -7,11 +7,11 @@
 #include <random>
 #include <atomic>
 
-#include "..\ControlLib\PowerTelemetryProvider.h"
-#include "..\ControlLib\CpuTelemetry.h"
-#include "..\Streamer\Streamer.h"
-#include "..\..\PresentData\PresentMonTraceConsumer.hpp"
-#include "..\..\PresentData\PresentMonTraceSession.hpp"
+#include "../ControlLib/PowerTelemetryProvider.h"
+#include "../ControlLib/CpuTelemetry.h"
+#include "../Streamer/Streamer.h"
+#include "../../PresentData/PresentMonTraceConsumer.hpp"
+#include "../../PresentData/PresentMonTraceSession.hpp"
 #include "PowerTelemetryContainer.h"
 
 
@@ -65,6 +65,14 @@ class PresentMonSession {
     } else {
       return std::string{"UNKOWN_CPU"};
     }
+  }
+  double GetCpuPowerLimit() {
+      if (cpu_) {
+          return cpu_->GetCpuPowerLimit();
+      }
+      else {
+          return 0.;
+      }
   }
 
   PM_STATUS SelectAdapter(uint32_t adapter_id);
@@ -142,7 +150,9 @@ class PresentMonSession {
 
 class PresentMon {
  public:
-  PresentMon() {}
+  PresentMon() {
+      firstConnectionEvent_.reset(CreateEventA(NULL, TRUE, FALSE, NULL));
+  }
   ~PresentMon();
 
   PM_STATUS StartTraceSession();
@@ -167,6 +177,7 @@ class PresentMon {
 
   std::vector<std::shared_ptr<pwr::PowerTelemetryAdapter>> EnumerateAdapters();
   std::string GetCpuName() { return real_time_session_.GetCpuName(); }
+  double GetCpuPowerLimit() { return real_time_session_.GetCpuPowerLimit(); }
 
   PM_STATUS SelectAdapter(uint32_t adapter_id);
   
@@ -201,7 +212,11 @@ class PresentMon {
     return real_time_session_.SetPowerTelemetryContainer(ptc);
   }
 
+  HANDLE GetFirstConnectionHandle() { return firstConnectionEvent_.get(); }
+
  private:
+  std::unique_ptr<std::remove_pointer_t<HANDLE>, HandleDeleter>
+    firstConnectionEvent_;
   PresentMonSession real_time_session_;
   PresentMonSession etl_session_;
 };

@@ -2,8 +2,6 @@
 #define GLOG_NO_ABBREVIATED_SEVERITIES
 #include <glog/logging.h>
 
-#include "../PresentMonApi/PresentMonAPI.h"
-#include "../PresentMonClient/PresentMonClient.h"
 #include "../PresentMonUtils/MemBuffer.h"
 #include "../PresentMonUtils/PresentMonNamedPipe.h"
 #include "../Streamer/StreamClient.h"

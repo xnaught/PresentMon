@@ -3,7 +3,7 @@
 #pragma once
 #include <string>
 
-#include "..\PresentMonUtils\PresentMonNamedPipe.h"
+#include "../PresentMonUtils/PresentMonNamedPipe.h"
 
 static const uint64_t kBufSize = 65536 * 60;
 static const std::string kGlobalPrefix = "Global\\NamedSharedMem_";

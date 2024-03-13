@@ -463,9 +463,9 @@ ULONG PMTraceSession::Start(
     if (mIsRealtimeSession) {
         TraceProperties sessionProps = {};
         sessionProps.Wnode.BufferSize = (ULONG) sizeof(TraceProperties);
-        sessionProps.Wnode.ClientContext = mTimestampType;        // Clock resolution to use when logging the timestamp for each event
+        sessionProps.Wnode.ClientContext = mTimestampType;          // Clock resolution to use when logging the timestamp for each event
         sessionProps.Wnode.Flags = WNODE_FLAG_TRACED_GUID;
-        sessionProps.LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
+        sessionProps.LogFileMode = EVENT_TRACE_REAL_TIME_MODE;      // We have a realtime consumer, not writing to a log file
         sessionProps.LoggerNameOffset = offsetof(TraceProperties, mSessionName);  // Location of session name; will be written by StartTrace()
 
         auto status = StartTraceW(&mSessionHandle, sessionName, &sessionProps);

@@ -26,7 +26,7 @@ PM_STATUS PresentMonSession::StartTraceSession() {
   std::lock_guard<std::mutex> lock(session_mutex_);
 
   if (pm_consumer_) {
-    return PM_STATUS::PM_STATUS_SESSION_ALREADY_EXISTS;
+    return PM_STATUS::PM_STATUS_SERVICE_ERROR;
   }
 
   auto expectFilteredEvents = IsWindows8Point1OrGreater();
@@ -37,14 +37,14 @@ PM_STATUS PresentMonSession::StartTraceSession() {
   try {
     pm_consumer_ = std::make_unique<PMTraceConsumer>();
   } catch (...) {
-    return PM_STATUS::PM_STATUS_ERROR;
+    return PM_STATUS::PM_STATUS_FAILURE;
   }
 
   pm_consumer_->mFilteredEvents = expectFilteredEvents;
   pm_consumer_->mFilteredProcessIds = filterProcessIds;
   pm_consumer_->mTrackDisplay = true;
   pm_consumer_->mTrackGPU = true;
-  pm_consumer_->mTrackGPUVideo = true;
+  pm_consumer_->mTrackGPUVideo = false;
   pm_consumer_->mTrackInput = true;
 
   const wchar_t* etl_file_name = nullptr;
@@ -73,11 +73,11 @@ PM_STATUS PresentMonSession::StartTraceSession() {
     pm_consumer_.reset();
     switch (status) {
       case ERROR_ALREADY_EXISTS:
-        return PM_STATUS::PM_STATUS_SESSION_ALREADY_EXISTS;
+        return PM_STATUS::PM_STATUS_SERVICE_ERROR;
       case ERROR_FILE_NOT_FOUND:
         return PM_STATUS::PM_STATUS_INVALID_ETL_FILE;
       default:
-        return PM_STATUS::PM_STATUS_ERROR;
+        return PM_STATUS::PM_STATUS_FAILURE;
     }
   }
 
@@ -114,7 +114,7 @@ PM_STATUS PresentMonSession::ProcessEtlFile(uint32_t client_process_id,
   if (pm_consumer_ != nullptr) {
     // There is a current consumer running. For now,
     // only support a single consumer.
-    return PM_STATUS::PM_STATUS_CREATE_SESSION_FAILED;
+    return PM_STATUS::PM_STATUS_SERVICE_ERROR;
   }
 
   streamer_.SetStreamMode(StreamMode::kOfflineEtl);
@@ -122,7 +122,7 @@ PM_STATUS PresentMonSession::ProcessEtlFile(uint32_t client_process_id,
       client_process_id, static_cast<uint32_t>(StreamPidOverride::kEtlPid),
       nsm_file_name);
   if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-    return PM_STATUS::PM_STATUS_CREATE_SESSION_FAILED;
+    return PM_STATUS::PM_STATUS_SERVICE_ERROR;
   }
 
   // Start the trace session
@@ -204,18 +204,17 @@ ProcessInfo* PresentMonSession::GetProcessInfo(uint32_t processId) {
     // name and also periodically check if it has terminated.  This will
     // fail (with GetLastError() == ERROR_ACCESS_DENIED) if the process was
     // run on another account, unless we're running with SeDebugPrivilege.
-    wchar_t const* processName = L"<error>";
+    auto pProcessName = L"<error>";
     wchar_t path[MAX_PATH];
-    DWORD numChars = sizeof(path);
-    HANDLE handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId);
-    if (handle != NULL) {
+    const auto handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId);
+    if (handle) {
+      auto numChars = (DWORD)std::size(path);
       if (QueryFullProcessImageNameW(handle, 0, path, &numChars)) {
-        processName = PathFindFileNameW(path);
+        pProcessName = PathFindFileNameW(path);
       }
-      CloseHandle(handle);
     }
 
-    InitProcessInfo(processInfo, processId, handle, processName);
+    InitProcessInfo(processInfo, processId, handle, pProcessName);
   }
 
   return processInfo;
@@ -493,7 +492,7 @@ void PresentMonSession::Output() {
     // queued events. This ensures that we call DequeueAnalyzedInfo() at
     // least once after events have stopped being collected so that all
     // events are included.
-    auto quit = quit_output_thread_ == true ? true:false;
+    const auto quit = quit_output_thread_.load();
 
     // Copy and process all the collected events, and update the various
     // tracking and statistics data structures.
@@ -511,7 +510,6 @@ void PresentMonSession::Output() {
 
     // Sleep to reduce overhead.
     Sleep(100);
-    
   }
 
   // Process handles
@@ -523,8 +521,6 @@ void PresentMonSession::Output() {
     }
   }
   processes_.clear();
-
-  return;
 }
 
 PM_STATUS PresentMonSession::StartStreaming(uint32_t client_process_id,
@@ -549,7 +545,7 @@ PM_STATUS PresentMonSession::StartStreaming(uint32_t client_process_id,
     // Add the client process id to be monitored
     GetProcessInfo(client_process_id);
     auto status = StartTraceSession();
-    if (status == PM_STATUS_ERROR) {
+    if (status == PM_STATUS_FAILURE) {
       // Unable to start a trace session. Destroy the NSM and
       // return status
       streamer_.StopStreaming(target_process_id);
@@ -605,6 +601,11 @@ PM_STATUS PresentMonSession::SelectAdapter(uint32_t adapter_id) {
   }
   return PM_STATUS::PM_STATUS_SUCCESS;
 }
+
+// TODO: copied from legacy api header
+// find a better home for these defines, and how to communicate them to app devs
+#define MIN_PM_TELEMETRY_PERIOD 1
+#define MAX_PM_TELEMETRY_PERIOD 1000
 
 PM_STATUS PresentMonSession::SetGpuTelemetryPeriod(uint32_t period_ms) {
   if (period_ms < MIN_PM_TELEMETRY_PERIOD ||

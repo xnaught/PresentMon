@@ -127,7 +127,8 @@ namespace p2c::client::util
 		else
 		{
 			// TODO: make this compile-time
-			p2clog.warn(L"Encountered unknown value type").commit();
+			p2clog.warn(std::format(L"Encountered unknown value type [{}]",
+				infra::util::ToWide(typeid(T).name()))).commit();
 		}
 		return v;
 	}
@@ -239,7 +240,8 @@ namespace p2c::client::util
 		}
 		CefValueTraverser operator[](const char* key);
 		CefValueTraverser operator[](size_t index);
-		CefRefPtr<CefValue> AsCefValue();
+		CefRefPtr<CefValue> AsCefValue() const &;
+		CefRefPtr<CefValue> AsCefValue() &&;
 		size_t GetArrayLength();
 		bool IsNull();
 	private:

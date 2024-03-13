@@ -95,6 +95,7 @@ namespace p2c::gfx::lay
 		void Resize(double window);
 		std::optional<float> Min() const;
 		std::optional<float> Max() const;
+		double GetWindowSize() const;
 	private:
 		// data
 		double timeWindow;

@@ -38,6 +38,16 @@ namespace pwr::nv
         return video_mem_size;
     }
 
+    double NvidiaPowerTelemetryAdapter::GetSustainedPowerLimit() const noexcept
+    {
+        unsigned int limitMw = 0;
+        if (nvml->Ok(nvml->DeviceGetPowerManagementLimit(*hNvml, &limitMw)))
+        {
+            return double(limitMw) / 1000.;
+        }
+        return 0.f;
+    }
+
     bool NvidiaPowerTelemetryAdapter::Sample() noexcept
     {
         LARGE_INTEGER qpc;
@@ -163,6 +173,20 @@ namespace pwr::nv
                 }
                 // TODO: consider logging failure (lower logging level perhaps)
             }
+
+            {// temperature
+                if (!GetPowerTelemetryCapBits().test(static_cast<size_t>(GpuTelemetryCapBits::gpu_temperature)))
+                {
+                    unsigned int temp = 0;
+                    if (nvml->Ok(nvml->DeviceGetTemperature(*hNvml, nvmlTemperatureSensors_t::NVML_TEMPERATURE_GPU, &temp)))
+                    {
+                        info.gpu_temperature_c = (double)temp;
+                        SetTelemetryCapBit(GpuTelemetryCapBits::gpu_temperature);
+                    }
+                    // TODO: consider logging failure (lower logging level perhaps)
+                }
+            }
+
         }
 
 
@@ -179,9 +203,9 @@ namespace pwr::nv
         return history.GetNearest(qpc);
     }
 
-    PM_GPU_VENDOR NvidiaPowerTelemetryAdapter::GetVendor() const noexcept
+    PM_DEVICE_VENDOR NvidiaPowerTelemetryAdapter::GetVendor() const noexcept
     {
-        return PM_GPU_VENDOR::PM_GPU_VENDOR_NVIDIA;
+        return PM_DEVICE_VENDOR::PM_DEVICE_VENDOR_NVIDIA;
     }
 
     std::string NvidiaPowerTelemetryAdapter::GetName() const noexcept

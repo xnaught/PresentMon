@@ -78,34 +78,8 @@ namespace p2c::gfx::impl
             }
         }
         // geometry buffers (vtx + idx)
-        {
-            {
-                D3D11_BUFFER_DESC bd = {};
-                bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-                bd.Usage = D3D11_USAGE_DYNAMIC;
-                bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-                bd.MiscFlags = 0u;
-                bd.ByteWidth = vertexBufferSize * sizeof(Point);
-                bd.StructureByteStride = sizeof(Point);
-                if (auto hr = device.CreateBuffer(&bd, nullptr, &pVertexBuffer); FAILED(hr))
-                {
-                    p2clog.hr(hr).commit();
-                }
-            }
-            {
-                D3D11_BUFFER_DESC ibd = {};
-                ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;
-                ibd.Usage = D3D11_USAGE_DYNAMIC;
-                ibd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-                ibd.MiscFlags = 0u;
-                ibd.ByteWidth = indexBufferSize * sizeof(UINT16);
-                ibd.StructureByteStride = sizeof(UINT16);
-                if (auto hr = device.CreateBuffer(&ibd, nullptr, &pIndexBuffer); FAILED(hr))
-                {
-                    p2clog.hr(hr).commit();
-                }
-            }
-        }
+        MakeVertexBuffer(device);
+        MakeIndexBuffer(device);
         // rasterizer (backface cull etc.)
         {
             auto rasterDesc = CD3D11_RASTERIZER_DESC{ CD3D11_DEFAULT{} };
@@ -155,6 +129,11 @@ namespace p2c::gfx::impl
 
 	void FastRenderer::StartFrame(ID3D11DeviceContext& context)
 	{
+        if (vertexLimitExceededAmount || indexLimitExceededAmount) {
+            p2clog.warn(L"Limit on vtx or idx buffer exceeded last frame and not resized, resetting tripwire").commit();
+            vertexLimitExceededAmount.reset();
+            indexLimitExceededAmount.reset();
+        }
         if (!batches.empty())
         {
             p2clog.warn(L"batches not empty").commit();
@@ -279,9 +258,12 @@ namespace p2c::gfx::impl
         if (nVertices < vertexBufferSize) {
             reinterpret_cast<Point*>(vertexMapping->pData)[nVertices++] = { ConvertPoint(pt), chainColor };
         }
-        else if (!vertexLimitExceededTripwire) {
-            vertexLimitExceededTripwire = true;
-            p2clog.warn(L"Vertex limit exceeded!").commit();
+        else  {
+            if (!vertexLimitExceededAmount) {
+                vertexLimitExceededAmount = 0;
+                p2clog.warn(L"Vertex limit exceeded!").commit();
+            }
+            *vertexLimitExceededAmount += 1;
         }
     }
 
@@ -290,15 +272,48 @@ namespace p2c::gfx::impl
 #ifdef _DEBUG
         if (i < activeBatch->vertexOffset || i > nVertices)
         {
-            p2clog.warn(std::format(L"vertex index out of range: {}", i)).commit();
+            p2clog.warn(std::format(L"writing index out of range: {}", i)).commit();
         }
 #endif
         if (nIndices < indexBufferSize) {
             reinterpret_cast<UINT16*>(indexMapping->pData)[nIndices++] = UINT16(i - activeBatch->vertexOffset);
         }
-        else if (!indexLimitExceededTripwire) {
-            indexLimitExceededTripwire = true;
-            p2clog.warn(L"Index limit exceeded!").commit();
+        else {
+            if (!indexLimitExceededAmount) {
+                indexLimitExceededAmount = 0;
+                p2clog.warn(L"Index limit exceeded!").commit();
+            }
+            *indexLimitExceededAmount += 1;
+        }
+    }
+
+    void FastRenderer::MakeVertexBuffer(ID3D11Device& device)
+    {
+        D3D11_BUFFER_DESC bd = {};
+        bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        bd.Usage = D3D11_USAGE_DYNAMIC;
+        bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+        bd.MiscFlags = 0u;
+        bd.ByteWidth = vertexBufferSize * sizeof(Point);
+        bd.StructureByteStride = sizeof(Point);
+        if (auto hr = device.CreateBuffer(&bd, nullptr, &pVertexBuffer); FAILED(hr))
+        {
+            p2clog.hr(hr).commit();
+        }
+    }
+
+    void FastRenderer::MakeIndexBuffer(ID3D11Device& device)
+    {
+        D3D11_BUFFER_DESC ibd = {};
+        ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+        ibd.Usage = D3D11_USAGE_DYNAMIC;
+        ibd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+        ibd.MiscFlags = 0u;
+        ibd.ByteWidth = indexBufferSize * sizeof(UINT16);
+        ibd.StructureByteStride = sizeof(UINT16);
+        if (auto hr = device.CreateBuffer(&ibd, nullptr, &pIndexBuffer); FAILED(hr))
+        {
+            p2clog.hr(hr).commit();
         }
     }
 
@@ -580,6 +595,26 @@ namespace p2c::gfx::impl
     void FastRenderer::Resize(const DimensionsI& dims_)
     {
         dims = dims_;
+    }
+
+    void FastRenderer::ResizeGeometryBuffersIfNecessary(ID3D11Device& device)
+    {
+        if (vertexLimitExceededAmount) {
+            const auto newSize = UINT(float(vertexBufferSize + *vertexLimitExceededAmount) * 2.f);
+            p2clog.info(std::format(L"Vertex limit exceeded last frame, resizing from {} to {}",
+                vertexBufferSize, newSize)).commit();
+            vertexBufferSize = newSize;
+            MakeVertexBuffer(device);
+            vertexLimitExceededAmount.reset();
+        }
+        if (indexLimitExceededAmount) {
+            const auto newSize = UINT(float(indexBufferSize + *indexLimitExceededAmount) * 2.f);
+            p2clog.info(std::format(L"Index limit exceeded last frame, resizing from {} to {}",
+                indexBufferSize, newSize)).commit();
+            indexBufferSize = newSize;
+            MakeIndexBuffer(device);
+            indexLimitExceededAmount.reset();
+        }
     }
 
     Vec2 FastRenderer::ConvertPoint(Vec2 pt) const

@@ -97,7 +97,7 @@ void StreamerULT::ServerRead(string file_name) {
 		getline(test_read_file, line);
 
 		while (getline(test_read_file, line) && reading_from_file_) {
-			LOG(INFO) << "\nWriting data...\n"<< line << endl;
+			LOG(INFO) << "\nWriting data...\n"<< line << std::endl;
 			PmNsmFrameData data = { 0 };
 
 			ParsePresentMonCsvData(line, data);

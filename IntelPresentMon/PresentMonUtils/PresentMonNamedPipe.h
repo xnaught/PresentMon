@@ -16,10 +16,11 @@
 #include <Windows.h>
 #include <tchar.h>
 #include <bitset>
-#include "..\..\PresentData\PresentMonTraceConsumer.hpp"
-#include "..\PresentMonAPI\PresentMonAPI.h"
-#include "..\ControlLib\PowerTelemetryProvider.h"
-#include "..\ControlLib\CpuTelemetryInfo.h"
+#include "../../PresentData/PresentMonTraceConsumer.hpp"
+#include "../PresentMonAPI2/PresentMonAPI.h"
+#include "../ControlLib/PowerTelemetryProvider.h"
+#include "../ControlLib/CpuTelemetryInfo.h"
+#include "LegacyAPIDefines.h"
 
 // We use system reserved pid (0: System Idle Process, 4: System) that will
 // never show up in present mon for StreamAll and ETL PIDs
@@ -37,7 +38,7 @@ enum class PM_ACTION
 	ENUMERATE_ADAPTERS,
 	SELECT_ADAPTER,
 	SET_GPU_TELEMETRY_PERIOD,
-	GET_CPU_NAME,
+	GET_STATIC_CPU_METRICS,
 	INVALID_REQUEST
 };
 
@@ -110,8 +111,7 @@ struct PmNsmPresentEvent {
                               // Present (D3D9, DXGI, or DXGK Present_Start)
   uint32_t ProcessId;         // ID of the process that presented
   uint32_t ThreadId;          // ID of the thread that presented
-  uint64_t
-      PresentStopTime;    // QPC duration between runtime present start and end
+  uint64_t TimeInPresent;     // QPC duration between runtime present start and end
   uint64_t GPUStartTime;  // QPC value when the frame's first DMA packet started
   uint64_t ReadyTime;    // QPC value when the frame's last DMA packet completed
 
@@ -201,10 +201,33 @@ struct IPMAdapterInfo
   PM_ADAPTER_INFO adapters[MAX_PM_ADAPTERS];
 };
 
+struct IPMStaticAdapterData
+{
+	uint32_t id;
+	PM_GPU_VENDOR vendor;
+	char name[64];
+	double gpuSustainedPowerLimit;
+	uint64_t gpuMemorySize;
+	uint64_t gpuMemoryMaxBandwidth;
+};
+
+struct IPMAdapterInfoNext
+{
+	uint32_t num_adapters;
+	IPMStaticAdapterData adapters[8];
+};
+
 struct IPMCpuNameResponse
 {
   char cpu_name[MAX_PM_CPU_NAME];
   uint32_t cpu_name_length;
+};
+
+struct IPMStaticCpuMetrics
+{
+	char cpuName[256];
+	uint32_t cpuNameLength;
+	double cpuPowerLimit;
 };
 
 #ifdef __cplusplus

@@ -1,15 +1,18 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 import { RgbaColor } from './color'
+import { QualifiedMetric, makeDefaultQualifiedMetric } from './qualified-metric';
 
 export enum AxisAffinity {
     Left,
     Right,
 }
 
+// contains information describing one of possibly many metrics contained in a widget
+// along with per-metric annotation/presentation data such as colors and alignment
 export interface WidgetMetric {
     key: number;
-    metricId: number;
+    metric: QualifiedMetric;
     lineColor: RgbaColor;
     fillColor: RgbaColor;
     axisAffinity: AxisAffinity;
@@ -29,10 +32,10 @@ export function RegenerateKeys(m: WidgetMetric): void {
     m.key = GenerateKey();
 }
 
-export function makeDefaultWidgetMetric(metricId: number = 0): WidgetMetric {
+export function makeDefaultWidgetMetric(qualifiedMetric: QualifiedMetric|null = null): WidgetMetric {
     return {
         key: GenerateKey(),
-        metricId,
+        metric: qualifiedMetric ?? makeDefaultQualifiedMetric(),
         lineColor: {
           r: 100,
           g: 255,

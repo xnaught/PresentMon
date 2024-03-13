@@ -57,8 +57,9 @@ namespace p2c::client::util::async
                 );
                 return Result{ true, MakeCefObject(CefProp{ "payload", std::move(payload) }) };
             }
-
-            return Result{ false, CefValueNull() };
+            else {
+                throw std::runtime_error{ std::format("Unable to open file path: {}", filePath.string()) };
+            }
         }
     };
 }

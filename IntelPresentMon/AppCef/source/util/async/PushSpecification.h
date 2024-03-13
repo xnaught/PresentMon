@@ -16,12 +16,10 @@ namespace p2c::client::util::async
         // {very-complicated-spec-object} => null
         Result ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const override
         {
-            if (Traverse(pArgObj)["pid"].IsNull())
-            {
+            if (Traverse(pArgObj)["pid"].IsNull()) {
                 kernel.ClearOverlay();
             }
-            else
-            {
+            else {
                 kernel.PushSpec(MakeOverlaySpec(std::move(pArgObj)));
             }
             return Result{ true, CefValueNull() };

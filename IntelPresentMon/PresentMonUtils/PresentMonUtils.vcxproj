@@ -188,6 +188,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="LegacyAPIDefines.h" />
     <ClInclude Include="MemBuffer.h" />
     <ClInclude Include="NamedPipeHelper.h" />
     <ClInclude Include="PresentDataUtils.h" />

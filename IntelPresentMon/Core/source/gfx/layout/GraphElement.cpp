@@ -78,7 +78,7 @@ namespace p2c::gfx::lay
 				}, { "$label-wrap-left" });
 				if (showCurrentValues) {
 					// value
-					metricValueReadouts[i] = TextElement::Make(L"0000", { "$label-value", std::format("$metric-{}", i) });
+					metricValueReadouts[i] = TextElement::Make(L"0000.", { "$label-value", std::format("$metric-{}", i) });
 					titleFlex->AddChild(metricValueReadouts[i]);
 					// units
 					titleFlex->AddChild(TextElement::Make(pack.units, { "$label-units", std::format("$metric-{}", i) }));
@@ -89,7 +89,7 @@ namespace p2c::gfx::lay
 				auto titleFlex = FlexElement::Make({}, { "$label-wrap-right" });
 				if (showCurrentValues) {
 					// units
-					metricValueReadouts[i] = TextElement::Make(L"0000", { "$label-value", std::format("$metric-{}", i) });
+					metricValueReadouts[i] = TextElement::Make(L"0000.", { "$label-value", std::format("$metric-{}", i) });
 					titleFlex->AddChild(metricValueReadouts[i]);
 					// units
 					titleFlex->AddChild(TextElement::Make(pack.units, { "$label-units", std::format("$metric-{}", i) }));
@@ -177,7 +177,7 @@ namespace p2c::gfx::lay
 		// value range is x-axis for histogram, otherwise (line plot) y-axis
 		if (dynamic_cast<HistogramPlotElement*>(pPlot.get()))
 		{
-			SetBottomAxisLabels_(float(min), float(max));
+			SetBottomAxisLabels_(float(min), float(max), packs.front()->units);
 		}
 		else // line plot
 		{
@@ -229,12 +229,17 @@ namespace p2c::gfx::lay
 		}
 	}
 
-	void GraphElement::SetBottomAxisLabels_(float left, float right)
+	void GraphElement::SetBottomAxisLabels_(float left, float right, std::optional<std::wstring> units)
 	{
-		if (pBottomLeft && pBottomRight)
-		{
-			pBottomLeft->SetText(std::format(L"{:.0f}", left));
-			pBottomRight->SetText(std::format(L"{:.0f}", right));
+		if (pBottomLeft && pBottomRight) {
+			if (!units) {
+				pBottomLeft->SetText(std::format(L"{:.0f}", left));
+				pBottomRight->SetText(std::format(L"{:.0f}", right));
+			}
+			else {
+				pBottomLeft->SetText(std::format(L"{:.0f}{}", left, *units));
+				pBottomRight->SetText(std::format(L"{:.0f}{}", right, *units));
+			}
 		}
 	}
 
@@ -265,7 +270,7 @@ namespace p2c::gfx::lay
 					}
 					else {
 						const auto v = *vopt;
-						const auto digitsBeforeDecimal = int(log10(std::abs(v)));
+						const auto digitsBeforeDecimal = std::max(int(log10(std::abs(v))), 0);
 						const int maxFractionalDigits = 2;
 						auto text = std::format(L"{:.{}f}", v, std::max(maxFractionalDigits - digitsBeforeDecimal, 0));
 						readout.SetText(std::move(text));

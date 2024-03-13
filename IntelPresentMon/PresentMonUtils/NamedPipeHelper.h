@@ -38,8 +38,8 @@ public:
                                                    uint32_t value);
     static PM_STATUS DecodeGeneralSetActionResponse(PM_ACTION action,
                                                    MemBuffer* rsp_buffer);
-    static PM_STATUS DecodeCpuNameResponse(MemBuffer* rsp_buf,
-                                           IPMCpuNameResponse* cpu_name_info);
+    static PM_STATUS DecodeStaticCpuMetricsResponse(MemBuffer* rsp_buf,
+        IPMStaticCpuMetrics* static_cpu_metrics);
 
     static bool ValidateRequest(MemBuffer* rqst_buf, PM_ACTION action);
 

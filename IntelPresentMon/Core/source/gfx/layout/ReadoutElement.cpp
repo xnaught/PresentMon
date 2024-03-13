@@ -4,7 +4,6 @@
 #include "TextElement.h"
 #include "GraphData.h"
 #include <limits>
-#include <Core/source/pmon/metric/Metric.h>
 
 
 namespace p2c::gfx::lay

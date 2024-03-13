@@ -35,7 +35,7 @@ export class HotkeyModule extends VuexModule {
     Vue.set(this.bindings, HotkeyAction[payload.action], payload);
   }
 
-  @Action
+  @Action({rawError: true})
   async bindHotkey(payload: Binding) {
     await this.bindHotkeyUnserialized(payload);
     try {
@@ -48,7 +48,7 @@ export class HotkeyModule extends VuexModule {
     }
   }
 
-  @Action
+  @Action({rawError: true})
   async clearHotkey(action: HotkeyAction) {
     await this.clearHotkeyUnserialized(action);
     try {
@@ -61,7 +61,7 @@ export class HotkeyModule extends VuexModule {
     }
   }
 
-  @Action
+  @Action({rawError: true})
   async bindHotkeyUnserialized(payload: Binding) {
     try {
       await Api.bindHotkey(payload);
@@ -73,7 +73,7 @@ export class HotkeyModule extends VuexModule {
     }
   }
 
-  @Action
+  @Action({rawError: true})
   async clearHotkeyUnserialized(action: HotkeyAction) {
     try {
       await Api.clearHotkey(action);
@@ -86,13 +86,13 @@ export class HotkeyModule extends VuexModule {
     }
   }
 
-  @Action
+  @Action({rawError: true})
   async refreshOptions() {
     this.context.commit('replaceAllKeyOptions', await Api.enumerateKeys());
     this.context.commit('replaceAllModifierOptions', await Api.enumerateModifiers());
   }
 
-  @Action
+  @Action({rawError: true})
   async initBindings() {
     for (let action of getEnumValues(HotkeyAction)) {
       const binding: Binding = {action, combination: null};
@@ -100,7 +100,7 @@ export class HotkeyModule extends VuexModule {
     }
   }
 
-  @Action
+  @Action({rawError: true})
   async bindDefaults() {
     for (let binding of this.defaultBindings) {
       try {
