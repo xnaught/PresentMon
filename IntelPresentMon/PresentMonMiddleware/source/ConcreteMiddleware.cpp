@@ -1031,7 +1031,7 @@ void ReportMetrics(
                     display_duration.push_back(swapChain.DisplayDuration[i]);
                 }
             }
-            CalculateMetric(output, display_duration, element.stat, true); // Invert the notion of min/max to match PM_METRIC_DISPLAYED_FPS
+            CalculateMetric(output, display_duration, element.stat);
         }
             break;
         case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
@@ -1044,7 +1044,7 @@ void ReportMetrics(
             for (size_t i = 0; i < swapChain.CPUDuration.size(); ++i) {
                 cpu_fps[i] = 1000.0 / (swapChain.CPUDuration[i] + swapChain.CPUFramePacingStall[i]);
             }
-            CalculateMetric(output, cpu_fps, element.stat, true);
+            CalculateMetric(output, cpu_fps, element.stat);
         }
             break;
         case PM_METRIC_DISPLAYED_FPS:
@@ -1056,7 +1056,7 @@ void ReportMetrics(
                     displayed_fps.push_back(1000.0 / swapChain.DisplayDuration[i]);
                 }
             }
-            CalculateMetric(output, displayed_fps, element.stat, true);
+            CalculateMetric(output, displayed_fps, element.stat);
         }
             break;
         case PM_METRIC_DROPPED_FRAMES:
@@ -1074,17 +1074,17 @@ void ReportMetrics(
             for (size_t i = 0; i < swapChain.CPUDuration.size(); ++i) {
                 frame_times[i] = swapChain.CPUDuration[i] + swapChain.CPUFramePacingStall[i];
             }
-            CalculateMetric(output, frame_times, element.stat, true);
+            CalculateMetric(output, frame_times, element.stat);
         }
             break;
         case PM_METRIC_CPU_BUSY:
-            CalculateMetric(output, swapChain.CPUDuration, element.stat, false);
+            CalculateMetric(output, swapChain.CPUDuration, element.stat);
             break;
         case PM_METRIC_CPU_WAIT:
-            CalculateMetric(output, swapChain.CPUFramePacingStall, element.stat, true);
+            CalculateMetric(output, swapChain.CPUFramePacingStall, element.stat);
             break;
         case PM_METRIC_GPU_TIME:
-            CalculateMetric(output, swapChain.GPUDuration, element.stat, true);
+            CalculateMetric(output, swapChain.GPUDuration, element.stat);
             break;
         default:
             output = 0.;
@@ -1111,7 +1111,7 @@ void ReportMetrics(
         return;
     }
 
-    void ConcreteMiddleware::CalculateMetric(double& pBlob, std::vector<double>& inData, PM_STAT stat, bool ascending)
+    void ConcreteMiddleware::CalculateMetric(double& pBlob, std::vector<double>& inData, PM_STAT stat)
     {
         auto& output = reinterpret_cast<double&>(pBlob);
         output = 0.;
@@ -1124,13 +1124,13 @@ void ReportMetrics(
                 output /= inData.size();
                 return;
             }
-            if (stat == PM_STAT_MID_POINT)
+            else if (stat == PM_STAT_MID_POINT)
             {
                 size_t middle_index = inData.size() / 2;
                 output = inData[middle_index];
                 return;
             }
-            if (ascending) {
+            else {
                 std::sort(inData.begin(), inData.end());
                 switch (stat)
                 {
@@ -1149,28 +1149,14 @@ void ReportMetrics(
                 case PM_STAT_PERCENTILE_90:
                     output = GetPercentile(inData, 0.10);
                     break;
-                default:
+                case PM_STAT_PERCENTILE_01:
+                    output = GetPercentile(inData, 0.99);
                     break;
-                }
-            }
-            else {
-                std::sort(inData.begin(), inData.end(), std::greater<>());
-                switch (stat)
-                {
-                case PM_STAT_MIN:
-                    output = inData[0];
+                case PM_STAT_PERCENTILE_05:
+                    output = GetPercentile(inData, 0.95);
                     break;
-                case PM_STAT_MAX:
-                    output = inData[inData.size() - 1];
-                    break;
-                case PM_STAT_PERCENTILE_99:
-                    output = GetPercentile(inData, 0.01);
-                    break;
-                case PM_STAT_PERCENTILE_95:
-                    output = GetPercentile(inData, 0.05);
-                    break;
-                case PM_STAT_PERCENTILE_90:
-                    output = GetPercentile(inData, 0.10);
+                case PM_STAT_PERCENTILE_10:
+                    output = GetPercentile(inData, 0.90);
                     break;
                 default:
                     break;
