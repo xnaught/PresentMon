@@ -14,4 +14,5 @@
 		X_(STAT, MID_LERP, "Mid Lerp", "mlp", "Linear interpolation between the two points nearest to the middle of the sliding window") \
 		X_(STAT, NEWEST_POINT, "Newest Point", "npt", "Value in the most recent frame in the sliding window") \
 		X_(STAT, OLDEST_POINT, "Oldest Point", "opt", "Value in the least recent frame in the sliding window") \
-		X_(STAT, COUNT, "Count", "cnt", "Count of frames in the sliding window matching a predicate (e.g. counting # of frames for which a field is boolean true)")
+		X_(STAT, COUNT, "Count", "cnt", "Count of frames in the sliding window matching a predicate (e.g. counting # of frames for which a field is boolean true)") \
+		X_(STAT, NON_ZERO_AVG, "Non-zero Average", (const char*)u8"øavg", "Average or mean of frame samples over the sliding window, excluding all zero values")

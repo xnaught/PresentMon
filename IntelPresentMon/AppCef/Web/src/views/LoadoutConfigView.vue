@@ -193,7 +193,7 @@ export default Vue.extend({
   flex: 3;
 }
 .widget-row .widget-cell.col-stat {
-  width: 90px;
+  width: 110px;
 }
 .widget-row .widget-cell.col-type {
   width: 120px;
