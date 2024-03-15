@@ -336,7 +336,7 @@ namespace p2c::pmon
                     // tracking frame times
                     pStatsTracker->Push(pQueryElementContainer->ExtractFrameTimeFromBlob(pBlob));
                 }
-                pQueryElementContainer->WriteFrame(procTracker, procName, file, pBlob);
+                pQueryElementContainer->WriteFrame(procTracker.GetPid(), procName, file, pBlob);
             }
         } while (blobs.AllBlobsPopulated()); // if container filled, means more might be left
         file << std::flush;
