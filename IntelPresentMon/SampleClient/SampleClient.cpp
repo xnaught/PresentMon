@@ -29,6 +29,8 @@
 #include "WrapperStaticQuery.h"
 #include "MetricListSample.h"
 
+#include "../CommonUtilities/log/Log.h"
+
 
 int main(int argc, char* argv[])
 {
@@ -43,6 +45,8 @@ int main(int argc, char* argv[])
             std::cout << "Must set both control pipe and intro NSM, or neither.\n";
             return -1;
         }
+
+        pmlog.note(L"henlo");
 
         // determine requested activity
         if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample ^ opt.checkMetricSample ^ opt.wrapperStaticQuerySample ^ opt.metricListSample) {
