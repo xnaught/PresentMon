@@ -128,9 +128,9 @@ namespace pmon::mid
 		std::map<uint32_t, std::unique_ptr<StreamClient>> presentMonStreamClients;
 		std::unique_ptr<ipc::MiddlewareComms> pComms;
 		// Dynamic query handle to frame data delta
-		std::unordered_map<std::pair<PM_DYNAMIC_QUERY*, uint32_t>, uint64_t> queryFrameDataDeltas;
+		std::unordered_map<std::pair<const PM_DYNAMIC_QUERY*, uint32_t>, uint64_t> queryFrameDataDeltas;
 		// Dynamic query handle to cache data
-		std::unordered_map<std::pair<PM_DYNAMIC_QUERY*, uint32_t>, std::unique_ptr<uint8_t[]>> cachedMetricDatas;
+		std::unordered_map<std::pair<const PM_DYNAMIC_QUERY*, uint32_t>, std::unique_ptr<uint8_t[]>> cachedMetricDatas;
 		std::vector<DeviceInfo> cachedGpuInfo;
 		std::vector<DeviceInfo> cachedCpuInfo;
 		uint32_t currentGpuInfoIndex = UINT32_MAX;

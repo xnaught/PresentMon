@@ -306,8 +306,11 @@ namespace pmon::mid
         char path[MAX_PATH];
         DWORD numChars = sizeof(path);
         handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId);
-        if (QueryFullProcessImageNameA(handle, 0, path, &numChars)) {
-            processName = PathFindFileNameA(path);
+        if (handle) {
+            if (QueryFullProcessImageNameA(handle, 0, path, &numChars)) {
+                processName = PathFindFileNameA(path);
+            }
+            CloseHandle(handle);
         }
         return processName;
     }
@@ -529,7 +532,6 @@ namespace pmon::mid
             offset += qe.dataSize;
         }
 
-        pQuery->dynamicQueryHandle = pQuery.get();
         pQuery->metricOffsetMs = metricOffsetMs;
         pQuery->windowSizeMs = windowSizeMs;
         pQuery->elements = std::vector<PM_QUERY_ELEMENT>{ queryElements.begin(), queryElements.end() };
@@ -697,7 +699,7 @@ void ReportMetrics(
 
         uint64_t index = 0;
         double adjusted_window_size_in_ms = pQuery->windowSizeMs;
-        auto result = queryFrameDataDeltas.emplace(std::pair(std::pair(pQuery->dynamicQueryHandle, processId), uint64_t()));
+        auto result = queryFrameDataDeltas.emplace(std::pair(std::pair(pQuery, processId), uint64_t()));
         auto queryToFrameDataDelta = &result.first->second;
         
         PmNsmFrameData* frame_data = GetFrameDataStart(client, index, SecondsDeltaToQpc(pQuery->metricOffsetMs/1000., client->GetQpcFrequency()), *queryToFrameDataDelta, adjusted_window_size_in_ms);
@@ -1430,7 +1432,7 @@ void ReportMetrics(
 
     void ConcreteMiddleware::SaveMetricCache(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob)
     {
-        auto it = cachedMetricDatas.find(std::pair(pQuery->dynamicQueryHandle, processId));
+        auto it = cachedMetricDatas.find(std::pair(pQuery, processId));
         if (it != cachedMetricDatas.end())
         {
             auto& uniquePtr = it->second;
@@ -1440,13 +1442,13 @@ void ReportMetrics(
         {
             auto dataArray = std::make_unique<uint8_t[]>(pQuery->queryCacheSize);
             std::copy(pBlob, pBlob + pQuery->queryCacheSize, dataArray.get());
-            cachedMetricDatas.emplace(std::pair(pQuery->dynamicQueryHandle, processId), std::move(dataArray));
+            cachedMetricDatas.emplace(std::pair(pQuery, processId), std::move(dataArray));
         }
     }
 
     void ConcreteMiddleware::CopyMetricCacheToBlob(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob)
     {
-        auto it = cachedMetricDatas.find(std::pair(pQuery->dynamicQueryHandle, processId));
+        auto it = cachedMetricDatas.find(std::pair(pQuery, processId));
         if (it != cachedMetricDatas.end())
         {
             auto& uniquePtr = it->second;
@@ -1712,6 +1714,12 @@ void ReportMetrics(
         status =
             NamedPipeHelper::DecodeEnumerateAdaptersResponse(&responseBuf, (IPMAdapterInfo*)&adapterInfo);
         if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            return;
+        }
+
+        if (adapterInfo.num_adapters != cachedGpuInfo.size())
+        {
+            LOG(INFO) << "Number of adapters returned from Control Pipe does not match Introspective data";
             return;
         }
 
