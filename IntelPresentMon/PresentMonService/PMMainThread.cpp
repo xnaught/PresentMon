@@ -100,22 +100,25 @@ void IPCCommunication(Service* srv, PresentMon* pm)
         return;
     }
 
-    auto nps = std::make_unique<NamedPipeServer>(srv, pm, opt.controlPipe.AsOptional());
-    if (!nps) {
-        // TODO: log
-        return;
+    try
+    {
+        auto nps = std::make_unique<NamedPipeServer>(srv, pm, opt.controlPipe.AsOptional());
+        while (createNamedPipeServer) {
+            DWORD result = nps->RunServer();
+            if (result == ERROR_SUCCESS) {
+                createNamedPipeServer = false;
+            }
+            else {
+                // We were unable to start our named pipe server. Sleep for
+                // a bit and then try again.
+                PmSleep(3000);
+            }
+        }
     }
-
-    while (createNamedPipeServer) {
-        DWORD result = nps->RunServer();
-        if (result == ERROR_SUCCESS) {
-            createNamedPipeServer = false;
-        }
-        else {
-            // We were unable to start our named pipe server. Sleep for
-            // a bit and then try again.
-            PmSleep(3000);
-        }
+    catch (const std::bad_alloc& e)
+    {
+        LOG(INFO) << "Unable to create Name Pipe Server. Result: " << e.what();
+        return;
     }
 
     return;
