@@ -100,7 +100,8 @@ namespace p2c::pmon
             if (available) {
                 const auto typeId = metric.GetDataTypeInfo().GetFrameType();
                 // DISPLAYED_TIME and DISPLAY_LATENCY should just show zeros when NaN is encountered
-                const bool zeroForNA = metricId == PM_METRIC_DISPLAYED_TIME || PM_METRIC_DISPLAY_LATENCY;
+                const bool zeroForNA = (metricId == PM_METRIC_DISPLAYED_TIME)
+                    || (metricId == PM_METRIC_DISPLAY_LATENCY);
                 // special case for TIME, it needs to be relative to TIME of first frame and scaled ms => s
                 if (metricId == PM_METRIC_TIME) {
                     pAnnotation = std::make_unique<TypedAnnotation_<TimeAnnotationType_>>();
