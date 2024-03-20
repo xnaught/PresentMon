@@ -17,9 +17,12 @@ namespace pmapi
 
     FrameQuery& FrameQuery::operator=(FrameQuery&& rhs) noexcept
     {
-        hQuery_ = rhs.hQuery_;
-        blobSize_ = rhs.blobSize_;
-        rhs.Clear_();;
+        if (&rhs != this)
+        {
+            hQuery_ = rhs.hQuery_;
+            blobSize_ = rhs.blobSize_;
+            rhs.Clear_();;
+        }
         return *this;
     }
 

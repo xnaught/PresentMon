@@ -16,9 +16,12 @@ namespace pmapi
 
     DynamicQuery& DynamicQuery::operator=(DynamicQuery&& rhs) noexcept
     {
-        hQuery_ = rhs.hQuery_;
-        blobSize_ = rhs.blobSize_;
-        rhs.Clear_();
+        if (&rhs != this)
+        {
+            hQuery_ = rhs.hQuery_;
+            blobSize_ = rhs.blobSize_;
+            rhs.Clear_();
+        }
         return *this;
     }
 

@@ -26,27 +26,33 @@ namespace pmapi
 
     BlobContainer& BlobContainer::operator=(BlobContainer&& rhs) noexcept
     {
-        handle_ = rhs.handle_;
-        blobSize_ = rhs.blobSize_;
-        nBlobs_ = rhs.nBlobs_;
-        nBlobsFilledInOut_ = rhs.nBlobsFilledInOut_;
-        pBlobArrayBytes_ = std::move(rhs.pBlobArrayBytes_);
-        blobPointers_ = std::move(rhs.blobPointers_);
-        rhs.Reset();
+        if (&rhs != this)
+        {
+            handle_ = rhs.handle_;
+            blobSize_ = rhs.blobSize_;
+            nBlobs_ = rhs.nBlobs_;
+            nBlobsFilledInOut_ = rhs.nBlobsFilledInOut_;
+            pBlobArrayBytes_ = std::move(rhs.pBlobArrayBytes_);
+            blobPointers_ = std::move(rhs.blobPointers_);
+            rhs.Reset();
+        }
         return *this;
     }
 
     BlobContainer& BlobContainer::operator=(const BlobContainer& rhs)
     {
-        handle_ = rhs.handle_;
-        blobSize_ = rhs.blobSize_;
-        nBlobs_ = rhs.nBlobs_;
-        nBlobsFilledInOut_ = rhs.nBlobsFilledInOut_;
-        pBlobArrayBytes_ = std::make_unique<uint8_t[]>(rhs.GetTotalSize());
-        PopulateBlobPointers_();
-        std::copy(rhs.pBlobArrayBytes_.get(),
-            rhs.pBlobArrayBytes_.get() + rhs.GetTotalSize(),
-            pBlobArrayBytes_.get());
+        if (&rhs != this)
+        {
+            handle_ = rhs.handle_;
+            blobSize_ = rhs.blobSize_;
+            nBlobs_ = rhs.nBlobs_;
+            nBlobsFilledInOut_ = rhs.nBlobsFilledInOut_;
+            pBlobArrayBytes_ = std::make_unique<uint8_t[]>(rhs.GetTotalSize());
+            PopulateBlobPointers_();
+            std::copy(rhs.pBlobArrayBytes_.get(),
+                rhs.pBlobArrayBytes_.get() + rhs.GetTotalSize(),
+                pBlobArrayBytes_.get());
+        }
         return *this;
     }
 
