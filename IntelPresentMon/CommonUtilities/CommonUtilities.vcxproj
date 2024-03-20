@@ -21,20 +21,21 @@
   <ItemGroup>
     <ClInclude Include="cli\CliFramework.h" />
     <ClInclude Include="log\Channel.h" />
+    <ClInclude Include="log\Entry.h" />
     <ClInclude Include="log\EntryBuilder.h" />
     <ClInclude Include="log\IChannel.h" />
     <ClInclude Include="log\IDriver.h" />
     <ClInclude Include="log\IPolicy.h" />
     <ClInclude Include="log\ITextFormatter.h" />
     <ClInclude Include="log\Level.h" />
-    <ClInclude Include="log\Entry.h" />
     <ClInclude Include="log\Log.h" />
     <ClInclude Include="log\MsvcDebugDriver.h" />
+    <ClInclude Include="log\TextFormatter.h" />
     <ClInclude Include="Memory.h" />
     <ClInclude Include="Hash.h" />
     <ClInclude Include="Meta.h" />
+    <ClInclude Include="log\SimpleFileDriver.h" />
     <ClInclude Include="str\String.h" />
-    <ClInclude Include="log\TextFormatter.h" />
     <ClInclude Include="win\Utilities.h" />
     <ClInclude Include="win\WinAPI.h" />
   </ItemGroup>
@@ -46,8 +47,9 @@
     <ClCompile Include="log\Level.cpp" />
     <ClCompile Include="log\Log.cpp" />
     <ClCompile Include="log\MsvcDebugDriver.cpp" />
-    <ClCompile Include="str\String.cpp" />
+    <ClCompile Include="log\SimpleFileDriver.cpp" />
     <ClCompile Include="log\TextFormatter.cpp" />
+    <ClCompile Include="str\String.cpp" />
     <ClCompile Include="win\Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
