@@ -16,6 +16,7 @@ namespace pmon::ipc::intro
 		ProbeAllocator(const ProbeAllocator<void>& other)
 			: pTotalSize(other.pTotalSize)
 		{}
+		ProbeAllocator& operator=(const ProbeAllocator&) = delete;
 		T* allocate(size_t count)
 		{
 			*pTotalSize += sizeof(T) * count + util::GetPadding<T>(*pTotalSize);
@@ -43,6 +44,7 @@ namespace pmon::ipc::intro
 			pTotalSize(other.pTotalSize),
 			pBytes{ other.pBytes }
 		{}
+		BlockAllocator& operator=(const BlockAllocator&) = delete;
 		T* allocate(size_t count)
 		{
 			*pTotalSize += util::GetPadding<T>(*pTotalSize);
