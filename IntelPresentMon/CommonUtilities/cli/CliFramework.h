@@ -87,6 +87,11 @@ namespace pmon::util::cli
 		{
 			pOption_ = pParent->app_.add_option(std::move(names), data_, std::move(description));
 		}
+		Option(const Option&) = delete;
+		Option & operator=(const Option&) = delete;
+		Option(Option&&) = delete;
+		Option & operator=(Option&&) = delete;
+		~Option() = default;
 		const T& operator*() const
 		{
 			return data_;
