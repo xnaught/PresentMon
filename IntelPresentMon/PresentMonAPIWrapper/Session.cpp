@@ -35,9 +35,12 @@ namespace pmapi
 
     Session& Session::operator=(Session&& rhs) noexcept
     {
-        handle_ = rhs.handle_;
-        pIntrospectionRootCache_ = std::move(rhs.pIntrospectionRootCache_);
-        rhs.Clear_();
+        if (&rhs != this)
+        {
+            handle_ = rhs.handle_;
+            pIntrospectionRootCache_ = std::move(rhs.pIntrospectionRootCache_);
+            rhs.Clear_();
+        }
         return *this;
     }
 

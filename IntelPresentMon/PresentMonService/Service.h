@@ -20,6 +20,7 @@ public:
 	std::optional<int> GetErrorCode() const;
 	virtual HANDLE GetServiceStopHandle() = 0;
 	virtual HANDLE GetResetPowerTelemetryHandle() = 0;
+	virtual ~Service() = default;
 private:
 	std::optional<int> errCode_;
 };
@@ -31,6 +32,12 @@ public:
 	void Run();
 	HANDLE GetServiceStopHandle() override;
 	HANDLE GetResetPowerTelemetryHandle() override;
+
+	ConsoleDebugMockService(const ConsoleDebugMockService&) = delete;
+	ConsoleDebugMockService & operator=(const ConsoleDebugMockService&) = delete;
+	ConsoleDebugMockService(ConsoleDebugMockService&&) = delete;
+	ConsoleDebugMockService & operator=(ConsoleDebugMockService&&) = delete;
+
 private:
 	ConsoleDebugMockService();
 	~ConsoleDebugMockService();
@@ -52,6 +59,15 @@ public:
   }
   void ReportServiceStatus(DWORD currentState, DWORD win32ExitCode,
                                   DWORD waitHint);
+
+
+  ConcreteService(const ConcreteService&) = delete;
+  ConcreteService & operator=(const ConcreteService&) = delete;
+  ConcreteService(ConcreteService&&) = delete;
+  ConcreteService & operator=(ConcreteService&&) = delete;
+  ~ConcreteService() = default;
+
+
  private:
   void ServiceInit();
 
