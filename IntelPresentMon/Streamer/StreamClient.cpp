@@ -228,7 +228,7 @@ const PmNsmFrameData* StreamClient::PeekPreviousFrame()
 
 PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData)
 {
-    if (*pNsmData == nullptr) {
+    if (pNsmData == nullptr) {
         return PM_STATUS::PM_STATUS_FAILURE;
     }
 
