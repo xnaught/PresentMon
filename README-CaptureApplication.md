@@ -34,77 +34,73 @@ In Debug configuration, the application will halt with a modal error dialog when
 
 ## Metric Definitions
 
-| Metric                             |  Description                                  |  Stats Generated Using User Specified Settings                                                    |
-| ---------------------------------- | ----------------------------------------------|:-------------------------------------------------------------------------------------------------:|
-| Presented FPS                      | Rate of frames presented by the application.                                                                                                  | Y |
-| Displayed FPS                      | Rate of frames scanned out to the display.                                                                                                    | Y |
-| GPU Busy                           | Average time GPU was busy.                                                                                                                    | Y |
-| Time Between Presents              | The time between Present() calls, in milliseconds.                                                                                            | N |
-| Dropped Frames                     | Percentage of frames dropped because they were replaced by a more recent frame.                                                               | Y |
-| Present Mode                       | The presentation mode used by the system. Only the most recent Present() call is returned.                                                    | N |
-| Sync Interval                      | The sync interval provided by the application in the Present() call. Only the most recent Present() call is returned.                         | N |
-| Allows Tearing                     | Indicates whether tearing is possible. Only the most recent frame is returned.                                                                | N |
-| Gfx Latency Display                | Time between when GPU work for a frame has completed to when the frame is displayed.                                                          | N |
-| Gfx Latency Render                 | Time between the Present() call  and when the frame is displayed.                                                                             | N |
-| GPU Power                          | GPU power usage in W                                                                                                                          | Y |
-| GPU Sustained Power Limit          | Sustained GPU power limit in W                                                                                                                | Y |
-| GPU Voltage                        | Voltage feeding the GPU chip                                                                                                                  | Y |
-| GPU Frequency                      | GPU chip frequency                                                                                                                            | Y |
-| GPU Temp                           | GPU chip temperature in C                                                                                                                     | Y |
-| GPU Utilization                    | Percentage utilization of the GPU                                                                                                             | Y |
-| GPU Power Limited                  | Percentage of the time the GPU frequency is being throttled because the GPU chip is exceeding the maximum power limits                        | Y |
-| GPU Temperature Limited            | Percentage of the time the GPU frequency is being throttled because the GPU chip is exceeding the maximum temperature limits                  | Y |
-| GPU Current Limited                | Percentage of the time the GPU frequency is being throttled because the GPU chip is exceeding the power supply current limits                 | Y |
-| GPU Voltage Limited                | Percentage of the time the GPU frequency is being throttled because the GPU chip is exceeding the voltage limits                              | Y |
-| GPU Utilization Limited            | Percentage of time the GPU frequency has been lowered due to low GPU utilization                                                              | Y |
-| VRAM Power Limited                 | Percentage of the time the memory frequency is being throttled because the memory modules are exceeding the maximum power limits              | Y |
-| VRAM Temperature Limited           | Percentage of the time the memory frequency is being throttled because the memory modules are exceeding the maximum temperature limits        | Y |
-| VRAM Current Limited               | Percentage of the time the memory frequency is being throttled because the memory modules are exceeding the power supply current limits       | Y |
-| VRAM Voltage Limited               | Percentage of the time the memory frequency is being throttled because the memory modules are exceeding the voltage limits                    | Y |
-| VRAM Utilization Limited           | Percentage of time the memory frequency has been lowered due to low memory traffic                                                            | Y |
-| CPU Utilization                    | Percentage utilization of the CPU                                                                                                             | Y |
-| CPU Power                          | CPU power usage in W                                                                                                                          | Y |
-| CPU Power Limit                    | Sustained CPU power limit in W                                                                                                                | Y |
-| CPU Temperature                    | CPU temperature in C                                                                                                                          | Y |
-| CPU Frequency                      | CPU frequency in GHz                                                                                                                          | Y |
-| Date Time                          | The current date and time. Shown in YYYY-MM-DD HH:MM:SS:MS format                                                                             | N |
-| Elapsed Time                       | The amount of elapsed time since selecting the process to monitor. Shown in HH:MM:SS:MS format                                             | N |
-| GPU Name                           | GPU name as provided by the respective graphics adapter.                                                                                    | N |
-| GPU Fan Speed 0                    | GPU fan speed in RPMs.                                                                                                                    | Y |
-| GPU Fan Speed 1                    | GPU fan speed in RPMs.                                                                                                                    | Y |
-| GPU Fan Speed 2                    | GPU fan speed in RPMs.                                                                                                                    | Y |
-| GPU Fan Speed 3                    | GPU fan speed in RPMs.                                                                                                                    | Y |
-| GPU Fan Speed 4                    | GPU fan speed in RPMs.                                                                                                                    | Y |
-| GPU Render/Compute Utilization     | Percentage utilization of the 3D and Compute blocks in the GPU.                                                                               | Y |
-| GPU Media Utilization              | Percentage utilization of the media blocks in the GPU.                                                                                        | Y |
-| VRAM Power                         | Memory module power usage in Watts.                                                                                                           | Y |
-| VRAM Voltage                       | Voltage feeding the memory modules.                                                                                                           | Y |
-| VRAM Frequency                     | Memory module frequency.                                                                                                                      | Y |
-| VRAM Frequency Effective Bandwidth | Effective data transfer rate the memory modules can sustain based on the current clock frequency.                                             | Y |
-| VRAM Read Bandwidth                | Current memory module read bandwidth in bytes per second.                                                                                     | Y |
-| VRAM Write Bandwidth               | Current memory module write bandwidth in bytes per second.                                                                                    | Y |
-| VRAM Temperature                   | Memory modules temperature in celsius.                                                                                                        | Y |
-| GPU Memory Size                    | Total GPU memory size in bytes.                                                                                                             | Y |
-| GPU Memory Used                    | Total GPU memory used in bytes.                                                                                                             | Y |
-| GPU Memory Read Bandwidth          | Current memory module read bandwidth in bytes per second.                                                                                     | Y |
-| GPU Memory Write Bandwidth         | Current memory module write bandwidth in bytes per second.                                                                                    | Y |
-| GPU Memory Max Bandwidth           | Max memory module write bandwidth in bytes per second.                                                                                        | Y |
-| GPU Memory Used %                  | Percent utilization of the of GPU memory.                                                                                                 | Y |
-| PSU Type 0                         | Specfies the Power Supply Type (PCIE, Pin6, Pin8) at index 0.                                                                             | Y |
-| PSU Type 1                         | Specfies the Power Supply Type (PCIE, Pin6, Pin8) at index 1.                                                                             | Y |
-| PSU Type 2                         | Specfies the Power Supply Type (PCIE, Pin6, Pin8) at index 2.                                                                             | Y |
-| PSU Type 3                         | Specfies the Power Supply Type (PCIE, Pin6, Pin8) at index 3.                                                                             | Y |
-| PSU Type 4                         | Specfies the Power Supply Type (PCIE, Pin6, Pin8) at index 4.                                                                             | Y |
-| PSU Power 0                        | Total energy consumed by the power source in Watts.                                                                                         | Y |
-| PSU Power 1                        | Total energy consumed by the power source in Watts.                                                                                         | Y |
-| PSU Power 2                        | Total energy consumed by the power source in Watts.                                                                                         | Y |
-| PSU Power 3                        | Total energy consumed by the power source in Watts.                                                                                         | Y |
-| PSU Power 4                        | Total energy consumed by the power source in Watts.                                                                                         | Y |
-| PSU Voltage 0                      | Voltage of the power source in Volts.                                                                                                     | Y |
-| PSU Voltage 1                      | Voltage of the power source in Volts.                                                                                                     | Y |
-| PSU Voltage 2                      | Voltage of the power source in Volts.                                                                                                     | Y |
-| PSU Voltage 3                      | Voltage of the power source in Volts.                                                                                                     | Y |
-| PSU Voltage 4                      | Voltage of the power source in Volts.                                                                                                     | Y |
+| Metric | Description | Compatible Query Types |
+| - | - |:-:|
+|Application|Name of the executable of the process being targetted|DS|
+|Swap Chain Address|Address of the swap chain used to present, useful as a unique identifier|F|
+|GPU Vendor|Vendor name of the GPU|DS|
+|GPU Name|Device name of the GPU|DS|
+|CPU Vendor|Vendor name of the CPU|DS|
+|CPU Name|Device name of the CPU|DS|
+|Time|Time elapsed since the start of ETW event tracing|F|
+|CPU Frame QPC|The QueryPerformanceCounter timestamp when the CPU started working on the frame|F|
+|Frame Time|The total amount of time in between frames on the CPU|DF|
+|CPU Busy|How long the CPU was generating the frame in milliseconds|DF|
+|CPU Wait|How long the CPU spent waiting before it could start generating the frame in milliseconds|DF|
+|Displayed FPS|Rate of frame change measurable at display|D|
+|Presented FPS|Rate of application calls to a Present() function|D|
+|GPU Time|Total amount of time between when GPU started frame and when it finished in milliseconds. The GPU may not have been fully busy during this time|DF|
+|GPU Busy|How long the GPU spent working on this frame|DF|
+|GPU Wait|How long the GPU spent waiting while working on this frame|DF|
+|Dropped Frames|Indicates if the frame was not displayed|DF|
+|Displayed Time|How long this frame was displayed on screen|DF|
+|Sync Interval|The application's requested interval between presents measured in vertical sync/vblank events|DF|
+|Present Flags|Flags used to configure the present operation|DF|
+|Present Mode|Method used to present the frame|DF|
+|Present Runtime|The graphics runtime used for the present operation (DXGI, D3D9, etc.)|DF|
+|Allows Tearing|Indicates if the frame allows tearing|DF|
+|GPU Latency|How long it took until GPU work for this frame started|DF|
+|Display Latency|Time between frame submission and scan out to display|DF|
+|Input To Frame Start Latency|Time between input and display|DF|
+|Click To Photon Latency|Time between input and display|DF|
+|GPU Sustained Power Limit|Sustained power limit of the GPU|DS|
+|GPU Power|Power consumed by the graphics adapter|DF|
+|GPU Voltage|Voltage consumet by the graphics adapter|DF|
+|GPU Frequency|Clock speed of the GPU cores|DF|
+|GPU Temperature|Temperature of the GPU|DF|
+|GPU Fan Speed|Rate at which a GPU cooler fan is rotating|DF|
+|GPU Utilization|Amount of GPU processing capacity being used|DF|
+|3D/Compute Utilization|Amount of 3D/Compute processing capacity being used|DF|
+|Media Utilization|Amount of media processing capacity being used|DF|
+|GPU Power Limited|GPU frequency is being limited because GPU is exceeding maximum power limits|DF|
+|GPU Temperature Limited|GPU frequency is being limited because GPU is exceeding maximum temperature limits|DF|
+|GPU Current Limited|GPU frequency is being limited because GPU is exceeding maximum current limits|DF|
+|GPU Voltage Limited|GPU frequency is being limited because GPU is exceeding maximum voltage limits|DF|
+|GPU Utilization Limited|GPU frequency is being limited due to low GPU utilization|DF|
+|GPU Memory Power|Power consumed by the GPU memory|DF|
+|GPU Memory Voltage|Voltage consumet by the GPU memory|DF|
+|GPU Memory Frequency|Clock speed of the GPU memory|DF|
+|GPU Memory Effective Frequency|Effective data transfer rate GPU memory can sustain|DF|
+|GPU Memory Temperature|Temperature of the GPU memory|DF|
+|GPU Memory Size|Size of the GPU memory|DS|
+|GPU Memory Size Used|Amount of used GPU memory|DF|
+|GPU Memory Utilization|Percent of GPU memory used|D|
+|GPU Memory Max Bandwidth|Maximum total GPU memory bandwidth|DS|
+|GPU Memory Write Bandwidth|Maximum GPU memory bandwidth for writing|DF|
+|GPU Memory Read Bandwidth|Maximum GPU memory bandwidth for reading|DF|
+|GPU Memory Power Limited|Memory frequency is being limited because the memory modules are exceeding the maximum power limits|DF|
+|GPU Memory Temperature Limited|Memory frequency is being limited because the memory modules are exceeding the maximum temperature limits|DF|
+|GPU Memory Current Limited|Memory frequency is being limited because the memory modules are exceeding the maximum current limits|DF|
+|GPU Memory Voltage Limited|Memory frequency is being limited because the memory modules are exceeding the maximum voltage limits|DF|
+|GPU Memory Utilization Limited|Memory frequency is being limited due to low memory traffic|DF|
+|CPU Utilization|Amount of CPU processing capacity being used|DF|
+|CPU Power Limit|Power limit of the CPU|DS|
+|CPU Power|Power consumed by the CPU|DF|
+|CPU Temperature|Temperature of the CPU|DF|
+|CPU Frequency|Clock speed of the CPU|DF|
+|CPU Core Utility|Amount of CPU processing utility being used per core|D|
+
+*Query Type Codes: **D** = Dynamic Query, **F** = Frame Event Query, **S** = Static Query
 
 ## Comma-separated value (CSV) file output
 
