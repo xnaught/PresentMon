@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <Shlwapi.h>
+#include <numeric>
 #include "../../PresentMonUtils/NamedPipeHelper.h"
 #include "../../PresentMonUtils/QPCUtils.h"
 #include "../../PresentMonAPI2/Internal.h"
@@ -1125,6 +1126,13 @@ void ReportMetrics(
                 }
                 output /= inData.size();
                 return;
+            }
+            else if (stat == PM_STAT_NON_ZERO_AVG)
+            {
+                std::vector<double> non_zero_data;
+                std::copy_if(inData.begin(), inData.end(), std::back_inserter(non_zero_data),
+                    [](double value) { return value != 0.0; });
+                output = !non_zero_data.empty() ? std::accumulate(non_zero_data.begin(), non_zero_data.end(), 0.0) / non_zero_data.size() : 0.0;
             }
             else if (stat == PM_STAT_MID_POINT)
             {
