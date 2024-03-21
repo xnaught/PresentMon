@@ -1,9 +1,10 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "String.h"
-#include <stdlib.h>
 #include <sstream>
 #include <iomanip>
+// TODO: replace with with properly wrapped winapi include
+#include <Windows.h>
 
 namespace pmon::util::str
 {
@@ -27,25 +28,34 @@ namespace pmon::util::str
 
 	std::wstring ToWide(const std::string& narrow)
 	{
+		if (narrow.empty()) {
+			return {};
+		}
 		std::wstring wide;
+		// TODO: replace with resize_and_overwrite when it becomes widely available
 		wide.resize(narrow.size() + 1);
-		size_t actual;
-		mbstowcs_s(&actual, wide.data(), wide.size(), narrow.c_str(), _TRUNCATE);
-		if (actual > 0)
-		{
-			wide.resize(actual - 1);
+		const auto actual = MultiByteToWideChar(CP_UTF8, 0, narrow.data(), (int)narrow.size(), wide.data(), (int)wide.size());
+		if (actual > 0) {
+			wide.resize(actual);
 			return wide;
 		}
+		// TODO: log error here
 		return {};
 	}
 
 	std::string ToNarrow(const std::wstring& wide)
 	{
 		std::string narrow;
+		// TODO: replace with resize_and_overwrite when it becomes widely available
 		narrow.resize(wide.size() * 2);
-		size_t actual;
-		wcstombs_s(&actual, narrow.data(), narrow.size(), wide.c_str(), _TRUNCATE);
-		narrow.resize(actual - 1);
-		return narrow;
+		const auto actual = WideCharToMultiByte(CP_UTF8, 0, wide.data(), (int)wide.size(),
+			narrow.data(), (int)narrow.size(), nullptr, nullptr);
+		if (actual > 0) {
+			narrow.resize(actual);
+			return narrow;
+		}
+		// TODO: (maybe) check for insufficient buffer error and do redo with two-pass (or just double buffer again)
+		// TODO: log error here
+		return {};
 	}
 }
