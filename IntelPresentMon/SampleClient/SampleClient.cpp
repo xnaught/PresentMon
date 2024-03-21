@@ -27,6 +27,7 @@
 #include "IntrospectionSample.h"
 #include "CheckMetricSample.h"
 #include "WrapperStaticQuery.h"
+#include "MetricListSample.h"
 
 
 int main(int argc, char* argv[])
@@ -44,7 +45,7 @@ int main(int argc, char* argv[])
         }
 
         // determine requested activity
-        if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample ^ opt.checkMetricSample ^ opt.wrapperStaticQuerySample) {
+        if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample ^ opt.checkMetricSample ^ opt.wrapperStaticQuerySample ^ opt.metricListSample) {
             std::unique_ptr<pmapi::Session> pSession;
             if (opt.controlPipe) {
                 pSession = std::make_unique<pmapi::Session>(*opt.controlPipe, *opt.introNsm);
@@ -64,6 +65,9 @@ int main(int argc, char* argv[])
             }
             else if (opt.wrapperStaticQuerySample) {
                 return WrapperStaticQuerySample(std::move(pSession));
+            }
+            else if (opt.metricListSample) {
+                return MetricListSample(*pSession);
             }
             else {
                 return FrameQuerySample(std::move(pSession));

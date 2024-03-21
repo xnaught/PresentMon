@@ -13,5 +13,6 @@
     <ClInclude Include="CheckMetricSample.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="WrapperStaticQuery.h" />
+    <ClInclude Include="MetricListSample.h" />
   </ItemGroup>
 </Project>
