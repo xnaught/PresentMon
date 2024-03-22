@@ -12,9 +12,9 @@ This repository contains several components:
 
 - The PresentData/ directory contains the **PresentMon Collection and Analysis library**: a library that performs the lowest-level collection and analysis of [ETW](https://msdn.microsoft.com/en-us/library/windows/desktop/bb968803%28v=vs.85%29.aspx?f=255&MSPPError=-2147217396) events.  See [PresentData/PresentMonTraceConsumer.hpp](PresentData/PresentMonTraceConsumer.hpp) for more information.
 
-- The PresentMon/ directory contains the **PresentMon Console Application**: a standalone console application that can be used to collect CSV data from target applications.  See [README-ConsoleAppliation.md](README-ConsoleApplication.md) for more information.
+- The PresentMon/ directory contains the **PresentMon Console Application**: a standalone console application that can be used to collect CSV data from target applications.  See [README-ConsoleApplication.md](README-ConsoleApplication.md) for more information.
 
-- The IntelPresentMon/ directory contains the **PresentMon Service** and **PresentMon Capture Application**: an easy-to-use GUI that can be used to collect and analyze target applications.  See [README-Service.md](README-Service.md) and [README-CaptureAppliation.md](README-CaptureApplication.md) for more information.
+- The IntelPresentMon/ directory contains the **PresentMon Service** and **PresentMon Capture Application**: an easy-to-use GUI that can be used to collect and analyze target applications.  See [README-Service.md](README-Service.md) and [README-CaptureApplication.md](README-CaptureApplication.md) for more information.
 
 There are also several other programs that build on this functionality and/or help visualize the resulting data.  For example, see:
 
@@ -32,7 +32,7 @@ See [BUILDING.md](BUILDING.md) for information on how to build PresentMon compon
 
 ## License
 
-Copyright (C) 2017-2023 Intel Corporation
+Copyright (C) 2017-2024 Intel Corporation
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

@@ -114,11 +114,6 @@ The second CSV file generated is a stats summary file for the capture. It includ
 
 The PresentMon capture application outputs all of the telemetry provided by the PresentMon Service. Please see the following link for all metric definitions:
 
-[CSV Column Definitions](IntelPresentMon\PresentMonCli\README.md#csv-columns)
-
-Note: There is no method for filtering the number of telemetry items reported by the PresentMon capture application. If you wish to limit or filter the number of telemetry items,
-consider using the PresentMonCli application.
-
 ## Implementation
 
 ### Z-band
