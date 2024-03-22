@@ -2,6 +2,7 @@
 #include "Level.h"
 #include <chrono>
 #include <optional>
+#include <stacktrace>
 
 namespace pmon::util::log
 {
@@ -14,7 +15,7 @@ namespace pmon::util::log
 		const wchar_t* sourceFunctionName_ = nullptr;
 		int sourceLine_ = -1;
 		std::chrono::system_clock::time_point timestamp_;
-		// std::optional<utl::StackTrace> trace_;
+		std::unique_ptr<std::stacktrace> trace_;
 		std::optional<unsigned int> hResult_;
 		// behavior override flags 
 		std::optional<bool> captureTrace_;
