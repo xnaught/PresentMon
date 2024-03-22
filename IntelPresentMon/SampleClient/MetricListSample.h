@@ -24,5 +24,8 @@ int MetricListSample(pmapi::Session& session)
         }
     }
 
+    // footer
+    out << "*Query Type Codes: **D** = Dynamic Query, **F** = Frame Event Query, **S** = Static Query\n";
+
     return 0;
 }
