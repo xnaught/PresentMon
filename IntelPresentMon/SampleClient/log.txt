@@ -1,0 +1,140 @@
+@Error {2024-03-22 21:57:54.5902634 GMT+9} henlo
+  >> at main
+     C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(48)
+@Error {2024-03-22 22:00:36.8772803 GMT+9} henlo
+  >> at main
+     C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(48)
+C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\CommonUtilities\log\EntryBuilder.cpp:71 @SampleClient!pmon::util::log::EntryBuilder::~EntryBuilder+0xA1
+C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp:51 @SampleClient!main+0x1DA
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:79 @SampleClient!invoke_main+0x39
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:288 @SampleClient!__scrt_common_main_seh+0x12E
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:331 @SampleClient!__scrt_common_main+0xE
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_main.cpp:17 @SampleClient!mainCRTStartup+0xE
+:0 @KERNEL32!BaseThreadInitThunk+0x14
+:0 @ntdll!RtlUserThreadStart+0x21
+@Error {2024-03-22 22:01:42.7538160 GMT+9} henlo
+  >> at main
+     C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(48)
+C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\CommonUtilities\log\EntryBuilder.cpp(71) @SampleClient!pmon::util::log::EntryBuilder::~EntryBuilder+0xA1
+C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(51) @SampleClient!main+0x1DA
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(79) @SampleClient!invoke_main+0x39
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(288) @SampleClient!__scrt_common_main_seh+0x12E
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(331) @SampleClient!__scrt_common_main+0xE
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_main.cpp(17) @SampleClient!mainCRTStartup+0xE
+(0) @KERNEL32!BaseThreadInitThunk+0x14
+(0) @ntdll!RtlUserThreadStart+0x21
+@Error {2024-03-22 22:06:53.0654456 GMT+9} henlo
+  >> at main
+     C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(48)
+C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\CommonUtilities\log\EntryBuilder.cpp(71)
+C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(51)
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(79)
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(288)
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(331)
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_main.cpp(17)
+(0)
+(0)
+@Error {2024-03-22 22:13:30.2640886 GMT+9} henlo
+  >> at main
+     C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(48)
+  C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\CommonUtilities\log\EntryBuilder.cpp(71)
+    @SampleClient!pmon::util::log::EntryBuilder::~EntryBuilder+0xA1
+  C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(51)
+    @SampleClient!main+0x1DA
+  D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(79)
+    @SampleClient!invoke_main+0x39
+  D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(288)
+    @SampleClient!__scrt_common_main_seh+0x12E
+  D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(331)
+    @SampleClient!__scrt_common_main+0xE
+  D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_main.cpp(17)
+    @SampleClient!mainCRTStartup+0xE
+  (0)
+    @KERNEL32!BaseThreadInitThunk+0x14
+  (0)
+    @ntdll!RtlUserThreadStart+0x21
+@Error {2024-03-22 22:15:49.0739152 GMT+9} henlo
+  >> at main
+     C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(48)
+  @SampleClient!pmon::util::log::EntryBuilder::~EntryBuilder+0xA1
+    C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\CommonUtilities\log\EntryBuilder.cpp(71)
+  @SampleClient!main+0x1DA
+    C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(51)
+  @SampleClient!invoke_main+0x39
+    D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(79)
+  @SampleClient!__scrt_common_main_seh+0x12E
+    D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(288)
+  @SampleClient!__scrt_common_main+0xE
+    D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(331)
+  @SampleClient!mainCRTStartup+0xE
+    D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_main.cpp(17)
+  @KERNEL32!BaseThreadInitThunk+0x14
+  @ntdll!RtlUserThreadStart+0x21
+@Error {2024-03-22 22:32:06.9508098 GMT+9} henlo
+  >> at main
+     C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(48)
+  [0] SampleClient!pmon::util::log::EntryBuilder::~EntryBuilder+0xA1
+    C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\CommonUtilities\log\EntryBuilder.cpp(71)
+  [1] SampleClient!main+0x1DA
+    C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(51)
+  [2] SampleClient!invoke_main+0x39
+    D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(79)
+  [3] SampleClient!__scrt_common_main_seh+0x12E
+    D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(288)
+  [4] SampleClient!__scrt_common_main+0xE
+    D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(331)
+  [5] SampleClient!mainCRTStartup+0xE
+    D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_main.cpp(17)
+  [6] KERNEL32!BaseThreadInitThunk+0x14
+  [7] ntdll!RtlUserThreadStart+0x21
+@Error {2024-03-25 13:14:21.4466176 GMT+9} henlo
+  >> at main
+     C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(48)
+  [0] SampleClient!pmon::util::log::EntryBuilder::~EntryBuilder+0xA1
+    C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\CommonUtilities\log\EntryBuilder.cpp(71)
+  [1] SampleClient!main+0x1DA
+    C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(51)
+  [2] SampleClient!invoke_main+0x39
+    D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(79)
+  [3] SampleClient!__scrt_common_main_seh+0x12E
+    D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(288)
+  [4] SampleClient!__scrt_common_main+0xE
+    D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(331)
+  [5] SampleClient!mainCRTStartup+0xE
+    D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_main.cpp(17)
+  [6] KERNEL32!BaseThreadInitThunk+0x14
+  [7] ntdll!RtlUserThreadStart+0x21
+@Error {2024-03-25 13:18:22.4423684 GMT+9} henlo
+  >> at main
+     C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(48)
+  [0] C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\CommonUtilities\log\EntryBuilder.cpp(71)
+    > SampleClient!pmon::util::log::EntryBuilder::~EntryBuilder+0xA1
+  [1] C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(51)
+    > SampleClient!main+0x1DA
+  [2] D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(79)
+    > SampleClient!invoke_main+0x39
+  [3] D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(288)
+    > SampleClient!__scrt_common_main_seh+0x12E
+  [4] D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(331)
+    > SampleClient!__scrt_common_main+0xE
+  [5] D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_main.cpp(17)
+    > SampleClient!mainCRTStartup+0xE
+  [6] KERNEL32!BaseThreadInitThunk+0x14
+  [7] ntdll!RtlUserThreadStart+0x21
+@Error {2024-03-25 13:19:35.9280771 GMT+9} henlo
+  >> at main
+     C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(48)
+  [0] SampleClient!pmon::util::log::EntryBuilder::~EntryBuilder+0xA1
+    > C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\CommonUtilities\log\EntryBuilder.cpp(71)
+  [1] SampleClient!main+0x1DA
+    > C:\Users\Chili\Desktop\cpp\ipm-relay\IntelPresentMon\SampleClient\SampleClient.cpp(51)
+  [2] SampleClient!invoke_main+0x39
+    > D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(79)
+  [3] SampleClient!__scrt_common_main_seh+0x12E
+    > D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(288)
+  [4] SampleClient!__scrt_common_main+0xE
+    > D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl(331)
+  [5] SampleClient!mainCRTStartup+0xE
+    > D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_main.cpp(17)
+  [6] KERNEL32!BaseThreadInitThunk+0x14
+  [7] ntdll!RtlUserThreadStart+0x21

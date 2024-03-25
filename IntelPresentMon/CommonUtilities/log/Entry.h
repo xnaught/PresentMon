@@ -15,7 +15,7 @@ namespace pmon::util::log
 		const wchar_t* sourceFunctionName_ = nullptr;
 		int sourceLine_ = -1;
 		std::chrono::system_clock::time_point timestamp_;
-		std::unique_ptr<std::stacktrace> trace_;
+		std::unique_ptr<std::stacktrace> pTrace_;
 		std::optional<unsigned int> hResult_;
 		// behavior override flags 
 		std::optional<bool> captureTrace_;

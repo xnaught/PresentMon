@@ -1,8 +1,9 @@
 #include "Log.h"
 #include "Channel.h"
 #include "MsvcDebugDriver.h"
-#include "SimpleFileDriver.h"
+#include "BasicFileDriver.h"
 #include "TextFormatter.h"
+#include "SimpleFileStrategy.h"
 #include <memory>
 #include <shared_mutex>
 
@@ -29,10 +30,11 @@ namespace pmon::util::log
 			if (!pChannel_) {
 				// make the formatter
 				const auto pFormatter = std::make_shared<TextFormatter>();
+				const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log.txt");
 				// construct and configure default logging channel
 				pChannel_ = std::make_shared<Channel>();
 				pChannel_->AttachDriver(std::make_shared<MsvcDebugDriver>(pFormatter));
-				pChannel_->AttachDriver(std::make_shared<SimpleFileDriver>("log.txt", pFormatter));
+				pChannel_->AttachDriver(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy));
 			}
 		}
 		return pChannel_.get();

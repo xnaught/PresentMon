@@ -4,6 +4,8 @@
 #include <sstream>
 #include "Entry.h"
 #include "../win/Utilities.h"
+#include "../str/String.h"
+#include <ranges>
 
 namespace pmon::util::log
 {
@@ -29,9 +31,14 @@ namespace pmon::util::log
 		else {
 			oss << "\n";
 		}
-		//if (e.trace_) {
-		//	oss << e.trace_->Print() << "\n";
-		//}
+		if (e.pTrace_) {
+			for (auto&& [i, frame] : std::views::zip(std::views::iota(0), *e.pTrace_)) {
+				oss << "  [" << i << "] " << str::ToWide(frame.description()) << "\n";
+				if (frame.source_line() != 0 || !frame.source_file().empty()) {
+					oss << "    > " << str::ToWide(frame.source_file()) << '(' << frame.source_line() << ")\n";
+				}
+			}
+		}
 		return oss.str();
 	}
 }

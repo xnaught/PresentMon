@@ -67,9 +67,9 @@ namespace pmon::util::log
 	EntryBuilder::~EntryBuilder()
 	{
 		if (pDest_) {
-			//if (captureTrace_.value_or((int)level_ <= (int)Level::Error)) {
-			//	trace_.emplace(traceSkipDepth_);
-			//}
+			if (captureTrace_.value_or((int)level_ <= (int)Level::Error)) {
+				pTrace_ = std::make_unique<std::stacktrace>(std::stacktrace::current());
+			}
 			pDest_->Submit(*this);
 		}
 	}

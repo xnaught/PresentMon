@@ -30,7 +30,7 @@
     <ClInclude Include="Meta.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="log\SimpleFileDriver.h">
+    <ClInclude Include="log\BasicFileDriver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="log\MsvcDebugDriver.h">
@@ -72,6 +72,12 @@
     <ClInclude Include="win\WinAPI.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="log\IFileStrategy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="log\SimpleFileStrategy.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">
@@ -83,7 +89,7 @@
     <ClCompile Include="Hash.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="log\SimpleFileDriver.cpp">
+    <ClCompile Include="log\BasicFileDriver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="log\Channel.cpp">
@@ -105,6 +111,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="win\Utilities.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="log\SimpleFileStrategy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
