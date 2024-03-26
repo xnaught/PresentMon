@@ -70,7 +70,7 @@ namespace pmon::util::log
 			if (captureTrace_.value_or((int)level_ <= (int)Level::Error)) {
 				pTrace_ = std::make_unique<std::stacktrace>(std::stacktrace::current());
 			}
-			pDest_->Submit(*this);
+			pDest_->Submit(std::move(*this));
 		}
 	}
 	EntryBuilder& EntryBuilder::operator<<(std::wstring noteString)

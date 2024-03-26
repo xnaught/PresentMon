@@ -34,6 +34,9 @@
 
 int main(int argc, char* argv[])
 {
+    // eager-initialize the logging channel
+    pmon::util::log::GetDefaultChannel();
+
     try {
         if (auto e = clio::Options::Init(argc, argv)) {
             return *e;

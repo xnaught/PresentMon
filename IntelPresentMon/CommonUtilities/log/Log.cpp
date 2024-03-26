@@ -9,34 +9,32 @@
 
 namespace pmon::util::log
 {
-	std::shared_mutex channelMutex_;
-	std::shared_ptr<IChannel> pChannel_;
-
-	void InjectDefaultChannel(std::shared_ptr<IChannel> pChannel)
+	IChannel* GetDefaultChannel() noexcept
 	{
-		std::unique_lock lk{ channelMutex_ };
-		pChannel_ = std::move(pChannel);
-	}
-
-	IChannel* GetDefaultChannel()
-	{
-		std::shared_lock lk{ channelMutex_ };
-		// check if we have a channel
-		if (!pChannel_) {
-			// if no channel, switch from a shared to unique lock
-			lk.unlock();
-			std::unique_lock lk{ channelMutex_ };
-			// make sure channel was not set in interim of switching lock
-			if (!pChannel_) {
-				// make the formatter
-				const auto pFormatter = std::make_shared<TextFormatter>();
-				const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log.txt");
-				// construct and configure default logging channel
-				pChannel_ = std::make_shared<Channel>();
-				pChannel_->AttachDriver(std::make_shared<MsvcDebugDriver>(pFormatter));
-				pChannel_->AttachDriver(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy));
+		try {
+			// this call is a workaround to make sure CRT global objects required by
+			// std::stacktrace are destroyed after channel
+			if (auto dummyTrace = std::stacktrace::current(); !dummyTrace.empty()) {
+				auto dummyDescription = dummyTrace[0].description();
 			}
+			// using static-local to sequence destruction of channel before destruction of
+			// CRT lazy initialized objects requried by std::stacktrace
+			static struct ChannelManager {
+				Channel channel;
+				ChannelManager() {
+					// make the formatter
+					const auto pFormatter = std::make_shared<TextFormatter>();
+					const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log.txt");
+					// construct and configure default logging channel
+					channel.AttachDriver(std::make_shared<MsvcDebugDriver>(pFormatter));
+					channel.AttachDriver(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy));
+				}
+			} channelManager;
+
+			return &channelManager.channel;
 		}
-		return pChannel_.get();
+		catch (...) {
+			return nullptr;
+		}
 	}
 }

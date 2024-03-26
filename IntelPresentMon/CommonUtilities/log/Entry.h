@@ -3,6 +3,7 @@
 #include <chrono>
 #include <optional>
 #include <stacktrace>
+#include <memory>
 
 namespace pmon::util::log
 {

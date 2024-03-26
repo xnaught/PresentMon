@@ -3,20 +3,44 @@
 #include <span>
 #include <vector>
 #include <memory>
+#include <thread>
 
 namespace pmon::util::log
 {
-	class Channel : public IChannel
+	namespace
+	{
+		// internal channel implementation, has functions that are called only from the worker thread
+		// in response to entries / packets placed in the queue
+		class ChannelInternal_
+		{
+		public:
+			~ChannelInternal_();
+			void Flush();
+			void SignalExit();
+			void AttachDriver(std::shared_ptr<IDriver>);
+			void AttachPolicy(std::shared_ptr<IPolicy>);
+			void* GetQueuePtr();
+		protected:
+			ChannelInternal_(std::vector<std::shared_ptr<IDriver>> driverPtrs);
+		private:
+			bool exiting = false;
+			std::vector<std::shared_ptr<IDriver>> driverPtrs_;
+			std::vector<std::shared_ptr<IPolicy>> policyPtrs_;
+			std::shared_ptr<void> pEntryQueue_;
+			std::jthread worker_;
+		};
+	}
+
+	// external channel implementation, has functions that are only called from outside the channel
+	// worker thread and which only place entries / packets in the queue
+	class Channel : public IChannel, private ChannelInternal_
 	{
 	public:
 		Channel(std::vector<std::shared_ptr<IDriver>> driverPtrs = {});
 		~Channel();
-		void Submit(Entry&) override;
+		void Submit(Entry&&) override;
 		void Flush() override;
 		void AttachDriver(std::shared_ptr<IDriver>) override;
 		void AttachPolicy(std::shared_ptr<IPolicy>) override;
-	private:
-		std::vector<std::shared_ptr<IDriver>> driverPtrs_;
-		std::vector<std::shared_ptr<IPolicy>> policyPtrs_;
 	};
 }

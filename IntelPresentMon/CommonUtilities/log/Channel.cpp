@@ -1,42 +1,172 @@
 #include "Channel.h"
 #include "IPolicy.h"
 #include "IDriver.h"
+#include "Entry.h"
+#include <concurrentqueue\blockingconcurrentqueue.h>
+#include <variant>
+#include <semaphore>
 
 namespace pmon::util::log
 {
-	Channel::Channel(std::vector<std::shared_ptr<IDriver>> driverPtrs)
-		:
-		driverPtrs_{ std::move(driverPtrs) }
-	{}
-	Channel::~Channel()
-	{}
-	void Channel::Submit(Entry& e)
+	namespace
 	{
-		// process all policies, tranforming entry in-place
-		for (auto& pPolicy : policyPtrs_) {
-			// if any policy returns false, drop entry
-			if (!pPolicy->TransformFilter(e)) {
-				return;
+		// command packets that can be put on the entry queue in place of log entries
+		// used to control the worker thread. Each packet encodes what functionality
+		// to call in the variant visit routine
+		struct Packet_
+		{
+			std::binary_semaphore semaphore{ 0 };
+			// must be called from external thread calling channel interface function
+			void WaitUntilProcessed() { semaphore.acquire(); }
+		};
+		struct AttachDriverPacket_ : public Packet_
+		{
+			std::shared_ptr<IDriver> pDriver;
+			// must be called from channel worker thread
+			void Process(ChannelInternal_& channel)
+			{
+				channel.AttachDriver(std::move(pDriver));
+				semaphore.release();
+			}
+		};
+		struct AttachPolicyPacket_ : public Packet_
+		{
+			std::shared_ptr<IPolicy> pPolicy;
+			// must be called from channel worker thread
+			void Process(ChannelInternal_& channel)
+			{
+				channel.AttachPolicy(std::move(pPolicy));
+				semaphore.release();
+			}
+		};
+		struct FlushPacket_ : public Packet_
+		{
+			// must be called from channel worker thread
+			void Process(ChannelInternal_& channel)
+			{
+				channel.Flush();
+				semaphore.release();
+			}
+		};
+		struct KillPacket_ : public Packet_
+		{
+			// must be called from channel worker thread
+			void Process(ChannelInternal_& channel)
+			{
+				channel.SignalExit();
+				semaphore.release();
+			}
+		};
+		using QueueElementType_ = std::variant<Entry,
+			std::shared_ptr<AttachDriverPacket_>,
+			std::shared_ptr<AttachPolicyPacket_>,
+			std::shared_ptr<FlushPacket_>,
+			std::shared_ptr<KillPacket_>>;
+		using QueueType_ = moodycamel::BlockingConcurrentQueue<QueueElementType_>;
+		// shortcut to get the underlying queue variant type when given the type-erased pointer
+		// (also do some sanity checking here via assert)
+		QueueType_& Queue_(ChannelInternal_* pChan)
+		{
+			assert(pChan);
+			auto pQueueVoid = pChan->GetQueuePtr();
+			assert(pQueueVoid);
+			return *static_cast<QueueType_*>(pQueueVoid);
+		}
+		// internal implementation of the channel, with public functions hidden from the external interface
+		// but available to packet processing functions to use
+		ChannelInternal_::ChannelInternal_(std::vector<std::shared_ptr<IDriver>> driverPtrs)
+			:
+			driverPtrs_{ std::move(driverPtrs) },
+			pEntryQueue_{ std::make_shared<QueueType_>() }
+		{
+			worker_ = std::jthread([this] {
+				auto visitor = [this](auto& el) {
+					// log entry is handled differently than command packets
+					using ElementType = std::decay_t<decltype(el)>;
+					if constexpr (std::is_same_v<ElementType, Entry>) {
+						auto& entry = el;
+						// process all policies, tranforming entry in-place
+						for (auto& pPolicy : policyPtrs_) {
+							// if any policy returns false, drop entry
+							if (!pPolicy->TransformFilter(entry)) {
+								return;
+							}
+						}
+						// submit entry to all drivers (by copy)
+						for (auto& pDriver : driverPtrs_) {
+							pDriver->Submit(entry);
+						}
+						// TODO: log case when there are no drivers?
+					}
+					// if not log entry object, then shared_ptr to a command packet w/ Process member
+					else {
+						el->Process(*this);
+					}
+				};
+				QueueElementType_ el;
+				while (!exiting) {
+					Queue_(this).wait_dequeue(el);
+					std::visit(visitor, el);
+				}
+			});
+		}
+ 		ChannelInternal_::~ChannelInternal_() = default;
+		void ChannelInternal_::Flush()
+		{
+			for (auto& pDriver : driverPtrs_) {
+				pDriver->Flush();
 			}
 		}
-		// submit entry to all drivers (by copy)
-		for (auto& pDriver : driverPtrs_) {
-			pDriver->Submit(e);
+		void ChannelInternal_::SignalExit()
+		{
+			exiting = true;
 		}
-		// TODO: log case when there are no drivers?
+		void ChannelInternal_::AttachDriver(std::shared_ptr<IDriver> pDriver)
+		{
+			driverPtrs_.push_back(std::move(pDriver));
+		}
+		void ChannelInternal_::AttachPolicy(std::shared_ptr<IPolicy> pPolicy)
+		{
+			policyPtrs_.push_back(std::move(pPolicy));
+		}
+		void* ChannelInternal_::GetQueuePtr()
+		{
+			return pEntryQueue_.get();
+		}
+	}
+
+	// implementation of external interfaces
+	Channel::Channel(std::vector<std::shared_ptr<IDriver>> driverPtrs)
+		:
+		ChannelInternal_{ std::move(driverPtrs) }
+	{}
+	Channel::~Channel()
+	{
+		Queue_(this).enqueue(std::make_shared<KillPacket_>());
+		// no need to wait on the packet, jthread dtor in Internal_ will block
+	}
+	void Channel::Submit(Entry&& e)
+	{
+		Queue_(this).enqueue(std::move(e));
 	}
 	void Channel::Flush()
 	{
-		for (auto& pDriver : driverPtrs_) {
-			pDriver->Flush();
-		}
+		auto pPacket = std::make_shared<FlushPacket_>();
+		Queue_(this).enqueue(pPacket);
+		pPacket->WaitUntilProcessed();
 	}
 	void Channel::AttachDriver(std::shared_ptr<IDriver> pDriver)
 	{
-		driverPtrs_.push_back(std::move(pDriver));
+		auto pPacket = std::make_shared<AttachDriverPacket_>();
+		pPacket->pDriver = std::move(pDriver);
+		Queue_(this).enqueue(pPacket);
+		pPacket->WaitUntilProcessed();
 	}
 	void Channel::AttachPolicy(std::shared_ptr<IPolicy> pPolicy)
 	{
-		policyPtrs_.push_back(std::move(pPolicy));
+		auto pPacket = std::make_shared<AttachPolicyPacket_>();
+		pPacket->pPolicy = std::move(pPolicy);
+		Queue_(this).enqueue(pPacket);
+		pPacket->WaitUntilProcessed();
 	}
 }

@@ -32,12 +32,14 @@ namespace pmon::util::log
 			oss << "\n";
 		}
 		if (e.pTrace_) {
+			oss << " ====== STACK TRACE (newest on top) ======\n";
 			for (auto&& [i, frame] : std::views::zip(std::views::iota(0), *e.pTrace_)) {
 				oss << "  [" << i << "] " << str::ToWide(frame.description()) << "\n";
 				if (frame.source_line() != 0 || !frame.source_file().empty()) {
 					oss << "    > " << str::ToWide(frame.source_file()) << '(' << frame.source_line() << ")\n";
 				}
 			}
+			oss << " =========================================\n";
 		}
 		return oss.str();
 	}
