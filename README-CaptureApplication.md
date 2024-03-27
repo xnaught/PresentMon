@@ -32,12 +32,11 @@ In Debug configuration, the application will halt with a modal error dialog when
 --p2c-no-net-fail
 ```
 
-## Metric Definitions
+## Metric and CSV Column Definitions
 
 | Metric | CSV Column | Description | Compatible Query Types |
 | - | - | - |:-:|
-|Application|Application|Name of the executable of the process being targeted|DS|
-||ProcessID|ID of the process being targeted||
+|Application||Name of the executable of the process being targeted|DS|
 |Swap Chain Address|SwapChainAddress|Address of the swap chain used to present, useful as a unique identifier|F|
 |GPU Vendor||Vendor name of the GPU|DS|
 |GPU Name||Device name of the GPU|DS|
@@ -62,7 +61,6 @@ In Debug configuration, the application will halt with a modal error dialog when
 |Allows Tearing|AllowsTearing|Indicates if the frame allows tearing|DF|
 |GPU Latency|GPULatency|How long it took until GPU work for this frame started|DF|
 |Display Latency|DisplayLatency|Time between frame submission and scan out to display|DF|
-|Input To Frame Start Latency||Time between input and display|DF|
 |Click To Photon Latency|ClickToPhotonLatency|Time between input and display|DF|
 |GPU Sustained Power Limit||Sustained power limit of the GPU|DS|
 |GPU Power|GPUPower|Power consumed by the graphics adapter|DF|
@@ -109,10 +107,6 @@ In Debug configuration, the application will halt with a modal error dialog when
 The PresentMon capture application creates two CSV files per capture. The first records the raw frame data of the capture and is named using the following pattern: "pmcap-[executablename]-YYMMDD-HHMMSS.csv".
 The second CSV file generated is a stats summary file for the capture. It includes the duration of the capture, the total number of frames captured, plus the average, minimum, maximum, 99th, 95th and
 90th FPS percentiles. The stats file is named using the following pattern: "pmcap-[executablename]-YYMMDD-HHMMSS-stats.csv". All files are stored in the user's appdata local directory in the "Intel\PresentMon\Capture" folder.
-
-### CSV columns
-
-The PresentMon capture application outputs all of the telemetry provided by the PresentMon Service. Please see the following link for all metric definitions:
 
 ## Implementation
 

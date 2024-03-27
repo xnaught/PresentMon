@@ -59,7 +59,7 @@ int AddGpuMetric(pmapi::Session& pSession, unsigned int processId, double window
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_GPU_BUSY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_DISPLAY_LATENCY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_DISPLAYED_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
-        elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_INPUT_LATENCY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
+        elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_CLICK_TO_PHOTON_LATENCY, .stat = PM_STAT_NON_ZERO_AVG, .deviceId = 0, .arrayIndex = 0 });
 
         PM_METRIC gpuMetric;
         uint32_t gpuDeviceId;
@@ -157,7 +157,7 @@ int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, double window
             FixedQueryElement gpuBusyTimeAvg{ this, PM_METRIC_GPU_BUSY, PM_STAT_AVG };
             FixedQueryElement gpuDisplayLatencyAvg{ this, PM_METRIC_DISPLAY_LATENCY, PM_STAT_AVG };
             FixedQueryElement gpuDisplayDurationAvg{ this, PM_METRIC_DISPLAYED_TIME, PM_STAT_AVG };
-            FixedQueryElement gpuPhotonLatencyAvg{ this, PM_METRIC_CLICK_TO_PHOTON_LATENCY, PM_STAT_AVG };
+            FixedQueryElement gpuPhotonLatencyAvg{ this, PM_METRIC_CLICK_TO_PHOTON_LATENCY, PM_STAT_NON_ZERO_AVG };
             FixedQueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_AVG, 1 };
             FixedQueryElement presentMode{ this, PM_METRIC_PRESENT_MODE, PM_STAT_MID_POINT };
             FixedQueryElement gpuName{ this, PM_METRIC_GPU_NAME, PM_STAT_NONE, 1 };
