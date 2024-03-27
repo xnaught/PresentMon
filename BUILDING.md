@@ -26,7 +26,7 @@ Note: if you only want to build the PresentData/ library, or the PresentMon Cons
 
 2. Build the Chromium Embedded Framework (CEF)
 
-    1. Download the CEF 114.2.11 distribution and extract it to a local folder (e.g., CefDir): https://cef-builds.spotifycdn.com/index.html
+    1. Download the CEF 122.1.13 distribution and extract it to a local folder (e.g., CefDir): https://cef-builds.spotifycdn.com/index.html
 
         - The "Minimal Distribution" is sufficient.
 
