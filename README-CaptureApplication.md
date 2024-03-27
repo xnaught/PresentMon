@@ -34,72 +34,72 @@ In Debug configuration, the application will halt with a modal error dialog when
 
 ## Metric Definitions
 
-| Metric | Description | Compatible Query Types |
-| - | - |:-:|
-|Application|Name of the executable of the process being targetted|DS|
-|Swap Chain Address|Address of the swap chain used to present, useful as a unique identifier|F|
-|GPU Vendor|Vendor name of the GPU|DS|
-|GPU Name|Device name of the GPU|DS|
-|CPU Vendor|Vendor name of the CPU|DS|
-|CPU Name|Device name of the CPU|DS|
-|Time|Time elapsed since the start of ETW event tracing|F|
-|CPU Frame QPC|The QueryPerformanceCounter timestamp when the CPU started working on the frame|F|
-|Frame Time|The total amount of time in between frames on the CPU|DF|
-|CPU Busy|How long the CPU was generating the frame in milliseconds|DF|
-|CPU Wait|How long the CPU spent waiting before it could start generating the frame in milliseconds|DF|
-|Displayed FPS|Rate of frame change measurable at display|D|
-|Presented FPS|Rate of application calls to a Present() function|D|
-|GPU Time|Total amount of time between when GPU started frame and when it finished in milliseconds. The GPU may not have been fully busy during this time|DF|
-|GPU Busy|How long the GPU spent working on this frame|DF|
-|GPU Wait|How long the GPU spent waiting while working on this frame|DF|
-|Dropped Frames|Indicates if the frame was not displayed|DF|
-|Displayed Time|How long this frame was displayed on screen|DF|
-|Sync Interval|The application's requested interval between presents measured in vertical sync/vblank events|DF|
-|Present Flags|Flags used to configure the present operation|DF|
-|Present Mode|Method used to present the frame|DF|
-|Present Runtime|The graphics runtime used for the present operation (DXGI, D3D9, etc.)|DF|
-|Allows Tearing|Indicates if the frame allows tearing|DF|
-|GPU Latency|How long it took until GPU work for this frame started|DF|
-|Display Latency|Time between frame submission and scan out to display|DF|
-|Input To Frame Start Latency|Time between input and display|DF|
-|Click To Photon Latency|Time between input and display|DF|
-|GPU Sustained Power Limit|Sustained power limit of the GPU|DS|
-|GPU Power|Power consumed by the graphics adapter|DF|
-|GPU Voltage|Voltage consumet by the graphics adapter|DF|
-|GPU Frequency|Clock speed of the GPU cores|DF|
-|GPU Temperature|Temperature of the GPU|DF|
-|GPU Fan Speed|Rate at which a GPU cooler fan is rotating|DF|
-|GPU Utilization|Amount of GPU processing capacity being used|DF|
-|3D/Compute Utilization|Amount of 3D/Compute processing capacity being used|DF|
-|Media Utilization|Amount of media processing capacity being used|DF|
-|GPU Power Limited|GPU frequency is being limited because GPU is exceeding maximum power limits|DF|
-|GPU Temperature Limited|GPU frequency is being limited because GPU is exceeding maximum temperature limits|DF|
-|GPU Current Limited|GPU frequency is being limited because GPU is exceeding maximum current limits|DF|
-|GPU Voltage Limited|GPU frequency is being limited because GPU is exceeding maximum voltage limits|DF|
-|GPU Utilization Limited|GPU frequency is being limited due to low GPU utilization|DF|
-|GPU Memory Power|Power consumed by the GPU memory|DF|
-|GPU Memory Voltage|Voltage consumet by the GPU memory|DF|
-|GPU Memory Frequency|Clock speed of the GPU memory|DF|
-|GPU Memory Effective Frequency|Effective data transfer rate GPU memory can sustain|DF|
-|GPU Memory Temperature|Temperature of the GPU memory|DF|
-|GPU Memory Size|Size of the GPU memory|DS|
-|GPU Memory Size Used|Amount of used GPU memory|DF|
-|GPU Memory Utilization|Percent of GPU memory used|D|
-|GPU Memory Max Bandwidth|Maximum total GPU memory bandwidth|DS|
-|GPU Memory Write Bandwidth|Maximum GPU memory bandwidth for writing|DF|
-|GPU Memory Read Bandwidth|Maximum GPU memory bandwidth for reading|DF|
-|GPU Memory Power Limited|Memory frequency is being limited because the memory modules are exceeding the maximum power limits|DF|
-|GPU Memory Temperature Limited|Memory frequency is being limited because the memory modules are exceeding the maximum temperature limits|DF|
-|GPU Memory Current Limited|Memory frequency is being limited because the memory modules are exceeding the maximum current limits|DF|
-|GPU Memory Voltage Limited|Memory frequency is being limited because the memory modules are exceeding the maximum voltage limits|DF|
-|GPU Memory Utilization Limited|Memory frequency is being limited due to low memory traffic|DF|
-|CPU Utilization|Amount of CPU processing capacity being used|DF|
-|CPU Power Limit|Power limit of the CPU|DS|
-|CPU Power|Power consumed by the CPU|DF|
-|CPU Temperature|Temperature of the CPU|DF|
-|CPU Frequency|Clock speed of the CPU|DF|
-|CPU Core Utility|Amount of CPU processing utility being used per core|D|
-
+| Metric | CSV Column | Description | Compatible Query Types |
+| - | - | - |:-:|
+|Application|Application|Name of the executable of the process being targeted|DS|
+||ProcessID|ID of the process being targeted||
+|Swap Chain Address|SwapChainAddress|Address of the swap chain used to present, useful as a unique identifier|F|
+|GPU Vendor||Vendor name of the GPU|DS|
+|GPU Name||Device name of the GPU|DS|
+|CPU Vendor||Vendor name of the CPU|DS|
+|CPU Name||Device name of the CPU|DS|
+|Time|Time|Time elapsed since the start of ETW event tracing|F|
+|CPU Frame QPC|CPUFrameQPC|The QueryPerformanceCounter timestamp when the CPU started working on the frame|F|
+|Frame Time|FrameTime|The total amount of time in between frames on the CPU|DF|
+|CPU Busy|CPUBusy|How long the CPU was generating the frame in milliseconds|DF|
+|CPU Wait|CPUWait|How long the CPU spent waiting before it could start generating the frame in milliseconds|DF|
+|Displayed FPS||Rate of frame change measurable at display|D|
+|Presented FPS||Rate of application calls to a Present() function|D|
+|GPU Time|GPUTime|Total amount of time between when GPU started frame and when it finished in milliseconds. The GPU may not have been fully busy during this time|DF|
+|GPU Busy|GPUBusy|How long the GPU spent working on this frame|DF|
+|GPU Wait|GPUWait|How long the GPU spent waiting while working on this frame|DF|
+|Dropped Frames||Indicates if the frame was not displayed|DF|
+|Displayed Time|DisplayedTime|How long this frame was displayed on screen|DF|
+|Sync Interval|SyncInterval|The application's requested interval between presents measured in vertical sync/vblank events|DF|
+|Present Flags|PresentFlags|Flags used to configure the present operation|DF|
+|Present Mode|PresentMode|Method used to present the frame|DF|
+|Present Runtime|PresentRuntime|The graphics runtime used for the present operation (DXGI, D3D9, etc.)|DF|
+|Allows Tearing|AllowsTearing|Indicates if the frame allows tearing|DF|
+|GPU Latency|GPULatency|How long it took until GPU work for this frame started|DF|
+|Display Latency|DisplayLatency|Time between frame submission and scan out to display|DF|
+|Input To Frame Start Latency||Time between input and display|DF|
+|Click To Photon Latency|ClickToPhotonLatency|Time between input and display|DF|
+|GPU Sustained Power Limit||Sustained power limit of the GPU|DS|
+|GPU Power|GPUPower|Power consumed by the graphics adapter|DF|
+|GPU Voltage|GPUVoltage|Voltage consumed by the graphics adapter|DF|
+|GPU Frequency|GPUFrequency|Clock speed of the GPU cores|DF|
+|GPU Temperature|GPUTemperature|Temperature of the GPU|DF|
+|GPU Fan Speed|GPUFanSpeed|Rate at which a GPU cooler fan is rotating|DF|
+|GPU Utilization|GPUUtilization|Amount of GPU processing capacity being used|DF|
+|3D/Compute Utilization|3D/ComputeUtilization|Amount of 3D/Compute processing capacity being used|DF|
+|Media Utilization|MediaUtilization|Amount of media processing capacity being used|DF|
+|GPU Power Limited|GPUPowerLimited|GPU frequency is being limited because GPU is exceeding maximum power limits|DF|
+|GPU Temperature Limited|GPUTemperatureLimited|GPU frequency is being limited because GPU is exceeding maximum temperature limits|DF|
+|GPU Current Limited|GPUCurrentLimited|GPU frequency is being limited because GPU is exceeding maximum current limits|DF|
+|GPU Voltage Limited|GPUVoltageLimited|GPU frequency is being limited because GPU is exceeding maximum voltage limits|DF|
+|GPU Utilization Limited|GPUUtilizationLimited|GPU frequency is being limited due to low GPU utilization|DF|
+|GPU Memory Power|GPUMemoryPower|Power consumed by the GPU memory|DF|
+|GPU Memory Voltage|GPUMemoryVoltage|Voltage consumed by the GPU memory|DF|
+|GPU Memory Frequency|GPUMemoryFrequency|Clock speed of the GPU memory|DF|
+|GPU Memory Effective Frequency|GPUMemoryEffectiveFrequency|Effective data transfer rate GPU memory can sustain|DF|
+|GPU Memory Temperature|GPUMemoryTemperature|Temperature of the GPU memory|DF|
+|GPU Memory Size|GPUMemorySize|Size of the GPU memory|DS|
+|GPU Memory Size Used|GPUMemorySizeUsed|Amount of used GPU memory|DF|
+|GPU Memory Utilization||Percent of GPU memory used|D|
+|GPU Memory Max Bandwidth|GPUMemoryMaxBandwidth|Maximum total GPU memory bandwidth|DS|
+|GPU Memory Write Bandwidth|GPUMemoryWriteBandwidth|Maximum GPU memory bandwidth for writing|DF|
+|GPU Memory Read Bandwidth|GPUMemoryReadBandwidth|Maximum GPU memory bandwidth for reading|DF|
+|GPU Memory Power Limited|GPUMemoryPowerLimited|Memory frequency is being limited because the memory modules are exceeding the maximum power limits|DF|
+|GPU Memory Temperature Limited|GPUMemoryTemperatureLimited|Memory frequency is being limited because the memory modules are exceeding the maximum temperature limits|DF|
+|GPU Memory Current Limited|GPUMemoryCurrentLimited|Memory frequency is being limited because the memory modules are exceeding the maximum current limits|DF|
+|GPU Memory Voltage Limited|GPUMemoryVoltageLimited|Memory frequency is being limited because the memory modules are exceeding the maximum voltage limits|DF|
+|GPU Memory Utilization Limited|GPUMemoryUtilizationLimited|Memory frequency is being limited due to low memory traffic|DF|
+|CPU Utilization|CPUUtilization|Amount of CPU processing capacity being used|DF|
+|CPU Power Limit||Power limit of the CPU|DS|
+|CPU Power|CPUPower|Power consumed by the CPU|DF|
+|CPU Temperature|CPUTemperature|Temperature of the CPU|DF|
+|CPU Frequency|CPUFrequency|Clock speed of the CPU|DF|
+|CPU Core Utility||Amount of CPU processing utility being used per core|D|
 *Query Type Codes: **D** = Dynamic Query, **F** = Frame Event Query, **S** = Static Query
 
 ## Comma-separated value (CSV) file output
