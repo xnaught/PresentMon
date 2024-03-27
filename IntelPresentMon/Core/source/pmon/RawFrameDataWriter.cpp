@@ -278,7 +278,7 @@ namespace p2c::pmon
 
     double RawFrameDataWriter::GetDuration_() const
     {
-        return endTime - startTime;
+        return (endTime - startTime) / 1000.;
     }
 
     void RawFrameDataWriter::WriteStats_()
