@@ -40,6 +40,12 @@ public:
 	void GatherToBlob(const Context& ctx, uint8_t* pDestBlob) const;
 	size_t GetBlobSize() const;
 	std::optional<uint32_t> GetReferencedDevice() const;
+
+	PM_FRAME_QUERY(const PM_FRAME_QUERY&) = delete;
+	PM_FRAME_QUERY& operator=(const PM_FRAME_QUERY&) = delete;
+	PM_FRAME_QUERY(PM_FRAME_QUERY&&) = delete;
+	PM_FRAME_QUERY& operator=(PM_FRAME_QUERY&&) = delete;
+
 private:
 	// functions
 	std::unique_ptr<pmon::mid::GatherCommand_> MapQueryElementToGatherCommand_(const PM_QUERY_ELEMENT& q, size_t pos);

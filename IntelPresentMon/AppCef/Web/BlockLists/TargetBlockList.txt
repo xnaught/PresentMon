@@ -295,7 +295,8 @@ wowup.exe
 wpfsurface.exe
 wsl2distromanager.exe
 wudfhost.exe
-wwahostexe
+wwahost.exe
+xboxgamebarwidgets.exe
 xboxapp.exe
 xboxpcapp.exe
 xdesproc.exe
