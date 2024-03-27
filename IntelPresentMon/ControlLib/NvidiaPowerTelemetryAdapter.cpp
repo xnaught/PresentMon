@@ -67,8 +67,7 @@ namespace pwr::nv
                 // loop through all sensors, read those of interest into output struct
                 for (const auto& sensor : thermals.sensor)
                 {
-                    if (sensor.target == NVAPI_THERMAL_TARGET_GPU &&
-                        sensor.controller == NVAPI_THERMAL_CONTROLLER_GPU_INTERNAL)
+                    if (sensor.target == NVAPI_THERMAL_TARGET_GPU)
                     {
                         info.gpu_temperature_c = (double)sensor.currentTemp;
                         SetTelemetryCapBit(GpuTelemetryCapBits::gpu_temperature);
