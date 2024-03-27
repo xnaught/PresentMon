@@ -73,13 +73,13 @@ namespace pmon::util::log
 					pTrace_ = std::make_unique<std::stacktrace>(std::stacktrace::current());
 				}
 				catch (...) {
-					Panic(L"Failed to get current stacktrace");
+					pmlog_panic_(L"Failed to get current stacktrace");
 				}
 			}
 			pDest_->Submit(std::move(*this));
 		}
 		else {
-			Panic(L"Log entry completed with no destination channel set");
+			pmlog_panic_(L"Log entry completed with no destination channel set");
 		}
 	}
 	EntryBuilder& EntryBuilder::operator<<(std::wstring noteString) noexcept

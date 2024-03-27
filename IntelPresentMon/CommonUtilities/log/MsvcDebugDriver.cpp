@@ -15,7 +15,7 @@ namespace pmon::util::log
 			OutputDebugStringW(pFormatter_->Format(e).c_str());
 		}
 		else {
-			Panic(L"BasicFileDriver submitted to without a formatter set");
+			pmlog_panic_(L"BasicFileDriver submitted to without a formatter set");
 		}
 	}
 	void MsvcDebugDriver::SetFormatter(std::shared_ptr<ITextFormatter> pFormatter)

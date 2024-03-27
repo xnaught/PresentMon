@@ -24,6 +24,8 @@ namespace pmon::util::log
 			void EnqueueEntry(Entry&&);
 			template<class P, typename...Args>
 			void EnqueuePacketWait(Args&&...args);
+			template<class P, typename...Args>
+			void EnqueuePacketAsync(Args&&...args);
 		protected:
 			ChannelInternal_(std::vector<std::shared_ptr<IDriver>> driverPtrs);
 		private:

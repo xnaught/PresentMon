@@ -20,10 +20,10 @@ namespace pmon::util::log
 		}
 		else {
 			if (!pFormatter_) {
-				Panic(L"BasicFileDriver submitted to without a formatter set");
+				pmlog_panic_(L"BasicFileDriver submitted to without a formatter set");
 			}
 			if (!pFileStrategy_) {
-				Panic(L"BasicFileDriver submitted to without a file strategy set");
+				pmlog_panic_(L"BasicFileDriver submitted to without a file strategy set");
 			}
 		}
 	}
@@ -41,7 +41,7 @@ namespace pmon::util::log
 			pFileStrategy_->GetFileStream()->flush();
 		}
 		else {
-			Panic(L"BasicFileDriver flushed without a file strategy set");
+			pmlog_panic_(L"BasicFileDriver flushed without a file strategy set");
 		}
 	}
 }

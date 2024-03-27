@@ -45,13 +45,14 @@ namespace pmon::util::log
 					oss << " =========================================\n";
 				}
 				catch (...) {
-					Panic(L"Failed printing stack trace in TextFormatter::Format");
+					pmlog_panic_(L"Failed printing stack trace in TextFormatter::Format");
 				}
 			}
 			return oss.str();
 		}
 		catch (...) {
-			Panic(L"Exception in TextFormatter::Format");
+			pmlog_panic_(L"Exception in TextFormatter::Format");
+			return {};
 		}
 	}
 }

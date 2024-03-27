@@ -13,17 +13,17 @@ namespace pmon::util::log
 		PanicLogger_() noexcept
 		{
 			try {
-				file_.open("logger-panic.txt", file_.out|file_.app);
+				file_.open("pmlog-panic.txt", file_.out|file_.app);
 			}
 			catch (...) {
-				LogLastChance_(L"Could not open logger-panic.txt in working directory, reverting to temp directory");
+				LogLastChance_(L"Could not open pmlog-panic.txt in working directory, reverting to temp directory");
 			}
 			if (!file_) {
 				try {
-					file_.open(std::filesystem::temp_directory_path(), file_.out | file_.app);
+					file_.open(std::filesystem::temp_directory_path() / "pmlog-panic.txt", file_.out | file_.app);
 				}
 				catch (...) {
-					LogLastChance_(L"Could not open logger-panic.txt in temp directory, file panic logging will not be used");
+					LogLastChance_(L"Could not open pmlog-panic.txt in temp directory, file panic logging will not be used");
 				}
 			}
 		}
@@ -38,7 +38,7 @@ namespace pmon::util::log
 		void LogStdErr_(const std::wstring& msg) const noexcept
 		{
 			try {
-				std::wcerr << msg << std::endl;
+				std::wcerr << L"[@Error|log_panic] " << msg << std::endl;
 			}
 			catch (...) {
 				LogLastChance_(L"Failed panic logging to stderr");
@@ -46,13 +46,15 @@ namespace pmon::util::log
 		}
 		void LogWinDbg_(const std::wstring& msg) const noexcept
 		{
+			OutputDebugStringW(L"[@Error|log_panic] ");
 			OutputDebugStringW(msg.c_str());
+			OutputDebugStringW(L"\n");
 		}
 		void LogFile_(const std::wstring& msg) noexcept
 		{
 			if (file_) {
 				try {
-					file_ << msg << std::endl;
+					file_ << L"[@Error|log_panic] " << msg << std::endl;
 					if (!file_) {
 						LogLastChance_(L"Error occurred when panic logging to file");
 					}
@@ -71,9 +73,9 @@ namespace pmon::util::log
 		std::wofstream file_;
 	};
 
-	void Panic(const std::wstring& msg) noexcept
+	void PMLogPanic_(const std::wstring& msg) noexcept
 	{
-		static PanicLogger_ panic;
-		panic.Log(msg);
+		static PanicLogger_ panic_;
+		panic_.Log(msg);
 	}
 }

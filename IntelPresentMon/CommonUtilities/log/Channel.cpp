@@ -103,7 +103,9 @@ namespace pmon::util::log
 							for (auto& pDriver : driverPtrs_) {
 								pDriver->Submit(entry);
 							}
-							// TODO: log case when there are no drivers?
+							if (driverPtrs_.empty()) {
+								pmlog_panic_(L"No drivers in logging channel while processing entry");
+							}
 						}
 						// if not log entry object, then shared_ptr to a command packet w/ Process member
 						else {
@@ -117,7 +119,7 @@ namespace pmon::util::log
 					}
 				}
 				catch (...) {
-					Panic(L"Exeption thrown in channel worker thread, exiting");
+					pmlog_panic_(L"Exeption thrown in channel worker thread, exiting");
 				}
 			});
 		}
@@ -151,6 +153,11 @@ namespace pmon::util::log
 			Queue_(this).enqueue(pPacket);
 			pPacket->WaitUntilProcessed();
 		}
+		template<class P, typename ...Args>
+		void ChannelInternal_::EnqueuePacketAsync(Args&& ...args)
+		{
+			Queue_(this).enqueue(std::make_shared<P>(std::forward<Args>(args)...));
+		}
 	}
 
 
@@ -161,7 +168,12 @@ namespace pmon::util::log
 	{}
 	Channel::~Channel()
 	{
-		EnqueuePacketWait<KillPacket_>();
+		try {
+			EnqueuePacketAsync<KillPacket_>();
+		}
+		catch (...) {
+			pmlog_panic_(L"Failure enqueing kill packet in Channel dtor");
+		}
 	}
 	void Channel::Submit(Entry&& e) noexcept
 	{
@@ -169,7 +181,7 @@ namespace pmon::util::log
 			EnqueueEntry(std::move(e));
 		}
 		catch (...) {
-			Panic(L"Exception thrown in Channel::Submit");
+			pmlog_panic_(L"Exception thrown in Channel::Submit");
 		}
 	}
 	void Channel::Flush()

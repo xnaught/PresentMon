@@ -4,14 +4,11 @@
 
 namespace pmon::util::log
 {
-	class IChannel* GetDefaultChannel() noexcept;
-	// To simplify implementation of the free-threaded channel object, ability
-	// to swap default channel at runtime has been removed. Can be reconsidered
-	// if a compelling use-case is found
-	// void InjectDefaultChannel(std::shared_ptr<IChannel>);
+	IChannel* GetDefaultChannel() noexcept;
 }
 
 #define pmlog ::pmon::util::log::EntryBuilder{ __FILEW__, __FUNCTIONW__, __LINE__ } \
 	.to(::pmon::util::log::GetDefaultChannel())
-#define pmlog_warn pmlog.level(::pmon::util::log::Level::Warn)
-#define pmlog_info pmlog.level(::pmon::util::log::Level::Info)
+#define pmlog_warn		pmlog.level(::pmon::util::log::Level::Warn)
+#define pmlog_info		pmlog.level(::pmon::util::log::Level::Info)
+#define pmlog_error		pmlog.level(::pmon::util::log::Level::Error)
