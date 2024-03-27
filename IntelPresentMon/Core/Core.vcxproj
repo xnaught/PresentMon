@@ -94,6 +94,7 @@
     <ClInclude Include="source\pmon\DynamicQuery.h" />
     <ClInclude Include="source\pmon\metric\DynamicPollingFetcher.h" />
     <ClInclude Include="source\pmon\MetricFetcherFactory.h" />
+    <ClInclude Include="source\pmon\RawFrameDataMetricList.h" />
     <ClInclude Include="source\pmon\StatisticsTracker.h" />
     <ClInclude Include="source\win\com\ProcessSpawnSink.h" />
     <ClInclude Include="source\kernel\KernelHandler.h" />
