@@ -5,6 +5,7 @@
 #include <concurrentqueue\blockingconcurrentqueue.h>
 #include <variant>
 #include <semaphore>
+#include "PanicLogger.h"
 
 namespace pmon::util::log
 {
@@ -85,33 +86,38 @@ namespace pmon::util::log
 			pEntryQueue_{ std::make_shared<QueueType_>() }
 		{
 			worker_ = std::jthread([this] {
-				auto visitor = [this](auto& el) {
-					// log entry is handled differently than command packets
-					using ElementType = std::decay_t<decltype(el)>;
-					if constexpr (std::is_same_v<ElementType, Entry>) {
-						auto& entry = el;
-						// process all policies, tranforming entry in-place
-						for (auto& pPolicy : policyPtrs_) {
-							// if any policy returns false, drop entry
-							if (!pPolicy->TransformFilter(entry)) {
-								return;
+				try {
+					auto visitor = [this](auto& el) {
+						// log entry is handled differently than command packets
+						using ElementType = std::decay_t<decltype(el)>;
+						if constexpr (std::is_same_v<ElementType, Entry>) {
+							auto& entry = el;
+							// process all policies, tranforming entry in-place
+							for (auto& pPolicy : policyPtrs_) {
+								// if any policy returns false, drop entry
+								if (!pPolicy->TransformFilter(entry)) {
+									return;
+								}
 							}
+							// submit entry to all drivers (by copy)
+							for (auto& pDriver : driverPtrs_) {
+								pDriver->Submit(entry);
+							}
+							// TODO: log case when there are no drivers?
 						}
-						// submit entry to all drivers (by copy)
-						for (auto& pDriver : driverPtrs_) {
-							pDriver->Submit(entry);
+						// if not log entry object, then shared_ptr to a command packet w/ Process member
+						else {
+							el->Process(*this);
 						}
-						// TODO: log case when there are no drivers?
+					};
+					QueueElementType_ el;
+					while (!exiting) {
+						Queue_(this).wait_dequeue(el);
+						std::visit(visitor, el);
 					}
-					// if not log entry object, then shared_ptr to a command packet w/ Process member
-					else {
-						el->Process(*this);
-					}
-				};
-				QueueElementType_ el;
-				while (!exiting) {
-					Queue_(this).wait_dequeue(el);
-					std::visit(visitor, el);
+				}
+				catch (...) {
+					Panic(L"Exeption thrown in channel worker thread, exiting");
 				}
 			});
 		}
@@ -157,9 +163,14 @@ namespace pmon::util::log
 	{
 		EnqueuePacketWait<KillPacket_>();
 	}
-	void Channel::Submit(Entry&& e)
+	void Channel::Submit(Entry&& e) noexcept
 	{
-		EnqueueEntry(std::move(e));
+		try {
+			EnqueueEntry(std::move(e));
+		}
+		catch (...) {
+			Panic(L"Exception thrown in Channel::Submit");
+		}
 	}
 	void Channel::Flush()
 	{

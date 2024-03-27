@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 #include <thread>
+#include <atomic>
 
 namespace pmon::util::log
 {
@@ -41,7 +42,7 @@ namespace pmon::util::log
 	public:
 		Channel(std::vector<std::shared_ptr<IDriver>> driverPtrs = {});
 		~Channel();
-		void Submit(Entry&&) override;
+		void Submit(Entry&&) noexcept override;
 		void Flush() override;
 		void AttachDriver(std::shared_ptr<IDriver>) override;
 		void AttachPolicy(std::shared_ptr<IPolicy>) override;

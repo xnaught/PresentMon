@@ -8,19 +8,19 @@ namespace pmon::util::log
 	class EntryBuilder : private Entry
 	{
 	public:
-		EntryBuilder(const wchar_t* sourceFile, const wchar_t* sourceFunctionName, int sourceLine);
-		EntryBuilder& note(std::wstring note);
-		EntryBuilder& level(Level);
-		EntryBuilder& to(IEntrySink*);
+		EntryBuilder(const wchar_t* sourceFile, const wchar_t* sourceFunctionName, int sourceLine) noexcept;
+		EntryBuilder& note(std::wstring note) noexcept;
+		EntryBuilder& level(Level) noexcept;
+		EntryBuilder& to(IEntrySink*) noexcept;
 		//EntryBuilder& trace_skip(int depth);
 		//EntryBuilder& no_trace();
 		//EntryBuilder& trace();
-		EntryBuilder& no_line();
-		EntryBuilder& line();
-		EntryBuilder& hr();
-		EntryBuilder& hr(unsigned int);
+		EntryBuilder& no_line() noexcept;
+		EntryBuilder& line() noexcept;
+		EntryBuilder& hr() noexcept;
+		EntryBuilder& hr(unsigned int) noexcept;
 		~EntryBuilder();
-		EntryBuilder& operator<<(std::wstring note);
+		EntryBuilder& operator<<(std::wstring note) noexcept;
 	private:
 		IEntrySink* pDest_ = nullptr;
 		int traceSkipDepth_ = 6;

@@ -37,6 +37,7 @@
     <ClInclude Include="Meta.h" />
     <ClInclude Include="log\BasicFileDriver.h" />
     <ClInclude Include="log\SimpleFileStrategy.h" />
+    <ClInclude Include="log\PanicLogger.h" />
     <ClInclude Include="str\String.h" />
     <ClInclude Include="win\Utilities.h" />
     <ClInclude Include="win\WinAPI.h" />
@@ -52,6 +53,7 @@
     <ClCompile Include="log\BasicFileDriver.cpp" />
     <ClCompile Include="log\TextFormatter.cpp" />
     <ClCompile Include="log\SimpleFileStrategy.cpp" />
+    <ClCompile Include="log\PanicLogger.cpp" />
     <ClCompile Include="str\String.cpp" />
     <ClCompile Include="win\Utilities.cpp" />
   </ItemGroup>

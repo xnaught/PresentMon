@@ -6,6 +6,7 @@
 #include "SimpleFileStrategy.h"
 #include <memory>
 #include <shared_mutex>
+#include "PanicLogger.h"
 
 namespace pmon::util::log
 {
@@ -22,6 +23,7 @@ namespace pmon::util::log
 			static struct ChannelManager {
 				Channel channel;
 				ChannelManager() {
+					throw std::runtime_error{ "kek" };
 					// make the formatter
 					const auto pFormatter = std::make_shared<TextFormatter>();
 					const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log.txt");
@@ -34,6 +36,7 @@ namespace pmon::util::log
 			return &channelManager.channel;
 		}
 		catch (...) {
+			Panic(L"Exception thrown while getting default log channel");
 			return nullptr;
 		}
 	}

@@ -13,3 +13,5 @@ namespace pmon::util::log
 
 #define pmlog ::pmon::util::log::EntryBuilder{ __FILEW__, __FUNCTIONW__, __LINE__ } \
 	.to(::pmon::util::log::GetDefaultChannel())
+#define pmlog_warn pmlog.level(::pmon::util::log::Level::Warn)
+#define pmlog_info pmlog.level(::pmon::util::log::Level::Info)

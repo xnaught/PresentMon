@@ -4,5 +4,5 @@
 
 namespace pmon::util::win
 {
-	std::wstring GetErrorDescription(HRESULT hr);
+	std::wstring GetErrorDescription(HRESULT hr) noexcept;
 }

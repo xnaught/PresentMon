@@ -1,6 +1,7 @@
 #include "MsvcDebugDriver.h"
 #include "ITextFormatter.h"
 #include "../win/WinAPI.h"
+#include "PanicLogger.h"
 
 namespace pmon::util::log
 {
@@ -13,7 +14,9 @@ namespace pmon::util::log
 		if (pFormatter_) {
 			OutputDebugStringW(pFormatter_->Format(e).c_str());
 		}
-		// TODO: how to log stuff from log system itself?
+		else {
+			Panic(L"BasicFileDriver submitted to without a formatter set");
+		}
 	}
 	void MsvcDebugDriver::SetFormatter(std::shared_ptr<ITextFormatter> pFormatter)
 	{

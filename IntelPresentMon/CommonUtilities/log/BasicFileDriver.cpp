@@ -1,5 +1,6 @@
 #include "BasicFileDriver.h"
 #include "ITextFormatter.h"
+#include "PanicLogger.h"
 #include <cassert>
 
 namespace pmon::util::log
@@ -17,7 +18,14 @@ namespace pmon::util::log
 			auto pFile = pFileStrategy_->AddLine();
 			*pFile << pFormatter_->Format(e);
 		}
-		// TODO: how to log stuff from log system 
+		else {
+			if (!pFormatter_) {
+				Panic(L"BasicFileDriver submitted to without a formatter set");
+			}
+			if (!pFileStrategy_) {
+				Panic(L"BasicFileDriver submitted to without a file strategy set");
+			}
+		}
 	}
 	void BasicFileDriver::SetFormatter(std::shared_ptr<ITextFormatter> pFormatter)
 	{
@@ -31,6 +39,9 @@ namespace pmon::util::log
 	{
 		if (pFileStrategy_) {
 			pFileStrategy_->GetFileStream()->flush();
+		}
+		else {
+			Panic(L"BasicFileDriver flushed without a file strategy set");
 		}
 	}
 }
