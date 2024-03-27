@@ -16,13 +16,12 @@ namespace pmon::util::log
 		struct Packet_
 		{
 			std::binary_semaphore semaphore{ 0 };
-			// must be called from external thread calling channel interface function
 			void WaitUntilProcessed() { semaphore.acquire(); }
 		};
 		struct AttachDriverPacket_ : public Packet_
 		{
 			std::shared_ptr<IDriver> pDriver;
-			// must be called from channel worker thread
+			AttachDriverPacket_(std::shared_ptr<IDriver> pDriver) : pDriver{ std::move(pDriver) } {}
 			void Process(ChannelInternal_& channel)
 			{
 				channel.AttachDriver(std::move(pDriver));
@@ -32,7 +31,7 @@ namespace pmon::util::log
 		struct AttachPolicyPacket_ : public Packet_
 		{
 			std::shared_ptr<IPolicy> pPolicy;
-			// must be called from channel worker thread
+			AttachPolicyPacket_(std::shared_ptr<IPolicy> pPolicy) : pPolicy{ std::move(pPolicy) } {}
 			void Process(ChannelInternal_& channel)
 			{
 				channel.AttachPolicy(std::move(pPolicy));
@@ -41,7 +40,6 @@ namespace pmon::util::log
 		};
 		struct FlushPacket_ : public Packet_
 		{
-			// must be called from channel worker thread
 			void Process(ChannelInternal_& channel)
 			{
 				channel.Flush();
@@ -50,13 +48,13 @@ namespace pmon::util::log
 		};
 		struct KillPacket_ : public Packet_
 		{
-			// must be called from channel worker thread
 			void Process(ChannelInternal_& channel)
 			{
 				channel.SignalExit();
 				semaphore.release();
 			}
 		};
+		// aliases for variant / queue typenames
 		using QueueElementType_ = std::variant<Entry,
 			std::shared_ptr<AttachDriverPacket_>,
 			std::shared_ptr<AttachPolicyPacket_>,
@@ -65,12 +63,19 @@ namespace pmon::util::log
 		using QueueType_ = moodycamel::BlockingConcurrentQueue<QueueElementType_>;
 		// shortcut to get the underlying queue variant type when given the type-erased pointer
 		// (also do some sanity checking here via assert)
+		struct QueueAccessor_
+		{
+			static QueueType_& Access(ChannelInternal_* pChan)
+			{
+				assert(pChan);
+				auto pQueueVoid = pChan->pEntryQueue_.get();
+				assert(pQueueVoid);
+				return *static_cast<QueueType_*>(pQueueVoid);
+			}
+		};
 		QueueType_& Queue_(ChannelInternal_* pChan)
 		{
-			assert(pChan);
-			auto pQueueVoid = pChan->GetQueuePtr();
-			assert(pQueueVoid);
-			return *static_cast<QueueType_*>(pQueueVoid);
+			return QueueAccessor_::Access(pChan);
 		}
 		// internal implementation of the channel, with public functions hidden from the external interface
 		// but available to packet processing functions to use
@@ -129,11 +134,19 @@ namespace pmon::util::log
 		{
 			policyPtrs_.push_back(std::move(pPolicy));
 		}
-		void* ChannelInternal_::GetQueuePtr()
+		void ChannelInternal_::EnqueueEntry(Entry&& e)
 		{
-			return pEntryQueue_.get();
+			Queue_(this).enqueue(std::move(e));
+		}
+		template<class P, typename ...Args>
+		void ChannelInternal_::EnqueuePacketWait(Args&& ...args)
+		{
+			auto pPacket = std::make_shared<P>(std::forward<Args>(args)...);
+			Queue_(this).enqueue(pPacket);
+			pPacket->WaitUntilProcessed();
 		}
 	}
+
 
 	// implementation of external interfaces
 	Channel::Channel(std::vector<std::shared_ptr<IDriver>> driverPtrs)
@@ -142,31 +155,22 @@ namespace pmon::util::log
 	{}
 	Channel::~Channel()
 	{
-		Queue_(this).enqueue(std::make_shared<KillPacket_>());
-		// no need to wait on the packet, jthread dtor in Internal_ will block
+		EnqueuePacketWait<KillPacket_>();
 	}
 	void Channel::Submit(Entry&& e)
 	{
-		Queue_(this).enqueue(std::move(e));
+		EnqueueEntry(std::move(e));
 	}
 	void Channel::Flush()
 	{
-		auto pPacket = std::make_shared<FlushPacket_>();
-		Queue_(this).enqueue(pPacket);
-		pPacket->WaitUntilProcessed();
+		EnqueuePacketWait<FlushPacket_>();
 	}
 	void Channel::AttachDriver(std::shared_ptr<IDriver> pDriver)
 	{
-		auto pPacket = std::make_shared<AttachDriverPacket_>();
-		pPacket->pDriver = std::move(pDriver);
-		Queue_(this).enqueue(pPacket);
-		pPacket->WaitUntilProcessed();
+		EnqueuePacketWait<AttachDriverPacket_>(std::move(pDriver));
 	}
 	void Channel::AttachPolicy(std::shared_ptr<IPolicy> pPolicy)
 	{
-		auto pPacket = std::make_shared<AttachPolicyPacket_>();
-		pPacket->pPolicy = std::move(pPolicy);
-		Queue_(this).enqueue(pPacket);
-		pPacket->WaitUntilProcessed();
+		EnqueuePacketWait<AttachPolicyPacket_>(std::move(pPolicy));
 	}
 }

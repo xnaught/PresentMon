@@ -13,13 +13,16 @@ namespace pmon::util::log
 		// in response to entries / packets placed in the queue
 		class ChannelInternal_
 		{
+			friend struct QueueAccessor_;
 		public:
 			~ChannelInternal_();
 			void Flush();
 			void SignalExit();
 			void AttachDriver(std::shared_ptr<IDriver>);
 			void AttachPolicy(std::shared_ptr<IPolicy>);
-			void* GetQueuePtr();
+			void EnqueueEntry(Entry&&);
+			template<class P, typename...Args>
+			void EnqueuePacketWait(Args&&...args);
 		protected:
 			ChannelInternal_(std::vector<std::shared_ptr<IDriver>> driverPtrs);
 		private:
@@ -31,7 +34,7 @@ namespace pmon::util::log
 		};
 	}
 
-	// external channel implementation, has functions that are only called from outside the channel
+	// external channel implementation, has functions that are only called from outside of the channel
 	// worker thread and which only place entries / packets in the queue
 	class Channel : public IChannel, private ChannelInternal_
 	{
