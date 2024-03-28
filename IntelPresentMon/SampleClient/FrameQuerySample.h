@@ -119,7 +119,7 @@ int GenCsv(pmapi::Session& pSession, std::string processName, unsigned int proce
             { PM_METRIC_GPU_BUSY, PM_STAT_NONE, 0, 0},
             { PM_METRIC_DISPLAY_LATENCY, PM_STAT_NONE, 0, 0 },
             { PM_METRIC_DISPLAYED_TIME, PM_STAT_NONE, 0, 0 },
-            { PM_METRIC_INPUT_LATENCY, PM_STAT_NONE, 0, 0}
+            { PM_METRIC_CLICK_TO_PHOTON_LATENCY, PM_STAT_NONE, 0, 0}
         };
 
         auto frameQuery = pSession.RegisterFrameQuery(queryElements);

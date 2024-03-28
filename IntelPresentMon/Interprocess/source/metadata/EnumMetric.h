@@ -36,7 +36,6 @@
 \
 		X_(METRIC, GPU_LATENCY, "GPU Latency", "", "How long it took until GPU work for this frame started") \
 		X_(METRIC, DISPLAY_LATENCY, "Display Latency", "", "Time between frame submission and scan out to display") \
-		X_(METRIC, INPUT_LATENCY, "Input To Frame Start Latency", "", "Time between input and display") \
 		X_(METRIC, CLICK_TO_PHOTON_LATENCY, "Click To Photon Latency", "", "Time between input and display") \
 		\
 		X_(METRIC, GPU_SUSTAINED_POWER_LIMIT, "GPU Sustained Power Limit", "", "Sustained power limit of the GPU") \
