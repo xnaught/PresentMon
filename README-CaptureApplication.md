@@ -36,7 +36,8 @@ In Debug configuration, the application will halt with a modal error dialog when
 
 | Metric | CSV Column | Description | Compatible Query Types |
 | - | - | - |:-:|
-|Application||Name of the executable of the process being targeted|DS|
+|Application|Application|Name of the executable of the process being targeted|DS|
+||ProcessID|ID of the process being targeted||
 |Swap Chain Address|SwapChainAddress|Address of the swap chain used to present, useful as a unique identifier|F|
 |GPU Vendor||Vendor name of the GPU|DS|
 |GPU Name||Device name of the GPU|DS|
