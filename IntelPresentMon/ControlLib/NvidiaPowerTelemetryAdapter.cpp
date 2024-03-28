@@ -67,6 +67,7 @@ namespace pwr::nv
                 // loop through all sensors, read those of interest into output struct
                 for (const auto& sensor : thermals.sensor)
                 {
+                    // TODO: consider prioritizing sensor.controller == NVAPI_THERMAL_CONTROLLER_GPU_INTERNAL when multiple GPU thermals are present
                     if (sensor.target == NVAPI_THERMAL_TARGET_GPU)
                     {
                         info.gpu_temperature_c = (double)sensor.currentTemp;
