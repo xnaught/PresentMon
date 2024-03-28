@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cli\CliFramework.h" />
+    <ClInclude Include="log\GlobalPolicy.h" />
     <ClInclude Include="log\IFileStrategy.h" />
     <ClInclude Include="log\Channel.h" />
     <ClInclude Include="log\Entry.h" />
@@ -47,6 +48,7 @@
     <ClCompile Include="Hash.cpp" />
     <ClCompile Include="log\Channel.cpp" />
     <ClCompile Include="log\EntryBuilder.cpp" />
+    <ClCompile Include="log\GlobalPolicy.cpp" />
     <ClCompile Include="log\Level.cpp" />
     <ClCompile Include="log\Log.cpp" />
     <ClCompile Include="log\MsvcDebugDriver.cpp" />

@@ -49,7 +49,8 @@ int main(int argc, char* argv[])
             return -1;
         }
 
-        pmlog.note(L"henlo");
+        pmon::util::log::globalPolicy.SetLogLevel(pmon::util::log::Level::Info);
+        pmlog_info.note(L"henlo");
 
         // determine requested activity
         if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample ^ opt.checkMetricSample ^ opt.wrapperStaticQuerySample ^ opt.metricListSample) {
