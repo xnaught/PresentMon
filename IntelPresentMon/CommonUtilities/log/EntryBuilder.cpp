@@ -6,9 +6,10 @@
 
 namespace pmon::util::log
 {
-	EntryBuilder::EntryBuilder(const wchar_t* sourceFile, const wchar_t* sourceFunctionName, int sourceLine) noexcept
+	EntryBuilder::EntryBuilder(Level lvl, const wchar_t* sourceFile, const wchar_t* sourceFunctionName, int sourceLine) noexcept
 		:
 		Entry{
+			.level_ = lvl,
 			.sourceFile_ = sourceFile,
 			.sourceFunctionName_ = sourceFunctionName,
 			.sourceLine_ = sourceLine,
@@ -18,11 +19,6 @@ namespace pmon::util::log
 	EntryBuilder& EntryBuilder::note(std::wstring note) noexcept
 	{
 		note_ = std::move(note);
-		return *this;
-	}
-	EntryBuilder& EntryBuilder::level(Level level) noexcept
-	{
-		level_ = level;
 		return *this;
 	}
 	EntryBuilder& EntryBuilder::to(IEntrySink* pSink) noexcept

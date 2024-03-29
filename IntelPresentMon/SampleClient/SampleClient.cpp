@@ -29,6 +29,7 @@
 #include "WrapperStaticQuery.h"
 #include "MetricListSample.h"
 
+#define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Verbose
 #include "../CommonUtilities/log/Log.h"
 
 
@@ -49,8 +50,8 @@ int main(int argc, char* argv[])
             return -1;
         }
 
-        pmon::util::log::globalPolicy.SetLogLevel(pmon::util::log::Level::Info);
-        pmlog_info.note(L"henlo");
+        pmon::util::log::globalPolicy.SetLogLevel(pmon::util::log::Level::Verbose);
+        pmlog_verb(true).note(L"henlo");
 
         // determine requested activity
         if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample ^ opt.checkMetricSample ^ opt.wrapperStaticQuerySample ^ opt.metricListSample) {

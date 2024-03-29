@@ -8,9 +8,8 @@ namespace pmon::util::log
 	class EntryBuilder : private Entry
 	{
 	public:
-		EntryBuilder(const wchar_t* sourceFile, const wchar_t* sourceFunctionName, int sourceLine) noexcept;
+		EntryBuilder(Level lvl, const wchar_t* sourceFile, const wchar_t* sourceFunctionName, int sourceLine) noexcept;
 		EntryBuilder& note(std::wstring note) noexcept;
-		EntryBuilder& level(Level) noexcept;
 		EntryBuilder& to(IEntrySink*) noexcept;
 		//EntryBuilder& trace_skip(int depth);
 		//EntryBuilder& no_trace();
