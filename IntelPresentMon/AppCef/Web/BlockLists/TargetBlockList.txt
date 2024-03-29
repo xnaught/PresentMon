@@ -297,6 +297,7 @@ wsl2distromanager.exe
 wudfhost.exe
 wwahost.exe
 xboxgamebarwidgets.exe
+xboxgamebarspotify.exe
 xboxapp.exe
 xboxpcapp.exe
 xdesproc.exe

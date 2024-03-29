@@ -1043,11 +1043,41 @@ void ReportMetrics(
 
         case PM_METRIC_PRESENTED_FPS:
         {
-            std::vector<double> cpu_fps(swapChain.CPUDuration.size());
+            std::vector<double> frameTimes(swapChain.CPUDuration.size());
             for (size_t i = 0; i < swapChain.CPUDuration.size(); ++i) {
-                cpu_fps[i] = 1000.0 / (swapChain.CPUDuration[i] + swapChain.CPUFramePacingStall[i]);
+                frameTimes[i] = swapChain.CPUDuration[i] + swapChain.CPUFramePacingStall[i];
             }
-            CalculateMetric(output, cpu_fps, element.stat);
+            switch (element.stat)
+            {
+            case PM_STAT_PERCENTILE_99:
+                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_01);
+                break;
+            case PM_STAT_PERCENTILE_95:
+                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_05);
+                break;
+            case PM_STAT_PERCENTILE_90:
+                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_10);
+                break;
+            case PM_STAT_PERCENTILE_10:
+                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_90);
+                break;
+            case PM_STAT_PERCENTILE_05:
+                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_95);
+                break;
+            case PM_STAT_PERCENTILE_01:
+                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_99);
+                break;
+            case PM_STAT_MAX:
+                CalculateMetric(output, frameTimes, PM_STAT_MIN);
+                break;
+            case PM_STAT_MIN:
+                CalculateMetric(output, frameTimes, PM_STAT_MAX);
+                break;
+            default:
+                CalculateMetric(output, frameTimes, element.stat);
+            }
+            // Convert to FPS
+            output = 1000.0 / output;
         }
             break;
         case PM_METRIC_DISPLAYED_FPS:
