@@ -14,8 +14,10 @@ namespace pmon::util::log
 	{
 		try {
 			std::wostringstream oss;
-			oss << std::format(L"@{} {{{}}} {}",
+			oss << std::format(L"[@{}] <{}:{}> {{{}}} {}",
 				GetLevelName(e.level_),
+				e.pid_,
+				e.tid_,
 				std::chrono::zoned_time{ std::chrono::current_zone(), e.timestamp_ },
 				e.note_
 			);

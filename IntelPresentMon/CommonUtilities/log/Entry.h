@@ -18,6 +18,8 @@ namespace pmon::util::log
 		std::chrono::system_clock::time_point timestamp_;
 		std::unique_ptr<std::stacktrace> pTrace_;
 		std::optional<unsigned int> hResult_;
+		uint32_t pid_;
+		uint32_t tid_;
 		// behavior override flags 
 		std::optional<bool> captureTrace_;
 		std::optional<bool> showSourceLine_;
