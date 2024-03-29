@@ -7,6 +7,7 @@
 #include "../str/String.h"
 #include <ranges>
 #include "PanicLogger.h"
+#include "StackTrace.h"
 
 namespace pmon::util::log
 {
@@ -33,18 +34,18 @@ namespace pmon::util::log
 				);
 			}
 			else {
-				oss << "\n";
+				oss << L"\n";
 			}
 			if (e.pTrace_) {
 				try {
-					oss << " ====== STACK TRACE (newest on top) ======\n";
-					for (auto&& [i, frame] : std::views::zip(std::views::iota(0), *e.pTrace_)) {
-						oss << "  [" << i << "] " << str::ToWide(frame.description()) << "\n";
-						if (frame.source_line() != 0 || !frame.source_file().empty()) {
-							oss << "    > " << str::ToWide(frame.source_file()) << '(' << frame.source_line() << ")\n";
+					oss << L" ====== STACK TRACE (newest on top) ======\n";
+					for (auto& f : e.pTrace_->GetFrames()) {
+						oss << L"  [" << f.index << L"] " << f.description << L"\n";
+						if (f.line != 0 || !f.file.empty()) {
+							oss << L"    > " << f.file << L'(' << f.line << L")\n";
 						}
 					}
-					oss << " =========================================\n";
+					oss << L" =========================================\n";
 				}
 				catch (...) {
 					pmlog_panic_(L"Failed printing stack trace in TextFormatter::Format");

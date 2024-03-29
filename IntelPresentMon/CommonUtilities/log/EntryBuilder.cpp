@@ -2,6 +2,7 @@
 #include "IChannel.h"
 #include "../win/WinAPI.h"
 #include "PanicLogger.h"
+#include "StackTrace.h"
 
 
 namespace pmon::util::log
@@ -71,7 +72,7 @@ namespace pmon::util::log
 		if (pDest_) {
 			if (captureTrace_.value_or((int)level_ <= (int)Level::Error)) {
 				try {
-					pTrace_ = std::make_unique<std::stacktrace>(std::stacktrace::current());
+					pTrace_ = std::make_unique<StackTrace>();
 				}
 				catch (...) {
 					pmlog_panic_(L"Failed to get current stacktrace");

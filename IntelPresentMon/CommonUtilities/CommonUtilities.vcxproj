@@ -32,6 +32,7 @@
     <ClInclude Include="log\Level.h" />
     <ClInclude Include="log\Log.h" />
     <ClInclude Include="log\MsvcDebugDriver.h" />
+    <ClInclude Include="log\StackTrace.h" />
     <ClInclude Include="log\TextFormatter.h" />
     <ClInclude Include="Memory.h" />
     <ClInclude Include="Hash.h" />
@@ -53,6 +54,7 @@
     <ClCompile Include="log\Log.cpp" />
     <ClCompile Include="log\MsvcDebugDriver.cpp" />
     <ClCompile Include="log\BasicFileDriver.cpp" />
+    <ClCompile Include="log\StackTrace.cpp" />
     <ClCompile Include="log\TextFormatter.cpp" />
     <ClCompile Include="log\SimpleFileStrategy.cpp" />
     <ClCompile Include="log\PanicLogger.cpp" />

@@ -6,6 +6,7 @@
 #include "SimpleFileStrategy.h"
 #include <memory>
 #include <shared_mutex>
+#include <stacktrace>
 #include "PanicLogger.h"
 
 namespace pmon::util::log

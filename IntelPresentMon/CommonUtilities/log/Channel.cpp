@@ -6,6 +6,7 @@
 #include <variant>
 #include <semaphore>
 #include "PanicLogger.h"
+#include "StackTrace.h"
 
 namespace pmon::util::log
 {
@@ -91,13 +92,17 @@ namespace pmon::util::log
 						// log entry is handled differently than command packets
 						using ElementType = std::decay_t<decltype(el)>;
 						if constexpr (std::is_same_v<ElementType, Entry>) {
-							auto& entry = el;
+							Entry& entry = el;
 							// process all policies, tranforming entry in-place
 							for (auto& pPolicy : policyPtrs_) {
 								// if any policy returns false, drop entry
 								if (!pPolicy->TransformFilter(entry)) {
 									return;
 								}
+							}
+							// resolve trace if one is present
+							if (entry.pTrace_) {
+								entry.pTrace_->Resolve();
 							}
 							// submit entry to all drivers (by copy)
 							for (auto& pDriver : driverPtrs_) {

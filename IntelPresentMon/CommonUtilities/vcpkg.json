@@ -4,7 +4,8 @@
   "version": "0.6.0",
   "dependencies": [
     "cli11",
-    "concurrentqueue"
+    "concurrentqueue",
+    "cereal"
   ],
   "builtin-baseline": "bb588985e37484d543fc849d0d79434e0d45bb3c"
 }

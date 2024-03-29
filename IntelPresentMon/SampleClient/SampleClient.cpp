@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
         }
 
         pmon::util::log::globalPolicy.SetLogLevel(pmon::util::log::Level::Verbose);
-        pmlog_verb(true).note(L"henlo");
+        pmlog_err.note(L"henlo");
 
         // determine requested activity
         if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample ^ opt.checkMetricSample ^ opt.wrapperStaticQuerySample ^ opt.metricListSample) {
