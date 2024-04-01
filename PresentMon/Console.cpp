@@ -279,7 +279,7 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
                 chain.mPresentSyncInterval,
                 chain.mPresentFlags,
                 chain.mAvgCPUBusy,
-                CalculateFPSForPrintf(chain.mAvgCPUBusy));
+                CalculateFPSForPrintf(chain.mAvgCPUDuration));
 
             if (args.mTrackDisplay) {
                 ConsolePrint(L" Display=%.3fms (%.1f fps)",

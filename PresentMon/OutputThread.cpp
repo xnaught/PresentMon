@@ -336,6 +336,7 @@ static void ReportMetrics(
 
     if (computeAvg) {
         UpdateAverage(&chain->mAvgCPUBusy, metrics.mCPUBusy);
+        UpdateAverage(&chain->mAvgCPUDuration, metrics.mCPUBusy + metrics.mCPUWait);
         UpdateAverage(&chain->mAvgGPUDuration, gpuDuration);
         if (displayed) {
             UpdateAverage(&chain->mAvgDisplayLatency, metrics.mDisplayLatency);
