@@ -33,6 +33,7 @@
     <ClInclude Include="log\Log.h" />
     <ClInclude Include="log\MsvcDebugDriver.h" />
     <ClInclude Include="log\StackTrace.h" />
+    <ClInclude Include="log\StackTraceCereal.h" />
     <ClInclude Include="log\TextFormatter.h" />
     <ClInclude Include="Memory.h" />
     <ClInclude Include="Hash.h" />

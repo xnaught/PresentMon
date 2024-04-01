@@ -5,6 +5,7 @@
 
 namespace pmon::util::log
 {
+	void BootDefaultChannelEager() noexcept;
 	IChannel* GetDefaultChannel() noexcept;
 }
 

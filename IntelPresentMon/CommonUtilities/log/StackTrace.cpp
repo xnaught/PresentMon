@@ -11,6 +11,14 @@ namespace pmon::util::log
 	{}
 	void StackTrace::Resolve()
 	{
+		if (trace_.empty()) {
+			pmlog_panic_(L"Resolving empty trace");
+			return;
+		}
+		else if (!frames_.empty()) {
+			pmlog_panic_(L"Resolving when already resolved");
+			return;
+		}
 		frames_.reserve(trace_.size());
 		for (auto&& [i, f] : std::views::zip(std::views::iota(0), trace_)) {
 			frames_.push_back(FrameInfo{
@@ -27,5 +35,9 @@ namespace pmon::util::log
 			pmlog_panic_(L"Getting frames from and unresolved/empty stack trace.");
 		}
 		return frames_;
+	}
+	std::unique_ptr<StackTrace> StackTrace::Here()
+	{
+		return std::make_unique<StackTrace>(std::stacktrace::current());
 	}
 }
