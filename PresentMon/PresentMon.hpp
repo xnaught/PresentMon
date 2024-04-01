@@ -130,7 +130,7 @@ struct SwapChainData {
     bool        mPresentInfoValid = false;
 
     // Frame statistics
-    float mAvgCPUBusy = 0.f;
+    float mAvgCPUDuration = 0.f;
     float mAvgGPUDuration = 0.f;
     float mAvgDisplayLatency = 0.f;
     float mAvgDisplayedTime = 0.f;

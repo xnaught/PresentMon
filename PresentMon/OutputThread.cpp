@@ -277,7 +277,7 @@ static void ReportMetrics1(
     }
 
     if (computeAvg) {
-        UpdateAverage(&chain->mAvgCPUBusy, metrics.msBetweenPresents);
+        UpdateAverage(&chain->mAvgCPUDuration, metrics.msBetweenPresents);
         UpdateAverage(&chain->mAvgGPUDuration, metrics.msGPUDuration);
         if (metrics.msUntilDisplayed > 0) {
             UpdateAverage(&chain->mAvgDisplayLatency, metrics.msUntilDisplayed);
@@ -335,7 +335,7 @@ static void ReportMetrics(
     }
 
     if (computeAvg) {
-        UpdateAverage(&chain->mAvgCPUBusy, metrics.mCPUBusy);
+        UpdateAverage(&chain->mAvgCPUDuration, metrics.mCPUBusy + metrics.mCPUWait);
         UpdateAverage(&chain->mAvgGPUDuration, gpuDuration);
         if (displayed) {
             UpdateAverage(&chain->mAvgDisplayLatency, metrics.mDisplayLatency);
