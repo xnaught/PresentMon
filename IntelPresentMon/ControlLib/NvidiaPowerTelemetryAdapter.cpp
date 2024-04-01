@@ -68,8 +68,8 @@ namespace pwr::nv
                 for (const auto& sensor : thermals.sensor)
                 {
                     // TODO: consider prioritizing sensor.controller == NVAPI_THERMAL_CONTROLLER_GPU_INTERNAL when multiple GPU thermals are present
-                    if (sensor.target == NVAPI_THERMAL_TARGET_GPU)
-                    {
+                    if ((sensor.target == NVAPI_THERMAL_TARGET_GPU) &&
+                        (sensor.controller == NVAPI_THERMAL_CONTROLLER_GPU_INTERNAL)) {
                         info.gpu_temperature_c = (double)sensor.currentTemp;
                         SetTelemetryCapBit(GpuTelemetryCapBits::gpu_temperature);
                     }
@@ -175,13 +175,15 @@ namespace pwr::nv
             }
 
             {// temperature
-                if (!GetPowerTelemetryCapBits().test(static_cast<size_t>(GpuTelemetryCapBits::gpu_temperature)))
+                if (!GetPowerTelemetryCapBits().test(static_cast<size_t>(GpuTelemetryCapBits::gpu_temperature))||
+                    (useNvmlTemperature))
                 {
                     unsigned int temp = 0;
                     if (nvml->Ok(nvml->DeviceGetTemperature(*hNvml, nvmlTemperatureSensors_t::NVML_TEMPERATURE_GPU, &temp)))
                     {
                         info.gpu_temperature_c = (double)temp;
                         SetTelemetryCapBit(GpuTelemetryCapBits::gpu_temperature);
+                        useNvmlTemperature = true;
                     }
                     // TODO: consider logging failure (lower logging level perhaps)
                 }
