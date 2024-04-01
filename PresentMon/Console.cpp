@@ -278,7 +278,7 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
                 RuntimeToString(chain.mPresentRuntime),
                 chain.mPresentSyncInterval,
                 chain.mPresentFlags,
-                chain.mAvgCPUBusy,
+                chain.mAvgCPUDuration,
                 CalculateFPSForPrintf(chain.mAvgCPUDuration));
 
             if (args.mTrackDisplay) {
