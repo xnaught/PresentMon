@@ -55,6 +55,7 @@ namespace pmon::util::log
 	}
 	DefaultChannelManager::~DefaultChannelManager()
 	{
+		GlobalPolicy::SetResolveTraceInClientThread(true);
 		GetDefaultChannelImpl_()->FlushEntryPointExit();
 	}
 }

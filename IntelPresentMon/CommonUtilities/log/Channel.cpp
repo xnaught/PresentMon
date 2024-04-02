@@ -7,6 +7,7 @@
 #include <semaphore>
 #include "PanicLogger.h"
 #include "StackTrace.h"
+#include "GlobalPolicy.h"
 
 namespace pmon::util::log
 {
@@ -111,13 +112,9 @@ namespace pmon::util::log
 								}
 							}
 							// resolve trace if one is present
-							if (entry.pTrace_) {
+							if (entry.pTrace_ && !entry.pTrace_->Resolved()) {
 								if (resolvingTraces_) {
 									entry.pTrace_->Resolve();
-								}
-								else {
-									pmlog_panic_(L"Cannot resolve trace after exiting from module entry point");
-									entry.pTrace_.reset();
 								}
 							}
 							// submit entry to all drivers (by copy)

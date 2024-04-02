@@ -24,6 +24,8 @@ namespace pmon::util::log
 		StackTrace(std::stacktrace trace);
 		void Resolve();
 		std::span<const FrameInfo> GetFrames() const;
+		bool Empty() const;
+		bool Resolved() const;
 		static std::unique_ptr<StackTrace> Here();
 	private:
 		std::stacktrace trace_;

@@ -20,6 +20,14 @@ namespace pmon::util::log
 	{
 		logLevel_.store(level);
 	}
+	bool GlobalPolicy::GetResolveTraceInClientThread_() const noexcept
+	{
+		return resolveTraceInClientThread_.load();
+	}
+	void GlobalPolicy::SetResolveTraceInClientThread_(bool setting) noexcept
+	{
+		resolveTraceInClientThread_.store(setting);
+	}
 
 	GlobalPolicy& GlobalPolicy::Get_() noexcept
 	{
@@ -35,5 +43,13 @@ namespace pmon::util::log
 	void GlobalPolicy::SetLogLevel(Level level) noexcept
 	{
 		Get_().SetLogLevel_(level);
+	}
+	bool GlobalPolicy::GetResolveTraceInClientThread() noexcept
+	{
+		return Get_().GetResolveTraceInClientThread_();
+	}
+	void GlobalPolicy::SetResolveTraceInClientThread(bool setting) noexcept
+	{
+		Get_().SetResolveTraceInClientThread_(setting);
 	}
 }

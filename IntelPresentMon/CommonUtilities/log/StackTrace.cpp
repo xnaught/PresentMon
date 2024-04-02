@@ -36,6 +36,14 @@ namespace pmon::util::log
 		}
 		return frames_;
 	}
+	bool StackTrace::Empty() const
+	{
+		return trace_.empty() && frames_.empty();
+	}
+	bool StackTrace::Resolved() const
+	{
+		return !frames_.empty();
+	}
 	std::unique_ptr<StackTrace> StackTrace::Here()
 	{
 		return std::make_unique<StackTrace>(std::stacktrace::current());

@@ -3,6 +3,7 @@
 #include "../win/WinAPI.h"
 #include "PanicLogger.h"
 #include "StackTrace.h"
+#include "GlobalPolicy.h"
 
 
 namespace pmon::util::log
@@ -73,6 +74,9 @@ namespace pmon::util::log
 			if (captureTrace_.value_or((int)level_ <= (int)Level::Error)) {
 				try {
 					pTrace_ = StackTrace::Here();
+					if (GlobalPolicy::GetResolveTraceInClientThread()) {
+						pTrace_->Resolve();
+					}
 				}
 				catch (...) {
 					pmlog_panic_(L"Failed to get current stacktrace");
