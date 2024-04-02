@@ -7,11 +7,15 @@ namespace pmon::util::log
 	class GlobalPolicy
 	{
 	public:
-		GlobalPolicy() noexcept;
-		Level GetLogLevel() const noexcept;
-		void SetLogLevel(Level level) noexcept;
+		static Level GetLogLevel() noexcept;
+		static void SetLogLevel(Level level) noexcept;
 	private:
+		// functions
+		GlobalPolicy() noexcept;
+		static GlobalPolicy& Get_() noexcept;
+		Level GetLogLevel_() const noexcept;
+		void SetLogLevel_(Level level) noexcept;
+		// data
 		std::atomic<Level> logLevel_;
 	};
-	extern GlobalPolicy globalPolicy;
 }

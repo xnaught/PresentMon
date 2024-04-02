@@ -75,7 +75,6 @@ namespace pmon::util::log
 
 	void PMLogPanic_(const std::wstring& msg) noexcept
 	{
-		static PanicLogger_ panic_;
-		panic_.Log(msg);
+		PanicLogger_{}.Log(msg);
 	}
 }

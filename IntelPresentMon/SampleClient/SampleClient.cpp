@@ -32,11 +32,21 @@
 #define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Verbose
 #include "../CommonUtilities/log/Log.h"
 
+struct Test
+{
+    Test()
+    {
+        pmlog_info.note(L"global init log");
+    }
+    ~Test()
+    {
+        pmlog_error.note(L"global destroy log w/ trace");
+    }
+} spoot;
 
 int main(int argc, char* argv[])
 {
-    // eager-initialize the logging channel
-    pmon::util::log::BootDefaultChannelEager();
+    pmlog_setup;
 
     try {
         if (auto e = clio::Options::Init(argc, argv)) {
@@ -50,8 +60,8 @@ int main(int argc, char* argv[])
             return -1;
         }
 
-        pmon::util::log::globalPolicy.SetLogLevel(pmon::util::log::Level::Verbose);
-        pmlog_err.note(L"henlo");
+        pmon::util::log::GlobalPolicy::SetLogLevel(pmon::util::log::Level::Verbose);
+        pmlog_error.note(L"henlo");
 
         // determine requested activity
         if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample ^ opt.checkMetricSample ^ opt.wrapperStaticQuerySample ^ opt.metricListSample) {
@@ -100,5 +110,4 @@ int main(int argc, char* argv[])
         std::cout << "Unknown Error" << std::endl;
         return -1;
     }
-
 }

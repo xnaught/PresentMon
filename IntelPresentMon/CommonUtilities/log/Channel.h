@@ -19,6 +19,7 @@ namespace pmon::util::log
 			~ChannelInternal_();
 			void Flush();
 			void SignalExit();
+			void DisableTraceResolution();
 			void AttachDriver(std::shared_ptr<IDriver>);
 			void AttachPolicy(std::shared_ptr<IPolicy>);
 			void EnqueueEntry(Entry&&);
@@ -29,7 +30,8 @@ namespace pmon::util::log
 		protected:
 			ChannelInternal_(std::vector<std::shared_ptr<IDriver>> driverPtrs);
 		private:
-			bool exiting = false;
+			bool resolvingTraces_ = true;
+			bool exiting_ = false;
 			std::vector<std::shared_ptr<IDriver>> driverPtrs_;
 			std::vector<std::shared_ptr<IPolicy>> policyPtrs_;
 			std::shared_ptr<void> pEntryQueue_;
@@ -37,6 +39,7 @@ namespace pmon::util::log
 		};
 	}
 
+	// Channel: standard free-threaded lockfree-queued implementation of IChannel
 	// external channel implementation, has functions that are only called from outside of the channel
 	// worker thread and which only place entries / packets in the queue
 	class Channel : public IChannel, private ChannelInternal_
@@ -48,5 +51,6 @@ namespace pmon::util::log
 		void Flush() override;
 		void AttachDriver(std::shared_ptr<IDriver>) override;
 		void AttachPolicy(std::shared_ptr<IPolicy>) override;
+		void FlushEntryPointExit();
 	};
 }

@@ -14,45 +14,47 @@ namespace pmon::util::log
 {
 	namespace
 	{
-		// calling stacktrace::description will cause some lazy-initialized objects to be
-		// created in the CRT
-		void PreloadStdStackTrace()
+		Channel* GetDefaultChannelImpl_() noexcept
 		{
-			if (auto dummyTrace = std::stacktrace::current(); !dummyTrace.empty()) {
-				auto dummyDescription = dummyTrace[0].description();
+			try {
+				// @SINGLETON
+				static struct ChannelManager {
+					Channel channel;
+					ChannelManager() {
+						// make the formatter
+						const auto pFormatter = std::make_shared<TextFormatter>();
+						const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log.txt");
+						// construct and configure default logging channel
+						channel.AttachDriver(std::make_shared<MsvcDebugDriver>(pFormatter));
+						channel.AttachDriver(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy));
+					}
+				} channelManager;
+
+				return &channelManager.channel;
+			}
+			catch (...) {
+				pmlog_panic_(L"Exception thrown while getting default log channel");
+				return nullptr;
 			}
 		}
-		std::once_flag preloadTraceOnce_;
-	}
-	void BootDefaultChannelEager() noexcept
-	{
-		std::thread{ [] {GetDefaultChannel(); } }.detach();
 	}
 	IChannel* GetDefaultChannel() noexcept
 	{
-		try {
-			// this call is a workaround to make sure CRT global objects required by
-			// std::stacktrace are destroyed after channel
-			std::call_once(preloadTraceOnce_, PreloadStdStackTrace);
-			// using static-local to sequence destruction of channel before destruction of
-			// CRT lazy initialized objects requried by std::stacktrace
-			static struct ChannelManager {
-				Channel channel;
-				ChannelManager() {
-					// make the formatter
-					const auto pFormatter = std::make_shared<TextFormatter>();
-					const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log.txt");
-					// construct and configure default logging channel
-					channel.AttachDriver(std::make_shared<MsvcDebugDriver>(pFormatter));
-					channel.AttachDriver(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy));
-				}
-			} channelManager;
-
-			return &channelManager.channel;
-		}
-		catch (...) {
-			pmlog_panic_(L"Exception thrown while getting default log channel");
-			return nullptr;
-		}
+		return GetDefaultChannelImpl_();
+	}
+	void BootDefaultChannelEager() noexcept
+	{
+		std::thread{ [] {
+			GlobalPolicy::GetLogLevel();
+			GetDefaultChannel();
+		} }.detach();
+	}
+	DefaultChannelManager::DefaultChannelManager()
+	{
+		BootDefaultChannelEager();
+	}
+	DefaultChannelManager::~DefaultChannelManager()
+	{
+		GetDefaultChannelImpl_()->FlushEntryPointExit();
 	}
 }

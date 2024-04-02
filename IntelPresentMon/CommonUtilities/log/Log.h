@@ -7,6 +7,13 @@ namespace pmon::util::log
 {
 	void BootDefaultChannelEager() noexcept;
 	IChannel* GetDefaultChannel() noexcept;
+	// DefaultChannelManager should be instantiated as early as possible in the entry point of the process/module
+	// It acts as a guard to prevent stack trace resolution in the channel worker thread after exiting main
+	struct DefaultChannelManager
+	{
+		DefaultChannelManager();
+		~DefaultChannelManager();
+	};
 }
 
 #ifndef PMLOG_BUILD_LEVEL
@@ -17,12 +24,14 @@ namespace pmon::util::log
 #endif
 #endif
 
-#define xinternal_pmlog_(lvl) ((PMLOG_BUILD_LEVEL < lvl) || (::pmon::util::log::globalPolicy.GetLogLevel() < lvl)) \
+#define xinternal_pmlog_(lvl) ((PMLOG_BUILD_LEVEL < lvl) || (::pmon::util::log::GlobalPolicy::GetLogLevel() < lvl)) \
 	? (void)0 : (void)::pmon::util::log::EntryBuilder{ lvl, __FILEW__, __FUNCTIONW__, __LINE__ } \
 	.to(::pmon::util::log::GetDefaultChannel())
 #define pmlog_fatal	xinternal_pmlog_(::pmon::util::log::Level::Fatal)
-#define pmlog_err	xinternal_pmlog_(::pmon::util::log::Level::Error)
+#define pmlog_error	xinternal_pmlog_(::pmon::util::log::Level::Error)
 #define pmlog_warn	xinternal_pmlog_(::pmon::util::log::Level::Warn)
 #define pmlog_info	xinternal_pmlog_(::pmon::util::log::Level::Info)
 #define pmlog_dbg	xinternal_pmlog_(::pmon::util::log::Level::Debug)
 #define pmlog_verb(vtag) !vtag ? (void)0 : xinternal_pmlog_(::pmon::util::log::Level::Verbose)
+
+#define pmlog_setup ::pmon::util::log::DefaultChannelManager xpmlog_scope_sentinel_

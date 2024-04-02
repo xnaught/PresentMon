@@ -56,12 +56,22 @@ namespace pmon::util::log
 				semaphore.release();
 			}
 		};
+		struct FlushEntryPointPacket_ : public Packet_
+		{
+			void Process(ChannelInternal_& channel)
+			{
+				channel.DisableTraceResolution();
+				channel.Flush();
+				semaphore.release();
+			}
+		};
 		// aliases for variant / queue typenames
 		using QueueElementType_ = std::variant<Entry,
 			std::shared_ptr<AttachDriverPacket_>,
 			std::shared_ptr<AttachPolicyPacket_>,
 			std::shared_ptr<FlushPacket_>,
-			std::shared_ptr<KillPacket_>>;
+			std::shared_ptr<KillPacket_>,
+			std::shared_ptr<FlushEntryPointPacket_>>;
 		using QueueType_ = moodycamel::BlockingConcurrentQueue<QueueElementType_>;
 		// shortcut to get the underlying queue variant type when given the type-erased pointer
 		// (also do some sanity checking here via assert)
@@ -102,7 +112,13 @@ namespace pmon::util::log
 							}
 							// resolve trace if one is present
 							if (entry.pTrace_) {
-								entry.pTrace_->Resolve();
+								if (resolvingTraces_) {
+									entry.pTrace_->Resolve();
+								}
+								else {
+									pmlog_panic_(L"Cannot resolve trace after exiting from module entry point");
+									entry.pTrace_.reset();
+								}
 							}
 							// submit entry to all drivers (by copy)
 							for (auto& pDriver : driverPtrs_) {
@@ -118,7 +134,7 @@ namespace pmon::util::log
 						}
 					};
 					QueueElementType_ el;
-					while (!exiting) {
+					while (!exiting_) {
 						Queue_(this).wait_dequeue(el);
 						std::visit(visitor, el);
 					}
@@ -137,7 +153,11 @@ namespace pmon::util::log
 		}
 		void ChannelInternal_::SignalExit()
 		{
-			exiting = true;
+			exiting_ = true;
+		}
+		void ChannelInternal_::DisableTraceResolution()
+		{
+			resolvingTraces_ = false;
 		}
 		void ChannelInternal_::AttachDriver(std::shared_ptr<IDriver> pDriver)
 		{
@@ -200,5 +220,9 @@ namespace pmon::util::log
 	void Channel::AttachPolicy(std::shared_ptr<IPolicy> pPolicy)
 	{
 		EnqueuePacketWait<AttachPolicyPacket_>(std::move(pPolicy));
+	}
+	void Channel::FlushEntryPointExit()
+	{
+		EnqueuePacketWait<FlushEntryPointPacket_>();
 	}
 }
