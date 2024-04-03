@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cli\CliFramework.h" />
+    <ClInclude Include="log\EntryCereal.h" />
     <ClInclude Include="log\GlobalPolicy.h" />
     <ClInclude Include="log\IFileStrategy.h" />
     <ClInclude Include="log\Channel.h" />

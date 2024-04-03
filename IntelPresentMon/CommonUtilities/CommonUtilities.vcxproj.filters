@@ -90,6 +90,9 @@
     <ClInclude Include="log\StackTraceCereal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="log\EntryCereal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">

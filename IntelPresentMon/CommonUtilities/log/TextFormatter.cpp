@@ -27,11 +27,13 @@ namespace pmon::util::log
 					win::GetErrorDescription(*e.hResult_));
 			}
 			if (e.showSourceLine_.value_or(true)) {
-				oss << std::format(L"\n  >> at {}\n     {}({})\n",
-					e.sourceFunctionName_,
-					e.sourceFile_,
-					e.sourceLine_
-				);
+				std::visit([&](auto& strings) {
+					oss << std::format(L"\n  >> at {}\n     {}({})\n",
+						strings.functionName_,
+						strings.file_,
+						e.sourceLine_
+					);
+				}, e.sourceStrings_);
 			}
 			else {
 				oss << L"\n";

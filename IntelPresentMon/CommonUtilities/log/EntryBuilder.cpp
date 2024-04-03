@@ -5,6 +5,10 @@
 #include "StackTrace.h"
 #include "GlobalPolicy.h"
 
+#include "EntryCereal.h"
+#include <cereal/archives/binary.hpp>
+#include <sstream>
+
 
 namespace pmon::util::log
 {
@@ -12,8 +16,10 @@ namespace pmon::util::log
 		:
 		Entry{
 			.level_ = lvl,
-			.sourceFile_ = sourceFile,
-			.sourceFunctionName_ = sourceFunctionName,
+			.sourceStrings_ = Entry::StaticSourceStrings{
+				.file_ = sourceFile,
+				.functionName_ = sourceFunctionName,
+			},
 			.sourceLine_ = sourceLine,
 			.timestamp_ = std::chrono::system_clock::now(),
 		}
