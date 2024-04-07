@@ -11,7 +11,7 @@ namespace p2c::kern
 {
     WindowSpawnHandler::WindowSpawnHandler(DWORD pid, OverlayContainer* pOverlay) : pid{ pid }, pOverlay{ pOverlay }
     {
-        p2cvlog(procwatch).note(std::format(L"win spawn handler ctor | pid:{:5x}", pid)).commit();
+        p2cvlog(procwatch).note(std::format(L"win spawn handler ctor | pid:{:5}", pid)).commit();
     }
 
     win::EventHookHandler::Filter WindowSpawnHandler::GetFilter() const
