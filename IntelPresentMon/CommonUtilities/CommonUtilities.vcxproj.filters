@@ -93,6 +93,27 @@
     <ClInclude Include="log\EntryCereal.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="log\IEntryMarshallReceiver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="log\EntryMarshallInjector.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="log\IEntryMarshallSender.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="log\MarshallDriver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="log\NamedPipeMarshallSender.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="log\NamedPipeMarshallReceiver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="win\Handle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">
@@ -138,6 +159,21 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="log\StackTrace.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="log\EntryMarshallInjector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="log\MarshallDriver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="log\NamedPipeMarshallSender.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="log\NamedPipeMarshallReceiver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="win\Handle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

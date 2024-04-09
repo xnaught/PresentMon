@@ -26,9 +26,9 @@ namespace pmon::util::log
 			// raw pointer sources should convert to wstring
 			if (auto pStrings = std::get_if<Entry::StaticSourceStrings>(&e.sourceStrings_)) {
 				// Convert to HeapedSourceStrings for serialization
-				Entry::HeapedSourceStrings tempHeapedStrings{
-					std::wstring(pStrings->file_),
-					std::wstring(pStrings->functionName_) };
+				auto file = pStrings->file_ ? std::wstring(pStrings->file_) : std::wstring{};
+				auto functionName = pStrings->functionName_ ? std::wstring(pStrings->functionName_) : std::wstring{};
+				Entry::HeapedSourceStrings tempHeapedStrings{ std::move(file), std::move(functionName) };
 				ar(tempHeapedStrings);
 			}
 			// wstring source needs no extra work

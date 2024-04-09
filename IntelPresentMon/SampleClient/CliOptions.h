@@ -16,6 +16,8 @@ namespace clio
 		Flag wrapperStaticQuerySample{ this, "--wrapper-static-query-sample", "Example of using the wrapper to poll static metric data" };
 		Flag genCsv{ this, "--gen-csv", "Example of creating a csv file from consumed raw frame data" };
 		Flag addGPUMetric{ this, "--add-gpu-metric", "Example of how to search for an available GPU metric and add it to a dynamic query" };
+		Flag doPipeSrv{ this, "--do-pipe-srv", "" };
+		Flag doPipeCli{ this, "--do-pipe-cli", "" };
 		Option<double> metricOffset{ this, "--metric-offset", 1000., "Offset from top for frame data. Used in --dynamic-query-sample" };
 		Option<double> windowSize{ this, "--window-size", 2000., "Window size used for metrics calculation. Used in --dynamic-query-sample" };
 		Option<unsigned int> processId{ this, "--process-id", 0, "Process Id to use for polling or frame data capture" };

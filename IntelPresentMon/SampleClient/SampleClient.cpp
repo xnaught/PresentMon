@@ -31,6 +31,9 @@
 
 #define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Verbose
 #include "../CommonUtilities/log/Log.h"
+#include "../CommonUtilities/log/NamedPipeMarshallReceiver.h"
+#include "../CommonUtilities/log/NamedPipeMarshallSender.h"
+#include "../CommonUtilities/log/StackTrace.h"
 
 struct Test
 {
@@ -53,6 +56,40 @@ int main(int argc, char* argv[])
             return *e;
         }
         auto& opt = clio::Options::Get();
+
+        using namespace pmon::util;
+        using namespace std::chrono_literals;
+
+        if (opt.doPipeCli) {
+            log::NamedPipeMarshallSender senderClient{ L"pml_testpipe" };
+            while (true) {
+                std::cout << "SAY> ";
+                log::Entry e{};
+                std::getline(std::wcin, e.note_);
+                senderClient.Push(e);
+                if (e.note_ == L"@#$") {
+                    break;
+                }
+            }
+            return 0;
+        }
+        if (opt.doPipeSrv) {
+            log::NamedPipeMarshallReceiver receiverServer{ L"pml_testpipe" };
+            while (true) {
+                auto e = receiverServer.Pop();
+                if (e) {
+                    std::wcout << e->note_ << std::endl;
+                }
+                else {
+                    std::cout << "got empty boid" << std::endl;
+                    break;
+                }
+                if (e->note_ == L"@#$") {
+                    break;
+                }
+            }
+            return 0;
+        }
 
         // validate options, better to do this with CLI11 validation but framework needs upgrade...
         if (bool(opt.controlPipe) != bool(opt.introNsm)) {
