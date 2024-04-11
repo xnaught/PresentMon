@@ -261,9 +261,6 @@ struct PMTraceConsumer
     std::mutex mPresentEventMutex;
     std::vector<std::shared_ptr<PresentEvent>> mCompletePresentEvents;
 
-    std::mutex mLostPresentEventMutex;
-    std::vector<std::shared_ptr<PresentEvent>> mLostPresentEvents;
-
     std::mutex mProcessEventMutex;
     std::vector<ProcessEvent> mProcessEvents;
 
@@ -271,12 +268,6 @@ struct PMTraceConsumer
     {
         std::lock_guard<std::mutex> lock(mPresentEventMutex);
         outPresentEvents.swap(mCompletePresentEvents);
-    }
-
-    void DequeueLostPresentEvents(std::vector<std::shared_ptr<PresentEvent>>& outPresentEvents)
-    {
-        std::lock_guard<std::mutex> lock(mLostPresentEventMutex);
-        outPresentEvents.swap(mLostPresentEvents);
     }
 
     void DequeueProcessEvents(std::vector<ProcessEvent>& outProcessEvents)
@@ -370,8 +361,7 @@ struct PMTraceConsumer
     //
     // When all expected events are observed, or the
     // DeferredCompletionWaitCount expires, Presents are moved from
-    // mDeferedCompletions into either mCompletePresentEvents or
-    // mLostPresentEvents for the user to dequeue.
+    // mDeferedCompletions into mCompletePresentEvents.
 
     struct DeferredCompletions {
         OrderedPresents mOrderedPresents;

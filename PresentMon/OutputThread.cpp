@@ -486,6 +486,11 @@ static void ProcessEvents(
     uint64_t presentTime = 0;
     for (auto const& presentEvent : presentEvents) {
 
+        // Ignore failed and lost presents.
+        if (presentEvent->IsLost) {
+            continue;
+        }
+
         // Look up the process this present belongs to.  If the process info doesn't exist yet,
         // handle process events first and then check again.  
         ProcessInfo* processInfo = nullptr;
@@ -589,10 +594,6 @@ void Output(PMTraceSession const* pmSession)
         // Copy process events, present events, and lost present events from ConsumerThread.
         UpdateProcessEvents(pmSession->mPMConsumer, &processEvents);
         pmSession->mPMConsumer->DequeuePresentEvents(presentEvents);
-        {
-            std::vector<std::shared_ptr<PresentEvent>> lostPresentEvents;
-            pmSession->mPMConsumer->DequeueLostPresentEvents(lostPresentEvents);
-        }
 
         // Process all the collected events, and update the various tracking
         // and statistics data structures.

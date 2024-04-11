@@ -1744,7 +1744,7 @@ void PMTraceConsumer::CompletePresentHelper(std::shared_ptr<PresentEvent> const&
     //
     // PresentEvents that become lost are not removed from DependentPresents
     // tracking, so we need to protect against lost events (but they have
-    // already been added to mLostPresentEvents etc.).
+    // already been added to mCompletePresentEvents etc.).
     if (!p->DependentPresents.empty()) {
         std::unordered_set<uint64_t> completedComposedFlipHwnds;
         for (auto ii = p->DependentPresents.rbegin(), ie = p->DependentPresents.rend(); ii != ie; ++ii) {
@@ -1851,7 +1851,6 @@ void PMTraceConsumer::EnqueueDeferredPresent(std::shared_ptr<PresentEvent> const
 void PMTraceConsumer::EnqueueDeferredCompletions(DeferredCompletions* deferredCompletions)
 {
     size_t completedCount = 0;
-    size_t lostCount = 0;
 
     auto iterBegin = deferredCompletions->mOrderedPresents.begin();
     auto iterEnqueueEnd = iterBegin;
@@ -1882,32 +1881,19 @@ void PMTraceConsumer::EnqueueDeferredCompletions(DeferredCompletions* deferredCo
             present->IsLost = true;
         }
 
-        if (present->IsLost) {
-            lostCount += 1;
-        } else {
+        if (!present->IsLost) {
             deferredCompletions->mLastEnqueuedQpcTime = present->PresentStartTime;
-            completedCount += 1;
         }
+
+        completedCount += 1;
     }
 
-    if (lostCount + completedCount > 0) {
-        if (completedCount > 0) {
+    if (completedCount > 0) {
+        {
             std::lock_guard<std::mutex> lock(mPresentEventMutex);
             mCompletePresentEvents.reserve(mCompletePresentEvents.size() + completedCount);
             for (auto iter = iterBegin; iter != iterEnqueueEnd; ++iter) {
-                if (!iter->second->IsLost) {
-                    mCompletePresentEvents.emplace_back(iter->second);
-                }
-            }
-        }
-
-        if (lostCount > 0) {
-            std::lock_guard<std::mutex> lock(mLostPresentEventMutex);
-            mLostPresentEvents.reserve(mLostPresentEvents.size() + lostCount);
-            for (auto iter = iterBegin; iter != iterEnqueueEnd; ++iter) {
-                if (iter->second->IsLost) {
-                    mLostPresentEvents.emplace_back(iter->second);
-                }
+                mCompletePresentEvents.emplace_back(iter->second);
             }
         }
 

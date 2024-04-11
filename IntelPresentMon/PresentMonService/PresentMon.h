@@ -90,8 +90,7 @@ class PresentMonSession {
   void WaitForConsumerThreadToExit();
   void DequeueAnalyzedInfo(
       std::vector<ProcessEvent>* processEvents,
-      std::vector<std::shared_ptr<PresentEvent>>* presentEvents,
-      std::vector<std::shared_ptr<PresentEvent>>* lostPresentEvents);
+      std::vector<std::shared_ptr<PresentEvent>>* presentEvents);
   void Consume(TRACEHANDLE traceHandle);
 
   void StartOutputThread();
@@ -111,7 +110,6 @@ class PresentMonSession {
   void ProcessEvents(
       std::vector<ProcessEvent>* processEvents,
       std::vector<std::shared_ptr<PresentEvent>>* presentEvents,
-      std::vector<std::shared_ptr<PresentEvent>>* lostPresentEvents,
       std::vector<std::pair<uint32_t, uint64_t>>* terminatedProcesses);
   void CheckForTerminatedRealtimeProcesses(
       std::vector<std::pair<uint32_t, uint64_t>>* terminatedProcesses);
