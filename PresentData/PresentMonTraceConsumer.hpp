@@ -117,6 +117,11 @@ enum class InputDeviceType {
     Keyboard = 3,
 };
 
+enum DeferredReason {
+    DeferredReason_None                  = 0,
+    DeferredReason_WaitingForPresentStop = 1 << 0,
+};
+
 struct InputEvent {
     uint64_t Time;
     InputDeviceType Type;
@@ -157,15 +162,11 @@ struct PresentEvent {
     uint64_t DxgkContext;                 // mPresentByDxgkContext
     uint64_t Hwnd;                        // mLastPresentByWindow
     uint32_t QueueSubmitSequence;         // mPresentBySubmitSequence
-    uint32_t mAllPresentsTrackingIndex;   // mAllPresents.
+    uint32_t RingIndex;                   // mTrackedPresents and mCompletedPresents
     // Note: the following index tracking structures as well but are defined elsewhere:
     //       ProcessId                 -> mOrderedPresentsByProcessId
     //       ThreadId, DriverThreadId  -> mPresentByThreadId
     //       PresentInDwmWaitingStruct -> mPresentsWaitingForDWM
-
-    // How many PresentStop events from the thread to wait for before
-    // enqueueing this present.
-    uint32_t DeferredCompletionWaitCount;
 
     // Properties deduced by watching events through present pipeline
     uint32_t DestWidth;
@@ -193,6 +194,8 @@ struct PresentEvent {
 
     // Additional transient tracking state
     std::deque<std::shared_ptr<PresentEvent>> DependentPresents;
+
+    uint32_t DeferredReason;    // The reason(s) this present is being deferred (see DeferredReason enum).
 
     // Track the path the present took through the PresentMon analysis.
     #ifdef TRACK_PRESENT_PATHS
@@ -222,6 +225,12 @@ struct PMTraceConsumer
     bool mTrackGPU = false;             // Whether the analysis should track GPU work
     bool mTrackGPUVideo = false;        // Whether the analysis should track GPU video work separately
     bool mTrackInput = false;           // Whether to track keyboard/mouse click times
+
+    // When PresentEvents are missing data that may still arrive later, they get put into a deferred
+    // state until the data arrives.  This time limit specifies how long a PresentEvent can be
+    // deferred before being considered lost.  The default of 0 means that no PresentEvents will be
+    // deferred, potentially leading to dequeued events that are missing data.
+    uint64_t mDeferralTimeLimit = 0; // QPC duration
 
     // Whether we've completed any presents yet.  This is used to indicate that
     // all the necessary providers have started and it's safe to start tracking
@@ -261,28 +270,17 @@ struct PMTraceConsumer
     // caused by a missed ETW event (IsLost==true).
 
     std::mutex mPresentEventMutex;
-    std::vector<std::shared_ptr<PresentEvent>> mCompletePresentEvents;
-
     std::mutex mProcessEventMutex;
     std::vector<ProcessEvent> mProcessEvents;
 
-    void DequeuePresentEvents(std::vector<std::shared_ptr<PresentEvent>>& outPresentEvents)
-    {
-        std::lock_guard<std::mutex> lock(mPresentEventMutex);
-        outPresentEvents.swap(mCompletePresentEvents);
-    }
-
-    void DequeueProcessEvents(std::vector<ProcessEvent>& outProcessEvents)
-    {
-        std::lock_guard<std::mutex> lock(mProcessEventMutex);
-        outProcessEvents.swap(mProcessEvents);
-    }
+    void DequeuePresentEvents(std::vector<std::shared_ptr<PresentEvent>>& outPresentEvents);
+    void DequeueProcessEvents(std::vector<ProcessEvent>& outProcessEvents);
 
 
     // These data structures store in-progress presents that are being
     // processed by PMTraceConsumer.
     //
-    // mAllPresents is a circular buffer storage for all in-progress presents.
+    // mTrackedPresents is a circular buffer storage for all in-progress presents.
     // Presents that are still in-progress when the buffer wraps are considered
     // lost due to age.
     //
@@ -336,8 +334,12 @@ struct PMTraceConsumer
         std::size_t operator()(Win32KPresentHistoryToken const& v) const noexcept;
     };
 
-    unsigned int mAllPresentsNextIndex = 0;
-    std::vector<std::shared_ptr<PresentEvent>> mAllPresents;
+    std::vector<std::shared_ptr<PresentEvent>> mTrackedPresents;
+    std::vector<std::shared_ptr<PresentEvent>> mCompletedPresents;
+    uint32_t mNextFreeRingIndex = 0;    // The index of mTrackedPresents to use when creating the next present.
+    uint32_t mCompletedIndex = 0;       // The index of mCompletedPresents of the oldest completed present.
+    uint32_t mCompletedCount = 0;       // The total number of presents in mCompletedPresents.
+    uint32_t mReadyCount = 0;           // The number of presents in mCompletedPresents, starting at mCompletedIndex, that are ready to be dequeued.
 
     std::unordered_map<uint32_t, std::shared_ptr<PresentEvent>> mPresentByThreadId;                     // ThreadId -> PresentEvent
     std::unordered_map<uint32_t, OrderedPresents>               mOrderedPresentsByProcessId;            // ProcessId -> ordered PresentStartTime -> PresentEvent
@@ -349,30 +351,6 @@ struct PMTraceConsumer
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByDxgkPresentHistoryTokenData;  // DxgkPresentHistoryTokenData -> PresentEvent
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByDxgkContext;                  // DxgkContex -> PresentEvent
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mLastPresentByWindow;                   // HWND -> PresentEvent
-
-
-    // Once an in-progress present becomes lost, discarded, or displayed, it is
-    // removed from all of the above tracking structures and moved into
-    // mDeferredCompletions.
-    //
-    // In some cases (e.g., a present being displayed before Present() returns)
-    // such presents have not yet seen all of their expected events.  When this
-    // happens, the present will remain in mDeferredCompletions for
-    // DeferredCompletionWaitCount PresentStop events from the same thread,
-    // before being enqueued for the user.
-    //
-    // When all expected events are observed, or the
-    // DeferredCompletionWaitCount expires, Presents are moved from
-    // mDeferedCompletions into mCompletePresentEvents.
-
-    struct DeferredCompletions {
-        OrderedPresents mOrderedPresents;
-        uint64_t mLastEnqueuedQpcTime;
-    };
-
-    std::unordered_map<uint32_t, std::unordered_map<uint64_t,
-                                        DeferredCompletions>> mDeferredCompletions;   // ProcessId -> SwapChainAddress -> DeferredCompletions
-
 
     // mGpuTrace tracks work executed on the GPU.
     GpuTrace mGpuTrace;
@@ -390,8 +368,8 @@ struct PMTraceConsumer
     // applied to a present, the InputDeviceType is set to None, but the time
     // is not changed so that we know whether mLastInputDeviceReadTime has
     // already been retrieved or not.
-    uint64_t mLastInputDeviceReadTime;
-    InputDeviceType mLastInputDeviceType;
+    uint64_t mLastInputDeviceReadTime = 0;
+    InputDeviceType mLastInputDeviceType = InputDeviceType::None;
 
     std::unordered_map<uint32_t, std::pair<uint64_t, InputDeviceType>> mRetrievedInput; // ProcessID -> <InputTime, InputType>
 
@@ -406,15 +384,15 @@ struct PMTraceConsumer
     void HandleDxgkPresentHistoryInfo(EVENT_HEADER const& hdr, uint64_t token);
 
     void CompletePresent(std::shared_ptr<PresentEvent> const& p);
-    void CompletePresentHelper(std::shared_ptr<PresentEvent> const& p);
-    void EnqueueDeferredCompletions(DeferredCompletions* deferredCompletions);
-    void EnqueueDeferredPresent(std::shared_ptr<PresentEvent> const& p);
     void TrackPresent(std::shared_ptr<PresentEvent> present, OrderedPresents* presentsByThisProcess);
     void RemoveLostPresent(std::shared_ptr<PresentEvent> present);
-    void RemovePresentFromTemporaryTrackingCollections(std::shared_ptr<PresentEvent> const& present);
+    void StopTrackingPresent(std::shared_ptr<PresentEvent> const& present);
     void RemovePresentFromSubmitSequenceIdTracking(std::shared_ptr<PresentEvent> const& present);
     void RuntimePresentStart(Runtime runtime, EVENT_HEADER const& hdr, uint64_t swapchainAddr, uint32_t dxgiPresentFlags, int32_t syncInterval);
     void RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hdr, uint32_t result);
+
+    void AddPresentToCompletedList(std::shared_ptr<PresentEvent> const& present);
+    void ClearDeferredReason(std::shared_ptr<PresentEvent> const& present, uint32_t deferredReason);
 
     void HandleProcessEvent(EVENT_RECORD* pEventRecord);
     void HandleDXGIEvent(EVENT_RECORD* pEventRecord);

@@ -98,11 +98,11 @@ void Streamer::CopyFromPresentMonPresentEvent(
     nsm_present_event->DxgkContext = present_event->DxgkContext;
     nsm_present_event->Hwnd = present_event->Hwnd;
     nsm_present_event->QueueSubmitSequence = present_event->QueueSubmitSequence;
-    nsm_present_event->mAllPresentsTrackingIndex =
-        present_event->mAllPresentsTrackingIndex;
+    nsm_present_event->RingIndex =
+        present_event->RingIndex;
 
-    nsm_present_event->DeferredCompletionWaitCount =
-        present_event->DeferredCompletionWaitCount;
+    nsm_present_event->DeferredReason =
+        present_event->DeferredReason;
 
     nsm_present_event->DestWidth = present_event->DestWidth;
     nsm_present_event->DestHeight = present_event->DestHeight;

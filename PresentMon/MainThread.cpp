@@ -321,6 +321,11 @@ int wmain(int argc, wchar_t** argv)
         return 6;
     }
 
+    // Set deferral time limit to 2 seconds
+    if (pmConsumer.mDeferralTimeLimit == 0) {
+        pmConsumer.mDeferralTimeLimit = pmSession.mTimestampFrequency.QuadPart * 2;
+    }
+
     // Start the consumer and output threads
     StartConsumerThread(pmSession.mTraceHandle);
     StartOutputThread(pmSession);
