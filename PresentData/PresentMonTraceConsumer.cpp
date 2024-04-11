@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2023 Intel Corporation
+// Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "PresentMonTraceConsumer.hpp"
@@ -118,6 +118,7 @@ PresentEvent::PresentEvent()
     , GpuFrameCompleted(false)
     , IsCompleted(false)
     , IsLost(false)
+    , PresentFailed(false)
     , PresentInDwmWaitingStruct(false)
     #ifdef TRACK_PRESENT_PATHS
     , AnalysisPath(0ull)
@@ -2049,6 +2050,8 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
             DebugAssert(present->IsLost                      == false);
             DebugAssert(present->DeferredCompletionWaitCount == 0);
             DebugAssert(present->DependentPresents.empty());
+
+            present->PresentFailed = true;
 
             // Remove the present from any tracking structures.
             RemovePresentFromTemporaryTrackingCollections(present);

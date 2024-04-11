@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2023 Intel Corporation
+// Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
 
@@ -183,8 +183,10 @@ struct PresentEvent {
     bool SeenWin32KEvents;
     bool SeenInFrameEvent;      // This present has gotten a Win32k TokenStateChanged event into InFrame state
     bool GpuFrameCompleted;     // This present has already seen an event that caused GpuTrace::CompleteFrame() to be called.
-    bool IsCompleted;           // All expected events have been observed
-    bool IsLost;                // This PresentEvent was found in an unexpected state or is too old
+    bool IsCompleted;           // All expected events have been observed.
+    bool IsLost;                // This PresentEvent was found in an unexpected state and analysis could not continue (potentially
+                                // due to missing a critical ETW event'.
+    bool PresentFailed;         // The Present() call failed.
 
     bool PresentInDwmWaitingStruct; // Whether this PresentEvent is currently stored in
                                     // PMTraceConsumer::mPresentsWaitingForDWM

@@ -487,7 +487,7 @@ static void ProcessEvents(
     for (auto const& presentEvent : presentEvents) {
 
         // Ignore failed and lost presents.
-        if (presentEvent->IsLost) {
+        if (presentEvent->IsLost || presentEvent->PresentFailed) {
             continue;
         }
 

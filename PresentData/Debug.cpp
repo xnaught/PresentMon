@@ -249,6 +249,7 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintBool,          SeenWin32KEvents)
     FLUSH_MEMBER(PrintBool,          IsCompleted)
     FLUSH_MEMBER(PrintBool,          IsLost)
+    FLUSH_MEMBER(PrintBool,          PresentFailed)
     FLUSH_MEMBER(PrintU32,           DeferredCompletionWaitCount)
 #undef FLUSH_MEMBER
 
