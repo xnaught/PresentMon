@@ -52,12 +52,9 @@ void PresentMonProvider_ShutDown(PresentMonProvider* ctxt);
 // 'FlipFrameType' event in this case as the flip will be detected using standard events.
 //
 // For generated frames that are submitted through a proprietary mechanism, emit the 'FlipFrameType'
-// event as close to the flip time as possible.  sourcePresentID should be the ID of the previous
-// app-rendered frame, and be the same ID used by MMIOFlipMultiPlaneOverlay3.
-
-enum PresentMonProvider_PresentIDType {
-    PresentMonProvider_PresentID_MMIOFlipMultiPlaneOverlay3,
-};
+// event as close to the flip time as possible.  'vidPnSourceId', 'layerIndex', and 'presentId'
+// refer to the application's initially-presented frame and should match the values in the
+// corresponding MMIOFlipMultiPlaneOverlay3 event.
 
 enum PresentMonProvider_FrameType {
     PresentMonProvider_FrameType_Unspecified,       // Use when no other values are appropriate (file github request
@@ -71,6 +68,7 @@ ULONG PresentMonProvider_PresentFrameType(PresentMonProvider* ctxt,
                                           PresentMonProvider_FrameType frameType);
 
 ULONG PresentMonProvider_FlipFrameType(PresentMonProvider* ctxt,
-                                       uint64_t sourcePresentID,
-                                       PresentMonProvider_PresentIDType sourcePresentIDType,
+                                       uint32_t vidPnSourceId,
+                                       uint32_t layerIndex,
+                                       uint64_t presentId,
                                        PresentMonProvider_FrameType frameType);

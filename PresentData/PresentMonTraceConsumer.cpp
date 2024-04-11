@@ -2323,11 +2323,19 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
 
     case Intel_PresentMon::FlipFrameType_Info::Id: {
         EventDataDesc desc[] = {
-            { L"PresentID" },
+            /* TODO:
+            { L"VidPnSourceId" },
+            { L"LayerIndex" },
+            */
+            { L"PresentId" },
             { L"FrameType" },
         };
         mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto PresentID = desc[0].GetData<uint64_t>();
+        /* TODO:
+        auto VidPnSourceId = desc[0].GetData<uint32_t>();
+        auto LayerIndex    = desc[1].GetData<uint32_t>();
+        */
+        auto PresentId = desc[0].GetData<uint64_t>();
         auto FrameType = desc[1].GetData<uint8_t>();
 
         FlipFrameTypeEvent flip;
@@ -2342,7 +2350,7 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
         }
 
         // TODO: If we get a FlipFrameType event after the present has been flushed it will
-        // stay in mPendingFlipFrameType forever.  We need more than PresentID to know when
+        // stay in mPendingFlipFrameType forever.  We need more than PresentId to know when
         // to replace it.
         if (!mPendingFlipFrameType.empty()) {
             wprintf(L"                             PENDING:");
@@ -2352,9 +2360,9 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
             wprintf(L"\n");
         }
 
-        auto ii = mPresentByPresentId.find(PresentID);
+        auto ii = mPresentByPresentId.find(PresentId);
         if (ii == mPresentByPresentId.end()) {
-            mPendingFlipFrameType[PresentID] = flip;
+            mPendingFlipFrameType[PresentId] = flip;
         } else {
             HandleFlipFrameType(ii->second, flip);
         }

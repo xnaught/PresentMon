@@ -72,16 +72,14 @@ bool KeywordIsEnabled(
 }
 
 void EnableCallback(
-    LPCGUID SourceId,
+    LPCGUID, // SourceId
     ULONG ControlCode,
     UCHAR Level,
     ULONGLONG MatchAnyKeyword,
     ULONGLONG MatchAllKeyword,
-    PEVENT_FILTER_DESCRIPTOR FilterData,
+    PEVENT_FILTER_DESCRIPTOR, // FilterData
     PVOID CallbackContext)
 {
-    (void) SourceId, FilterData;
-
     auto ctxt = (PresentMonProvider*) CallbackContext;
     if (ctxt != nullptr) {
         switch (ControlCode) {
@@ -137,12 +135,6 @@ ULONG WriteEvent(
     FillDesc(data, &params...);
 
     return (*ctxt->pEventWrite)(ctxt->ProviderHandle, &EventDescriptor[event], _countof(data), data);
-}
-
-bool IsValid(
-    PresentMonProvider_PresentIDType presentIDType)
-{
-    return presentIDType == PresentMonProvider_PresentID_MMIOFlipMultiPlaneOverlay3;
 }
 
 bool IsValid(
@@ -221,16 +213,17 @@ ULONG PresentMonProvider_PresentFrameType(
 
 ULONG PresentMonProvider_FlipFrameType(
     PresentMonProvider* ctxt,
-    uint64_t sourcePresentID,
-    PresentMonProvider_PresentIDType sourcePresentIDType,
+    uint32_t vidPnSourceId,
+    uint32_t layerIndex,
+    uint64_t presentId,
     PresentMonProvider_FrameType frameType)
 {
     PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
-    PRESENTMONPROVIDER_ASSERT(IsValid(sourcePresentIDType));
     PRESENTMONPROVIDER_ASSERT(IsValid(frameType));
 
-    return WriteEvent(ctxt, Event_FlipFrameType, sourcePresentID,
-                                                 (uint8_t) sourcePresentIDType,
+    return WriteEvent(ctxt, Event_FlipFrameType, vidPnSourceId,
+                                                 layerIndex,
+                                                 presentId,
                                                  (uint8_t) frameType);
 }
 
