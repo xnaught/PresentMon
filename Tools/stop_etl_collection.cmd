@@ -1,3 +1,5 @@
+:: Copyright (C) 2017-2024 Intel Corporation
+:: SPDX-License-Identifier: MIT
 @echo off
 setlocal
 set xperf="%ProgramFiles(x86)%\Windows Kits\10\Windows Performance Toolkit\xperf.exe"

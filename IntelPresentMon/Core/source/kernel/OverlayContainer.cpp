@@ -16,7 +16,7 @@ namespace p2c::kern
 
     OverlayContainer::OverlayContainer(
         win::com::WbemConnection& wbemConn_, std::shared_ptr<OverlaySpec> pSpec_,
-        pmon::PresentMon* pm_, std::map<size_t, GraphDataPack> graphPacks_)
+        pmon::PresentMon* pm_)
         :
         wbemConn{ wbemConn_ },
         rootPid{ pSpec_->pid }
@@ -36,7 +36,7 @@ namespace p2c::kern
                 curPid = j->second.pid;
                 vlog.note(std::format(L"overlay container found candidate child process|pid:{} hwn:{:6x}",
                     curPid, (uintptr_t)j->second.hWnd)).commit();
-                pOverlay = std::make_unique<Overlay>(j->second, std::move(pSpec_), pm_, std::move(graphPacks_));
+                pOverlay = std::make_unique<Overlay>(j->second, std::move(pSpec_), pm_, std::make_unique<MetricPackMapper>());
             }
             // if no windowed child exists, use the root
             else
@@ -44,7 +44,7 @@ namespace p2c::kern
                 curPid = rootPid;
                 vlog.note(std::format(L"overlay container using root process|pid:{} hwn:{:6x}",
                     curPid, (uintptr_t)i->second.hWnd)).commit();
-                pOverlay = std::make_unique<Overlay>(i->second, std::move(pSpec_), pm_, std::move(graphPacks_));
+                pOverlay = std::make_unique<Overlay>(i->second, std::move(pSpec_), pm_, std::make_unique<MetricPackMapper>());
             }
             // begin listening for children
             pChildListener = wbemConn.MakeListener<win::com::ProcessSpawnSink>(spawnQueue);

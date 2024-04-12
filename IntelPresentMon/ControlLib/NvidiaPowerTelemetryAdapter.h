@@ -20,9 +20,11 @@ namespace pwr::nv
 			std::optional<nvmlDevice_t> hGpuNvml);
 		bool Sample() noexcept override;
 		std::optional<PresentMonPowerTelemetryInfo> GetClosest(uint64_t qpc) const noexcept override;
-		PM_GPU_VENDOR GetVendor() const noexcept override;
+		PM_DEVICE_VENDOR GetVendor() const noexcept override;
 		std::string GetName() const noexcept override;
         uint64_t GetDedicatedVideoMemory() const noexcept override;
+		uint64_t GetVideoMemoryMaxBandwidth() const noexcept override { return 0; }
+		double GetSustainedPowerLimit() const noexcept override;
 
 	private:
 		// data
@@ -33,5 +35,6 @@ namespace pwr::nv
 		std::string name = "Unknown Adapter Name";
 		mutable std::mutex historyMutex;
 		TelemetryHistory<PresentMonPowerTelemetryInfo> history{ PowerTelemetryAdapter::defaultHistorySize };
+		bool useNvmlTemperature = false;
 	};
 }

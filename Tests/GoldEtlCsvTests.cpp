@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "PresentMonTests.h"
@@ -6,7 +6,6 @@
 namespace {
 
 struct TestArgs {
-    std::string name_;
     std::wstring etl_;
     std::wstring goldCsv_;
     std::wstring testCsv_;
@@ -37,7 +36,7 @@ public:
         // Generate command line, querying gold CSV to try and match expected
         // data.
         PresentMon pm;
-        pm.Add(L"-stop_existing_session");
+        pm.Add(L"--stop_existing_session");
         pm.AddEtlPath(etl_);
         pm.AddCsvPath(testCsv_);
         for (auto param : goldCsv.params_) {
@@ -148,57 +147,12 @@ public:
     }
 };
 
-bool CheckGoldEtlCsvPair(
-    std::wstring const& dir,
-    size_t relIdx,
-    wchar_t const* fileName,
-    TestArgs* args)
-{
-    // Confirm fileName is an ETL
-    auto len = wcslen(fileName);
-    if (len < 4 || _wcsicmp(fileName + len - 4, L".etl") != 0) {
-        return false;
-    }
-
-    auto path = dir + fileName;
-    args->etl_ = path;
-
-    // Check if there is a CSV with the same path/name but different extension
-    path = path.substr(0, path.size() - 4);
-    args->goldCsv_ = path + L".csv";
-
-    auto attr = GetFileAttributes(args->goldCsv_.c_str());
-    if (attr == INVALID_FILE_ATTRIBUTES || (attr & FILE_ATTRIBUTE_DIRECTORY) != 0) {
-        if (warnOnMissingCsv_) {
-            fprintf(stderr, "warning: missing gold CSV: %ls%ls\n", dir.c_str(), fileName);
-        }
-        return false;
-    }
-
-    // Create name and test CSV path
-    std::wstring relName(path.substr(relIdx));
-    args->name_ = Convert(relName);
-    args->testCsv_ = outDir_ + relName + L".csv";
-
-    // Replace any '-' characters in the name, as they will screw up googletest
-    // filters.
-    for (auto& ch : args->name_) {
-        if (ch == '-') {
-            ch = '_';
-        }
-    }
-
-    return true;
-}
-
 }
 
 void AddGoldEtlCsvTests(
     std::wstring const& dir,
     size_t relIdx)
 {
-    TestArgs args;
-
     WIN32_FIND_DATA ff = {};
     auto h = FindFirstFile((dir + L'*').c_str(), &ff);
     if (h == INVALID_HANDLE_VALUE) {
@@ -211,10 +165,49 @@ void AddGoldEtlCsvTests(
             if (wcscmp(ff.cFileName, L"..") == 0) continue;
             AddGoldEtlCsvTests(dir + ff.cFileName + L'\\', relIdx);
         } else {
-            if (CheckGoldEtlCsvPair(dir, relIdx, ff.cFileName, &args)) {
-                ::testing::RegisterTest(
-                    "GoldEtlCsvTests", args.name_.c_str(), nullptr, nullptr, __FILE__, __LINE__,
-                    [=]() -> ::testing::Test* { return new Tests(args); });
+            // Confirm fileName is an ETL
+            auto len = wcslen(ff.cFileName);
+            if (len >= 4 && _wcsicmp(ff.cFileName + len - 4, L".etl") == 0) {
+                std::wstring etl(dir + ff.cFileName);
+                uint32_t csvCount = 0;
+
+                // Add a test for each filename*.csv
+                WIN32_FIND_DATA csvff = {};
+                auto csvh = FindFirstFile((etl.substr(0, etl.size() - 4) + L"*.csv").c_str(), &csvff);
+                if (csvh != INVALID_HANDLE_VALUE) {
+                    do
+                    {
+                        if ((csvff.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+                            std::wstring fileName(csvff.cFileName);
+
+                            TestArgs args;
+                            args.etl_     = etl;
+                            args.goldCsv_ = dir + fileName;
+                            args.testCsv_ = outDir_ + fileName;
+
+                            // Replace any '-' characters in the name, as they will screw up googletest
+                            // filters.
+                            std::string name(Convert(fileName.substr(0, fileName.size() - 4)));
+                            for (auto& ch : name) {
+                                if (ch == '-') {
+                                    ch = '_';
+                                }
+                            }
+
+                            ::testing::RegisterTest(
+                                "GoldEtlCsvTests", name.c_str(), nullptr, nullptr, __FILE__, __LINE__,
+                                [=]() -> ::testing::Test* { return new Tests(std::move(args)); });
+
+                            csvCount += 1;
+                        }
+                    } while (FindNextFile(csvh, &csvff) != 0);
+
+                    FindClose(csvh);
+                }
+
+                if (csvCount == 0 && warnOnMissingCsv_) {
+                    fprintf(stderr, "warning: missing gold CSV for: %ls\n", etl.c_str());
+                }
             }
         }
     } while (FindNextFile(h, &ff) != 0);

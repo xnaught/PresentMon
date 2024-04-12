@@ -131,14 +131,14 @@ enum DeferredReason {
     DeferredReason_WaitingForFlipFrameType = 1 << 1,
 };
 
-struct FlipFrameTypeEvent {
-    uint64_t mTimestamp;
-    FrameType mFrameType;
-};
-
 struct InputEvent {
     uint64_t Time;
     InputDeviceType Type;
+};
+
+struct FlipFrameTypeEvent {
+    uint64_t Timestamp;
+    FrameType FrameType;
 };
 
 // A ProcessEvent occurs whenever a Process starts or stops.
@@ -153,7 +153,7 @@ struct PresentEvent {
     uint64_t PresentStartTime;  // QPC value of the first event related to the Present (D3D9, DXGI, or DXGK Present_Start)
     uint32_t ProcessId;         // ID of the process that presented
     uint32_t ThreadId;          // ID of the thread that presented
-    uint64_t PresentStopTime;   // QPC value when the application's present call completed
+    uint64_t TimeInPresent;     // The QPC duration of the Present call (only applicable for D3D9/DXGI)
     uint64_t GPUStartTime;      // QPC value when the frame's first DMA packet started
     uint64_t ReadyTime;         // QPC value when the frame's last DMA packet completed
     uint64_t GPUDuration;       // QPC duration during which a frame's DMA packet was running on
@@ -188,7 +188,7 @@ struct PresentEvent {
     uint32_t DestHeight;
     uint32_t DriverThreadId;    // If the present is deferred by the driver, this will hold the
                                 // threaad id that the driver finally presented on.
-    Runtime Runtime;
+    Runtime Runtime;            // Whether PresentStart originated from D3D9, DXGI, or DXGK.
     PresentMode PresentMode;
     PresentResult FinalState;
     InputDeviceType InputType;
@@ -198,7 +198,6 @@ struct PresentEvent {
     bool WaitForMPOFlipEvent;
     bool SeenDxgkPresent;
     bool SeenWin32KEvents;
-    bool DwmNotified;
     bool SeenInFrameEvent;      // This present has gotten a Win32k TokenStateChanged event into InFrame state
     bool GpuFrameCompleted;     // This present has already seen an event that caused GpuTrace::CompleteFrame() to be called.
     bool IsCompleted;           // All expected events have been observed.
@@ -237,14 +236,15 @@ struct PMTraceConsumer
     // The following are parameters to the analysis, which can be configured prior to starting the
     // trace session.
 
-    bool mFilteredEvents = false;   // Whether the trace session was configured to filter non-PresentMon events
+    bool mFilteredEvents = false;       // Whether the trace session was configured to filter non-PresentMon events
+    bool mFilteredProcessIds = false;   // Whether to filter presents to specific processes
 
     // Whether the analysis should track...
-    bool mTrackDisplay = true;      // ... presents to the display.
-    bool mTrackGPU = false;         // ... GPU work.
-    bool mTrackGPUVideo = false;    // ... GPU video work (separately from non-video GPU work).
-    bool mTrackInput = false;       // ... keyboard/mouse latency.
-    bool mTrackFrameType = false;   // ... the frame type communicated through the Intel-PresentMon provider.
+    bool mTrackDisplay = true;    // ... presents to the display.
+    bool mTrackGPU = false;       // ... GPU work.
+    bool mTrackGPUVideo = false;  // ... GPU video work (separately from non-video GPU work).
+    bool mTrackInput = false;     // ... keyboard/mouse latency.
+    bool mTrackFrameType = false; // ... the frame type communicated through the Intel-PresentMon provider.
 
     // When PresentEvents are missing data that may still arrive later, they get put into a deferred
     // state until the data arrives.  This time limit specifies how long a PresentEvent can be
@@ -278,17 +278,19 @@ struct PMTraceConsumer
     // The rest of this structure are internal data and functions for analysing the collected ETW
     // data.
 
-    // Storage for process and present events.
+    // Storage for process and present events:
     std::vector<ProcessEvent> mProcessEvents;
     std::vector<std::shared_ptr<PresentEvent>> mTrackedPresents;
     std::vector<std::shared_ptr<PresentEvent>> mCompletedPresents;
-    std::mutex mProcessEventsMutex;     // Mutexs to protect consumer/dequeue access from different
-    std::mutex mDequeuePresentsMutex;   // threads.
-    uint32_t mNextFreeIndex = 0;        // The index of mTrackedPresents to use when creating the next present.
+    uint32_t mNextFreeRingIndex = 0;    // The index of mTrackedPresents to use when creating the next present.
     uint32_t mCompletedIndex = 0;       // The index of mCompletedPresents of the oldest completed present.
     uint32_t mCompletedCount = 0;       // The total number of presents in mCompletedPresents.
-    uint32_t mReadyCount = 0;           // The number of presents in mCompletedPresents, starting at
-                                        // mCompletedIndex, that are ready to be dequeued.
+    uint32_t mReadyCount = 0;           // The number of presents in mCompletedPresents, starting at mCompletedIndex, that are ready to be dequeued.
+
+    // Mutexs to protect consumer/dequeue access from different threads:
+    std::mutex mProcessEventMutex;
+    std::mutex mPresentEventMutex;
+
 
     // EventMetadata stores the structure of ETW events to optimize subsequent property retrieval.
     EventMetadata mMetadata;
@@ -296,7 +298,6 @@ struct PMTraceConsumer
     // Limit tracking to specified processes
     std::set<uint32_t> mTrackedProcessFilter;
     std::shared_mutex mTrackedProcessFilterMutex;
-    bool mFilteredProcessIds = false;
 
     // Whether we've completed any presents yet.  This is used to indicate that all the necessary
     // providers have started and it's safe to start tracking presents.
@@ -388,10 +389,10 @@ struct PMTraceConsumer
     // to the PresentEvent in Present_Start.
     //
     // Typically FlipFrameType events are stored into the present looked up by PresentId.  If the
-    // PresentId has not been observed yet, it is stored into mPendingFlipFrameType and then
+    // PresentId has not been observed yet, it is stored into mPendingFlipFrameTypeEvents and then
     // attached to the present when the PresentId is observed.
-    std::unordered_map<uint32_t, uint8_t>            mFrameTypeByThreadId;  // ThreadId -> Intel_PresentMon::FrameType
-    std::unordered_map<uint64_t, FlipFrameTypeEvent> mPendingFlipFrameType; // PresentId -> FlipFrameTypeEvent
+    std::unordered_map<uint32_t, uint8_t>            mFrameTypeByThreadId;        // ThreadId -> Intel_PresentMon::FrameType
+    std::unordered_map<uint64_t, FlipFrameTypeEvent> mPendingFlipFrameTypeEvents; // PresentId -> FlipFrameTypeEvent
 
     // State for tracking keyboard/mouse click times
     //
@@ -452,9 +453,12 @@ struct PMTraceConsumer
     void RuntimePresentStart(Runtime runtime, EVENT_HEADER const& hdr, uint64_t swapchainAddr, uint32_t dxgiPresentFlags, int32_t syncInterval);
     void RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hdr, uint32_t result);
     void CompletePresent(std::shared_ptr<PresentEvent> const& p);
-    void HandleFlipFrameType(std::shared_ptr<PresentEvent> const& p, FlipFrameTypeEvent const& flipFrameType);
     void RemoveLostPresent(std::shared_ptr<PresentEvent> present);
 
     void AddPresentToCompletedList(std::shared_ptr<PresentEvent> const& present);
     void ClearDeferredReason(std::shared_ptr<PresentEvent> const& present, uint32_t deferredReason);
+
+    void DeferFlipFrameType(uint64_t presentId, uint64_t timestamp, FrameType frameType);
+    void ApplyFlipFrameType(std::shared_ptr<PresentEvent> const& present, uint64_t timestamp, FrameType frameType);
+    void ApplyPresentFrameType(std::shared_ptr<PresentEvent> const& present);
 };

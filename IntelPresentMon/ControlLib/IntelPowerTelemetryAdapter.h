@@ -17,9 +17,11 @@ namespace pwr::intel
 		IntelPowerTelemetryAdapter(ctl_device_adapter_handle_t handle);
 		bool Sample() noexcept override;
 		std::optional<PresentMonPowerTelemetryInfo> GetClosest(uint64_t qpc) const noexcept override;
-		PM_GPU_VENDOR GetVendor() const noexcept override;
+		PM_DEVICE_VENDOR GetVendor() const noexcept override;
 		std::string GetName() const noexcept override;
         uint64_t GetDedicatedVideoMemory() const noexcept override;
+		uint64_t GetVideoMemoryMaxBandwidth() const noexcept override;
+		double GetSustainedPowerLimit() const noexcept override;
 
 		// types
 		class NonGraphicsDeviceException : public std::exception {};
@@ -83,5 +85,9 @@ namespace pwr::intel
 		std::optional<ctl_power_telemetry_t> previousSample;
 		std::optional<ctl_mem_bandwidth_t> previousMemBwSample;
 		double time_delta_ = 0.f;
+		// TODO: File issue with control lib to determine why readbandwidth
+		// occasionally returns what appears to be an invalid counter value
+		double gpu_mem_read_bw_cache_value_bps_ = 0.;
+		uint64_t gpu_mem_max_bw_cache_value_bps_ = 0;
 	};
 }

@@ -1,5 +1,14 @@
+:: Copyright (C) 2017-2024 Intel Corporation
+:: SPDX-License-Identifier: MIT
 @echo off
 setlocal
+
+:: Ensure we're running as administrator
+net session >nul 2>&1
+if not %errorlevel% == 0 (
+    echo error: must run as administrator
+    exit /b 1
+)
 
 :: Determine whether we're running on 32- or 64-bit
 set platform=x64
@@ -9,7 +18,6 @@ if %errorlevel% EQU 0 (
     set platform=Win32
     set dllname=Intel-PresentMon32.dll
 )
-
 
 :: Get the dll directory from command line (or assume same dir as this script)
 set dlldir=%~dp0.

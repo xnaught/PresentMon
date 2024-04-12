@@ -7,11 +7,11 @@
 #include <random>
 #include <atomic>
 
-#include "..\ControlLib\PowerTelemetryProvider.h"
-#include "..\ControlLib\CpuTelemetry.h"
-#include "..\Streamer\Streamer.h"
-#include "..\..\PresentData\PresentMonTraceConsumer.hpp"
-#include "..\..\PresentData\TraceSession.hpp"
+#include "../ControlLib/PowerTelemetryProvider.h"
+#include "../ControlLib/CpuTelemetry.h"
+#include "../Streamer/Streamer.h"
+#include "../../PresentData/PresentMonTraceConsumer.hpp"
+#include "../../PresentData/PresentMonTraceSession.hpp"
 #include "PowerTelemetryContainer.h"
 
 
@@ -66,6 +66,14 @@ class PresentMonSession {
       return std::string{"UNKOWN_CPU"};
     }
   }
+  double GetCpuPowerLimit() {
+      if (cpu_) {
+          return cpu_->GetCpuPowerLimit();
+      }
+      else {
+          return 0.;
+      }
+  }
 
   PM_STATUS SelectAdapter(uint32_t adapter_id);
   PM_STATUS SetGpuTelemetryPeriod(uint32_t period_ms);
@@ -82,8 +90,7 @@ class PresentMonSession {
   void WaitForConsumerThreadToExit();
   void DequeueAnalyzedInfo(
       std::vector<ProcessEvent>* processEvents,
-      std::vector<std::shared_ptr<PresentEvent>>* presentEvents,
-      std::vector<std::shared_ptr<PresentEvent>>* lostPresentEvents);
+      std::vector<std::shared_ptr<PresentEvent>>* presentEvents);
   void Consume(TRACEHANDLE traceHandle);
 
   void StartOutputThread();
@@ -103,7 +110,6 @@ class PresentMonSession {
   void ProcessEvents(
       std::vector<ProcessEvent>* processEvents,
       std::vector<std::shared_ptr<PresentEvent>>* presentEvents,
-      std::vector<std::shared_ptr<PresentEvent>>* lostPresentEvents,
       std::vector<std::pair<uint32_t, uint64_t>>* terminatedProcesses);
   void CheckForTerminatedRealtimeProcesses(
       std::vector<std::pair<uint32_t, uint64_t>>* terminatedProcesses);
@@ -111,7 +117,7 @@ class PresentMonSession {
   std::wstring pm_session_name_;
 
   std::unique_ptr<PMTraceConsumer> pm_consumer_;
-  TraceSession trace_session_;
+  PMTraceSession trace_session_;
 
   std::thread consumer_thread_;
   std::thread output_thread_;
@@ -142,7 +148,9 @@ class PresentMonSession {
 
 class PresentMon {
  public:
-  PresentMon() {}
+  PresentMon() {
+      firstConnectionEvent_.reset(CreateEventA(NULL, TRUE, FALSE, NULL));
+  }
   ~PresentMon();
 
   PM_STATUS StartTraceSession();
@@ -167,6 +175,7 @@ class PresentMon {
 
   std::vector<std::shared_ptr<pwr::PowerTelemetryAdapter>> EnumerateAdapters();
   std::string GetCpuName() { return real_time_session_.GetCpuName(); }
+  double GetCpuPowerLimit() { return real_time_session_.GetCpuPowerLimit(); }
 
   PM_STATUS SelectAdapter(uint32_t adapter_id);
   
@@ -201,7 +210,11 @@ class PresentMon {
     return real_time_session_.SetPowerTelemetryContainer(ptc);
   }
 
+  HANDLE GetFirstConnectionHandle() { return firstConnectionEvent_.get(); }
+
  private:
+  std::unique_ptr<std::remove_pointer_t<HANDLE>, HandleDeleter>
+    firstConnectionEvent_;
   PresentMonSession real_time_session_;
   PresentMonSession etl_session_;
 };

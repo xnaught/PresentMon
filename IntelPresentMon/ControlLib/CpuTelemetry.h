@@ -10,7 +10,7 @@
 #include <wrl/client.h>
 #include <stdexcept>
 #include "CpuTelemetryInfo.h"
-#include "..\PresentMonUtils\StringUtils.h"
+#include "../PresentMonUtils/StringUtils.h"
 
 namespace pwr::cpu {
 
@@ -30,7 +30,8 @@ class CpuTelemetry {
   }
 
   std::string GetCpuName();
-
+  double GetCpuPowerLimit() { return 0.; }
+  
   // constants
   static constexpr size_t defaultHistorySize = 300;
   // data

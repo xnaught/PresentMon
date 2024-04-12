@@ -1,4 +1,13 @@
+:: Copyright (C) 2017-2024 Intel Corporation
+:: SPDX-License-Identifier: MIT
 @echo off
+
+:: Ensure we're running as administrator
+net session >nul 2>&1
+if not %errorlevel% == 0 (
+    echo error: must run as administrator
+    exit /b 1
+)
 
 :: Check dependencies
 if not exist "%SystemRoot%\System32\wevtutil.exe" (
@@ -10,7 +19,6 @@ if not exist "%~dp0Intel-PresentMon.man" (
     echo error: missing dependency: %~dp0Intel-PresentMon.man
     exit /b 1
 )
-
 
 :: Uninstall manifest
 "%SystemRoot%\System32\wevtutil.exe" um "%~dp0Intel-PresentMon.man"

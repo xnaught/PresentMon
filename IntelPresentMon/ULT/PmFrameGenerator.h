@@ -3,7 +3,6 @@
 #include <numeric>
 #include <random>
 
-#include "../PresentMonApi/PresentMonAPI.h"
 #include "../PresentMonUtils/MemBuffer.h"
 #include "../PresentMonUtils/PresentDataUtils.h"
 #include "../PresentMonUtils/PresentMonNamedPipe.h"

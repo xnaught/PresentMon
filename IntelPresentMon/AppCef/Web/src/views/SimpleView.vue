@@ -106,6 +106,7 @@
         </v-btn-toggle>
         <v-btn
           :to="{name: 'loadout-config'}"
+          :disabled="!isCustomPresetSelected"
           color="primary" class="ml-5"
         >
           Edit
@@ -294,6 +295,9 @@ export default Vue.extend({
     },
     beginCaptureButtonText(): string {
       return this.capturing ? 'END CAPTURE' : 'BEGIN CAPTURE';
+    },
+    isCustomPresetSelected(): boolean {
+      return this.selectedPreset === 1000;
     },
 
     // v-model enablers

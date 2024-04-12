@@ -101,7 +101,7 @@ If you set your `user.name` and `user.email` git config accordingly, this line w
     > build\Debug\etw_list-dev-x64.exe --etl=TRACE.etl --provider=PROVIDER_NAME --event=* --no_event_structs
     ```
 
-2. In PresentData/TraceSession.cpp, modify `EnableProviders()` to add the new
+2. In PresentData/PresentMonTraceSession.cpp, modify `EnableProviders()` to add the new
    event to the provider before it is enabled.  If this is a new provider, you
    will also need to:
 

@@ -44,13 +44,13 @@ export class NotificationsModule extends VuexModule {
     return this.notifications.length;
   }
 
-  @Action  
+  @Action({rawError: true})  
   async notify(note: Notification) {
     this.context.commit('push', note);
     this.context.commit('show');
   }
 
-  @Action  
+  @Action({rawError: true})  
   async dismiss() {
     this.context.commit('hide');
     await delayFor(250);

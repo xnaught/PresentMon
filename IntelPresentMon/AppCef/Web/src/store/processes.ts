@@ -14,7 +14,7 @@ export class ProcessesModule extends VuexModule {
     this.processes = processes;
   }
 
-  @Action({ commit: 'replaceAll' })
+  @Action({rawError: true, commit: 'replaceAll' })
   async refresh() {
     return await Api.enumerateProcesses();
   }

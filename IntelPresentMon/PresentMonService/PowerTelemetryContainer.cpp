@@ -7,16 +7,16 @@
 #define GLOG_NO_ABBREVIATED_SEVERITIES
 #include <glog/logging.h>
 
-bool PowerTelemetryContainer::QueryPowerTelemetrySupport() { 
+bool PowerTelemetryContainer::Repopulate() {
   try {
     telemetry_providers_.clear();
     telemetry_adapters_.clear();
 
     // create providers
-    for (int iVendor = 0; iVendor < int(PM_GPU_VENDOR_UNKNOWN); iVendor++) {
+    for (int iVendor = 0; iVendor < int(PM_DEVICE_VENDOR_UNKNOWN); iVendor++) {
       try {
         if (auto pProvider = pwr::PowerTelemetryProviderFactory::Make(
-                PM_GPU_VENDOR(iVendor))) {
+                PM_DEVICE_VENDOR(iVendor))) {
           telemetry_providers_.push_back(std::move(pProvider));
         }
       } catch (const std::runtime_error& e) {
@@ -35,12 +35,12 @@ bool PowerTelemetryContainer::QueryPowerTelemetrySupport() {
     if (telemetry_adapters_.size() == 0) {
       return false;
     }
+    // Re-sort adapters based on video memory size in an attempt to return back the most
+    // capable adapters
+    constexpr auto ComparisonField = &pwr::PowerTelemetryAdapter::GetDedicatedVideoMemory;
+    std::ranges::sort(telemetry_adapters_, std::greater{}, ComparisonField);
+    return true;
   } catch (...) {
     return false;
   }
-  // Re-sort adapters based on video memory size in an attempt to return back the most
-  // capable adapters
-  constexpr auto ComparisonField = &pwr::PowerTelemetryAdapter::GetDedicatedVideoMemory;
-  std::ranges::sort(telemetry_adapters_, std::greater{}, ComparisonField);
-  return true;
 }

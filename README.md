@@ -12,9 +12,9 @@ This repository contains several components:
 
 - The PresentData/ directory contains the **PresentMon Collection and Analysis library**: a library that performs the lowest-level collection and analysis of [ETW](https://msdn.microsoft.com/en-us/library/windows/desktop/bb968803%28v=vs.85%29.aspx?f=255&MSPPError=-2147217396) events.  See [PresentData/PresentMonTraceConsumer.hpp](PresentData/PresentMonTraceConsumer.hpp) for more information.
 
-- The PresentMon/ directory contains the **PresentMon Console Application**: a standalone console application that can be used to collect CSV data from target applications.  See [README-ConsoleAppliation.md](README-ConsoleApplication.md) for more information.
+- The PresentMon/ directory contains the **PresentMon Console Application**: a standalone console application that can be used to collect CSV data from target applications.  See [README-ConsoleApplication.md](README-ConsoleApplication.md) for more information.
 
-- The IntelPresentMon/ directory contains the **PresentMon Service** and **PresentMon Capture Application**: an easy-to-use GUI that can be used to collect and analyze target applications.  See [README-Service.md](README-Service.md) and [README-CaptureAppliation.md](README-CaptureApplication.md) for more information.
+- The IntelPresentMon/ directory contains the **PresentMon Service** and **PresentMon Capture Application**: an easy-to-use GUI that can be used to collect and analyze target applications.  See [README-Service.md](README-Service.md) and [README-CaptureApplication.md](README-CaptureApplication.md) for more information.
 
 There are also several other programs that build on this functionality and/or help visualize the resulting data.  For example, see:
 
@@ -32,7 +32,7 @@ See [BUILDING.md](BUILDING.md) for information on how to build PresentMon compon
 
 ## License
 
-Copyright (C) 2017-2023 Intel Corporation
+Copyright (C) 2017-2024 Intel Corporation
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -46,7 +46,8 @@ See [GitHub Issues](https://github.com/GameTechDev/PresentMon/issues) for a curr
 
 ### User access denied
 
-PresentMon needs to be run by a user who is a member of the "Performance Log Users" user group, or to be run with administrator privilege. If neither of these are true, you will get an error "failed to start trace session (access denied)".
+PresentMon needs to be run by a user who is a member of the "Performance Log Users" user group. If
+neither of these are true, you will get an error "failed to start trace session (access denied)".
 
 To add a user to the "Performance Log Users" user group:
 
@@ -56,27 +57,27 @@ To add a user to the "Performance Log Users" user group:
 4. In the "Enter the object names to select" text box, type the name of the user account or group account that you want to add, and then click "OK".
 5. Sign out and log back in for the changes to take effect.
 
-If PresentMon is not run with administrator privilege, it will not have complete process information for processes running on different user accounts.  Such processes will be listed in the console and CSV as "\<error>", and they cannot be targeted by name (`-process_name`).
+If PresentMon is not run with administrator privilege, it will not have complete process information
+for processes running on different user accounts or for processes that are short-lived.  Such
+processes will be listed in the console and CSV as "\<unknown>", and they cannot be targeted by name
+(`--process_name`).
 
 ### Analyzing OpenGL and Vulkan applications
 
-Applications that do not use D3D9 or DXGI APIs for presenting frames (e.g., as is typical with OpenGL or Vulkan applications) will report the following:
-
-- *Runtime* = Other
-- *SwapChainAddress* = 0
-- *msInPresentAPI* = 0
-
-In this case, *TimeInSeconds* will represent the first time the present is observed in the kernel, as opposed to the runtime, and therefore will be sometime after the application presented the frame (typically ~0.5ms).  Since *msUntilRenderComplete* and *msUntilDisplayed* are deltas from *TimeInSeconds*, they will be correspondingly smaller then they would have been if measured from application present.  *msBetweenDisplayChange* will still be correct, and *msBetweenPresents* should be correct on average.
+Applications that report *Runtime* of "Other" (e.g., as is typical with OpenGL or Vulkan
+applications) have less instrumentation in the frame presentation process.  As a result,
+*CPUFramePacingStall* will always report 0 and *CPUFrameTime* may be slightly less accurate.  This
+inaccuracy also impacts latency calculations based off of *CPUFrameTime* (e.g., *GPUBeginLatency*,
+*GPUEndLatency*, and *DisplayLatency* but not *InputLatency*).
 
 ### Tracking GPU work with Hardware-Accelerated GPU Scheduling enabled
 
-When using `-track_gpu` on a system that uses Hardware-Accelerated GPU
-Scheduling (HWS), the GPU execution metrics are less accurate than when HWS is
-disabled resulting in *msUntilRenderStart*, *msUntilRenderComplete*,
-*msGPUActive*, and *msGPUVideoActive* measurements that are later/larger than
-they should be.  For example, in a GPU-bound scenario the frame's *msGPUActive*
-may be reported ~0.5ms larger than the true GPU work duration, though the
-specific amount of the inaccuracy will be workload- and GPU-dependent.
+GPU execution metrics are less accurate when running on a system that uses Hardware-Accelerated GPU
+Scheduling (HWS).  When HWS is enabled, *msUntilRenderStart*, *msUntilRenderComplete*,
+*msGPUActive*, and *msGPUVideoActive* measurements may be later/larger than they should be.  For
+example, in a GPU-bound scenario the frame's *msGPUActive* may be reported ~0.5ms larger than the
+true GPU work duration, though the specific amount of the inaccuracy will be workload- and
+GPU-dependent.
 
 An improved solution is WIP.
 

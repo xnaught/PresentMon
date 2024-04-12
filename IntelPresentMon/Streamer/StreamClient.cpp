@@ -15,7 +15,7 @@ StreamClient::StreamClient()
       current_dequeue_frame_num_(0),
       is_etl_stream_client_(false) {}
 
-StreamClient::StreamClient(string mapfile_name, bool is_etl_stream_client)
+StreamClient::StreamClient(std::string mapfile_name, bool is_etl_stream_client)
     : next_dequeue_idx_(0),
       recording_frame_data_(false),
       current_dequeue_frame_num_(0),
@@ -26,7 +26,7 @@ StreamClient::StreamClient(string mapfile_name, bool is_etl_stream_client)
 StreamClient::~StreamClient() {
 }
 
-void StreamClient::Initialize(string mapfile_name) {
+void StreamClient::Initialize(std::string mapfile_name) {
 	shared_mem_view_ = std::make_unique<NamedSharedMem>();
 	shared_mem_view_->OpenSharedMemView(mapfile_name);
 	mapfile_name_ = std::move(mapfile_name);
@@ -113,7 +113,7 @@ PM_STATUS StreamClient::RecordFrame(PM_FRAME_DATA** out_frame_data) {
   if (is_etl_stream_client_) {
     LOG(INFO) << "ETL Client should be using DequeueFrame instead.";
     *out_frame_data = nullptr;
-    return PM_STATUS::PM_STATUS_SERVICE_NOT_SUPPORTED;
+    return PM_STATUS::PM_STATUS_SERVICE_ERROR;
   }
 
   PmNsmFrameData* data = nullptr;
@@ -122,7 +122,7 @@ PM_STATUS StreamClient::RecordFrame(PM_FRAME_DATA** out_frame_data) {
   if (!nsm_hdr->process_active) {
     // Service destroyed the named shared memory.
     *out_frame_data = nullptr;
-    return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+    return PM_STATUS::PM_STATUS_INVALID_PID;
   }
 
   if (recording_frame_data_ == false) {
@@ -157,8 +157,134 @@ PM_STATUS StreamClient::RecordFrame(PM_FRAME_DATA** out_frame_data) {
 
     return PM_STATUS::PM_STATUS_SUCCESS;
   } else {
-    return PM_STATUS::PM_STATUS_ERROR;
+    return PM_STATUS::PM_STATUS_FAILURE;
   }
+}
+
+const PmNsmFrameData* StreamClient::PeekNextDisplayedFrame()
+{
+    if (recording_frame_data_) {
+        auto nsm_view = GetNamedSharedMemView();
+        auto nsm_hdr = nsm_view->GetHeader();
+        if (!nsm_hdr->process_active) {
+            // Service destroyed the named shared memory.
+            return nullptr;
+        }
+
+        const PmNsmFrameData* pNsmData = nullptr;
+        uint64_t peekIndex = next_dequeue_idx_;
+        pNsmData = ReadFrameByIdx(peekIndex);
+        while (pNsmData) {
+            if (pNsmData->present_event.ScreenTime != 0) {
+                return pNsmData;
+            }
+            // advance to next frame with circular buffer wrapping behavior
+            peekIndex = (peekIndex + 1) % nsm_view->GetHeader()->max_entries;
+            pNsmData = ReadFrameByIdx(peekIndex);
+        }
+    }
+    return nullptr;
+}
+
+const PmNsmFrameData* StreamClient::PeekPreviousFrame()
+{
+    if (recording_frame_data_) {
+        auto nsm_view = GetNamedSharedMemView();
+        auto nsm_hdr = nsm_view->GetHeader();
+        if (!nsm_hdr->process_active) {
+            // Service destroyed the named shared memory.
+            return nullptr;
+        }
+
+        uint64_t current_max_entries =
+            (nsm_view->IsFull()) ? nsm_hdr->max_entries - 1 : nsm_hdr->tail_idx;
+
+        // previous idx is 2 before next
+        std::optional<uint64_t> peekIndex{ next_dequeue_idx_ };
+        for (int i = 0; i < 2; i++)
+        {
+            if (peekIndex.has_value())
+            {
+                peekIndex = (peekIndex.value() == 0) ? current_max_entries : peekIndex.value() - 1;
+                if (peekIndex.value() == nsm_hdr->head_idx) {
+                    peekIndex.reset();
+                    break;
+                }
+            }
+        }
+
+        if (peekIndex.has_value())
+        {
+            return ReadFrameByIdx(peekIndex.value());
+        }
+        else
+        {
+            return nullptr;
+        }
+        
+    }
+    return nullptr;
+}
+
+PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData)
+{
+    if (pNsmData == nullptr) {
+        return PM_STATUS::PM_STATUS_FAILURE;
+    }
+
+    // nullify point so that if we exit early it will be null
+    *pNsmData = nullptr;
+
+    if (is_etl_stream_client_) {
+        LOG(INFO) << "ETL Client should be using DequeueFrame instead.";
+        return PM_STATUS::PM_STATUS_SERVICE_ERROR;
+    }
+
+    auto nsm_view = GetNamedSharedMemView();
+    auto nsm_hdr = nsm_view->GetHeader();
+    if (!nsm_hdr->process_active) {
+        // Service destroyed the named shared memory.
+        return PM_STATUS::PM_STATUS_INVALID_PID;
+    }
+
+    if (recording_frame_data_ == false) {
+        // Get the current number of frames written and set it as the current
+        // dequeue frame number. This will be used to track data overruns if
+        // the client does not read data fast enough.
+        recording_frame_data_ = true;
+        current_dequeue_frame_num_ = nsm_hdr->num_frames_written;
+        next_dequeue_idx_ = GetLatestFrameIndex();
+    }
+
+    // Check to see if the number of pending read frames is greater
+    // than the maximum number of entries. If so we have lost frame
+    // data
+    uint64_t num_pending_frames = CheckPendingReadFrames();
+    if (num_pending_frames > nsm_hdr->max_entries) {
+        recording_frame_data_ = false;
+        return PM_STATUS::PM_STATUS_SUCCESS;
+    }
+    else if (num_pending_frames == 0) {
+        return PM_STATUS::PM_STATUS_SUCCESS;
+    }
+
+    if (nsm_hdr->tail_idx < next_dequeue_idx_) {
+        if (next_dequeue_idx_ - nsm_hdr->tail_idx < 500)
+        {
+            recording_frame_data_ = false;
+            return PM_STATUS::PM_STATUS_SUCCESS;
+        }
+    }
+
+    *pNsmData = ReadFrameByIdx(next_dequeue_idx_);
+    if (*pNsmData) {
+        next_dequeue_idx_ = (next_dequeue_idx_ + 1) % nsm_hdr->max_entries;
+        current_dequeue_frame_num_++;
+        return PM_STATUS::PM_STATUS_SUCCESS;
+    }
+    else {
+        return PM_STATUS::PM_STATUS_FAILURE;
+    }
 }
 
 void StreamClient::CopyFrameData(uint64_t start_qpc,
@@ -203,15 +329,9 @@ void StreamClient::CopyFrameData(uint64_t start_qpc,
   dst_frame->time_in_seconds = QpcDeltaToSeconds(
       src_frame->present_event.PresentStartTime - start_qpc, GetQpcFrequency());
 
-  if (src_frame->present_event.PresentStopTime <
-      src_frame->present_event.PresentStartTime) {
-    dst_frame->ms_in_present_api = 0.;
-  } else {
-    dst_frame->ms_in_present_api =
-        QpcDeltaToMs(src_frame->present_event.PresentStopTime -
-                         src_frame->present_event.PresentStartTime,
+  dst_frame->ms_in_present_api =
+        QpcDeltaToMs(src_frame->present_event.TimeInPresent,
                      GetQpcFrequency());
-  }
 
   dst_frame->allows_tearing = src_frame->present_event.SupportsTearing;
   dst_frame->present_mode =
@@ -485,7 +605,7 @@ PM_STATUS StreamClient::DequeueFrame(PM_FRAME_DATA** out_frame_data) {
   if (!nsm_hdr->process_active) {
     // Service destroyed the named shared memory.
     *out_frame_data = nullptr;
-    return PM_STATUS::PM_STATUS_PROCESS_NOT_EXIST;
+    return PM_STATUS::PM_STATUS_INVALID_PID;
   }
 
   if ((nsm_view->GetBuffer() == nullptr) || (nsm_view->IsEmpty())) {

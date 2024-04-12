@@ -62,17 +62,9 @@
       <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
       <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>
-    <ProjectReference Include="..\PresentMonAPI\PresentMonAPI.vcxproj">
-      <Name>PresentMonAPI</Name>
-      <Project>{811adcf0-da1d-4a94-97c7-7aa6c33b5368}</Project>
-      <Private>True</Private>
-      <DoNotHarvest>True</DoNotHarvest>
-      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
-      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
-    </ProjectReference>
-    <ProjectReference Include="..\PresentMonCli\PresentMonCli.vcxproj">
-      <Name>PresentMonCli</Name>
-      <Project>{4197c787-370f-4886-a357-f8a5e1357a9c}</Project>
+    <ProjectReference Include="..\PresentMonAPI2\PresentMonAPI2.vcxproj">
+      <Name>PresentMonAPI2</Name>
+      <Project>{5ddba061-53a0-4835-8aaf-943f403f924f}</Project>
       <Private>True</Private>
       <DoNotHarvest>True</DoNotHarvest>
       <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>

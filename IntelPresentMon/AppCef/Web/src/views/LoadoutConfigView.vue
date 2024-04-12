@@ -11,9 +11,9 @@
 
     <v-row class="mt-5 loadout-table" id="sortable-row-container">
       <loadout-row
-        v-for="(w, i) in widgets" :key="w.key" 
+        v-for="(w, i) in widgets" :key="w.key" :stats="stats"
         :widgetIdx="i" :widgets="widgets" :metrics="metrics" 
-        :metricOptions="metricOptions" :locked="false" 
+        :metricOptions="metricOptions" :adapterId="activeAdapterId" :locked="false" 
         @delete="removeWidget" 
       ></loadout-row>
       <div class="add-btn-row">
@@ -34,12 +34,14 @@ import Sortable from 'sortablejs'
 import { Preferences } from '@/store/preferences'
 import { Preferences as PrefType } from '@/core/preferences'
 import { Loadout } from '@/store/loadout'
-import { Metrics } from '@/store/metrics'
-import { Metric, MetricOption } from '@/core/metric'
+import { Introspection } from '@/store/introspection'
+import { Metric } from '@/core/metric'
+import { Stat } from '@/core/stat'
 import { Widget } from '@/core/widget'
 import { Api } from '@/core/api'
 import { Notifications } from '@/store/notifications'
 import LoadoutRow from '@/components/LoadoutRow.vue'
+import { MetricOption } from '@/core/metric-option'
 
 export default Vue.extend({
   name: 'LoadoutConfig',
@@ -48,7 +50,7 @@ export default Vue.extend({
   },
 
   data: () => ({
-  }),
+  }),  
 
   mounted() {
     new Sortable(document.querySelector('#sortable-row-container')!, {
@@ -73,16 +75,12 @@ export default Vue.extend({
       }
     },
     async load() {
-      try {
-        const browseResult = await Api.browseReadSpec();
-        // zero length result means user canceled out of dialog
-        if (browseResult.payload.length > 0) {
-          await Loadout.parseAndReplace(browseResult);
-          await Loadout.serializeCustom();
-        }
-      } catch (e) {
-        await Notifications.notify({text:'Failed to load config file.'});
-        console.error(['Failed to load config file.', e]);
+      const {payload} = await Api.browseReadSpec();
+      // zero length result means user canceled out of dialog
+      if (payload.length > 0) {
+        const err = 'Failed to load preset file. ';
+        await Loadout.loadConfigFromPayload({ payload, err });
+        await Loadout.serializeCustom();
       }
     },
     addWidget() {
@@ -101,28 +99,20 @@ export default Vue.extend({
     pref(): PrefType {
       return Preferences.preferences;
     },
+    activeAdapterId(): number|null {
+      return this.pref.adapterId;
+    },
     metrics(): Metric[] {
-      return Metrics.metrics;
+      return Introspection.metrics;
+    },
+    stats(): Stat[] {
+      return Introspection.stats;
     },
     widgets(): Widget[] {
       return Loadout.widgets;
     },
     metricOptions(): MetricOption[] {
-      // maps a cat+name string to the option, used for filtering and merging stats
-      const visited = new Map<string, MetricOption>();
-      // map metrics to options and make unique (filter out stat variations, add them to array)
-      return this.metrics
-        .map((m, i) => ({name: `${m.name}`, metricIds: [i], className: m.className} as MetricOption))
-        .filter(o => {
-          const existing = visited.get(o.name);
-          if (existing) {
-            existing.metricIds.push(o.metricIds[0]);
-            return false;
-          } else {
-            visited.set(o.name, o);
-            return true;
-          }
-        });
+      return Introspection.metricOptions;
     },
     selectedPreset: {
       set(preset: number|null) {
@@ -203,7 +193,7 @@ export default Vue.extend({
   flex: 3;
 }
 .widget-row .widget-cell.col-stat {
-  width: 90px;
+  width: 110px;
 }
 .widget-row .widget-cell.col-type {
   width: 120px;

@@ -41,8 +41,4 @@ enum class FrameType : uint32_t {
     AMD_AFMF = 100,
 };
 
-enum class PresentIDType : uint32_t {
-    MMIOFlipMultiPlaneOverlay3 = 0,
-};
-
 }

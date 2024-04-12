@@ -17,9 +17,26 @@ namespace p2c::kern
         Readout,
     };
 
+    struct QualifiedMetric
+    {
+        int32_t metricId;
+        int32_t statId;
+        uint32_t arrayIndex;
+        uint32_t deviceId;
+        int32_t unitId;
+        bool operator==(const QualifiedMetric& rhs) const
+        {
+            return metricId == rhs.metricId &&
+                statId == rhs.statId &&
+                arrayIndex == rhs.arrayIndex &&
+                deviceId == rhs.deviceId;
+            // TODO: cosider what to do about unitId here
+        }
+    };
+
     struct GraphMetricSpec
     {
-        size_t index;
+        QualifiedMetric metric;
         gfx::lay::AxisAffinity axisAffinity;
     };
 
@@ -32,7 +49,7 @@ namespace p2c::kern
 
     struct ReadoutSpec
     {
-        size_t metricIndex;
+        QualifiedMetric metric;
         std::string tag;
     };
 

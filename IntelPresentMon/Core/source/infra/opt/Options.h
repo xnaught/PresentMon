@@ -16,6 +16,8 @@ namespace p2c::infra::opt
 			Flag noNetFail{ "--p2c-no-net-fail", "Disable error modal for bad url accesses" };
 			Flag allowTearing{ "--p2c-allow-tearing", "Allow tearing presents (optional, might affect VRR)" };
 			Option<std::string> url{ "--p2c-url", "URL to load instead of app files" };
+			Option<std::string> controlPipe{ "--p2c-control-pipe", "Named pipe to connect to the service with" };
+			Option<std::string> shmName{ "--p2c-shm-name", "Shared memory to connect to the service with" };
 			Option<std::string> cefType{ "--type", "Type of the current chromium process", false };
 
 		protected:

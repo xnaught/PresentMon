@@ -7,10 +7,18 @@
 #include <thread>
 #include "NamedPipeCmdProcess.h"
 #include "..\PresentMonUtils\NamedPipeHelper.h"
+#include "..\CommonUtilities\str\String.h"
+#include "GlobalIdentifiers.h"
 #include "sddl.h"
 
-NamedPipeServer::NamedPipeServer(Service* srv, PresentMon* pm)
-    : mService(srv), mPm(pm) {
+#define GLOG_NO_ABBREVIATED_SEVERITIES
+#include <glog/logging.h>
+
+using namespace pmon;
+
+NamedPipeServer::NamedPipeServer(Service* srv, PresentMon* pm, std::optional<std::string> pipeName)
+    : mService(srv), mPm(pm),
+    mPipeName{pipeName.value_or(gid::defaultControlPipeName)} {
   // Initialize all events associated with a pipe
   for (DWORD i = 0; i < mMaxPipes; i++) {
     mEvents[i] = INVALID_HANDLE_VALUE;
@@ -49,8 +57,9 @@ DWORD NamedPipeServer::CreateNamedPipesAndEvents() {
     mPipe[i].mOverlap.hEvent = mEvents[i];
 
     // Create the pipe instance
+    auto pipeNameWide = util::str::ToWide(mPipeName);
     if (const auto result = mPipe[i].CreatePipeInstance(
-            mPresentMonServicePipeName, mMaxPipes, mPipeTimeout);
+        pipeNameWide.c_str(), mMaxPipes, mPipeTimeout);
         result != ERROR_SUCCESS) {
       return result;
     }
@@ -175,6 +184,7 @@ void NamedPipeServer::GetPendingOperationResult(DWORD pipeIndex) {
         // was successful. Now transition to a reading state to read
         // the incoming data.
         mPipe[pipeIndex].mCurrentState = PipeStates::READING;
+        SetEvent(mPm->GetFirstConnectionHandle());
         break;
       case PipeStates::READING:
         // Pending read operation
@@ -370,4 +380,35 @@ DWORD NamedPipeServer::GetNumActiveConnections() {
   }
 
   return numActiveClients;
+}
+
+DWORD NamedPipeServer::Pipe::CreatePipeInstance(LPCTSTR pipe_name, int max_pipes, uint32_t pipe_timeout) {
+    LOG(INFO) << "Creating control pipe with name: [" << util::str::ToNarrow(pipe_name) << "]" << std::endl;
+
+    SECURITY_ATTRIBUTES sa = { sizeof(sa) };
+    if (ConvertStringSecurityDescriptorToSecurityDescriptorW(
+        L"D:PNO_ACCESS_CONTROLS:(ML;;NW;;;LW)", SDDL_REVISION_1,
+        &sa.lpSecurityDescriptor, NULL)) {
+        HANDLE tempPipeInstance =
+            CreateNamedPipe(pipe_name,                   // pipe name
+                PIPE_ACCESS_DUPLEX |         // read/write access
+                FILE_FLAG_OVERLAPPED,    // overlapped mode
+                PIPE_TYPE_MESSAGE |          // message-type pipe
+                PIPE_READMODE_MESSAGE |  // message-read mode
+                PIPE_WAIT,               // blocking mode
+                max_pipes,                   // number of instances
+                MaxBufferSize,               // output buffer size
+                MaxBufferSize,               // input buffer size
+                pipe_timeout,                // client time-out
+                &sa);  // default security attributes
+        if (tempPipeInstance == INVALID_HANDLE_VALUE) {
+            return GetLastError();
+        }
+        mPipeInstance.reset(tempPipeInstance);
+        LocalFree(sa.lpSecurityDescriptor);
+        return ERROR_SUCCESS;
+    }
+    else {
+        return GetLastError();
+    }
 }

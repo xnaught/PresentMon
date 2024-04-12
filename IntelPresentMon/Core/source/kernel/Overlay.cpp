@@ -21,6 +21,8 @@
 #include <array>
 #include <cassert>
 #include "TargetLostException.h"
+#include "MetricPackMapper.h"
+#include <PresentMonAPIWrapper/StaticQuery.h>
 
 
 namespace p2c::kern
@@ -35,28 +37,26 @@ namespace p2c::kern
         auto MakeDocument_(
             gfx::Graphics& gfx,
             const OverlaySpec& spec,
-            std::map<size_t, GraphDataPack>& graphPacks,
-            std::vector<TextDataPack>& textPacks,
+            MetricPackMapper& mapper,
+            pmon::MetricFetcherFactory& fetcherFactory,
             std::shared_ptr<TextElement>& captureIndicator)
         {
             auto pRoot = FlexElement::Make({}, { "doc" });
             std::shared_ptr<gfx::lay::Element> pReadoutContainer;
-            size_t iNextReadout = 0;
 
             for (const auto& w : spec.widgets) {
                 try {
                     if (auto pGraphSpec = std::get_if<GraphSpec>(&w)) {
                         auto packsData = pGraphSpec->metrics |
-                            std::views::transform([&](const GraphMetricSpec& metric) {
-                                auto& pack = graphPacks.at(metric.index);
+                            std::views::transform([&](const GraphMetricSpec& gms) {
+                                auto metInfo = fetcherFactory.GetMetricInfo(gms.metric);
                                 return std::make_shared<GraphLinePack>(GraphLinePack{
-                                    .data = pack.pData,
-                                    .axisAffinity = metric.axisAffinity,
-                                    .label = pack.GetFullName(),
-                                    .units = pack.pMetric->GetUnits(),
+                                    .data = mapper[gms.metric].graphData,
+                                    .axisAffinity = gms.axisAffinity,
+                                    .label = std::move(metInfo.fullName),
+                                    .units = std::move(metInfo.unitLabel),
                                 });
-                            }) |
-                            infra::util::rn::ToVector();
+                            }) | infra::util::rn::ToVector();
                         pRoot->AddChild(GraphElement::Make(
                             pGraphSpec->type, std::move(packsData), { pGraphSpec->tag }
                         ));
@@ -67,11 +67,12 @@ namespace p2c::kern
                             pReadoutContainer = gfx::lay::FlexElement::Make({}, { "readout-container" });
                             pRoot->AddChild(pReadoutContainer);
                         }
-                        auto& pack = textPacks[iNextReadout++];
+
+                        auto metInfo = fetcherFactory.GetMetricInfo(pReadoutSpec->metric);
                         pReadoutContainer->AddChild(gfx::lay::ReadoutElement::Make(
-                            pack.pMetric->GetMetricClassName() == L"Text", pack.GetFullName(),
-                            pack.pMetric->GetUnits(), &pack.text, { pReadoutSpec->tag } )
-                        );
+                            metInfo.isNonNumeric, std::move(metInfo.fullName), std::move(metInfo.unitLabel),
+                            mapper[pReadoutSpec->metric].textData.get(), { pReadoutSpec->tag }
+                        ));
                     }
                     else {
                         throw std::runtime_error{ "Bad widget variant" };
@@ -106,13 +107,14 @@ namespace p2c::kern
         win::Process proc_,
         std::shared_ptr<OverlaySpec> pSpec_,
         pmon::PresentMon* pm_,
-        std::map<size_t, GraphDataPack> graphPacks_,
-        std::optional<Vec2I> pos_)
+        std::unique_ptr<MetricPackMapper> pPackMapper_,
+        std::optional<gfx::Vec2I> pos_)
         :
         proc{ std::move(proc_) },
         pm{ pm_ },
         pSpec{ std::move(pSpec_) },
-        graphPacks{ std::move(graphPacks_) },
+        fetcherFactory{ *pm },
+        pPackMapper{ std::move(pPackMapper_) },
         hProcess{ OpenProcess(SYNCHRONIZE, TRUE, proc.pid) },
         moveHandlerToken{ win::EventHookManager::AddHandler(std::make_shared<WindowMoveHandler>(proc, this)) },
         activateHandlerToken{ win::EventHookManager::AddHandler(std::make_shared<WindowActivateHandler>(proc, this)) },
@@ -130,53 +132,39 @@ namespace p2c::kern
         samplingWaiter{ float(pSpec->samplingPeriodMs) / 1'000.f }
     {
         UpdateDataSets_();
-        pRoot = MakeDocument_(gfx, *pSpec, graphPacks, textPacks, pCaptureIndicatorText);
+        pRoot = MakeDocument_(gfx, *pSpec, *pPackMapper, fetcherFactory, pCaptureIndicatorText);
         UpdateCaptureStatusText_();
         AdjustOverlaySituation_(position);
-        pm->StartStream(proc.pid);
+        pm->StartTracking(proc.pid);
     }
 
     Overlay::~Overlay()
     {
         if (pm) {
-            try { pm->StopStream(); }
+            try { pm->StopTracking(); }
             catch (...) {}
         }
     }
 
     void Overlay::UpdateDataSets_()
     {
-        std::set<size_t> newSet;
-        textPacks.clear();
+        // loop all widgets
         for (auto& w : pSpec->widgets) {
-            try {
-                if (auto pGraphSpec = std::get_if<GraphSpec>(&w)) {
-                    for (const auto metric : pGraphSpec->metrics) {
-                        auto pMetric = dynamic_cast<pmon::NumericMetric*>(pm->GetMetricByIndex(metric.index));
-                        // TODO: silent fail this by inserting "empty" data pack and logging 
-                        assert(pMetric);
-                        auto [i, inserted] = graphPacks.emplace(metric.index,
-                            GraphDataPack{ pMetric, pSpec->graphDataWindowSize }
-                        );
-                        // if pack already existed, resize it
-                        if (!inserted) {
-                            i->second.pData->Resize(pSpec->graphDataWindowSize);
-                        }
-                        newSet.emplace(metric.index);
-                    }
-                }
-                else if (auto pReadoutSpec = std::get_if<ReadoutSpec>(&w)) {
-                    textPacks.emplace_back(std::wstring{}, pm->GetMetricByIndex(pReadoutSpec->metricIndex));
-                }
-                else {
-                    throw std::runtime_error{ "Bad widget variant" };
+            // if widget is a graph
+            if (auto pGraphSpec = std::get_if<GraphSpec>(&w)) {
+                // loop all lines in graph
+                for (auto& gms : pGraphSpec->metrics) {
+                    pPackMapper->AddGraph(gms.metric, pSpec->graphDataWindowSize);
                 }
             }
-            catch (...) {
-                p2clog.warn(L"Failed updating dataset with widget").commit();
+            // if widget is a readout
+            else if (auto pReadoutSpec = std::get_if<ReadoutSpec>(&w)) {
+                pPackMapper->AddReadout(pReadoutSpec->metric);
             }
         }
-        std::erase_if(graphPacks, [&newSet](const auto& p) { return !newSet.contains(p.first); });
+        // remove stale data packs, register new query, fill new fetchers
+        pPackMapper->CommitChanges(proc.pid, pSpec->averagingWindowSize,
+            pSpec->metricsOffset, fetcherFactory);
     }
 
     std::unique_ptr<win::KernelWindow> Overlay::MakeWindow_(std::optional<Vec2I> pos_)
@@ -188,24 +176,29 @@ namespace p2c::kern
             // TODO: connect this more assuredly to the cef control window
             // tried CefBrowserHost::GetWindowHandle, but it causes crashes for some unknown reason
             // should make this at least less brittle with respect to window classname / title
-            Vec2I iPos{ CW_USEDEFAULT, CW_USEDEFAULT };
-            if (auto hWndControl = FindWindowA("BrowserWindowClass", "Intel PresentMon")) {
-                RECT controlRect{};
-                if (GetWindowRect(hWndControl, &controlRect)) {
-                    iPos = { controlRect.left + 25, controlRect.top + 25 };
+            bool bringToFrontOnCreation = false;
+            if (!pos_) {
+                bringToFrontOnCreation = true;
+                pos_ = Vec2I{ CW_USEDEFAULT, CW_USEDEFAULT };
+                if (auto hWndControl = FindWindowA("BrowserWindowClass", "Intel PresentMon")) {
+                    RECT controlRect{};
+                    if (GetWindowRect(hWndControl, &controlRect)) {
+                        pos_ = Vec2I{ controlRect.left + 25, controlRect.top + 25 };
+                    }
+                    else {
+                        p2clog.warn(L"failed to get rect of control window").hr().commit();
+                    }
                 }
                 else {
-                    p2clog.warn(L"failed to get rect of control window").hr().commit();
+                    p2clog.warn(L"failed to find control window").commit();
                 }
-            }
-            else {
-                p2clog.warn(L"failed to find control window").commit();
             }
             // make the metrics window
             pWindow = std::make_unique<win::StandardWindow>(
-                iPos.x, iPos.y,
+                pos_->x, pos_->y,
                 windowDimensions,
-                L"PresentMon Data Display"
+                L"PresentMon Data Display",
+                bringToFrontOnCreation
             );
         }
         else {
@@ -226,7 +219,7 @@ namespace p2c::kern
     {
         pSpec = std::move(pSpec_);
         UpdateDataSets_();
-        pRoot = MakeDocument_(gfx, *pSpec, graphPacks, textPacks, pCaptureIndicatorText);
+        pRoot = MakeDocument_(gfx, *pSpec, *pPackMapper, fetcherFactory, pCaptureIndicatorText);
         UpdateCaptureStatusText_();
         samplingPeriodMs = pSpec->samplingPeriodMs;
         samplingWaiter.SetInterval(pSpec->samplingPeriodMs / 1'000.f);
@@ -269,20 +262,10 @@ namespace p2c::kern
 
     void Overlay::UpdateGraphData_(double timestamp)
     {
-        if (!IsTargetLive())
-        {
+        if (!IsTargetLive()) {
             throw TargetLostException{};
         }
-
-        for (auto& [i, p] : graphPacks)
-        {
-            p.Populate(timestamp);
-        }
-
-        for (auto& p : textPacks)
-        {
-            p.Populate(timestamp);
-        }
+        pPackMapper->Populate(pm->GetTracker(), timestamp);
     }
 
     void Overlay::UpdateTargetRect(const RectI& newRect)
@@ -405,9 +388,8 @@ namespace p2c::kern
             }
         }
 
-        if (pWriter)
-        {
-            pWriter->Process(pmon::Timekeeper::GetLockedNow());
+        if (pWriter) {
+            pWriter->Process();
         }
 
         // handle hide during move logic (show if time elapsed and now otherwise hidden)
@@ -444,9 +426,7 @@ namespace p2c::kern
                     return std::nullopt;
                 }
             }();
-            // TODO: maybe allow for flushing of data with a timestamp so we don't start with a ~0.5s delay
-            pm->FlushRawData();
-            pWriter = { pm->MakeRawFrameDataWriter(std::move(fullPath), std::move(fullStatsPath)) };
+            pWriter = { pm->MakeRawFrameDataWriter(std::move(fullPath), std::move(fullStatsPath), proc.pid, proc.name) };
         }
         else if (!active && pWriter)
         {
@@ -518,6 +498,8 @@ namespace p2c::kern
 
     std::unique_ptr<Overlay> Overlay::SacrificeClone(std::optional<HWND> hWnd_, std::shared_ptr<OverlaySpec> pSpec_)
     {
+        p2clog.info(L"doing SacrificeClone").commit();
+
         std::optional<Vec2I> pos;
         if (pWindow->Standard()) {
             pos = pWindow->GetPosition();
@@ -533,7 +515,7 @@ namespace p2c::kern
             proc,
             std::move(pSpec_),
             pm,
-            std::move(graphPacks),
+            std::move(pPackMapper),
             pos
         );
         // clear pm so that stream isn't closed when this overlay dies
@@ -544,17 +526,19 @@ namespace p2c::kern
     }
     std::unique_ptr<Overlay> Overlay::RetargetPidClone(win::Process proc_)
     {
+        p2clog.info(L"doing RetargetPidClone").commit();
+
         std::optional<Vec2I> pos;
         if (pWindow->Standard()) {
             pos = pWindow->GetPosition();
         }
 
-        pm->StopStream();
+        pm->StopTracking();
         auto pNewOverlay = std::make_unique<Overlay>(
             proc_,
             std::move(pSpec),
             pm,
-            std::map<size_t, GraphDataPack>{},
+            std::make_unique<MetricPackMapper>(),
             pos
         );
         // clear pm so that stream isn't closed when this overlay dies

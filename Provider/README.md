@@ -48,4 +48,3 @@ specifying only the Intel-PresentMon Provider GUID:
 > ...
 > Xperf.exe -stop NAME
 ```
-

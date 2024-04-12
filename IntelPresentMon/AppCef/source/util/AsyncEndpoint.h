@@ -41,6 +41,7 @@ namespace p2c::client::util
 		virtual void ExecuteOnRenderAccessor(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor& accessor) const;
 		virtual Result ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const;
 		Environment GetEnvironment() const;
+		static Result MakeStringErrorResult(std::wstring errorString);
 	private:
 		// data
 		Environment env;

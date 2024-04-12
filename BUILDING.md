@@ -26,7 +26,7 @@ Note: if you only want to build the PresentData/ library, or the PresentMon Cons
 
 2. Build the Chromium Embedded Framework (CEF)
 
-    1. Download the CEF 114.2.11 distribution and extract it to a local folder (e.g., CefDir): https://cef-builds.spotifycdn.com/index.html
+    1. Download the CEF 122.1.13 distribution and extract it to a local folder (e.g., CefDir): https://cef-builds.spotifycdn.com/index.html
 
         - The "Minimal Distribution" is sufficient.
 
@@ -110,3 +110,18 @@ You must run the PresentMon Capture Application from its directory, with the *Pr
 ```
 
 Further, for the Release build, the application must be run from a secure location (e.g. "Program Files" or "System32") so it will need to be copied there first. The Release build also cannot be started from Visual Studio, irregardless of whether the debugger is attached, and even if VS is running with admin privilege.
+
+## Troubleshooting
+
+- If you are seeing vcpkg errors when updating to a new version of PresentMon (e.g., "error: while checking out baseline from commit...") then try updating or removing and re-adding vcpkg:
+
+    ```bat
+    > cd PresentMonRepoDir
+    > build\vcpkg\vcpkg.exe remove
+    > build\vcpkg\vcpkg.exe integrate remove
+    > rmdir /s /q build\vcpkg
+    > git clone https://github.com/Microsoft/vcpkg.git build\vcpkg
+    > build\vcpkg\bootstrap-vcpkg.bat
+    > build\vcpkg\vcpkg.exe integrate install
+    > build\vcpkg\vcpkg.exe install
+    ```

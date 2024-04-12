@@ -1,3 +1,5 @@
+:: Copyright (C) 2017-2024 Intel Corporation
+:: SPDX-License-Identifier: MIT
 @echo off
 setlocal
 set xperf="%ProgramFiles(x86)%\Windows Kits\10\Windows Performance Toolkit\xperf.exe"
@@ -64,7 +66,7 @@ set providers=%providers%+%win32k%
 %xperf% -start NoCaptureState -on %providers% -BufferSize 1024 -MinBuffers 30 -MaxBuffers 120 -f NoCaptureState.etl
 if %errorlevel% neq 0 goto error
 
-echo STARTED
+echo STARTED...
 exit /b 0
 
 :error

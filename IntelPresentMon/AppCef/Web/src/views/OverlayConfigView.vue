@@ -60,7 +60,7 @@
                 <v-slider
                     v-model="width"
                     :max="1920"
-                    :min="120"
+                    :min="200"
                     thumb-label="always"
                     hide-details
                 ></v-slider>
