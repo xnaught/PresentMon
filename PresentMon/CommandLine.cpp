@@ -1,4 +1,4 @@
-// Copyright (C) 2017,2019-2023 Intel Corporation
+// Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include <generated/version.h>
