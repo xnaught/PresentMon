@@ -251,42 +251,12 @@ void FlushModifiedPresent()
 #define FLUSH_MEMBER(_Fn, _Name) \
     if (gModifiedPresent->_Name != gOriginalPresentValues._Name) { \
         if (changedCount++ == 0) { \
-            wprintf(L"%*hsp%llu", 17 + 6 + 6, "", gModifiedPresent->Id); \
+            wprintf(L"%*hsp%u", 17 + 6 + 6, "", gModifiedPresent->FrameId); \
         } \
         wprintf(L" " L#_Name L"="); \
         _Fn(gOriginalPresentValues._Name); \
         wprintf(L"->"); \
         _Fn(gModifiedPresent->_Name); \
-    }
-#define FLUSH_MEMBER_ARRAY(_Fn, _Name) \
-    { \
-        bool changed = false; \
-        if (gModifiedPresent->_Name.size() != gOriginalPresentValues._Name.size()) { \
-            changed = true; \
-        } else { \
-            for (size_t i = 0; i < gModifiedPresent->_Name.size(); ++i) { \
-                if (gModifiedPresent->_Name[i] != gOriginalPresentValues._Name[i]) { \
-                    changed = true; \
-                    break; \
-                } \
-            } \
-        } \
-        if (changed) { \
-            if (changedCount++ == 0) { \
-                wprintf(L"%*hsp%llu", 17 + 6 + 6, "", gModifiedPresent->Id); \
-            } \
-            wprintf(L" " L#_Name L"=["); \
-            for (size_t i = 0; i < gOriginalPresentValues._Name.size(); ++i) { \
-                if (i > 0) wprintf(L","); \
-                _Fn(gOriginalPresentValues._Name[i]); \
-            } \
-            wprintf(L"]->["); \
-            for (size_t i = 0; i < gModifiedPresent->_Name.size(); ++i) { \
-                if (i > 0) wprintf(L","); \
-                _Fn(gModifiedPresent->_Name[i]); \
-            } \
-            wprintf(L"]"); \
-        } \
     }
     FLUSH_MEMBER(PrintTimeDelta,      TimeInPresent)
     FLUSH_MEMBER(PrintTime,           ReadyTime)
@@ -313,10 +283,32 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintBool,           IsLost)
     FLUSH_MEMBER(PrintBool,           PresentFailed)
     FLUSH_MEMBER(PrintDeferredReason, DeferredReason)
-    FLUSH_MEMBER_ARRAY(PrintU64,      PresentIds)
     FLUSH_MEMBER(PrintFrameType,      FrameType)
 #undef FLUSH_MEMBER
-#undef FLUSH_MEMBER_ARRAY
+
+    // PresentIds
+    if (gModifiedPresent->PresentIds != gOriginalPresentValues.PresentIds) {
+        if (changedCount++ == 0) {
+            wprintf(L"%*hsp%u", 17 + 6 + 6, "", gModifiedPresent->FrameId);
+        }
+        wprintf(L" PresentId=[");
+        auto first = true;
+        for (auto const& pr : gOriginalPresentValues.PresentIds) {
+            if (first) first = false; else wprintf(L",");
+            auto vidPnSourceId = uint32_t(pr.first >> 32);
+            auto layerIndex = uint32_t(pr.first & 0xffffffff);
+            wprintf(L" %u:%u:%llu", vidPnSourceId, layerIndex, pr.second);
+        }
+        wprintf(L" ]->[");
+        first = true;
+        for (auto const& pr : gModifiedPresent->PresentIds) {
+            if (first) first = false; else wprintf(L",");
+            auto vidPnSourceId = uint32_t(pr.first >> 32);
+            auto layerIndex = uint32_t(pr.first & 0xffffffff);
+            wprintf(L" %u:%u:%llu", vidPnSourceId, layerIndex, pr.second);
+        }
+        wprintf(L" ]");
+    }
 
     if (changedCount > 0) {
         wprintf(L"\n");
@@ -325,7 +317,7 @@ void FlushModifiedPresent()
     gModifiedPresent = nullptr;
 }
 
-uint64_t LookupPresentId(
+uint32_t LookupFrameId(
     PMTraceConsumer* pmConsumer,
     uint64_t CompositionSurfaceLuid,
     uint64_t PresentCount,
@@ -337,14 +329,14 @@ uint64_t LookupPresentId(
     // the event refers to.
     static std::unordered_map<
         PMTraceConsumer::Win32KPresentHistoryToken,
-        uint64_t,
+        uint32_t,
         PMTraceConsumer::Win32KPresentHistoryTokenHash> tokenToIdMap;
 
     PMTraceConsumer::Win32KPresentHistoryToken key(CompositionSurfaceLuid, PresentCount, BindId);
     auto ii = pmConsumer->mPresentByWin32KPresentHistoryToken.find(key);
     if (ii != pmConsumer->mPresentByWin32KPresentHistoryToken.end()) {
-        tokenToIdMap[key] = ii->second->Id;
-        return ii->second->Id;
+        tokenToIdMap[key] = ii->second->FrameId;
+        return ii->second->FrameId;
     }
 
     auto jj = tokenToIdMap.find(key);
@@ -592,11 +584,11 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
                 PrintEventHeader(hdr);
                 wprintf(L"Win32K_TokenStateChanged");
 
-                auto presentId = LookupPresentId(pmConsumer, CompositionSurfaceLuid, PresentCount, BindId);
-                if (presentId == 0) {
+                auto frameId = LookupFrameId(pmConsumer, CompositionSurfaceLuid, PresentCount, BindId);
+                if (frameId == 0) {
                     wprintf(L" (unknown present)");
                 } else {
-                    wprintf(L" p%llu", presentId);
+                    wprintf(L" p%u", frameId);
                 }
 
                 switch (NewState) {

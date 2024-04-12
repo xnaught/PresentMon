@@ -23,10 +23,11 @@ PresentMonProvider* PresentMonProvider_Initialize();
 void PresentMonProvider_ShutDown(PresentMonProvider* ctxt);
 
 
-// Once you successfully initialize the provider, you can generate the following events.
+// Once you successfully initialize the provider, you can communicate with PresentMon using the
+// following API.
 //
-// Event function arguments are checked with PRESENTMONPROVIDER_ASSERT().  Each function will return
-// one of the following status values:
+// Function arguments are checked with PRESENTMONPROVIDER_ASSERT().  Each function will return one
+// of the following status values:
 //
 //     - ERROR_SUCCESS:             The event was written successfully.
 //
@@ -35,8 +36,8 @@ void PresentMonProvider_ShutDown(PresentMonProvider* ctxt);
 //
 //     - ERROR_MORE_DATA:           The ETW session buffer size is too small for the event.
 //
-//     - ERROR_NOT_ENOUGH_MEMORY:   Can occur when the disk IO cannot keep up with the amount of 
-//                                  events being generated.
+//     - ERROR_NOT_ENOUGH_MEMORY:   The disk IO could not keep up with the amount of events being
+//                                  generated.
 //
 //     - Other return values may be returned in the event of a PresentMonProvider internal error.
 
@@ -44,17 +45,21 @@ void PresentMonProvider_ShutDown(PresentMonProvider* ctxt);
 // PRESENTING GENERATED FRAMES
 //
 // Drivers or SDKs that present generated frames other than the application-rendered frames should
-// emit these events to ensure PresentMon can properly track them.
+// use these functions to inform PresentMon what type of frame is being presented.
 //
-// For generated frames that are submitted through a standard present API, inform PresentMon what
-// type of frame it is by emitting the 'PresentFrameType' event immediately before calling Present()
-// for the frame, on the same thread as the Present() call.  You do not need to emit a
-// 'FlipFrameType' event in this case as the flip will be detected using standard events.
+// Use PresentMonProvider_PresentFrameType() when presenting generated frames that are submitted
+// through a standard present API. PresentMonProvider_PresentFrameType() should be called before
+// calling each Present(), on the same thread as the Present() call.  Use 'frameId' to identify when
+// multiple Present()s refer to the same logical frame.  e.g., you may have one
+// PresentMonProvider_FrameType_Original Present() and multiple
+// non-PresentMonProvider_FrameType_Original Present()s associated with the same frameId.  Do not
+// reuse a frameId value to refer to a new frame for at least several seconds.
 //
-// For generated frames that are submitted through a proprietary mechanism, emit the 'FlipFrameType'
-// event as close to the flip time as possible.  'vidPnSourceId', 'layerIndex', and 'presentId'
-// refer to the application's initially-presented frame and should match the values in the
-// corresponding MMIOFlipMultiPlaneOverlay3 event.
+// Use PresentMonProvider_FlipFrameType() when displaying generated frames that are submitted
+// through a proprietary mechanism. PresentMonProvider_FlipFrameType() should be called as close as
+// possible to the time the frame is displayed. 'vidPnSourceId', 'layerIndex', and 'presentId' refer
+// to the application's initially-presented frame and should match the values in the corresponding
+// SetVidPnSourceAddressWithMultiPlaneOverlay3 call.
 
 enum PresentMonProvider_FrameType {
     PresentMonProvider_FrameType_Unspecified,       // Use when no other values are appropriate (file github request
@@ -65,6 +70,7 @@ enum PresentMonProvider_FrameType {
 };
 
 ULONG PresentMonProvider_PresentFrameType(PresentMonProvider* ctxt,
+                                          uint32_t frameId,
                                           PresentMonProvider_FrameType frameType);
 
 ULONG PresentMonProvider_FlipFrameType(PresentMonProvider* ctxt,

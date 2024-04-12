@@ -136,7 +136,13 @@ struct InputEvent {
     InputDeviceType Type;
 };
 
+struct PresentFrameTypeEvent {
+    uint32_t FrameId;
+    FrameType FrameType;
+};
+
 struct FlipFrameTypeEvent {
+    uint64_t PresentId;
     uint64_t Timestamp;
     FrameType FrameType;
 };
@@ -177,7 +183,7 @@ struct PresentEvent {
     uint64_t Hwnd;                        // mLastPresentByWindow
     uint32_t QueueSubmitSequence;         // mPresentBySubmitSequence
     uint32_t RingIndex;                   // mTrackedPresents and mCompletedPresents
-    std::vector<uint64_t> PresentIds;     // mPresentByPresentId
+    std::unordered_map<uint64_t, uint64_t> PresentIds; // mPresentByVidPnLayerId
     // Note: the following index tracking structures as well but are defined elsewhere:
     //       ProcessId                 -> mOrderedPresentsByProcessId
     //       ThreadId, DriverThreadId  -> mPresentByThreadId
@@ -188,6 +194,9 @@ struct PresentEvent {
     uint32_t DestHeight;
     uint32_t DriverThreadId;    // If the present is deferred by the driver, this will hold the
                                 // threaad id that the driver finally presented on.
+
+    uint32_t FrameId;           // ID for the logical frame that this Present is associated with.
+
     Runtime Runtime;            // Whether PresentStart originated from D3D9, DXGI, or DXGK.
     PresentMode PresentMode;
     PresentResult FinalState;
@@ -210,18 +219,12 @@ struct PresentEvent {
 
     // Additional transient tracking state
     std::deque<std::shared_ptr<PresentEvent>> DependentPresents;
-    std::vector<FlipFrameTypeEvent> PendingFlipFrameTypes;
 
     uint32_t DeferredReason;    // The reason(s) this present is being deferred (see DeferredReason enum).
 
     // Track the path the present took through the PresentMon analysis.
     #ifdef TRACK_PRESENT_PATHS
     uint64_t AnalysisPath;
-    #endif
-
-    // Give every present a unique id for debugging.
-    #if PRESENTMON_ENABLE_DEBUG_TRACE
-    uint64_t Id;
     #endif
 
     PresentEvent();
@@ -379,20 +382,20 @@ struct PMTraceConsumer
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByDxgkPresentHistoryToken;      // DxgkPresentHistoryToken -> PresentEvent
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByDxgkPresentHistoryTokenData;  // DxgkPresentHistoryTokenData -> PresentEvent
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByDxgkContext;                  // DxgkContex -> PresentEvent
-    std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByPresentId;                    // PresentId -> PresentEvent
+    std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByVidPnLayerId;                 // VidPnLayerId -> PresentEvent
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mLastPresentByWindow;                   // HWND -> PresentEvent
 
     // mGpuTrace tracks work executed on the GPU.
     GpuTrace mGpuTrace;
 
-    // PresentFrameType events are stored into mFrameTypeByThreadId and then looked-up and attached
-    // to the PresentEvent in Present_Start.
+    // PresentFrameTypeEvents are stored into mPendingPresentFrameTypeEvents and then looked-up and
+    // attached to the PresentEvent in Present_Start.
     //
     // Typically FlipFrameType events are stored into the present looked up by PresentId.  If the
     // PresentId has not been observed yet, it is stored into mPendingFlipFrameTypeEvents and then
     // attached to the present when the PresentId is observed.
-    std::unordered_map<uint32_t, uint8_t>            mFrameTypeByThreadId;        // ThreadId -> Intel_PresentMon::FrameType
-    std::unordered_map<uint64_t, FlipFrameTypeEvent> mPendingFlipFrameTypeEvents; // PresentId -> FlipFrameTypeEvent
+    std::unordered_map<uint32_t, PresentFrameTypeEvent> mPendingPresentFrameTypeEvents; // ThreadId -> PresentFrameTypeEvent
+    std::unordered_map<uint64_t, FlipFrameTypeEvent>    mPendingFlipFrameTypeEvents;    // VidPnLayerId -> FlipFrameTypeEvent
 
     // State for tracking keyboard/mouse click times
     //
@@ -458,7 +461,7 @@ struct PMTraceConsumer
     void AddPresentToCompletedList(std::shared_ptr<PresentEvent> const& present);
     void ClearDeferredReason(std::shared_ptr<PresentEvent> const& present, uint32_t deferredReason);
 
-    void DeferFlipFrameType(uint64_t presentId, uint64_t timestamp, FrameType frameType);
+    void DeferFlipFrameType(uint64_t vidPnLayerId, uint64_t presentId, uint64_t timestamp, FrameType frameType);
     void ApplyFlipFrameType(std::shared_ptr<PresentEvent> const& present, uint64_t timestamp, FrameType frameType);
     void ApplyPresentFrameType(std::shared_ptr<PresentEvent> const& present);
 };

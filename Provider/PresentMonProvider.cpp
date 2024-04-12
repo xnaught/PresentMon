@@ -203,12 +203,14 @@ void PresentMonProvider_ShutDown(
 
 ULONG PresentMonProvider_PresentFrameType(
     PresentMonProvider* ctxt,
+    uint32_t frameId,
     PresentMonProvider_FrameType frameType)
 {
     PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
     PRESENTMONPROVIDER_ASSERT(IsValid(frameType));
 
-    return WriteEvent(ctxt, Event_PresentFrameType, (uint8_t) frameType);
+    return WriteEvent(ctxt, Event_PresentFrameType, frameId,
+                                                    (uint8_t) frameType);
 }
 
 ULONG PresentMonProvider_FlipFrameType(

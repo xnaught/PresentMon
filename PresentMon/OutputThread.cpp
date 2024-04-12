@@ -235,19 +235,14 @@ static void UpdateAverage(float* avg, double value)
 
 static void UpdateChain(
     SwapChainData* chain,
-    PresentEvent const& p)
+    std::shared_ptr<PresentEvent> const& p)
 {
-    chain->mNextFrameCPUStart   = p.PresentStartTime + p.TimeInPresent;
-    chain->mPresentMode         = p.PresentMode;
-    chain->mPresentRuntime      = p.Runtime;
-    chain->mPresentSyncInterval = p.SyncInterval;
-    chain->mPresentFlags        = p.PresentFlags;
-    chain->mPresentInfoValid    = true;
+    chain->mLastPresent = p;
+    chain->mIncludeFrameData = true;
 
-    // v1
-    chain->mLastPresentStartTime = p.PresentStartTime;
-    if (p.FinalState == PresentResult::Presented) {
-        chain->mLastDisplayedScreenTime = p.ScreenTime;
+    // Only used for v1 metrics:
+    if (p->FinalState == PresentResult::Presented) {
+        chain->mLastDisplayedScreenTime = p->ScreenTime;
     }
 }
 
@@ -255,25 +250,25 @@ static void ReportMetrics1(
     PMTraceSession const& pmSession,
     ProcessInfo* processInfo,
     SwapChainData* chain,
-    PresentEvent const& p,
+    std::shared_ptr<PresentEvent> const& p,
     bool isRecording,
     bool computeAvg)
 {
-    bool displayed = p.FinalState == PresentResult::Presented;
+    bool displayed = p->FinalState == PresentResult::Presented;
 
     FrameMetrics1 metrics;
-    metrics.msBetweenPresents      = !chain->mPresentInfoValid ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastPresentStartTime, p.PresentStartTime);
-    metrics.msInPresentApi         = pmSession.TimestampDeltaToMilliSeconds(p.TimeInPresent);
-    metrics.msUntilRenderComplete  = pmSession.TimestampDeltaToMilliSeconds(p.PresentStartTime, p.ReadyTime);
-    metrics.msUntilDisplayed       = !displayed ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p.PresentStartTime, p.ScreenTime);
-    metrics.msBetweenDisplayChange = !displayed || chain->mLastDisplayedScreenTime == 0 ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastDisplayedScreenTime, p.ScreenTime);
-    metrics.msUntilRenderStart     = pmSession.TimestampDeltaToMilliSeconds(p.PresentStartTime, p.GPUStartTime);
-    metrics.msGPUDuration          = pmSession.TimestampDeltaToMilliSeconds(p.GPUDuration);
-    metrics.msVideoDuration        = pmSession.TimestampDeltaToMilliSeconds(p.GPUVideoDuration);
-    metrics.msSinceInput           = p.InputTime == 0 ? 0 : pmSession.TimestampDeltaToMilliSeconds(p.PresentStartTime - p.InputTime);
+    metrics.msBetweenPresents      = chain->mLastPresent == nullptr ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastPresent->PresentStartTime, p->PresentStartTime);
+    metrics.msInPresentApi         = pmSession.TimestampDeltaToMilliSeconds(p->TimeInPresent);
+    metrics.msUntilRenderComplete  = pmSession.TimestampDeltaToMilliSeconds(p->PresentStartTime, p->ReadyTime);
+    metrics.msUntilDisplayed       = !displayed ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p->PresentStartTime, p->ScreenTime);
+    metrics.msBetweenDisplayChange = !displayed || chain->mLastDisplayedScreenTime == 0 ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastDisplayedScreenTime, p->ScreenTime);
+    metrics.msUntilRenderStart     = pmSession.TimestampDeltaToMilliSeconds(p->PresentStartTime, p->GPUStartTime);
+    metrics.msGPUDuration          = pmSession.TimestampDeltaToMilliSeconds(p->GPUDuration);
+    metrics.msVideoDuration        = pmSession.TimestampDeltaToMilliSeconds(p->GPUVideoDuration);
+    metrics.msSinceInput           = p->InputTime == 0 ? 0 : pmSession.TimestampDeltaToMilliSeconds(p->PresentStartTime - p->InputTime);
 
     if (isRecording) {
-        UpdateCsv(pmSession, processInfo, p, metrics);
+        UpdateCsv(pmSession, processInfo, *p, metrics);
     }
 
     if (computeAvg) {
@@ -294,7 +289,8 @@ static void ReportMetrics(
     PMTraceSession const& pmSession,
     ProcessInfo* processInfo,
     SwapChainData* chain,
-    PresentEvent const& p,
+    std::shared_ptr<PresentEvent> const& p,
+    std::shared_ptr<PresentEvent> const& nextPresent,
     PresentEvent const* nextDisplayedPresent,
     bool isRecording,
     bool computeAvg)
@@ -303,47 +299,74 @@ static void ReportMetrics(
     // PE = PresentEndTime
     // D  = ScreenTime
     //
-    // Previous PresentEvent:  PB--PE----D
+    // chain->mLastPresent:    PB--PE----D
     // p:                          |        PB--PE----D
-    // Next PresentEvent(s):       |        |   |   PB--PE
-    //                             |        |   |     |     PB--PE
+    // nextPresent:                |        |   |   PB--PE
+    // ...                         |        |   |     |     PB--PE
     // nextDisplayedPresent:       |        |   |     |             PB--PE----D
     //                             |        |   |     |                       |
-    // CPUStartTime/CPUBusy:       |------->|   |     |                       |
-    // CPUWait:                             |-->|     |                       |
-    // DisplayLatency:             |----------------->|                       |
-    // DisplayedTime:                                 |---------------------->|
+    // mCPUStart/mCPUBusy:         |------->|   |     |                       |
+    // mCPUWait:                            |-->|     |                       |
+    // mDisplayLatency:            |----------------->|                       |
+    // mDisplayedTime:                                |---------------------->|
 
-    bool displayed = p.FinalState == PresentResult::Presented;
+    bool includeFrameData = chain->mIncludeFrameData && (p->FrameId != nextPresent->FrameId || p->FrameType == FrameType::Application);
 
-    double gpuDuration = pmSession.TimestampDeltaToUnsignedMilliSeconds(p.GPUStartTime, p.ReadyTime);
+    bool displayed = p->FinalState == PresentResult::Presented;
+    double msGPUDuration = 0.0;
 
     FrameMetrics metrics;
-    metrics.mCPUStart             = chain->mNextFrameCPUStart;
-    metrics.mCPUBusy              = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p.PresentStartTime);
-    metrics.mCPUWait              = pmSession.TimestampDeltaToMilliSeconds(p.TimeInPresent);
-    metrics.mGPULatency           = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p.GPUStartTime);
-    metrics.mGPUBusy              = pmSession.TimestampDeltaToMilliSeconds(p.GPUDuration);
-    metrics.mVideoBusy            = pmSession.TimestampDeltaToMilliSeconds(p.GPUVideoDuration);
-    metrics.mGPUWait              = std::max(0.0, gpuDuration - metrics.mGPUBusy);
-    metrics.mDisplayLatency       = !displayed       ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p.ScreenTime);
-    metrics.mDisplayedTime        = !displayed       ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p.ScreenTime, nextDisplayedPresent->ScreenTime);
-    metrics.mClickToPhotonLatency = p.InputTime == 0 ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p.InputTime, p.ScreenTime);
+    metrics.mCPUStart = chain->mLastPresent->PresentStartTime + chain->mLastPresent->TimeInPresent;
+
+    if (includeFrameData) {
+        msGPUDuration       = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->GPUStartTime, p->ReadyTime);
+        metrics.mCPUBusy    = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->PresentStartTime);
+        metrics.mCPUWait    = pmSession.TimestampDeltaToMilliSeconds(p->TimeInPresent);
+        metrics.mGPULatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->GPUStartTime);
+        metrics.mGPUBusy    = pmSession.TimestampDeltaToMilliSeconds(p->GPUDuration);
+        metrics.mVideoBusy  = pmSession.TimestampDeltaToMilliSeconds(p->GPUVideoDuration);
+        metrics.mGPUWait    = std::max(0.0, msGPUDuration - metrics.mGPUBusy);
+    } else {
+        metrics.mCPUBusy    = 0;
+        metrics.mCPUWait    = 0;
+        metrics.mGPULatency = 0;
+        metrics.mGPUBusy    = 0;
+        metrics.mVideoBusy  = 0;
+        metrics.mGPUWait    = 0;
+    }
+
+    if (displayed) {
+        metrics.mDisplayLatency       = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->ScreenTime);
+        metrics.mDisplayedTime        = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ScreenTime, nextDisplayedPresent->ScreenTime);
+        metrics.mClickToPhotonLatency = p->InputTime == 0 ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, p->ScreenTime);
+    } else {
+        metrics.mDisplayLatency       = 0;
+        metrics.mDisplayedTime        = 0;
+        metrics.mClickToPhotonLatency = 0;
+    }
 
     if (isRecording) {
-        UpdateCsv(pmSession, processInfo, p, metrics);
+        UpdateCsv(pmSession, processInfo, *p, metrics);
     }
 
     if (computeAvg) {
-        UpdateAverage(&chain->mAvgCPUDuration, metrics.mCPUBusy + metrics.mCPUWait);
-        UpdateAverage(&chain->mAvgGPUDuration, gpuDuration);
+        if (includeFrameData) {
+            UpdateAverage(&chain->mAvgCPUDuration, metrics.mCPUBusy + metrics.mCPUWait);
+            UpdateAverage(&chain->mAvgGPUDuration, msGPUDuration);
+        }
         if (displayed) {
             UpdateAverage(&chain->mAvgDisplayLatency, metrics.mDisplayLatency);
             UpdateAverage(&chain->mAvgDisplayedTime, metrics.mDisplayedTime);
         }
     }
 
-    UpdateChain(chain, p);
+    if (p->FrameId == nextPresent->FrameId) {
+        if (includeFrameData) {
+            chain->mIncludeFrameData = false;
+        }
+    } else {
+        UpdateChain(chain, p);
+    }
 }
 
 static void PruneOldSwapChainData(
@@ -356,7 +379,7 @@ static void PruneOldSwapChainData(
         auto processInfo = &pair.second;
         for (auto ii = processInfo->mSwapChain.begin(), ie = processInfo->mSwapChain.end(); ii != ie; ) {
             auto chain = &ii->second;
-            if (chain->mNextFrameCPUStart < minTimestamp) {
+            if (chain->mLastPresent->PresentStartTime < minTimestamp) {
                 ii = processInfo->mSwapChain.erase(ii);
             } else {
                 ++ii;
@@ -393,48 +416,48 @@ static void QueryProcessName(uint32_t processId, ProcessInfo* info)
 }
 
 static bool GetPresentProcessInfo(
-    PresentEvent const& presentEvent,
+    std::shared_ptr<PresentEvent> const& presentEvent,
     bool create,
     ProcessInfo** outProcessInfo,
     SwapChainData** outChain,
     uint64_t* outPresentTime)
 {
     ProcessInfo* processInfo;
-    auto ii = gProcesses.find(presentEvent.ProcessId);
+    auto ii = gProcesses.find(presentEvent->ProcessId);
     if (ii != gProcesses.end()) {
         processInfo = &ii->second;
     } else {
         if (!create) {
             *outProcessInfo = nullptr;
             *outChain       = nullptr;
-            *outPresentTime = presentEvent.PresentStartTime;
+            *outPresentTime = presentEvent->PresentStartTime;
             return false;
         }
 
         ProcessInfo info;
-        QueryProcessName(presentEvent.ProcessId, &info);
+        QueryProcessName(presentEvent->ProcessId, &info);
         info.mOutputCsv       = nullptr;
-        info.mIsTargetProcess = IsTargetProcess(presentEvent.ProcessId, info.mModuleName);
+        info.mIsTargetProcess = IsTargetProcess(presentEvent->ProcessId, info.mModuleName);
         if (info.mIsTargetProcess) {
             gTargetProcessCount += 1;
         }
 
-        processInfo = &gProcesses.emplace(presentEvent.ProcessId, info).first->second;
+        processInfo = &gProcesses.emplace(presentEvent->ProcessId, info).first->second;
     }
 
     if (!processInfo->mIsTargetProcess) {
         return true;
     }
 
-    auto chain = &processInfo->mSwapChain[presentEvent.SwapChainAddress];
-    if (!chain->mPresentInfoValid) {
+    auto chain = &processInfo->mSwapChain[presentEvent->SwapChainAddress];
+    if (chain->mLastPresent == nullptr) {
         UpdateChain(chain, presentEvent);
         return true;
     }
 
     *outProcessInfo = processInfo;
     *outChain       = chain;
-    *outPresentTime = chain->mNextFrameCPUStart;
+    *outPresentTime = chain->mLastPresent->PresentStartTime;
     return false;
 }
 
@@ -495,7 +518,7 @@ static void ProcessEvents(
         // handle process events first and then check again.  
         ProcessInfo* processInfo = nullptr;
         SwapChainData* chain = nullptr;
-        if (GetPresentProcessInfo(*presentEvent, false, &processInfo, &chain, &presentTime)) {
+        if (GetPresentProcessInfo(presentEvent, false, &processInfo, &chain, &presentTime)) {
             continue;
         }
 
@@ -524,36 +547,40 @@ static void ProcessEvents(
         }
 
         // If we didn't get process info, try again (this time querying realtime data if needed).
-        if (processInfo == nullptr && GetPresentProcessInfo(*presentEvent, true, &processInfo, &chain, &presentTime)) {
+        if (processInfo == nullptr && GetPresentProcessInfo(presentEvent, true, &processInfo, &chain, &presentTime)) {
             continue;
         }
 
-        // If we are recording or presenting metrics to console and the chain is initialized, then
-        // update the metrics and pending presents.  Otherwise, just update the latest present
-        // details in the chain.
+        // If we are recording or presenting metrics to console then update the metrics and pending
+        // presents.  Otherwise, just update the latest present details in the chain.
         //
-        // The only time there will be existing pending presents is if the first one was displayed
-        // and we are waiting for the next displayed present to compute DisplayBusy.
+        // If there are more than one pending PresentEvents, then the first one is displayed and the
+        // rest aren't.  Otherwise, there will only be one (or zero) pending presents.
         if (isRecording || computeAvg) {
             if (args.mUseV1Metrics) {
-                ReportMetrics1(pmSession, processInfo, chain, *presentEvent, isRecording, computeAvg);
+                ReportMetrics1(pmSession, processInfo, chain, presentEvent, isRecording, computeAvg);
             } else {
-                if (presentEvent->FinalState == PresentResult::Presented) {
-                    for (auto pp : chain->mPendingPresents) {
-                        ReportMetrics(pmSession, processInfo, chain, *pp, presentEvent.get(), isRecording, computeAvg);
-                    }
-                    chain->mPendingPresents.clear();
-                    chain->mPendingPresents.push_back(presentEvent);
-                } else {
-                    if (chain->mPendingPresents.empty()) {
-                        ReportMetrics(pmSession, processInfo, chain, *presentEvent, nullptr, isRecording, computeAvg);
+                auto numPendingPresents = chain->mPendingPresents.size();
+                if (numPendingPresents > 0) {
+                    if (presentEvent->FinalState == PresentResult::Presented) {
+                        size_t i = 1;
+                        for ( ; i < numPendingPresents; ++i) {
+                            ReportMetrics(pmSession, processInfo, chain, chain->mPendingPresents[i - 1], chain->mPendingPresents[i], presentEvent.get(), isRecording, computeAvg);
+                        }
+                        ReportMetrics(pmSession, processInfo, chain, chain->mPendingPresents[i - 1], presentEvent, presentEvent.get(), isRecording, computeAvg);
+                        chain->mPendingPresents.clear();
                     } else {
-                        chain->mPendingPresents.push_back(presentEvent);
+                        if (chain->mPendingPresents[0]->FinalState != PresentResult::Presented) {
+                            ReportMetrics(pmSession, processInfo, chain, chain->mPendingPresents[0], presentEvent, nullptr, isRecording, computeAvg);
+                            chain->mPendingPresents.clear();
+                        }
                     }
                 }
+
+                chain->mPendingPresents.push_back(presentEvent);
             }
         } else {
-            UpdateChain(chain, *presentEvent);
+            UpdateChain(chain, presentEvent);
         }
     }
 

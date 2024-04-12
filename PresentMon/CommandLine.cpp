@@ -510,6 +510,12 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         }
     }
 
+    // Ignore --track_frame_type if v1 metrics (since they are not supported there)
+    if (args->mTrackFrameType && args->mUseV1Metrics) {
+        PrintWarning(L"warning: ignoring --track_frame_type due to --v1_metrics.\n");
+        args->mTrackFrameType = false;
+    }
+
     // Enable verbose trace if requested, and disable Full or Simple console output
     #if PRESENTMON_ENABLE_DEBUG_TRACE
     if (verboseTrace) {

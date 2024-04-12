@@ -37,17 +37,17 @@ const char* RuntimeToString(Runtime rt)
 const char* FrameTypeToString(FrameType ft)
 {
     switch (ft) {
-    #ifdef _DEBUG
-    case FrameType::NotSet:      return "NotSet";
-    #else
-    case FrameType::NotSet:      return "Application";
-    #endif
     case FrameType::Unspecified: return "Unspecified";
-    case FrameType::Application: return "Application";
     case FrameType::Repeated:    return "Repeated";
     case FrameType::AMD_AFMF:    return "AMD_AFMF";
-    default: return "Unknown";
     }
+
+    #ifdef _DEBUG
+         if (ft == FrameType::NotSet)      return "NotSet";
+    else if (ft != FrameType::Application) return "Unknown";
+    #endif
+
+    return "Application";
 }
 
 // v1.x only:
@@ -140,9 +140,6 @@ void WriteCsvHeader<FrameMetrics1>(FILE* fp)
                  L",SyncInterval"
                  L",PresentFlags"
                  L",Dropped");
-    if (args.mTrackFrameType) {
-        fwprintf(fp, L",FrameType");
-    }
     fwprintf(fp, L",TimeInSeconds"
                  L",msInPresentAPI"
                  L",msBetweenPresents");
@@ -186,9 +183,6 @@ void WriteCsvRow<FrameMetrics1>(
                                                    p.SyncInterval,
                                                    p.PresentFlags,
                                                    FinalStateToDroppedString(p.FinalState));
-    if (args.mTrackFrameType) {
-        fwprintf(fp, L",%hs", FrameTypeToString(p.FrameType));
-    }
     switch (args.mTimeUnit) {
     case TimeUnit::DateTime: {
         SYSTEMTIME st = {};

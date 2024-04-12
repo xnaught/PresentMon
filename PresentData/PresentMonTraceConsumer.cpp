@@ -51,13 +51,16 @@ static constexpr int PRESENTEVENT_CIRCULAR_BUFFER_SIZE = 8192;
 #define TRACK_PRESENT_PATH_SAVE_GENERATED_ID(present) (void) present
 #endif
 
-#if PRESENTMON_ENABLE_DEBUG_TRACE
-static uint64_t gNextPresentId = 1;
-#endif
+static uint32_t gNextFrameId = 1;
 
 static inline uint32_t GetRingIndex(uint32_t index)
 {
     return index % PRESENTEVENT_CIRCULAR_BUFFER_SIZE;
+}
+
+static inline uint64_t GenerateVidPnLayerId(uint32_t vidPnSourceId, uint32_t layerIndex)
+{
+    return (((uint64_t) vidPnSourceId) << 32) | (uint64_t) layerIndex;
 }
 
 static inline FrameType ConvertPMPFrameTypeToFrameType(uint8_t pmpFrameType)
@@ -103,6 +106,8 @@ PresentEvent::PresentEvent()
     , DestHeight(0)
     , DriverThreadId(0)
 
+    , FrameId(gNextFrameId++)
+
     , Runtime(Runtime::Other)
     , PresentMode(PresentMode::Unknown)
     , FinalState(PresentResult::Unknown)
@@ -125,9 +130,6 @@ PresentEvent::PresentEvent()
 
     #ifdef TRACK_PRESENT_PATHS
     , AnalysisPath(0ull)
-    #endif
-    #if PRESENTMON_ENABLE_DEBUG_TRACE
-    , Id(gNextPresentId++)
     #endif
 {
 }
@@ -498,12 +500,8 @@ void PMTraceConsumer::HandleDxgkSyncDPC(uint64_t timestamp, uint32_t submitSeque
 
         TRACK_PRESENT_PATH_SAVE_GENERATED_ID(pEvent);
 
-        // Update the screen time if it's not already set (e.g., may have already been set by
-        // FlipFrameTime event).
         VerboseTraceBeforeModifyingPresent(pEvent.get());
-        if (pEvent->ScreenTime == 0) {
-            pEvent->ScreenTime = timestamp;
-        }
+        pEvent->ScreenTime = timestamp;
         pEvent->FinalState = PresentResult::Presented;
 
         // For Hardware_Legacy_Flip, we are done tracking the present.  If we
@@ -1153,32 +1151,47 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
         // driver uses to report flip completion.
         case Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay3_Info::Id: {
             EventDataDesc desc[] = {
+                { L"VidPnSourceId" },
                 { L"PlaneCount" },
                 { L"PresentId" },
+                { L"LayerIndex" },
                 { L"FlipSubmitSequence" },
             };
             mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-            auto PlaneCount         = desc[0].GetData<uint32_t>();
-            auto PresentId          = desc[1].GetArray<uint64_t>(PlaneCount);
-            auto FlipSubmitSequence = desc[2].GetData<uint32_t>();
-
-            // TODO: PresentId's only seem to be unique per VidPnSourceId per LayerIndex, so we may
-            // need to add that to the FlipFrameType event as well.  For now, will assume PresentId
-            // is unique.
+            auto VidPnSourceId      = desc[0].GetData<uint32_t>();
+            auto PlaneCount         = desc[1].GetData<uint32_t>();
+            auto PresentId          = desc[2].GetArray<uint64_t>(PlaneCount);
+            auto LayerIndex         = desc[3].GetArray<uint32_t>(PlaneCount);
+            auto FlipSubmitSequence = desc[4].GetData<uint32_t>();
 
             // Lookup the present associated with this submitsequence
             if (PlaneCount > 0) {
                 auto present = FindPresentBySubmitSequence(FlipSubmitSequence);
                 if (present != nullptr) {
                     VerboseTraceBeforeModifyingPresent(present.get());
-                    present->PresentIds.reserve(present->PresentIds.size() + PlaneCount);
+                    DebugAssert(present->PresentIds.empty());
+
                     for (uint32_t i = 0; i < PlaneCount; ++i) {
-                        // Add the PresentId to the present
-                        present->PresentIds.emplace_back(PresentId[i]);
-                        mPresentByPresentId[PresentId[i]] = present;
+                        // Add presentid to the present
+                        auto vidPnLayerId = GenerateVidPnLayerId(VidPnSourceId, LayerIndex[i]);
+                        present->PresentIds.emplace(vidPnLayerId, PresentId[i]);
+                        auto const& pr = mPresentByVidPnLayerId.emplace(vidPnLayerId, present);
+
+                        // Any previous present on this VidPnLayer will not get any more FlipFrameType
+                        // events.
+                        if (!pr.second) {
+                            auto p2 = pr.first->second;
+                            pr.first->second = present;
+
+                            if (p2->DeferredReason & DeferredReason_WaitingForFlipFrameType) {
+                                ClearDeferredReason(p2, DeferredReason_WaitingForFlipFrameType);
+                            } else {
+                                p2->PresentIds.clear();
+                            }
+                        }
 
                         // Apply any pending FlipFrameType events
-                        auto ii = mPendingFlipFrameTypeEvents.find(PresentId[i]);
+                        auto ii = mPendingFlipFrameTypeEvents.find(vidPnLayerId);
                         if (ii != mPendingFlipFrameTypeEvents.end()) {
                             ApplyFlipFrameType(present, ii->second.Timestamp, ii->second.FrameType);
                             mPendingFlipFrameTypeEvents.erase(ii);
@@ -1682,9 +1695,7 @@ void PMTraceConsumer::StopTrackingPresent(std::shared_ptr<PresentEvent> const& p
     }
 
     // mOrderedPresentsByProcessId
-    if ((p->DeferredReason & DeferredReason_WaitingForFlipFrameType) == 0 ) {
-        mOrderedPresentsByProcessId[p->ProcessId].erase(p->PresentStartTime);
-    }
+    mOrderedPresentsByProcessId[p->ProcessId].erase(p->PresentStartTime);
 
     // mPresentBySubmitSequence
     RemovePresentFromSubmitSequenceIdTracking(p);
@@ -1736,14 +1747,13 @@ void PMTraceConsumer::StopTrackingPresent(std::shared_ptr<PresentEvent> const& p
 
     // mPresentByVidPnLayerId (unless it will be needed by deferred FlipFrameType handling)
     if ((p->DeferredReason & DeferredReason_WaitingForFlipFrameType) == 0 ) {
-        for (auto presentId : p->PresentIds) {
-            auto ii = mPresentByPresentId.find(presentId);
-            if (ii != mPresentByPresentId.end() && ii->second == p) {
-                mPresentByPresentId.erase(ii);
+        for (auto const& pr : p->PresentIds) {
+            auto ii = mPresentByVidPnLayerId.find(pr.first);
+            if (ii != mPresentByVidPnLayerId.end() && ii->second == p) {
+                mPresentByVidPnLayerId.erase(ii);
             }
         }
         p->PresentIds.clear();
-        p->PresentIds.shrink_to_fit();
     }
 
     // mLastPresentByWindow
@@ -1798,8 +1808,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
             mPresentByDxgkPresentHistoryTokenData.clear();
             mPresentByDxgkContext.clear();
             mLastPresentByWindow.clear();
-            mFrameTypeByThreadId.clear();
-            mPresentByPresentId.clear();
+            mPresentByVidPnLayerId.clear();
 
             mTrackedPresents.clear();
             mTrackedPresents.resize(PRESENTEVENT_CIRCULAR_BUFFER_SIZE);
@@ -1900,18 +1909,11 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
 
     // If flip frame type tracking is enabled, we defer the completion because we may see subsequent
     // FlipFrameType events that need to refer back to this PresentEvent.  The deferral will be
-    // completed when we see the next vsync for the same process/swapchain.
-    if (!p->IsLost && mTrackFrameType && !p->PresentIds.empty()) {
+    // completed when we see another MMIOFlipMultiPlaneOverlay3_Info event for the same
+    // (VidPnSourceId, LayerIndex) pair.
+    if (mTrackFrameType && !p->PresentIds.empty()) {
         VerboseTraceBeforeModifyingPresent(p.get());
         p->DeferredReason |= DeferredReason_WaitingForFlipFrameType;
-        // If we already saw a FlipFrameType events, handle them now.
-        if (!p->PendingFlipFrameTypes.empty()) {
-            for (auto const& flip : p->PendingFlipFrameTypes) {
-                ApplyFlipFrameType(p, flip.Timestamp, flip.FrameType);
-            }
-            p->PendingFlipFrameTypes.clear();
-            p->PendingFlipFrameTypes.shrink_to_fit();
-        }
     }
 
     // Remove the present from tracking structures.
@@ -2285,45 +2287,56 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
 
     switch (hdr.EventDescriptor.Id) {
 
-    case Intel_PresentMon::PresentFrameType_Info::Id:
-        mFrameTypeByThreadId[hdr.ThreadId] = mMetadata.GetEventData<uint8_t>(pEventRecord, L"FrameType");
-        break;
+    case Intel_PresentMon::PresentFrameType_Info::Id: {
+        EventDataDesc desc[] = {
+            { L"FrameId" },
+            { L"FrameType" },
+        };
+        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+        auto FrameId      = desc[0].GetData<uint32_t>();
+        auto PMPFrameType = desc[1].GetData<uint8_t>();
+
+        PresentFrameTypeEvent e;
+        e.FrameId   = FrameId;
+        e.FrameType = ConvertPMPFrameTypeToFrameType(PMPFrameType);
+        mPendingPresentFrameTypeEvents[hdr.ThreadId] = e;
+    }   break;
 
     case Intel_PresentMon::FlipFrameType_Info::Id: {
         EventDataDesc desc[] = {
+            { L"VidPnSourceId" },
+            { L"LayerIndex" },
             { L"PresentId" },
             { L"FrameType" },
         };
         mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto PresentId    = desc[0].GetData<uint64_t>();
-        auto PMPFrameType = desc[1].GetData<uint8_t>();
+        auto VidPnSourceId = desc[0].GetData<uint32_t>();
+        auto LayerIndex    = desc[1].GetData<uint32_t>();
+        auto PresentId     = desc[2].GetData<uint64_t>();
+        auto PMPFrameType  = desc[3].GetData<uint8_t>();
 
         auto frameType = ConvertPMPFrameTypeToFrameType(PMPFrameType);
-
-        // TODO: If we get a FlipFrameType event after the present has been flushed it will
-        // stay in mPendingFlipFrameType forever.  We need more than PresentId to know when
-        // to replace it.
-        if (!mPendingFlipFrameTypeEvents.empty()) {
-            wprintf(L"                             PENDING:");
-            for (auto const& pr : mPendingFlipFrameTypeEvents) {
-                wprintf(L" %llu", pr.first);
-            }
-            wprintf(L"\n");
-        }
 
         // Look up the present associated with this (VidPnSourceId, LayerIndex, PresentId).
         //
         // It is possible to see the FlipFrameType event before the MMIOFlipMultiPlaneOverlay3_Info
         // event, in which case the lookup will fail.  In this case we deferr application of the
         // FlipFrameType until we see the MMIOFlipMultiPlaneOverlay3_Info event.
-        auto ii = mPresentByPresentId.find(PresentId);
-        if (ii == mPresentByPresentId.end()) {
-            DeferFlipFrameType(PresentId, hdr.TimeStamp.QuadPart, frameType);
+        auto vidPnLayerId = GenerateVidPnLayerId(VidPnSourceId, LayerIndex);
+        auto ii = mPresentByVidPnLayerId.find(vidPnLayerId);
+        if (ii == mPresentByVidPnLayerId.end()) {
+            DeferFlipFrameType(vidPnLayerId, PresentId, hdr.TimeStamp.QuadPart, frameType);
+            return;
+        }
+
+        auto present = ii->second;
+        auto jj = present->PresentIds.find(vidPnLayerId);
+        if (jj == present->PresentIds.end() || jj->second != PresentId) {
+            DeferFlipFrameType(vidPnLayerId, PresentId, hdr.TimeStamp.QuadPart, frameType);
             return;
         }
 
         // Create a PresentEvent for this flip time
-        auto present = ii->second;
         ApplyFlipFrameType(present, hdr.TimeStamp.QuadPart, frameType);
     }   break;
 
@@ -2334,16 +2347,18 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
 }
 
 void PMTraceConsumer::DeferFlipFrameType(
+    uint64_t vidPnLayerId,
     uint64_t presentId,
     uint64_t timestamp,
     FrameType frameType)
 {
-    DebugAssert(mPendingFlipFrameTypeEvents.find(presentId) == mPendingFlipFrameTypeEvents.end());
+    DebugAssert(mPendingFlipFrameTypeEvents.find(vidPnLayerId) == mPendingFlipFrameTypeEvents.end());
 
     FlipFrameTypeEvent e;
+    e.PresentId = presentId;
     e.Timestamp = timestamp;
     e.FrameType = frameType;
-    mPendingFlipFrameTypeEvents.emplace(presentId, e);
+    mPendingFlipFrameTypeEvents.emplace(vidPnLayerId, e);
 }
 
 void PMTraceConsumer::ApplyFlipFrameType(
@@ -2351,17 +2366,6 @@ void PMTraceConsumer::ApplyFlipFrameType(
     uint64_t timestamp,
     FrameType frameType)
 {
-    // It is possible to get FlipFrameType events before VSync events.  When this happens, we save
-    // the FlipFrameTypeEvent into the PresentEvent and HandleFlipFrameType() will be recalled at
-    // the VSync once IsCompleted is true.
-    if (!present->IsCompleted) {
-        FlipFrameTypeEvent flip;
-        flip.Timestamp = timestamp;
-        flip.FrameType = frameType;
-        present->PendingFlipFrameTypes.emplace_back(flip);
-        return;
-    }
-
     // Create a copy of the present for this flip to add to the complete list, and mark the base
     // present as lost.
     auto copy = std::make_shared<PresentEvent>();
@@ -2377,26 +2381,17 @@ void PMTraceConsumer::ApplyFlipFrameType(
     copy->FrameType = frameType;
     copy->FinalState = PresentResult::Presented;
 
-    // Non-Application frames currently have 0 GPUDuration.  The first Application frame resets the
-    // parent GPUDuration so that any repeated Application frames also have no GPUDuration.
-    if (frameType == FrameType::Application) {
-        present->GPUDuration = 0;
-        present->GPUVideoDuration = 0;
-    } else {
-        copy->GPUDuration = 0;
-        copy->GPUVideoDuration = 0;
-    }
-
     AddPresentToCompletedList(copy);
 }
 
 void PMTraceConsumer::ApplyPresentFrameType(
     std::shared_ptr<PresentEvent> const& present)
 {
-    auto ii = mFrameTypeByThreadId.find(present->ThreadId);
-    if (ii != mFrameTypeByThreadId.end()) {
-        present->FrameType = ConvertPMPFrameTypeToFrameType(ii->second);
-        mFrameTypeByThreadId.erase(ii);
+    auto ii = mPendingPresentFrameTypeEvents.find(present->ThreadId);
+    if (ii != mPendingPresentFrameTypeEvents.end()) {
+        present->FrameId   = ii->second.FrameId;
+        present->FrameType = ii->second.FrameType;
+        mPendingPresentFrameTypeEvents.erase(ii);
     }
 }
 
