@@ -143,6 +143,7 @@ bool IsValid(
     return frameType == PresentMonProvider_FrameType_Unspecified ||
            frameType == PresentMonProvider_FrameType_Original ||
            frameType == PresentMonProvider_FrameType_Repeated ||
+           frameType == PresentMonProvider_FrameType_Intel_XEFG ||
            frameType == PresentMonProvider_FrameType_AMD_AFMF;
 }
 

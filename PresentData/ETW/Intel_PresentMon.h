@@ -38,6 +38,7 @@ enum class FrameType : uint8_t {
     Unspecified = 0,
     Original = 1,
     Repeated = 2,
+    Intel_XEFG = 50,
     AMD_AFMF = 100,
 };
 

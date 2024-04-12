@@ -123,6 +123,7 @@ enum class FrameType {
     Unspecified = 1,
     Application = 2,
     Repeated = 3,
+    Intel_XEFG = 50,
     AMD_AFMF = 100,
 };
 

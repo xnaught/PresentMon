@@ -41,6 +41,7 @@ static inline FrameType ConvertPMPFrameTypeToFrameType(Intel_PresentMon::FrameTy
     case Intel_PresentMon::FrameType::Unspecified: return FrameType::Unspecified;
     case Intel_PresentMon::FrameType::Original:    return FrameType::Application;
     case Intel_PresentMon::FrameType::Repeated:    return FrameType::Repeated;
+    case Intel_PresentMon::FrameType::Intel_XEFG:  return FrameType::Intel_XEFG;
     case Intel_PresentMon::FrameType::AMD_AFMF:    return FrameType::AMD_AFMF;
     }
 

@@ -178,6 +178,7 @@ wchar_t const* PMPFrameTypeToString(Intel_PresentMon::FrameType type)
     case Intel_PresentMon::FrameType::Unspecified: return L"Unspecified";
     case Intel_PresentMon::FrameType::Original:    return L"Original";
     case Intel_PresentMon::FrameType::Repeated:    return L"Repeated";
+    case Intel_PresentMon::FrameType::Intel_XEFG:  return L"Intel_XEFG";
     case Intel_PresentMon::FrameType::AMD_AFMF:    return L"AMD_AFMF";
     }
 
@@ -191,6 +192,7 @@ void PrintFrameType(FrameType type)
     case FrameType::Unspecified: wprintf(L"Unspecified"); break;
     case FrameType::Application: wprintf(L"Application"); break;
     case FrameType::Repeated:    wprintf(L"Repeated"); break;
+    case FrameType::Intel_XEFG:  wprintf(L"Intel_XEFG"); break;
     case FrameType::AMD_AFMF:    wprintf(L"AMD_AFMF"); break;
     default:                     wprintf(L"Unknown (%u)", type); assert(false); break;
     }
