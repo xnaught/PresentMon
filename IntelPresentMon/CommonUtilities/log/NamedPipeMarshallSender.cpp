@@ -312,11 +312,15 @@ namespace pmon::util::log
 		}
 		~NamedPipe()
 		{
+			using namespace std::chrono_literals;
+			try { win::WaitAnyEventFor(50ms, emptyEvent_); }
+			catch (...) {}
 			try { exitEvent_.Set(); }
 			catch (...) {}
 		}
 		void Send(const Entry& entry)
 		{
+			emptyEvent_.ResetEvent();
 			entryQueue_.enqueue(entry);
 			entryEvent_.Set();
 		}
@@ -383,6 +387,9 @@ namespace pmon::util::log
 						break;
 					}
 				}
+
+				// signal that exiting is possible
+				emptyEvent_.Set();
 			}
 		}
 		// data
@@ -390,6 +397,7 @@ namespace pmon::util::log
 		win::Event exitEvent_;
 		win::Event decommissionEvent_;
 		win::Event entryEvent_;
+		win::Event emptyEvent_{ true, true };
 		std::vector<std::unique_ptr<NamedPipeInstance>> instances_;
 		moodycamel::ConcurrentQueue<Entry> entryQueue_;
 		std::jthread connectionThread_;

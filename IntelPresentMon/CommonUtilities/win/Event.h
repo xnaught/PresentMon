@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <optional>
 #include <concepts>
+#include <chrono>
 
 namespace pmon::util::win
 {
@@ -20,12 +21,20 @@ namespace pmon::util::win
         void ResetEvent();
     };
 
-    std::optional<uint32_t> WaitOnMultipleEvents(std::span<Event::HandleType> events, bool waitAll = 0, uint32_t milli = 0xFFFF'FFFF);
+    std::optional<uint32_t> WaitOnMultipleEvents(std::span<Event::HandleType> events, bool waitAll = false, uint32_t milli = 0xFFFF'FFFF);
 
     template<std::same_as<Event>...E>
     std::optional<uint32_t> WaitAnyEvent(const E&...events)
     {
         Event::HandleType handles[] = { events... };
         return WaitOnMultipleEvents(handles);
+    }
+
+    template<class D, std::same_as<Event>...E>
+    std::optional<uint32_t> WaitAnyEventFor(D timeout, const E&...events)
+    {
+        Event::HandleType handles[] = { events... };
+        const auto milli = (uint32_t)std::chrono::duration_cast<std::chrono::milliseconds>(timeout).count();
+        return WaitOnMultipleEvents(handles, false, milli);
     }
 }
