@@ -97,6 +97,7 @@ namespace pmon::util::log
 					}
 					if (const auto error = GetLastError(); error == ERROR_IO_PENDING) {
 						// overlapped operation initiated and waiting for connection
+						inst.state_ = State::Connecting;
 						return StepResult::RequiresAwaiting;
 					}
 					// TODO: consider distinguishing between errors where pipe is recycled, and quarantine errors
