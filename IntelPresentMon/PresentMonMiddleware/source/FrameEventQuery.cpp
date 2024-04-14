@@ -131,7 +131,7 @@ namespace
 		uint32_t outputOffset_;
 		uint16_t outputPaddingSize_;
 	};
-	template<uint64_t PmNsmPresentEvent::* pStart, uint64_t PmNsmPresentEvent::* pEnd, bool doZeroCheck, bool doDroppedCheck, bool allowNegative, bool clampZero>
+	template<uint64_t PmNsmPresentEvent::* pStart, uint64_t PmNsmPresentEvent::* pEnd, bool doZeroCheck, bool doDroppedCheck, bool allowNegative>
 	class QpcDifferenceGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
@@ -142,7 +142,6 @@ namespace
 		}
 		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
 		{
-			static_assert(!allowNegative || !clampZero);
 			if constexpr (doDroppedCheck) {
 				if (ctx.dropped) {
 					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
@@ -158,11 +157,8 @@ namespace
 					return;
 				}
 			}
-			if constexpr (allowNegative || clampZero) {
+			if constexpr (allowNegative) {
 				auto qpcDurationDouble = double(ctx.pSourceFrameData->present_event.*pEnd) - double(start);
-				if constexpr (clampZero) {
-					qpcDurationDouble = std::max(0., qpcDurationDouble);
-				}
 				const auto val = ctx.performanceCounterPeriodMs * qpcDurationDouble;
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 			}
@@ -553,7 +549,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_CPU_WAIT:
 		return std::make_unique<QpcDurationGatherCommand_<&Pre::TimeInPresent>>(pos);
 	case PM_METRIC_GPU_TIME:
-		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::GPUStartTime, &Pre::ReadyTime, 0, 0, 0, 0>>(pos);
+		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::GPUStartTime, &Pre::ReadyTime, 0, 0, 0>>(pos);
 	case PM_METRIC_GPU_WAIT:
 		return std::make_unique<GpuWaitGatherCommand_>(pos);
 	case PM_METRIC_DISPLAYED_TIME:
@@ -563,7 +559,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_DISPLAY_LATENCY:
 		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::ScreenTime, 1>>(pos);
 	case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
-		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::InputTime, &Pre::ScreenTime, 1, 1, 0, 0>>(pos);
+		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::InputTime, &Pre::ScreenTime, 1, 1, 0>>(pos);
 
 	default: return {};
 	}
