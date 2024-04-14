@@ -34,12 +34,12 @@ namespace pmon::util::log
 				try {
 					std::span sizeBytes{ reinterpret_cast<const std::byte*>(&sizeField_), sizeof(sizeField_) };
 					if (!initiated_) {
-						inst.InitiateByteTransmission_(std::move(sizeBytes));
+						inst.InitiateByteTransmission_(sizeBytes);
 						initiated_ = true;
-						return inst.overlapped_;
+						return true;
 					}
 					else {
-						inst.ResolveByteTransmission_(std::move(sizeBytes));
+						inst.ResolveOverlapped_((DWORD)sizeBytes.size());
 						inst.AdvanceStep_();
 						return inst.ExecuteCurrentStep();
 					}
@@ -70,10 +70,10 @@ namespace pmon::util::log
 					if (!initiated_) {
 						inst.InitiateByteTransmission_(data_);
 						initiated_ = true;
-						return inst.overlapped_;
+						return true;
 					}
 					else {
-						inst.ResolveByteTransmission_(std::move(data_));
+						inst.ResolveOverlapped_((DWORD)data_.size());
 						inst.AdvanceStep_();
 						return inst.ExecuteCurrentStep();
 					}
@@ -106,6 +106,7 @@ namespace pmon::util::log
 						// overlapped operation initiated and waiting for connection
 						return true;
 					}
+					// TODO: handle pulsed client connect between create and connect
 					else if (error != ERROR_PIPE_CONNECTED) {
 						// any error other than already connected pseudo-error signal
 						throw std::runtime_error{ "failed connecting named pipe" };
@@ -113,11 +114,7 @@ namespace pmon::util::log
 					// if we reach here, pipe has already connected => fall through to finalization
 				}
 				// finalization routine, switch over to active mode
-				DWORD transferred = 0;
-				if (!GetOverlappedResult(inst.pipeHandle_, inst.overlapped_, &transferred, FALSE)) {
-					throw std::runtime_error{ "Failure resolving transmission" };
-				}
-				inst.overlapped_.ResetOverlapped();
+				inst.ResolveOverlapped_(std::nullopt);
 				inst.state_ = State::Active;
 				inst.AdvanceStep_();
 				return inst.ExecuteCurrentStep();
@@ -187,14 +184,14 @@ namespace pmon::util::log
 				throw std::runtime_error{ "Failure initiating transmission" };
 			}
 		}
-		void ResolveByteTransmission_(std::span<const std::byte> data)
+		void ResolveOverlapped_(std::optional<DWORD> expectedBytesTransferred)
 		{
 			DWORD transferred = 0;
 			if (!GetOverlappedResult(pipeHandle_, overlapped_, &transferred, FALSE)) {
-				throw std::runtime_error{ "Failure resolving transmission" };
+				throw std::runtime_error{ "Failure resolving pipe operation" };
 			}
-			if (transferred != (DWORD)data.size()) {
-				throw std::runtime_error{ "Failure resolving transmission, sent byte count does not match expected" };
+			if (expectedBytesTransferred && transferred != *expectedBytesTransferred) {
+				throw std::runtime_error{ "Failure resolving pipe operation, byte count does not match expected" };
 			}
 			overlapped_.ResetOverlapped();
 		}
@@ -206,6 +203,9 @@ namespace pmon::util::log
 		}
 		void Decommision_()
 		{
+			// TODO: check this result and panic
+			// or alternatively, dispose handle completely on this error
+			DisconnectNamedPipe(pipeHandle_);
 			overlapped_.ResetOverlapped();
 			state_ = State::OutOfCommission;
 		}
