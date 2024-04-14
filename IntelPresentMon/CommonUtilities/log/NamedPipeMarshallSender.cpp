@@ -177,6 +177,7 @@ namespace pmon::util::log
 		{
 			// TODO: check this result and panic
 			// or alternatively, dispose handle completely on this error
+			CancelIo(pipeHandle_);
 			DisconnectNamedPipe(pipeHandle_);
 			steps_.clear();
 			overlapped_.ResetOverlapped();
