@@ -35,8 +35,7 @@ namespace p2c::client::util::async
             const auto filterPred = [](const pmapi::intro::MetricView& m) { const auto type = m.GetType();
                 return
                     (   m.GetId() != PM_METRIC_GPU_LATENCY &&
-                        m.GetId() != PM_METRIC_DISPLAY_LATENCY &&
-                        m.GetId() != PM_METRIC_INPUT_LATENCY)
+                        m.GetId() != PM_METRIC_DISPLAY_LATENCY)
                     &&
                     (   type == PM_METRIC_TYPE_DYNAMIC ||
                         type == PM_METRIC_TYPE_DYNAMIC_FRAME ||

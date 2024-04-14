@@ -98,6 +98,9 @@ static void VConsolePrint(wchar_t const* format, va_list val, bool newLine)
 
     CONSOLE_SCREEN_BUFFER_INFO info = {};
     GetConsoleScreenBufferInfo(console, &info);
+    if (info.dwSize.X == 0) {
+        return;
+    }
 
     COORD endPosition;
     endPosition.Y = gWritePosition.Y + (SHORT) ((numChars + gWritePosition.X) / info.dwSize.X);
@@ -275,13 +278,13 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
                 RuntimeToString(chain.mPresentRuntime),
                 chain.mPresentSyncInterval,
                 chain.mPresentFlags,
-                chain.mAvgCPUDuration,
-                CalculateFPSForPrintf(chain.mAvgCPUDuration));
+                chain.mAvgCPUBusy,
+                CalculateFPSForPrintf(chain.mAvgCPUBusy));
 
             if (args.mTrackDisplay) {
                 ConsolePrint(L" Display=%.3fms (%.1f fps)",
-                    chain.mAvgDisplayDuration,
-                    CalculateFPSForPrintf(chain.mAvgDisplayDuration));
+                    chain.mAvgDisplayedTime,
+                    CalculateFPSForPrintf(chain.mAvgDisplayedTime));
             }
 
             if (args.mTrackGPU) {

@@ -5,7 +5,7 @@ The PresentMon/ directory contains source for a standalone console application t
 CSV file(s).
 
 A binary of the console application is provided in the release, e.g.:
-[PresentMon-2.0.0-x64.exe](releases/download/v2.0.0/PresentMon-2.0.0-x64.exe).
+[PresentMon-1.10.0-x64.exe](releases/download/v1.10.0/PresentMon-1.10.0-x64.exe).
 
 ## Command line options
 
@@ -23,9 +23,9 @@ A binary of the console application is provided in the release, e.g.:
 | `--multi_csv`        | Create a separate CSV file for each captured process.                    |
 | `--no_csv`           | Do not create any output CSV file.                                       |
 | `--no_console_stats` | Do not display active swap chains and frame statistics in the console.   |
-| `--qpc_time`         | Output frame time as a performance counter value.                        |
-| `--qpc_time_ms`      | Output frame time as a performance counter value converted to milliseconds. |
-| `--date_time`        | Output frame time as a date and time with nanosecond precision.          |
+| `--qpc_time`         | Output the CPU start time as a performance counter value.                |
+| `--qpc_time_ms`      | Output the CPU start time as a performance counter value converted to milliseconds. |
+| `--date_time`        | Output the CPU start time as a date and time with nanosecond precision.  |
 | `--exclude_dropped`  | Exclude frames that were not displayed to the screen from the CSV output. |
 | `--v1_metrics`       | Output a CSV using PresentMon 1.x metrics.                               |
 
@@ -79,24 +79,24 @@ metrics include:
 | *PresentFlags*        | The present flags provided by the application when presenting the frame. |
 | *AllowsTearing*       | 1 if partial frames might be displayed on the screen, or 0 if only full frames are displayed. |
 | *PresentMode*         | The presentation mode used by the system for this frame.  See the table below for more details. |
-| *CPUFrameTime<br>(CPUFrameQPC)<br>(CPUFrameQPCTime)<br>(CPUFrameDateTime)* | The time the CPU started working on this frame.  By default, this is the time since recording started in milliseconds.<br>&bull; When `--qpc_time` is used, the value is a [performance counter value](https://docs.microsoft.com/en-us/windows/win32/api/profileapi/nf-profileapi-queryperformancecounter) and the column is named *CPUFrameQPC*.<br>&bull; When `--qpc_time_ms` is used, the value is the query performance counter value converted to milliseconds and the column is named *CPUFrameQPCTime*.<br>&bull; When `--date_time` is used, the value is a date and the column is named *CPUFrameDateTime*. |
-| *CPUDuration*         | How long the CPU spent working on this frame, in milliseconds. |
-| *GPUDuration*         | How long the GPU spent working on this frame, in milliseconds. |
-| *DisplayDuration*     | How long the frame was displayed on the screen, in milliseconds.  If 0, the frame was not displayed. |
-| *CPUFramePacingStall* | How long the CPU spent waiting before starting the next frame, in milliseconds. |
+| *CPUStartTime<br>(CPUStartQPC)<br>(CPUStartQPCTime)<br>(CPUStartDateTime)* | The time the CPU started working on this frame.  By default, this is the time since recording started in milliseconds.<br>&bull; When `--qpc_time` is used, the value is a [performance counter value](https://docs.microsoft.com/en-us/windows/win32/api/profileapi/nf-profileapi-queryperformancecounter) and the column is named *CPUStartQPC*.<br>&bull; When `--qpc_time_ms` is used, the value is the query performance counter value converted to milliseconds and the column is named *CPUStartQPCTime*.<br>&bull; When `--date_time` is used, the value is a date and the column is named *CPUStartDateTime*. |
+| *CPUBusy*             | How long the CPU spent working on this frame, in milliseconds. |
+| *CPUWait*             | How long the CPU spent waiting before starting the next frame, in milliseconds. |
+| *GPULatency*          | How long it took from *CPUStartTime* until GPU work for this frame started, in milliseconds. |
 | *GPUBusy*             | The total amount of time that the GPU was actively working on this frame, in milliseconds.  Time is counted whenever at least one engine is executing work from the target process. |
-| *VideoBusy*           | The total amount of time that the GPU video encode/decode engines were actively working on this frame, in milliseconds.<br>This column is only available when `--track_gpu_video` is used and, when used, the video encode/decode work is not included in *GPUBusy*. |
-| *GPULatency*          | How long it took from *CPUFrameTime* until GPU work for this frame started, in milliseconds. |
-| *DisplayLatency*      | How long it took from *CPUFrameTime* until the frame was displayed on the screen, in milliseconds. |
-| *InputLatency*        | How long it took from the earliest keyboard or mouse interaction that contributed to this frame until this frame was displayed, in milliseconds.<br>When supported HW measuring devices are not available, this is the software-visible subset of the full input-to-photon latency and doesn't include:<br>&bull; time spent processing input in the keyboard/controller hardware or drivers (typically a fixed additional overhead),<br>&bull; time spent processing the output in the display hardware or drivers (typically a fixed additional overhead), and<br>&bull; a combination of display blanking interval and scan time (which varies, depending on timing and tearing). |
+| *VideoBusy*           | The total amount of time that the GPU video encode/decode engines were actively working on this frame, in milliseconds. This column is only available when `--track_gpu_video` is used and, when used, the video encode/decode work is not included in *GPUBusy*. |
+| *GPUWait*             | How long the GPU was idle while working on this frame, in milliseconds. |
+| *DisplayLatency*      | How long it took from *CPUStartTime* until the frame was displayed on the screen, in milliseconds. |
+| *DisplayedTime*       | How long the frame was displayed on the screen, in milliseconds.  If 0, the frame was not displayed. |
+| *ClickToPhotonLatency* | How long it took from the earliest keyboard or mouse interaction that contributed to this frame until this frame was displayed, in milliseconds. When supported HW measuring devices are not available, this is the software-visible subset of the full click-to-photon latency and doesn't include:<br>&bull; time spent processing input in the keyboard/controller hardware or drivers (typically a fixed additional overhead),<br>&bull; time spent processing the output in the display hardware or drivers (typically a fixed additional overhead), and<br>&bull; a combination of display blanking interval and scan time (which varies, depending on timing and tearing). |
 
 Some metrics are disabled depending on the command line options:
 
 | Command line option  | Disabled metrics |
 | -------------------- | ---------------- |
-| `--no_track_gpu`     | *GPULatency<br>GPUDuration<br>GPUBusy<br>VideoBusy*  |
-| `--no_track_input`   | *InputLatency* |
-| `--no_track_display`<br>(requires `--no_track_gpu` and `--no_track_input` as well) | *AllowsTearing<br>PresentMode<br>DisplayLatency<br>DisplayDuration* |
+| `--no_track_gpu`     | *GPULatency<br>GPUBusy<br>GPUWait<br>VideoBusy*  |
+| `--no_track_input`   | *ClickToPhotonLatency* |
+| `--no_track_display`<br>(requires `--no_track_gpu` and `--no_track_input` as well) | *AllowsTearing<br>PresentMode<br>DisplayLatency<br>DisplayedTime* |
 | `--v1_metrics`       | Most of the above metrics.  See a [1.x README.md](https://github.com/GameTechDev/PresentMon/blob/v1.9.2/README.md#csv-columns) for details on Presentmon 1.x metrics. |
 
 The following values are used in the PresentMode column:

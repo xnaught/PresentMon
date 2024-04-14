@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2023 Intel Corporation
+// Copyright (C) 2020-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "Debug.hpp"
@@ -60,6 +60,9 @@ struct FilteredProvider {
             }
         }
     }
+
+    FilteredProvider(FilteredProvider const&);
+    FilteredProvider& operator=(FilteredProvider const&);
 
     ~FilteredProvider()
     {
@@ -333,8 +336,8 @@ void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
     #pragma warning(disable: 4984) // c++17 extension
 
     if constexpr (!IS_REALTIME_SESSION) {
-        if (session->mStartQpc.QuadPart == 0) {
-            session->mStartQpc = hdr.TimeStamp;
+        if (session->mStartTimestamp.QuadPart == 0) {
+            session->mStartTimestamp = hdr.TimeStamp;
         }
     }
 
@@ -451,7 +454,7 @@ ULONG PMTraceSession::Start(
     assert(mPMConsumer != nullptr);
     assert(mSessionHandle == 0);
     assert(mTraceHandle == INVALID_PROCESSTRACE_HANDLE);
-    mStartQpc.QuadPart = 0;
+    mStartTimestamp.QuadPart = 0;
     mContinueProcessingBuffers = TRUE;
     mIsRealtimeSession = etlPath == nullptr;
 
@@ -460,12 +463,12 @@ ULONG PMTraceSession::Start(
     if (mIsRealtimeSession) {
         TraceProperties sessionProps = {};
         sessionProps.Wnode.BufferSize = (ULONG) sizeof(TraceProperties);
-        sessionProps.Wnode.ClientContext = 1; // 1 == use QPC for timestamp
+        sessionProps.Wnode.ClientContext = mTimestampType;          // Clock resolution to use when logging the timestamp for each event
         sessionProps.Wnode.Flags = WNODE_FLAG_TRACED_GUID;
-        sessionProps.LogFileMode = EVENT_TRACE_REAL_TIME_MODE;
+        sessionProps.LogFileMode = EVENT_TRACE_REAL_TIME_MODE;      // We have a realtime consumer, not writing to a log file
         sessionProps.LoggerNameOffset = offsetof(TraceProperties, mSessionName);  // Location of session name; will be written by StartTrace()
 
-        auto status = StartTrace(&mSessionHandle, sessionName, &sessionProps);
+        auto status = StartTraceW(&mSessionHandle, sessionName, &sessionProps);
         if (status != ERROR_SUCCESS) {
             mSessionHandle = 0;
             return status;
@@ -479,7 +482,7 @@ ULONG PMTraceSession::Start(
     }
 
     // Open a trace to collect the session events
-    EVENT_TRACE_LOGFILE traceProps = {};
+    EVENT_TRACE_LOGFILEW traceProps = {};
     traceProps.ProcessTraceMode = PROCESS_TRACE_MODE_EVENT_RECORD | PROCESS_TRACE_MODE_RAW_TIMESTAMP;
     traceProps.Context = this;
 
@@ -500,7 +503,7 @@ ULONG PMTraceSession::Start(
         mPMConsumer->mTrackDisplay, // TRACK_DISPLAY
         mPMConsumer->mTrackInput);  // TRACK_INPUT
 
-    mTraceHandle = OpenTrace(&traceProps);
+    mTraceHandle = OpenTraceW(&traceProps);
     if (mTraceHandle == INVALID_PROCESSTRACE_HANDLE) {
         auto openTraceError = GetLastError();
         Stop();
@@ -510,16 +513,23 @@ ULONG PMTraceSession::Start(
     // Save the initial time to base capture off of.  ETL captures use the
     // time of the first event, which matches GPUVIEW usage, and realtime
     // captures are based off the timestamp here.
-    switch (traceProps.LogfileHeader.ReservedFlags) {
-    case 2: // System time
-        mQpcFrequency.QuadPart = 10000000ull;
+    mTimestampType = (TimestampType) traceProps.LogfileHeader.ReservedFlags;
+    switch (mTimestampType) {
+    case TIMESTAMP_TYPE_SYSTEM_TIME:
+        mTimestampFrequency.QuadPart = 10000000ull;
         break;
-    case 3: // CPU cycle counter
-        mQpcFrequency.QuadPart = 1000000ull * traceProps.LogfileHeader.CpuSpeedInMHz;
+    case TIMESTAMP_TYPE_CPU_CYCLE_COUNTER:
+        mTimestampFrequency.QuadPart = 1000000ull * traceProps.LogfileHeader.CpuSpeedInMHz;
         break;
-    default: // 1 == QPC
-        mQpcFrequency = traceProps.LogfileHeader.PerfFreq;
+    case TIMESTAMP_TYPE_QPC:
+    default:
+        mTimestampFrequency = traceProps.LogfileHeader.PerfFreq;
         break;
+    }
+
+    // Default to systemtime frequency if the frequency didn't load correctly.
+    if (mTimestampFrequency.QuadPart == 0) {
+        mTimestampFrequency.QuadPart = 10000000ull;
     }
 
     if (mIsRealtimeSession) {
@@ -529,20 +539,20 @@ ULONG PMTraceSession::Start(
         QueryPerformanceCounter(&qpc1);
         GetSystemTimeAsFileTime(&ft);
         QueryPerformanceCounter(&qpc2);
-        FileTimeToLocalFileTime(&ft, &mStartTime);
-        mStartQpc.QuadPart = qpc1.QuadPart + (qpc2.QuadPart - qpc1.QuadPart) / 2;
+        FileTimeToLocalFileTime(&ft, (FILETIME*) &mStartFileTime);
+        mStartTimestamp.QuadPart = (qpc1.QuadPart + qpc2.QuadPart) / 2;
     } else {
-        SYSTEMTIME ust = {};
-        SYSTEMTIME lst = {};
+        // Convert start FILETIME to local start FILETIME
+        SYSTEMTIME ust{};
+        SYSTEMTIME lst{};
         FileTimeToSystemTime((FILETIME const*) &traceProps.LogfileHeader.StartTime, &ust);
         SystemTimeToTzSpecificLocalTime(&traceProps.LogfileHeader.TimeZone, &ust, &lst);
-        SystemTimeToFileTime(&lst, &mStartTime);
+        SystemTimeToFileTime(&lst, (FILETIME*) &mStartFileTime);
+        // The above conversion stops at milliseconds, so copy the rest over too
+        mStartFileTime += traceProps.LogfileHeader.StartTime.QuadPart % 10000;
     }
 
-    InitializeTimestampInfo(&mStartQpc, mQpcFrequency);
-
-    mQpcPerMilliSecond  = 0.001 * mQpcFrequency.QuadPart;
-    mMilliSecondsPerQpc = 1000.0 / mQpcFrequency.QuadPart;
+    InitializeTimestampInfo(&mStartTimestamp, mTimestampFrequency);
 
     return ERROR_SUCCESS;
 }
@@ -594,41 +604,42 @@ ULONG StopNamedTraceSession(wchar_t const* sessionName)
     return ControlTraceW((TRACEHANDLE) 0, sessionName, &sessionProps, EVENT_TRACE_CONTROL_STOP);
 }
 
-double PMTraceSession::QpcDeltaToMilliSeconds(uint64_t qpcDelta) const
+double PMTraceSession::TimestampDeltaToMilliSeconds(uint64_t timestampDelta) const
 {
-    return mMilliSecondsPerQpc * qpcDelta;
+    return 1000.0 * timestampDelta / mTimestampFrequency.QuadPart;
 }
 
-double PMTraceSession::QpcDeltaToUnsignedMilliSeconds(uint64_t qpcFrom, uint64_t qpcTo) const
+double PMTraceSession::TimestampDeltaToUnsignedMilliSeconds(uint64_t timestampFrom, uint64_t timestampTo) const
 {
-    return qpcFrom == 0 || qpcTo <= qpcFrom ? 0.0 : QpcDeltaToMilliSeconds(qpcTo - qpcFrom);
+    return timestampFrom == 0 || timestampTo <= timestampFrom ? 0.0 : TimestampDeltaToMilliSeconds(timestampTo - timestampFrom);
 }
 
-double PMTraceSession::QpcDeltaToMilliSeconds(uint64_t qpcFrom, uint64_t qpcTo) const
+double PMTraceSession::TimestampDeltaToMilliSeconds(uint64_t timestampFrom, uint64_t timestampTo) const
 {
-    return qpcFrom == 0 || qpcTo == 0 || qpcFrom == qpcTo ? 0.0 :
-        qpcTo > qpcFrom ? QpcDeltaToMilliSeconds(qpcTo - qpcFrom) :
-                         -QpcDeltaToMilliSeconds(qpcFrom - qpcTo);
+    return timestampFrom == 0 || timestampTo == 0 || timestampFrom == timestampTo ? 0.0 :
+           timestampTo > timestampFrom                                            ? TimestampDeltaToMilliSeconds(timestampTo - timestampFrom)
+                                                                                  : -TimestampDeltaToMilliSeconds(timestampFrom - timestampTo);
 }
 
-uint64_t PMTraceSession::MilliSecondsDeltaToQpc(double millisecondsDelta) const
+uint64_t PMTraceSession::MilliSecondsDeltaToTimestamp(double millisecondsDelta) const
 {
-    return (uint64_t) (millisecondsDelta * mQpcPerMilliSecond);
+    return (uint64_t) (0.001 * millisecondsDelta * mTimestampFrequency.QuadPart);
 }
 
-double PMTraceSession::QpcToMilliSeconds(uint64_t qpc) const
+double PMTraceSession::TimestampToMilliSeconds(uint64_t timestamp) const
 {
-    return QpcDeltaToMilliSeconds(qpc - mStartQpc.QuadPart);
+    return TimestampDeltaToMilliSeconds(timestamp - mStartTimestamp.QuadPart);
 }
 
-void PMTraceSession::QpcToLocalSystemTime(uint64_t qpc, SYSTEMTIME* st, uint64_t* ns) const
+void PMTraceSession::TimestampToLocalSystemTime(uint64_t timestamp, SYSTEMTIME* st, uint64_t* ns) const
 {
-    double   delta100nsd = QpcDeltaToMilliSeconds(mStartQpc.QuadPart, qpc) * 10000.0;
-    uint64_t delta100nsu = (uint64_t) delta100nsd;
+    if (mTimestampType != PMTraceSession::TIMESTAMP_TYPE_SYSTEM_TIME) {
+        auto delta100ns = (timestamp - mStartTimestamp.QuadPart) * 10000000ull / mTimestampFrequency.QuadPart;
+        timestamp = mStartFileTime + delta100ns;
+    }
 
-    uint64_t num100nsSinceEpoch = (*(uint64_t*) &mStartTime) + delta100nsu;
-
-    FileTimeToSystemTime((FILETIME const*) &num100nsSinceEpoch, st);
-
-    *ns = ((uint64_t) (delta100nsd * 100.0 + 0.5)) - delta100nsu;
+    FILETIME lft{};
+    FileTimeToLocalFileTime((FILETIME*) &timestamp, &lft);
+    FileTimeToSystemTime(&lft, st);
+    *ns = (timestamp % 10000000) * 100;
 }

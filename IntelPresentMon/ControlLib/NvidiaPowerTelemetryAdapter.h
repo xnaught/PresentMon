@@ -35,5 +35,6 @@ namespace pwr::nv
 		std::string name = "Unknown Adapter Name";
 		mutable std::mutex historyMutex;
 		TelemetryHistory<PresentMonPowerTelemetryInfo> history{ PowerTelemetryAdapter::defaultHistorySize };
+		bool useNvmlTemperature = false;
 	};
 }

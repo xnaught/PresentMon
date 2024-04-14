@@ -20,7 +20,6 @@ struct PM_DYNAMIC_QUERY
 	// Data used to calculate the requested metrics
 	double windowSizeMs = 0;
 	double metricOffsetMs = 0.;
-	PM_DYNAMIC_QUERY* dynamicQueryHandle = nullptr;
 	size_t queryCacheSize = 0;
 	std::optional<uint32_t> cachedGpuInfoIndex;
 };

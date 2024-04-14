@@ -147,22 +147,22 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
         if (track_gpu_video)  params_.emplace_back(L"--track_gpu_video");
         if (!track_input)     params_.emplace_back(L"--no_track_input");
     } else {
-        CheckAll(headerColumnIndex_, &columnsOK, { Header_CPUDuration,
-                                                   Header_CPUFramePacingStall });
+        CheckAll(headerColumnIndex_, &columnsOK, { Header_CPUBusy,
+                                                   Header_CPUWait });
 
-        size_t time          = CheckOne(headerColumnIndex_, &columnsOK,      { Header_CPUFrameTime,
-                                                                               Header_CPUFrameQPC,
-                                                                               Header_CPUFrameQPCTime,
-                                                                               Header_CPUFrameDateTime });
+        size_t time          = CheckOne(headerColumnIndex_, &columnsOK,      { Header_CPUStartTime,
+                                                                               Header_CPUStartQPC,
+                                                                               Header_CPUStartQPCTime,
+                                                                               Header_CPUStartDateTime });
         auto track_display   = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_AllowsTearing,
                                                                                Header_PresentMode,
                                                                                Header_DisplayLatency,
-                                                                               Header_DisplayDuration });
+                                                                               Header_DisplayedTime });
         auto track_gpu       = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_GPULatency,
-                                                                               Header_GPUDuration,
-                                                                               Header_GPUBusy });
+                                                                               Header_GPUBusy,
+                                                                               Header_GPUWait });
         auto track_gpu_video = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_VideoBusy });
-        auto track_input     = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_InputLatency });
+        auto track_input     = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_ClickToPhotonLatency });
 
         switch (time) {
         case 1: params_.emplace_back(L"--qpc_time");    break;

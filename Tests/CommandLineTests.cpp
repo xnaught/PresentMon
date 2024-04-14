@@ -196,10 +196,12 @@ void InputTest(uint32_t v)
         return;
     }
 
-    char const* inputHeader = v == 1 ? "msSinceInput" : "InputLatency";
+    char const* inputHeader = v == 1 ? "msSinceInput" : "ClickToPhotonLatency";
 
     auto idxInputHeader = csv.GetColumnIndex(inputHeader);
-    ASSERT_NE(idxInputHeader, SIZE_MAX) << "    Output missing required column: " << inputHeader;
+    if (idxInputHeader == SIZE_MAX) {
+       FAIL() << "    Output missing required column: " << inputHeader;
+    }
 
     uint32_t nonZeroInputRowCount = 0;
     while (!::testing::Test::HasFailure() && csv.ReadRow()) {

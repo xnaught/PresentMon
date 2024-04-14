@@ -228,6 +228,10 @@ const PmNsmFrameData* StreamClient::PeekPreviousFrame()
 
 PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData)
 {
+    if (pNsmData == nullptr) {
+        return PM_STATUS::PM_STATUS_FAILURE;
+    }
+
     // nullify point so that if we exit early it will be null
     *pNsmData = nullptr;
 
@@ -273,7 +277,7 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
     }
 
     *pNsmData = ReadFrameByIdx(next_dequeue_idx_);
-    if (pNsmData) {
+    if (*pNsmData) {
         next_dequeue_idx_ = (next_dequeue_idx_ + 1) % nsm_hdr->max_entries;
         current_dequeue_frame_num_++;
         return PM_STATUS::PM_STATUS_SUCCESS;

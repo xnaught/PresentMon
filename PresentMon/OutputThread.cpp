@@ -237,7 +237,7 @@ static void UpdateChain(
     SwapChainData* chain,
     PresentEvent const& p)
 {
-    chain->mCPUFrameQPC         = p.PresentStartTime + p.TimeInPresent;
+    chain->mNextFrameCPUStart   = p.PresentStartTime + p.TimeInPresent;
     chain->mPresentMode         = p.PresentMode;
     chain->mPresentRuntime      = p.Runtime;
     chain->mPresentSyncInterval = p.SyncInterval;
@@ -259,31 +259,30 @@ static void ReportMetrics1(
     bool isRecording,
     bool computeAvg)
 {
-    uint64_t lastPresentedStartTime  = chain->mLastPresentStartTime;
-    uint64_t lastDisplayedScreenTime = chain->mLastDisplayedScreenTime;
+    bool displayed = p.FinalState == PresentResult::Presented;
 
     FrameMetrics1 metrics;
-    metrics.msBetweenPresents      = pmSession.QpcDeltaToUnsignedMilliSeconds(lastPresentedStartTime, p.PresentStartTime);
-    metrics.msInPresentApi         = pmSession.QpcDeltaToMilliSeconds(p.TimeInPresent);
-    metrics.msUntilRenderComplete  = pmSession.QpcDeltaToMilliSeconds(p.PresentStartTime, p.ReadyTime);
-    metrics.msUntilDisplayed       = pmSession.QpcDeltaToUnsignedMilliSeconds(p.PresentStartTime, p.ScreenTime);
-    metrics.msBetweenDisplayChange = pmSession.QpcDeltaToUnsignedMilliSeconds(lastDisplayedScreenTime, p.ScreenTime);
-    metrics.msUntilRenderStart     = pmSession.QpcDeltaToMilliSeconds(p.PresentStartTime, p.GPUStartTime);
-    metrics.msGPUDuration          = pmSession.QpcDeltaToMilliSeconds(p.GPUDuration);
-    metrics.msVideoDuration        = pmSession.QpcDeltaToMilliSeconds(p.GPUVideoDuration);
-    metrics.msSinceInput           = p.InputTime == 0 ? 0 : pmSession.QpcDeltaToMilliSeconds(p.PresentStartTime - p.InputTime);
+    metrics.msBetweenPresents      = !chain->mPresentInfoValid ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastPresentStartTime, p.PresentStartTime);
+    metrics.msInPresentApi         = pmSession.TimestampDeltaToMilliSeconds(p.TimeInPresent);
+    metrics.msUntilRenderComplete  = pmSession.TimestampDeltaToMilliSeconds(p.PresentStartTime, p.ReadyTime);
+    metrics.msUntilDisplayed       = !displayed ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p.PresentStartTime, p.ScreenTime);
+    metrics.msBetweenDisplayChange = !displayed || chain->mLastDisplayedScreenTime == 0 ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastDisplayedScreenTime, p.ScreenTime);
+    metrics.msUntilRenderStart     = pmSession.TimestampDeltaToMilliSeconds(p.PresentStartTime, p.GPUStartTime);
+    metrics.msGPUDuration          = pmSession.TimestampDeltaToMilliSeconds(p.GPUDuration);
+    metrics.msVideoDuration        = pmSession.TimestampDeltaToMilliSeconds(p.GPUVideoDuration);
+    metrics.msSinceInput           = p.InputTime == 0 ? 0 : pmSession.TimestampDeltaToMilliSeconds(p.PresentStartTime - p.InputTime);
 
     if (isRecording) {
         UpdateCsv(pmSession, processInfo, p, metrics);
     }
 
     if (computeAvg) {
-        UpdateAverage(&chain->mAvgCPUDuration, metrics.msBetweenPresents);
+        UpdateAverage(&chain->mAvgCPUBusy, metrics.msBetweenPresents);
         UpdateAverage(&chain->mAvgGPUDuration, metrics.msGPUDuration);
-        if (p.FinalState == PresentResult::Presented) {
-            UpdateAverage(&chain->mAvgDisplayLatency, pmSession.QpcDeltaToMilliSeconds(p.PresentStartTime, p.ScreenTime));
-            if (lastDisplayedScreenTime != 0) {
-                UpdateAverage(&chain->mAvgDisplayDuration, metrics.msBetweenDisplayChange);
+        if (metrics.msUntilDisplayed > 0) {
+            UpdateAverage(&chain->mAvgDisplayLatency, metrics.msUntilDisplayed);
+            if (metrics.msBetweenDisplayChange > 0) {
+                UpdateAverage(&chain->mAvgDisplayedTime, metrics.msBetweenDisplayChange);
             }
         }
     }
@@ -303,9 +302,6 @@ static void ReportMetrics(
     // PB = PresentStartTime
     // PE = PresentEndTime
     // D  = ScreenTime
-    // F  = CPUFrameTime/CPUDuration
-    // S  = CPUFramePacingStall
-    // D  = DisplayDuration
     //
     // Previous PresentEvent:  PB--PE----D
     // p:                          |        PB--PE----D
@@ -313,35 +309,37 @@ static void ReportMetrics(
     //                             |        |   |     |     PB--PE
     // nextDisplayedPresent:       |        |   |     |             PB--PE----D
     //                             |        |   |     |                       |
-    // CPUFrameTime/CPUDuration:   |------->|   |     |                       |
-    // CPUFramePacingStall:                 |-->|     |                       |
+    // CPUStartTime/CPUBusy:       |------->|   |     |                       |
+    // CPUWait:                             |-->|     |                       |
     // DisplayLatency:             |----------------->|                       |
-    // DisplayDuration:                               |---------------------->|
+    // DisplayedTime:                                 |---------------------->|
 
     bool displayed = p.FinalState == PresentResult::Presented;
 
+    double gpuDuration = pmSession.TimestampDeltaToUnsignedMilliSeconds(p.GPUStartTime, p.ReadyTime);
+
     FrameMetrics metrics;
-    metrics.mCPUFrameQPC         = chain->mCPUFrameQPC;
-    metrics.mCPUDuration         = pmSession.QpcDeltaToUnsignedMilliSeconds(chain->mCPUFrameQPC, p.PresentStartTime);
-    metrics.mCPUFramePacingStall = pmSession.QpcDeltaToMilliSeconds(p.TimeInPresent);
-    metrics.mGPULatency          = pmSession.QpcDeltaToUnsignedMilliSeconds(chain->mCPUFrameQPC, p.GPUStartTime);
-    metrics.mGPUDuration         = pmSession.QpcDeltaToUnsignedMilliSeconds(p.GPUStartTime, p.ReadyTime);
-    metrics.mGPUBusy             = pmSession.QpcDeltaToMilliSeconds(p.GPUDuration);
-    metrics.mVideoBusy           = pmSession.QpcDeltaToMilliSeconds(p.GPUVideoDuration);
-    metrics.mDisplayLatency      = !displayed       ? 0 : pmSession.QpcDeltaToUnsignedMilliSeconds(chain->mCPUFrameQPC, p.ScreenTime);
-    metrics.mDisplayDuration     = !displayed       ? 0 : pmSession.QpcDeltaToUnsignedMilliSeconds(p.ScreenTime, nextDisplayedPresent->ScreenTime);
-    metrics.mInputLatency        = p.InputTime == 0 ? 0 : pmSession.QpcDeltaToUnsignedMilliSeconds(p.InputTime, p.ScreenTime);
+    metrics.mCPUStart             = chain->mNextFrameCPUStart;
+    metrics.mCPUBusy              = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p.PresentStartTime);
+    metrics.mCPUWait              = pmSession.TimestampDeltaToMilliSeconds(p.TimeInPresent);
+    metrics.mGPULatency           = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p.GPUStartTime);
+    metrics.mGPUBusy              = pmSession.TimestampDeltaToMilliSeconds(p.GPUDuration);
+    metrics.mVideoBusy            = pmSession.TimestampDeltaToMilliSeconds(p.GPUVideoDuration);
+    metrics.mGPUWait              = std::max(0.0, gpuDuration - metrics.mGPUBusy);
+    metrics.mDisplayLatency       = !displayed       ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p.ScreenTime);
+    metrics.mDisplayedTime        = !displayed       ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p.ScreenTime, nextDisplayedPresent->ScreenTime);
+    metrics.mClickToPhotonLatency = p.InputTime == 0 ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p.InputTime, p.ScreenTime);
 
     if (isRecording) {
         UpdateCsv(pmSession, processInfo, p, metrics);
     }
 
     if (computeAvg) {
-        UpdateAverage(&chain->mAvgCPUDuration, metrics.mCPUDuration);
-        UpdateAverage(&chain->mAvgGPUDuration, metrics.mGPUBusy);
+        UpdateAverage(&chain->mAvgCPUBusy, metrics.mCPUBusy);
+        UpdateAverage(&chain->mAvgGPUDuration, gpuDuration);
         if (displayed) {
             UpdateAverage(&chain->mAvgDisplayLatency, metrics.mDisplayLatency);
-            UpdateAverage(&chain->mAvgDisplayDuration, metrics.mDisplayDuration);
+            UpdateAverage(&chain->mAvgDisplayedTime, metrics.mDisplayedTime);
         }
     }
 
@@ -350,15 +348,15 @@ static void ReportMetrics(
 
 static void PruneOldSwapChainData(
     PMTraceSession const& pmSession,
-    uint64_t latestQpc)
+    uint64_t latestTimestamp)
 {
-    auto minQpc = latestQpc - pmSession.MilliSecondsDeltaToQpc(4000.0);
+    auto minTimestamp = latestTimestamp - pmSession.MilliSecondsDeltaToTimestamp(4000.0);
 
     for (auto& pair : gProcesses) {
         auto processInfo = &pair.second;
         for (auto ii = processInfo->mSwapChain.begin(), ie = processInfo->mSwapChain.end(); ii != ie; ) {
             auto chain = &ii->second;
-            if (chain->mCPUFrameQPC < minQpc) {
+            if (chain->mNextFrameCPUStart < minTimestamp) {
                 ii = processInfo->mSwapChain.erase(ii);
             } else {
                 ++ii;
@@ -436,7 +434,7 @@ static bool GetPresentProcessInfo(
 
     *outProcessInfo = processInfo;
     *outChain       = chain;
-    *outPresentTime = chain->mCPUFrameQPC;
+    *outPresentTime = chain->mNextFrameCPUStart;
     return false;
 }
 

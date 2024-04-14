@@ -3,7 +3,7 @@
 
 // enum annotation (enum_name_fragment, key_name_fragment, name, short_name, description)
 #define ENUM_KEY_LIST_METRIC(X_) \
-		X_(METRIC, APPLICATION, "Application", "", "Name of the executable of the process being targetted") \
+		X_(METRIC, APPLICATION, "Application", "", "Name of the executable of the process being targeted") \
 		X_(METRIC, SWAP_CHAIN_ADDRESS, "Swap Chain Address", "", "Address of the swap chain used to present, useful as a unique identifier") \
 \
 		X_(METRIC, GPU_VENDOR, "GPU Vendor", "", "Vendor name of the GPU") \
@@ -36,12 +36,11 @@
 \
 		X_(METRIC, GPU_LATENCY, "GPU Latency", "", "How long it took until GPU work for this frame started") \
 		X_(METRIC, DISPLAY_LATENCY, "Display Latency", "", "Time between frame submission and scan out to display") \
-		X_(METRIC, INPUT_LATENCY, "Input To Frame Start Latency", "", "Time between input and display") \
 		X_(METRIC, CLICK_TO_PHOTON_LATENCY, "Click To Photon Latency", "", "Time between input and display") \
 		\
 		X_(METRIC, GPU_SUSTAINED_POWER_LIMIT, "GPU Sustained Power Limit", "", "Sustained power limit of the GPU") \
 		X_(METRIC, GPU_POWER, "GPU Power", "", "Power consumed by the graphics adapter") \
-		X_(METRIC, GPU_VOLTAGE, "GPU Voltage", "", "Voltage consumet by the graphics adapter") \
+		X_(METRIC, GPU_VOLTAGE, "GPU Voltage", "", "Voltage consumed by the graphics adapter") \
 		X_(METRIC, GPU_FREQUENCY, "GPU Frequency", "", "Clock speed of the GPU cores") \
 		X_(METRIC, GPU_TEMPERATURE, "GPU Temperature", "", "Temperature of the GPU") \
 		X_(METRIC, GPU_FAN_SPEED, "GPU Fan Speed", "", "Rate at which a GPU cooler fan is rotating") \
@@ -56,7 +55,7 @@
 		X_(METRIC, GPU_UTILIZATION_LIMITED, "GPU Utilization Limited", "", "GPU frequency is being limited due to low GPU utilization") \
 \
 		X_(METRIC, GPU_MEM_POWER, "GPU Memory Power", "", "Power consumed by the GPU memory") \
-		X_(METRIC, GPU_MEM_VOLTAGE, "GPU Memory Voltage", "", "Voltage consumet by the GPU memory") \
+		X_(METRIC, GPU_MEM_VOLTAGE, "GPU Memory Voltage", "", "Voltage consumed by the GPU memory") \
 		X_(METRIC, GPU_MEM_FREQUENCY, "GPU Memory Frequency", "", "Clock speed of the GPU memory") \
 		X_(METRIC, GPU_MEM_EFFECTIVE_FREQUENCY, "GPU Memory Effective Frequency", "", "Effective data transfer rate GPU memory can sustain") \
 		X_(METRIC, GPU_MEM_TEMPERATURE, "GPU Memory Temperature", "", "Temperature of the GPU memory") \

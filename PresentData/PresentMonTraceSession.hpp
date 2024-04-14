@@ -1,16 +1,21 @@
-// Copyright (C) 2020,2023 Intel Corporation
+// Copyright (C) 2020,2023-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 struct PMTraceConsumer;
 
 struct PMTraceSession {
+    enum TimestampType {
+        TIMESTAMP_TYPE_QPC = 1,
+        TIMESTAMP_TYPE_SYSTEM_TIME = 2,
+        TIMESTAMP_TYPE_CPU_CYCLE_COUNTER = 3,
+    };
+
     PMTraceConsumer* mPMConsumer = nullptr; // Required PMTraceConsumer instance
 
-    LARGE_INTEGER mStartQpc = {};
-    LARGE_INTEGER mQpcFrequency = {};
-    double mQpcPerMilliSecond = 0.0;
-    double mMilliSecondsPerQpc = 0.0;
-    FILETIME mStartTime = {};
+    LARGE_INTEGER mStartTimestamp = {};
+    LARGE_INTEGER mTimestampFrequency = {};
+    uint64_t mStartFileTime = 0;
+    TimestampType mTimestampType = TIMESTAMP_TYPE_QPC;
 
     TRACEHANDLE mSessionHandle = 0;                         // invalid session handles are 0
     TRACEHANDLE mTraceHandle = INVALID_PROCESSTRACE_HANDLE; // invalid trace handles are INVALID_PROCESSTRACE_HANDLE
@@ -26,12 +31,12 @@ struct PMTraceSession {
                 wchar_t const* sessionName); // Required session name
     void Stop();
 
-    double QpcDeltaToMilliSeconds(uint64_t qpcDelta) const;
-    double QpcDeltaToMilliSeconds(uint64_t qpcFrom, uint64_t qpcTo) const;
-    double QpcDeltaToUnsignedMilliSeconds(uint64_t qpcFrom, uint64_t qpcTo) const;
-    double QpcToMilliSeconds(uint64_t qpc) const;
-    void QpcToLocalSystemTime(uint64_t qpc, SYSTEMTIME* st, uint64_t* ns) const;
-    uint64_t MilliSecondsDeltaToQpc(double millisecondsDelta) const;
+    double TimestampDeltaToMilliSeconds(uint64_t timestampDelta) const;
+    double TimestampDeltaToMilliSeconds(uint64_t timestampFrom, uint64_t timestampTo) const;
+    double TimestampDeltaToUnsignedMilliSeconds(uint64_t timestampFrom, uint64_t timestampTo) const;
+    double TimestampToMilliSeconds(uint64_t timestamp) const;
+    void TimestampToLocalSystemTime(uint64_t timestamp, SYSTEMTIME* st, uint64_t* ns) const;
+    uint64_t MilliSecondsDeltaToTimestamp(double millisecondsDelta) const;
 };
 
 ULONG StopNamedTraceSession(wchar_t const* sessionName);

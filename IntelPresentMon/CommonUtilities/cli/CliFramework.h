@@ -27,6 +27,12 @@ namespace pmon::util::cli
 			ConvertedNarrowOptions_(int argc, const wchar_t* const* wargv);
 			~ConvertedNarrowOptions_();
 			const char* const* GetRawPointerArray() const;
+
+			ConvertedNarrowOptions_(const ConvertedNarrowOptions_&) = delete;
+			ConvertedNarrowOptions_ & operator=(const ConvertedNarrowOptions_&) = delete;
+			ConvertedNarrowOptions_(ConvertedNarrowOptions_&&) = delete;
+			ConvertedNarrowOptions_ & operator=(ConvertedNarrowOptions_&&) = delete;
+
 		private:
 			std::vector<char*> stringPointerArray;
 		};
@@ -87,6 +93,11 @@ namespace pmon::util::cli
 		{
 			pOption_ = pParent->app_.add_option(std::move(names), data_, std::move(description));
 		}
+		Option(const Option&) = delete;
+		Option & operator=(const Option&) = delete;
+		Option(Option&&) = delete;
+		Option & operator=(Option&&) = delete;
+		~Option() = default;
 		const T& operator*() const
 		{
 			return data_;

@@ -86,16 +86,16 @@ struct CommandLineArgs {
 
 // Metrics computed per-frame.  Duration and Latency metrics are in milliseconds.
 struct FrameMetrics {
-    uint64_t mCPUFrameQPC;
-    double mCPUDuration;
-    double mCPUFramePacingStall;
+    uint64_t mCPUStart;
+    double mCPUBusy;
+    double mCPUWait;
     double mGPULatency;
-    double mGPUDuration;
     double mGPUBusy;
     double mVideoBusy;
+    double mGPUWait;
     double mDisplayLatency;
-    double mDisplayDuration;
-    double mInputLatency;
+    double mDisplayedTime;
+    double mClickToPhotonLatency;
 };
 
 struct FrameMetrics1 {
@@ -122,7 +122,7 @@ struct SwapChainData {
     // Present info
     uint64_t    mLastPresentStartTime = 0;
     uint64_t    mLastDisplayedScreenTime = 0;
-    uint64_t    mCPUFrameQPC = 0;
+    uint64_t    mNextFrameCPUStart = 0;
     PresentMode mPresentMode = PresentMode::Unknown;
     Runtime     mPresentRuntime = Runtime::Other;
     int32_t     mPresentSyncInterval = 0;
@@ -130,10 +130,10 @@ struct SwapChainData {
     bool        mPresentInfoValid = false;
 
     // Frame statistics
-    float mAvgCPUDuration = 0.f;
+    float mAvgCPUBusy = 0.f;
     float mAvgGPUDuration = 0.f;
     float mAvgDisplayLatency = 0.f;
-    float mAvgDisplayDuration = 0.f;
+    float mAvgDisplayedTime = 0.f;
 };
 
 struct ProcessInfo {

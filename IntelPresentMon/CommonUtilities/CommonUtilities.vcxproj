@@ -30,6 +30,9 @@
     <ClCompile Include="Hash.cpp" />
     <ClCompile Include="str\String.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="vcpkg.json" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>

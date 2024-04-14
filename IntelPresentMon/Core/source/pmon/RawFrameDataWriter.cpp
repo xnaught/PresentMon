@@ -8,6 +8,7 @@
 #include <PresentMonAPIWrapperCommon/EnumMap.h>
 #include <format>
 #include <array>
+#include "RawFrameDataMetricList.h"
 
 namespace p2c::pmon
 {
@@ -100,7 +101,8 @@ namespace p2c::pmon
             if (available) {
                 const auto typeId = metric.GetDataTypeInfo().GetFrameType();
                 // DISPLAYED_TIME and DISPLAY_LATENCY should just show zeros when NaN is encountered
-                const bool zeroForNA = metricId == PM_METRIC_DISPLAYED_TIME || PM_METRIC_DISPLAY_LATENCY;
+                const bool zeroForNA = (metricId == PM_METRIC_DISPLAYED_TIME)
+                    || (metricId == PM_METRIC_DISPLAY_LATENCY);
                 // special case for TIME, it needs to be relative to TIME of first frame and scaled ms => s
                 if (metricId == PM_METRIC_TIME) {
                     pAnnotation = std::make_unique<TypedAnnotation_<TimeAnnotationType_>>();
@@ -134,15 +136,7 @@ namespace p2c::pmon
     class QueryElementContainer_
     {
     public:
-        // types
-        struct ElementDefinition
-        {
-            PM_METRIC metricId;
-            uint32_t deviceId;
-            std::optional<uint32_t> index;
-        };
-        // functions
-        QueryElementContainer_(std::span<const ElementDefinition> elements,
+        QueryElementContainer_(std::span<const RawFrameQueryElementDefinition> elements,
             pmapi::Session& session, const pmapi::intro::Root& introRoot)
         {
             for (auto& el : elements) {
@@ -249,67 +243,7 @@ namespace p2c::pmon
         pStatsTracker{ frameStatsPath ? std::make_unique<StatisticsTracker>() : nullptr },
         file{ path }
     {
-        using Element = QueryElementContainer_::ElementDefinition;
-
-        std::array queryElements{
-            Element{.metricId = PM_METRIC_TIME, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_SWAP_CHAIN_ADDRESS, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_PRESENT_RUNTIME, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_SYNC_INTERVAL, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_PRESENT_FLAGS, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_ALLOWS_TEARING, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_PRESENT_MODE, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_CPU_FRAME_QPC, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_FRAME_TIME, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_CPU_BUSY, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_CPU_WAIT, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_GPU_LATENCY, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_GPU_TIME, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_GPU_BUSY, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_GPU_WAIT, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_DISPLAY_LATENCY, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_DISPLAYED_TIME, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_CLICK_TO_PHOTON_LATENCY, .deviceId = 0 },
-
-            Element{.metricId = PM_METRIC_GPU_POWER, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_VOLTAGE, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_FREQUENCY, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_TEMPERATURE, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_UTILIZATION, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_MEDIA_UTILIZATION, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_MEM_POWER, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_MEM_VOLTAGE, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_MEM_FREQUENCY, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_MEM_EFFECTIVE_FREQUENCY, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_MEM_TEMPERATURE, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_MEM_SIZE, .deviceId = activeDeviceId }, // special case filling static
-            Element{.metricId = PM_METRIC_GPU_MEM_USED, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_MEM_MAX_BANDWIDTH, .deviceId = activeDeviceId }, // special case filling static
-            Element{.metricId = PM_METRIC_GPU_MEM_READ_BANDWIDTH, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_MEM_WRITE_BANDWIDTH, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_FAN_SPEED, .deviceId = activeDeviceId, .index = 0 },
-            Element{.metricId = PM_METRIC_GPU_FAN_SPEED, .deviceId = activeDeviceId, .index = 1 },
-            Element{.metricId = PM_METRIC_GPU_FAN_SPEED, .deviceId = activeDeviceId, .index = 2 },
-            Element{.metricId = PM_METRIC_GPU_FAN_SPEED, .deviceId = activeDeviceId, .index = 3 },
-            Element{.metricId = PM_METRIC_GPU_POWER_LIMITED, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_TEMPERATURE_LIMITED, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_CURRENT_LIMITED, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_VOLTAGE_LIMITED, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_UTILIZATION_LIMITED, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_MEM_POWER_LIMITED, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_MEM_TEMPERATURE_LIMITED, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_MEM_CURRENT_LIMITED, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_MEM_VOLTAGE_LIMITED, .deviceId = activeDeviceId },
-            Element{.metricId = PM_METRIC_GPU_MEM_UTILIZATION_LIMITED, .deviceId = activeDeviceId },
-
-            Element{.metricId = PM_METRIC_CPU_UTILIZATION },
-            Element{.metricId = PM_METRIC_CPU_POWER },
-            Element{.metricId = PM_METRIC_CPU_TEMPERATURE },
-            Element{.metricId = PM_METRIC_CPU_FREQUENCY },
-        };
-        // we want the order in the output csv to match the order of the metric ids
-        rn::sort(queryElements, {}, &Element::metricId);
+        auto queryElements = GetRawFrameDataMetricList(activeDeviceId);
         pQueryElementContainer = std::make_unique<QueryElementContainer_>(queryElements, session, introRoot);
         blobs = pQueryElementContainer->MakeBlobs(numberOfBlobs);
                 
@@ -336,7 +270,7 @@ namespace p2c::pmon
                     // tracking frame times
                     pStatsTracker->Push(pQueryElementContainer->ExtractFrameTimeFromBlob(pBlob));
                 }
-                pQueryElementContainer->WriteFrame(procTracker, procName, file, pBlob);
+                pQueryElementContainer->WriteFrame(procTracker.GetPid(), procName, file, pBlob);
             }
         } while (blobs.AllBlobsPopulated()); // if container filled, means more might be left
         file << std::flush;
@@ -344,7 +278,7 @@ namespace p2c::pmon
 
     double RawFrameDataWriter::GetDuration_() const
     {
-        return endTime - startTime;
+        return (endTime - startTime) / 1000.;
     }
 
     void RawFrameDataWriter::WriteStats_()

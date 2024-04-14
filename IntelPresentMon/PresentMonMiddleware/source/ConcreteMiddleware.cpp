@@ -7,6 +7,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <Shlwapi.h>
+#include <numeric>
 #include "../../PresentMonUtils/NamedPipeHelper.h"
 #include "../../PresentMonUtils/QPCUtils.h"
 #include "../../PresentMonAPI2/Internal.h"
@@ -306,8 +307,11 @@ namespace pmon::mid
         char path[MAX_PATH];
         DWORD numChars = sizeof(path);
         handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId);
-        if (QueryFullProcessImageNameA(handle, 0, path, &numChars)) {
-            processName = PathFindFileNameA(path);
+        if (handle) {
+            if (QueryFullProcessImageNameA(handle, 0, path, &numChars)) {
+                processName = PathFindFileNameA(path);
+            }
+            CloseHandle(handle);
         }
         return processName;
     }
@@ -529,7 +533,6 @@ namespace pmon::mid
             offset += qe.dataSize;
         }
 
-        pQuery->dynamicQueryHandle = pQuery.get();
         pQuery->metricOffsetMs = metricOffsetMs;
         pQuery->windowSizeMs = windowSizeMs;
         pQuery->elements = std::vector<PM_QUERY_ELEMENT>{ queryElements.begin(), queryElements.end() };
@@ -697,7 +700,7 @@ void ReportMetrics(
 
         uint64_t index = 0;
         double adjusted_window_size_in_ms = pQuery->windowSizeMs;
-        auto result = queryFrameDataDeltas.emplace(std::pair(std::pair(pQuery->dynamicQueryHandle, processId), uint64_t()));
+        auto result = queryFrameDataDeltas.emplace(std::pair(std::pair(pQuery, processId), uint64_t()));
         auto queryToFrameDataDelta = &result.first->second;
         
         PmNsmFrameData* frame_data = GetFrameDataStart(client, index, SecondsDeltaToQpc(pQuery->metricOffsetMs/1000., client->GetQpcFrequency()), *queryToFrameDataDelta, adjusted_window_size_in_ms);
@@ -1031,7 +1034,7 @@ void ReportMetrics(
                     display_duration.push_back(swapChain.DisplayDuration[i]);
                 }
             }
-            CalculateMetric(output, display_duration, element.stat, true); // Invert the notion of min/max to match PM_METRIC_DISPLAYED_FPS
+            CalculateMetric(output, display_duration, element.stat);
         }
             break;
         case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
@@ -1040,11 +1043,41 @@ void ReportMetrics(
 
         case PM_METRIC_PRESENTED_FPS:
         {
-            std::vector<double> cpu_fps(swapChain.CPUDuration.size());
+            std::vector<double> frameTimes(swapChain.CPUDuration.size());
             for (size_t i = 0; i < swapChain.CPUDuration.size(); ++i) {
-                cpu_fps[i] = 1000.0 / (swapChain.CPUDuration[i] + swapChain.CPUFramePacingStall[i]);
+                frameTimes[i] = swapChain.CPUDuration[i] + swapChain.CPUFramePacingStall[i];
             }
-            CalculateMetric(output, cpu_fps, element.stat, true);
+            switch (element.stat)
+            {
+            case PM_STAT_PERCENTILE_99:
+                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_01);
+                break;
+            case PM_STAT_PERCENTILE_95:
+                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_05);
+                break;
+            case PM_STAT_PERCENTILE_90:
+                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_10);
+                break;
+            case PM_STAT_PERCENTILE_10:
+                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_90);
+                break;
+            case PM_STAT_PERCENTILE_05:
+                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_95);
+                break;
+            case PM_STAT_PERCENTILE_01:
+                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_99);
+                break;
+            case PM_STAT_MAX:
+                CalculateMetric(output, frameTimes, PM_STAT_MIN);
+                break;
+            case PM_STAT_MIN:
+                CalculateMetric(output, frameTimes, PM_STAT_MAX);
+                break;
+            default:
+                CalculateMetric(output, frameTimes, element.stat);
+            }
+            // Convert to FPS
+            output = 1000.0 / output;
         }
             break;
         case PM_METRIC_DISPLAYED_FPS:
@@ -1056,7 +1089,7 @@ void ReportMetrics(
                     displayed_fps.push_back(1000.0 / swapChain.DisplayDuration[i]);
                 }
             }
-            CalculateMetric(output, displayed_fps, element.stat, true);
+            CalculateMetric(output, displayed_fps, element.stat);
         }
             break;
         case PM_METRIC_DROPPED_FRAMES:
@@ -1074,17 +1107,17 @@ void ReportMetrics(
             for (size_t i = 0; i < swapChain.CPUDuration.size(); ++i) {
                 frame_times[i] = swapChain.CPUDuration[i] + swapChain.CPUFramePacingStall[i];
             }
-            CalculateMetric(output, frame_times, element.stat, true);
+            CalculateMetric(output, frame_times, element.stat);
         }
             break;
         case PM_METRIC_CPU_BUSY:
-            CalculateMetric(output, swapChain.CPUDuration, element.stat, false);
+            CalculateMetric(output, swapChain.CPUDuration, element.stat);
             break;
         case PM_METRIC_CPU_WAIT:
-            CalculateMetric(output, swapChain.CPUFramePacingStall, element.stat, true);
+            CalculateMetric(output, swapChain.CPUFramePacingStall, element.stat);
             break;
         case PM_METRIC_GPU_TIME:
-            CalculateMetric(output, swapChain.GPUDuration, element.stat, true);
+            CalculateMetric(output, swapChain.GPUDuration, element.stat);
             break;
         default:
             output = 0.;
@@ -1111,7 +1144,7 @@ void ReportMetrics(
         return;
     }
 
-    void ConcreteMiddleware::CalculateMetric(double& pBlob, std::vector<double>& inData, PM_STAT stat, bool ascending)
+    void ConcreteMiddleware::CalculateMetric(double& pBlob, std::vector<double>& inData, PM_STAT stat)
     {
         auto& output = reinterpret_cast<double&>(pBlob);
         output = 0.;
@@ -1124,13 +1157,20 @@ void ReportMetrics(
                 output /= inData.size();
                 return;
             }
-            if (stat == PM_STAT_MID_POINT)
+            else if (stat == PM_STAT_NON_ZERO_AVG)
+            {
+                std::vector<double> non_zero_data;
+                std::copy_if(inData.begin(), inData.end(), std::back_inserter(non_zero_data),
+                    [](double value) { return value != 0.0; });
+                output = !non_zero_data.empty() ? std::accumulate(non_zero_data.begin(), non_zero_data.end(), 0.0) / non_zero_data.size() : 0.0;
+            }
+            else if (stat == PM_STAT_MID_POINT)
             {
                 size_t middle_index = inData.size() / 2;
                 output = inData[middle_index];
                 return;
             }
-            if (ascending) {
+            else {
                 std::sort(inData.begin(), inData.end());
                 switch (stat)
                 {
@@ -1149,28 +1189,14 @@ void ReportMetrics(
                 case PM_STAT_PERCENTILE_90:
                     output = GetPercentile(inData, 0.10);
                     break;
-                default:
+                case PM_STAT_PERCENTILE_01:
+                    output = GetPercentile(inData, 0.99);
                     break;
-                }
-            }
-            else {
-                std::sort(inData.begin(), inData.end(), std::greater<>());
-                switch (stat)
-                {
-                case PM_STAT_MIN:
-                    output = inData[0];
+                case PM_STAT_PERCENTILE_05:
+                    output = GetPercentile(inData, 0.95);
                     break;
-                case PM_STAT_MAX:
-                    output = inData[inData.size() - 1];
-                    break;
-                case PM_STAT_PERCENTILE_99:
-                    output = GetPercentile(inData, 0.01);
-                    break;
-                case PM_STAT_PERCENTILE_95:
-                    output = GetPercentile(inData, 0.05);
-                    break;
-                case PM_STAT_PERCENTILE_90:
-                    output = GetPercentile(inData, 0.10);
+                case PM_STAT_PERCENTILE_10:
+                    output = GetPercentile(inData, 0.90);
                     break;
                 default:
                     break;
@@ -1444,7 +1470,7 @@ void ReportMetrics(
 
     void ConcreteMiddleware::SaveMetricCache(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob)
     {
-        auto it = cachedMetricDatas.find(std::pair(pQuery->dynamicQueryHandle, processId));
+        auto it = cachedMetricDatas.find(std::pair(pQuery, processId));
         if (it != cachedMetricDatas.end())
         {
             auto& uniquePtr = it->second;
@@ -1454,13 +1480,13 @@ void ReportMetrics(
         {
             auto dataArray = std::make_unique<uint8_t[]>(pQuery->queryCacheSize);
             std::copy(pBlob, pBlob + pQuery->queryCacheSize, dataArray.get());
-            cachedMetricDatas.emplace(std::pair(pQuery->dynamicQueryHandle, processId), std::move(dataArray));
+            cachedMetricDatas.emplace(std::pair(pQuery, processId), std::move(dataArray));
         }
     }
 
     void ConcreteMiddleware::CopyMetricCacheToBlob(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob)
     {
-        auto it = cachedMetricDatas.find(std::pair(pQuery->dynamicQueryHandle, processId));
+        auto it = cachedMetricDatas.find(std::pair(pQuery, processId));
         if (it != cachedMetricDatas.end())
         {
             auto& uniquePtr = it->second;
@@ -1726,6 +1752,12 @@ void ReportMetrics(
         status =
             NamedPipeHelper::DecodeEnumerateAdaptersResponse(&responseBuf, (IPMAdapterInfo*)&adapterInfo);
         if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            return;
+        }
+
+        if (adapterInfo.num_adapters != cachedGpuInfo.size())
+        {
+            LOG(INFO) << "Number of adapters returned from Control Pipe does not match Introspective data";
             return;
         }
 
