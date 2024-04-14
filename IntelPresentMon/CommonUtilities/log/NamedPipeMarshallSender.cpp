@@ -19,81 +19,74 @@ namespace pmon::util::log
 	// how to support per-pipe instance configuration of a filter
 	class NamedPipeInstance
 	{
-	private:
+	public: // types
+		enum class StepResult
+		{
+			Completed,
+			RequiresAwaiting,
+			RequiresDisposal,
+		};
+		enum class State
+		{
+			OutOfCommission,
+			Connecting,
+			Active,
+		};
+	private: // Steps
 		class TransmitHeaderStep
 		{
 		public:
-			TransmitHeaderStep(std::span<const std::byte> data, win::Event* pDecomEvt)
+			TransmitHeaderStep(std::span<const std::byte> data)
 				:
-				sizeField_{ (DWORD)data.size() },
-				pDecommissionEvent_{ pDecomEvt }
+				sizeField_{ (DWORD)data.size() }
 			{}
-			// return true if caller needs to wait on overlapped, false if sequence is terminated
-			bool Execute(NamedPipeInstance& inst)
+			// return needs to signal whether a: sequence complete b: overlapped pending c: recycle pipe [exception]
+			StepResult Execute(NamedPipeInstance& inst)
 			{
-				try {
-					std::span sizeBytes{ reinterpret_cast<const std::byte*>(&sizeField_), sizeof(sizeField_) };
-					if (!initiated_) {
-						inst.InitiateByteTransmission_(sizeBytes);
-						initiated_ = true;
-						return true;
-					}
-					else {
-						inst.ResolveOverlapped_((DWORD)sizeBytes.size());
-						inst.AdvanceStep_();
-						return inst.ExecuteCurrentStep();
-					}
+				std::span sizeBytes{ reinterpret_cast<const std::byte*>(&sizeField_), sizeof(sizeField_) };
+				if (!initiated_) {
+					inst.InitiateByteTransmission_(sizeBytes);
+					initiated_ = true;
+					return StepResult::RequiresAwaiting;
 				}
-				catch (...) {
-					inst.Decommision_();
-					pDecommissionEvent_->Set();
-					return false;
+				else {
+					inst.ResolveOverlapped_((DWORD)sizeBytes.size());
+					return StepResult::Completed;
 				}
 			}
 		private:
 			DWORD sizeField_;
-			win::Event* pDecommissionEvent_;
 			bool initiated_ = false;
 		};
 		class TransmitPayloadStep
 		{
 		public:
-			TransmitPayloadStep(std::span<const std::byte> data, win::Event* pDecomEvt)
+			TransmitPayloadStep(std::span<const std::byte> data)
 				:
-				data_{ std::move(data) },
-				pDecommissionEvent_{ pDecomEvt }
+				data_{ std::move(data) }
 			{}
-			// return true if caller needs to wait on overlapped, false if sequence is terminated
-			bool Execute(NamedPipeInstance& inst)
+			// return needs to signal whether a: sequence complete b: overlapped pending c: recycle pipe [exception]
+			StepResult Execute(NamedPipeInstance& inst)
 			{
-				try {
-					if (!initiated_) {
-						inst.InitiateByteTransmission_(data_);
-						initiated_ = true;
-						return true;
-					}
-					else {
-						inst.ResolveOverlapped_((DWORD)data_.size());
-						inst.AdvanceStep_();
-						return inst.ExecuteCurrentStep();
-					}
+				if (!initiated_) {
+					inst.InitiateByteTransmission_(data_);
+					initiated_ = true;
+					return StepResult::RequiresAwaiting;
 				}
-				catch (...) {
-					inst.Decommision_();
-					pDecommissionEvent_->Set();
-					return false;
+				else {
+					inst.ResolveOverlapped_((DWORD)data_.size());
+					return StepResult::Completed;
 				}
 			}
 		private:
 			std::span<const std::byte> data_;
-			win::Event* pDecommissionEvent_;
 			bool initiated_ = false;
 		};
 		class ConnectStep
 		{
 		public:
-			// return true if caller needs to wait on overlapped, false if sequence is terminated
-			bool Execute(NamedPipeInstance& inst)
+			// return needs to signal whether a: sequence complete b: overlapped pending c: recycle pipe [exception]
+			StepResult Execute(NamedPipeInstance& inst)
 			{
 				if (!initiated_) {
  					const auto result = ConnectNamedPipe(inst.pipeHandle_, inst.overlapped_);
@@ -104,11 +97,12 @@ namespace pmon::util::log
 					}
 					if (const auto error = GetLastError(); error == ERROR_IO_PENDING) {
 						// overlapped operation initiated and waiting for connection
-						return true;
+						return StepResult::RequiresAwaiting;
 					}
-					// TODO: handle pulsed client connect between create and connect
+					// TODO: consider distinguishing between errors where pipe is recycled, and quarantine errors
 					else if (error != ERROR_PIPE_CONNECTED) {
 						// any error other than already connected pseudo-error signal
+						// this will cause the instance to be recycled
 						throw std::runtime_error{ "failed connecting named pipe" };
 					}
 					// if we reach here, pipe has already connected => fall through to finalization
@@ -116,23 +110,17 @@ namespace pmon::util::log
 				// finalization routine, switch over to active mode
 				inst.ResolveOverlapped_(std::nullopt);
 				inst.state_ = State::Active;
-				inst.AdvanceStep_();
-				return inst.ExecuteCurrentStep();
+				return StepResult::Completed;
 			}
 		private:
 			bool initiated_ = false;
 		};
 		using Step = std::variant<TransmitHeaderStep, TransmitPayloadStep, ConnectStep>;
 	public:
-		// types
-		enum class State
-		{
-			OutOfCommission,
-			Connecting,
-			Active,
-		};
 		// functions
-		NamedPipeInstance(const std::wstring& address, size_t nInstances)
+		NamedPipeInstance(const std::wstring& address, size_t nInstances, win::Event& decomissionEvent)
+			:
+			decomissionEvent_{ decomissionEvent }
 		{
 			pipeHandle_ = (win::Handle)CreateNamedPipeW(
 				address.c_str(),
@@ -147,21 +135,31 @@ namespace pmon::util::log
 				throw std::runtime_error("Failed to create named pipe instance for sending");
 			}
 		}
-		bool ExecuteCurrentStep()
+		StepResult ExecuteCurrentStep() noexcept
 		{
-			if (!steps_.empty()) {
-				return std::visit([this](auto& step) { return step.Execute(*this); }, steps_.front());
+			while (!steps_.empty()) {
+				try {
+					auto result = std::visit([this](auto& step) { return step.Execute(*this); }, steps_.front());
+					if (result == StepResult::Completed) {
+						AdvanceStep_();
+						continue;
+					}
+					return result;
+				}
+				catch (...) {
+					return StepResult::RequiresDisposal;
+				}
 			}
-			return false;
+			return StepResult::Completed;
 		}
 		win::Handle::HandleType GetOverlappedEventHandle()
 		{
 			return overlapped_.GetEvent();
 		}
-		void SetTransmissionSequence(std::span<const std::byte> data, win::Event& decomEvt)
+		void SetTransmissionSequence(std::span<const std::byte> data)
 		{
-			steps_.push_back(TransmitHeaderStep{ data, &decomEvt });
-			steps_.push_back(TransmitPayloadStep{ data, &decomEvt });
+			steps_.push_back(TransmitHeaderStep{ data });
+			steps_.push_back(TransmitPayloadStep{ data });
 		}
 		void SetConnectionSequence()
 		{
@@ -174,6 +172,16 @@ namespace pmon::util::log
 		bool NeedsConnection() const
 		{
 			return state_.load() == State::OutOfCommission;
+		}
+		void Decommision()
+		{
+			// TODO: check this result and panic
+			// or alternatively, dispose handle completely on this error
+			DisconnectNamedPipe(pipeHandle_);
+			steps_.clear();
+			overlapped_.ResetOverlapped();
+			state_ = State::OutOfCommission;
+			decomissionEvent_.Set();
 		}
 	private:
 		// functions
@@ -201,19 +209,12 @@ namespace pmon::util::log
 				steps_.pop_front();
 			}
 		}
-		void Decommision_()
-		{
-			// TODO: check this result and panic
-			// or alternatively, dispose handle completely on this error
-			DisconnectNamedPipe(pipeHandle_);
-			overlapped_.ResetOverlapped();
-			state_ = State::OutOfCommission;
-		}
 		// data
 		win::Handle pipeHandle_;
 		win::Overlapped overlapped_;
 		std::deque<Step> steps_;
 		std::atomic<State> state_ = State::OutOfCommission;
+		win::Event& decomissionEvent_;
 	};
 
 	class ScheduledActions
@@ -237,9 +238,15 @@ namespace pmon::util::log
 		}
 		void Push(NamedPipeInstance* pInst)
 		{
-			if (pInst->ExecuteCurrentStep()) {
+			// only overlapped events requiring await should be placed in action container
+			// do first execution to see if insertion is necessary, or if complete synchronously
+			auto result = pInst->ExecuteCurrentStep();
+			if (result == NamedPipeInstance::StepResult::RequiresAwaiting) {
 				instances_.push_back(pInst);
 				overlappedEvents_.push_back(pInst->GetOverlappedEventHandle());
+			}
+			else if (result == NamedPipeInstance::StepResult::RequiresDisposal) {
+				pInst->Decommision();
 			}
 		}
 		// returns interrupt index if unblocking due to interrupt signal
@@ -266,9 +273,18 @@ namespace pmon::util::log
 			if (eventIndex < nEvents) {
 				// account for the exit event being element 0
 				const int instanceIndex = eventIndex - nInterrupts_;
+				const auto pInst = instances_[instanceIndex];
 				// check for sequence completion
-				if (!instances_[instanceIndex]->ExecuteCurrentStep()) {
+				switch (auto result = pInst->ExecuteCurrentStep()) {
+				case NamedPipeInstance::StepResult::Completed:
 					Remove_(instanceIndex);
+					break;
+				case NamedPipeInstance::StepResult::RequiresAwaiting:
+					// default case, keep this instance in the actions container
+					break;
+				case NamedPipeInstance::StepResult::RequiresDisposal:
+					pInst->Decommision();
+					break;
 				}
 			}
 			else {
@@ -305,7 +321,7 @@ namespace pmon::util::log
 		{
 			instances_.reserve(nInstances);
 			for (size_t i = 0; i < nInstances; i++) {
-				instances_.push_back(std::make_unique<NamedPipeInstance>(pipeAddress_, nInstances));
+				instances_.push_back(std::make_unique<NamedPipeInstance>(pipeAddress_, nInstances, decommissionEvent_));
 			}
 			transmissionThread_ = std::jthread{ &NamedPipe::TransmissionThreadProcedure_, this };
 			connectionThread_ = std::jthread{ &NamedPipe::ConnectionThreadProcedure_, this };
@@ -378,7 +394,7 @@ namespace pmon::util::log
 
 					// for all active pipe connections, set transmission sequence and add to action list
 					for (auto& pInst : instances_ | vi::filter(&NamedPipeInstance::IsActive)) {
-						pInst->SetTransmissionSequence(bufferSpan, decommissionEvent_);
+						pInst->SetTransmissionSequence(bufferSpan);
 						actions_.Push(pInst.get());
 					}
 
