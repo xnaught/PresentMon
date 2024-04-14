@@ -3,6 +3,8 @@
 #include <string>
 #include "../win/WinAPI.h"
 #include "../win/Handle.h"
+#include "../win/Event.h"
+#include "../win/Overlapped.h"
 
 
 namespace pmon::util::log
@@ -20,11 +22,8 @@ namespace pmon::util::log
         win::Handle hPipe_;
         std::wstring pipeName_;
         std::string inputBuffer_;
-        OVERLAPPED overlappedConnect_{};
-        OVERLAPPED overlappedRead_{};
-        win::Handle exitEvent_;
-        win::Handle readEvent_;
-        win::Handle connectEvent_;
+        win::Overlapped overlapped_{};
+        win::Event exitEvent_;
 	};
 }
 

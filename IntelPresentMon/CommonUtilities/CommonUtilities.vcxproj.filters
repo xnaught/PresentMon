@@ -114,6 +114,12 @@
     <ClInclude Include="win\Handle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="win\Overlapped.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="win\Event.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">
@@ -174,6 +180,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="win\Handle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="win\Event.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

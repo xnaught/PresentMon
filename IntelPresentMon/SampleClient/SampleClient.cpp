@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
         using namespace pmon::util;
         using namespace std::chrono_literals;
 
-        if (opt.doPipeCli) {
+        if (opt.doPipeSrv) {
             log::NamedPipeMarshallSender senderClient{ L"pml_testpipe" };
             while (true) {
                 std::cout << "SAY> ";
@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
             }
             return 0;
         }
-        if (opt.doPipeSrv) {
+        if (opt.doPipeCli) {
             log::NamedPipeMarshallReceiver receiverServer{ L"pml_testpipe" };
             while (true) {
                 auto e = receiverServer.Pop();

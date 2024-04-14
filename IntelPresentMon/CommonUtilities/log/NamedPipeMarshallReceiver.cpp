@@ -7,39 +7,22 @@
 
 namespace pmon::util::log
 {
-    NamedPipeMarshallReceiver::NamedPipeMarshallReceiver(const std::wstring& pipeName) : pipeName_(L"\\\\.\\pipe\\" + pipeName)
-    {    
-        // Initialize events for overlapped operations
-        connectEvent_ = (win::Handle)CreateEvent(NULL, TRUE, FALSE, NULL); // Manual reset, initially non-signaled
-        readEvent_ = (win::Handle)CreateEvent(NULL, TRUE, FALSE, NULL); // Manual reset, initially non-signaled
-        exitEvent_ = (win::Handle)CreateEvent(NULL, TRUE, FALSE, NULL); // Manual reset event for exit signal
-
-        if (!connectEvent_ || !readEvent_ || !exitEvent_) {
-            throw std::runtime_error("Failed to create events for overlapped operations");
-        }
-
-        overlappedConnect_.hEvent = connectEvent_;
-        overlappedRead_.hEvent = readEvent_;
-
-        // Create the named pipe with overlapped option enabled
-        hPipe_ = (win::Handle)CreateNamedPipeW(
-            pipeName_.c_str(),
-            PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED, // Use overlapped (asynchronous) mode
-            PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE | PIPE_WAIT,
-            1, // Single instance
-            0, // Default buffer sizes
-            0,
-            0, // Default timeout
-            nullptr); // Default security
-
-        if (hPipe_ == INVALID_HANDLE_VALUE) {
-            throw std::runtime_error("Failed to create named pipe");
-        }
-
-        // Initiate an asynchronous connection        
-        if (BOOL connected = ConnectNamedPipe(hPipe_, &overlappedConnect_); 
-            !connected && GetLastError() != ERROR_IO_PENDING && GetLastError() != ERROR_PIPE_CONNECTED) {
-            throw std::runtime_error("Failed to initiate connect to named pipe");
+    NamedPipeMarshallReceiver::NamedPipeMarshallReceiver(const std::wstring& pipeName)
+        :
+        pipeName_(L"\\\\.\\pipe\\" + pipeName)
+    {
+        // Open the named pipe with overlapped option enabled
+        hPipe_ = (win::Handle)CreateFileW(
+            pipeName_.c_str(),            // Pipe name 
+            GENERIC_READ,                 // Desired access: Read access 
+            0,                            // No sharing 
+            NULL,                         // Default security attributes
+            OPEN_EXISTING,                // Opens existing pipe 
+            FILE_FLAG_OVERLAPPED,         // Use overlapped (asynchronous) mode
+            NULL);                        // No template file 
+        // Check if the pipe handle is valid
+        if (!hPipe_) {
+            throw std::runtime_error("Failed to open named pipe");
         }
     }
 
@@ -53,35 +36,13 @@ namespace pmon::util::log
         if (sealed_) {
             throw std::runtime_error{ "Pop called after pipe sealed due to disconnection/error/exit signal" };
         }
-        // only perform connection wait on the first call to Pop()
-        if (!connected_) {
-            // Wait for either the connection to be established or the exit signal
-            {
-                HANDLE waitHandles[] = { overlappedConnect_.hEvent, exitEvent_ };
-                if (auto wait = WaitForMultipleObjects((DWORD)std::size(waitHandles), waitHandles, FALSE, INFINITE);
-                    wait == WAIT_OBJECT_0 + 1) { // Exit event is signaled
-                    return {};
-                }
-            }
-            // Ensure connection is established before proceeding
-            {
-                DWORD bytesTransferred;
-                if (!GetOverlappedResult(hPipe_, &overlappedConnect_, &bytesTransferred, FALSE)) {
-                    // Handle error or disconnection
-                    sealed_ = true;
-                    return {};
-                }
-            }
-            connected_ = true;
-        }
-
 
         // perform the read sequence
         // 1. Initiate an overlapped read for the header
         DWORD bytesRead;
         uint32_t payloadSize = 0;
-        ResetEvent(readEvent_);
-        if (!ReadFile(hPipe_, &payloadSize, sizeof(payloadSize), &bytesRead, &overlappedRead_) &&
+        overlapped_.ResetOverlapped();
+        if (!ReadFile(hPipe_, &payloadSize, sizeof(payloadSize), nullptr, overlapped_) &&
             GetLastError() != ERROR_IO_PENDING) {
             // TODO: differentiate types of error and log unexpected ones (e.g. pipe disconnected is not an error)
             sealed_ = true;
@@ -90,9 +51,8 @@ namespace pmon::util::log
 
         // 2. Wait for the read operation or exit signal
         {
-            HANDLE waitHandles[] = { readEvent_, exitEvent_ };
-            DWORD wait = WaitForMultipleObjects(2, waitHandles, FALSE, INFINITE);
-            if (wait == WAIT_OBJECT_0 + 1) { // Exit event is signaled
+            const auto eventIndex = win::WaitAnyEvent(exitEvent_, overlapped_.GetEvent());
+            if (eventIndex == 0) { // Exit event is signaled
                 CancelIo(hPipe_);
                 sealed_ = true;
                 return {};
@@ -100,8 +60,9 @@ namespace pmon::util::log
         }
 
         // 3. Get the result of the read operation
-        if (auto result = GetOverlappedResult(hPipe_, &overlappedRead_, &bytesRead, FALSE);
+        if (auto result = GetOverlappedResult(hPipe_, overlapped_, &bytesRead, FALSE);
             !result || bytesRead != sizeof(payloadSize)) {
+            // TODO: differentiate types of error and log unexpected ones (e.g. pipe disconnected is not an error)
             sealed_ = true;
             return {};
         }
@@ -109,30 +70,31 @@ namespace pmon::util::log
         // Payload size read successfully, prepare to read the payload using the same pattern
 
         // Reset OVERLAPPED for payload read
-        ResetEvent(readEvent_);
+        overlapped_.ResetOverlapped();
         inputBuffer_.resize(payloadSize); // Resize buffer for payload
 
         // Initiate an overlapped read for the payload
-        if (!ReadFile(hPipe_, inputBuffer_.data(), (DWORD)inputBuffer_.size(), &bytesRead, &overlappedRead_) &&
+        if (!ReadFile(hPipe_, inputBuffer_.data(), (DWORD)inputBuffer_.size(), nullptr, overlapped_) &&
             GetLastError() != ERROR_IO_PENDING) {
+            // TODO: differentiate types of error and log unexpected ones (e.g. pipe disconnected is not an error)
             sealed_ = true;
             return {};
         }
 
         // Wait again for the payload read or exit signal
         {
-            HANDLE waitHandles[] = { overlappedConnect_.hEvent, exitEvent_ };            
-            if (auto wait = WaitForMultipleObjects(2, waitHandles, FALSE, INFINITE); 
-                wait == WAIT_OBJECT_0 + 1) { // Exit event is signaled
-                CancelIo(hPipe_); // Cancel the read operation
+            const auto eventIndex = win::WaitAnyEvent(exitEvent_, overlapped_.GetEvent());
+            if (eventIndex == 0) { // Exit event is signaled
+                CancelIo(hPipe_);
                 sealed_ = true;
                 return {};
             }
         }
 
         // Check the result of the payload read operation
-        if (auto result = GetOverlappedResult(hPipe_, &overlappedRead_, &bytesRead, FALSE);
+        if (auto result = GetOverlappedResult(hPipe_, overlapped_, &bytesRead, FALSE);
             !result || bytesRead != payloadSize) {
+            // TODO: differentiate types of error and log unexpected ones (e.g. pipe disconnected is not an error)
             sealed_ = true;
             return {};
         }

@@ -27,7 +27,7 @@ namespace pmon::util::log
 		std::variant<StaticSourceStrings, HeapedSourceStrings> sourceStrings_;
 		int sourceLine_ = -1;
 		std::chrono::system_clock::time_point timestamp_;
-		std::unique_ptr<StackTrace> pTrace_;
+		std::shared_ptr<StackTrace> pTrace_;
 		std::optional<unsigned int> hResult_;
 		uint32_t pid_;
 		uint32_t tid_;

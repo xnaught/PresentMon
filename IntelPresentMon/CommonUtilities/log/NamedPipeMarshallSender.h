@@ -1,11 +1,12 @@
 #pragma once
 #include "IEntryMarshallSender.h"
 #include <string>
-#include <vector>
-#include "../win/Handle.h"
+#include <memory>
 
 namespace pmon::util::log
 {
+	struct Entry;
+
 	class NamedPipeMarshallSender : public IEntryMarshallSender
 	{
 	public:
@@ -13,9 +14,7 @@ namespace pmon::util::log
         ~NamedPipeMarshallSender();
         void Push(const Entry& entry);
 	private:
-		std::wstring pipeName_;
-        win::Handle hPipe_;
-		std::vector<char> inputBuffer_;
+		std::shared_ptr<void> pNamedPipe_;
 	};
 }
 
