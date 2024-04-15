@@ -40,13 +40,13 @@ namespace pmon::util::win
         {
             return (bool)event_;
         }
+        void Clear()
+        {
+            event_.Clear();
+        }
         void Reset()
         {
             event_.Reset();
-        }
-        void ResetOverlapped()
-        {
-            event_.ResetEvent();
             overlapped_ = { .hEvent = event_ };
         }
     private:

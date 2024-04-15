@@ -9,7 +9,7 @@ namespace pmon::util::win
     Handle::Handle(HandleType handle) : handle_{ handle } {}
     Handle::~Handle()
     {
-        try { Reset(); }
+        try { Clear(); }
         catch (...) {
             // TODO: consider logging here in some builds / modes, but
             // caution required since this is used by logging components themselves
@@ -24,7 +24,7 @@ namespace pmon::util::win
     Handle& Handle::operator=(Handle&& other) noexcept
     {
         if (this != &other) {
-            Reset();
+            Clear();
             handle_ = other.handle_;
             other.handle_ = nullptr;
         }
@@ -38,7 +38,7 @@ namespace pmon::util::win
     {
         return handle_;
     }
-    void Handle::Reset()
+    void Handle::Clear()
     {
         if (*this) {
             if (!CloseHandle(handle_)) {
@@ -51,7 +51,7 @@ namespace pmon::util::win
     Handle::HandleType Handle::Release()
     {
         const auto temp = handle_;
-        Reset();
+        Clear();
         return temp;
     }
     Handle::operator bool() const noexcept

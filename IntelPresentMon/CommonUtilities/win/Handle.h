@@ -18,7 +18,7 @@ namespace pmon::util::win
         Handle& operator=(Handle&& other) noexcept;
         operator HandleType() const;
         HandleType Get() const;
-        void Reset();
+        void Clear();
         HandleType Release();
         operator bool() const noexcept;
     private:

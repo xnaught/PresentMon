@@ -20,7 +20,7 @@ namespace pmon::util::log
 	class NamedPipeInstance
 	{
 	public: // types
-		enum class StepResult
+		enum class StepResult // this could be completely replaced using just the State below
 		{
 			Completed,
 			RequiresAwaiting,
@@ -181,7 +181,7 @@ namespace pmon::util::log
 			CancelIo(pipeHandle_);
 			DisconnectNamedPipe(pipeHandle_);
 			steps_.clear();
-			overlapped_.ResetOverlapped();
+			overlapped_.Reset();
 			state_ = State::OutOfCommission;
 			decomissionEvent_.Set();
 		}
@@ -203,7 +203,7 @@ namespace pmon::util::log
 			if (expectedBytesTransferred && transferred != *expectedBytesTransferred) {
 				throw std::runtime_error{ "Failure resolving pipe operation, byte count does not match expected" };
 			}
-			overlapped_.ResetOverlapped();
+			overlapped_.Reset();
 		}
 		void AdvanceStep_()
 		{
@@ -338,7 +338,7 @@ namespace pmon::util::log
 		}
 		void Send(const Entry& entry)
 		{
-			emptyEvent_.ResetEvent();
+			emptyEvent_.Reset();
 			entryQueue_.enqueue(entry);
 			entryEvent_.Set();
 		}
@@ -363,7 +363,7 @@ namespace pmon::util::log
 						}
 						// else decommission signalled
 						else {
-							decommissionEvent_.ResetEvent();
+							decommissionEvent_.Reset();
 							break;
 						}
 					}
@@ -383,7 +383,7 @@ namespace pmon::util::log
 				}
 
 				// reset the event
-				entryEvent_.ResetEvent();
+				entryEvent_.Reset();
 
 				// dequeue any entries
 				while (entryQueue_.try_dequeue(entry)) {

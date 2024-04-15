@@ -18,7 +18,7 @@ namespace pmon::util::win
         Event(bool manualReset = true, bool initialState = false);
         void Set();
         void Pulse();
-        void ResetEvent();
+        void Reset();
     };
 
     std::optional<uint32_t> WaitOnMultipleEvents(std::span<Event::HandleType> events, bool waitAll = false, uint32_t milli = 0xFFFF'FFFF);

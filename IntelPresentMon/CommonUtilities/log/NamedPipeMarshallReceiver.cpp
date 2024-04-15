@@ -41,7 +41,7 @@ namespace pmon::util::log
         // 1. Initiate an overlapped read for the header
         DWORD bytesRead;
         uint32_t payloadSize = 0;
-        overlapped_.ResetOverlapped();
+        overlapped_.Reset();
         if (!ReadFile(hPipe_, &payloadSize, sizeof(payloadSize), nullptr, overlapped_) &&
             GetLastError() != ERROR_IO_PENDING) {
             // TODO: differentiate types of error and log unexpected ones (e.g. pipe disconnected is not an error)
@@ -70,7 +70,7 @@ namespace pmon::util::log
         // Payload size read successfully, prepare to read the payload using the same pattern
 
         // Reset OVERLAPPED for payload read
-        overlapped_.ResetOverlapped();
+        overlapped_.Reset();
         inputBuffer_.resize(payloadSize); // Resize buffer for payload
 
         // Initiate an overlapped read for the payload

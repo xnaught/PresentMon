@@ -29,7 +29,7 @@ namespace pmon::util::win
 		}
 	}
 
-	void Event::ResetEvent()
+	void Event::Reset()
 	{
 		if (!::ResetEvent(*this)) {
 			throw std::runtime_error("Failed to reset event");
