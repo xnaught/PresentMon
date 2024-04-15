@@ -4,7 +4,7 @@
 
 #ifndef PRESENTMONPROVIDER_ASSERT
 #ifdef NDEBUG
-#define PRESENTMONPROVIDER_ASSERT(_C) (void) _C
+#define PRESENTMONPROVIDER_ASSERT(_C) (void) (_C)
 #else
 #define PRESENTMONPROVIDER_ASSERT assert
 #endif
