@@ -43,16 +43,14 @@ namespace pmon::util::log
         while (true) {
             // perform the read sequence
             // 1. Initiate an overlapped read for the header
-            {
-                DWORD bytesRead;
-                uint32_t payloadSize = 0;
-                overlapped_.Reset();
-                if (!ReadFile(hPipe_, &payloadSize, sizeof(payloadSize), nullptr, overlapped_) &&
-                    GetLastError() != ERROR_IO_PENDING) {
-                    // TODO: differentiate types of error and log unexpected ones (e.g. pipe disconnected is not an error)
-                    sealed_ = true;
-                    break;
-                }
+            DWORD bytesRead;
+            uint32_t payloadSize = 0;
+            overlapped_.Reset();
+            if (!ReadFile(hPipe_, &payloadSize, sizeof(payloadSize), nullptr, overlapped_) &&
+                GetLastError() != ERROR_IO_PENDING) {
+                // TODO: differentiate types of error and log unexpected ones (e.g. pipe disconnected is not an error)
+                sealed_ = true;
+                break;
             }
 
             // 2. Wait for the read operation or exit signal
@@ -133,7 +131,6 @@ namespace pmon::util::log
 
     void NamedPipeMarshallReceiver::SignalExit()
     {
-        // TODO: log error
-        SetEvent(exitEvent_);
+        exitEvent_.Set();
     }
 }

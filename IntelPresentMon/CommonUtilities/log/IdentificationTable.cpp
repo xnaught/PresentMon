@@ -74,6 +74,9 @@ namespace pmon::util::log
 	}
 	void IdentificationTable::AddThread_(uint32_t tid, uint32_t pid, std::wstring name)
 	{
+		if (pid == GetCurrentProcessId()) {
+			SetThreadDescription(GetCurrentThread(), name.c_str());
+		}
 		std::lock_guard lk{ mtx_ };
 		threads_.emplace(std::piecewise_construct,
 			std::forward_as_tuple(tid),

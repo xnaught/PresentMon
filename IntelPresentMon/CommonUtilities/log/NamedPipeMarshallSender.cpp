@@ -386,7 +386,6 @@ namespace pmon::util::log
 		// function
 		void ConnectionThreadProcedure_()
 		{
-			SetThreadDescription(GetCurrentThread(), L"MarshallSender-Conn");
 			ScheduledActions actions_{ exitEvent_, decommissionEvent_ };
 			while (true) {
 				// for all inactive pipe connections, set connection sequence and add to action list
@@ -412,7 +411,6 @@ namespace pmon::util::log
 		}
 		void TransmissionThreadProcedure_()
 		{
-			SetThreadDescription(GetCurrentThread(), L"MarshallSender-Tx");
 			ScheduledActions actions_{ exitEvent_ };
 			MarshallPacket packet = Entry{};
 			auto& entry = std::get<Entry>(packet);
