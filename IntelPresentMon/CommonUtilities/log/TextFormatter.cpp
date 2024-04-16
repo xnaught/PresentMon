@@ -8,17 +8,42 @@
 #include <ranges>
 #include "PanicLogger.h"
 #include "StackTrace.h"
+#include "IdentificationTable.h"
 
 namespace pmon::util::log
 {
+	std::wstring MakeProc_(const Entry& e)
+	{
+		std::wstring text;
+		if (auto proc = IdentificationTable::LookupProcess(e.pid_)) {
+			text = std::format(L"{}({})", proc->name, proc->pid);
+		}
+		else {
+			text = std::to_wstring(e.pid_);
+		}
+		return text;
+	}
+	std::wstring MakeThread_(const Entry& e)
+	{
+		std::wstring text;
+		if (auto thread = IdentificationTable::LookupThread(e.tid_)) {
+			text = std::format(L"{}({})", thread->name, thread->tid);
+		}
+		else {
+			text = std::to_wstring(e.tid_);
+		}
+		return text;
+	}
+
+
 	std::wstring TextFormatter::Format(const Entry& e) const
 	{
 		try {
 			std::wostringstream oss;
-			oss << std::format(L"[@{}] <{}:{}> {{{}}} {}",
+			oss << std::format(L"[@{}] <{}:{}> {{{}}}\n  {}",
 				GetLevelName(e.level_),
-				e.pid_,
-				e.tid_,
+				MakeProc_(e),
+				MakeThread_(e),
 				std::chrono::zoned_time{ std::chrono::current_zone(), e.timestamp_ },
 				e.note_
 			);

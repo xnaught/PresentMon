@@ -22,13 +22,10 @@ namespace pmon::util::log
 			},
 			.sourceLine_ = sourceLine,
 			.timestamp_ = std::chrono::system_clock::now(),
+			.pid_ = GetCurrentProcessId(),
+			.tid_ = GetCurrentThreadId(),
 		}
-	{
-		static uint32_t pid = GetProcessId(GetCurrentProcess());;
-		pid_ = pid;
-		thread_local uint32_t tid = GetCurrentThreadId();;
-		tid_ = tid;
-	}
+	{}
 	EntryBuilder& EntryBuilder::note(std::wstring note) noexcept
 	{
 		note_ = std::move(note);

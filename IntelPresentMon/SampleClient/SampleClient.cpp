@@ -34,6 +34,7 @@
 #include "../CommonUtilities/log/NamedPipeMarshallReceiver.h"
 #include "../CommonUtilities/log/NamedPipeMarshallSender.h"
 #include "../CommonUtilities/log/StackTrace.h"
+#include "../CommonUtilities/log/IdentificationTable.h"
 
 struct Test
 {
@@ -98,6 +99,8 @@ int main(int argc, char* argv[])
         }
 
         pmon::util::log::GlobalPolicy::SetLogLevel(pmon::util::log::Level::Verbose);
+        pmon::util::log::IdentificationTable::AddThisProcess(L"p-master");
+        pmon::util::log::IdentificationTable::AddThisThread(L"t-main");
         pmlog_error.note(L"henlo");
 
         // determine requested activity

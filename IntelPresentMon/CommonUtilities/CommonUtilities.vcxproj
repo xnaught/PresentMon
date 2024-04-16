@@ -23,6 +23,7 @@
     <ClInclude Include="log\EntryMarshallInjector.h" />
     <ClInclude Include="log\EntryCereal.h" />
     <ClInclude Include="log\GlobalPolicy.h" />
+    <ClInclude Include="log\IdentificationTable.h" />
     <ClInclude Include="log\IEntryMarshallReceiver.h" />
     <ClInclude Include="log\IEntryMarshallSender.h" />
     <ClInclude Include="log\IFileStrategy.h" />
@@ -62,6 +63,7 @@
     <ClCompile Include="log\Channel.cpp" />
     <ClCompile Include="log\EntryBuilder.cpp" />
     <ClCompile Include="log\GlobalPolicy.cpp" />
+    <ClCompile Include="log\IdentificationTable.cpp" />
     <ClCompile Include="log\Level.cpp" />
     <ClCompile Include="log\Log.cpp" />
     <ClCompile Include="log\MsvcDebugDriver.cpp" />

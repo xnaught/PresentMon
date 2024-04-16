@@ -9,6 +9,7 @@
 #include <stacktrace>
 #include "PanicLogger.h"
 #include <future>
+#include "IdentificationTable.h"
 
 namespace pmon::util::log
 {
@@ -17,6 +18,8 @@ namespace pmon::util::log
 		Channel* GetDefaultChannelImpl_() noexcept
 		{
 			try {
+				// make sure ID table is booted
+				IdentificationTable::LookupThread(0);
 				// @SINGLETON
 				static struct ChannelManager {
 					Channel channel;
