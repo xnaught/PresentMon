@@ -9,11 +9,11 @@ namespace pmon::util::log
 	class MarshallDriver : public IDriver
 	{
 	public:
-		MarshallDriver(std::unique_ptr<IEntryMarshallSender> pMarshallSender);
+		MarshallDriver(std::shared_ptr<IEntryMarshallSender> pMarshallSender);
 		void Submit(const Entry&) override;
 		void Flush() override;
 	private:
-		std::unique_ptr<IEntryMarshallSender> pMarshallSender_;
+		std::shared_ptr<IEntryMarshallSender> pMarshallSender_;
 	};
 }
 

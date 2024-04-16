@@ -3,7 +3,7 @@
 
 namespace pmon::util::log
 {
-	MarshallDriver::MarshallDriver(std::unique_ptr<IEntryMarshallSender> pMarshallSender)
+	MarshallDriver::MarshallDriver(std::shared_ptr<IEntryMarshallSender> pMarshallSender)
 		:
 		pMarshallSender_{ std::move(pMarshallSender) }
 	{}

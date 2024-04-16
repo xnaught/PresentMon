@@ -33,6 +33,8 @@
 #include "../CommonUtilities/log/Log.h"
 #include "../CommonUtilities/log/NamedPipeMarshallReceiver.h"
 #include "../CommonUtilities/log/NamedPipeMarshallSender.h"
+#include "../CommonUtilities/log/MarshallDriver.h"
+#include "../CommonUtilities/log/EntryMarshallInjector.h"
 #include "../CommonUtilities/log/StackTrace.h"
 #include "../CommonUtilities/log/IdentificationTable.h"
 
@@ -61,23 +63,29 @@ int main(int argc, char* argv[])
         using namespace pmon::util;
         using namespace std::chrono_literals;
 
+        pmon::util::log::GlobalPolicy::SetLogLevel(pmon::util::log::Level::Verbose);
+
         if (opt.doPipeSrv) {
-            log::NamedPipeMarshallSender senderClient{ L"pml_testpipe" };
+            {
+                auto pSender = std::make_shared<log::NamedPipeMarshallSender>(L"pml_testpipe");
+                auto pDriver = std::make_shared<log::MarshallDriver>(std::move(pSender));
+                log::GetDefaultChannel()->AttachDriver(std::move(pDriver));
+            }
+            std::wstring note;
             while (true) {
                 std::cout << "SAY> ";
-                log::Entry e{};
-                std::getline(std::wcin, e.note_);
-                senderClient.Push(e);
-                if (e.note_ == L"@#$") {
+                std::getline(std::wcin, note);
+                pmlog_info.note(note);
+                if (note == L"@#$") {
                     break;
                 }
             }
             return 0;
         }
         if (opt.doPipeCli) {
-            log::NamedPipeMarshallReceiver receiverServer{ L"pml_testpipe" };
+            log::NamedPipeMarshallReceiver receiverClient{ L"pml_testpipe" };
             while (true) {
-                auto e = receiverServer.Pop();
+                auto e = receiverClient.Pop();
                 if (e) {
                     std::wcout << e->note_ << std::endl;
                 }
@@ -98,9 +106,6 @@ int main(int argc, char* argv[])
             return -1;
         }
 
-        pmon::util::log::GlobalPolicy::SetLogLevel(pmon::util::log::Level::Verbose);
-        pmon::util::log::IdentificationTable::AddThisProcess(L"p-master");
-        pmon::util::log::IdentificationTable::AddThisThread(L"t-main");
         pmlog_error.note(L"henlo");
 
         // determine requested activity
