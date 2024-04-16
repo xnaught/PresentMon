@@ -6,7 +6,7 @@
 
 namespace pmon::util::log
 {
-	EntryMarshallInjector::EntryMarshallInjector(IEntrySink* pTo, std::unique_ptr<IEntryMarshallReceiver> pSink)
+	EntryMarshallInjector::EntryMarshallInjector(IEntrySink* pTo, std::shared_ptr<IEntryMarshallReceiver> pSink)
 		:
 		pFrom_{ std::move(pSink) },
 		pTo_{ pTo }

@@ -83,20 +83,9 @@ int main(int argc, char* argv[])
             return 0;
         }
         if (opt.doPipeCli) {
-            log::NamedPipeMarshallReceiver receiverClient{ L"pml_testpipe" };
-            while (true) {
-                auto e = receiverClient.Pop();
-                if (e) {
-                    std::wcout << e->note_ << std::endl;
-                }
-                else {
-                    std::cout << "got empty boid" << std::endl;
-                    break;
-                }
-                if (e->note_ == L"@#$") {
-                    break;
-                }
-            }
+            auto pReceiver = std::make_shared<log::NamedPipeMarshallReceiver>(L"pml_testpipe");
+            log::EntryMarshallInjector injector{ log::GetDefaultChannel(), std::move(pReceiver) };
+            while (!_kbhit());
             return 0;
         }
 

@@ -10,7 +10,7 @@ namespace pmon::util::log
 	class EntryMarshallInjector
 	{
 	public:
-		EntryMarshallInjector(IEntrySink* pTo_, std::unique_ptr<IEntryMarshallReceiver> pSink);
+		EntryMarshallInjector(IEntrySink* pTo_, std::shared_ptr<IEntryMarshallReceiver> pSink);
 		~EntryMarshallInjector();
 	private:
 		std::shared_ptr<IEntryMarshallReceiver> pFrom_;
