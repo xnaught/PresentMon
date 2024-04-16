@@ -11,6 +11,7 @@
 #include "EntryCereal.h"
 #include <cereal/archives/binary.hpp>
 #include <concurrentqueue/concurrentqueue.h>
+#include "MarshallingProtocol.h"
 
 namespace pmon::util::log
 {
@@ -116,7 +117,45 @@ namespace pmon::util::log
 		private:
 			bool initiated_ = false;
 		};
-		using Step = std::variant<TransmitHeaderStep, TransmitPayloadStep, ConnectStep>;
+		class IdTableBulkStep
+		{
+		public:
+			IdTableBulkStep()
+				:
+				data_{ MakeDataBytes_() },
+				headerStep_{ data_ },
+				payloadStep_{ data_ }
+			{}
+			// return needs to signal whether a: sequence complete b: overlapped pending c: recycle pipe [exception]
+			StepResult Execute(NamedPipeInstance& inst)
+			{
+				if (headerStepActive_) {
+					if (auto result = headerStep_.Execute(inst); result != StepResult::Completed) {
+						return result;
+					}
+					headerStepActive_ = false;
+				}
+				return payloadStep_.Execute(inst);
+			}
+		private:
+			// functions
+			static std::vector<std::byte> MakeDataBytes_()
+			{
+				MarshallPacket packet = IdentificationTable::GetBulk();
+				std::ostringstream stream;
+				cereal::BinaryOutputArchive archive(stream);
+				archive(packet);
+				const auto bufferView = stream.rdbuf()->view();
+				const std::span bufferSpan{ reinterpret_cast<const std::byte*>(bufferView.data()), bufferView.size() };
+				return { std::from_range, bufferSpan };
+			}
+			// data
+			std::vector<std::byte> data_;
+			TransmitHeaderStep headerStep_;
+			TransmitPayloadStep payloadStep_;
+			bool headerStepActive_ = true;
+		};
+		using Step = std::variant<TransmitHeaderStep, TransmitPayloadStep, ConnectStep, IdTableBulkStep>;
 	public:
 		// functions
 		NamedPipeInstance(const std::wstring& address, size_t nInstances, win::Event& decomissionEvent)
@@ -165,6 +204,7 @@ namespace pmon::util::log
 		void SetConnectionSequence()
 		{
 			steps_.push_back(ConnectStep{});
+			steps_.push_back(IdTableBulkStep{});
 		}
 		bool IsActive() const
 		{
@@ -374,7 +414,8 @@ namespace pmon::util::log
 		{
 			SetThreadDescription(GetCurrentThread(), L"MarshallSender-Tx");
 			ScheduledActions actions_{ exitEvent_ };
-			Entry entry;
+			MarshallPacket packet = Entry{};
+			auto& entry = std::get<Entry>(packet);
 			while (true) {
 				// wait for either an Entry enqueue event or exit signal
 				if (const auto eventId = *win::WaitAnyEvent(exitEvent_, entryEvent_);
@@ -390,7 +431,7 @@ namespace pmon::util::log
 					// serialize the entry
 					std::ostringstream stream;
 					cereal::BinaryOutputArchive archive(stream);
-					archive(entry);
+					archive(packet);
 					const auto bufferView = stream.rdbuf()->view();
 					const std::span bufferSpan{ reinterpret_cast<const std::byte*>(bufferView.data()), bufferView.size() };
 

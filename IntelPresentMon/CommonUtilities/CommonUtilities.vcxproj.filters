@@ -123,6 +123,9 @@
     <ClInclude Include="log\IdentificationTable.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="log\MarshallingProtocol.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">

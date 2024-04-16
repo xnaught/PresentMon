@@ -36,6 +36,7 @@
     <ClInclude Include="log\ITextFormatter.h" />
     <ClInclude Include="log\Level.h" />
     <ClInclude Include="log\Log.h" />
+    <ClInclude Include="log\MarshallingProtocol.h" />
     <ClInclude Include="log\MsvcDebugDriver.h" />
     <ClInclude Include="log\NamedPipeMarshallReceiver.h" />
     <ClInclude Include="log\StackTrace.h" />

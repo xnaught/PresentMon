@@ -1,5 +1,6 @@
 #include "IdentificationTable.h"
 #include "../win/WinAPI.h"
+#include <ranges>
 
 namespace pmon::util::log
 {
@@ -44,6 +45,26 @@ namespace pmon::util::log
 		}
 	}
 
+	IdentificationTable::Bulk IdentificationTable::GetBulk() noexcept
+	{
+		try {
+			return Get_().GetBulk_();
+		}
+		catch (...) {
+			return {};
+		}
+	}
+
+	IdentificationTable* IdentificationTable::GetPtr() noexcept
+	{
+		try {
+			return &Get_();
+		}
+		catch (...) {
+			return nullptr;
+		}
+	}
+
 	IdentificationTable::IdentificationTable() = default;
 	IdentificationTable& IdentificationTable::Get_()
 	{
@@ -69,22 +90,26 @@ namespace pmon::util::log
 	}
 	std::optional<IdentificationTable::Thread> IdentificationTable::LookupThread_(uint32_t tid) const
 	{
-		try {
-			std::shared_lock lk{ mtx_ };
-			return threads_.at(tid);
+		std::shared_lock lk{ mtx_ };
+		if (auto i = threads_.find(tid); i != threads_.end()) {
+			return i->second;
 		}
-		catch (...) {
-			return {};
-		}
+		return {};
 	}
 	std::optional<IdentificationTable::Process> IdentificationTable::LookupProcess_(uint32_t pid) const
 	{
-		try {
-			std::shared_lock lk{ mtx_ };
-			return processes_.at(pid);
+		std::shared_lock lk{ mtx_ };
+		if (auto i = processes_.find(pid); i != processes_.end()) {
+			return i->second;
 		}
-		catch (...) {
-			return {};
-		}
+		return {};
+	}
+	IdentificationTable::Bulk IdentificationTable::GetBulk_() const noexcept
+	{
+		std::shared_lock lk{ mtx_ };
+		return Bulk{
+			.threads = threads_ | std::views::values | std::ranges::to<std::vector>(),
+			.processes = processes_ | std::views::values | std::ranges::to<std::vector>(),
+		};
 	}
 }

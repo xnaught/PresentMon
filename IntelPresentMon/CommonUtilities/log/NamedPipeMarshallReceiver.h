@@ -12,7 +12,7 @@ namespace pmon::util::log
 	class NamedPipeMarshallReceiver : public IEntryMarshallReceiver
 	{
     public:
-        NamedPipeMarshallReceiver(const std::wstring& pipeName);
+        NamedPipeMarshallReceiver(const std::wstring& pipeName, class IdentificationTable* pTable = nullptr);
         ~NamedPipeMarshallReceiver();
         std::optional<Entry> Pop() override;
         void SignalExit() override;
@@ -24,6 +24,7 @@ namespace pmon::util::log
         std::string inputBuffer_;
         win::Overlapped overlapped_{};
         win::Event exitEvent_;
+        class IdentificationTable* pIdTable_ = nullptr;
 	};
 }
 

@@ -66,6 +66,8 @@ int main(int argc, char* argv[])
         pmon::util::log::GlobalPolicy::SetLogLevel(pmon::util::log::Level::Verbose);
 
         if (opt.doPipeSrv) {
+            log::IdentificationTable::AddThisProcess(L"p-server");
+            log::IdentificationTable::AddThisThread(L"t-main");
             {
                 auto pSender = std::make_shared<log::NamedPipeMarshallSender>(L"pml_testpipe");
                 auto pDriver = std::make_shared<log::MarshallDriver>(std::move(pSender));
@@ -83,7 +85,9 @@ int main(int argc, char* argv[])
             return 0;
         }
         if (opt.doPipeCli) {
-            auto pReceiver = std::make_shared<log::NamedPipeMarshallReceiver>(L"pml_testpipe");
+            log::IdentificationTable::AddThisProcess(L"p-client");
+            log::IdentificationTable::AddThisThread(L"t-main");
+            auto pReceiver = std::make_shared<log::NamedPipeMarshallReceiver>(L"pml_testpipe", log::IdentificationTable::GetPtr());
             log::EntryMarshallInjector injector{ log::GetDefaultChannel(), std::move(pReceiver) };
             while (!_kbhit());
             return 0;
