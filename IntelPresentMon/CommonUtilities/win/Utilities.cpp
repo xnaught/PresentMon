@@ -16,12 +16,12 @@ namespace pmon::util::win
 
 			std::wstring description;
 			if (!result) {
-				pmlog_warn.note(L"Failed formatting windows error");
+				pmlog_warn(L"Failed formatting windows error");
 			}
 			else {
 				description = descriptionWinalloc;
 				if (LocalFree(descriptionWinalloc)) {
-					pmlog_warn.note(L"Failed freeing memory for windows error formatting");
+					pmlog_warn(L"Failed freeing memory for windows error formatting");
 				}
 				if (description.ends_with(L"\r\n")) {
 					description.resize(description.size() - 2);
@@ -30,7 +30,7 @@ namespace pmon::util::win
 			return description;
 		}
 		catch (...) {
-			pmlog_warn.note(L"Exception thrown in windows error GetErrorDescription");
+			pmlog_warn(L"Exception thrown in windows error GetErrorDescription");
 			return {};
 		}
 	}

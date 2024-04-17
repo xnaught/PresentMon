@@ -27,12 +27,12 @@ namespace pmon::util::log
 #define xinternal_pmlog_(lvl) ((PMLOG_BUILD_LEVEL < lvl) || (::pmon::util::log::GlobalPolicy::GetLogLevel() < lvl)) \
 	? (void)0 : (void)::pmon::util::log::EntryBuilder{ lvl, __FILEW__, __FUNCTIONW__, __LINE__ } \
 	.to(::pmon::util::log::GetDefaultChannel())
-#define pmlog_fatal	xinternal_pmlog_(::pmon::util::log::Level::Fatal)
-#define pmlog_error	xinternal_pmlog_(::pmon::util::log::Level::Error)
-#define pmlog_warn	xinternal_pmlog_(::pmon::util::log::Level::Warn)
-#define pmlog_info	xinternal_pmlog_(::pmon::util::log::Level::Info)
-#define pmlog_dbg	xinternal_pmlog_(::pmon::util::log::Level::Debug)
-#define pmlog_verb(vtag) !vtag ? (void)0 : xinternal_pmlog_(::pmon::util::log::Level::Verbose)
+#define pmlog_fatal	xinternal_pmlog_(::pmon::util::log::Level::Fatal).note
+#define pmlog_error	xinternal_pmlog_(::pmon::util::log::Level::Error).note
+#define pmlog_warn	xinternal_pmlog_(::pmon::util::log::Level::Warn).note
+#define pmlog_info	xinternal_pmlog_(::pmon::util::log::Level::Info).note
+#define pmlog_dbg	xinternal_pmlog_(::pmon::util::log::Level::Debug).note
+#define pmlog_verb(vtag) !vtag ? (void)0 : xinternal_pmlog_(::pmon::util::log::Level::Verbose).note
 
 #define pmwatch(expr) watch(L###expr, (expr))
 

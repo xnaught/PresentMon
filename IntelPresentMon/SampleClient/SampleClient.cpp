@@ -42,11 +42,11 @@ struct Test
 {
     Test()
     {
-        pmlog_info.note(L"global init log");
+        pmlog_info(L"global init log");
     }
     ~Test()
     {
-        pmlog_error.note(L"global destroy log w/ trace");
+        pmlog_error(L"global destroy log w/ trace");
     }
 } spoot;
 
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
                 int x = 3;
                 std::cout << "SAY> ";
                 std::getline(std::wcin, note);
-                pmlog_info.note(note).pmwatch(x+2);
+                pmlog_info(note).pmwatch(x+2);
                 if (note == L"@#$") {
                     break;
                 }
@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
             return -1;
         }
 
-        pmlog_error.note(L"henlo");
+        pmlog_error(L"henlo");
 
         // determine requested activity
         if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample ^ opt.checkMetricSample ^ opt.wrapperStaticQuerySample ^ opt.metricListSample) {
