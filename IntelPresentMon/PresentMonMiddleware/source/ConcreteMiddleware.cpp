@@ -548,49 +548,54 @@ namespace pmon::mid
 namespace {
 
 struct FakePMTraceSession {
-    double mMilliSecondsPerQpc = 0.0;
+    double mMilliSecondsPerTimestamp = 0.0;
 
-    double QpcDeltaToMilliSeconds(uint64_t qpcDelta) const
+    double TimestampDeltaToMilliSeconds(uint64_t qpcDelta) const
     {
-        return mMilliSecondsPerQpc * qpcDelta;
+        return mMilliSecondsPerTimestamp * qpcDelta;
     }
 
-    double QpcDeltaToUnsignedMilliSeconds(uint64_t qpcFrom, uint64_t qpcTo) const
+    double TimestampDeltaToUnsignedMilliSeconds(uint64_t qpcFrom, uint64_t qpcTo) const
     {
-        return qpcFrom == 0 || qpcTo <= qpcFrom ? 0.0 : QpcDeltaToMilliSeconds(qpcTo - qpcFrom);
+        return qpcFrom == 0 || qpcTo <= qpcFrom ? 0.0 : TimestampDeltaToMilliSeconds(qpcTo - qpcFrom);
     }
 
-    double QpcDeltaToMilliSeconds(uint64_t qpcFrom, uint64_t qpcTo) const
+    double TimestampDeltaToMilliSeconds(uint64_t qpcFrom, uint64_t qpcTo) const
     {
         return qpcFrom == 0 || qpcTo == 0 || qpcFrom == qpcTo ? 0.0 :
-            qpcTo > qpcFrom ? QpcDeltaToMilliSeconds(qpcTo - qpcFrom) :
-                             -QpcDeltaToMilliSeconds(qpcFrom - qpcTo);
+            qpcTo > qpcFrom ? TimestampDeltaToMilliSeconds(qpcTo - qpcFrom) :
+                             -TimestampDeltaToMilliSeconds(qpcFrom - qpcTo);
     }
 };
 
+// Copied from: PresentMon/PresentMon.hpp
+// Metrics computed per-frame.  Duration and Latency metrics are in milliseconds.
 struct FrameMetrics {
-    uint64_t mCPUFrameQPC;
-    double mCPUDuration;
-    double mCPUFramePacingStall;
+    uint64_t mCPUStart;
+    double mCPUBusy;
+    double mCPUWait;
     double mGPULatency;
-    double mGPUDuration;
     double mGPUBusy;
     double mVideoBusy;
+    double mGPUWait;
     double mDisplayLatency;
-    double mDisplayDuration;
-    double mInputLatency;
+    double mDisplayedTime;
+    double mClickToPhotonLatency;
 };
 
+// Copied from: PresentMon/OutputThread.cpp
 void UpdateChain(
     fpsSwapChainData* chain,
     PmNsmPresentEvent const& p)
 {
-    chain->mCPUFrameQPC         = p.PresentStartTime + p.TimeInPresent;
+    chain->mNextFrameCPUStart   = p.PresentStartTime + p.TimeInPresent;
     chain->mPresentMode         = p.PresentMode;
     chain->mPresentRuntime      = p.Runtime;
     chain->mPresentSyncInterval = p.SyncInterval;
     chain->mPresentFlags        = p.PresentFlags;
     chain->mPresentInfoValid    = true;
+
+    // IntelPresentMon specifics:
     chain->applicationName      = p.application;
     chain->allows_tearing       = p.SupportsTearing;
 
@@ -603,6 +608,7 @@ void UpdateChain(
     }
 }
 
+// Copied from: PresentMon/OutputThread.cpp
 void ReportMetrics(
     FakePMTraceSession const& pmSession,
     fpsSwapChainData* chain,
@@ -612,9 +618,6 @@ void ReportMetrics(
     // PB = PresentStartTime
     // PE = PresentEndTime
     // D  = ScreenTime
-    // F  = CPUFrameTime/CPUDuration
-    // S  = CPUFramePacingStall
-    // D  = DisplayDuration
     //
     // Previous PresentEvent:  PB--PE----D
     // p:                          |        PB--PE----D
@@ -622,37 +625,40 @@ void ReportMetrics(
     //                             |        |   |     |     PB--PE
     // nextDisplayedPresent:       |        |   |     |             PB--PE----D
     //                             |        |   |     |                       |
-    // CPUFrameTime/CPUDuration:   |------->|   |     |                       |
-    // CPUFramePacingStall:                 |-->|     |                       |
+    // CPUStartTime/CPUBusy:       |------->|   |     |                       |
+    // CPUWait:                             |-->|     |                       |
     // DisplayLatency:             |----------------->|                       |
-    // DisplayDuration:                               |---------------------->|
+    // DisplayedTime:                                 |---------------------->|
 
     bool displayed = p.FinalState == PresentResult::Presented;
 
+    double gpuDuration = pmSession.TimestampDeltaToUnsignedMilliSeconds(p.GPUStartTime, p.ReadyTime);
+
     FrameMetrics metrics;
-    metrics.mCPUFrameQPC         = chain->mCPUFrameQPC;
-    metrics.mCPUDuration         = pmSession.QpcDeltaToUnsignedMilliSeconds(chain->mCPUFrameQPC, p.PresentStartTime);
-    metrics.mCPUFramePacingStall = pmSession.QpcDeltaToMilliSeconds(p.TimeInPresent);
-    metrics.mGPULatency          = pmSession.QpcDeltaToUnsignedMilliSeconds(chain->mCPUFrameQPC, p.GPUStartTime);
-    metrics.mGPUDuration         = pmSession.QpcDeltaToUnsignedMilliSeconds(p.GPUStartTime, p.ReadyTime);
-    metrics.mGPUBusy             = pmSession.QpcDeltaToMilliSeconds(p.GPUDuration);
-    metrics.mVideoBusy           = pmSession.QpcDeltaToMilliSeconds(p.GPUVideoDuration);
-    metrics.mDisplayLatency      = !displayed       ? 0 : pmSession.QpcDeltaToUnsignedMilliSeconds(chain->mCPUFrameQPC, p.ScreenTime);
-    metrics.mDisplayDuration     = !displayed       ? 0 : pmSession.QpcDeltaToUnsignedMilliSeconds(p.ScreenTime, nextDisplayedPresent->ScreenTime);
-    metrics.mInputLatency        = p.InputTime == 0 ? 0 : pmSession.QpcDeltaToUnsignedMilliSeconds(p.InputTime, p.ScreenTime);
+    metrics.mCPUStart             = chain->mNextFrameCPUStart;
+    metrics.mCPUBusy              = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p.PresentStartTime);
+    metrics.mCPUWait              = pmSession.TimestampDeltaToMilliSeconds(p.TimeInPresent);
+    metrics.mGPULatency           = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p.GPUStartTime);
+    metrics.mGPUBusy              = pmSession.TimestampDeltaToMilliSeconds(p.GPUDuration);
+    metrics.mVideoBusy            = pmSession.TimestampDeltaToMilliSeconds(p.GPUVideoDuration);
+    metrics.mGPUWait              = std::max(0.0, gpuDuration - metrics.mGPUBusy);
+    metrics.mDisplayLatency       = !displayed       ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p.ScreenTime);
+    metrics.mDisplayedTime        = !displayed       ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p.ScreenTime, nextDisplayedPresent->ScreenTime);
+    metrics.mClickToPhotonLatency = p.InputTime == 0 ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p.InputTime, p.ScreenTime);
 
     UpdateChain(chain, p);
 
-    chain->CPUFrameQPC        .push_back(metrics.mCPUFrameQPC);
-    chain->CPUDuration        .push_back(metrics.mCPUDuration);
-    chain->CPUFramePacingStall.push_back(metrics.mCPUFramePacingStall);
-    chain->GPULatency         .push_back(metrics.mGPULatency);
-    chain->GPUWait            .push_back(std::max(0.0, metrics.mGPUDuration - metrics.mGPUBusy));
-    chain->GPUBusy            .push_back(metrics.mGPUBusy);
-    chain->GPUDuration        .push_back(metrics.mGPUDuration);
-    chain->DisplayLatency     .push_back(metrics.mDisplayLatency);
-    chain->DisplayDuration    .push_back(metrics.mDisplayDuration);
-    chain->InputLatency       .push_back(metrics.mInputLatency);
+    // IntelPresentMon specifics:
+    chain->mCPUStart            .push_back(metrics.mCPUStart);
+    chain->mCPUBusy             .push_back(metrics.mCPUBusy);
+    chain->mCPUWait             .push_back(metrics.mCPUWait);
+    chain->mGPULatency          .push_back(metrics.mGPULatency);
+    chain->mGPUBusy             .push_back(metrics.mGPUBusy);
+    chain->mVideoBusy           .push_back(metrics.mVideoBusy);
+    chain->mGPUWait             .push_back(metrics.mGPUWait);
+    chain->mDisplayLatency      .push_back(metrics.mDisplayLatency);
+    chain->mDisplayedTime       .push_back(metrics.mDisplayedTime);
+    chain->mClickToPhotonLatency.push_back(metrics.mClickToPhotonLatency);
 }
 
 }
@@ -733,7 +739,7 @@ void ReportMetrics(
         }
 
         FakePMTraceSession pmSession;
-        pmSession.mMilliSecondsPerQpc = 1000.0 / client->GetQpcFrequency().QuadPart;
+        pmSession.mMilliSecondsPerTimestamp = 1000.0 / client->GetQpcFrequency().QuadPart;
 
         for (const auto& frame_data : frames | std::views::reverse) {
             if (pQuery->accumFpsData)
@@ -1005,21 +1011,21 @@ void ReportMetrics(
             break;
         // no statistics on PM_METRIC_FRAME_QPC
         case PM_METRIC_GPU_LATENCY:
-            CalculateMetric(output, swapChain.GPULatency, element.stat);
+            CalculateMetric(output, swapChain.mGPULatency, element.stat);
             break;
         case PM_METRIC_GPU_WAIT:
-            CalculateMetric(output, swapChain.GPUWait, element.stat);
+            CalculateMetric(output, swapChain.mGPUWait, element.stat);
             break;
         case PM_METRIC_GPU_BUSY:
-            CalculateMetric(output, swapChain.GPUBusy, element.stat);
+            CalculateMetric(output, swapChain.mGPUBusy, element.stat);
             break;
         case PM_METRIC_DISPLAY_LATENCY:
         {
             std::vector<double> display_latency;
-            display_latency.reserve(swapChain.DisplayLatency.size());
-            for (size_t i = 0; i < swapChain.DisplayLatency.size(); ++i) {
-                if (swapChain.DisplayLatency[i] != 0.0) {
-                    display_latency.push_back(swapChain.DisplayLatency[i]);
+            display_latency.reserve(swapChain.mDisplayLatency.size());
+            for (size_t i = 0; i < swapChain.mDisplayLatency.size(); ++i) {
+                if (swapChain.mDisplayLatency[i] != 0.0) {
+                    display_latency.push_back(swapChain.mDisplayLatency[i]);
                 }
             }
             CalculateMetric(output, display_latency, element.stat);
@@ -1028,24 +1034,24 @@ void ReportMetrics(
         case PM_METRIC_DISPLAYED_TIME:
         {
             std::vector<double> display_duration;
-            display_duration.reserve(swapChain.DisplayDuration.size());
-            for (size_t i = 0; i < swapChain.DisplayDuration.size(); ++i) {
-                if (swapChain.DisplayDuration[i] != 0.0) {
-                    display_duration.push_back(swapChain.DisplayDuration[i]);
+            display_duration.reserve(swapChain.mDisplayedTime.size());
+            for (size_t i = 0; i < swapChain.mDisplayedTime.size(); ++i) {
+                if (swapChain.mDisplayedTime[i] != 0.0) {
+                    display_duration.push_back(swapChain.mDisplayedTime[i]);
                 }
             }
             CalculateMetric(output, display_duration, element.stat);
         }
             break;
         case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
-            CalculateMetric(output, swapChain.InputLatency, element.stat);
+            CalculateMetric(output, swapChain.mClickToPhotonLatency, element.stat);
             break;
 
         case PM_METRIC_PRESENTED_FPS:
         {
-            std::vector<double> frameTimes(swapChain.CPUDuration.size());
-            for (size_t i = 0; i < swapChain.CPUDuration.size(); ++i) {
-                frameTimes[i] = swapChain.CPUDuration[i] + swapChain.CPUFramePacingStall[i];
+            std::vector<double> frameTimes(swapChain.mCPUBusy.size());
+            for (size_t i = 0; i < swapChain.mCPUBusy.size(); ++i) {
+                frameTimes[i] = swapChain.mCPUBusy[i] + swapChain.mCPUWait[i];
             }
             switch (element.stat)
             {
@@ -1083,10 +1089,10 @@ void ReportMetrics(
         case PM_METRIC_DISPLAYED_FPS:
         {
             std::vector<double> displayed_fps;
-            displayed_fps.reserve(swapChain.DisplayDuration.size());
-            for (size_t i = 0; i < swapChain.DisplayDuration.size(); ++i) {
-                if (swapChain.DisplayDuration[i] != 0.0) {
-                    displayed_fps.push_back(1000.0 / swapChain.DisplayDuration[i]);
+            displayed_fps.reserve(swapChain.mDisplayedTime.size());
+            for (size_t i = 0; i < swapChain.mDisplayedTime.size(); ++i) {
+                if (swapChain.mDisplayedTime[i] != 0.0) {
+                    displayed_fps.push_back(1000.0 / swapChain.mDisplayedTime[i]);
                 }
             }
             CalculateMetric(output, displayed_fps, element.stat);
@@ -1094,30 +1100,36 @@ void ReportMetrics(
             break;
         case PM_METRIC_DROPPED_FRAMES:
         {
-            std::vector<double> dropped(swapChain.DisplayDuration.size());
-            for (size_t i = 0; i < swapChain.DisplayDuration.size(); ++i) {
-                dropped[i] = swapChain.DisplayDuration[i] == 0.0 ? 1.0 : 0.0;
+            std::vector<double> dropped(swapChain.mDisplayedTime.size());
+            for (size_t i = 0; i < swapChain.mDisplayedTime.size(); ++i) {
+                dropped[i] = swapChain.mDisplayedTime[i] == 0.0 ? 1.0 : 0.0;
             }
             CalculateMetric(output, dropped, element.stat);
         }
             break;
         case PM_METRIC_FRAME_TIME:
         {
-            std::vector<double> frame_times(swapChain.CPUDuration.size());
-            for (size_t i = 0; i < swapChain.CPUDuration.size(); ++i) {
-                frame_times[i] = swapChain.CPUDuration[i] + swapChain.CPUFramePacingStall[i];
+            std::vector<double> frame_times(swapChain.mCPUBusy.size());
+            for (size_t i = 0; i < swapChain.mCPUBusy.size(); ++i) {
+                frame_times[i] = swapChain.mCPUBusy[i] + swapChain.mCPUWait[i];
             }
             CalculateMetric(output, frame_times, element.stat);
         }
             break;
         case PM_METRIC_CPU_BUSY:
-            CalculateMetric(output, swapChain.CPUDuration, element.stat);
+            CalculateMetric(output, swapChain.mCPUBusy, element.stat);
             break;
         case PM_METRIC_CPU_WAIT:
-            CalculateMetric(output, swapChain.CPUFramePacingStall, element.stat);
+            CalculateMetric(output, swapChain.mCPUWait, element.stat);
             break;
         case PM_METRIC_GPU_TIME:
-            CalculateMetric(output, swapChain.GPUDuration, element.stat);
+        {
+            std::vector<double> gpu_duration(swapChain.mGPUBusy.size());
+            for (size_t i = 0; i < swapChain.mGPUBusy.size(); ++i) {
+                gpu_duration[i] = swapChain.mGPUBusy[i] + swapChain.mGPUWait[i];
+            }
+            CalculateMetric(output, gpu_duration, element.stat);
+        }
             break;
         default:
             output = 0.;
@@ -1528,9 +1540,9 @@ void ReportMetrics(
 
         for (auto& pair : swapChainData) {
             auto& swapChain = pair.second;
-            if (swapChain.CPUFrameQPC.size() > maxSwapChainPresents)
+            if (swapChain.mCPUStart.size() > maxSwapChainPresents)
             {
-                maxSwapChainPresents = (uint32_t)swapChain.CPUFrameQPC.size();
+                maxSwapChainPresents = (uint32_t)swapChain.mCPUStart.size();
                 maxSwapChainPresentsIndex = currentSwapChainIndex;
             }
             currentSwapChainIndex++;
@@ -1559,7 +1571,7 @@ void ReportMetrics(
             // fps metric data. The first is if all of the frames are dropped.
             // The second is if in the requested sample window there are
             // no presents.
-            if ((swapChain.display_count <= 1) && (swapChain.CPUFrameQPC.size() == 0)) {
+            if ((swapChain.display_count <= 1) && (swapChain.mCPUStart.size() == 0)) {
                 useCache = true;
                 break;
             }

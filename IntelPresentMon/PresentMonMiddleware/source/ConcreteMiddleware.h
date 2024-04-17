@@ -21,35 +21,38 @@ namespace pmon::mid
 	};
 
 	struct fpsSwapChainData {
-        // Per-frame metrics:
-        std::vector<uint64_t> CPUFrameQPC;
-		std::vector<double> CPUDuration;
-		std::vector<double> CPUFramePacingStall;
-		std::vector<double> GPULatency;
-		std::vector<double> GPUWait;
-		std::vector<double> GPUBusy;
-		std::vector<double> GPUDuration;
-		std::vector<double> DisplayLatency;
-		std::vector<double> DisplayDuration;
-		std::vector<double> InputLatency;
+        // Pending presents waiting for the next displayed present.
+        std::vector<PmNsmPresentEvent> mPendingPresents;
 
-        // begin/end screen times to optimize average calculation:
-		uint64_t display_n_screen_time = 0;       // The last presented frame's ScreenTime (qpc)
-		uint64_t display_0_screen_time = 0;       // The first presented frame's ScreenTime (qpc)
-		uint32_t display_count = 0;               // The number of presented frames
-
-		// Properties of the most-recent processed frame:
-        uint64_t    mCPUFrameQPC = 0;
+        // Present info
+        uint64_t    mLastPresentStartTime = 0;
+        uint64_t    mLastDisplayedScreenTime = 0;
+        uint64_t    mNextFrameCPUStart = 0;
         PresentMode mPresentMode = PresentMode::Unknown;
         Runtime     mPresentRuntime = Runtime::Other;
         int32_t     mPresentSyncInterval = 0;
         uint32_t    mPresentFlags = 0;
         bool        mPresentInfoValid = false;
+
+        // IntelPresentMon specifics:
+        std::vector<uint64_t> mCPUStart;
+        std::vector<double> mCPUBusy;
+        std::vector<double> mCPUWait;
+        std::vector<double> mGPULatency;
+        std::vector<double> mGPUBusy;
+        std::vector<double> mVideoBusy;
+        std::vector<double> mGPUWait;
+        std::vector<double> mDisplayLatency;
+        std::vector<double> mDisplayedTime;
+        std::vector<double> mClickToPhotonLatency;
+
 		std::string applicationName;
 		bool allows_tearing = false;
 
-        // Pending presents waiting for the next displayed present.
-        std::vector<PmNsmPresentEvent> mPendingPresents;
+        // begin/end screen times to optimize average calculation:
+		uint64_t display_n_screen_time = 0;       // The last presented frame's ScreenTime (qpc)
+		uint64_t display_0_screen_time = 0;       // The first presented frame's ScreenTime (qpc)
+		uint32_t display_count = 0;               // The number of presented frames
 	};
 
 	struct DeviceInfo
