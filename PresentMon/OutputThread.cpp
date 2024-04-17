@@ -295,6 +295,21 @@ static void ReportMetrics(
     bool isRecording,
     bool computeAvg)
 {
+    // Ignore repeated frames
+    if (p->FrameType == FrameType::Repeated) {
+        if (p->FrameId == chain->mLastPresent->FrameId) {
+            return;
+        }
+
+        if (p->FrameId == nextPresent->FrameId &&
+            nextPresent->ScreenTime != 0) {
+            nextPresent->ScreenTime = p->ScreenTime;
+            return;
+        }
+
+        p->FrameType = FrameType::Application;
+    }
+
     // PB = PresentStartTime
     // PE = PresentEndTime
     // D  = ScreenTime
