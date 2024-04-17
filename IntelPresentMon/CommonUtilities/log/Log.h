@@ -20,7 +20,7 @@ namespace pmon::util::log
 #ifndef NDEBUG
 #define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Debug
 #else
-#define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Error
+#define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Info
 #endif
 #endif
 
@@ -33,5 +33,7 @@ namespace pmon::util::log
 #define pmlog_info	xinternal_pmlog_(::pmon::util::log::Level::Info)
 #define pmlog_dbg	xinternal_pmlog_(::pmon::util::log::Level::Debug)
 #define pmlog_verb(vtag) !vtag ? (void)0 : xinternal_pmlog_(::pmon::util::log::Level::Verbose)
+
+#define pmwatch(expr) watch(L###expr, (expr))
 
 #define pmlog_setup ::pmon::util::log::DefaultChannelManager xpmlog_scope_sentinel_

@@ -75,9 +75,10 @@ int main(int argc, char* argv[])
             }
             std::wstring note;
             while (true) {
+                int x = 3;
                 std::cout << "SAY> ";
                 std::getline(std::wcin, note);
-                pmlog_info.note(note);
+                pmlog_info.note(note).pmwatch(x+2);
                 if (note == L"@#$") {
                     break;
                 }

@@ -1,5 +1,6 @@
 #pragma once
 #include "Entry.h"
+#include <format>
 
 namespace pmon::util::log
 {
@@ -9,6 +10,12 @@ namespace pmon::util::log
 	{
 	public:
 		EntryBuilder(Level lvl, const wchar_t* sourceFile, const wchar_t* sourceFunctionName, int sourceLine) noexcept;
+		template<typename T>
+		EntryBuilder& watch(const wchar_t* symbol, const T& value) noexcept
+		{
+			note_ += std::format(L"\n     {} => {}", symbol, value);
+			return *this;
+		}
 		EntryBuilder& note(std::wstring note) noexcept;
 		EntryBuilder& to(IEntrySink*) noexcept;
 		//EntryBuilder& trace_skip(int depth);
