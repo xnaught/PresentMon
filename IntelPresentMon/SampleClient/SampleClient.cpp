@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
                 int x = 3;
                 std::cout << "SAY> ";
                 std::getline(std::wcin, note);
-                pmlog_info(note).pmwatch(x+2);
+                pmlog_info(note).pmwatch(x+2).every(3);
                 if (note == L"@#$") {
                     break;
                 }

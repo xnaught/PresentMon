@@ -53,15 +53,18 @@ namespace pmon::util::log
 			}
 			if (e.showSourceLine_.value_or(true)) {
 				std::visit([&](auto& strings) {
-					oss << std::format(L"\n  >> at {}\n     {}({})\n",
+					oss << std::format(L"\n  >> at {} {}\n     {}({})\n",
 						strings.functionName_,
+						[&] { return e.hitCount_ == -1 ? std::wstring{} : std::format(L"[Hits: {}]", e.hitCount_); }(),
 						strings.file_,
 						e.sourceLine_
 					);
 				}, e.sourceStrings_);
 			}
 			else {
-				oss << L"\n";
+				oss << L"  " << [&]{ return e.hitCount_ == -1 ?
+					std::wstring{} : std::format(L"[Hits: {}]", e.hitCount_); }()
+					<< L"\n";
 			}
 			if (e.pTrace_) {
 				try {

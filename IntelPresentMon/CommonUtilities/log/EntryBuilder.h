@@ -13,7 +13,12 @@ namespace pmon::util::log
 		template<typename T>
 		EntryBuilder& watch(const wchar_t* symbol, const T& value) noexcept
 		{
-			note_ += std::format(L"\n     {} => {}", symbol, value);
+			if (note_.empty()) {
+				note_ += std::format(L"     {} = > {}", symbol, value);
+			}
+			else {
+				note_ += std::format(L"\n     {} => {}", symbol, value);
+			}
 			return *this;
 		}
 		EntryBuilder& note(std::wstring note = L"") noexcept;
@@ -25,6 +30,10 @@ namespace pmon::util::log
 		EntryBuilder& line() noexcept;
 		EntryBuilder& hr() noexcept;
 		EntryBuilder& hr(unsigned int) noexcept;
+		EntryBuilder& every(int n, bool includeFirst = true) noexcept;
+		EntryBuilder& first(int n) noexcept;
+		EntryBuilder& after(int n) noexcept;
+		EntryBuilder& hitcount() noexcept;
 		~EntryBuilder();
 		EntryBuilder& operator<<(std::wstring note) noexcept;
 	private:

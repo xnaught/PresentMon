@@ -8,6 +8,7 @@
 #include "EntryCereal.h"
 #include <cereal/archives/binary.hpp>
 #include <sstream>
+#include <cassert>
 
 
 namespace pmon::util::log
@@ -69,6 +70,38 @@ namespace pmon::util::log
 	EntryBuilder& EntryBuilder::hr(unsigned int hr) noexcept
 	{
 		hResult_ = hr;
+		return *this;
+	}
+	EntryBuilder& EntryBuilder::every(int n, bool includeFirst) noexcept
+	{
+		assert(n > 1);
+		rateControl_ = {
+			.type = includeFirst ? RateControl::Type::EveryAndFirst : RateControl::Type::Every,
+			.parameter = n,
+		};
+		return *this;
+	}
+	EntryBuilder& EntryBuilder::first(int n) noexcept
+	{
+		assert(n > 0);
+		rateControl_ = {
+			.type = RateControl::Type::First,
+			.parameter = n,
+		};
+		return *this;
+	}
+	EntryBuilder& EntryBuilder::after(int n) noexcept
+	{
+		assert(n > 0);
+		rateControl_ = {
+			.type = RateControl::Type::After,
+			.parameter = n,
+		};
+		return *this;
+	}
+	EntryBuilder& EntryBuilder::hitcount() noexcept
+	{
+		rateControl_ = { .type = RateControl::Type::Hitcount };
 		return *this;
 	}
 	EntryBuilder::~EntryBuilder()

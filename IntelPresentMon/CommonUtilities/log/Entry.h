@@ -11,6 +11,19 @@ namespace pmon::util::log
 
 	struct Entry
 	{
+		struct RateControl
+		{
+			enum class Type : int
+			{
+				None,
+				Every,
+				EveryAndFirst,
+				First,
+				After,
+				Hitcount,
+			} type = Type::None;
+			int parameter = -1;
+		};
 		struct StaticSourceStrings
 		{
 			const wchar_t* file_ = nullptr;
@@ -31,8 +44,23 @@ namespace pmon::util::log
 		std::optional<unsigned int> hResult_;
 		uint32_t pid_;
 		uint32_t tid_;
+		RateControl rateControl_;
+		int hitCount_ = -1;
 		// behavior override flags 
 		std::optional<bool> captureTrace_;
 		std::optional<bool> showSourceLine_;
+		// accessors
+		std::wstring GetSourceFileName() const
+		{
+			if (auto p = std::get_if<StaticSourceStrings>(&sourceStrings_)) {
+				if (p->file_) {
+					return p->file_;
+				}
+				else {
+					return {};
+				}
+			}
+			return std::get<HeapedSourceStrings>(sourceStrings_).file_;
+		}
 	};
 }

@@ -35,6 +35,8 @@
     <ClInclude Include="log\IPolicy.h" />
     <ClInclude Include="log\ITextFormatter.h" />
     <ClInclude Include="log\Level.h" />
+    <ClInclude Include="log\LinePolicy.h" />
+    <ClInclude Include="log\LineTable.h" />
     <ClInclude Include="log\Log.h" />
     <ClInclude Include="log\MarshallingProtocol.h" />
     <ClInclude Include="log\MsvcDebugDriver.h" />
@@ -66,6 +68,8 @@
     <ClCompile Include="log\GlobalPolicy.cpp" />
     <ClCompile Include="log\IdentificationTable.cpp" />
     <ClCompile Include="log\Level.cpp" />
+    <ClCompile Include="log\LinePolicy.cpp" />
+    <ClCompile Include="log\LineTable.cpp" />
     <ClCompile Include="log\Log.cpp" />
     <ClCompile Include="log\MsvcDebugDriver.cpp" />
     <ClCompile Include="log\BasicFileDriver.cpp" />
