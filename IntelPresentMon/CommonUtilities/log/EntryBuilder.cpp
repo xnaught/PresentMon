@@ -4,6 +4,7 @@
 #include "PanicLogger.h"
 #include "StackTrace.h"
 #include "GlobalPolicy.h"
+#include "LineTable.h"
 
 #include "EntryCereal.h"
 #include <cereal/archives/binary.hpp>
@@ -107,7 +108,14 @@ namespace pmon::util::log
 	EntryBuilder::~EntryBuilder()
 	{
 		if (pDest_) {
-			if (captureTrace_.value_or((int)level_ <= (int)Level::Error)) {
+			auto tracing = captureTrace_.value_or((int)level_ <= (int)Level::Error);
+			// do line override check
+			if (!tracing && LineTable::TraceOverrideActive()) {
+				if (auto pEntry = LineTable::TryLookup(GetSourceFileName(), sourceLine_)) {
+					tracing = pEntry->traceOverride_;
+				}
+			}
+			if (tracing) {
 				try {
 					pTrace_ = StackTrace::Here();
 					if (GlobalPolicy::GetResolveTraceInClientThread()) {

@@ -68,6 +68,7 @@ int main(int argc, char* argv[])
         try {
             pmon::util::log::LineTable::IngestList(L"black.txt");
             pmon::util::log::LineTable::SetListMode(pmon::util::log::LineTable::ListMode::Black);
+            pmon::util::log::LineTable::SetTraceOverride(true);
         }
         catch (...) { std::cout << "cant find black.txt\n"; }
 

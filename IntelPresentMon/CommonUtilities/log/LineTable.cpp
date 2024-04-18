@@ -24,42 +24,64 @@ namespace pmon::util::log
 	}
 	LineTable::ListMode LineTable::GetListMode() noexcept
 	{
-		return Get_().GetListMode_();
+		try {
+			return Get_().GetListMode_();
+		}
+		catch (...) { return ListMode::None; }
 	}
 	void LineTable::SetListMode(ListMode mode) noexcept
 	{
-		Get_().SetListMode_(mode);
+		try {
+			Get_().SetListMode_(mode);
+		}
+		catch (...) {}
 	}
-	void LineTable::RegisterListItem(const std::wstring& file, int line) noexcept
+	bool LineTable::TraceOverrideActive() noexcept
 	{
-		Get_().RegisterListItem_(file, line);
+		try {
+			return Get_().traceOverride_;
+		}
+		catch (...) { return false; }
 	}
-
-	void LineTable::IngestList(const std::wstring& path)
+	void LineTable::SetTraceOverride(bool ov) noexcept
+	{
+		try {
+			Get_().traceOverride_ = ov;
+		}
+		catch (...) {}
+	}
+	void LineTable::RegisterListItem(const std::wstring& file, int line, bool isTrace) noexcept
+	{
+		Get_().RegisterListItem_(file, line, isTrace);
+	}
+		
+	bool LineTable::IngestList(const std::wstring& path)
 	{
 		if (std::wifstream listFile{ path }) {
-			std::wregex patternRaw(LR"(.*\?.+\d+$)");
 			std::wstring line;
+			bool traceover = false;
 			while (std::getline(listFile, line)) {
 				line = str::TrimWhitespace(line);
 				if (line.empty()) {
 					continue;
 				}
-				// try to match a line in the table key format +42
-				if (std::regex_match(line, patternRaw)) {
-					Get_().RegisterListItem_(line);
+				// detect marker for trace control line and remove
+				const auto traceControl = line.back() == L'%';
+				if (traceControl) {
+					line.pop_back();
+					traceover = true;
 				}
-				else {
-					std::wregex patternLogged(LR"((.+)\((\d+)\)$)");
-					std::wsmatch matches;
-					// try to match a line in the log line format (42)
-					if (std::regex_search(line, matches, patternLogged)) {
-						if (matches.size() == 3) {  // matches[0] is the whole string, [1] is the path, [2] is the number
-							RegisterListItem(matches[1], std::stoi(matches[2]));
-						}
+				// check if pattern matches line identifier
+				std::wregex patternLogged(LR"((.+)\((\d+)\)$)");
+				std::wsmatch matches;
+				// try to match a line in the log line format (42)
+				if (std::regex_search(line, matches, patternLogged)) {
+					if (matches.size() == 3) {  // matches[0] is the whole string, [1] is the path, [2] is the number
+						RegisterListItem(matches[1], std::stoi(matches[2]), traceControl);
 					}
 				}
 			}
+			return traceover;
 		}
 		else {
 			pmlog_error();
@@ -92,13 +114,19 @@ namespace pmon::util::log
 	{
 		listMode_ = mode;
 	}
-	void LineTable::RegisterListItem_(const std::wstring& file, int line)
+	void LineTable::RegisterListItem_(const std::wstring& file, int line, bool isTrace)
 	{
-		RegisterListItem_(MakeKey_(file, line));
+		RegisterListItem_(MakeKey_(file, line), isTrace);
 	}
-	void LineTable::RegisterListItem_(const std::wstring& key)
+	void LineTable::RegisterListItem_(const std::wstring& key, bool isTrace)
 	{
-		lines_[key].isListed_ = true;
+		auto& e = lines_[key];
+		if (isTrace) {
+			e.traceOverride_ = true;
+		}
+		else {
+			e.isListed_ = true;
+		}
 	}
 	std::wstring LineTable::MakeKey_(const std::wstring& file, int line)
 	{
