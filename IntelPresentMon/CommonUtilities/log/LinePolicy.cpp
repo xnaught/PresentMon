@@ -5,11 +5,30 @@
 
 namespace pmon::util::log
 {
-
 	bool LinePolicy::TransformFilter(Entry& e)
 	{
+		LineTable::Entry* pEntry = nullptr;
+		const auto listMode = LineTable::GetListMode();
+		// processing for black/whitelists
+		// first check if listing is active
+		if (listMode != LineTable::ListMode::None) {
+			// check if this line is listed
+			if (pEntry = LineTable::TryLookup(e.GetSourceFileName(), e.sourceLine_); pEntry && pEntry->isListed_) {
+				// in blacklist mode, lines listed are dropped
+				if (listMode == LineTable::ListMode::Black) {
+					return false;
+				}
+			}
+			else {
+				// in whitelist mode, lines not listed are dropped
+				if (listMode == LineTable::ListMode::White) {
+					return false;
+				}
+			}
+		}
 		if (e.rateControl_.type != Entry::RateControl::Type::None) {
-			auto& te = LineTable::Lookup(e.GetSourceFileName(), e.sourceLine_);
+			// lookup the line entry, use previous lookup results if available from list processing
+			auto& te = pEntry ? *pEntry : LineTable::Lookup(e.GetSourceFileName(), e.sourceLine_);
 			e.hitCount_ = te.NextHit();
 			switch (e.rateControl_.type) {
 			case Entry::RateControl::Type::After:

@@ -3,6 +3,8 @@
 #include "String.h"
 #include <sstream>
 #include <iomanip>
+#include <ranges>
+#include <cwctype>
 // TODO: replace with with properly wrapped winapi include
 #include <Windows.h>
 
@@ -57,5 +59,28 @@ namespace pmon::util::str
 		// TODO: (maybe) check for insufficient buffer error and do redo with two-pass (or just double buffer again)
 		// TODO: log error here
 		return {};
+	}
+
+	std::wstring TrimWhitespace(const std::wstring& input)
+	{
+		// Lambda to check if a character is not whitespace
+		auto not_space = [](wchar_t c) { return !iswspace(static_cast<wint_t>(c)); };
+
+		// Create a view that drops leading whitespace
+		auto start = std::ranges::find_if(input, not_space);
+
+		// Create a view of the string in reverse and drop trailing whitespace
+		auto rev_end = std::ranges::find_if(input | std::views::reverse, not_space);
+
+		// Calculate the end iterator in normal order
+		auto end = rev_end.base();
+
+		// If start is after end in the original string, return an empty string
+		if (start >= end) {
+			return L"";
+		}
+
+		// Create a substring from the start to the end
+		return std::wstring(start, end);
 	}
 }

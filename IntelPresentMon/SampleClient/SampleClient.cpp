@@ -37,6 +37,7 @@
 #include "../CommonUtilities/log/EntryMarshallInjector.h"
 #include "../CommonUtilities/log/StackTrace.h"
 #include "../CommonUtilities/log/IdentificationTable.h"
+#include "../CommonUtilities/log/LineTable.h"
 
 struct Test
 {
@@ -64,6 +65,13 @@ int main(int argc, char* argv[])
         using namespace std::chrono_literals;
 
         pmon::util::log::GlobalPolicy::SetLogLevel(pmon::util::log::Level::Verbose);
+        try {
+            pmon::util::log::LineTable::IngestList(L"black.txt");
+            pmon::util::log::LineTable::SetListMode(pmon::util::log::LineTable::ListMode::Black);
+        }
+        catch (...) { std::cout << "cant find black.txt\n"; }
+
+        pmlog_info();
 
         if (opt.doPipeSrv) {
             log::IdentificationTable::AddThisProcess(L"p-server");

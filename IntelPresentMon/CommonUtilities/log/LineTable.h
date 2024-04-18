@@ -33,6 +33,7 @@ namespace pmon::util::log
 		static ListMode GetListMode() noexcept;
 		static void SetListMode(ListMode mode) noexcept;
 		static void RegisterListItem(const std::wstring& file, int line) noexcept;
+		static void IngestList(const std::wstring& path);
 	private:
 		// function
 		static LineTable& Get_();
@@ -41,6 +42,7 @@ namespace pmon::util::log
 		ListMode GetListMode_() const;
 		void SetListMode_(ListMode mode);
 		void RegisterListItem_(const std::wstring& file, int line);
+		void RegisterListItem_(const std::wstring& key);
 		static std::wstring MakeKey_(const std::wstring& file, int line);
 		// data
 		mutable std::shared_mutex mtx_;
