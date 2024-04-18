@@ -23,7 +23,7 @@
 #include "../../ControlLib/CpuTelemetryInfo.h"
 #include "../../PresentMonService/GlobalIdentifiers.h"
 #include "FrameEventQuery.h"
-
+#include "Exception.h"
 
 #define GLOG_NO_ABBREVIATED_SEVERITIES
 #include <glog/logging.h>
@@ -58,12 +58,12 @@ namespace pmon::mid
 
             // Exit if an error other than ERROR_PIPE_BUSY occurs.
             if (const auto hr = GetLastError(); hr != ERROR_PIPE_BUSY) {
-                throw std::runtime_error{ "Service not found" };
+                throw pmon::mid::Exception{ (PM_STATUS)22 };
             }
 
             // All pipe instances are busy, so wait for 20 seconds.
             if (!WaitNamedPipeA(pipeName, 20000)) {
-                throw std::runtime_error{ "Pipe sessions full" };
+                throw pmon::mid::Exception{ (PM_STATUS)23 };
             }
         }
         // The pipe connected; change to message-read mode.
@@ -73,7 +73,7 @@ namespace pmon::mid
             NULL,
             NULL);
         if (!success) {
-            throw std::runtime_error{ "Pipe error" };
+            throw pmon::mid::Exception{ (PM_STATUS)24 };
         }
         pNamedPipeHandle.reset(namedPipeHandle);
         clientProcessId = GetCurrentProcessId();
@@ -81,18 +81,25 @@ namespace pmon::mid
         pComms = ipc::MakeMiddlewareComms(std::move(introNsmOverride));
 
         // Get the introspection data
-        auto& ispec = GetIntrospectionRoot();
-        
-        uint32_t gpuAdapterId = 0;
-        auto deviceView = ispec.GetDevices();
-        for (auto dev : deviceView)
-        {
-            if (dev.GetType() == PM_DEVICE_TYPE_GRAPHICS_ADAPTER)
+        try {
+            auto& ispec = GetIntrospectionRoot();
+
+            uint32_t gpuAdapterId = 0;
+            auto deviceView = ispec.GetDevices();
+            for (auto dev : deviceView)
             {
-                cachedGpuInfo.push_back({ dev.GetVendor(), dev.GetName(), dev.GetId(), gpuAdapterId, 0., 0, 0});
-                gpuAdapterId++;
+                if (dev.GetType() == PM_DEVICE_TYPE_GRAPHICS_ADAPTER)
+                {
+                    cachedGpuInfo.push_back({ dev.GetVendor(), dev.GetName(), dev.GetId(), gpuAdapterId, 0., 0, 0 });
+                    gpuAdapterId++;
+                }
             }
         }
+        catch (...)
+        {
+            throw pmon::mid::Exception{ (PM_STATUS)25 };
+        }
+
         // Update the static GPU metric data from the service
         GetStaticGpuMetrics();
         GetStaticCpuMetrics();
