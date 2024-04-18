@@ -43,8 +43,6 @@ namespace pmon::util::log
 		static LineTable& Get_();
 		LineTable::Entry* TryLookup_(const std::wstring& file, int line);
 		Entry& Lookup_(const std::wstring& file, int line);
-		ListMode GetListMode_() const;
-		void SetListMode_(ListMode mode);
 		void RegisterListItem_(const std::wstring& file, int line, bool isTrace);
 		void RegisterListItem_(const std::wstring& key, bool isTrace);
 		static std::wstring MakeKey_(const std::wstring& file, int line);

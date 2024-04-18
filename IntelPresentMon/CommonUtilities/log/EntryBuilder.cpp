@@ -108,7 +108,7 @@ namespace pmon::util::log
 	EntryBuilder::~EntryBuilder()
 	{
 		if (pDest_) {
-			auto tracing = captureTrace_.value_or((int)level_ <= (int)Level::Error);
+			auto tracing = captureTrace_.value_or((int)level_ <= (int)GlobalPolicy::GetTraceLevel());
 			// do line override check
 			if (!tracing && LineTable::TraceOverrideActive()) {
 				if (auto pEntry = LineTable::TryLookup(GetSourceFileName(), sourceLine_)) {

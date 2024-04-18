@@ -25,14 +25,14 @@ namespace pmon::util::log
 	LineTable::ListMode LineTable::GetListMode() noexcept
 	{
 		try {
-			return Get_().GetListMode_();
+			return Get_().listMode_;
 		}
 		catch (...) { return ListMode::None; }
 	}
 	void LineTable::SetListMode(ListMode mode) noexcept
 	{
 		try {
-			Get_().SetListMode_(mode);
+			Get_().listMode_ = mode;
 		}
 		catch (...) {}
 	}
@@ -52,7 +52,10 @@ namespace pmon::util::log
 	}
 	void LineTable::RegisterListItem(const std::wstring& file, int line, bool isTrace) noexcept
 	{
-		Get_().RegisterListItem_(file, line, isTrace);
+		try {
+			Get_().RegisterListItem_(file, line, isTrace);
+		}
+		catch (...) {}
 	}
 		
 	bool LineTable::IngestList(const std::wstring& path)
@@ -91,6 +94,7 @@ namespace pmon::util::log
 
 	LineTable& LineTable::Get_()
 	{
+		// @SINGLETON
 		static LineTable table;
 		return table;
 	}
@@ -105,14 +109,6 @@ namespace pmon::util::log
 	LineTable::Entry& LineTable::Lookup_(const std::wstring& file, int line)
 	{
 		return lines_[MakeKey_(file, line)];
-	}
-	LineTable::ListMode LineTable::GetListMode_() const
-	{
-		return listMode_;
-	}
-	void LineTable::SetListMode_(ListMode mode)
-	{
-		listMode_ = mode;
 	}
 	void LineTable::RegisterListItem_(const std::wstring& file, int line, bool isTrace)
 	{

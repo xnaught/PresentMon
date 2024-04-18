@@ -9,18 +9,17 @@ namespace pmon::util::log
 	public:
 		static Level GetLogLevel() noexcept;
 		static void SetLogLevel(Level level) noexcept;
+		static Level GetTraceLevel() noexcept;
+		static void SetTraceLevel(Level level) noexcept;
 		static bool GetResolveTraceInClientThread() noexcept;
 		static void SetResolveTraceInClientThread(bool setting) noexcept;
 	private:
 		// functions
 		GlobalPolicy() noexcept;
 		static GlobalPolicy& Get_() noexcept;
-		Level GetLogLevel_() const noexcept;
-		void SetLogLevel_(Level level) noexcept;
-		bool GetResolveTraceInClientThread_() const noexcept;
-		void SetResolveTraceInClientThread_(bool setting) noexcept;
 		// data
 		std::atomic<Level> logLevel_;
 		std::atomic<bool> resolveTraceInClientThread_ = false;
+		std::atomic<Level> traceLevel_ = Level::Error;
 	};
 }

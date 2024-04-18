@@ -12,23 +12,6 @@ namespace pmon::util::log
 		:
 		logLevel_{ PMLOG_GPOL_DEFAULT_LEVEL }
 	{}
-	Level GlobalPolicy::GetLogLevel_() const noexcept
-	{
-		return logLevel_.load();
-	}
-	void GlobalPolicy::SetLogLevel_(Level level) noexcept
-	{
-		logLevel_.store(level);
-	}
-	bool GlobalPolicy::GetResolveTraceInClientThread_() const noexcept
-	{
-		return resolveTraceInClientThread_.load();
-	}
-	void GlobalPolicy::SetResolveTraceInClientThread_(bool setting) noexcept
-	{
-		resolveTraceInClientThread_.store(setting);
-	}
-
 	GlobalPolicy& GlobalPolicy::Get_() noexcept
 	{
 		// @SINGLETON
@@ -38,18 +21,26 @@ namespace pmon::util::log
 
 	Level GlobalPolicy::GetLogLevel() noexcept
 	{
-		return Get_().GetLogLevel_();
+		return Get_().logLevel_;
 	}
 	void GlobalPolicy::SetLogLevel(Level level) noexcept
 	{
-		Get_().SetLogLevel_(level);
+		Get_().logLevel_ = level;
+	}
+	Level GlobalPolicy::GetTraceLevel() noexcept
+	{
+		return Get_().traceLevel_;
+	}
+	void GlobalPolicy::SetTraceLevel(Level level) noexcept
+	{
+		Get_().traceLevel_ = level;
 	}
 	bool GlobalPolicy::GetResolveTraceInClientThread() noexcept
 	{
-		return Get_().GetResolveTraceInClientThread_();
+		return Get_().resolveTraceInClientThread_;
 	}
 	void GlobalPolicy::SetResolveTraceInClientThread(bool setting) noexcept
 	{
-		Get_().SetResolveTraceInClientThread_(setting);
+		Get_().resolveTraceInClientThread_ = setting;
 	}
 }

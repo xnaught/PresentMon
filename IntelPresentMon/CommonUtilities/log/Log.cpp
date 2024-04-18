@@ -20,7 +20,9 @@ namespace pmon::util::log
 		Channel* GetDefaultChannelImpl_() noexcept
 		{
 			try {
-				// make sure ID table is booted
+				// make sure singleton dependencies are booted
+				GlobalPolicy::GetLogLevel();
+				LineTable::TryLookup(L"", 0);
 				IdentificationTable::LookupThread(0);
 				// @SINGLETON
 				static struct ChannelManager {
@@ -52,8 +54,6 @@ namespace pmon::util::log
 	void BootDefaultChannelEager() noexcept
 	{
 		std::thread{ [] {
-			LineTable::TryLookup(L"", 0);
-			GlobalPolicy::GetLogLevel();
 			GetDefaultChannel();
 		} }.detach();
 	}
