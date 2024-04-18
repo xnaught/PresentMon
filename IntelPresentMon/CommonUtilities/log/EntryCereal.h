@@ -17,8 +17,8 @@ namespace pmon::util::log
 	template<class Archive>
 	void serialize(Archive& ar, Entry& e)
 	{
-		ar(e.level_, e.note_, e.sourceLine_, e.timestamp_, e.pTrace_,
-			e.hResult_, e.pid_, e.tid_, e.captureTrace_, e.showSourceLine_);
+		ar(e.level_, e.note_, e.sourceLine_, e.timestamp_,
+			e.pTrace_, e.hResult_, e.pid_, e.tid_);
 
 		// special handling for source strings as they might contain raw pointer alternatives
 		// we always serialize as wstring container regardless of source

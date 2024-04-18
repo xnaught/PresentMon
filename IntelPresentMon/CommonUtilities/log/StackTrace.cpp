@@ -44,8 +44,8 @@ namespace pmon::util::log
 	{
 		return !frames_.empty();
 	}
-	std::unique_ptr<StackTrace> StackTrace::Here()
+	std::unique_ptr<StackTrace> StackTrace::Here(size_t skip)
 	{
-		return std::make_unique<StackTrace>(std::stacktrace::current());
+		return std::make_unique<StackTrace>(std::stacktrace::current(skip));
 	}
 }

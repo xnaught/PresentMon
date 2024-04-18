@@ -12,6 +12,13 @@
 #include <cassert>
 
 
+#ifndef NDEBUG
+#define PM_LOG_DEFAULT_TRACE_SKIP 3
+#else
+#define PM_LOG_DEFAULT_TRACE_SKIP 1
+#endif
+
+
 namespace pmon::util::log
 {
 	EntryBuilder::EntryBuilder(Level lvl, const wchar_t* sourceFile, const wchar_t* sourceFunctionName, int sourceLine) noexcept
@@ -26,7 +33,8 @@ namespace pmon::util::log
 			.timestamp_ = std::chrono::system_clock::now(),
 			.pid_ = GetCurrentProcessId(),
 			.tid_ = GetCurrentThreadId(),
-		}
+		},
+		traceSkipDepth_{ PM_LOG_DEFAULT_TRACE_SKIP }
 	{}
 	EntryBuilder& EntryBuilder::note(std::wstring note) noexcept
 	{
@@ -38,29 +46,19 @@ namespace pmon::util::log
 		pDest_ = pSink;
 		return *this;
 	}
-	//EntryBuilder& EntryBuilder::trace_skip(int depth)
-	//{
-	//	traceSkipDepth_ = depth;
-	//	return *this;
-	//}
-	//EntryBuilder& EntryBuilder::no_trace()
-	//{
-	//	captureTrace_ = false;
-	//	return *this;
-	//}
-	//EntryBuilder& EntryBuilder::trace()
-	//{
-	//	captureTrace_ = true;
-	//	return *this;
-	//}
-	EntryBuilder& EntryBuilder::no_line() noexcept
+	EntryBuilder& EntryBuilder::trace_skip(int depth) noexcept
 	{
-		showSourceLine_ = false;
+		traceSkipDepth_ = depth;
 		return *this;
 	}
-	EntryBuilder& EntryBuilder::line() noexcept
+	EntryBuilder& EntryBuilder::no_trace() noexcept
 	{
-		showSourceLine_ = true;
+		captureTrace_ = false;
+		return *this;
+	}
+	EntryBuilder& EntryBuilder::trace() noexcept
+	{
+		captureTrace_ = true;
 		return *this;
 	}
 	EntryBuilder& EntryBuilder::hr() noexcept
@@ -117,7 +115,7 @@ namespace pmon::util::log
 			}
 			if (tracing) {
 				try {
-					pTrace_ = StackTrace::Here();
+					pTrace_ = StackTrace::Here(traceSkipDepth_);
 					if (GlobalPolicy::GetResolveTraceInClientThread()) {
 						pTrace_->Resolve();
 					}

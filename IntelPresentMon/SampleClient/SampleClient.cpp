@@ -45,11 +45,26 @@ struct Test
     {
         pmlog_info(L"global init log");
     }
-    ~Test()
+    __declspec(noinline) ~Test()
     {
         pmlog_error(L"global destroy log w/ trace");
     }
-} spoot;
+};
+
+struct LogBooter { LogBooter() { pmon::util::log::GetDefaultChannel(); } };
+
+struct
+{
+    LogBooter lb;
+    Test t;
+} glob;
+
+void f() {
+    pmlog_error();
+}
+void g() {
+    f();
+}
 
 int main(int argc, char* argv[])
 {
@@ -72,7 +87,11 @@ int main(int argc, char* argv[])
         }
         catch (...) { std::cout << "cant find black.txt\n"; }
 
-        pmlog_info();
+        g();
+
+        std::jthread{ [] {
+            g();
+        } };
 
         if (opt.doPipeSrv) {
             log::IdentificationTable::AddThisProcess(L"p-server");

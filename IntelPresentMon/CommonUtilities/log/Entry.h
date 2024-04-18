@@ -46,9 +46,8 @@ namespace pmon::util::log
 		uint32_t tid_;
 		RateControl rateControl_;
 		int hitCount_ = -1;
-		// behavior override flags 
-		std::optional<bool> captureTrace_;
-		std::optional<bool> showSourceLine_;
+		// behavior override flags
+		
 		// accessors
 		std::wstring GetSourceFileName() const
 		{

@@ -23,11 +23,9 @@ namespace pmon::util::log
 		}
 		EntryBuilder& note(std::wstring note = L"") noexcept;
 		EntryBuilder& to(IEntrySink*) noexcept;
-		//EntryBuilder& trace_skip(int depth);
-		//EntryBuilder& no_trace();
-		//EntryBuilder& trace();
-		EntryBuilder& no_line() noexcept;
-		EntryBuilder& line() noexcept;
+		EntryBuilder& trace_skip(int depth) noexcept;
+		EntryBuilder& no_trace() noexcept;
+		EntryBuilder& trace() noexcept;
 		EntryBuilder& hr() noexcept;
 		EntryBuilder& hr(unsigned int) noexcept;
 		EntryBuilder& every(int n, bool includeFirst = true) noexcept;
@@ -38,7 +36,8 @@ namespace pmon::util::log
 		EntryBuilder& operator<<(std::wstring note) noexcept;
 	private:
 		IEntrySink* pDest_ = nullptr;
-		int traceSkipDepth_ = 6;
+		int traceSkipDepth_;
+		std::optional<bool> captureTrace_;
 	};
 
 }

@@ -51,7 +51,9 @@ namespace pmon::util::log
 				oss << std::format(L"\n  !HRESULT [{:#010x}]: {}", *e.hResult_,
 					win::GetErrorDescription(*e.hResult_));
 			}
-			if (e.showSourceLine_.value_or(true)) {
+			// display of source line info could be controlled here
+			// if so, hitcount would need to be separately handled
+			if (true) {
 				std::visit([&](auto& strings) {
 					oss << std::format(L"\n  >> at {} {}\n     {}({})\n",
 						strings.functionName_,
@@ -60,11 +62,6 @@ namespace pmon::util::log
 						e.sourceLine_
 					);
 				}, e.sourceStrings_);
-			}
-			else {
-				oss << L"  " << [&]{ return e.hitCount_ == -1 ?
-					std::wstring{} : std::format(L"[Hits: {}]", e.hitCount_); }()
-					<< L"\n";
 			}
 			if (e.pTrace_) {
 				try {
