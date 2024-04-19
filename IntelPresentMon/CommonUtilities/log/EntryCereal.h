@@ -10,6 +10,16 @@
 namespace pmon::util::log
 {
 	template<class Archive>
+	void serialize(Archive& ar, IErrorCodeResolver::Strings& s)
+	{
+		ar(s.description, s.name, s.symbol);
+	}
+	template<class Archive>
+	void serialize(Archive& ar, ErrorCode& c)
+	{
+		ar(c.pStrings_, c.integral_);
+	}
+	template<class Archive>
 	void serialize(Archive& ar, Entry::HeapedSourceStrings& s)
 	{
 		ar(s.file_, s.functionName_);
@@ -18,7 +28,7 @@ namespace pmon::util::log
 	void serialize(Archive& ar, Entry& e)
 	{
 		ar(e.level_, e.note_, e.sourceLine_, e.timestamp_,
-			e.pTrace_, e.hResult_, e.pid_, e.tid_);
+			e.pTrace_, e.errorCode_, e.pid_, e.tid_);
 
 		// special handling for source strings as they might contain raw pointer alternatives
 		// we always serialize as wstring container regardless of source

@@ -12,6 +12,9 @@
 #include "IdentificationTable.h"
 #include "LinePolicy.h"
 #include "LineTable.h"
+#include "ErrorCodeResolvePolicy.h"
+#include "ErrorCodeResolver.h"
+#include "../win/HrErrorCodeProvider.h"
 
 namespace pmon::util::log
 {
@@ -28,6 +31,13 @@ namespace pmon::util::log
 				static struct ChannelManager {
 					Channel channel;
 					ChannelManager() {
+						// error resolver
+						auto pErrorResolver = std::make_shared<ErrorCodeResolver>();
+						pErrorResolver->AddProvider(std::make_unique<win::HrErrorCodeProvider>());
+						// error resolving policy
+						auto pErrPolicy = std::make_shared<ErrorCodeResolvePolicy>();
+						pErrPolicy->SetResolver(std::move(pErrorResolver));
+						channel.AttachPolicy(std::move(pErrPolicy));
 						// make the formatter
 						const auto pFormatter = std::make_shared<TextFormatter>();
 						const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log.txt");

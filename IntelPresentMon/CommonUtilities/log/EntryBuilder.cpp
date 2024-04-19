@@ -5,6 +5,7 @@
 #include "StackTrace.h"
 #include "GlobalPolicy.h"
 #include "LineTable.h"
+#include "../win/HrErrorCodeProvider.h"
 
 #include "EntryCereal.h"
 #include <cereal/archives/binary.hpp>
@@ -63,13 +64,11 @@ namespace pmon::util::log
 	}
 	EntryBuilder& EntryBuilder::hr() noexcept
 	{
-		hResult_ = GetLastError();
-		return *this;
+		return hr(GetLastError());
 	}
-	EntryBuilder& EntryBuilder::hr(unsigned int hr) noexcept
+	EntryBuilder& EntryBuilder::hr(uint32_t hres) noexcept
 	{
-		hResult_ = hr;
-		return *this;
+		return code(win::hr_wrap{ hres });
 	}
 	EntryBuilder& EntryBuilder::every(int n, bool includeFirst) noexcept
 	{

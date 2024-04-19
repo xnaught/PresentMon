@@ -20,12 +20,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cli\CliFramework.h" />
+    <ClInclude Include="log\ErrorCode.h" />
     <ClInclude Include="log\EntryMarshallInjector.h" />
     <ClInclude Include="log\EntryCereal.h" />
+    <ClInclude Include="log\ErrorCodeResolvePolicy.h" />
+    <ClInclude Include="log\ErrorCodeResolver.h" />
     <ClInclude Include="log\GlobalPolicy.h" />
     <ClInclude Include="log\IdentificationTable.h" />
     <ClInclude Include="log\IEntryMarshallReceiver.h" />
     <ClInclude Include="log\IEntryMarshallSender.h" />
+    <ClInclude Include="log\IErrorCodeProvider.h" />
+    <ClInclude Include="log\IErrorCodeResolver.h" />
     <ClInclude Include="log\IFileStrategy.h" />
     <ClInclude Include="log\Channel.h" />
     <ClInclude Include="log\Entry.h" />
@@ -55,6 +60,7 @@
     <ClInclude Include="str\String.h" />
     <ClInclude Include="win\Event.h" />
     <ClInclude Include="win\Handle.h" />
+    <ClInclude Include="win\HrErrorCodeProvider.h" />
     <ClInclude Include="win\Overlapped.h" />
     <ClInclude Include="win\Utilities.h" />
     <ClInclude Include="win\WinAPI.h" />
@@ -65,6 +71,9 @@
     <ClCompile Include="Hash.cpp" />
     <ClCompile Include="log\Channel.cpp" />
     <ClCompile Include="log\EntryBuilder.cpp" />
+    <ClCompile Include="log\ErrorCode.cpp" />
+    <ClCompile Include="log\ErrorCodeResolvePolicy.cpp" />
+    <ClCompile Include="log\ErrorCodeResolver.cpp" />
     <ClCompile Include="log\GlobalPolicy.cpp" />
     <ClCompile Include="log\IdentificationTable.cpp" />
     <ClCompile Include="log\Level.cpp" />
@@ -83,6 +92,7 @@
     <ClCompile Include="str\String.cpp" />
     <ClCompile Include="win\Event.cpp" />
     <ClCompile Include="win\Handle.cpp" />
+    <ClCompile Include="win\HrErrorCodeProvider.cpp" />
     <ClCompile Include="win\Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>

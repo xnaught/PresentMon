@@ -27,11 +27,17 @@ namespace pmon::util::log
 		EntryBuilder& no_trace() noexcept;
 		EntryBuilder& trace() noexcept;
 		EntryBuilder& hr() noexcept;
-		EntryBuilder& hr(unsigned int) noexcept;
+		EntryBuilder& hr(uint32_t) noexcept;
 		EntryBuilder& every(int n, bool includeFirst = true) noexcept;
 		EntryBuilder& first(int n) noexcept;
 		EntryBuilder& after(int n) noexcept;
 		EntryBuilder& hitcount() noexcept;
+		template<typename T>
+		EntryBuilder& code(const T& code) noexcept
+		{
+			errorCode_ = { code };
+			return *this;
+		} 
 		~EntryBuilder();
 		EntryBuilder& operator<<(std::wstring note) noexcept;
 	private:

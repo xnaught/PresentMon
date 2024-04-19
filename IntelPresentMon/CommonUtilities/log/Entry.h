@@ -4,6 +4,7 @@
 #include <optional>
 #include <memory>
 #include <variant>
+#include "ErrorCode.h"
 
 namespace pmon::util::log
 {
@@ -41,13 +42,11 @@ namespace pmon::util::log
 		int sourceLine_ = -1;
 		std::chrono::system_clock::time_point timestamp_;
 		std::shared_ptr<StackTrace> pTrace_;
-		std::optional<unsigned int> hResult_;
+		ErrorCode errorCode_;
 		uint32_t pid_;
 		uint32_t tid_;
 		RateControl rateControl_;
-		int hitCount_ = -1;
-		// behavior override flags
-		
+		int hitCount_ = -1;		
 		// accessors
 		std::wstring GetSourceFileName() const
 		{

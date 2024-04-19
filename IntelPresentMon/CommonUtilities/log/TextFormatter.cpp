@@ -9,6 +9,7 @@
 #include "PanicLogger.h"
 #include "StackTrace.h"
 #include "IdentificationTable.h"
+#include "IErrorCodeResolver.h"
 
 namespace pmon::util::log
 {
@@ -47,9 +48,15 @@ namespace pmon::util::log
 				std::chrono::zoned_time{ std::chrono::current_zone(), e.timestamp_ },
 				e.note_
 			);
-			if (e.hResult_) {
-				oss << std::format(L"\n  !HRESULT [{:#010x}]: {}", *e.hResult_,
-					win::GetErrorDescription(*e.hResult_));
+			if (e.errorCode_) {
+				auto& ec = e.errorCode_;
+				if (ec.IsResolvedNontrivial()) {
+					auto pStrings = ec.GetStrings();
+					oss << std::format(L"\n  !{} [{}]: {}", pStrings->type, ec.AsHex(), pStrings->description);
+				}
+				else {
+					oss << std::format(L"\n  !UNKNOWN [{}]", ec.AsHex());
+				}
 			}
 			// display of source line info could be controlled here
 			// if so, hitcount would need to be separately handled

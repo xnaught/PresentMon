@@ -39,6 +39,8 @@
 #include "../CommonUtilities/log/IdentificationTable.h"
 #include "../CommonUtilities/log/LineTable.h"
 
+#include "../CommonUtilities/win/HrErrorCodeProvider.h"
+
 struct Test
 {
     Test()
@@ -60,7 +62,8 @@ struct
 } glob;
 
 void f() {
-    pmlog_error();
+    using pmon::util::win::hr_wrap;
+    pmlog_error().code(hr_wrap{ 0x69420 });
 }
 void g() {
     f();
