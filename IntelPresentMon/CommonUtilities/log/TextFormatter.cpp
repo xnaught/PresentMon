@@ -52,7 +52,7 @@ namespace pmon::util::log
 				auto& ec = e.errorCode_;
 				if (ec.IsResolvedNontrivial()) {
 					auto pStrings = ec.GetStrings();
-					oss << std::format(L"\n  !{} [{}]: {}", pStrings->type, ec.AsHex(), pStrings->description);
+					oss << std::format(L"\n  !{} [{}]:{}) {}", pStrings->type, ec.AsHex(), pStrings->name, pStrings->description);
 				}
 				else {
 					oss << std::format(L"\n  !UNKNOWN [{}]", ec.AsHex());

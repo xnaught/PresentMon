@@ -22,11 +22,13 @@
     <ClCompile Include="EnumMap.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="Introspection.cpp" />
+    <ClCompile Include="PmErrorCodeProvider.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EnumMap.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="Introspection.h" />
+    <ClInclude Include="PmErrorCodeProvider.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">

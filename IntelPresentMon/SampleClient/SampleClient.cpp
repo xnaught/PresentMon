@@ -28,6 +28,7 @@
 #include "CheckMetricSample.h"
 #include "WrapperStaticQuery.h"
 #include "MetricListSample.h"
+#include "../PresentMonAPIWrapperCommon/PmErrorCodeProvider.h"
 
 #define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Verbose
 #include "../CommonUtilities/log/Log.h"
@@ -35,11 +36,8 @@
 #include "../CommonUtilities/log/NamedPipeMarshallSender.h"
 #include "../CommonUtilities/log/MarshallDriver.h"
 #include "../CommonUtilities/log/EntryMarshallInjector.h"
-#include "../CommonUtilities/log/StackTrace.h"
 #include "../CommonUtilities/log/IdentificationTable.h"
 #include "../CommonUtilities/log/LineTable.h"
-
-#include "../CommonUtilities/win/HrErrorCodeProvider.h"
 
 struct Test
 {
@@ -62,8 +60,7 @@ struct
 } glob;
 
 void f() {
-    using pmon::util::win::hr_wrap;
-    pmlog_error().code(hr_wrap{ 0x69420 });
+    pmlog_error().code(PM_STATUS_SERVICE_ERROR);
 }
 void g() {
     f();
@@ -142,6 +139,8 @@ int main(int argc, char* argv[])
             else {
                 pSession = std::make_unique<pmapi::Session>();
             }
+
+            pmlog_info().code(PM_STATUS_DATA_LOSS);
 
             if (opt.introspectionSample) {
                 return IntrospectionSample(std::move(pSession));
