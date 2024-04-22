@@ -197,6 +197,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Console.cpp" />
+    <ClCompile Include="Log.cpp" />
     <ClCompile Include="SampleClient.cpp" />
   </ItemGroup>
   <ItemGroup>

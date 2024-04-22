@@ -2,11 +2,14 @@
 #include "EntryBuilder.h"
 #include "IChannel.h"
 #include "GlobalPolicy.h"
+#include <functional>
 
 namespace pmon::util::log
 {
-	void BootDefaultChannelEager() noexcept;
+	// this function must be implemented by the module using this log utility
 	IChannel* GetDefaultChannel() noexcept;
+	void BootDefaultChannelEager() noexcept;
+	IChannel* GetDefaultChannelWithFactory(std::function<std::shared_ptr<IChannel>()> factory) noexcept;
 	// DefaultChannelManager should be instantiated as early as possible in the entry point of the process/module
 	// It acts as a guard to prevent stack trace resolution in the channel worker thread after exiting main
 	struct DefaultChannelManager

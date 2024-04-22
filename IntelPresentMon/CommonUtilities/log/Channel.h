@@ -51,6 +51,6 @@ namespace pmon::util::log
 		void Flush() override;
 		void AttachDriver(std::shared_ptr<IDriver>) override;
 		void AttachPolicy(std::shared_ptr<IPolicy>) override;
-		void FlushEntryPointExit();
+		void FlushEntryPointExit() override;
 	};
 }

@@ -18,48 +18,27 @@
 
 namespace pmon::util::log
 {
-	namespace
+	IChannel* GetDefaultChannelWithFactory(std::function<std::shared_ptr<IChannel>()> factory) noexcept
 	{
-		Channel* GetDefaultChannelImpl_() noexcept
-		{
-			try {
-				// make sure singleton dependencies are booted
-				GlobalPolicy::GetLogLevel();
-				LineTable::TryLookup(L"", 0);
-				IdentificationTable::LookupThread(0);
-				// @SINGLETON
-				static struct ChannelManager {
-					Channel channel;
-					ChannelManager() {
-						// error resolver
-						auto pErrorResolver = std::make_shared<ErrorCodeResolver>();
-						pErrorResolver->AddProvider(std::make_unique<win::HrErrorCodeProvider>());
-						// error resolving policy
-						auto pErrPolicy = std::make_shared<ErrorCodeResolvePolicy>();
-						pErrPolicy->SetResolver(std::move(pErrorResolver));
-						channel.AttachPolicy(std::move(pErrPolicy));
-						// make the formatter
-						const auto pFormatter = std::make_shared<TextFormatter>();
-						const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log.txt");
-						// make and add the line-tracking policy
-						channel.AttachPolicy(std::make_shared<LinePolicy>());
-						// construct and configure default logging channel
-						channel.AttachDriver(std::make_shared<MsvcDebugDriver>(pFormatter));
-						channel.AttachDriver(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy));
-					}
-				} channelManager;
-
-				return &channelManager.channel;
-			}
-			catch (...) {
-				pmlog_panic_(L"Exception thrown while getting default log channel");
-				return nullptr;
-			}
+		try {
+			// make sure singleton dependencies are booted
+			GlobalPolicy::GetLogLevel();
+			LineTable::TryLookup(L"", 0);
+			IdentificationTable::LookupThread(0);
+			// @SINGLETON
+			static struct ChannelManager {
+				std::shared_ptr<IChannel> pChannel;
+				ChannelManager(std::function<std::shared_ptr<IChannel>()> factory)
+					:
+					pChannel{ factory() }
+				{}
+			} channelManager{ std::move(factory) };
+			return channelManager.pChannel.get();
 		}
-	}
-	IChannel* GetDefaultChannel() noexcept
-	{
-		return GetDefaultChannelImpl_();
+		catch (...) {
+			pmlog_panic_(L"Exception thrown while getting default log channel");
+			return nullptr;
+		}
 	}
 	void BootDefaultChannelEager() noexcept
 	{
@@ -74,6 +53,6 @@ namespace pmon::util::log
 	DefaultChannelManager::~DefaultChannelManager()
 	{
 		GlobalPolicy::SetResolveTraceInClientThread(true);
-		GetDefaultChannelImpl_()->FlushEntryPointExit();
+		GetDefaultChannel()->FlushEntryPointExit();
 	}
 }

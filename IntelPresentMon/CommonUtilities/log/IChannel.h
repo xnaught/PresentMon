@@ -20,5 +20,6 @@ namespace pmon::util::log
 	public:
 		virtual void AttachDriver(std::shared_ptr<IDriver>) = 0;
 		virtual void AttachPolicy(std::shared_ptr<IPolicy>) = 0;
+		virtual void FlushEntryPointExit() = 0;
 	};
 }
