@@ -1798,35 +1798,20 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
     // persist for the full capture.
     //
     // We handle this by throwing away all queued presents up to this point.
-    if (!mHasCompletedAPresent) {
-        if (!p->IsLost) {
-            mPresentByThreadId.clear();
-            mOrderedPresentsByProcessId.clear();
-            mPresentBySubmitSequence.clear();
-            mPresentByWin32KPresentHistoryToken.clear();
-            mPresentByDxgkPresentHistoryToken.clear();
-            mPresentByDxgkPresentHistoryTokenData.clear();
-            mPresentByDxgkContext.clear();
-            mLastPresentByWindow.clear();
-            mPresentByVidPnLayerId.clear();
-
-            mTrackedPresents.clear();
-            mTrackedPresents.resize(PRESENTEVENT_CIRCULAR_BUFFER_SIZE);
-            mCompletedPresents.clear();
-            mCompletedPresents.resize(PRESENTEVENT_CIRCULAR_BUFFER_SIZE);
-            mNextFreeRingIndex = 0;
-            mCompletedIndex = 0;
-            mCompletedCount = 0;
-            mReadyCount = 0;
-
-            mHasCompletedAPresent = true;
+    if (!mHasCompletedAPresent && !p->IsLost) {
+        for (auto const& pr : mOrderedPresentsByProcessId) {
+            for (auto orderedPresents = &pr.second; !orderedPresents->empty(); ) {
+                RemoveLostPresent(orderedPresents->begin()->second);
+            }
         }
+
+        mHasCompletedAPresent = true;
         return;
     }
 
     // Protect against CompletePresent() being called twice for the same present.  That isn't
     // intended,  but there have been cases observed where it happens (in some cases leading to
-    // infinite recursion with a DWM present and a dependent present completing eachother).
+    // infinite recursion with a DWM present and a dependent present completing each other).
     //
     // The exact pattern causing this has not yet been identified, so is the best fix for now.
     DebugAssert(p->IsCompleted == false);

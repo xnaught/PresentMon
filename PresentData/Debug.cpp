@@ -363,6 +363,10 @@ void DebugAssertImpl(wchar_t const* msg, wchar_t const* file, int line)
 {
     if (IsVerboseTraceEnabled()) {
         wprintf(L"ASSERTION FAILED: %s(%d): %s\n", file, line, msg);
+
+        if (IsDebuggerPresent()) {
+            DebugBreak();
+        }
     } else {
         #ifndef NDEBUG
         _wassert(msg, file, line);
