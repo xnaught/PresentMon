@@ -84,3 +84,4 @@ An improved solution is WIP.
 ### Shutting down PresentMon on Windows 7
 
 Some users have observed system stability issues when forcibly shutting down PresentMon on Windows 7.  If you are having similar issues, they can be avoided by using Ctrl+C in the PresentMon window to shut it down.
+
