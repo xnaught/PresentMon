@@ -108,9 +108,13 @@ void Streamer::CopyFromPresentMonPresentEvent(
     nsm_present_event->DestHeight = present_event->DestHeight;
     nsm_present_event->DriverThreadId = present_event->DriverThreadId;
 
+    nsm_present_event->FrameId = present_event->FrameId;
+
     nsm_present_event->Runtime = present_event->Runtime;
     nsm_present_event->PresentMode = present_event->PresentMode;
     nsm_present_event->FinalState = present_event->FinalState;
+    nsm_present_event->InputType = present_event->InputType;
+    nsm_present_event->FrameType = present_event->FrameType;
 
     nsm_present_event->SupportsTearing = present_event->SupportsTearing;
     nsm_present_event->WaitForFlipEvent = present_event->WaitForFlipEvent;
@@ -126,7 +130,6 @@ void Streamer::CopyFromPresentMonPresentEvent(
 
     nsm_present_event->GPUDuration = present_event->GPUDuration;
     nsm_present_event->GPUVideoDuration = present_event->GPUVideoDuration;
-    nsm_present_event->InputType = present_event->InputType;
     return;
 }
 

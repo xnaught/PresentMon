@@ -394,19 +394,19 @@ namespace pmon::mid
             case PM_METRIC_SYNC_INTERVAL:
             case PM_METRIC_ALLOWS_TEARING:
             case PM_METRIC_CPU_FRAME_QPC:
+            case PM_METRIC_CPU_BUSY:
+            case PM_METRIC_CPU_WAIT:
+            case PM_METRIC_FRAME_TIME:
             case PM_METRIC_GPU_LATENCY:
-            case PM_METRIC_GPU_TIME:
-            case PM_METRIC_GPU_WAIT:
             case PM_METRIC_GPU_BUSY:
+            case PM_METRIC_GPU_WAIT:
+            case PM_METRIC_GPU_TIME:
             case PM_METRIC_DISPLAY_LATENCY:
-            case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
+            case PM_METRIC_DISPLAYED_TIME:
             case PM_METRIC_PRESENTED_FPS:
             case PM_METRIC_DISPLAYED_FPS:
             case PM_METRIC_DROPPED_FRAMES:
-            case PM_METRIC_FRAME_TIME:
-            case PM_METRIC_CPU_BUSY:
-            case PM_METRIC_CPU_WAIT:
-            case PM_METRIC_DISPLAYED_TIME:
+            case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
                 pQuery->accumFpsData = true;
                 break;
             case PM_METRIC_GPU_POWER:
@@ -588,17 +588,10 @@ void UpdateChain(
     fpsSwapChainData* chain,
     PmNsmPresentEvent const& p)
 {
-    chain->mNextFrameCPUStart   = p.PresentStartTime + p.TimeInPresent;
-    chain->mPresentMode         = p.PresentMode;
-    chain->mPresentRuntime      = p.Runtime;
-    chain->mPresentSyncInterval = p.SyncInterval;
-    chain->mPresentFlags        = p.PresentFlags;
-    chain->mPresentInfoValid    = true;
+    chain->mLastPresent = p;
+    chain->mLastPresentIsValid = true;
 
     // IntelPresentMon specifics:
-    chain->applicationName      = p.application;
-    chain->allows_tearing       = p.SupportsTearing;
-
     if (p.FinalState == PresentResult::Presented) {
         if (chain->display_count == 0) {
             chain->display_0_screen_time = p.ScreenTime;
@@ -612,53 +605,69 @@ void UpdateChain(
 void ReportMetrics(
     FakePMTraceSession const& pmSession,
     fpsSwapChainData* chain,
-    PmNsmPresentEvent const& p,
+    PmNsmPresentEvent* p,
+    PmNsmPresentEvent* nextPresent,
     PmNsmPresentEvent const* nextDisplayedPresent)
 {
     // PB = PresentStartTime
     // PE = PresentEndTime
     // D  = ScreenTime
     //
-    // Previous PresentEvent:  PB--PE----D
+    // chain->mLastPresent:    PB--PE----D
     // p:                          |        PB--PE----D
-    // Next PresentEvent(s):       |        |   |   PB--PE
-    //                             |        |   |     |     PB--PE
+    // nextPresent:                |        |   |   PB--PE
+    // ...                         |        |   |     |     PB--PE
     // nextDisplayedPresent:       |        |   |     |             PB--PE----D
     //                             |        |   |     |                       |
-    // CPUStartTime/CPUBusy:       |------->|   |     |                       |
-    // CPUWait:                             |-->|     |                       |
-    // DisplayLatency:             |----------------->|                       |
-    // DisplayedTime:                                 |---------------------->|
+    // mCPUStart/mCPUBusy:         |------->|   |     |                       |
+    // mCPUWait:                            |-->|     |                       |
+    // mDisplayLatency:            |----------------->|                       |
+    // mDisplayedTime:                                |---------------------->|
 
-    bool displayed = p.FinalState == PresentResult::Presented;
+    bool displayed = p->FinalState == PresentResult::Presented;
 
-    double gpuDuration = pmSession.TimestampDeltaToUnsignedMilliSeconds(p.GPUStartTime, p.ReadyTime);
+    double msGPUDuration = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->GPUStartTime, p->ReadyTime);
 
     FrameMetrics metrics;
-    metrics.mCPUStart             = chain->mNextFrameCPUStart;
-    metrics.mCPUBusy              = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p.PresentStartTime);
-    metrics.mCPUWait              = pmSession.TimestampDeltaToMilliSeconds(p.TimeInPresent);
-    metrics.mGPULatency           = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p.GPUStartTime);
-    metrics.mGPUBusy              = pmSession.TimestampDeltaToMilliSeconds(p.GPUDuration);
-    metrics.mVideoBusy            = pmSession.TimestampDeltaToMilliSeconds(p.GPUVideoDuration);
-    metrics.mGPUWait              = std::max(0.0, gpuDuration - metrics.mGPUBusy);
-    metrics.mDisplayLatency       = !displayed       ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p.ScreenTime);
-    metrics.mDisplayedTime        = !displayed       ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p.ScreenTime, nextDisplayedPresent->ScreenTime);
-    metrics.mClickToPhotonLatency = p.InputTime == 0 ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p.InputTime, p.ScreenTime);
+    metrics.mCPUStart   = chain->mLastPresent.PresentStartTime + chain->mLastPresent.TimeInPresent;
+    metrics.mCPUBusy    = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->PresentStartTime);
+    metrics.mCPUWait    = pmSession.TimestampDeltaToMilliSeconds(p->TimeInPresent);
+    metrics.mGPULatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->GPUStartTime);
+    metrics.mGPUBusy    = pmSession.TimestampDeltaToMilliSeconds(p->GPUDuration);
+    metrics.mVideoBusy  = pmSession.TimestampDeltaToMilliSeconds(p->GPUVideoDuration);
+    metrics.mGPUWait    = std::max(0.0, msGPUDuration - metrics.mGPUBusy);
 
-    UpdateChain(chain, p);
+    if (displayed) {
+        metrics.mDisplayLatency       = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->ScreenTime);
+        metrics.mDisplayedTime        = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ScreenTime, nextDisplayedPresent->ScreenTime);
+        metrics.mClickToPhotonLatency = p->InputTime == 0 ? 0.0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, p->ScreenTime);
+    } else {
+        metrics.mDisplayLatency       = 0.0;
+        metrics.mDisplayedTime        = 0.0;
+        metrics.mClickToPhotonLatency = 0.0;
+    }
+
+    UpdateChain(chain, *p);
 
     // IntelPresentMon specifics:
-    chain->mCPUStart            .push_back(metrics.mCPUStart);
-    chain->mCPUBusy             .push_back(metrics.mCPUBusy);
-    chain->mCPUWait             .push_back(metrics.mCPUWait);
-    chain->mGPULatency          .push_back(metrics.mGPULatency);
-    chain->mGPUBusy             .push_back(metrics.mGPUBusy);
-    chain->mVideoBusy           .push_back(metrics.mVideoBusy);
-    chain->mGPUWait             .push_back(metrics.mGPUWait);
-    chain->mDisplayLatency      .push_back(metrics.mDisplayLatency);
-    chain->mDisplayedTime       .push_back(metrics.mDisplayedTime);
-    chain->mClickToPhotonLatency.push_back(metrics.mClickToPhotonLatency);
+    chain->mCPUBusy.push_back(metrics.mCPUBusy);
+    chain->mCPUWait.push_back(metrics.mCPUWait);
+    chain->mGPULatency.push_back(metrics.mGPULatency);
+    chain->mGPUBusy.push_back(metrics.mGPUBusy);
+    chain->mVideoBusy.push_back(metrics.mVideoBusy);
+    chain->mGPUWait.push_back(metrics.mGPUWait);
+
+    if (displayed) {
+        if (p->InputTime) {
+            chain->mClickToPhotonLatency.push_back(metrics.mClickToPhotonLatency);
+        }
+
+        chain->mDisplayLatency.push_back(metrics.mDisplayLatency);
+        chain->mDisplayedTime.push_back(metrics.mDisplayedTime);
+        chain->mDropped.push_back(0.0);
+    } else {
+        chain->mDropped.push_back(1.0);
+    }
 }
 
 }
@@ -750,22 +759,31 @@ void ReportMetrics(
 
                 auto presentEvent = &frame_data->present_event;
                 auto chain = swap_chain;
-                if (!chain->mPresentInfoValid) {
-                    UpdateChain(chain, *presentEvent);
-                } else
-                if (presentEvent->FinalState == PresentResult::Presented) {
-                    for (auto const& pp : chain->mPendingPresents) {
-                        ReportMetrics(pmSession, chain, pp, presentEvent);
+
+                // The following code block copied from: PresentMon/OutputThread.cpp
+                if (chain->mLastPresentIsValid) {
+                    auto numPendingPresents = chain->mPendingPresents.size();
+                    if (numPendingPresents > 0) {
+                        if (presentEvent->FinalState == PresentResult::Presented) {
+                            size_t i = 1;
+                            for ( ; i < numPendingPresents; ++i) {
+                                ReportMetrics(pmSession, chain, &chain->mPendingPresents[i - 1], &chain->mPendingPresents[i], presentEvent);
+                            }
+                            ReportMetrics(pmSession, chain, &chain->mPendingPresents[i - 1], presentEvent, presentEvent);
+                            chain->mPendingPresents.clear();
+                        } else {
+                            if (chain->mPendingPresents[0].FinalState != PresentResult::Presented) {
+                                ReportMetrics(pmSession, chain, &chain->mPendingPresents[0], presentEvent, nullptr);
+                                chain->mPendingPresents.clear();
+                            }
+                        }
                     }
-                    chain->mPendingPresents.clear();
+
                     chain->mPendingPresents.push_back(*presentEvent);
                 } else {
-                    if (chain->mPendingPresents.empty()) {
-                        ReportMetrics(pmSession, chain, *presentEvent, nullptr);
-                    } else {
-                        chain->mPendingPresents.push_back(*presentEvent);
-                    }
+                    UpdateChain(chain, *presentEvent);
                 }
+                // end
             }
 
             for (size_t i = 0; i < pQuery->accumGpuBits.size(); ++i) {
@@ -992,120 +1010,28 @@ void ReportMetrics(
         switch (element.metric)
         {
         case PM_METRIC_APPLICATION:
-            strcpy_s(reinterpret_cast<char*>(&pBlob[element.dataOffset]), 260, swapChain.applicationName.c_str());
+            strcpy_s(reinterpret_cast<char*>(&pBlob[element.dataOffset]), 260, swapChain.mLastPresent.application);
             break;
         case PM_METRIC_PRESENT_MODE:
-            reinterpret_cast<PM_PRESENT_MODE&>(pBlob[element.dataOffset]) = (PM_PRESENT_MODE)swapChain.mPresentMode;
+            reinterpret_cast<PM_PRESENT_MODE&>(pBlob[element.dataOffset]) = (PM_PRESENT_MODE)swapChain.mLastPresent.PresentMode;
             break;
         case PM_METRIC_PRESENT_RUNTIME:
-            reinterpret_cast<PM_GRAPHICS_RUNTIME&>(pBlob[element.dataOffset]) = (PM_GRAPHICS_RUNTIME)swapChain.mPresentRuntime;
+            reinterpret_cast<PM_GRAPHICS_RUNTIME&>(pBlob[element.dataOffset]) = (PM_GRAPHICS_RUNTIME)swapChain.mLastPresent.Runtime;
             break;
         case PM_METRIC_PRESENT_FLAGS:
-            reinterpret_cast<uint32_t&>(pBlob[element.dataOffset]) = swapChain.mPresentFlags;
+            reinterpret_cast<uint32_t&>(pBlob[element.dataOffset]) = swapChain.mLastPresent.PresentFlags;
             break;
         case PM_METRIC_SYNC_INTERVAL:
-            reinterpret_cast<uint32_t&>(pBlob[element.dataOffset]) = swapChain.mPresentSyncInterval;
+            reinterpret_cast<uint32_t&>(pBlob[element.dataOffset]) = swapChain.mLastPresent.SyncInterval;
             break;
         case PM_METRIC_ALLOWS_TEARING:
-            reinterpret_cast<bool&>(pBlob[element.dataOffset]) = swapChain.allows_tearing;
+            reinterpret_cast<bool&>(pBlob[element.dataOffset]) = swapChain.mLastPresent.SupportsTearing;
             break;
-        // no statistics on PM_METRIC_FRAME_QPC
-        case PM_METRIC_GPU_LATENCY:
-            CalculateMetric(output, swapChain.mGPULatency, element.stat);
+        case PM_METRIC_CPU_BUSY:
+            output = CalculateStatistic(swapChain.mCPUBusy, element.stat);
             break;
-        case PM_METRIC_GPU_WAIT:
-            CalculateMetric(output, swapChain.mGPUWait, element.stat);
-            break;
-        case PM_METRIC_GPU_BUSY:
-            CalculateMetric(output, swapChain.mGPUBusy, element.stat);
-            break;
-        case PM_METRIC_DISPLAY_LATENCY:
-        {
-            std::vector<double> display_latency;
-            display_latency.reserve(swapChain.mDisplayLatency.size());
-            for (size_t i = 0; i < swapChain.mDisplayLatency.size(); ++i) {
-                if (swapChain.mDisplayLatency[i] != 0.0) {
-                    display_latency.push_back(swapChain.mDisplayLatency[i]);
-                }
-            }
-            CalculateMetric(output, display_latency, element.stat);
-        }
-            break;
-        case PM_METRIC_DISPLAYED_TIME:
-        {
-            std::vector<double> display_duration;
-            display_duration.reserve(swapChain.mDisplayedTime.size());
-            for (size_t i = 0; i < swapChain.mDisplayedTime.size(); ++i) {
-                if (swapChain.mDisplayedTime[i] != 0.0) {
-                    display_duration.push_back(swapChain.mDisplayedTime[i]);
-                }
-            }
-            CalculateMetric(output, display_duration, element.stat);
-        }
-            break;
-        case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
-            CalculateMetric(output, swapChain.mClickToPhotonLatency, element.stat);
-            break;
-
-        case PM_METRIC_PRESENTED_FPS:
-        {
-            std::vector<double> frameTimes(swapChain.mCPUBusy.size());
-            for (size_t i = 0; i < swapChain.mCPUBusy.size(); ++i) {
-                frameTimes[i] = swapChain.mCPUBusy[i] + swapChain.mCPUWait[i];
-            }
-            switch (element.stat)
-            {
-            case PM_STAT_PERCENTILE_99:
-                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_01);
-                break;
-            case PM_STAT_PERCENTILE_95:
-                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_05);
-                break;
-            case PM_STAT_PERCENTILE_90:
-                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_10);
-                break;
-            case PM_STAT_PERCENTILE_10:
-                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_90);
-                break;
-            case PM_STAT_PERCENTILE_05:
-                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_95);
-                break;
-            case PM_STAT_PERCENTILE_01:
-                CalculateMetric(output, frameTimes, PM_STAT_PERCENTILE_99);
-                break;
-            case PM_STAT_MAX:
-                CalculateMetric(output, frameTimes, PM_STAT_MIN);
-                break;
-            case PM_STAT_MIN:
-                CalculateMetric(output, frameTimes, PM_STAT_MAX);
-                break;
-            default:
-                CalculateMetric(output, frameTimes, element.stat);
-            }
-            // Convert to FPS
-            output = 1000.0 / output;
-        }
-            break;
-        case PM_METRIC_DISPLAYED_FPS:
-        {
-            std::vector<double> displayed_fps;
-            displayed_fps.reserve(swapChain.mDisplayedTime.size());
-            for (size_t i = 0; i < swapChain.mDisplayedTime.size(); ++i) {
-                if (swapChain.mDisplayedTime[i] != 0.0) {
-                    displayed_fps.push_back(1000.0 / swapChain.mDisplayedTime[i]);
-                }
-            }
-            CalculateMetric(output, displayed_fps, element.stat);
-        }
-            break;
-        case PM_METRIC_DROPPED_FRAMES:
-        {
-            std::vector<double> dropped(swapChain.mDisplayedTime.size());
-            for (size_t i = 0; i < swapChain.mDisplayedTime.size(); ++i) {
-                dropped[i] = swapChain.mDisplayedTime[i] == 0.0 ? 1.0 : 0.0;
-            }
-            CalculateMetric(output, dropped, element.stat);
-        }
+        case PM_METRIC_CPU_WAIT:
+            output = CalculateStatistic(swapChain.mCPUWait, element.stat);
             break;
         case PM_METRIC_FRAME_TIME:
         {
@@ -1113,14 +1039,17 @@ void ReportMetrics(
             for (size_t i = 0; i < swapChain.mCPUBusy.size(); ++i) {
                 frame_times[i] = swapChain.mCPUBusy[i] + swapChain.mCPUWait[i];
             }
-            CalculateMetric(output, frame_times, element.stat);
+            output = CalculateStatistic(frame_times, element.stat);
+            break;
         }
+        case PM_METRIC_GPU_LATENCY:
+            output = CalculateStatistic(swapChain.mGPULatency, element.stat);
             break;
-        case PM_METRIC_CPU_BUSY:
-            CalculateMetric(output, swapChain.mCPUBusy, element.stat);
+        case PM_METRIC_GPU_BUSY:
+            output = CalculateStatistic(swapChain.mGPUBusy, element.stat);
             break;
-        case PM_METRIC_CPU_WAIT:
-            CalculateMetric(output, swapChain.mCPUWait, element.stat);
+        case PM_METRIC_GPU_WAIT:
+            output = CalculateStatistic(swapChain.mGPUWait, element.stat);
             break;
         case PM_METRIC_GPU_TIME:
         {
@@ -1128,8 +1057,38 @@ void ReportMetrics(
             for (size_t i = 0; i < swapChain.mGPUBusy.size(); ++i) {
                 gpu_duration[i] = swapChain.mGPUBusy[i] + swapChain.mGPUWait[i];
             }
-            CalculateMetric(output, gpu_duration, element.stat);
+            output = CalculateStatistic(gpu_duration, element.stat);
+            break;
         }
+        case PM_METRIC_DISPLAY_LATENCY:
+            output = CalculateStatistic(swapChain.mDisplayLatency, element.stat);
+            break;
+        case PM_METRIC_DISPLAYED_TIME:
+            output = CalculateStatistic(swapChain.mDisplayedTime, element.stat);
+            break;
+        case PM_METRIC_PRESENTED_FPS:
+        {
+            std::vector<double> presented_fps(swapChain.mCPUBusy.size());
+            for (size_t i = 0; i < swapChain.mCPUBusy.size(); ++i) {
+                presented_fps[i] = 1000.0 / (swapChain.mCPUBusy[i] + swapChain.mCPUWait[i]);
+            }
+            output = CalculateStatistic(presented_fps, element.stat);
+            break;
+        }
+        case PM_METRIC_DISPLAYED_FPS:
+        {
+            std::vector<double> displayed_fps(swapChain.mDisplayedTime.size());
+            for (size_t i = 0; i < swapChain.mDisplayedTime.size(); ++i) {
+                displayed_fps[i] = 1000.0 / swapChain.mDisplayedTime[i];
+            }
+            output = CalculateStatistic(displayed_fps, element.stat);
+            break;
+        }
+        case PM_METRIC_DROPPED_FRAMES:
+            output = CalculateStatistic(swapChain.mDropped, element.stat);
+            break;
+        case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
+            output = CalculateStatistic(swapChain.mClickToPhotonLatency, element.stat);
             break;
         default:
             output = 0.;
@@ -1149,94 +1108,102 @@ void ReportMetrics(
             auto it2 = mi.data.find(element.arrayIndex);
             if (it2 != mi.data.end())
             {
-                CalculateMetric(output, it2->second, element.stat);
+                output = CalculateStatistic(it2->second, element.stat);
             }
-            
         }
         return;
     }
 
-    void ConcreteMiddleware::CalculateMetric(double& pBlob, std::vector<double>& inData, PM_STAT stat)
+    double ConcreteMiddleware::CalculateStatistic(std::vector<double>& inData, PM_STAT stat) const
     {
-        auto& output = reinterpret_cast<double&>(pBlob);
-        output = 0.;
-        if (inData.size() > 1) {
-            if (stat == PM_STAT_AVG)
+        if (inData.size() == 1) {
+            return inData[0];
+        }
+
+        if (inData.size() >= 1) {
+            switch (stat) {
+            case PM_STAT_NONE:
+                break;
+            case PM_STAT_AVG:
             {
-                for (auto& element : inData) {
-                    output += element;
+                double sum = 0.0;
+                for (auto element : inData) {
+                    sum += element;
                 }
-                output /= inData.size();
-                return;
+                return sum / inData.size();
             }
-            else if (stat == PM_STAT_NON_ZERO_AVG)
+            case PM_STAT_PERCENTILE_99: return CalculatePercentile(inData, 0.99);
+            case PM_STAT_PERCENTILE_95: return CalculatePercentile(inData, 0.95);
+            case PM_STAT_PERCENTILE_90: return CalculatePercentile(inData, 0.90);
+            case PM_STAT_PERCENTILE_01: return CalculatePercentile(inData, 0.01);
+            case PM_STAT_PERCENTILE_05: return CalculatePercentile(inData, 0.05);
+            case PM_STAT_PERCENTILE_10: return CalculatePercentile(inData, 0.10);
+            case PM_STAT_MAX:
             {
-                std::vector<double> non_zero_data;
-                std::copy_if(inData.begin(), inData.end(), std::back_inserter(non_zero_data),
-                    [](double value) { return value != 0.0; });
-                output = !non_zero_data.empty() ? std::accumulate(non_zero_data.begin(), non_zero_data.end(), 0.0) / non_zero_data.size() : 0.0;
+                double max = inData[0];
+                for (size_t i = 1; i < inData.size(); ++i) {
+                    max = std::max(max, inData[i]);
+                }
+                return max;
             }
-            else if (stat == PM_STAT_MID_POINT)
+            case PM_STAT_MIN:
+            {
+                double min = inData[0];
+                for (size_t i = 1; i < inData.size(); ++i) {
+                    min = std::min(min, inData[i]);
+                }
+                return min;
+            }
+            case PM_STAT_MID_POINT:
             {
                 size_t middle_index = inData.size() / 2;
-                output = inData[middle_index];
-                return;
+                return inData[middle_index];
             }
-            else {
-                std::sort(inData.begin(), inData.end());
-                switch (stat)
-                {
-                case PM_STAT_MIN:
-                    output = inData[0];
-                    break;
-                case PM_STAT_MAX:
-                    output = inData[inData.size() - 1];
-                    break;
-                case PM_STAT_PERCENTILE_99:
-                    output = GetPercentile(inData, 0.01);
-                    break;
-                case PM_STAT_PERCENTILE_95:
-                    output = GetPercentile(inData, 0.05);
-                    break;
-                case PM_STAT_PERCENTILE_90:
-                    output = GetPercentile(inData, 0.10);
-                    break;
-                case PM_STAT_PERCENTILE_01:
-                    output = GetPercentile(inData, 0.99);
-                    break;
-                case PM_STAT_PERCENTILE_05:
-                    output = GetPercentile(inData, 0.95);
-                    break;
-                case PM_STAT_PERCENTILE_10:
-                    output = GetPercentile(inData, 0.90);
-                    break;
-                default:
-                    break;
+            case PM_STAT_MID_LERP:
+                // TODO: Not yet implemented
+                break;
+            case PM_STAT_NEWEST_POINT:
+                // TODO: Not yet implemented
+                break;
+            case PM_STAT_OLDEST_POINT:
+                // TODO: Not yet implemented
+                break;
+            case PM_STAT_COUNT:
+                // TODO: Not yet implemented
+                break;
+            case PM_STAT_NON_ZERO_AVG:
+            {
+                double sum = 0.0;
+                size_t num = 0;
+                for (auto element : inData) {
+                    sum += element;
+                    num += element == 0.0 ? 0 : 1;
                 }
+                return num == 0 ? 0.0 : sum / num;
+            }
             }
         }
-        else if (inData.size() == 1) {
-            output = inData[0];
-        }
+
+        return 0.0;
     }
 
     // Calculate percentile using linear interpolation between the closet ranks
-    // data must be pre-sorted
-    double ConcreteMiddleware::GetPercentile(std::vector<double>& data, double percentile)
+    double ConcreteMiddleware::CalculatePercentile(std::vector<double>& inData, double percentile) const
     {
-        percentile = max(percentile, 0.);
+        percentile = min(max(percentile, 0.), 1.);
 
         double integral_part_as_double;
         double fractpart =
-            modf(percentile * static_cast<double>(data.size()),
+            modf(percentile * static_cast<double>(inData.size()),
                 &integral_part_as_double);
 
         uint32_t idx = static_cast<uint32_t>(integral_part_as_double);
-        if (idx >= data.size() - 1) {
-            return data[data.size() - 1];
+        if (idx >= inData.size() - 1) {
+            return CalculateStatistic(inData, PM_STAT_MAX);
         }
 
-        return data[idx] + (fractpart * (data[idx + 1] - data[idx]));
+        std::sort(inData.begin(), inData.end());
+        return inData[idx] + (fractpart * (inData[idx + 1] - inData[idx]));
     }
 
     PmNsmFrameData* ConcreteMiddleware::GetFrameDataStart(StreamClient* client, uint64_t& index, uint64_t queryMetricsDataOffset, uint64_t& queryFrameDataDelta, double& window_sample_size_in_ms)
@@ -1513,9 +1480,6 @@ void ReportMetrics(
     void ConcreteMiddleware::CalculateMetrics(const PM_DYNAMIC_QUERY* pQuery, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains, LARGE_INTEGER qpcFrequency, std::unordered_map<uint64_t, fpsSwapChainData>& swapChainData, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo)
     {
         // Find the swapchain with the most frame metrics
-        uint32_t maxSwapChainPresents = 0;
-        uint32_t maxSwapChainPresentsIndex = 0;
-        uint32_t currentSwapChainIndex = 0;
         auto CalcGpuMemUtilization = [this, metricInfo](PM_STAT stat)
             {
                 double output = 0.;
@@ -1531,18 +1495,22 @@ void ReportMetrics(
                             for (auto memUsed : memUsedVector) {
                                 memoryUtilization.push_back(100. * (memUsed / gpuMemSize));
                             }
-                            CalculateMetric(output, memoryUtilization, stat);
+                            output = CalculateStatistic(memoryUtilization, stat);
                         }
                     }
                 }
                 return output;
             };
 
+        uint32_t maxSwapChainPresents = 0;
+        uint32_t maxSwapChainPresentsIndex = 0;
+        uint32_t currentSwapChainIndex = 0;
         for (auto& pair : swapChainData) {
             auto& swapChain = pair.second;
-            if (swapChain.mCPUStart.size() > maxSwapChainPresents)
+            auto numFrames = (uint32_t)swapChain.mCPUBusy.size();
+            if (numFrames > maxSwapChainPresents)
             {
-                maxSwapChainPresents = (uint32_t)swapChain.mCPUStart.size();
+                maxSwapChainPresents = numFrames;
                 maxSwapChainPresentsIndex = currentSwapChainIndex;
             }
             currentSwapChainIndex++;
@@ -1571,7 +1539,8 @@ void ReportMetrics(
             // fps metric data. The first is if all of the frames are dropped.
             // The second is if in the requested sample window there are
             // no presents.
-            if ((swapChain.display_count <= 1) && (swapChain.mCPUStart.size() == 0)) {
+            auto numFrames = (uint32_t)swapChain.mCPUBusy.size();
+            if ((swapChain.display_count <= 1) && (numFrames == 0)) {
                 useCache = true;
                 break;
             }

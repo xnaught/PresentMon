@@ -149,10 +149,13 @@ struct PmNsmPresentEvent {
   uint32_t DestHeight;
   uint32_t DriverThreadId;
 
+  uint32_t FrameId;           // ID for the logical frame that this Present is associated with.
+
   Runtime Runtime;
   PresentMode PresentMode;
   PresentResult FinalState;
   InputDeviceType InputType;
+  FrameType FrameType;
 
   bool SupportsTearing;
   bool WaitForFlipEvent;
