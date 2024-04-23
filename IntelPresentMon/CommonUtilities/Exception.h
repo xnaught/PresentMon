@@ -19,6 +19,7 @@ namespace pmon::util
 	class Exception : public std::exception
 	{
 	public:
+		Exception() noexcept = default;
 		Exception(std::string msg) noexcept : note_{ std::move(msg) } {}
 		void CaptureStackTrace()
 		{
@@ -26,20 +27,32 @@ namespace pmon::util
 		}
 		const char* what() const noexcept override
 		{
-			buffer_ = GetNote_();
-			if (pTrace_) {
-				buffer_ += "\n" + GetTraceString_();
+			if (buffer_.empty()) {
+				buffer_ = ComposeWhatString_();
 			}
 			return buffer_.c_str();
 		}
 	protected:
+		virtual std::string ComposeWhatString_() const noexcept
+		{
+			try {
+				std::ostringstream oss;
+				oss << GetNote_();
+				if (pTrace_) {
+					oss << "\n" << GetTraceString_();
+				}
+				return oss.str();
+			}
+			catch (...) {}
+			return {};
+		}
 		const std::string& GetNote_() const
 		{
 			return note_;
 		}
 		std::string GetTraceString_() const
 		{
-			if (pTrace_) {
+			if (HasTrace_()) {
 				pTrace_->Resolve();
 				std::wostringstream oss;
 				oss << L" ====== STACK TRACE (newest on top) ======\n";
@@ -48,6 +61,10 @@ namespace pmon::util
 				return str::ToNarrow(oss.str());
 			}
 			return {};
+		}
+		bool HasTrace_() const noexcept
+		{
+			return bool(pTrace_);
 		}
 	private:
 		std::string note_;

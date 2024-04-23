@@ -39,6 +39,7 @@
 #include "../CommonUtilities/log/IdentificationTable.h"
 #include "../CommonUtilities/log/LineTable.h"
 #include "../CommonUtilities/Exception.h"
+#include "../CommonUtilities/win/Utilities.h"
 
 using namespace pmon;
 using namespace pmon::util;
@@ -79,6 +80,34 @@ void k() {
     j();
 }
 
+class SE_Exception : public Exception
+{
+private:
+    const unsigned int nSE;
+public:
+    SE_Exception() noexcept : SE_Exception{ 0 } {}
+    SE_Exception(unsigned int n) noexcept : nSE{ n } {}
+    unsigned int getSeNumber() const noexcept { return nSE; }
+protected:
+    std::string ComposeWhatString_() const noexcept override
+    {
+        try {
+            std::ostringstream oss;
+            oss << std::format("Error Code [0x{:08X}]\n", getSeNumber());
+            if (HasTrace_()) {
+                oss << "\n" << GetTraceString_();
+            }
+            return oss.str();
+        }
+        catch (...) {}
+        return {};
+    }
+};
+
+void seh_trans_func(unsigned int u, EXCEPTION_POINTERS*)
+{
+    throw SE_Exception{ u };
+}
 
 int main(int argc, char* argv[])
 {
@@ -156,7 +185,12 @@ int main(int argc, char* argv[])
 
             pmlog_info().code(PM_STATUS_DATA_LOSS);
 
+            struct Test { Test() { std::cout << "hiya!" << std::endl; }
+                ~Test() { std::cout << "Byeee" << std::endl; } } test;
+
+            _set_se_translator(seh_trans_func);
             log::GlobalPolicy::SetExceptionTracePolicy(log::ExceptionTracePolicy::OverrideOn);
+            RaiseException(STATUS_INVALID_HANDLE, 0, 0, nullptr);
             k();
 
             if (opt.introspectionSample) {
