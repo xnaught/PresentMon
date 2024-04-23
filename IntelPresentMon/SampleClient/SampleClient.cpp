@@ -38,6 +38,10 @@
 #include "../CommonUtilities/log/EntryMarshallInjector.h"
 #include "../CommonUtilities/log/IdentificationTable.h"
 #include "../CommonUtilities/log/LineTable.h"
+#include "../CommonUtilities/Exception.h"
+
+using namespace pmon;
+using namespace pmon::util;
 
 struct Test
 {
@@ -65,6 +69,16 @@ void f() {
 void g() {
     f();
 }
+
+class MyException : public Exception { using Exception::Exception; };
+
+void j() {
+    throw Except<MyException>("fine time to dine");
+}
+void k() {
+    j();
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -142,6 +156,9 @@ int main(int argc, char* argv[])
 
             pmlog_info().code(PM_STATUS_DATA_LOSS);
 
+            log::GlobalPolicy::SetExceptionTracePolicy(log::ExceptionTracePolicy::OverrideOn);
+            k();
+
             if (opt.introspectionSample) {
                 return IntrospectionSample(std::move(pSession));
             }
@@ -173,7 +190,7 @@ int main(int argc, char* argv[])
     }
     catch (const std::exception& e) {
         std::cout << "Error: " << e.what() << std::endl;
-        return -1;
+         return -1;
     }
     catch (...) {
         std::cout << "Unknown Error" << std::endl;

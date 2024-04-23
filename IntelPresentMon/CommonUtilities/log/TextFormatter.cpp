@@ -73,17 +73,7 @@ namespace pmon::util::log
 			if (e.pTrace_) {
 				try {
 					oss << L" ====== STACK TRACE (newest on top) ======\n";
-					if (e.pTrace_->Resolved()) {
-						for (auto& f : e.pTrace_->GetFrames()) {
-							oss << L"  [" << f.index << L"] " << f.description << L"\n";
-							if (f.line != 0 || !f.file.empty()) {
-								oss << L"    > " << f.file << L'(' << f.line << L")\n";
-							}
-						}
-					}
-					else {
-						oss << L"\n   !! UNRESOLVED STACK TRACE !!\n\n";
-					}
+					oss << e.pTrace_->ToString();
 					oss << L" =========================================\n";
 				}
 				catch (...) {

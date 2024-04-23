@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cli\CliFramework.h" />
+    <ClInclude Include="Exception.h" />
     <ClInclude Include="log\ErrorCode.h" />
     <ClInclude Include="log\EntryMarshallInjector.h" />
     <ClInclude Include="log\EntryCereal.h" />

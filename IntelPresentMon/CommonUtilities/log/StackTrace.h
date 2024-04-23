@@ -26,6 +26,7 @@ namespace pmon::util::log
 		std::span<const FrameInfo> GetFrames() const;
 		bool Empty() const;
 		bool Resolved() const;
+		std::wstring ToString() const;
 		static std::unique_ptr<StackTrace> Here(size_t skip = 0);
 	private:
 		std::stacktrace trace_;

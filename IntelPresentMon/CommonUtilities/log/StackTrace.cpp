@@ -1,6 +1,7 @@
 #include "StackTrace.h"
 #include "../str/String.h"
 #include <ranges>
+#include <sstream>
 #include "PanicLogger.h"
 
 namespace pmon::util::log
@@ -43,6 +44,22 @@ namespace pmon::util::log
 	bool StackTrace::Resolved() const
 	{
 		return !frames_.empty();
+	}
+	std::wstring StackTrace::ToString() const
+	{
+		std::wostringstream oss;
+		if (Resolved()) {
+			for (auto& f : GetFrames()) {
+				oss << L"  [" << f.index << L"] " << f.description << L"\n";
+				if (f.line != 0 || !f.file.empty()) {
+					oss << L"    > " << f.file << L'(' << f.line << L")\n";
+				}
+			}
+		}
+		else {
+			oss << L"\n   !! UNRESOLVED STACK TRACE !!\n\n";
+		}
+		return oss.str();
 	}
 	std::unique_ptr<StackTrace> StackTrace::Here(size_t skip)
 	{

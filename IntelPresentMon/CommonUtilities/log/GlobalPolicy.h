@@ -4,6 +4,13 @@
 
 namespace pmon::util::log
 {
+	enum class ExceptionTracePolicy
+	{
+		Default,
+		OverrideOn,
+		OverrideOff,
+	};
+
 	class GlobalPolicy
 	{
 	public:
@@ -13,6 +20,8 @@ namespace pmon::util::log
 		static void SetTraceLevel(Level level) noexcept;
 		static bool GetResolveTraceInClientThread() noexcept;
 		static void SetResolveTraceInClientThread(bool setting) noexcept;
+		static ExceptionTracePolicy GetExceptionTracePolicy() noexcept;
+		static void SetExceptionTracePolicy(ExceptionTracePolicy policy) noexcept;
 	private:
 		// functions
 		GlobalPolicy() noexcept;
@@ -21,5 +30,6 @@ namespace pmon::util::log
 		std::atomic<Level> logLevel_;
 		std::atomic<bool> resolveTraceInClientThread_ = false;
 		std::atomic<Level> traceLevel_ = Level::Error;
+		std::atomic<ExceptionTracePolicy> exceptionTracePolicy_ = ExceptionTracePolicy::Default;
 	};
 }
