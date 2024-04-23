@@ -20,86 +20,31 @@ namespace pmon::util
 	{
 	public:
 		Exception() noexcept = default;
-		Exception(std::string msg) noexcept : note_{ std::move(msg) } {}
-		void CaptureStackTrace()
-		{
-			pTrace_ = log::StackTrace::Here(PM_THROW_SKIP);
-		}
-		const char* what() const noexcept override
-		{
-			if (buffer_.empty()) {
-				buffer_ = ComposeWhatString_();
-			}
-			return buffer_.c_str();
-		}
+		Exception(std::string msg) noexcept;
+		void CaptureStackTrace();
+		const char* what() const noexcept override;
 	protected:
-		virtual std::string ComposeWhatString_() const noexcept
-		{
-			try {
-				std::ostringstream oss;
-				oss << GetNote_();
-				if (pTrace_) {
-					oss << "\n" << GetTraceString_();
-				}
-				return oss.str();
-			}
-			catch (...) {}
-			return {};
-		}
-		const std::string& GetNote_() const
-		{
-			return note_;
-		}
-		std::string GetTraceString_() const
-		{
-			if (HasTrace_()) {
-				pTrace_->Resolve();
-				std::wostringstream oss;
-				oss << L" ====== STACK TRACE (newest on top) ======\n";
-				oss << pTrace_->ToString();
-				oss << L" =========================================\n";
-				return str::ToNarrow(oss.str());
-			}
-			return {};
-		}
-		bool HasTrace_() const noexcept
-		{
-			return bool(pTrace_);
-		}
+		virtual std::string ComposeWhatString_() const noexcept;
+		const std::string& GetNote_() const;
+		std::string GetTraceString_() const;
+		bool HasTrace_() const noexcept;
 	private:
 		std::string note_;
 		mutable std::string buffer_;
 		std::shared_ptr<log::StackTrace> pTrace_;
 	};
 
+	void DoCapture_(Exception& e);
+
 	template<class E, typename...R>
 	auto Except(R&&...args)
 	{
 		E exception{ std::forward<R>(args)... };
-		if (log::GlobalPolicy::GetExceptionTracePolicy() == log::ExceptionTracePolicy::OverrideOn) {
-			exception.CaptureStackTrace();
-		}
+		DoCapture_(exception);
 		return exception;
 	}
 
-	std::string ReportException(std::exception_ptr pEx = {}) noexcept
-	{
-		if (!pEx) {
-			pEx = std::current_exception();
-		}
-		if (pEx) {
-			try {
-				std::rethrow_exception(pEx);
-			}
-			catch (const std::exception& e) {
-				return std::format("[{}]\n{}", typeid(e).name(), e.what());
-			}
-			catch (...) {
-				return "Unrecognized exception";
-			}
-		}
-		return "No exception in flight";
-	}
+	std::string ReportException(std::exception_ptr pEx = {}) noexcept;
 
 #define PM_DEFINE_EX(name) class name : public Exception { public: using Exception::Exception; }
 }

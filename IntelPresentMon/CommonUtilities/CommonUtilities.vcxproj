@@ -68,6 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp" />
+    <ClCompile Include="Exception.cpp" />
     <ClCompile Include="log\EntryMarshallInjector.cpp" />
     <ClCompile Include="Hash.cpp" />
     <ClCompile Include="log\Channel.cpp" />
