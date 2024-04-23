@@ -93,7 +93,8 @@ protected:
     {
         try {
             std::ostringstream oss;
-            oss << std::format("Error Code [0x{:08X}]\n", getSeNumber());
+            oss << std::format("Error Code [0x{:08X}]: {}\n", getSeNumber(),
+                str::ToNarrow(win::GetSEHSymbol(getSeNumber())));
             if (HasTrace_()) {
                 oss << "\n" << GetTraceString_();
             }
@@ -106,7 +107,7 @@ protected:
 
 void seh_trans_func(unsigned int u, EXCEPTION_POINTERS*)
 {
-    throw SE_Exception{ u };
+    throw Except<SE_Exception>(u);
 }
 
 int main(int argc, char* argv[])
