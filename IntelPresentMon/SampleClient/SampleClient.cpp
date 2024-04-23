@@ -191,6 +191,8 @@ int main(int argc, char* argv[])
 
             _set_se_translator(seh_trans_func);
             log::GlobalPolicy::SetExceptionTracePolicy(log::ExceptionTracePolicy::OverrideOn);
+            int y = 0;
+            int x = 5 / y;
             RaiseException(STATUS_INVALID_HANDLE, 0, 0, nullptr);
             k();
 
