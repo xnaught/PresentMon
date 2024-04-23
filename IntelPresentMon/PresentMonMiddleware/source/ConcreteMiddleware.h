@@ -35,6 +35,9 @@ namespace pmon::mid
         PmNsmPresentEvent mLastPresent;
         bool mLastPresentIsValid = false;
 
+        // Whether to include frame data in the next PresentEvent's FrameMetrics.
+        bool mIncludeFrameData = true;
+
         // IntelPresentMon specifics:
         std::vector<double> mCPUBusy;
         std::vector<double> mCPUWait;
@@ -44,6 +47,7 @@ namespace pmon::mid
         std::vector<double> mGPUWait;
         std::vector<double> mDisplayLatency;
         std::vector<double> mDisplayedTime;
+        std::vector<double> mAppDisplayedTime;
         std::vector<double> mClickToPhotonLatency;
         std::vector<double> mDropped;
 

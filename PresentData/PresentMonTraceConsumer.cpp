@@ -63,9 +63,9 @@ static inline uint64_t GenerateVidPnLayerId(uint32_t vidPnSourceId, uint32_t lay
     return (((uint64_t) vidPnSourceId) << 32) | (uint64_t) layerIndex;
 }
 
-static inline FrameType ConvertPMPFrameTypeToFrameType(uint8_t pmpFrameType)
+static inline FrameType ConvertPMPFrameTypeToFrameType(Intel_PresentMon::FrameType frameType)
 {
-    switch (pmpFrameType) {
+    switch (frameType) {
     case Intel_PresentMon::FrameType::Unspecified: return FrameType::Unspecified;
     case Intel_PresentMon::FrameType::Original:    return FrameType::Application;
     case Intel_PresentMon::FrameType::Repeated:    return FrameType::Repeated;
@@ -2268,61 +2268,45 @@ void PMTraceConsumer::HandleProcessEvent(EVENT_RECORD* pEventRecord)
 
 void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
 {
-    auto const& hdr = pEventRecord->EventHeader;
-
-    switch (hdr.EventDescriptor.Id) {
+    switch (pEventRecord->EventHeader.EventDescriptor.Id) {
 
     case Intel_PresentMon::PresentFrameType_Info::Id: {
-        EventDataDesc desc[] = {
-            { L"FrameId" },
-            { L"FrameType" },
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto FrameId      = desc[0].GetData<uint32_t>();
-        auto PMPFrameType = desc[1].GetData<uint8_t>();
+        DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::PresentFrameType_Info_Props));
 
-        PresentFrameTypeEvent e;
-        e.FrameId   = FrameId;
-        e.FrameType = ConvertPMPFrameTypeToFrameType(PMPFrameType);
-        mPendingPresentFrameTypeEvents[hdr.ThreadId] = e;
+        auto props = (Intel_PresentMon::PresentFrameType_Info_Props*) pEventRecord->UserData;
+        auto event = &mPendingPresentFrameTypeEvents[pEventRecord->EventHeader.ThreadId];
+        event->FrameId   = props->FrameId;
+        event->FrameType = ConvertPMPFrameTypeToFrameType(props->FrameType);
     }   break;
 
     case Intel_PresentMon::FlipFrameType_Info::Id: {
-        EventDataDesc desc[] = {
-            { L"VidPnSourceId" },
-            { L"LayerIndex" },
-            { L"PresentId" },
-            { L"FrameType" },
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto VidPnSourceId = desc[0].GetData<uint32_t>();
-        auto LayerIndex    = desc[1].GetData<uint32_t>();
-        auto PresentId     = desc[2].GetData<uint64_t>();
-        auto PMPFrameType  = desc[3].GetData<uint8_t>();
+        DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::FlipFrameType_Info_Props));
 
-        auto frameType = ConvertPMPFrameTypeToFrameType(PMPFrameType);
+        auto props = (Intel_PresentMon::FlipFrameType_Info_Props*) pEventRecord->UserData;
+        auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+        auto frameType = ConvertPMPFrameTypeToFrameType(props->FrameType);
 
         // Look up the present associated with this (VidPnSourceId, LayerIndex, PresentId).
         //
         // It is possible to see the FlipFrameType event before the MMIOFlipMultiPlaneOverlay3_Info
         // event, in which case the lookup will fail.  In this case we deferr application of the
         // FlipFrameType until we see the MMIOFlipMultiPlaneOverlay3_Info event.
-        auto vidPnLayerId = GenerateVidPnLayerId(VidPnSourceId, LayerIndex);
+        auto vidPnLayerId = GenerateVidPnLayerId(props->VidPnSourceId, props->LayerIndex);
         auto ii = mPresentByVidPnLayerId.find(vidPnLayerId);
         if (ii == mPresentByVidPnLayerId.end()) {
-            DeferFlipFrameType(vidPnLayerId, PresentId, hdr.TimeStamp.QuadPart, frameType);
+            DeferFlipFrameType(vidPnLayerId, props->PresentId, timestamp, frameType);
             return;
         }
 
         auto present = ii->second;
         auto jj = present->PresentIds.find(vidPnLayerId);
-        if (jj == present->PresentIds.end() || jj->second != PresentId) {
-            DeferFlipFrameType(vidPnLayerId, PresentId, hdr.TimeStamp.QuadPart, frameType);
+        if (jj == present->PresentIds.end() || jj->second != props->PresentId) {
+            DeferFlipFrameType(vidPnLayerId, props->PresentId, timestamp, frameType);
             return;
         }
 
         // Create a PresentEvent for this flip time
-        ApplyFlipFrameType(present, hdr.TimeStamp.QuadPart, frameType);
+        ApplyFlipFrameType(present, timestamp, frameType);
     }   break;
 
     default:

@@ -464,6 +464,8 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 		return std::make_unique<CpuFrameQpcGatherCommand_>(pos);
 	case PM_METRIC_ALLOWS_TEARING:
 		return std::make_unique<CopyGatherCommand_<&Pre::SupportsTearing>>(pos);
+	case PM_METRIC_FRAME_TYPE:
+		return std::make_unique<CopyGatherCommand_<&Pre::FrameType>>(pos);
 	case PM_METRIC_SYNC_INTERVAL:
 		return std::make_unique<CopyGatherCommand_<&Pre::SyncInterval>>(pos);
 

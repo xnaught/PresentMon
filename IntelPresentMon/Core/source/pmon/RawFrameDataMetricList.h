@@ -26,6 +26,7 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_PRESENT_FLAGS, .deviceId = 0 },
             Element{.metricId = PM_METRIC_ALLOWS_TEARING, .deviceId = 0 },
             Element{.metricId = PM_METRIC_PRESENT_MODE, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_FRAME_TYPE, .deviceId = 0 },
 
             Element{.metricId = PM_METRIC_CPU_START_TIME, .deviceId = 0 },
             Element{.metricId = PM_METRIC_CPU_FRAME_TIME, .deviceId = 0 },

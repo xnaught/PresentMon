@@ -46,6 +46,7 @@ PM_STATUS PresentMonSession::StartTraceSession() {
   pm_consumer_->mTrackGPU = true;
   pm_consumer_->mTrackGPUVideo = false;
   pm_consumer_->mTrackInput = true;
+  pm_consumer_->mTrackFrameType = true;
 
   const wchar_t* etl_file_name = nullptr;
   if (etl_file_name_.size() > 0) {

@@ -59,6 +59,7 @@ In Debug configuration, the application will halt with a modal error dialog when
 |Present Mode|PresentMode|Method used to present the frame|DF|
 |Present Runtime|PresentRuntime|The graphics runtime used for the present operation (DXGI, D3D9, etc.)|DF|
 |Allows Tearing|AllowsTearing|Indicates if the frame allows tearing|DF|
+|Frame Type|FrameType|Whether the frame was rendered by the application or interpolated by a driver/SDK.|DF|
 |GPU Latency|GPULatency|How long it took until GPU work for this frame started|DF|
 |Display Latency|DisplayLatency|Time between frame submission and scan out to display|DF|
 |Click To Photon Latency|ClickToPhotonLatency|Time between input and display|DF|

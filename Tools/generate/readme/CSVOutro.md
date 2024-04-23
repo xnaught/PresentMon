@@ -3,6 +3,7 @@ Some metrics are enabled or disabled depending on the command line options:
 
 | Command line option  | Enabled metrics | Disabled metrics |
 | -------------------- | --------------- | ---------------- |
+| `--track_frame_type` | *FrameType*     | |
 | `--track_gpu_video`  | *VideoBusy*     | |
 | `--no_track_gpu`     |                 | *GPULatency<br>GPUBusy<br>GPUWait<br>VideoBusy*  |
 | `--no_track_input`   |                 | *ClickToPhotonLatency* |

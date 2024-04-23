@@ -34,11 +34,27 @@ EVENT_DESCRIPTOR_DECL(PresentFrameType_Info, 0x0001, 0x00, 0x00, 0x04, 0x00, 0x0
 
 #undef EVENT_DESCRIPTOR_DECL
 
-enum class FrameType : uint32_t {
+enum class FrameType : uint8_t {
     Unspecified = 0,
     Original = 1,
     Repeated = 2,
     AMD_AFMF = 100,
 };
+
+#pragma pack(push, 1)
+
+struct FlipFrameType_Info_Props {
+    uint32_t VidPnSourceId;
+    uint32_t LayerIndex;
+    uint64_t PresentId;
+    FrameType FrameType;
+};
+
+struct PresentFrameType_Info_Props {
+    uint32_t FrameId;
+    FrameType FrameType;
+};
+
+#pragma pack(pop)
 
 }

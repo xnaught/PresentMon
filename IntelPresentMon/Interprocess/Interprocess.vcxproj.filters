@@ -116,5 +116,8 @@
     <ClInclude Include="source\metadata\EnumNullEnum.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\metadata\EnumFrameType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
