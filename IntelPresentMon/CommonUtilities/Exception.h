@@ -3,6 +3,8 @@
 #include <sstream>
 #include "log/GlobalPolicy.h"
 #include "log/StackTrace.h"
+#include <exception>
+#include <format>
 
 #ifndef PM_THROW_SKIP
 #ifndef NDEBUG
@@ -17,12 +19,12 @@ namespace pmon::util
 	class Exception : public std::exception
 	{
 	public:
-		Exception(std::string msg) : note_{ std::move(msg) } {}
+		Exception(std::string msg) noexcept : note_{ std::move(msg) } {}
 		void CaptureStackTrace()
 		{
 			pTrace_ = log::StackTrace::Here(PM_THROW_SKIP);
 		}
-		const char* what() const override
+		const char* what() const noexcept override
 		{
 			buffer_ = GetNote_();
 			if (pTrace_) {
@@ -50,7 +52,7 @@ namespace pmon::util
 	private:
 		std::string note_;
 		mutable std::string buffer_;
-		std::unique_ptr<log::StackTrace> pTrace_;
+		std::shared_ptr<log::StackTrace> pTrace_;
 	};
 
 	template<class E, typename...R>
@@ -62,4 +64,25 @@ namespace pmon::util
 		}
 		return exception;
 	}
+
+	std::string ReportException(std::exception_ptr pEx = {}) noexcept
+	{
+		if (!pEx) {
+			pEx = std::current_exception();
+		}
+		if (pEx) {
+			try {
+				std::rethrow_exception(pEx);
+			}
+			catch (const std::exception& e) {
+				return std::format("[{}]\n{}", typeid(e).name(), e.what());
+			}
+			catch (...) {
+				return "Unrecognized exception";
+			}
+		}
+		return "No exception in flight";
+	}
+
+#define PM_DEFINE_EX(name) class name : public Exception { public: using Exception::Exception; }
 }

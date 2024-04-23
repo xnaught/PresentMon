@@ -70,7 +70,7 @@ void g() {
     f();
 }
 
-class MyException : public Exception { using Exception::Exception; };
+PM_DEFINE_EX(MyException);
 
 void j() {
     throw Except<MyException>("fine time to dine");
@@ -188,12 +188,8 @@ int main(int argc, char* argv[])
             return -1;
         }
     }
-    catch (const std::exception& e) {
-        std::cout << "Error: " << e.what() << std::endl;
-         return -1;
-    }
     catch (...) {
-        std::cout << "Unknown Error" << std::endl;
+        std::cout << "Exception: " << ReportException();
         return -1;
     }
 }
