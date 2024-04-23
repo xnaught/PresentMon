@@ -179,15 +179,17 @@ void PrintPresentFlags(uint32_t flags)
 {
     if (flags & DXGI_PRESENT_TEST) wprintf(L"TEST");
 }
-void PrintPMPFrameType(uint8_t type)
+wchar_t const* PMPFrameTypeToString(Intel_PresentMon::FrameType type)
 {
     switch (type) {
-    case Intel_PresentMon::FrameType::Unspecified: wprintf(L"Unspecified"); break;
-    case Intel_PresentMon::FrameType::Original:    wprintf(L"Original"); break;
-    case Intel_PresentMon::FrameType::Repeated:    wprintf(L"Repeated"); break;
-    case Intel_PresentMon::FrameType::AMD_AFMF:    wprintf(L"AMD_AFMF"); break;
-    default:                                       wprintf(L"Unknown (%u)", type); assert(false); break;
+    case Intel_PresentMon::FrameType::Unspecified: return L"Unspecified";
+    case Intel_PresentMon::FrameType::Original:    return L"Original";
+    case Intel_PresentMon::FrameType::Repeated:    return L"Repeated";
+    case Intel_PresentMon::FrameType::AMD_AFMF:    return L"AMD_AFMF";
     }
+
+    assert(false);
+    return L"Unknown";
 }
 void PrintFrameType(FrameType type)
 {
@@ -236,7 +238,6 @@ void PrintEventHeader(EVENT_RECORD* eventRecord, EventMetadata* metadata, char c
         else if (propFunc == PrintDmaPacketType)       PrintDmaPacketType(metadata->GetEventData<uint32_t>(eventRecord, propName));
         else if (propFunc == PrintPresentFlags)        PrintPresentFlags(metadata->GetEventData<uint32_t>(eventRecord, propName));
         else if (propFunc == PrintPresentHistoryModel) PrintPresentHistoryModel(metadata->GetEventData<uint32_t>(eventRecord, propName));
-        else if (propFunc == PrintPMPFrameType)        PrintPMPFrameType(metadata->GetEventData<uint8_t>(eventRecord, propName));
         else assert(false);
     }
     wprintf(L"\n");
@@ -621,11 +622,25 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
         using namespace Intel_PresentMon;
         if (pmConsumer->mTrackFrameType) {
             switch (hdr.EventDescriptor.Id) {
-            case FlipFrameType_Info::Id:    PrintEventHeader(eventRecord, metadata, "PM_FlipFrameType",    { L"VidPnSourceId", PrintU32,
-                                                                                                             L"LayerIndex", PrintU32,
-                                                                                                             L"PresentId", PrintU64,
-                                                                                                             L"FrameType", PrintPMPFrameType }); break;
-            case PresentFrameType_Info::Id: PrintEventHeader(eventRecord, metadata, "PM_PresentFrameType", { L"FrameType", PrintPMPFrameType }); break;
+            case FlipFrameType_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::FlipFrameType_Info_Props));
+                auto props = (Intel_PresentMon::FlipFrameType_Info_Props*) eventRecord->UserData;
+                PrintEventHeader(eventRecord->EventHeader);
+                wprintf(L"PM_FlipFrameType VidPnSourceId=%u LayerIndex=%u PresentId=%llu FrameType=%s\n",
+                    props->VidPnSourceId,
+                    props->LayerIndex,
+                    props->PresentId,
+                    PMPFrameTypeToString(props->FrameType));
+                break;
+            }
+
+            case PresentFrameType_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::PresentFrameType_Info_Props));
+                auto props = (Intel_PresentMon::PresentFrameType_Info_Props*) eventRecord->UserData;
+                PrintEventHeader(eventRecord->EventHeader);
+                wprintf(L"PM_PresentFrameType FrameType=%s\n", PMPFrameTypeToString(props->FrameType));
+                break;
+            }
             }
         }
         return;
