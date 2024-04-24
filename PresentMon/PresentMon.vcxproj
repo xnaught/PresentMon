@@ -69,6 +69,9 @@
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
+  <PropertyGroup>
+    <CustomBuildAfterTargets>Build</CustomBuildAfterTargets>
+  </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnabled>false</VcpkgEnabled>
   </PropertyGroup>
@@ -86,6 +89,22 @@
       <DelayLoadDLLs>advapi32.dll;shell32.dll;tdh.dll;user32.dll</DelayLoadDLLs>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <CustomBuildStep>
+      <Message>Generating README-ConsoleApplication.md</Message>
+      <Command>call ..\Tools\generate\readme\generate.cmd</Command>
+      <Inputs>
+          ..\IntelPresentMon\metrics.csv;
+          ..\PresentMon.props;
+          ..\Tools\generate\readme\generate.cmd;
+          ..\Tools\generate\readme\CSVIntro.md;
+          ..\Tools\generate\readme\CSVOutro.md;
+          ..\Tools\generate\readme\ConsoleIntro.md;
+          ..\Tools\generate\readme\metrics.awk;
+          ..\Tools\generate\readme\version.awk;
+          CommandLine.cpp;
+      </Inputs>
+      <Outputs>..\README-ConsoleApplication.md</Outputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
@@ -127,18 +146,11 @@
     <ClCompile Include="Privilege.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\build\obj\generated\command_line_options.inl" />
     <ClInclude Include="..\build\obj\generated\version.h" />
     <ClInclude Include="PresentMon.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="..\README-ConsoleApplication.md">
-      <FileType>Document</FileType>
-      <Message>..\Tools\generate_options_header.cmd %(Identity) ..\build\obj\generated\command_line_options.inl</Message>
-      <Command>..\Tools\generate_options_header.cmd %(Identity) ..\build\obj\generated\command_line_options.inl</Command>
-      <Outputs>..\build\obj\generated\command_line_options.inl</Outputs>
-      <AdditionalInputs>..\Tools\generate_options_header.cmd</AdditionalInputs>
-    </CustomBuild>
+    <None Include="..\README-ConsoleApplication.md" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\PresentData\PresentData.vcxproj">
