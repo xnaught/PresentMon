@@ -51,4 +51,12 @@ namespace pmon::util::log
 	{
 		Get_().exceptionTracePolicy_ = policy;
 	}
+	bool GlobalPolicy::TracingSehExceptions() noexcept
+	{
+		return Get_().sehTraceOn_;
+	}
+	void GlobalPolicy::SetSehTracing(bool on) noexcept
+	{
+		Get_().sehTraceOn_ = on;
+	}
 }

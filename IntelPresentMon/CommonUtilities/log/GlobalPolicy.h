@@ -22,6 +22,8 @@ namespace pmon::util::log
 		static void SetResolveTraceInClientThread(bool setting) noexcept;
 		static ExceptionTracePolicy GetExceptionTracePolicy() noexcept;
 		static void SetExceptionTracePolicy(ExceptionTracePolicy policy) noexcept;
+		static bool TracingSehExceptions() noexcept;
+		static void SetSehTracing(bool on) noexcept;
 	private:
 		// functions
 		GlobalPolicy() noexcept;
@@ -31,5 +33,6 @@ namespace pmon::util::log
 		std::atomic<bool> resolveTraceInClientThread_ = false;
 		std::atomic<Level> traceLevel_ = Level::Error;
 		std::atomic<ExceptionTracePolicy> exceptionTracePolicy_ = ExceptionTracePolicy::Default;
+		std::atomic<bool> sehTraceOn_ = false;
 	};
 }

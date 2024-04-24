@@ -1,18 +1,7 @@
 #pragma once
 #include "str/String.h"
-#include <sstream>
-#include "log/GlobalPolicy.h"
 #include "log/StackTrace.h"
 #include <exception>
-#include <format>
-
-#ifndef PM_THROW_SKIP
-#ifndef NDEBUG
-#define PM_THROW_SKIP 3
-#else
-#define PM_THROW_SKIP 2
-#endif
-#endif
 
 namespace pmon::util
 {
@@ -23,11 +12,11 @@ namespace pmon::util
 		Exception(std::string msg) noexcept;
 		void CaptureStackTrace();
 		const char* what() const noexcept override;
+		const std::string& GetNote() const;
+		std::string GetTraceString() const;
+		bool HasTrace() const noexcept;
 	protected:
 		virtual std::string ComposeWhatString_() const noexcept;
-		const std::string& GetNote_() const;
-		std::string GetTraceString_() const;
-		bool HasTrace_() const noexcept;
 	private:
 		std::string note_;
 		mutable std::string buffer_;
@@ -45,6 +34,20 @@ namespace pmon::util
 	}
 
 	std::string ReportException(std::exception_ptr pEx = {}) noexcept;
+
+	class SehException : public Exception
+	{
+	public:
+		SehException() noexcept = default;
+		SehException(unsigned int code) noexcept;
+		unsigned int GetSehCode() const noexcept;
+	protected:
+		std::string ComposeWhatString_() const noexcept override;
+	private:
+		unsigned int sehCode = 0;
+	};
+
+	void InstallSehTranslator() noexcept;
 
 #define PM_DEFINE_EX(name) class name : public Exception { public: using Exception::Exception; }
 }

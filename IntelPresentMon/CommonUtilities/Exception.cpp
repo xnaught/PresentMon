@@ -1,5 +1,17 @@
 #include "Exception.h"
+#include "../CommonUtilities/win/Utilities.h"
+#include <sstream>
+#include "log/GlobalPolicy.h"
+#include <format>
 
+
+#ifndef PM_THROW_SKIP
+#ifndef NDEBUG
+#define PM_THROW_SKIP 3
+#else
+#define PM_THROW_SKIP 2
+#endif
+#endif
 
 namespace pmon::util
 {
@@ -19,22 +31,22 @@ namespace pmon::util
 	{
 		try {
 			std::ostringstream oss;
-			oss << GetNote_();
+			oss << GetNote();
 			if (pTrace_) {
-				oss << "\n" << GetTraceString_();
+				oss << "\n" << GetTraceString();
 			}
 			return oss.str();
 		}
 		catch (...) {}
 		return {};
 	}
-	const std::string& Exception::GetNote_() const
+	const std::string& Exception::GetNote() const
 	{
 		return note_;
 	}
-	std::string Exception::GetTraceString_() const
+	std::string Exception::GetTraceString() const
 	{
-		if (HasTrace_()) {
+		if (HasTrace()) {
 			pTrace_->Resolve();
 			std::wostringstream oss;
 			oss << L" ====== STACK TRACE (newest on top) ======\n";
@@ -44,7 +56,7 @@ namespace pmon::util
 		}
 		return {};
 	}
-	bool Exception::HasTrace_() const noexcept
+	bool Exception::HasTrace() const noexcept
 	{
 		return bool(pTrace_);
 	}
@@ -73,5 +85,40 @@ namespace pmon::util
 			}
 		}
 		return "No exception in flight";
+	}
+
+	namespace {
+		void seh_trans_func(unsigned int u, EXCEPTION_POINTERS*)
+		{
+			SehException ex{ u };
+			if (log::GlobalPolicy::TracingSehExceptions()) {
+				ex.CaptureStackTrace();
+			}
+			throw ex;
+		}
+	}
+
+	void InstallSehTranslator() noexcept
+	{
+		_set_se_translator(seh_trans_func);
+	}
+
+	SehException::SehException(unsigned int code) noexcept : sehCode{ code } {}
+
+	unsigned int SehException::GetSehCode() const noexcept { return sehCode; }
+
+	std::string SehException::ComposeWhatString_() const noexcept
+	{
+		try {
+			std::ostringstream oss;
+			oss << std::format("Error Code [0x{:08X}]: {}\n", GetSehCode(),
+				str::ToNarrow(win::GetSEHSymbol(GetSehCode())));
+			if (HasTrace()) {
+				oss << "\n" << GetTraceString();
+			}
+			return oss.str();
+		}
+		catch (...) {}
+		return {};
 	}
 }

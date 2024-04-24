@@ -78,7 +78,7 @@ namespace pmon::util::log
 				return std::format(L"0x{:08X}", (uint32_t)*o);
 			}
 			else {
-				return std::format(L"0x{:016X}", (uint32_t)*o);
+				return std::format(L"0x{:016X}", (uint64_t)*o);
 			}
 		}
 		if (auto o = AsUnsigned()) {
@@ -86,7 +86,7 @@ namespace pmon::util::log
 				return std::format(L"0x{:08X}", (uint32_t)*o);
 			}
 			else {
-				return std::format(L"0x{:016X}", (uint32_t)*o);
+				return std::format(L"0x{:016X}", (uint64_t)*o);
 			}
 		}
 		return L"";
