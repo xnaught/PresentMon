@@ -14,7 +14,7 @@ namespace pmon::util::log
 		EntryBuilder& watch(const wchar_t* symbol, const T& value) noexcept
 		{
 			if (note_.empty()) {
-				note_ += std::format(L"     {} = > {}", symbol, value);
+				note_ += std::format(L"   {} => {}", symbol, value);
 			}
 			else {
 				note_ += std::format(L"\n     {} => {}", symbol, value);
@@ -39,7 +39,6 @@ namespace pmon::util::log
 			return *this;
 		} 
 		~EntryBuilder();
-		EntryBuilder& operator<<(std::wstring note) noexcept;
 	private:
 		IEntrySink* pDest_ = nullptr;
 		int traceSkipDepth_;

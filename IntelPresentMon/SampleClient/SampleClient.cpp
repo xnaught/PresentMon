@@ -40,6 +40,7 @@
 #include "../CommonUtilities/log/LineTable.h"
 #include "../CommonUtilities/Exception.h"
 #include "../CommonUtilities/win/Utilities.h"
+#include "LogDemo.h"
 
 using namespace pmon;
 using namespace pmon::util;
@@ -82,9 +83,6 @@ void k() {
 
 int main(int argc, char* argv[])
 {
-    pmlog_setup;
-    InstallSehTranslator();
-
     try {
         if (auto e = clio::Options::Init(argc, argv)) {
             return *e;
@@ -93,6 +91,11 @@ int main(int argc, char* argv[])
 
         using namespace pmon::util;
         using namespace std::chrono_literals;
+
+        if (opt.logDemo) {
+            RunLogDemo(*opt.logDemo);
+            return 0;
+        }
 
         pmon::util::log::GlobalPolicy::SetLogLevel(pmon::util::log::Level::Verbose);
         try {
@@ -162,7 +165,7 @@ int main(int argc, char* argv[])
             struct Test { Test() { std::cout << "hiya!" << std::endl; }
                 ~Test() { std::cout << "Byeee" << std::endl; } } test;
 
-            log::GlobalPolicy::SetExceptionTracePolicy(log::ExceptionTracePolicy::OverrideOn);
+            log::GlobalPolicy::SetExceptionTrace(log::ExceptionTracePolicy::OverrideOn);
             log::GlobalPolicy::SetSehTracing(true);
             int y = 0;
             int x = 5 / y;

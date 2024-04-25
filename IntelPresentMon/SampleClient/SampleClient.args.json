@@ -3,6 +3,14 @@
   "Id": "79fe382a-c29c-4c32-a028-b8d1abdf51b0",
   "Items": [
     {
+      "Id": "edf9d064-e8f2-4c3c-8ab3-a70ae989a245",
+      "Command": "--log-demo 10"
+    },
+    {
+      "Id": "de172ca4-f013-4f7c-99e2-5b93c03c4ec5",
+      "Command": "--log-demo 19"
+    },
+    {
       "Id": "50932c9f-90e3-432b-81dd-2c2471ad5eae",
       "Command": "--do-pipe-srv"
     },

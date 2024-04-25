@@ -121,22 +121,23 @@ namespace pmon::util::log
 		class IdTableBulkStep
 		{
 		public:
-			IdTableBulkStep()
-				:
-				data_{ MakeDataBytes_() },
-				headerStep_{ data_ },
-				payloadStep_{ data_ }
-			{}
 			// return needs to signal whether a: sequence complete b: overlapped pending c: recycle pipe [exception]
 			StepResult Execute(NamedPipeInstance& inst)
 			{
 				if (headerStepActive_) {
-					if (auto result = headerStep_.Execute(inst); result != StepResult::Completed) {
+					// we want to lazy init this so that id context captured when client connects
+					// rather than when connection sequence is setup (e.g. on pipe instance creation)
+					if (!headerStep_) {
+						data_ = MakeDataBytes_();
+						headerStep_.emplace(data_);
+						payloadStep_.emplace(data_);
+					}
+					if (auto result = headerStep_->Execute(inst); result != StepResult::Completed) {
 						return result;
 					}
 					headerStepActive_ = false;
 				}
-				return payloadStep_.Execute(inst);
+				return payloadStep_->Execute(inst);
 			}
 		private:
 			// functions
@@ -152,8 +153,8 @@ namespace pmon::util::log
 			}
 			// data
 			std::vector<std::byte> data_;
-			TransmitHeaderStep headerStep_;
-			TransmitPayloadStep payloadStep_;
+			std::optional<TransmitHeaderStep> headerStep_;
+			std::optional<TransmitPayloadStep> payloadStep_;
 			bool headerStepActive_ = true;
 		};
 		using Step = std::variant<TransmitHeaderStep, TransmitPayloadStep, ConnectStep, IdTableBulkStep>;

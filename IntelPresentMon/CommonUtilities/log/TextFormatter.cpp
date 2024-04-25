@@ -41,18 +41,20 @@ namespace pmon::util::log
 	{
 		try {
 			std::wostringstream oss;
-			oss << std::format(L"[@{}] <{}:{}> {{{}}}\n  {}",
+			oss << std::format(L"[@{}] <{}:{}> {{{}}}",
 				GetLevelName(e.level_),
 				MakeProc_(e),
 				MakeThread_(e),
-				std::chrono::zoned_time{ std::chrono::current_zone(), e.timestamp_ },
-				e.note_
+				std::chrono::zoned_time{ std::chrono::current_zone(), e.timestamp_ }
 			);
+			if (!e.note_.empty()) {
+				oss << L"\n  " << e.note_;
+			}
 			if (e.errorCode_) {
 				auto& ec = e.errorCode_;
 				if (ec.IsResolvedNontrivial()) {
 					auto pStrings = ec.GetStrings();
-					oss << std::format(L"\n  !{} [{}]:{}) {}", pStrings->type, ec.AsHex(), pStrings->name, pStrings->description);
+					oss << std::format(L"\n  !{} [{}]:{} => {}", pStrings->type, ec.AsHex(), pStrings->name, pStrings->description);
 				}
 				else {
 					oss << std::format(L"\n  !UNKNOWN [{}]", ec.AsHex());

@@ -1,20 +1,10 @@
 #include "Log.h"
-#include "Channel.h"
-#include "MsvcDebugDriver.h"
-#include "BasicFileDriver.h"
-#include "TextFormatter.h"
-#include "SimpleFileStrategy.h"
 #include <memory>
-#include <shared_mutex>
-#include <stacktrace>
+#include "Channel.h"
 #include "PanicLogger.h"
-#include <future>
 #include "IdentificationTable.h"
 #include "LinePolicy.h"
 #include "LineTable.h"
-#include "ErrorCodeResolvePolicy.h"
-#include "ErrorCodeResolver.h"
-#include "../win/HrErrorCodeProvider.h"
 
 namespace pmon::util::log
 {

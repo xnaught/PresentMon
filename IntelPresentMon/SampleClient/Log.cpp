@@ -4,18 +4,12 @@
 #include "../CommonUtilities/log/BasicFileDriver.h"
 #include "../CommonUtilities/log/TextFormatter.h"
 #include "../CommonUtilities/log/SimpleFileStrategy.h"
-#include <memory>
-#include <shared_mutex>
-#include <stacktrace>
-#include <future>
-#include "../CommonUtilities/log/PanicLogger.h"
-#include "../CommonUtilities/log/IdentificationTable.h"
 #include "../CommonUtilities/log/LinePolicy.h"
-#include "../CommonUtilities/log/LineTable.h"
 #include "../CommonUtilities/log/ErrorCodeResolvePolicy.h"
 #include "../CommonUtilities/log/ErrorCodeResolver.h"
 #include "../CommonUtilities/win/HrErrorCodeProvider.h"
 #include "../PresentMonAPIWrapperCommon/PmErrorCodeProvider.h"
+#include <memory>
 
 
 namespace pmon::util::log

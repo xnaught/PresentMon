@@ -134,9 +134,4 @@ namespace pmon::util::log
 			pmlog_panic_(L"Log entry completed with no destination channel set");
 		}
 	}
-	EntryBuilder& EntryBuilder::operator<<(std::wstring noteString) noexcept
-	{
-		note(std::move(noteString));
-		return *this;
-	}
 }

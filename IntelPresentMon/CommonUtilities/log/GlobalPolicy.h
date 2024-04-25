@@ -20,8 +20,8 @@ namespace pmon::util::log
 		static void SetTraceLevel(Level level) noexcept;
 		static bool GetResolveTraceInClientThread() noexcept;
 		static void SetResolveTraceInClientThread(bool setting) noexcept;
-		static ExceptionTracePolicy GetExceptionTracePolicy() noexcept;
-		static void SetExceptionTracePolicy(ExceptionTracePolicy policy) noexcept;
+		static ExceptionTracePolicy GetExceptionTrace() noexcept;
+		static void SetExceptionTrace(ExceptionTracePolicy policy) noexcept;
 		static bool TracingSehExceptions() noexcept;
 		static void SetSehTracing(bool on) noexcept;
 	private:
