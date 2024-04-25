@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2023 Intel Corporation
+// Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "PresentMon.hpp"
@@ -237,7 +237,7 @@ int wmain(int argc, wchar_t** argv)
     gWnd = CreateWindowExW(0, wndClass.lpszClassName, L"PresentMonWnd", 0, 0, 0, 0, 0, HWND_MESSAGE, 0, 0, nullptr);
     if (!gWnd) {
         PrintError(L"error: failed to create hotkey window.\n");
-        UnregisterClass(wndClass.lpszClassName, NULL);
+        UnregisterClassW(wndClass.lpszClassName, NULL);
         return 4;
     }
 
@@ -245,7 +245,7 @@ int wmain(int argc, wchar_t** argv)
     if (args.mHotkeySupport && !RegisterHotKey(gWnd, HOTKEY_ID, args.mHotkeyModifiers, args.mHotkeyVirtualKeyCode)) {
         PrintHotkeyError();
         DestroyWindow(gWnd);
-        UnregisterClass(wndClass.lpszClassName, NULL);
+        UnregisterClassW(wndClass.lpszClassName, NULL);
         return 5;
     }
 
@@ -254,10 +254,11 @@ int wmain(int argc, wchar_t** argv)
 
     // Create event consumers
     PMTraceConsumer pmConsumer;
-    pmConsumer.mTrackDisplay  = args.mTrackDisplay;
-    pmConsumer.mTrackGPU      = args.mTrackGPU;
-    pmConsumer.mTrackGPUVideo = args.mTrackGPUVideo;
-    pmConsumer.mTrackInput    = args.mTrackInput;
+    pmConsumer.mTrackDisplay   = args.mTrackDisplay;
+    pmConsumer.mTrackGPU       = args.mTrackGPU;
+    pmConsumer.mTrackGPUVideo  = args.mTrackGPUVideo;
+    pmConsumer.mTrackInput     = args.mTrackInput;
+    pmConsumer.mTrackFrameType = args.mTrackFrameType;
 
     if (args.mTargetPid != 0) {
         pmConsumer.mFilteredProcessIds = true;
@@ -317,8 +318,13 @@ int wmain(int argc, wchar_t** argv)
 
         SetConsoleCtrlHandler(HandleCtrlEvent, FALSE);
         DestroyWindow(gWnd);
-        UnregisterClass(wndClass.lpszClassName, NULL);
+        UnregisterClassW(wndClass.lpszClassName, NULL);
         return 6;
+    }
+
+    // Set deferral time limit to 2 seconds
+    if (pmConsumer.mDeferralTimeLimit == 0) {
+        pmConsumer.mDeferralTimeLimit = pmSession.mTimestampFrequency.QuadPart * 2;
     }
 
     // Start the consumer and output threads
@@ -335,7 +341,7 @@ int wmain(int argc, wchar_t** argv)
     // If the user didn't specify --hotkey, simulate a hotkey press to start the
     // recording right away.
     if (!args.mHotkeySupport) {
-        PostMessage(gWnd, WM_HOTKEY, HOTKEY_ID, args.mHotkeyModifiers & ~MOD_NOREPEAT);
+        PostMessageW(gWnd, WM_HOTKEY, HOTKEY_ID, args.mHotkeyModifiers & ~MOD_NOREPEAT);
     }
 
     // Enter the MainThread message loop.  This thread will block waiting for
@@ -383,7 +389,7 @@ int wmain(int argc, wchar_t** argv)
     SetConsoleCtrlHandler(HandleCtrlEvent, FALSE);
     */
     DestroyWindow(gWnd);
-    UnregisterClass(wndClass.lpszClassName, NULL);
+    UnregisterClassW(wndClass.lpszClassName, NULL);
     FinalizeConsole();
     return 0;
 }

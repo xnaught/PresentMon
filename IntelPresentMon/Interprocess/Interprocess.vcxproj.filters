@@ -59,7 +59,7 @@
     <ClInclude Include="source\metadata\EnumStatus.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\metadata\EnumMetric.h">
+    <ClInclude Include="..\..\build\obj\generated\EnumMetric.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\metadata\EnumMetricType.h">
@@ -114,6 +114,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\metadata\EnumNullEnum.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\metadata\EnumFrameType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

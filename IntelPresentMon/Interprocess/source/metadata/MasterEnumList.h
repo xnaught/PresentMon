@@ -11,6 +11,7 @@
 		X_(ENUM, STAT, "Statistics", "", "List of all statistical variations of the data (average, 99th percentile, etc.)") \
 		X_(ENUM, DATA_TYPE, "Data Types", "", "List of all C++ language data types used for metrics") \
 		X_(ENUM, GRAPHICS_RUNTIME, "Graphics Runtime", "", "Graphics runtime subsystem used to make the present call") \
+		X_(ENUM, FRAME_TYPE, "Frame Type", "", "Type of frame rendered") \
 		X_(ENUM, DEVICE_TYPE, "Device Type", "", "Type of device in the list of devices associated with metrics") \
 		X_(ENUM, METRIC_AVAILABILITY, "Metric Availability", "", "Availability status of a metric with respect to a given device") \
 		X_(ENUM, NULL_ENUM, "Null Enum", "", "Used to indicate an empty / invalid enum type")

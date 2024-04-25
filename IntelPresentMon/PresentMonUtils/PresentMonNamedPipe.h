@@ -140,21 +140,22 @@ struct PmNsmPresentEvent {
   uint64_t DxgkContext;                // mPresentByDxgkContext
   uint64_t Hwnd;                       // mLastPresentByWindow
   uint32_t QueueSubmitSequence;        // mPresentBySubmitSequence
-  uint32_t mAllPresentsTrackingIndex;  // mAllPresents.
+  uint32_t RingIndex;                   // mTrackedPresents and mCompletedPresents
 
-  // How many PresentStop events from the thread to wait for before
-  // enqueueing this present.
-  uint32_t DeferredCompletionWaitCount;
+  uint32_t DeferredReason;    // The reason(s) this present is being deferred (see DeferredReason enum).
 
   // Properties deduced by watching events through present pipeline
   uint32_t DestWidth;
   uint32_t DestHeight;
   uint32_t DriverThreadId;
 
+  uint32_t FrameId;           // ID for the logical frame that this Present is associated with.
+
   Runtime Runtime;
   PresentMode PresentMode;
   PresentResult FinalState;
   InputDeviceType InputType;
+  FrameType FrameType;
 
   bool SupportsTearing;
   bool WaitForFlipEvent;

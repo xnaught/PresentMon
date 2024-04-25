@@ -1,4 +1,4 @@
-// Copyright (C) 2017,2019-2023 Intel Corporation
+// Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #pragma once
@@ -71,6 +71,7 @@ struct CommandLineArgs {
     bool mTrackInput;
     bool mTrackGPU;
     bool mTrackGPUVideo;
+    bool mTrackFrameType;
     bool mScrollLockIndicator;
     bool mExcludeDropped;
     bool mTerminateExistingSession;
@@ -119,15 +120,15 @@ struct SwapChainData {
     // Pending presents waiting for the next displayed present.
     std::vector<std::shared_ptr<PresentEvent>> mPendingPresents;
 
-    // Present info
-    uint64_t    mLastPresentStartTime = 0;
-    uint64_t    mLastDisplayedScreenTime = 0;
-    uint64_t    mNextFrameCPUStart = 0;
-    PresentMode mPresentMode = PresentMode::Unknown;
-    Runtime     mPresentRuntime = Runtime::Other;
-    int32_t     mPresentSyncInterval = 0;
-    uint32_t    mPresentFlags = 0;
-    bool        mPresentInfoValid = false;
+    // The most recent present that has been processed (e.g., output into CSV and/or used for frame
+    // statistics).
+    std::shared_ptr<PresentEvent> mLastPresent;
+
+    // The screen time for most recent present that was displayed (required for v1 metrics only)
+    uint64_t mLastDisplayedScreenTime = 0;
+
+    // Whether to include frame data in the next PresentEvent's FrameMetrics.
+    bool mIncludeFrameData = true;
 
     // Frame statistics
     float mAvgCPUDuration = 0.f;

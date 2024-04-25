@@ -46,6 +46,14 @@
                 <ComponentGroupRef Id="desktop_shortcut" />
                 <!--- <ComponentGroupRef Id="cli_files" /> -->
             </Feature>
+            <Feature
+                Id="presentmon_provider_install"
+                Title="!(loc.feature_presentmon_provider_install_title)"
+                Description="!(loc.feature_presentmon_provider_install_description)"
+                Level="1"
+                Absent="allow">
+                <ComponentGroupRef Id="provider_group" />
+            </Feature>
             <?if $(var.has_console_app) = "true" ?>
             <Feature
                 Id="presentmon_console_install"
@@ -120,6 +128,9 @@
                         <Directory
                             Id="sdk_folder"
                             Name="SDK"/>
+                        <Directory
+                            Id="provider_folder"
+                            Name="Provider"/>
                         <Directory
                             Id="pm_console_app_folder"
                             Name="PresentMonConsoleApplication"/>
@@ -213,6 +224,28 @@
                 </File>
             </Component>
         </DirectoryRef>
+        <ComponentGroup
+            Id="provider_group"
+            Directory="provider_folder">
+            <Component Id="Intel_PresentMon.dll">
+                <File
+                    Id="Intel_PresentMon.dll"
+                    Source="$(var.Provider.TargetPath)"
+                    KeyPath="yes">
+                </File>
+            </Component>
+            <Component Id="IntelPresentMon.man">
+                <File
+                    Id="IntelPresentMon.man"
+                    Source="$(var.Provider.ProjectDir)Intel-PresentMon.man"
+                    KeyPath="yes">
+                    <util:EventManifest
+                        MessageFile="[#Intel_PresentMon.dll]"
+                        ResourceFile="[#Intel_PresentMon.dll]">
+                    </util:EventManifest>
+                </File>
+            </Component>
+        </ComponentGroup>
         <ComponentGroup
             Id="service_files"
             Directory="service_folder">

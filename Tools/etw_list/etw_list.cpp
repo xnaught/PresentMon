@@ -1,4 +1,4 @@
-// Copyright (C) 2020-2022 Intel Corporation
+// Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #ifndef NOMINMAX
@@ -930,6 +930,11 @@ int wmain(
         EnumerateSystemProviders(&providerIds, &providers);
     }
 
+    if (providers.empty()) {
+        fprintf(stderr, "error: no matching providers installed.\n");
+        return 1;
+    }
+
     // Add any full GUIDs provided by user, even if not enumerated by the
     // system/etl.  If we see events from this provider we'll try to patch the
     // name from the EVENT_INFO.
@@ -1091,13 +1096,13 @@ int wmain(
                         "    static uint8_t  const Opcode  = opcode_; \\\n"
                         "    static uint16_t const Task    = task_; \\\n"
                         "    static %s const Keyword = %skeyword_; \\\n"
-                        "};\n"
+                        "}\n"
                         "\n",
                         showKeywords ? "Keyword " : "uint64_t",
                         showKeywords ? "(Keyword) " : "");
 
                     for (auto const& event : events) {
-                        printf("EVENT_DESCRIPTOR_DECL(%-*ls, 0x%04x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%04x, 0x%016llx)\n",
+                        printf("EVENT_DESCRIPTOR_DECL(%-*ls, 0x%04x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%04x, 0x%016llx);\n",
                             (int) maxEventNameWidth,
                             event.name_.c_str(),
                             event.Id,

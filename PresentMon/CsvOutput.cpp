@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2021,2023 Intel Corporation
+// Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "PresentMon.hpp"
@@ -32,6 +32,26 @@ const char* RuntimeToString(Runtime rt)
     case Runtime::D3D9: return "D3D9";
     default: return "Other";
     }
+}
+
+const char* FrameTypeToString(FrameType ft)
+{
+    #ifdef _DEBUG
+    switch (ft) {
+    case FrameType::NotSet:      return "NotSet";
+    case FrameType::Repeated:    return "Repeated";
+    }
+    #endif
+
+    switch (ft) {
+    case FrameType::NotSet:
+    case FrameType::Repeated:
+    case FrameType::Application: return "Application";
+    case FrameType::Unspecified: return "Unspecified";
+    case FrameType::AMD_AFMF:    return "AMD_AFMF";
+    }
+
+    return "Unknown";
 }
 
 // v1.x only:
@@ -123,8 +143,8 @@ void WriteCsvHeader<FrameMetrics1>(FILE* fp)
                  L",Runtime"
                  L",SyncInterval"
                  L",PresentFlags"
-                 L",Dropped"
-                 L",TimeInSeconds"
+                 L",Dropped");
+    fwprintf(fp, L",TimeInSeconds"
                  L",msInPresentAPI"
                  L",msBetweenPresents");
     if (args.mTrackDisplay) {
@@ -212,7 +232,6 @@ void WriteCsvRow<FrameMetrics1>(
         break;
     }
     fwprintf(fp, L"\n");
-
 }
 
 template<>
@@ -223,12 +242,15 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     fwprintf(fp, L"Application"
                  L",ProcessID"
                  L",SwapChainAddress"
-                 L",Runtime"
+                 L",PresentRuntime"
                  L",SyncInterval"
                  L",PresentFlags");
     if (args.mTrackDisplay) {
         fwprintf(fp, L",AllowsTearing"
                      L",PresentMode");
+    }
+    if (args.mTrackFrameType) {
+        fwprintf(fp, L",FrameType");
     }
     switch (args.mTimeUnit) {
     case TimeUnit::MilliSeconds:    fwprintf(fp, L",CPUStartTime"); break;
@@ -236,10 +258,12 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     case TimeUnit::QPCMilliSeconds: fwprintf(fp, L",CPUStartQPCTime"); break;
     case TimeUnit::DateTime:        fwprintf(fp, L",CPUStartDateTime"); break;
     }
-    fwprintf(fp, L",CPUBusy"
+    fwprintf(fp, L",FrameTime"
+                 L",CPUBusy"
                  L",CPUWait");
     if (args.mTrackGPU) {
         fwprintf(fp, L",GPULatency"
+                     L",GPUTime"
                      L",GPUBusy"
                      L",GPUWait");
     }
@@ -266,25 +290,28 @@ void WriteCsvRow<FrameMetrics>(
 {
     auto const& args = GetCommandLineArgs();
 
-    fwprintf(fp, L"%s,%d,0x%016llX,%hs,%d,%d", processInfo.mModuleName.c_str(),
-                                               p.ProcessId,
-                                               p.SwapChainAddress,
-                                               RuntimeToString(p.Runtime),
-                                               p.SyncInterval,
-                                               p.PresentFlags);
+    fwprintf(fp, L"%s,%d,0x%llX,%hs,%d,%d", processInfo.mModuleName.c_str(),
+                                            p.ProcessId,
+                                            p.SwapChainAddress,
+                                            RuntimeToString(p.Runtime),
+                                            p.SyncInterval,
+                                            p.PresentFlags);
     if (args.mTrackDisplay) {
         fwprintf(fp, L",%d,%hs", p.SupportsTearing,
                                  PresentModeToString(p.PresentMode));
     }
+    if (args.mTrackFrameType) {
+        fwprintf(fp, L",%hs", FrameTypeToString(p.FrameType));
+    }
     switch (args.mTimeUnit) {
     case TimeUnit::MilliSeconds:
-        fwprintf(fp, L",%.6lf", pmSession.TimestampToMilliSeconds(metrics.mCPUStart));
+        fwprintf(fp, L",%.4lf", pmSession.TimestampToMilliSeconds(metrics.mCPUStart));
         break;
     case TimeUnit::QPC:
         fwprintf(fp, L",%llu", metrics.mCPUStart);
         break;
     case TimeUnit::QPCMilliSeconds:
-        fwprintf(fp, L",%.6lf", pmSession.TimestampDeltaToMilliSeconds(metrics.mCPUStart));
+        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToMilliSeconds(metrics.mCPUStart));
         break;
     case TimeUnit::DateTime: {
         SYSTEMTIME st = {};
@@ -299,22 +326,32 @@ void WriteCsvRow<FrameMetrics>(
                                                        ns);
     }   break;
     }
-    fwprintf(fp, L",%.6lf,%.6lf", metrics.mCPUBusy,
-                                  metrics.mCPUWait);
+    fwprintf(fp, L",%.4lf,%.4lf,%.4lf", metrics.mCPUBusy + metrics.mCPUWait,
+                                        metrics.mCPUBusy,
+                                        metrics.mCPUWait);
     if (args.mTrackGPU) {
-        fwprintf(fp, L",%.6lf,%.6lf,%.6lf", metrics.mGPULatency,
-                                            metrics.mGPUBusy,
-                                            metrics.mGPUWait);
+        fwprintf(fp, L",%.4lf,%.4lf,%.4lf,%.4lf", metrics.mGPULatency,
+                                                  metrics.mGPUBusy + metrics.mGPUWait,
+                                                  metrics.mGPUBusy,
+                                                  metrics.mGPUWait);
     }
     if (args.mTrackGPUVideo) {
-        fwprintf(fp, L",%.6lf", metrics.mVideoBusy);
+        fwprintf(fp, L",%.4lf", metrics.mVideoBusy);
     }
     if (args.mTrackDisplay) {
-        fwprintf(fp, L",%.6lf,%.6lf", metrics.mDisplayLatency,
-                                      metrics.mDisplayedTime);
+        if (metrics.mDisplayedTime == 0.0) {
+            fwprintf(fp, L",NA,NA");
+        } else {
+            fwprintf(fp, L",%.4lf,%.4lf", metrics.mDisplayLatency,
+                                          metrics.mDisplayedTime);
+        }
     }
     if (args.mTrackInput) {
-        fwprintf(fp, L",%.6lf", metrics.mClickToPhotonLatency);
+        if (metrics.mClickToPhotonLatency == 0.0) {
+            fwprintf(fp, L",NA");
+        } else {
+            fwprintf(fp, L",%.4lf", metrics.mClickToPhotonLatency);
+        }
     }
     fwprintf(fp, L"\n");
 }

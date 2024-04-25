@@ -1,4 +1,4 @@
-:: Copyright (C) 2022 Intel Corporation
+:: Copyright (C) 2017-2024 Intel Corporation
 :: SPDX-License-Identifier: MIT
 @echo off
 setlocal
@@ -23,13 +23,16 @@ set error=0
 %xperf% -capturestate SchedulingLog 802ec45a-1e99-4b83-9920-87c98277ba9d:0x04000000:5
 if %errorlevel% neq 0 set error=1
 
-%xperf% -stop CaptureState NoCaptureState SchedulingLog
+%xperf% -stop CaptureState NoCaptureState SchedulingLog >NUL
 if %errorlevel% neq 0 set error=1
 
-%xperf% -stop
+%xperf% -stop >NUL
 if %errorlevel% neq 0 set error=1
 
 if %error% neq 0 exit /b 1
+
+echo STOPPED
+echo MERGING...
 
 %xperf% -merge Kernel.etl NoCaptureState.etl CaptureState.etl SchedulingLog.etl trace.etl -compress -suppresspii
 

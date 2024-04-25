@@ -6,7 +6,8 @@
 #include "metadata/EnumDeviceType.h"
 #include "metadata/EnumDeviceVendor.h"
 #include "metadata/EnumGraphicsRuntime.h"
-#include "metadata/EnumMetric.h"
+#include "metadata/EnumFrameType.h"
+#include <metadata/EnumMetric.h>
 #include "metadata/EnumMetricAvailability.h"
 #include "metadata/EnumMetricType.h"
 #include "metadata/EnumPresentMode.h"

@@ -111,8 +111,8 @@ int GenCsv(pmapi::Session& pSession, std::string processName, unsigned int proce
             { PM_METRIC_PRESENT_FLAGS, PM_STAT_NONE, 0, 0 },
             { PM_METRIC_ALLOWS_TEARING, PM_STAT_NONE, 0, 0 },
             { PM_METRIC_PRESENT_MODE, PM_STAT_NONE, 0, 0 },
-            { PM_METRIC_CPU_FRAME_QPC, PM_STAT_NONE, 0, 0 },
-            { PM_METRIC_FRAME_TIME, PM_STAT_NONE, 0, 0 },
+            { PM_METRIC_CPU_START_QPC, PM_STAT_NONE, 0, 0 },
+            { PM_METRIC_CPU_FRAME_TIME, PM_STAT_NONE, 0, 0 },
             { PM_METRIC_CPU_WAIT, PM_STAT_NONE, 0, 0 },
             { PM_METRIC_GPU_LATENCY, PM_STAT_NONE, 0, 0 },
             { PM_METRIC_GPU_TIME, PM_STAT_NONE, 0, 0 },
@@ -189,8 +189,8 @@ int FrameQuerySample(std::unique_ptr<pmapi::Session>&& pSession)
 
         PM_BEGIN_FIXED_FRAME_QUERY(MyFrameQuery)
             FixedQueryElement swapChain{ this, PM_METRIC_SWAP_CHAIN_ADDRESS, PM_STAT_NONE };
-            FixedQueryElement cpuFrameQpc{ this, PM_METRIC_CPU_FRAME_QPC, PM_STAT_NONE };
-            FixedQueryElement cpuDuration{ this, PM_METRIC_FRAME_TIME, PM_STAT_NONE };
+            FixedQueryElement cpuFrameQpc{ this, PM_METRIC_CPU_START_QPC, PM_STAT_NONE };
+            FixedQueryElement cpuDuration{ this, PM_METRIC_CPU_FRAME_TIME, PM_STAT_NONE };
             FixedQueryElement cpuFpStall{ this, PM_METRIC_CPU_WAIT, PM_STAT_NONE };
             FixedQueryElement gpuLatency{ this, PM_METRIC_GPU_LATENCY, PM_STAT_NONE };
             FixedQueryElement gpuDuration{ this, PM_METRIC_GPU_TIME, PM_STAT_NONE };

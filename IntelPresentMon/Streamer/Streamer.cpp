@@ -98,19 +98,23 @@ void Streamer::CopyFromPresentMonPresentEvent(
     nsm_present_event->DxgkContext = present_event->DxgkContext;
     nsm_present_event->Hwnd = present_event->Hwnd;
     nsm_present_event->QueueSubmitSequence = present_event->QueueSubmitSequence;
-    nsm_present_event->mAllPresentsTrackingIndex =
-        present_event->mAllPresentsTrackingIndex;
+    nsm_present_event->RingIndex =
+        present_event->RingIndex;
 
-    nsm_present_event->DeferredCompletionWaitCount =
-        present_event->DeferredCompletionWaitCount;
+    nsm_present_event->DeferredReason =
+        present_event->DeferredReason;
 
     nsm_present_event->DestWidth = present_event->DestWidth;
     nsm_present_event->DestHeight = present_event->DestHeight;
     nsm_present_event->DriverThreadId = present_event->DriverThreadId;
 
+    nsm_present_event->FrameId = present_event->FrameId;
+
     nsm_present_event->Runtime = present_event->Runtime;
     nsm_present_event->PresentMode = present_event->PresentMode;
     nsm_present_event->FinalState = present_event->FinalState;
+    nsm_present_event->InputType = present_event->InputType;
+    nsm_present_event->FrameType = present_event->FrameType;
 
     nsm_present_event->SupportsTearing = present_event->SupportsTearing;
     nsm_present_event->WaitForFlipEvent = present_event->WaitForFlipEvent;
@@ -126,7 +130,6 @@ void Streamer::CopyFromPresentMonPresentEvent(
 
     nsm_present_event->GPUDuration = present_event->GPUDuration;
     nsm_present_event->GPUVideoDuration = present_event->GPUVideoDuration;
-    nsm_present_event->InputType = present_event->InputType;
     return;
 }
 

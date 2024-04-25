@@ -29,6 +29,7 @@
     <ClInclude Include="source\IntrospectionCapsLookup.h" />
     <ClInclude Include="source\IntrospectionDataTypeMapping.h" />
     <ClInclude Include="source\IntrospectionHelpers.h" />
+    <ClInclude Include="source\metadata\EnumFrameType.h" />
     <ClInclude Include="source\metadata\EnumMetricAvailability.h" />
     <ClInclude Include="source\metadata\EnumDeviceType.h" />
     <ClInclude Include="source\metadata\EnumGraphicsRuntime.h" />
@@ -44,7 +45,7 @@
     <ClInclude Include="source\IntrospectionTransfer.h" />
     <ClInclude Include="source\IntrospectionMacroHelpers.h" />
     <ClInclude Include="source\IntrospectionMetadata.h" />
-    <ClInclude Include="source\metadata\EnumMetric.h" />
+    <ClInclude Include="..\..\build\obj\generated\EnumMetric.h" />
     <ClInclude Include="source\metadata\EnumMetricType.h" />
     <ClInclude Include="source\metadata\EnumPresentMode.h" />
     <ClInclude Include="source\metadata\EnumStatus.h" />
@@ -115,6 +116,21 @@
     <Import Project="..\..\vcpkg.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <CustomBuildBeforeTargets>ClCompile</CustomBuildBeforeTargets>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <CustomBuildStep>
+      <Message>Generating EnumMetric.h</Message>
+      <Command>call ..\..\Tools\generate\EnumMetric\generate.cmd</Command>
+      <Inputs>
+          ..\..\IntelPresentMon\metrics.csv;
+          ..\..\Tools\generate\EnumMetric\generate.cmd;
+          ..\..\Tools\generate\EnumMetric\metrics.awk;
+      </Inputs>
+      <Outputs>..\..\build\obj\generated\metadata\EnumMetric.h</Outputs>
+    </CustomBuildStep>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -124,6 +140,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalOptions>/we4062</AdditionalOptions>
+      <AdditionalIncludeDirectories>..\..\build\obj\generated</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -142,6 +159,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <AdditionalOptions>/we4062</AdditionalOptions>
+      <AdditionalIncludeDirectories>..\..\build\obj\generated</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -160,6 +178,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <AdditionalOptions>/we4062</AdditionalOptions>
+      <AdditionalIncludeDirectories>..\..\build\obj\generated</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -178,6 +197,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>/we4062</AdditionalOptions>
+      <AdditionalIncludeDirectories>..\..\build\obj\generated</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>

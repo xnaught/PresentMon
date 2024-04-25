@@ -1,4 +1,4 @@
-// Copyright (C) 2019-2021,2023 Intel Corporation
+// Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include "PresentMon.hpp"
@@ -273,11 +273,11 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
 
         ConsolePrint(L"    %016llX", address);
 
-        if (chain.mPresentInfoValid) {
+        if (chain.mLastPresent != nullptr) {
             ConsolePrint(L" (%hs): SyncInterval=%d Flags=%d CPU=%.3fms (%.1f fps)",
-                RuntimeToString(chain.mPresentRuntime),
-                chain.mPresentSyncInterval,
-                chain.mPresentFlags,
+                RuntimeToString(chain.mLastPresent->Runtime),
+                chain.mLastPresent->SyncInterval,
+                chain.mLastPresent->PresentFlags,
                 chain.mAvgCPUDuration,
                 CalculateFPSForPrintf(chain.mAvgCPUDuration));
 
@@ -294,7 +294,7 @@ void UpdateConsole(uint32_t processId, ProcessInfo const& processInfo)
             if (args.mTrackDisplay) {
                 ConsolePrint(L" Latency=%.3fms %hs",
                     chain.mAvgDisplayLatency,
-                    PresentModeToString(chain.mPresentMode));
+                    PresentModeToString(chain.mLastPresent->PresentMode));
             }
         }
 

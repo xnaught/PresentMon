@@ -46,6 +46,7 @@ PM_STATUS PresentMonSession::StartTraceSession() {
   pm_consumer_->mTrackGPU = true;
   pm_consumer_->mTrackGPUVideo = false;
   pm_consumer_->mTrackInput = true;
+  pm_consumer_->mTrackFrameType = true;
 
   const wchar_t* etl_file_name = nullptr;
   if (etl_file_name_.size() > 0) {
@@ -174,11 +175,9 @@ void PresentMonSession::Consume(TRACEHANDLE traceHandle) {
 
 void PresentMonSession::DequeueAnalyzedInfo(
     std::vector<ProcessEvent>* processEvents,
-    std::vector<std::shared_ptr<PresentEvent>>* presentEvents,
-    std::vector<std::shared_ptr<PresentEvent>>* lostPresentEvents) {
+    std::vector<std::shared_ptr<PresentEvent>>* presentEvents) {
   pm_consumer_->DequeueProcessEvents(*processEvents);
   pm_consumer_->DequeuePresentEvents(*presentEvents);
-  pm_consumer_->DequeueLostPresentEvents(*lostPresentEvents);
 }
 
 void PresentMonSession::StartOutputThread() {
@@ -376,13 +375,12 @@ void PresentMonSession::HandleTerminatedProcess(uint32_t processId) {
 void PresentMonSession::ProcessEvents(
     std::vector<ProcessEvent>* processEvents,
     std::vector<std::shared_ptr<PresentEvent>>* presentEvents,
-    std::vector<std::shared_ptr<PresentEvent>>* lostPresentEvents,
     std::vector<std::pair<uint32_t, uint64_t>>* terminatedProcesses) {
   bool eventProcessingDone = false;
 
   // Copy any analyzed information from ConsumerThread and early-out if there
   // isn't any.
-  DequeueAnalyzedInfo(processEvents, presentEvents, lostPresentEvents);
+  DequeueAnalyzedInfo(processEvents, presentEvents);
   if (processEvents->empty() && presentEvents->empty()) {
     return;
   }
@@ -430,7 +428,6 @@ void PresentMonSession::ProcessEvents(
   // Clear events processed.
   processEvents->clear();
   presentEvents->clear();
-  lostPresentEvents->clear();
 
   // Finished processing all events.  Erase the terminated processes that we
   // handled now.
@@ -481,7 +478,6 @@ void PresentMonSession::Output() {
   // Structures to track processes and statistics from recorded events.
   std::vector<ProcessEvent> processEvents;
   std::vector<std::shared_ptr<PresentEvent>> presentEvents;
-  std::vector<std::shared_ptr<PresentEvent>> lostPresentEvents;
   std::vector<std::pair<uint32_t, uint64_t>> terminatedProcesses;
   processEvents.reserve(128);
   presentEvents.reserve(4096);
@@ -496,8 +492,7 @@ void PresentMonSession::Output() {
 
     // Copy and process all the collected events, and update the various
     // tracking and statistics data structures.
-    ProcessEvents(&processEvents, &presentEvents, &lostPresentEvents,
-                  &terminatedProcesses);
+    ProcessEvents(&processEvents, &presentEvents, &terminatedProcesses);
 
     // Everything is processed and output out at this point, so if we're
     // quiting we don't need to update the rest.

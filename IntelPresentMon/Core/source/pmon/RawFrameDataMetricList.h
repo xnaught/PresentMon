@@ -20,15 +20,16 @@ namespace p2c::pmon
         using Element = RawFrameQueryElementDefinition;
 
         std::vector<Element> queryElements{
-            Element{.metricId = PM_METRIC_TIME, .deviceId = 0 },
             Element{.metricId = PM_METRIC_SWAP_CHAIN_ADDRESS, .deviceId = 0 },
             Element{.metricId = PM_METRIC_PRESENT_RUNTIME, .deviceId = 0 },
             Element{.metricId = PM_METRIC_SYNC_INTERVAL, .deviceId = 0 },
             Element{.metricId = PM_METRIC_PRESENT_FLAGS, .deviceId = 0 },
             Element{.metricId = PM_METRIC_ALLOWS_TEARING, .deviceId = 0 },
             Element{.metricId = PM_METRIC_PRESENT_MODE, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_CPU_FRAME_QPC, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_FRAME_TIME, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_FRAME_TYPE, .deviceId = 0 },
+
+            Element{.metricId = PM_METRIC_CPU_START_TIME, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_CPU_FRAME_TIME, .deviceId = 0 },
             Element{.metricId = PM_METRIC_CPU_BUSY, .deviceId = 0 },
             Element{.metricId = PM_METRIC_CPU_WAIT, .deviceId = 0 },
             Element{.metricId = PM_METRIC_GPU_LATENCY, .deviceId = 0 },
@@ -76,9 +77,6 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_CPU_TEMPERATURE },
             Element{.metricId = PM_METRIC_CPU_FREQUENCY },
         };
-
-        // we want the order in the output csv to match the order of the metric ids
-        rn::sort(queryElements, {}, &Element::metricId);
 
         return queryElements;
     }

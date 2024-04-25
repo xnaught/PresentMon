@@ -20,36 +20,41 @@ namespace pmon::mid
 		uint64_t metricOffset = 0;
 	};
 
+    // Copied from: PresentMon/PresentMon.hpp
+    // We store SwapChainData per process and per swapchain, where we maintain:
+    // - information on previous presents needed for console output or to compute metrics for upcoming
+    //   presents,
+    // - pending presents whose metrics cannot be computed until future presents are received,
+    // - exponential averages of key metrics displayed in console output.
 	struct fpsSwapChainData {
-        // Per-frame metrics:
-        std::vector<uint64_t> CPUFrameQPC;
-		std::vector<double> CPUDuration;
-		std::vector<double> CPUFramePacingStall;
-		std::vector<double> GPULatency;
-		std::vector<double> GPUWait;
-		std::vector<double> GPUBusy;
-		std::vector<double> GPUDuration;
-		std::vector<double> DisplayLatency;
-		std::vector<double> DisplayDuration;
-		std::vector<double> InputLatency;
+        // Pending presents waiting for the next displayed present.
+        std::vector<PmNsmPresentEvent> mPendingPresents;
+
+        // The most recent present that has been processed (e.g., output into CSV and/or used for frame
+        // statistics).
+        PmNsmPresentEvent mLastPresent;
+        bool mLastPresentIsValid = false;
+
+        // Whether to include frame data in the next PresentEvent's FrameMetrics.
+        bool mIncludeFrameData = true;
+
+        // IntelPresentMon specifics:
+        std::vector<double> mCPUBusy;
+        std::vector<double> mCPUWait;
+        std::vector<double> mGPULatency;
+        std::vector<double> mGPUBusy;
+        std::vector<double> mVideoBusy;
+        std::vector<double> mGPUWait;
+        std::vector<double> mDisplayLatency;
+        std::vector<double> mDisplayedTime;
+        std::vector<double> mAppDisplayedTime;
+        std::vector<double> mClickToPhotonLatency;
+        std::vector<double> mDropped;
 
         // begin/end screen times to optimize average calculation:
 		uint64_t display_n_screen_time = 0;       // The last presented frame's ScreenTime (qpc)
 		uint64_t display_0_screen_time = 0;       // The first presented frame's ScreenTime (qpc)
 		uint32_t display_count = 0;               // The number of presented frames
-
-		// Properties of the most-recent processed frame:
-        uint64_t    mCPUFrameQPC = 0;
-        PresentMode mPresentMode = PresentMode::Unknown;
-        Runtime     mPresentRuntime = Runtime::Other;
-        int32_t     mPresentSyncInterval = 0;
-        uint32_t    mPresentFlags = 0;
-        bool        mPresentInfoValid = false;
-		std::string applicationName;
-		bool allows_tearing = false;
-
-        // Pending presents waiting for the next displayed present.
-        std::vector<PmNsmPresentEvent> mPendingPresents;
 	};
 
 	struct DeviceInfo
@@ -106,8 +111,8 @@ namespace pmon::mid
 
 		void CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency);
 		void CalculateGpuCpuMetric(std::unordered_map<PM_METRIC, MetricInfo>& metricInfo, const PM_QUERY_ELEMENT& element, uint8_t* pBlob);
-		void CalculateMetric(double& pBlob, std::vector<double>& inData, PM_STAT stat);
-		double GetPercentile(std::vector<double>& data, double percentile);
+		double CalculateStatistic(std::vector<double>& inData, PM_STAT stat) const;
+		double CalculatePercentile(std::vector<double>& inData, double percentile) const;
 		bool GetGpuMetricData(size_t telemetry_item_bit, PresentMonPowerTelemetryInfo& power_telemetry_info, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo);
 		bool GetCpuMetricData(size_t telemetryBit, CpuTelemetryInfo& cpuTelemetry, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo);
 		void GetStaticCpuMetrics();

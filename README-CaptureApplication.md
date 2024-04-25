@@ -43,8 +43,7 @@ In Debug configuration, the application will halt with a modal error dialog when
 |GPU Name||Device name of the GPU|DS|
 |CPU Vendor||Vendor name of the CPU|DS|
 |CPU Name||Device name of the CPU|DS|
-|Time|Time|Time elapsed since the start of ETW event tracing|F|
-|CPU Frame QPC|CPUFrameQPC|The QueryPerformanceCounter timestamp when the CPU started working on the frame|F|
+|CPU Start Time|CPUStartTime|Time elapsed since the start of ETW event tracing|F|
 |Frame Time|FrameTime|The total amount of time in between frames on the CPU|DF|
 |CPU Busy|CPUBusy|How long the CPU was generating the frame in milliseconds|DF|
 |CPU Wait|CPUWait|How long the CPU spent waiting before it could start generating the frame in milliseconds|DF|
@@ -60,6 +59,7 @@ In Debug configuration, the application will halt with a modal error dialog when
 |Present Mode|PresentMode|Method used to present the frame|DF|
 |Present Runtime|PresentRuntime|The graphics runtime used for the present operation (DXGI, D3D9, etc.)|DF|
 |Allows Tearing|AllowsTearing|Indicates if the frame allows tearing|DF|
+|Frame Type|FrameType|Whether the frame was rendered by the application or interpolated by a driver/SDK.|DF|
 |GPU Latency|GPULatency|How long it took until GPU work for this frame started|DF|
 |Display Latency|DisplayLatency|Time between frame submission and scan out to display|DF|
 |Click To Photon Latency|ClickToPhotonLatency|Time between input and display|DF|

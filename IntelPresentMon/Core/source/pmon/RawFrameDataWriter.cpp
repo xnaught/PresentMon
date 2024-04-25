@@ -23,17 +23,27 @@ namespace p2c::pmon
 
         struct Annotation_
         {
+            enum {
+                FLAG_NONE = 0,
+                FLAG_NAN_MEANS_NOT_AVAILABLE = 1 << 0,
+                FLAG_WRITE_HEX_VALUE = 1 << 1,
+            };
+
+            Annotation_(uint32_t flags = FLAG_NONE) : flags_{ flags } {}
             virtual ~Annotation_() = default;
             virtual void Write(std::ostream& out, const uint8_t* pBytes) const = 0;
             std::string columnName;
             static std::unique_ptr<Annotation_> MakeTyped(PM_METRIC metricId, uint32_t deviceId,
                 const pmapi::intro::MetricView& metric);
+
+        protected:
+            uint32_t flags_;
         };
         template<typename T>
         struct TypedAnnotation_ : public Annotation_
         {
         public:
-            TypedAnnotation_(bool zeroForNA = false) : zeroForNA_{ zeroForNA } {}
+            TypedAnnotation_(uint32_t flags = Annotation_::FLAG_NONE) : Annotation_{ flags } {}
             void Write(std::ostream& out, const uint8_t* pBytes) const override
             {
                 if constexpr (std::same_as<T, const char*>) {
@@ -42,18 +52,26 @@ namespace p2c::pmon
                 else if constexpr (std::floating_point<T>) {
                     const auto val = *reinterpret_cast<const T*>(pBytes);
                     if (std::isnan(val)) {
-                        out << (zeroForNA_ ? "0" : "NA");
+                        out << ((flags_ & FLAG_NAN_MEANS_NOT_AVAILABLE) ? "NA" : "0.0000");
                     }
                     else {
-                        out << val;
+                        out << std::fixed << std::setprecision(4) << val;
+                    }
+                }
+                else if constexpr (std::is_integral<T>::value) {
+                    if (flags_ & FLAG_WRITE_HEX_VALUE) {
+                        auto f(out.flags());
+                        out << "0x" << std::hex << std::uppercase << *reinterpret_cast<const T*>(pBytes);
+                        out.flags(f);
+                    }
+                    else {
+                        out << *reinterpret_cast<const T*>(pBytes);
                     }
                 }
                 else {
                     out << *reinterpret_cast<const T*>(pBytes);
                 }
             }
-        private:
-            bool zeroForNA_;
         };
         template<>
         struct TypedAnnotation_<void> : public Annotation_
@@ -66,7 +84,7 @@ namespace p2c::pmon
         template<>
         struct TypedAnnotation_<PM_ENUM> : public Annotation_
         {
-            TypedAnnotation_(PM_ENUM enumId) : pKeyMap{ pmapi::EnumMap::GetKeyMap(enumId) } {}
+            TypedAnnotation_(uint32_t flags, PM_ENUM enumId) : Annotation_{ flags }, pKeyMap{ pmapi::EnumMap::GetKeyMap(enumId) } {}
             void Write(std::ostream& out, const uint8_t* pBytes) const override
             {
                 out << pKeyMap->at(*reinterpret_cast<const int*>(pBytes)).narrowName;
@@ -100,22 +118,32 @@ namespace p2c::pmon
             std::unique_ptr<Annotation_> pAnnotation;
             if (available) {
                 const auto typeId = metric.GetDataTypeInfo().GetFrameType();
-                // DISPLAYED_TIME and DISPLAY_LATENCY should just show zeros when NaN is encountered
-                const bool zeroForNA = (metricId == PM_METRIC_DISPLAYED_TIME)
-                    || (metricId == PM_METRIC_DISPLAY_LATENCY);
+
+                // TODO: This should be part of the PM_METRIC
+                uint32_t flags = Annotation_::FLAG_NONE;
+                if (metricId == PM_METRIC_DISPLAYED_TIME ||
+                    metricId == PM_METRIC_DISPLAY_LATENCY ||
+                    metricId == PM_METRIC_CLICK_TO_PHOTON_LATENCY) {
+                    flags |= Annotation_::FLAG_NAN_MEANS_NOT_AVAILABLE;
+                }
+
+                if (metricId == PM_METRIC_SWAP_CHAIN_ADDRESS) {
+                    flags |= Annotation_::FLAG_WRITE_HEX_VALUE;
+                }
+
                 // special case for TIME, it needs to be relative to TIME of first frame and scaled ms => s
-                if (metricId == PM_METRIC_TIME) {
+                if (metricId == PM_METRIC_CPU_START_TIME) {
                     pAnnotation = std::make_unique<TypedAnnotation_<TimeAnnotationType_>>();
                 }
                 else {
                     switch (typeId) {
-                    case PM_DATA_TYPE_BOOL: pAnnotation = std::make_unique<TypedAnnotation_<bool>>(); break;
-                    case PM_DATA_TYPE_INT32: pAnnotation = std::make_unique<TypedAnnotation_<int32_t>>(); break;
-                    case PM_DATA_TYPE_UINT32: pAnnotation = std::make_unique<TypedAnnotation_<uint32_t>>(); break;
-                    case PM_DATA_TYPE_UINT64: pAnnotation = std::make_unique<TypedAnnotation_<uint64_t>>(); break;
-                    case PM_DATA_TYPE_DOUBLE: pAnnotation = std::make_unique<TypedAnnotation_<double>>(zeroForNA); break;
-                    case PM_DATA_TYPE_STRING: pAnnotation = std::make_unique<TypedAnnotation_<const char*>>(); break;
-                    case PM_DATA_TYPE_ENUM: pAnnotation = std::make_unique<TypedAnnotation_<PM_ENUM>>(
+                    case PM_DATA_TYPE_BOOL: pAnnotation = std::make_unique<TypedAnnotation_<bool>>(flags); break;
+                    case PM_DATA_TYPE_INT32: pAnnotation = std::make_unique<TypedAnnotation_<int32_t>>(flags); break;
+                    case PM_DATA_TYPE_UINT32: pAnnotation = std::make_unique<TypedAnnotation_<uint32_t>>(flags); break;
+                    case PM_DATA_TYPE_UINT64: pAnnotation = std::make_unique<TypedAnnotation_<uint64_t>>(flags); break;
+                    case PM_DATA_TYPE_DOUBLE: pAnnotation = std::make_unique<TypedAnnotation_<double>>(flags); break;
+                    case PM_DATA_TYPE_STRING: pAnnotation = std::make_unique<TypedAnnotation_<const char*>>(flags); break;
+                    case PM_DATA_TYPE_ENUM: pAnnotation = std::make_unique<TypedAnnotation_<PM_ENUM>>(flags, 
                         metric.GetDataTypeInfo().GetEnumId()); break;
                     default: pAnnotation = std::make_unique<TypedAnnotation_<void>>(); break;
                     }
@@ -127,7 +155,7 @@ namespace p2c::pmon
             // set the column name for the element
             // remove spaces from metric name by range filter
             pAnnotation->columnName = metric.Introspect().GetName() |
-                vi::filter([](char c) { return c != ' '; }) |
+                vi::filter([](char c) { return c != ' ' && c != '-'; }) |
                 rn::to<std::basic_string>();
             return pAnnotation;
         }
@@ -155,17 +183,17 @@ namespace p2c::pmon
                 // check if metric is one of the specially-required fields
                 // these fields are required because they are used for summary stats
                 // we need pointers to these specific ones to read for generating those stats
-                if (el.metricId == PM_METRIC_TIME) {
+                if (el.metricId == PM_METRIC_CPU_START_TIME) {
                     totalTimeElementIdx_ = int(queryElements_.size() - 1);
                 }
-                else if (el.metricId == PM_METRIC_FRAME_TIME) {
+                else if (el.metricId == PM_METRIC_CPU_FRAME_TIME) {
                     frametimeElementIdx_ = int(queryElements_.size() - 1);
                 }
             }
             // if any specially-required fields are missing, add to query (but not to annotations)
             if (totalTimeElementIdx_ < 0) {
                 queryElements_.push_back(PM_QUERY_ELEMENT{
-                    .metric = PM_METRIC_TIME,
+                    .metric = PM_METRIC_CPU_START_TIME,
                     .stat = PM_STAT_NONE,
                     .deviceId = 0,
                     .arrayIndex = 0,
@@ -174,7 +202,7 @@ namespace p2c::pmon
             }
             if (frametimeElementIdx_ < 0) {
                 queryElements_.push_back(PM_QUERY_ELEMENT{
-                    .metric = PM_METRIC_FRAME_TIME,
+                    .metric = PM_METRIC_CPU_FRAME_TIME,
                     .stat = PM_STAT_NONE,
                     .deviceId = 0,
                     .arrayIndex = 0,

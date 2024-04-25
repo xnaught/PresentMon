@@ -1,4 +1,4 @@
-// Copyright (C) 2017,2019-2023 Intel Corporation
+// Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #include <generated/version.h>
@@ -249,18 +249,55 @@ bool ParseValue(wchar_t** argv, int argc, int* i, UINT* value)
     return true;
 }
 
-// Print command line usage help.  The command line arguments and their description
-// is extracted out of the README-ConsoleApplication.md file at compile time (see
-// Tools/generate_options_header.cmd) into command_line_options.inl, and this
-// function formats and prints them.
+// Print command line usage help.
 void PrintUsage()
 {
     fwprintf(stderr, L"PresentMon %hs\n", PRESENT_MON_VERSION);
 
-    // Layout
-    wchar_t* s[] = {
-        #include <generated/command_line_options.inl>
+    // Note: this array is parsed to generate README-ConsoleApplication.md, so do not deviate much
+    // from this formatting.  Test any changes by running Tools\generate\readme\generate.cmd
+    wchar_t const* s[] = {
+        LR"(--Capture Target Options)", nullptr,
+        LR"(--process_name name)", LR"(Only record processes with the specified exe name. This argument can be repeated to capture multiple processes.)",
+        LR"(--exclude name)",      LR"(Do not record processes with the specified exe name. This argument can be repeated to exclude multiple processes.)",
+        LR"(--process_id id)",     LR"(Only record the process with the specified process ID.)",
+        LR"(--etl_file path)",     LR"(Analyze an ETW trace log file instead of the actively running processes.)",
+
+        LR"(--Output Options)", nullptr,
+        LR"(--output_file path)", LR"(Write CSV output to the specified path.)",
+        LR"(--output_stdout)",    LR"(Write CSV output to STDOUT.)",
+        LR"(--multi_csv)",        LR"(Create a separate CSV file for each captured process.)",
+        LR"(--no_csv)",           LR"(Do not create any output CSV file.)",
+        LR"(--no_console_stats)", LR"(Do not display active swap chains and frame statistics in the console.)",
+        LR"(--qpc_time)",         LR"(Output the CPU start time as a performance counter value.)",
+        LR"(--qpc_time_ms)",      LR"(Output the CPU start time as a performance counter value converted to milliseconds.)",
+        LR"(--date_time)",        LR"(Output the CPU start time as a date and time with nanosecond precision.)",
+        LR"(--exclude_dropped)",  LR"(Exclude frames that were not displayed to the screen from the CSV output.)",
+        LR"(--v1_metrics)",       LR"(Output a CSV using PresentMon 1.x metrics.)",
+
+        LR"(--Recording Options)", nullptr,
+        LR"(--hotkey key)",       LR"(Use the specified key press to start and stop recording. 'key' is of the form MODIFIER+KEY, e.g., "ALT+SHIFT+F11".)",
+        LR"(--delay seconds)",    LR"(Wait for specified amount of time before starting to record. If using --hotkey, the delay occurs each time the recording key is pressed.)",
+        LR"(--timed seconds)",    LR"(Stop recording after the specified amount of time.)",
+        LR"(--scroll_indicator)", LR"(Enable scroll lock while recording.)",
+        LR"(--track_gpu_video)",  LR"(Track the video encode/decode portion of GPU work separately from other engines.)",
+        LR"(--no_track_display)", LR"(Do not track frames all the way to display.)",
+        LR"(--no_track_input)",   LR"(Do not track keyboard/mouse clicks impacting each frame.)",
+        LR"(--no_track_gpu)",     LR"(Do not track the duration of GPU work in each frame.)",
+
+        LR"(--Execution Options)", nullptr,
+        LR"(--session_name name)",          LR"(Use the specified session name instead of the default "PresentMon". This can be used to start multiple captures at the same time, as long as each is using a distinct, case-insensitive name.)",
+        LR"(--stop_existing_session)",      LR"(If a trace session with the same name is already running, stop the existing session before starting a new session.)",
+        LR"(--terminate_existing_session)", LR"(If a trace session with the same name is already running, stop the existing session then exit.)",
+        LR"(--restart_as_admin)",           LR"(If not running with elevated privilege, restart and request to be run as administrator.)",
+        LR"(--terminate_on_proc_exit)",     LR"(Terminate PresentMon when all the target processes have exited.)",
+        LR"(--terminate_after_timed)",      LR"(When using --timed, terminate PresentMon after the timed capture completes.)",
+
+        LR"(--Beta Options)", nullptr,
+        LR"(--track_frame_type)", LR"(Track the type of each displayed frame; requires application and/or driver instrumentation using Intel-PresentMon provider.)",
     };
+
+    // Layout
     size_t argWidth = 0;
     for (size_t i = 0; i < _countof(s); i += 2) {
         auto arg = s[i];
@@ -279,7 +316,7 @@ void PrintUsage()
         auto arg = s[i];
         auto desc = s[i + 1];
         if (desc == nullptr) {
-            fwprintf(stderr, L"\n%s:\n", arg);
+            fwprintf(stderr, L"\n%s:\n", arg + 2);
         } else {
             fwprintf(stderr, L"  %-*s  ", (int) argWidth, arg);
             for (auto len = wcslen(desc); len > 0; ) {
@@ -348,6 +385,7 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     args->mTrackInput = true;
     args->mTrackGPU = true;
     args->mTrackGPUVideo = false;
+    args->mTrackFrameType = false;
     args->mScrollLockIndicator = false;
     args->mExcludeDropped = false;
     args->mTerminateExistingSession = false;
@@ -410,6 +448,9 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         else if (ParseArg(argv[i], L"restart_as_admin"))           { args->mTryToElevate             = true; continue; }
         else if (ParseArg(argv[i], L"terminate_on_proc_exit"))     { args->mTerminateOnProcExit      = true; continue; }
         else if (ParseArg(argv[i], L"terminate_after_timed"))      { args->mTerminateAfterTimer      = true; continue; }
+
+        // Beta options:
+        else if (ParseArg(argv[i], L"track_frame_type")) { args->mTrackFrameType = true; continue; }
 
         // Hidden options:
         #if PRESENTMON_ENABLE_DEBUG_TRACE
@@ -504,6 +545,12 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         if (argc != expectedArgc) {
             PrintWarning(L"warning: --terminate_existing_session exits without capturing anything; ignoring all other options.\n");
         }
+    }
+
+    // Ignore --track_frame_type if v1 metrics (since they are not supported there)
+    if (args->mTrackFrameType && args->mUseV1Metrics) {
+        PrintWarning(L"warning: ignoring --track_frame_type due to --v1_metrics.\n");
+        args->mTrackFrameType = false;
     }
 
     // Enable verbose trace if requested, and disable Full or Simple console output
