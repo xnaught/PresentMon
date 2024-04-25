@@ -53,7 +53,7 @@ int AddGpuMetric(pmapi::Session& pSession, unsigned int processId, double window
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_PERCENTILE_90, .deviceId = 0, .arrayIndex = 0 });
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MAX, .deviceId = 0, .arrayIndex = 0 });
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_PRESENTED_FPS, .stat = PM_STAT_MIN, .deviceId = 0, .arrayIndex = 0 });
-        elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_FRAME_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
+        elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_CPU_FRAME_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_CPU_WAIT, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_GPU_TIME, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
         elements.push_back(PM_QUERY_ELEMENT{ .metric = PM_METRIC_GPU_BUSY, .stat = PM_STAT_AVG, .deviceId = 0, .arrayIndex = 0 });
@@ -151,7 +151,7 @@ int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, double window
             FixedQueryElement fps99{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_PERCENTILE_99 };
             FixedQueryElement fpsMax{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_MAX };
             FixedQueryElement fpsMin{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_MIN };
-            FixedQueryElement frameDurationAvg{ this, PM_METRIC_FRAME_TIME, PM_STAT_AVG };
+            FixedQueryElement frameDurationAvg{ this, PM_METRIC_CPU_FRAME_TIME, PM_STAT_AVG };
             FixedQueryElement fpStallAvg{ this, PM_METRIC_CPU_WAIT, PM_STAT_AVG };
             FixedQueryElement gpuDurationAvg{ this, PM_METRIC_GPU_TIME, PM_STAT_AVG };
             FixedQueryElement gpuBusyTimeAvg{ this, PM_METRIC_GPU_BUSY, PM_STAT_AVG };

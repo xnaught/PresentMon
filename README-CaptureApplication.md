@@ -43,8 +43,7 @@ In Debug configuration, the application will halt with a modal error dialog when
 |GPU Name||Device name of the GPU|DS|
 |CPU Vendor||Vendor name of the CPU|DS|
 |CPU Name||Device name of the CPU|DS|
-|Time|Time|Time elapsed since the start of ETW event tracing|F|
-|CPU Frame QPC|CPUFrameQPC|The QueryPerformanceCounter timestamp when the CPU started working on the frame|F|
+|CPU Start Time|CPUStartTime|Time elapsed since the start of ETW event tracing|F|
 |Frame Time|FrameTime|The total amount of time in between frames on the CPU|DF|
 |CPU Busy|CPUBusy|How long the CPU was generating the frame in milliseconds|DF|
 |CPU Wait|CPUWait|How long the CPU spent waiting before it could start generating the frame in milliseconds|DF|

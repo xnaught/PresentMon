@@ -11,9 +11,9 @@
 		X_(METRIC, CPU_VENDOR, "CPU Vendor", "", "Vendor name of the CPU") \
 		X_(METRIC, CPU_NAME, "CPU Name", "", "Device name of the CPU") \
 \
-		X_(METRIC, TIME, "Time", "", "Time elapsed since the start of ETW event tracing") \
-		X_(METRIC, CPU_FRAME_QPC, "CPU Frame QPC", "", "The QueryPerformanceCounter timestamp when the CPU started working on the frame") \
-		X_(METRIC, FRAME_TIME, "Frame Time", "", "The total amount of time in between frames on the CPU") \
+		X_(METRIC, CPU_START_TIME, "CPU Start Time", "", "Time elapsed since the start of ETW event tracing in milliseconds") \
+		X_(METRIC, CPU_START_QPC, "CPU Start QPC", "", "The QueryPerformanceCounter timestamp when the CPU started working on the frame") \
+		X_(METRIC, CPU_FRAME_TIME, "Frame Time", "", "The total amount of time in between frames on the CPU") \
 		X_(METRIC, CPU_BUSY, "CPU Busy", "", "How long the CPU was generating the frame in milliseconds") \
 		X_(METRIC, CPU_WAIT, "CPU Wait", "", "How long the CPU spent waiting before it could start generating the frame in milliseconds") \
 \

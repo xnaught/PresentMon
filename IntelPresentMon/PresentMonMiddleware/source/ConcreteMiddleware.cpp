@@ -393,10 +393,10 @@ namespace pmon::mid
             case PM_METRIC_PRESENT_FLAGS:
             case PM_METRIC_SYNC_INTERVAL:
             case PM_METRIC_ALLOWS_TEARING:
-            case PM_METRIC_CPU_FRAME_QPC:
+            case PM_METRIC_CPU_START_QPC:
             case PM_METRIC_CPU_BUSY:
             case PM_METRIC_CPU_WAIT:
-            case PM_METRIC_FRAME_TIME:
+            case PM_METRIC_CPU_FRAME_TIME:
             case PM_METRIC_GPU_LATENCY:
             case PM_METRIC_GPU_BUSY:
             case PM_METRIC_GPU_WAIT:
@@ -1033,7 +1033,7 @@ void ReportMetrics(
         case PM_METRIC_CPU_WAIT:
             output = CalculateStatistic(swapChain.mCPUWait, element.stat);
             break;
-        case PM_METRIC_FRAME_TIME:
+        case PM_METRIC_CPU_FRAME_TIME:
         {
             std::vector<double> frame_times(swapChain.mCPUBusy.size());
             for (size_t i = 0; i < swapChain.mCPUBusy.size(); ++i) {
@@ -1561,7 +1561,7 @@ void ReportMetrics(
                 }
                     break;
 
-                case PM_METRIC_CPU_FRAME_QPC:
+                case PM_METRIC_CPU_START_QPC:
                 case PM_METRIC_PRESENT_MODE:
                 case PM_METRIC_PRESENT_RUNTIME:
                 case PM_METRIC_PRESENT_FLAGS:
@@ -1575,7 +1575,7 @@ void ReportMetrics(
                 case PM_METRIC_PRESENTED_FPS:
                 case PM_METRIC_DISPLAYED_FPS:
                 case PM_METRIC_DROPPED_FRAMES:
-                case PM_METRIC_FRAME_TIME:
+                case PM_METRIC_CPU_FRAME_TIME:
                 case PM_METRIC_CPU_BUSY:
                 case PM_METRIC_CPU_WAIT:
                 case PM_METRIC_GPU_TIME:

@@ -238,7 +238,7 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     fwprintf(fp, L"Application"
                  L",ProcessID"
                  L",SwapChainAddress"
-                 L",Runtime"
+                 L",PresentRuntime"
                  L",SyncInterval"
                  L",PresentFlags");
     if (args.mTrackDisplay) {
@@ -254,10 +254,12 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     case TimeUnit::QPCMilliSeconds: fwprintf(fp, L",CPUStartQPCTime"); break;
     case TimeUnit::DateTime:        fwprintf(fp, L",CPUStartDateTime"); break;
     }
-    fwprintf(fp, L",CPUBusy"
+    fwprintf(fp, L",FrameTime"
+                 L",CPUBusy"
                  L",CPUWait");
     if (args.mTrackGPU) {
         fwprintf(fp, L",GPULatency"
+                     L",GPUTime"
                      L",GPUBusy"
                      L",GPUWait");
     }
@@ -284,12 +286,12 @@ void WriteCsvRow<FrameMetrics>(
 {
     auto const& args = GetCommandLineArgs();
 
-    fwprintf(fp, L"%s,%d,0x%016llX,%hs,%d,%d", processInfo.mModuleName.c_str(),
-                                               p.ProcessId,
-                                               p.SwapChainAddress,
-                                               RuntimeToString(p.Runtime),
-                                               p.SyncInterval,
-                                               p.PresentFlags);
+    fwprintf(fp, L"%s,%d,0x%llX,%hs,%d,%d", processInfo.mModuleName.c_str(),
+                                            p.ProcessId,
+                                            p.SwapChainAddress,
+                                            RuntimeToString(p.Runtime),
+                                            p.SyncInterval,
+                                            p.PresentFlags);
     if (args.mTrackDisplay) {
         fwprintf(fp, L",%d,%hs", p.SupportsTearing,
                                  PresentModeToString(p.PresentMode));
@@ -299,13 +301,13 @@ void WriteCsvRow<FrameMetrics>(
     }
     switch (args.mTimeUnit) {
     case TimeUnit::MilliSeconds:
-        fwprintf(fp, L",%.6lf", pmSession.TimestampToMilliSeconds(metrics.mCPUStart));
+        fwprintf(fp, L",%.4lf", pmSession.TimestampToMilliSeconds(metrics.mCPUStart));
         break;
     case TimeUnit::QPC:
         fwprintf(fp, L",%llu", metrics.mCPUStart);
         break;
     case TimeUnit::QPCMilliSeconds:
-        fwprintf(fp, L",%.6lf", pmSession.TimestampDeltaToMilliSeconds(metrics.mCPUStart));
+        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToMilliSeconds(metrics.mCPUStart));
         break;
     case TimeUnit::DateTime: {
         SYSTEMTIME st = {};
@@ -320,22 +322,32 @@ void WriteCsvRow<FrameMetrics>(
                                                        ns);
     }   break;
     }
-    fwprintf(fp, L",%.6lf,%.6lf", metrics.mCPUBusy,
-                                  metrics.mCPUWait);
+    fwprintf(fp, L",%.4lf,%.4lf,%.4lf", metrics.mCPUBusy + metrics.mCPUWait,
+                                        metrics.mCPUBusy,
+                                        metrics.mCPUWait);
     if (args.mTrackGPU) {
-        fwprintf(fp, L",%.6lf,%.6lf,%.6lf", metrics.mGPULatency,
-                                            metrics.mGPUBusy,
-                                            metrics.mGPUWait);
+        fwprintf(fp, L",%.4lf,%.4lf,%.4lf,%.4lf", metrics.mGPULatency,
+                                                  metrics.mGPUBusy + metrics.mGPUWait,
+                                                  metrics.mGPUBusy,
+                                                  metrics.mGPUWait);
     }
     if (args.mTrackGPUVideo) {
-        fwprintf(fp, L",%.6lf", metrics.mVideoBusy);
+        fwprintf(fp, L",%.4lf", metrics.mVideoBusy);
     }
     if (args.mTrackDisplay) {
-        fwprintf(fp, L",%.6lf,%.6lf", metrics.mDisplayLatency,
-                                      metrics.mDisplayedTime);
+        if (metrics.mDisplayedTime == 0.0) {
+            fwprintf(fp, L",NA,NA");
+        } else {
+            fwprintf(fp, L",%.4lf,%.4lf", metrics.mDisplayLatency,
+                                          metrics.mDisplayedTime);
+        }
     }
     if (args.mTrackInput) {
-        fwprintf(fp, L",%.6lf", metrics.mClickToPhotonLatency);
+        if (metrics.mClickToPhotonLatency == 0.0) {
+            fwprintf(fp, L",NA");
+        } else {
+            fwprintf(fp, L",%.4lf", metrics.mClickToPhotonLatency);
+        }
     }
     fwprintf(fp, L"\n");
 }
