@@ -133,8 +133,8 @@ int main(int argc, char* argv[])
         if (opt.doPipeCli) {
             log::IdentificationTable::AddThisProcess(L"p-client");
             log::IdentificationTable::AddThisThread(L"t-main");
-            auto pReceiver = std::make_shared<log::NamedPipeMarshallReceiver>(L"pml_testpipe", log::IdentificationTable::GetPtr());
-            log::EntryMarshallInjector injector{ log::GetDefaultChannel(), std::move(pReceiver) };
+            log::GetDefaultChannel()->AttachObject(std::make_shared<log::EntryMarshallInjector>(log::GetDefaultChannel(),
+                std::make_shared<log::NamedPipeMarshallReceiver>(L"pml_testpipe", log::IdentificationTable::GetPtr())));
             while (!_kbhit());
             return 0;
         }

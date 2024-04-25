@@ -22,6 +22,7 @@ namespace pmon::util::log
 			void DisableTraceResolution();
 			void AttachDriver(std::shared_ptr<IDriver>);
 			void AttachPolicy(std::shared_ptr<IPolicy>);
+			void AttachObject(std::shared_ptr<void>);
 			void EnqueueEntry(Entry&&);
 			template<class P, typename...Args>
 			void EnqueuePacketWait(Args&&...args);
@@ -34,6 +35,7 @@ namespace pmon::util::log
 			bool exiting_ = false;
 			std::vector<std::shared_ptr<IDriver>> driverPtrs_;
 			std::vector<std::shared_ptr<IPolicy>> policyPtrs_;
+			std::vector<std::shared_ptr<void>> objectPtrs_;
 			std::shared_ptr<void> pEntryQueue_;
 			std::jthread worker_;
 		};
@@ -51,6 +53,7 @@ namespace pmon::util::log
 		void Flush() override;
 		void AttachDriver(std::shared_ptr<IDriver>) override;
 		void AttachPolicy(std::shared_ptr<IPolicy>) override;
+		void AttachObject(std::shared_ptr<void>) override;
 		void FlushEntryPointExit() override;
 	};
 }

@@ -41,6 +41,16 @@ namespace pmon::util::log
 				semaphore.release();
 			}
 		};
+		struct AttachObjectPacket_ : public Packet_
+		{
+			std::shared_ptr<void> pObject;
+			AttachObjectPacket_(std::shared_ptr<void> pObject) : pObject{ std::move(pObject) } {}
+			void Process(ChannelInternal_& channel)
+			{
+				channel.AttachObject(std::move(pObject));
+				semaphore.release();
+			}
+		};
 		struct FlushPacket_ : public Packet_
 		{
 			void Process(ChannelInternal_& channel)
@@ -70,6 +80,7 @@ namespace pmon::util::log
 		using QueueElementType_ = std::variant<Entry,
 			std::shared_ptr<AttachDriverPacket_>,
 			std::shared_ptr<AttachPolicyPacket_>,
+			std::shared_ptr<AttachObjectPacket_>,
 			std::shared_ptr<FlushPacket_>,
 			std::shared_ptr<KillPacket_>,
 			std::shared_ptr<FlushEntryPointPacket_>>;
@@ -164,6 +175,10 @@ namespace pmon::util::log
 		{
 			policyPtrs_.push_back(std::move(pPolicy));
 		}
+		void ChannelInternal_::AttachObject(std::shared_ptr<void> pObj)
+		{
+			objectPtrs_.push_back(std::move(pObj));
+		}
 		void ChannelInternal_::EnqueueEntry(Entry&& e)
 		{
 			Queue_(this).enqueue(std::move(e));
@@ -217,6 +232,10 @@ namespace pmon::util::log
 	void Channel::AttachPolicy(std::shared_ptr<IPolicy> pPolicy)
 	{
 		EnqueuePacketWait<AttachPolicyPacket_>(std::move(pPolicy));
+	}
+	void Channel::AttachObject(std::shared_ptr<void> pObj)
+	{
+		EnqueuePacketWait<AttachObjectPacket_>(std::move(pObj));
 	}
 	void Channel::FlushEntryPointExit()
 	{
