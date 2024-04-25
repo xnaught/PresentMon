@@ -1,12 +1,13 @@
 
-Some metrics are disabled depending on the command line options:
+Some metrics are enabled or disabled depending on the command line options:
 
-| Command line option  | Disabled metrics |
-| -------------------- | ---------------- |
-| `--no_track_gpu`     | *GPULatency<br>GPUBusy<br>GPUWait<br>VideoBusy*  |
-| `--no_track_input`   | *ClickToPhotonLatency* |
-| `--no_track_display`<br>(requires `--no_track_gpu` and `--no_track_input` as well) | *AllowsTearing<br>PresentMode<br>DisplayLatency<br>DisplayedTime* |
-| `--v1_metrics`       | Most of the above metrics.  See a [1.x README.md](https://github.com/GameTechDev/PresentMon/blob/v1.9.2/README.md#csv-columns) for details on Presentmon 1.x metrics. |
+| Command line option  | Enabled metrics | Disabled metrics |
+| -------------------- | --------------- | ---------------- |
+| `--track_gpu_video`  | *VideoBusy*     | |
+| `--no_track_gpu`     |                 | *GPULatency<br>GPUBusy<br>GPUWait<br>VideoBusy*  |
+| `--no_track_input`   |                 | *ClickToPhotonLatency* |
+| `--no_track_display`<br>(requires `--no_track_gpu` and `--no_track_input` as well) | | *AllowsTearing<br>PresentMode<br>DisplayLatency<br>DisplayedTime* |
+| `--v1_metrics`       |                 | Most of the above metrics.  See a [1.x README.md](https://github.com/GameTechDev/PresentMon/blob/v1.9.2/README.md#csv-columns) for details on Presentmon 1.x metrics. |
 
 The following values are used in the PresentMode column:
 

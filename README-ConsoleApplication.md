@@ -77,32 +77,33 @@ Default metrics include:
 | *Application*          | The name of the process that generated the frame. |
 | *ProcessID*            | The process ID of the process that generated the frame. |
 | *SwapChainAddress*     | The address of the swap chain used to present the frame. |
-| *PresentRuntime*       | The runtime used to present the frame. |
-| *SyncInterval*         | The sync interval provided by the application when presenting the frame. Note: this value may be modified later by the driver |
+| *PresentRuntime*       | The API used to present the frame. |
+| *SyncInterval*         | The sync interval provided by the application when presenting the frame. Note: this value may be modified later by the driver, e.g., based on control panel overrides. |
 | *PresentFlags*         | The present flags provided by the application when presenting the frame. |
 | *AllowsTearing*        | 1 if partial frames might be displayed on the screen, or 0 if only full frames are displayed. |
 | *PresentMode*          | The presentation mode used by the system for this frame.  See the table below for more details. |
-| *CPUStartTime<br>(CPUStartQPC)<br>(CPUStartQPCTime)<br>(CPUStartDateTime)* | The time the CPU started working on this frame.  By default |
+| *CPUStartTime<br>(CPUStartQPC)<br>(CPUStartQPCTime)<br>(CPUStartDateTime)* | The time the CPU started working on this frame.  By default, this is the time since recording started unless:<br>&bull; When `--qpc_time` is used, the value is a [performance counter value](https://docs.microsoft.com/en-us/windows/win32/api/profileapi/nf-profileapi-queryperformancecounter) and the column is named *CPUStartQPC*.<br>&bull; When `--qpc_time_ms` is used, the value is the query performance counter value converted to milliseconds and the column is named *CPUStartQPCTime*.<br>&bull; When `--date_time` is used, the value is a date and the column is named *CPUStartDateTime*. |
 | *FrameTime*            | How long it took from the start of this frame until the CPU started working on the next frame. |
 | *CPUBusy*              | How long the CPU spent working on this frame before presenting it. |
 | *CPUWait*              | How long the CPU spent waiting before starting the next frame. |
 | *GPULatency*           | How long it took from the start of this frame until the GPU started working on it. |
 | *GPUTime*              | The total amount of time that GPU was working on this frame. |
-| *GPUBusy*              | How long the GPU was actively working on this frame (i.e. |
-| *VideoBusy*            | How long the GPU video encode/decode engines were actively working on this frame. This column is only available when `--track_gpu_video` is used and |
+| *GPUBusy*              | How long the GPU was actively working on this frame (i.e., the time during which at least one GPU engine is executing work from the target process). |
 | *GPUWait*              | How long the GPU was idle while working on this frame. |
+| *VideoBusy*            | How long the GPU video encode/decode engines were actively working on this frame. |
 | *DisplayLatency*       | How long it took from the start of this frame until the frame was displayed on the screen. |
 | *DisplayedTime*        | How long the frame was displayed on the screen, or 'NA' if the frame was not displayed. |
-| *ClickToPhotonLatency* | How long it took from the earliest keyboard or mouse interaction that contributed to this frame until this frame was displayed. When supported HW measuring devices are not available |
+| *ClickToPhotonLatency* | How long it took from the earliest keyboard or mouse interaction that contributed to this frame until this frame was displayed.  When supported HW measuring devices are not available, this is the software-visible subset of the full click-to-photon latency and doesn't include:<br>&bull; time spent processing input in the keyboard/controller hardware or drivers (typically a fixed additional overhead),<br>&bull; time spent processing the output in the display hardware or drivers (typically a fixed additional overhead), and<br>&bull; a combination of display blanking interval and scan time (which varies, depending on timing and tearing). |
 
-Some metrics are disabled depending on the command line options:
+Some metrics are enabled or disabled depending on the command line options:
 
-| Command line option  | Disabled metrics |
-| -------------------- | ---------------- |
-| `--no_track_gpu`     | *GPULatency<br>GPUBusy<br>GPUWait<br>VideoBusy*  |
-| `--no_track_input`   | *ClickToPhotonLatency* |
-| `--no_track_display`<br>(requires `--no_track_gpu` and `--no_track_input` as well) | *AllowsTearing<br>PresentMode<br>DisplayLatency<br>DisplayedTime* |
-| `--v1_metrics`       | Most of the above metrics.  See a [1.x README.md](https://github.com/GameTechDev/PresentMon/blob/v1.9.2/README.md#csv-columns) for details on Presentmon 1.x metrics. |
+| Command line option  | Enabled metrics | Disabled metrics |
+| -------------------- | --------------- | ---------------- |
+| `--track_gpu_video`  | *VideoBusy*     | |
+| `--no_track_gpu`     |                 | *GPULatency<br>GPUBusy<br>GPUWait<br>VideoBusy*  |
+| `--no_track_input`   |                 | *ClickToPhotonLatency* |
+| `--no_track_display`<br>(requires `--no_track_gpu` and `--no_track_input` as well) | | *AllowsTearing<br>PresentMode<br>DisplayLatency<br>DisplayedTime* |
+| `--v1_metrics`       |                 | Most of the above metrics.  See a [1.x README.md](https://github.com/GameTechDev/PresentMon/blob/v1.9.2/README.md#csv-columns) for details on Presentmon 1.x metrics. |
 
 The following values are used in the PresentMode column:
 

@@ -1,23 +1,78 @@
-// WARNING: ensure this file is saved in text CSV format when modifying this file,
-// SHORT_NAME,DESCRIPTION
-Application,The name of the process that generated the frame.
-ProcessID,The process ID of the process that generated the frame.
-SwapChainAddress,The address of the swap chain used to present the frame.
-PresentRuntime,The runtime used to present the frame.
-SyncInterval,The sync interval provided by the application when presenting the frame. Note: this value may be modified later by the driver, e.g., based on control panel overrides.
-PresentFlags,The present flags provided by the application when presenting the frame.
-AllowsTearing,"1 if partial frames might be displayed on the screen, or 0 if only full frames are displayed."
-PresentMode,The presentation mode used by the system for this frame.  See the table below for more details.
-CPUStartTime<br>(CPUStartQPC)<br>(CPUStartQPCTime)<br>(CPUStartDateTime),The time the CPU started working on this frame.  By default, this is the time since recording started unless:<br>&bull; When `--qpc_time` is used, the value is a [performance counter value](https://docs.microsoft.com/en-us/windows/win32/api/profileapi/nf-profileapi-queryperformancecounter) and the column is named *CPUStartQPC*.<br>&bull; When `--qpc_time_ms` is used, the value is the query performance counter value converted to milliseconds and the column is named *CPUStartQPCTime*.<br>&bull; When `--date_time` is used, the value is a date and the column is named *CPUStartDateTime*.
-FrameTime,How long it took from the start of this frame until the CPU started working on the next frame.
-CPUBusy,How long the CPU spent working on this frame before presenting it.
-CPUWait,How long the CPU spent waiting before starting the next frame.
-GPULatency,How long it took from the start of this frame until the GPU started working on it.
-GPUTime,The total amount of time that GPU was working on this frame.
-GPUBusy,How long the GPU was actively working on this frame (i.e., the time during which at least one GPU engine is executing work from the target process).
-VideoBusy,How long the GPU video encode/decode engines were actively working on this frame. This column is only available when `--track_gpu_video` is used and, when used, the video encode/decode work is not included in *GPUBusy*.
-GPUWait,How long the GPU was idle while working on this frame.
-DisplayLatency,How long it took from the start of this frame until the frame was displayed on the screen.
-DisplayedTime,"How long the frame was displayed on the screen, or 'NA' if the frame was not displayed."
-ClickToPhotonLatency,How long it took from the earliest keyboard or mouse interaction that contributed to this frame until this frame was displayed. When supported HW measuring devices are not available, this is the software-visible subset of the full click-to-photon latency and doesn't include:<br>&bull; time spent processing input in the keyboard/controller hardware or drivers (typically a fixed additional overhead),<br>&bull; time spent processing the output in the display hardware or drivers (typically a fixed additional overhead), and<br>&bull; a combination of display blanking interval and scan time (which varies, depending on timing and tearing).
-
+// WARNING: ensure this file is saved in text CSV format when modifying this file,,,
+// PM_METRIC,IPM_ONLY,NAME,DESCRIPTION
+,,,
+PM_METRIC_APPLICATION,,Application,The name of the process that generated the frame.
+PM_METRIC_PROCESS_ID,,Process ID,The process ID of the process that generated the frame.
+PM_METRIC_SWAP_CHAIN_ADDRESS,,Swap Chain Address,The address of the swap chain used to present the frame.
+PM_METRIC_PRESENT_RUNTIME,,Present Runtime,The API used to present the frame.
+PM_METRIC_SYNC_INTERVAL,,Sync Interval,"The sync interval provided by the application when presenting the frame. Note: this value may be modified later by the driver, e.g., based on control panel overrides."
+PM_METRIC_PRESENT_FLAGS,,Present Flags,The present flags provided by the application when presenting the frame.
+PM_METRIC_ALLOWS_TEARING,,Allows Tearing,"1 if partial frames might be displayed on the screen, or 0 if only full frames are displayed."
+PM_METRIC_PRESENT_MODE,,Present Mode,The presentation mode used by the system for this frame.  See the table below for more details.
+,,,
+PM_METRIC_CPU_START_TIME,,CPU Start Time,The time the CPU started working on this frame.
+PM_METRIC_CPU_START_QPC,1,CPU Start QPC,"The time the CPU started working on this frame, as a QueryPerformanceCounter() value."
+PM_METRIC_CPU_FRAME_TIME,,Frame Time,How long it took from the start of this frame until the CPU started working on the next frame.
+PM_METRIC_CPU_BUSY,,CPU Busy,How long the CPU spent working on this frame before presenting it.
+PM_METRIC_CPU_WAIT,,CPU Wait,How long the CPU spent waiting before starting the next frame.
+,,,
+PM_METRIC_GPU_LATENCY,,GPU Latency,How long it took from the start of this frame until the GPU started working on it.
+PM_METRIC_GPU_TIME,,GPU Time,The total amount of time that GPU was working on this frame.
+PM_METRIC_GPU_BUSY,,GPU Busy,"How long the GPU was actively working on this frame (i.e., the time during which at least one GPU engine is executing work from the target process)."
+PM_METRIC_GPU_WAIT,,GPU Wait,How long the GPU was idle while working on this frame.
+PM_METRIC_VIDEO_BUSY,,Video Busy,How long the GPU video encode/decode engines were actively working on this frame.
+,,,
+PM_METRIC_DISPLAY_LATENCY,,Display Latency,How long it took from the start of this frame until the frame was displayed on the screen.
+PM_METRIC_DISPLAYED_TIME,,Displayed Time,"How long the frame was displayed on the screen, or 'NA' if the frame was not displayed."
+PM_METRIC_CLICK_TO_PHOTON_LATENCY,,Click-To-Photon Latency,How long it took from the earliest keyboard or mouse interaction that contributed to this frame until this frame was displayed.
+,,,
+PM_METRIC_DISPLAYED_FPS,1,Displayed FPS,The rate at which new frames are being displayed on the screen
+PM_METRIC_PRESENTED_FPS,1,Presented FPS,The rate at which the application is calling Present()
+PM_METRIC_DROPPED_FRAMES,1,Dropped Frames,Indicates if the frame was not displayed
+,,,
+PM_METRIC_GPU_VENDOR,1,GPU Vendor,Vendor name of the GPU
+PM_METRIC_GPU_NAME,1,GPU Name,Device name of the GPU
+PM_METRIC_CPU_VENDOR,1,CPU Vendor,Vendor name of the CPU
+PM_METRIC_CPU_NAME,1,CPU Name,Device name of the CPU
+,,,
+PM_METRIC_GPU_SUSTAINED_POWER_LIMIT,1,GPU Sustained Power Limit,Sustained power limit of the GPU
+PM_METRIC_GPU_POWER,1,GPU Power,Power consumed by the graphics adapter
+PM_METRIC_GPU_VOLTAGE,1,GPU Voltage,Voltage consumed by the graphics adapter
+PM_METRIC_GPU_FREQUENCY,1,GPU Frequency,Clock speed of the GPU cores
+PM_METRIC_GPU_TEMPERATURE,1,GPU Temperature,Temperature of the GPU
+PM_METRIC_GPU_FAN_SPEED,1,GPU Fan Speed,Rate at which a GPU cooler fan is rotating
+PM_METRIC_GPU_UTILIZATION,1,GPU Utilization,Amount of GPU processing capacity being used
+PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION,1,3D/Compute Utilization,Amount of 3D/Compute processing capacity being used
+PM_METRIC_GPU_MEDIA_UTILIZATION,1,Media Utilization,Amount of media processing capacity being used
+,,,
+PM_METRIC_GPU_POWER_LIMITED,1,GPU Power Limited,GPU frequency is being limited because GPU is exceeding maximum power limits
+PM_METRIC_GPU_TEMPERATURE_LIMITED,1,GPU Temperature Limited,GPU frequency is being limited because GPU is exceeding maximum temperature limits
+PM_METRIC_GPU_CURRENT_LIMITED,1,GPU Current Limited,GPU frequency is being limited because GPU is exceeding maximum current limits
+PM_METRIC_GPU_VOLTAGE_LIMITED,1,GPU Voltage Limited,GPU frequency is being limited because GPU is exceeding maximum voltage limits
+PM_METRIC_GPU_UTILIZATION_LIMITED,1,GPU Utilization Limited,GPU frequency is being limited due to low GPU utilization
+,,,
+PM_METRIC_GPU_MEM_POWER,1,GPU Memory Power,Power consumed by the GPU memory
+PM_METRIC_GPU_MEM_VOLTAGE,1,GPU Memory Voltage,Voltage consumed by the GPU memory
+PM_METRIC_GPU_MEM_FREQUENCY,1,GPU Memory Frequency,Clock speed of the GPU memory
+PM_METRIC_GPU_MEM_EFFECTIVE_FREQUENCY,1,GPU Memory Effective Frequency,Effective data transfer rate GPU memory can sustain
+PM_METRIC_GPU_MEM_TEMPERATURE,1,GPU Memory Temperature,Temperature of the GPU memory
+,,,
+PM_METRIC_GPU_MEM_SIZE,1,GPU Memory Size,Size of the GPU memory
+PM_METRIC_GPU_MEM_USED,1,GPU Memory Size Used,Amount of used GPU memory
+PM_METRIC_GPU_MEM_UTILIZATION,1,GPU Memory Utilization,Percent of GPU memory used
+PM_METRIC_GPU_MEM_MAX_BANDWIDTH,1,GPU Memory Max Bandwidth,Maximum total GPU memory bandwidth
+PM_METRIC_GPU_MEM_WRITE_BANDWIDTH,1,GPU Memory Write Bandwidth,Maximum GPU memory bandwidth for writing
+PM_METRIC_GPU_MEM_READ_BANDWIDTH,1,GPU Memory Read Bandwidth,Maximum GPU memory bandwidth for reading
+,,,
+PM_METRIC_GPU_MEM_POWER_LIMITED,1,GPU Memory Power Limited,Memory frequency is being limited because the memory modules are exceeding the maximum power limits
+PM_METRIC_GPU_MEM_TEMPERATURE_LIMITED,1,GPU Memory Temperature Limited,Memory frequency is being limited because the memory modules are exceeding the maximum temperature limits
+PM_METRIC_GPU_MEM_CURRENT_LIMITED,1,GPU Memory Current Limited,Memory frequency is being limited because the memory modules are exceeding the maximum current limits
+PM_METRIC_GPU_MEM_VOLTAGE_LIMITED,1,GPU Memory Voltage Limited,Memory frequency is being limited because the memory modules are exceeding the maximum voltage limits
+PM_METRIC_GPU_MEM_UTILIZATION_LIMITED,1,GPU Memory Utilization Limited,Memory frequency is being limited due to low memory traffic
+,,,
+PM_METRIC_CPU_UTILIZATION,1,CPU Utilization,Amount of CPU processing capacity being used
+PM_METRIC_CPU_POWER_LIMIT,1,CPU Power Limit,Power limit of the CPU
+PM_METRIC_CPU_POWER,1,CPU Power,Power consumed by the CPU
+PM_METRIC_CPU_TEMPERATURE,1,CPU Temperature,Temperature of the CPU
+PM_METRIC_CPU_FREQUENCY,1,CPU Frequency,Clock speed of the CPU
+PM_METRIC_CPU_CORE_UTILITY,1,CPU Core Utility,Amount of CPU processing utility being used per core

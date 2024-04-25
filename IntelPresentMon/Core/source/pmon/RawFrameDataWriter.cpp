@@ -155,7 +155,7 @@ namespace p2c::pmon
             // set the column name for the element
             // remove spaces from metric name by range filter
             pAnnotation->columnName = metric.Introspect().GetName() |
-                vi::filter([](char c) { return c != ' '; }) |
+                vi::filter([](char c) { return c != ' ' && c != '-'; }) |
                 rn::to<std::basic_string>();
             return pAnnotation;
         }
