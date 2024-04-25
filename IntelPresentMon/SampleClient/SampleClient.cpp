@@ -28,58 +28,8 @@
 #include "CheckMetricSample.h"
 #include "WrapperStaticQuery.h"
 #include "MetricListSample.h"
-#include "../PresentMonAPIWrapperCommon/PmErrorCodeProvider.h"
-
-#define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Verbose
-#include "../CommonUtilities/log/Log.h"
-#include "../CommonUtilities/log/NamedPipeMarshallReceiver.h"
-#include "../CommonUtilities/log/NamedPipeMarshallSender.h"
-#include "../CommonUtilities/log/MarshallDriver.h"
-#include "../CommonUtilities/log/EntryMarshallInjector.h"
-#include "../CommonUtilities/log/IdentificationTable.h"
-#include "../CommonUtilities/log/LineTable.h"
-#include "../CommonUtilities/Exception.h"
-#include "../CommonUtilities/win/Utilities.h"
 #include "LogDemo.h"
 
-using namespace pmon;
-using namespace pmon::util;
-
-struct Test
-{
-    Test()
-    {
-        pmlog_info(L"global init log");
-    }
-    __declspec(noinline) ~Test()
-    {
-        pmlog_error(L"global destroy log w/ trace");
-    }
-};
-
-struct LogBooter { LogBooter() { pmon::util::log::GetDefaultChannel(); } };
-
-struct
-{
-    LogBooter lb;
-    Test t;
-} glob;
-
-void f() {
-    pmlog_error().code(PM_STATUS_SERVICE_ERROR);
-}
-void g() {
-    f();
-}
-
-PM_DEFINE_EX(MyException);
-
-void j() {
-    throw Except<MyException>("fine time to dine");
-}
-void k() {
-    j();
-}
 
 int main(int argc, char* argv[])
 {
@@ -89,56 +39,8 @@ int main(int argc, char* argv[])
         }
         auto& opt = clio::Options::Get();
 
-        using namespace pmon::util;
-        using namespace std::chrono_literals;
-
         if (opt.logDemo) {
             RunLogDemo(*opt.logDemo);
-            return 0;
-        }
-
-        pmon::util::log::GlobalPolicy::SetLogLevel(pmon::util::log::Level::Verbose);
-        try {
-            pmon::util::log::LineTable::IngestList(L"black.txt");
-            pmon::util::log::LineTable::SetListMode(pmon::util::log::LineTable::ListMode::Black);
-            pmon::util::log::LineTable::SetTraceOverride(true);
-        }
-        catch (...) { std::cout << "cant find black.txt\n"; }
-
-        g();
-
-        std::jthread{ [] {
-            g();
-        } };
-
-        if (opt.doPipeSrv) {
-            log::IdentificationTable::AddThisProcess(L"p-server");
-            log::IdentificationTable::AddThisThread(L"t-main");
-            {
-                auto pSender = std::make_shared<log::NamedPipeMarshallSender>(L"pml_testpipe");
-                log::IdentificationTable::RegisterSink(pSender);
-                auto pDriver = std::make_shared<log::MarshallDriver>(std::move(pSender));
-                log::GetDefaultChannel()->AttachDriver(std::move(pDriver));
-            }
-            std::wstring note;
-            while (true) {
-                int x = 3;
-                std::cout << "SAY> ";
-                std::getline(std::wcin, note);
-                log::IdentificationTable::AddThisThread(note);
-                pmlog_info(note).pmwatch(x+2).every(1);
-                if (note == L"@#$") {
-                    break;
-                }
-            }
-            return 0;
-        }
-        if (opt.doPipeCli) {
-            log::IdentificationTable::AddThisProcess(L"p-client");
-            log::IdentificationTable::AddThisThread(L"t-main");
-            log::GetDefaultChannel()->AttachObject(std::make_shared<log::EntryMarshallInjector>(log::GetDefaultChannel(),
-                std::make_shared<log::NamedPipeMarshallReceiver>(L"pml_testpipe", log::IdentificationTable::GetPtr())));
-            while (!_kbhit());
             return 0;
         }
 
@@ -147,8 +49,6 @@ int main(int argc, char* argv[])
             std::cout << "Must set both control pipe and intro NSM, or neither.\n";
             return -1;
         }
-
-        pmlog_error(L"henlo");
 
         // determine requested activity
         if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample ^ opt.checkMetricSample ^ opt.wrapperStaticQuerySample ^ opt.metricListSample) {
@@ -159,18 +59,6 @@ int main(int argc, char* argv[])
             else {
                 pSession = std::make_unique<pmapi::Session>();
             }
-
-            pmlog_info().code(PM_STATUS_DATA_LOSS);
-
-            struct Test { Test() { std::cout << "hiya!" << std::endl; }
-                ~Test() { std::cout << "Byeee" << std::endl; } } test;
-
-            log::GlobalPolicy::SetExceptionTrace(log::ExceptionTracePolicy::OverrideOn);
-            log::GlobalPolicy::SetSehTracing(true);
-            int y = 0;
-            int x = 5 / y;
-            std::cout << x;
-            k();
 
             if (opt.introspectionSample) {
                 return IntrospectionSample(std::move(pSession));
@@ -201,8 +89,13 @@ int main(int argc, char* argv[])
             return -1;
         }
     }
-    catch (...) {
-        std::cout << "Exception: " << ReportException();
+    catch (const std::exception& e) {
+        std::cout << "Error: " << e.what() << std::endl;
         return -1;
     }
+    catch (...) {
+        std::cout << "Unknown Error" << std::endl;
+        return -1;
+    }
+
 }

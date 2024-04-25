@@ -5,7 +5,7 @@
 #include <conio.h>
 #include "../PresentMonAPI2/PresentMonAPI.h"
 #include "../CommonUtilities/win/WinAPI.h"
-#define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Verbose
+// #define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Verbose
 #include "../CommonUtilities/log/Log.h"
 #include "../CommonUtilities/log/NamedPipeMarshallReceiver.h"
 #include "../CommonUtilities/log/NamedPipeMarshallSender.h"
@@ -15,7 +15,7 @@
 #include "../CommonUtilities/log/LineTable.h"
 #include "../CommonUtilities/Exception.h"
 #include "../CommonUtilities/win/Utilities.h"
-#define VVV_LOGDEMO
+// #define VVV_LOGDEMO
 #include "Verbose.h"
 
 using namespace pmon::util;
