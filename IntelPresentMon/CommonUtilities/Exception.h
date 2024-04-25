@@ -50,4 +50,7 @@ namespace pmon::util
 	void InstallSehTranslator() noexcept;
 
 #define PM_DEFINE_EX(name) class name : public Exception { public: using Exception::Exception; }
+
+// prevent any exceptions from leaking from this statement
+#define pmquell(stat) try { stat; } catch (...) {}
 }

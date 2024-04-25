@@ -72,11 +72,16 @@ namespace pmon::util::log
 	}
 	EntryBuilder& EntryBuilder::every(int n, bool includeFirst) noexcept
 	{
-		assert(n > 1);
-		rateControl_ = {
-			.type = includeFirst ? RateControl::Type::EveryAndFirst : RateControl::Type::Every,
-			.parameter = n,
-		};
+		assert(n > 0);
+		if (n > 1) {
+			rateControl_ = {
+				.type = includeFirst ? RateControl::Type::EveryAndFirst : RateControl::Type::Every,
+				.parameter = n,
+			};
+		}
+		else {
+			rateControl_ = {};
+		}
 		return *this;
 	}
 	EntryBuilder& EntryBuilder::first(int n) noexcept

@@ -113,6 +113,7 @@ int main(int argc, char* argv[])
             log::IdentificationTable::AddThisThread(L"t-main");
             {
                 auto pSender = std::make_shared<log::NamedPipeMarshallSender>(L"pml_testpipe");
+                log::IdentificationTable::RegisterSink(pSender);
                 auto pDriver = std::make_shared<log::MarshallDriver>(std::move(pSender));
                 log::GetDefaultChannel()->AttachDriver(std::move(pDriver));
             }
@@ -121,7 +122,8 @@ int main(int argc, char* argv[])
                 int x = 3;
                 std::cout << "SAY> ";
                 std::getline(std::wcin, note);
-                pmlog_info(note).pmwatch(x+2).every(3);
+                log::IdentificationTable::AddThisThread(note);
+                pmlog_info(note).pmwatch(x+2).every(1);
                 if (note == L"@#$") {
                     break;
                 }

@@ -12,6 +12,7 @@
 #include <cereal/archives/binary.hpp>
 #include <concurrentqueue/concurrentqueue.h>
 #include "MarshallingProtocol.h"
+#include "../Exception.h"
 
 namespace pmon::util::log
 {
@@ -371,15 +372,15 @@ namespace pmon::util::log
 		~NamedPipe()
 		{
 			using namespace std::chrono_literals;
-			try { win::WaitAnyEventFor(50ms, emptyEvent_); }
-			catch (...) {}
-			try { exitEvent_.Set(); }
-			catch (...) {}
+			// give 50ms max grace period to finish queued work
+			pmquell(win::WaitAnyEventFor(50ms, emptyEvent_))
+			pmquell(exitEvent_.Set())
 		}
-		void Send(const Entry& entry)
+		template<class T>
+		void Send(T&& packetable)
 		{
 			emptyEvent_.Reset();
-			entryQueue_.enqueue(entry);
+			entryQueue_.enqueue(std::forward<T>(packetable));
 			entryEvent_.Set();
 		}
 	private:
@@ -413,7 +414,6 @@ namespace pmon::util::log
 		{
 			ScheduledActions actions_{ exitEvent_ };
 			MarshallPacket packet = Entry{};
-			auto& entry = std::get<Entry>(packet);
 			while (true) {
 				// wait for either an Entry enqueue event or exit signal
 				if (const auto eventId = *win::WaitAnyEvent(exitEvent_, entryEvent_);
@@ -425,7 +425,7 @@ namespace pmon::util::log
 				entryEvent_.Reset();
 
 				// dequeue any entries
-				while (entryQueue_.try_dequeue(entry)) {
+				while (entryQueue_.try_dequeue(packet)) {
 					// serialize the entry
 					std::ostringstream stream;
 					cereal::BinaryOutputArchive archive(stream);
@@ -456,7 +456,7 @@ namespace pmon::util::log
 		win::Event entryEvent_;
 		win::Event emptyEvent_{ true, true };
 		std::vector<std::unique_ptr<NamedPipeInstance>> instances_;
-		moodycamel::ConcurrentQueue<Entry> entryQueue_;
+		moodycamel::ConcurrentQueue<MarshallPacket> entryQueue_;
 		std::jthread connectionThread_;
 		std::jthread transmissionThread_;
 	};
@@ -472,4 +472,16 @@ namespace pmon::util::log
     {
 		std::static_pointer_cast<NamedPipe>(pNamedPipe_)->Send(entry);
     }
+	void NamedPipeMarshallSender::AddThread(uint32_t tid, uint32_t pid, std::wstring name)
+	{
+		std::static_pointer_cast<NamedPipe>(pNamedPipe_)->Send(
+			IdentificationTable::Bulk{ .threads = { { tid, pid, std::move(name) } } }
+		);
+	}
+	void NamedPipeMarshallSender::AddProcess(uint32_t pid, std::wstring name)
+	{
+		std::static_pointer_cast<NamedPipe>(pNamedPipe_)->Send(
+			IdentificationTable::Bulk{ .processes = { { pid, std::move(name) } } }
+		);
+	}
 }

@@ -7,7 +7,8 @@ namespace pmon::util::log
 	ErrorCode::ErrorCode(const ErrorCode& other)
 		:
 		pTypeInfo_{ other.pTypeInfo_ },
-		pStrings_{ std::make_unique<IErrorCodeResolver::Strings>(*other.pStrings_) },
+		pStrings_{ other.pStrings_ ? std::make_unique<IErrorCodeResolver::Strings>(*other.pStrings_) :
+			std::unique_ptr<IErrorCodeResolver::Strings>{} },
 		integral_{ other.integral_ }
 	{}
 	ErrorCode::ErrorCode(ErrorCode&&) = default;

@@ -55,6 +55,14 @@ namespace pmon::util::log
 		}
 	}
 
+	void IdentificationTable::RegisterSink(std::shared_ptr<IIdentificationSink> pSink) noexcept
+	{
+		try {
+			Get_().RegisterSink_(std::move(pSink));
+		}
+		catch (...) {}
+	}
+
 	IdentificationTable* IdentificationTable::GetPtr() noexcept
 	{
 		try {
@@ -78,17 +86,21 @@ namespace pmon::util::log
 			SetThreadDescription(GetCurrentThread(), name.c_str());
 		}
 		std::lock_guard lk{ mtx_ };
-		threads_.emplace(std::piecewise_construct,
-			std::forward_as_tuple(tid),
-			std::forward_as_tuple(tid, pid, std::move(name))
+		for (auto& p : sinks_) {
+			p->AddThread(tid, pid, name);
+		}
+		threads_.insert_or_assign(tid,
+			Thread{ tid, pid, std::move(name) }
 		);
 	}
 	void IdentificationTable::AddProcess_(uint32_t pid, std::wstring name)
 	{
 		std::lock_guard lk{ mtx_ };
-		processes_.emplace(std::piecewise_construct,
-			std::forward_as_tuple(pid),
-			std::forward_as_tuple(pid, std::move(name))
+		for (auto& p : sinks_) {
+			p->AddProcess(pid, name);
+		}
+		processes_.insert_or_assign(pid,
+			Process{ pid, std::move(name) }
 		);
 	}
 	std::optional<IdentificationTable::Thread> IdentificationTable::LookupThread_(uint32_t tid) const
@@ -114,5 +126,10 @@ namespace pmon::util::log
 			.threads = threads_ | std::views::values | std::ranges::to<std::vector>(),
 			.processes = processes_ | std::views::values | std::ranges::to<std::vector>(),
 		};
+	}
+	void IdentificationTable::RegisterSink_(std::shared_ptr<IIdentificationSink> pSink)
+	{
+		std::lock_guard lk{ mtx_ };
+		sinks_.push_back(std::move(pSink));
 	}
 }
