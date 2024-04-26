@@ -1,6 +1,7 @@
 #include "IdentificationTable.h"
 #include "../win/WinAPI.h"
 #include <ranges>
+#include "../Exception.h"
 
 namespace pmon::util::log
 {
@@ -87,7 +88,7 @@ namespace pmon::util::log
 		}
 		std::lock_guard lk{ mtx_ };
 		for (auto& p : sinks_) {
-			p->AddThread(tid, pid, name);
+			pmquell(p->AddThread(tid, pid, name))
 		}
 		threads_.insert_or_assign(tid,
 			Thread{ tid, pid, std::move(name) }
@@ -97,7 +98,7 @@ namespace pmon::util::log
 	{
 		std::lock_guard lk{ mtx_ };
 		for (auto& p : sinks_) {
-			p->AddProcess(pid, name);
+			pmquell(p->AddProcess(pid, name))
 		}
 		processes_.insert_or_assign(pid,
 			Process{ pid, std::move(name) }

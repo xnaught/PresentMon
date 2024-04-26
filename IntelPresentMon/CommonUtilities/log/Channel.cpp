@@ -8,6 +8,8 @@
 #include "PanicLogger.h"
 #include "StackTrace.h"
 #include "GlobalPolicy.h"
+#include "../str/String.h"
+#include "../Exception.h"
 
 namespace pmon::util::log
 {
@@ -117,20 +119,33 @@ namespace pmon::util::log
 							Entry& entry = el;
 							// process all policies, tranforming entry in-place
 							for (auto& pPolicy : policyPtrs_) {
-								// if any policy returns false, drop entry
-								if (!pPolicy->TransformFilter(entry)) {
-									return;
+								try {
+									// if any policy returns false, drop entry
+									if (!pPolicy->TransformFilter(entry)) {
+										return;
+									}
+								}
+								catch (...) {
+									pmlog_panic_(str::ToWide(ReportException()));
 								}
 							}
 							// resolve trace if one is present
 							if (entry.pTrace_ && !entry.pTrace_->Resolved()) {
-								if (resolvingTraces_) {
-									entry.pTrace_->Resolve();
+								try {
+									if (resolvingTraces_) {
+										entry.pTrace_->Resolve();
+									}
+								}
+								catch (...) {
+									pmlog_panic_(str::ToWide(ReportException()));
 								}
 							}
 							// submit entry to all drivers (by copy)
 							for (auto& pDriver : driverPtrs_) {
-								pDriver->Submit(entry);
+								try { pDriver->Submit(entry); }
+								catch (...) {
+									pmlog_panic_(str::ToWide(ReportException()));
+								}
 							}
 							if (driverPtrs_.empty()) {
 								pmlog_panic_(L"No drivers in logging channel while processing entry");
@@ -148,7 +163,7 @@ namespace pmon::util::log
 					}
 				}
 				catch (...) {
-					pmlog_panic_(L"Exeption thrown in channel worker thread, exiting");
+					pmlog_panic_(str::ToWide(ReportException()));
 				}
 			});
 		}

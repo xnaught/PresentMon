@@ -13,6 +13,7 @@
 #include <concurrentqueue/concurrentqueue.h>
 #include "MarshallingProtocol.h"
 #include "../Exception.h"
+#include "PanicLogger.h"
 
 namespace pmon::util::log
 {
@@ -380,77 +381,92 @@ namespace pmon::util::log
 		template<class T>
 		void Send(T&& packetable)
 		{
-			emptyEvent_.Reset();
-			entryQueue_.enqueue(std::forward<T>(packetable));
-			entryEvent_.Set();
+			if (!deactivated_) {
+				emptyEvent_.Reset();
+				entryQueue_.enqueue(std::forward<T>(packetable));
+				entryEvent_.Set();
+			}
 		}
 	private:
 		// function
 		void ConnectionThreadProcedure_()
 		{
-			ScheduledActions actions_{ exitEvent_, decommissionEvent_ };
-			while (true) {
-				// for all inactive pipe connections, set connection sequence and add to action list
-				for (auto& pInst : instances_ | vi::filter(&NamedPipeInstance::NeedsConnection)) {
-					pInst->SetConnectionSequence();
-					actions_.Push(pInst.get());
-				}
-				// loop as long as not interrupted
-				while (true) {
-					if (auto interrupt = actions_.RunOnce()) {
-						// exit signalled
-						if (*interrupt == 0) {
-							return;
-						}
-						// else decommission signalled
-						else {
-							decommissionEvent_.Reset();
-							break;
+			try {
+				ScheduledActions actions_{ exitEvent_, decommissionEvent_ };
+				while (!deactivated_) {
+					// for all inactive pipe connections, set connection sequence and add to action list
+					for (auto& pInst : instances_ | vi::filter(&NamedPipeInstance::NeedsConnection)) {
+						pInst->SetConnectionSequence();
+						actions_.Push(pInst.get());
+					}
+					// loop as long as not interrupted
+					while (true) {
+						if (auto interrupt = actions_.RunOnce()) {
+							// exit signalled
+							if (*interrupt == 0) {
+								return;
+							}
+							// else decommission signalled
+							else {
+								decommissionEvent_.Reset();
+								break;
+							}
 						}
 					}
 				}
+			}
+			catch (...) {
+				deactivated_ = true;
+				pmlog_panic_(str::ToWide(ReportException()));
 			}
 		}
 		void TransmissionThreadProcedure_()
 		{
-			ScheduledActions actions_{ exitEvent_ };
-			MarshallPacket packet = Entry{};
-			while (true) {
-				// wait for either an Entry enqueue event or exit signal
-				if (const auto eventId = *win::WaitAnyEvent(exitEvent_, entryEvent_);
-					eventId == 0) {
-					break;
-				}
-
-				// reset the event
-				entryEvent_.Reset();
-
-				// dequeue any entries
-				while (entryQueue_.try_dequeue(packet)) {
-					// serialize the entry
-					std::ostringstream stream;
-					cereal::BinaryOutputArchive archive(stream);
-					archive(packet);
-					const auto bufferView = stream.rdbuf()->view();
-					const std::span bufferSpan{ reinterpret_cast<const std::byte*>(bufferView.data()), bufferView.size() };
-
-					// for all active pipe connections, set transmission sequence and add to action list
-					for (auto& pInst : instances_ | vi::filter(&NamedPipeInstance::IsActive)) {
-						pInst->SetTransmissionSequence(bufferSpan);
-						actions_.Push(pInst.get());
-					}
-
-					// process all sequences until complete or exit signal set
-					if (actions_.RunAll()) {
+			try {
+				ScheduledActions actions_{ exitEvent_ };
+				MarshallPacket packet = Entry{};
+				while (!deactivated_) {
+					// wait for either an Entry enqueue event or exit signal
+					if (const auto eventId = *win::WaitAnyEvent(exitEvent_, entryEvent_);
+						eventId == 0) {
 						break;
 					}
-				}
 
-				// signal that exiting is possible
-				emptyEvent_.Set();
+					// reset the event
+					entryEvent_.Reset();
+
+					// dequeue any entries
+					while (entryQueue_.try_dequeue(packet)) {
+						// serialize the entry
+						std::ostringstream stream;
+						cereal::BinaryOutputArchive archive(stream);
+						archive(packet);
+						const auto bufferView = stream.rdbuf()->view();
+						const std::span bufferSpan{ reinterpret_cast<const std::byte*>(bufferView.data()), bufferView.size() };
+
+						// for all active pipe connections, set transmission sequence and add to action list
+						for (auto& pInst : instances_ | vi::filter(&NamedPipeInstance::IsActive)) {
+							pInst->SetTransmissionSequence(bufferSpan);
+							actions_.Push(pInst.get());
+						}
+
+						// process all sequences until complete or exit signal set
+						if (actions_.RunAll()) {
+							break;
+						}
+					}
+
+					// signal that exiting is possible
+					emptyEvent_.Set();
+				}
+			}
+			catch (...) {
+				deactivated_ = true;
+				pmlog_panic_(str::ToWide(ReportException()));
 			}
 		}
 		// data
+		std::atomic<bool> deactivated_ = false;
 		std::wstring pipeAddress_;
 		win::Event exitEvent_;
 		win::Event decommissionEvent_;

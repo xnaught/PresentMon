@@ -3,6 +3,9 @@
 #include "IChannel.h"
 #include "Entry.h"
 #include "StackTrace.h"
+#include "../Exception.h"
+#include "PanicLogger.h"
+#include "../str/String.h"
 
 namespace pmon::util::log
 {
@@ -12,13 +15,18 @@ namespace pmon::util::log
 		pTo_{ pTo }
 	{
 		worker_ = std::jthread{ [this] {
-			while (auto entry = pFrom_->Pop()) {
-				pTo_->Submit(std::move(*entry));
+			try {
+				while (auto entry = pFrom_->Pop()) {
+					pTo_->Submit(std::move(*entry));
+				}
+			}
+			catch (...) {
+				pmlog_panic_(str::ToWide(ReportException()));
 			}
 		}};
 	}
 	EntryMarshallInjector::~EntryMarshallInjector()
 	{
-		pFrom_->SignalExit();
+		pmquell(pFrom_->SignalExit())
 	}
 }
