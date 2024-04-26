@@ -4,7 +4,7 @@
   "Items": [
     {
       "Id": "edf9d064-e8f2-4c3c-8ab3-a70ae989a245",
-      "Command": "--log-demo 10"
+      "Command": "--log-demo 6"
     },
     {
       "Id": "de172ca4-f013-4f7c-99e2-5b93c03c4ec5",

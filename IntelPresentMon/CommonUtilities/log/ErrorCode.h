@@ -7,6 +7,7 @@
 #include <string>
 #include <typeindex>
 #include "IErrorCodeResolver.h"
+#include "../Memory.h"
 
 namespace pmon::util::log
 {
@@ -61,7 +62,6 @@ namespace pmon::util::log
 		}
 		ErrorCode(const ErrorCode&);
 		ErrorCode(ErrorCode&&);
-		ErrorCode& operator=(const ErrorCode&);
 		ErrorCode& operator=(ErrorCode&&);
 		bool HasUnsigned() const;
 		bool HasSigned() const;
@@ -79,7 +79,7 @@ namespace pmon::util::log
 		operator bool() const;
 	private:
 		const std::type_info* pTypeInfo_ = nullptr;
-		std::unique_ptr<IErrorCodeResolver::Strings> pStrings_;
+		CloningUptr<IErrorCodeResolver::Strings> pStrings_;
 		std::variant<std::monostate, int64_t, uint64_t> integral_;
 	};
 }

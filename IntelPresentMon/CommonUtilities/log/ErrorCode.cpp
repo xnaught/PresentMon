@@ -12,13 +12,6 @@ namespace pmon::util::log
 		integral_{ other.integral_ }
 	{}
 	ErrorCode::ErrorCode(ErrorCode&&) = default;
-	ErrorCode& ErrorCode::operator=(const ErrorCode& rhs)
-	{
-		pTypeInfo_ = rhs.pTypeInfo_;
-		pStrings_ = std::make_unique<IErrorCodeResolver::Strings>(*rhs.pStrings_);
-		integral_ = rhs.integral_;
-		return *this;
-	}
 	ErrorCode& ErrorCode::operator=(ErrorCode&& rhs) = default;
 	bool ErrorCode::HasUnsigned() const { return std::holds_alternative<uint64_t>(integral_); }
 	bool ErrorCode::HasSigned() const { return std::holds_alternative<int64_t>(integral_); }
