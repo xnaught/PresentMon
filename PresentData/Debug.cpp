@@ -512,9 +512,11 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
                                                                                                    L"ulQueueSubmitSequence", PrintU32, }); break;
             }
         }
-        if (pmConsumer->mTrackFrameType) {
-            switch (hdr.EventDescriptor.Id) {
-            case MMIOFlipMultiPlaneOverlay3_Info::Id: {
+        if (pmConsumer->mTrackFrameType &&
+            hdr.EventDescriptor.Id == MMIOFlipMultiPlaneOverlay3_Info::Id) {
+            PrintEventHeader(hdr);
+
+            if (hdr.EventDescriptor.Version >= 8) {
                 EventDataDesc desc[] = {
                     { L"VidPnSourceId" },
                     { L"PlaneCount" },
@@ -529,15 +531,27 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
                 auto LayerIndex         = desc[3].GetArray<uint32_t>(PlaneCount);
                 auto FlipSubmitSequence = desc[4].GetData<uint32_t>();
 
-                PrintEventHeader(hdr);
                 wprintf(L"DXGKrnl_MMIOFlipMultiPlaneOverlay3_Info SubmitSequence=%u PresentId=[", FlipSubmitSequence);
                 for (uint32_t i = 0; i < PlaneCount; ++i) {
                     wprintf(L" %u:%u:%llu", VidPnSourceId, LayerIndex[i], PresentId[i]);
                 }
-                wprintf(L" ]\n");
-                break;
+            } else {
+                EventDataDesc desc[] = {
+                    { L"VidPnSourceId" },
+                    { L"PlaneCount" },
+                    { L"PresentId" },
+                };
+                metadata->GetEventData(eventRecord, desc, _countof(desc));
+                auto VidPnSourceId = desc[0].GetData<uint32_t>();
+                auto PlaneCount    = desc[1].GetData<uint32_t>();
+                auto PresentId     = desc[2].GetArray<uint64_t>(PlaneCount);
+
+                wprintf(L"DXGKrnl_MMIOFlipMultiPlaneOverlay3_Info PresentId=[");
+                for (uint32_t i = 0; i < PlaneCount; ++i) {
+                    wprintf(L" %u:%llu", VidPnSourceId, PresentId[i]);
+                }
             }
-            }
+            wprintf(L" ]\n");
         }
         return;
     }

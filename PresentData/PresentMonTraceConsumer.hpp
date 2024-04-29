@@ -391,11 +391,13 @@ struct PMTraceConsumer
     // PresentFrameTypeEvents are stored into mPendingPresentFrameTypeEvents and then looked-up and
     // attached to the PresentEvent in Present_Start.
     //
-    // Typically FlipFrameType events are stored into the present looked up by PresentId.  If the
+    // FlipFrameType events are typically stored into the present looked up by PresentId.  If the
     // PresentId has not been observed yet, it is stored into mPendingFlipFrameTypeEvents and then
-    // attached to the present when the PresentId is observed.
+    // attached to the present when the PresentId is observed.  mEnableFlipFrameTypeEvents is only
+    // set to true once a compatible MMIOFlipMultiPlaneOverlay3_Info event is observed.
     std::unordered_map<uint32_t, PresentFrameTypeEvent> mPendingPresentFrameTypeEvents; // ThreadId -> PresentFrameTypeEvent
     std::unordered_map<uint64_t, FlipFrameTypeEvent>    mPendingFlipFrameTypeEvents;    // VidPnLayerId -> FlipFrameTypeEvent
+    bool mEnableFlipFrameTypeEvents = false;
 
     // State for tracking keyboard/mouse click times
     //

@@ -1144,63 +1144,75 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
     }
 
     if (mTrackFrameType) {
-        switch (hdr.EventDescriptor.Id) {
-
         // MMIOFlipMultiPlaneOverlay3_Info is emitted immediately before MMIOFlipMultiPlaneOverlay_Info,
         // on the same thread, with the same SubmitSequence, and includes the PresentId(s) that the
         // driver uses to report flip completion.
-        case Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay3_Info::Id: {
-            EventDataDesc desc[] = {
-                { L"VidPnSourceId" },
-                { L"PlaneCount" },
-                { L"PresentId" },
-                { L"LayerIndex" },
-                { L"FlipSubmitSequence" },
-            };
-            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-            auto VidPnSourceId      = desc[0].GetData<uint32_t>();
-            auto PlaneCount         = desc[1].GetData<uint32_t>();
-            auto PresentId          = desc[2].GetArray<uint64_t>(PlaneCount);
-            auto LayerIndex         = desc[3].GetArray<uint32_t>(PlaneCount);
-            auto FlipSubmitSequence = desc[4].GetData<uint32_t>();
+        //
+        // Version 8 is required for LayerIndex and FlipSubmitSequence.
+        if (hdr.EventDescriptor.Id == Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay3_Info::Id) {
+            if (hdr.EventDescriptor.Version >= 8) {
+                // Enable FlipFrameType events as we now know this system supports it.
+                mEnableFlipFrameTypeEvents = true;
 
-            // Lookup the present associated with this submitsequence
-            if (PlaneCount > 0) {
-                auto present = FindPresentBySubmitSequence(FlipSubmitSequence);
-                if (present != nullptr) {
-                    VerboseTraceBeforeModifyingPresent(present.get());
-                    DebugAssert(present->PresentIds.empty());
+                EventDataDesc desc[] = {
+                    { L"VidPnSourceId" },
+                    { L"PlaneCount" },
+                    { L"PresentId" },
+                    { L"LayerIndex" },
+                    { L"FlipSubmitSequence" },
+                };
+                mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+                auto VidPnSourceId      = desc[0].GetData<uint32_t>();
+                auto PlaneCount         = desc[1].GetData<uint32_t>();
+                auto PresentId          = desc[2].GetArray<uint64_t>(PlaneCount);
+                auto LayerIndex         = desc[3].GetArray<uint32_t>(PlaneCount);
+                auto FlipSubmitSequence = desc[4].GetData<uint32_t>();
+
+                // Lookup the present associated with this submit sequence
+                if (PlaneCount > 0) {
+                    auto present = FindPresentBySubmitSequence(FlipSubmitSequence);
+                    DebugAssert(present == nullptr || present->PresentIds.empty());
 
                     for (uint32_t i = 0; i < PlaneCount; ++i) {
-                        // Add presentid to the present
+                        // Any previous present on this VidPnLayer will not get any more
+                        // FlipFrameType events.
                         auto vidPnLayerId = GenerateVidPnLayerId(VidPnSourceId, LayerIndex[i]);
-                        present->PresentIds.emplace(vidPnLayerId, PresentId[i]);
-                        auto const& pr = mPresentByVidPnLayerId.emplace(vidPnLayerId, present);
+                        {
+                            auto ii = mPresentByVidPnLayerId.find(vidPnLayerId);
+                            if (ii != mPresentByVidPnLayerId.end()) {
+                                auto p2 = ii->second;
+                                mPresentByVidPnLayerId.erase(ii);   // Remove first because ClearDeferredReason() may
+                                                                    // complete the present can trigger removal.
 
-                        // Any previous present on this VidPnLayer will not get any more FlipFrameType
-                        // events.
-                        if (!pr.second) {
-                            auto p2 = pr.first->second;
-                            pr.first->second = present;
-
-                            if (p2->DeferredReason & DeferredReason_WaitingForFlipFrameType) {
-                                ClearDeferredReason(p2, DeferredReason_WaitingForFlipFrameType);
-                            } else {
-                                p2->PresentIds.clear();
+                                if (p2->DeferredReason & DeferredReason_WaitingForFlipFrameType) {
+                                    ClearDeferredReason(p2, DeferredReason_WaitingForFlipFrameType);
+                                } else {
+                                    p2->PresentIds.clear();
+                                }
                             }
+                        }
+
+                        // If this submit sequence represents a present we are tracking, add
+                        // the present ids to it.
+                        if (present != nullptr) {
+                            VerboseTraceBeforeModifyingPresent(present.get());
+                            present->PresentIds.emplace(vidPnLayerId, PresentId[i]);
+
+                            mPresentByVidPnLayerId.emplace(vidPnLayerId, present);
                         }
 
                         // Apply any pending FlipFrameType events
                         auto ii = mPendingFlipFrameTypeEvents.find(vidPnLayerId);
                         if (ii != mPendingFlipFrameTypeEvents.end()) {
-                            ApplyFlipFrameType(present, ii->second.Timestamp, ii->second.FrameType);
+                            if (present != nullptr) {
+                                ApplyFlipFrameType(present, ii->second.Timestamp, ii->second.FrameType);
+                            }
                             mPendingFlipFrameTypeEvents.erase(ii);
                         }
                     }
                 }
             }
             return;
-        }
         }
     }
 
@@ -2279,35 +2291,37 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
         event->FrameType = ConvertPMPFrameTypeToFrameType(props->FrameType);
     }   break;
 
-    case Intel_PresentMon::FlipFrameType_Info::Id: {
-        DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::FlipFrameType_Info_Props));
+    case Intel_PresentMon::FlipFrameType_Info::Id:
+        if (mEnableFlipFrameTypeEvents) {
+            DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::FlipFrameType_Info_Props));
 
-        auto props = (Intel_PresentMon::FlipFrameType_Info_Props*) pEventRecord->UserData;
-        auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto frameType = ConvertPMPFrameTypeToFrameType(props->FrameType);
+            auto props = (Intel_PresentMon::FlipFrameType_Info_Props*) pEventRecord->UserData;
+            auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+            auto frameType = ConvertPMPFrameTypeToFrameType(props->FrameType);
 
-        // Look up the present associated with this (VidPnSourceId, LayerIndex, PresentId).
-        //
-        // It is possible to see the FlipFrameType event before the MMIOFlipMultiPlaneOverlay3_Info
-        // event, in which case the lookup will fail.  In this case we deferr application of the
-        // FlipFrameType until we see the MMIOFlipMultiPlaneOverlay3_Info event.
-        auto vidPnLayerId = GenerateVidPnLayerId(props->VidPnSourceId, props->LayerIndex);
-        auto ii = mPresentByVidPnLayerId.find(vidPnLayerId);
-        if (ii == mPresentByVidPnLayerId.end()) {
-            DeferFlipFrameType(vidPnLayerId, props->PresentId, timestamp, frameType);
-            return;
+            // Look up the present associated with this (VidPnSourceId, LayerIndex, PresentId).
+            //
+            // It is possible to see the FlipFrameType event before the MMIOFlipMultiPlaneOverlay3_Info
+            // event, in which case the lookup will fail.  In this case we deferr application of the
+            // FlipFrameType until we see the MMIOFlipMultiPlaneOverlay3_Info event.
+            auto vidPnLayerId = GenerateVidPnLayerId(props->VidPnSourceId, props->LayerIndex);
+            auto ii = mPresentByVidPnLayerId.find(vidPnLayerId);
+            if (ii == mPresentByVidPnLayerId.end()) {
+                DeferFlipFrameType(vidPnLayerId, props->PresentId, timestamp, frameType);
+                return;
+            }
+
+            auto present = ii->second;
+            auto jj = present->PresentIds.find(vidPnLayerId);
+            if (jj == present->PresentIds.end() || jj->second != props->PresentId) {
+                DeferFlipFrameType(vidPnLayerId, props->PresentId, timestamp, frameType);
+                return;
+            }
+
+            // Create a PresentEvent for this flip time
+            ApplyFlipFrameType(present, timestamp, frameType);
         }
-
-        auto present = ii->second;
-        auto jj = present->PresentIds.find(vidPnLayerId);
-        if (jj == present->PresentIds.end() || jj->second != props->PresentId) {
-            DeferFlipFrameType(vidPnLayerId, props->PresentId, timestamp, frameType);
-            return;
-        }
-
-        // Create a PresentEvent for this flip time
-        ApplyFlipFrameType(present, timestamp, frameType);
-    }   break;
+        break;
 
     default:
         assert(!mFilteredEvents); // Assert that filtering is working if expected
