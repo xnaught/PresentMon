@@ -365,14 +365,14 @@ exit /b 0
     set saw_error=0
     set present_mode=
     for /f "tokens=4,8 delims=," %%a in ('"%pmdir%\build\%test_config%\PresentMon-%version%-x64.exe" -process_id %started_target_app_pid% -output_stdout -timed 2 -terminate_after_timed 2^>NUL') do (
-        if "%%a" NEQ "Runtime" (
+        if "%%a" NEQ "PresentRuntime" (
             if !saw_row! EQU 0 (
                 set present_mode=%%b
                 set saw_row=1
             )
             if "%%a" NEQ "%expected_runtime%" (
                 if !saw_error! EQU 0 (
-                    echo [31merror: expecting runtime "%expected_runtime%", but got "%%a"[0m
+                    echo [31merror: expecting PresentRuntime "%expected_runtime%", but got "%%a"[0m
                     set saw_error=1
                 )
             )

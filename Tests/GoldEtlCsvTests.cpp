@@ -66,7 +66,7 @@ public:
             }
 
             auto rowOk = true;
-            for (size_t h = 0; h < _countof(PresentMonCsv::headerColumnIndex_); ++h) {
+            for (size_t h = 0; h < PresentMonCsv::KnownHeaderCount; ++h) {
                 if (testCsv.headerColumnIndex_[h] != SIZE_MAX && goldCsv.headerColumnIndex_[h] != SIZE_MAX) {
                     // Need to protect against missing columns on each line as
                     // the file may be corrupted.

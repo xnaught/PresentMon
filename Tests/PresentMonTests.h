@@ -16,26 +16,30 @@ struct PresentMonCsv
         Header_Application,
         Header_ProcessID,
         Header_SwapChainAddress,
-        Header_Runtime,
+        Header_PresentRuntime,
         Header_SyncInterval,
         Header_PresentFlags,
         Header_AllowsTearing,
         Header_PresentMode,
+        Header_FrameType,
         Header_CPUStartTime,
         Header_CPUStartQPC,
         Header_CPUStartQPCTime,
         Header_CPUStartDateTime,
+        Header_FrameTime,
         Header_CPUBusy,
         Header_CPUWait,
         Header_GPULatency,
+        Header_GPUTime,
         Header_GPUBusy,
-        Header_VideoBusy,
         Header_GPUWait,
+        Header_VideoBusy,
         Header_DisplayLatency,
         Header_DisplayedTime,
         Header_ClickToPhotonLatency,
 
         // --v1_metrics
+        Header_Runtime,
         Header_Dropped,
         Header_TimeInSeconds,
         Header_msBetweenPresents,
@@ -64,25 +68,29 @@ struct PresentMonCsv
         case Header_Application:            return "Application";
         case Header_ProcessID:              return "ProcessID";
         case Header_SwapChainAddress:       return "SwapChainAddress";
-        case Header_Runtime:                return "Runtime";
+        case Header_PresentRuntime:         return "PresentRuntime";
         case Header_SyncInterval:           return "SyncInterval";
         case Header_PresentFlags:           return "PresentFlags";
         case Header_AllowsTearing:          return "AllowsTearing";
         case Header_PresentMode:            return "PresentMode";
+        case Header_FrameType:              return "FrameType";
         case Header_CPUStartTime:           return "CPUStartTime";
         case Header_CPUStartQPC:            return "CPUStartQPC";
         case Header_CPUStartQPCTime:        return "CPUStartQPCTime";
         case Header_CPUStartDateTime:       return "CPUStartDateTime";
+        case Header_FrameTime:              return "FrameTime";
         case Header_CPUBusy:                return "CPUBusy";
         case Header_CPUWait:                return "CPUWait";
         case Header_GPULatency:             return "GPULatency";
+        case Header_GPUTime:                return "GPUTime";
         case Header_GPUBusy:                return "GPUBusy";
-        case Header_VideoBusy:              return "VideoBusy";
         case Header_GPUWait:                return "GPUWait";
+        case Header_VideoBusy:              return "VideoBusy";
         case Header_DisplayLatency:         return "DisplayLatency";
         case Header_DisplayedTime:          return "DisplayedTime";
         case Header_ClickToPhotonLatency:   return "ClickToPhotonLatency";
 
+        case Header_Runtime:                return "Runtime";
         case Header_Dropped:                return "Dropped";
         case Header_TimeInSeconds:          return "TimeInSeconds";
         case Header_msBetweenPresents:      return "msBetweenPresents";

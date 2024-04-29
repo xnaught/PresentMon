@@ -76,10 +76,10 @@ PresentMonCsv::Header FindHeader(char const* header)
 bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
 {
     // Load the CSV
-    for (uint32_t i = 0; i < _countof(headerColumnIndex_); ++i) {
+    for (uint32_t i = 0; i < KnownHeaderCount; ++i) {
         headerColumnIndex_[i] = SIZE_MAX;
     }
-    cols_.clear();
+
     path_ = path;
     line_ = 0;
 
@@ -117,18 +117,19 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
     }
 
     bool columnsOK = true;
-    CheckAll(headerColumnIndex_, &columnsOK, { Header_Application,
-                                               Header_ProcessID,
-                                               Header_SwapChainAddress,
-                                               Header_Runtime,
-                                               Header_SyncInterval,
-                                               Header_PresentFlags });
 
-    auto v1 = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_Dropped,
+    auto v1 = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_Runtime,
+                                                              Header_Dropped,
                                                               Header_TimeInSeconds,
                                                               Header_msBetweenPresents,
                                                               Header_msInPresentAPI });
     if (v1) {
+        CheckAll(headerColumnIndex_, &columnsOK, { Header_Application,
+                                                   Header_ProcessID,
+                                                   Header_SwapChainAddress,
+                                                   Header_SyncInterval,
+                                                   Header_PresentFlags });
+
         auto qpc_time        = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_QPCTime, });
         auto track_display   = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_AllowsTearing,
                                                                                Header_PresentMode,
@@ -147,32 +148,42 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
         if (track_gpu_video)  params_.emplace_back(L"--track_gpu_video");
         if (!track_input)     params_.emplace_back(L"--no_track_input");
     } else {
-        CheckAll(headerColumnIndex_, &columnsOK, { Header_CPUBusy,
+        CheckAll(headerColumnIndex_, &columnsOK, { Header_Application,
+                                                   Header_ProcessID,
+                                                   Header_SwapChainAddress,
+                                                   Header_PresentRuntime,
+                                                   Header_SyncInterval,
+                                                   Header_PresentFlags,
+                                                   Header_FrameTime,
+                                                   Header_CPUBusy,
                                                    Header_CPUWait });
 
-        size_t time          = CheckOne(headerColumnIndex_, &columnsOK,      { Header_CPUStartTime,
-                                                                               Header_CPUStartQPC,
-                                                                               Header_CPUStartQPCTime,
-                                                                               Header_CPUStartDateTime });
-        auto track_display   = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_AllowsTearing,
-                                                                               Header_PresentMode,
-                                                                               Header_DisplayLatency,
-                                                                               Header_DisplayedTime });
-        auto track_gpu       = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_GPULatency,
-                                                                               Header_GPUBusy,
-                                                                               Header_GPUWait });
-        auto track_gpu_video = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_VideoBusy });
-        auto track_input     = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_ClickToPhotonLatency });
+        size_t time           = CheckOne(headerColumnIndex_, &columnsOK,      { Header_CPUStartTime,
+                                                                                Header_CPUStartQPC,
+                                                                                Header_CPUStartQPCTime,
+                                                                                Header_CPUStartDateTime });
+        auto track_display    = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_AllowsTearing,
+                                                                                Header_PresentMode,
+                                                                                Header_DisplayLatency,
+                                                                                Header_DisplayedTime });
+        auto track_gpu        = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_GPULatency,
+                                                                                Header_GPUTime,
+                                                                                Header_GPUBusy,
+                                                                                Header_GPUWait });
+        auto track_gpu_video  = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_VideoBusy });
+        auto track_input      = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_ClickToPhotonLatency });
+        auto track_frame_type = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_FrameType });
 
         switch (time) {
         case 1: params_.emplace_back(L"--qpc_time");    break;
         case 2: params_.emplace_back(L"--qpc_time_ms"); break;
         case 3: params_.emplace_back(L"--date_time");   break;
         }
-        if (!track_display)  params_.emplace_back(L"--no_track_display");
-        if (!track_gpu)      params_.emplace_back(L"--no_track_gpu");
-        if (track_gpu_video) params_.emplace_back(L"--track_gpu_video");
-        if (!track_input)    params_.emplace_back(L"--no_track_input");
+        if (!track_display)    params_.emplace_back(L"--no_track_display");
+        if (!track_gpu)        params_.emplace_back(L"--no_track_gpu");
+        if (track_gpu_video)   params_.emplace_back(L"--track_gpu_video");
+        if (!track_input)      params_.emplace_back(L"--no_track_input");
+        if (!track_frame_type) params_.emplace_back(L"--track_frame_type");
     }
 
     if (!columnsOK) {
@@ -214,6 +225,64 @@ bool PresentMonCsv::ReadRow()
             for (p0 = p + 1; *p0 == ' ' || *p0 == '\t'; ++p0) *p0 = '\0';
             for (auto q = p - 1; *q == ' ' || *q == '\t' || *q == '\n' || *q == '\r'; --q) *q = '\0';
             if (ch == '\0') break;
+        }
+    }
+
+    // Hard-code some per-row validation
+
+    auto idxFrameTime = headerColumnIndex_[Header_FrameTime];
+    auto idxCPUBusy   = headerColumnIndex_[Header_CPUBusy];
+    auto idxCPUWait   = headerColumnIndex_[Header_CPUWait];
+    if (idxFrameTime != SIZE_MAX && idxCPUBusy != SIZE_MAX && idxCPUWait != SIZE_MAX) {
+        auto delta = strtod(cols_[idxFrameTime], nullptr) -
+                     strtod(cols_[idxCPUBusy], nullptr) -
+                     strtod(cols_[idxCPUWait], nullptr);
+        if (delta <= -0.0001 || delta >= 0.0001) {
+            AddTestFailure(__FILE__, __LINE__, "Invalid FrameTime: %s != %s + %s (%lf)", cols_[idxFrameTime],
+                                                                                         cols_[idxCPUBusy],
+                                                                                         cols_[idxCPUWait],
+                                                                                         delta);
+            return false;
+        }
+    }
+
+    auto idxGPUTime = headerColumnIndex_[Header_GPUTime];
+    auto idxGPUBusy = headerColumnIndex_[Header_GPUBusy];
+    auto idxGPUWait = headerColumnIndex_[Header_GPUWait];
+    if (idxGPUTime != SIZE_MAX && idxGPUBusy != SIZE_MAX && idxGPUWait != SIZE_MAX) {
+        auto delta = strtod(cols_[idxGPUTime], nullptr) -
+                     strtod(cols_[idxGPUBusy], nullptr) -
+                     strtod(cols_[idxGPUWait], nullptr);
+        auto idxVideoBusy = headerColumnIndex_[Header_VideoBusy];
+        if (idxVideoBusy != SIZE_MAX) {
+            delta -= strtod(cols_[idxVideoBusy], nullptr);
+        }
+        if (delta <= -0.0001 || delta >= 0.0001) {
+            AddTestFailure(__FILE__, __LINE__, "Invalid GPUTime: %s != %s + %s + %s (%lf)", cols_[idxGPUTime],
+                                                                                            cols_[idxGPUBusy],
+                                                                                            cols_[idxGPUWait],
+                                                                                            idxVideoBusy == SIZE_MAX ? "0" : cols_[idxVideoBusy],
+                                                                                            delta);
+            return false;
+        }
+    }
+
+    auto idxDisplayedTime        = headerColumnIndex_[Header_DisplayedTime];
+    auto idxDisplayLatency       = headerColumnIndex_[Header_DisplayLatency];
+    auto idxClickToPhotonLatency = headerColumnIndex_[Header_ClickToPhotonLatency];
+    if (idxDisplayedTime != SIZE_MAX && idxDisplayLatency != SIZE_MAX) {
+        auto DisplayedTime  = cols_[idxDisplayedTime];
+        auto DisplayLatency = cols_[idxDisplayLatency];
+        if (strcmp(DisplayedTime, "NA") == 0 || strcmp(DisplayLatency, "NA") == 0) {
+            if (strcmp(DisplayedTime, "NA") != 0 || strcmp(DisplayLatency, "NA") != 0) {
+                AddTestFailure(__FILE__, __LINE__, "    Invalid display metrics: %s, %s", DisplayedTime, DisplayLatency);
+                return false;
+            }
+
+            if (idxClickToPhotonLatency != SIZE_MAX && strcmp(cols_[idxClickToPhotonLatency], "NA") != 0) {
+                AddTestFailure(__FILE__, __LINE__, "    Invalid ClickToPhotonLatency when not displayed: %s", cols_[idxClickToPhotonLatency]);
+                return false;
+            }
         }
     }
 
