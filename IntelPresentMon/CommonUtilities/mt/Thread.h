@@ -8,12 +8,13 @@ namespace pmon::util::mt
 	class Thread : public std::jthread
 	{
 	public:
+		Thread() = default;
 		template<typename...R, std::invocable<R...> F>
 		Thread(F&& func, R&&...args)
 			:
 			std::jthread{ [](F&& func, R&&...args) {
 				InstallSehTranslator();
-				func(std::forward<R>(args)...);
+				std::invoke(std::forward<F>(func), std::forward<R>(args)...);
 			}, std::forward<F>(func), std::forward<R>(args)... }
 		{}
 		template<typename...R, std::invocable<R...> F>
@@ -22,7 +23,7 @@ namespace pmon::util::mt
 			std::jthread{ [](std::wstring threadName, F&& func, R&&...args) {
 				InstallSehTranslator();
 				log::IdentificationTable::AddThisThread(std::move(threadName));
-				func(std::forward<R>(args)...);
+				std::invoke(std::forward<F>(func), std::forward<R>(args)...);
 			}, std::move(threadName), std::forward<F>(func), std::forward<R>(args)... }
 		{}
 		template<typename...R, std::invocable<R...> F>

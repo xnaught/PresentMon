@@ -110,7 +110,7 @@ namespace pmon::util::log
 			driverPtrs_{ std::move(driverPtrs) },
 			pEntryQueue_{ std::make_shared<QueueType_>() }
 		{
-			worker_ = std::jthread([this] {
+			worker_ = mt::Thread(L"log-chan", [this] {
 				try {
 					auto visitor = [this](auto& el) {
 						// log entry is handled differently than command packets

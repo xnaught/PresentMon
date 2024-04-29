@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-#include <thread>
+#include "../mt/Thread.h"
 
 namespace pmon::util::log
 {
@@ -15,7 +15,7 @@ namespace pmon::util::log
 	private:
 		std::shared_ptr<IEntryMarshallReceiver> pFrom_;
 		IEntrySink* pTo_;
-		std::jthread worker_;
+		mt::Thread worker_;
 	};
 }
 

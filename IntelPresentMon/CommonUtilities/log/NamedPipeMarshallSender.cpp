@@ -1,9 +1,9 @@
 #include "NamedPipeMarshallSender.h"
 #include <vector>
 #include <atomic>
-#include <thread>
 #include <span>
 #include <variant>
+#include "../mt/Thread.h"
 #include "../win/Handle.h"
 #include "../win/Event.h"
 #include "../win/Overlapped.h"
@@ -368,8 +368,8 @@ namespace pmon::util::log
 			for (size_t i = 0; i < nInstances; i++) {
 				instances_.push_back(std::make_unique<NamedPipeInstance>(pipeAddress_, nInstances, decommissionEvent_));
 			}
-			transmissionThread_ = std::jthread{ &NamedPipe::TransmissionThreadProcedure_, this };
-			connectionThread_ = std::jthread{ &NamedPipe::ConnectionThreadProcedure_, this };
+			transmissionThread_ = mt::Thread{ L"log-psnd-tx", &NamedPipe::TransmissionThreadProcedure_, this };
+			connectionThread_ = mt::Thread{ L"log-psnd-con", &NamedPipe::ConnectionThreadProcedure_, this };
 		}
 		~NamedPipe()
 		{
@@ -474,8 +474,8 @@ namespace pmon::util::log
 		win::Event emptyEvent_{ true, true };
 		std::vector<std::unique_ptr<NamedPipeInstance>> instances_;
 		moodycamel::ConcurrentQueue<MarshallPacket> entryQueue_;
-		std::jthread connectionThread_;
-		std::jthread transmissionThread_;
+		mt::Thread connectionThread_;
+		mt::Thread transmissionThread_;
 	};
 
     NamedPipeMarshallSender::NamedPipeMarshallSender(const std::wstring& pipeName)

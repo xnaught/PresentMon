@@ -14,7 +14,7 @@ namespace pmon::util::log
 		pFrom_{ std::move(pSink) },
 		pTo_{ pTo }
 	{
-		worker_ = std::jthread{ [this] {
+		worker_ = mt::Thread{ L"log-prcv-inj", [this] {
 			try {
 				while (auto entry = pFrom_->Pop()) {
 					pTo_->Submit(std::move(*entry));
