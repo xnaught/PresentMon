@@ -11,12 +11,6 @@ namespace Microsoft_Windows_Dwm_Core {
 struct __declspec(uuid("{9E9BBA3C-2E38-40CB-99F4-9E8281425164}")) GUID_STRUCT;
 static const auto GUID = __uuidof(GUID_STRUCT);
 
-// Win7 GUID added manually:
-namespace Win7 {
-struct __declspec(uuid("{8c9dd1ad-e6e5-4b07-b455-684a9d879900}")) GUID_STRUCT;
-static const auto GUID = __uuidof(GUID_STRUCT);
-}
-
 enum class Keyword : uint64_t {
     Composition                           = 0x1,
     DetailedFrameInformation              = 0x2,
@@ -32,10 +26,10 @@ enum class Keyword : uint64_t {
     LowOverheadSmoothnessTracking         = 0x20000,
     FrameVisualizationExtra               = 0x40000,
     DwmHolographic                        = 0x80000,
-    WorkPerFrame                          = 0x100000,
+    WorkPerFrame                          = 0x100000, // Added manually
     DwmInput                              = 0x200000,
     DwmDiagTrack                          = 0x400000,
-    WorkPerFrameVerbose                   = 0x800000,
+    WorkPerFrameVerbose                   = 0x800000, // Added manually
     win_ResponseTime                      = 0x1000000000000,
     Microsoft_Windows_Dwm_Core_Diagnostic = 0x8000000000000000,
 };
@@ -59,20 +53,16 @@ enum class Channel : uint8_t {
     static uint8_t  const Opcode  = opcode_; \
     static uint16_t const Task    = task_; \
     static Keyword  const Keyword = (Keyword) keyword_; \
-};
+}
 
-// NOTE: SCHEDULE_PRESENT_Start and SCHEDULE_SURFACEUPDATE_Info have the
-// Scheduling keyword set instead of Composition on Win11.  The trace session
-// will reconfigure this at runtime if running on Win11.
-
-EVENT_DESCRIPTOR_DECL(MILEVENT_MEDIA_UCE_PROCESSPRESENTHISTORY_GetPresentHistory_Info, 0x0040, 0x00, 0x10, 0x05, 0x00, 0x003f, 0x8000000000000001)
-EVENT_DESCRIPTOR_DECL(SCHEDULE_PRESENT_Start                                         , 0x000f, 0x00, 0x10, 0x04, 0x01, 0x000d, 0x8000000000000001)
-EVENT_DESCRIPTOR_DECL(SCHEDULE_SURFACEUPDATE_Info                                    , 0x00c4, 0x00, 0x10, 0x04, 0x00, 0x007f, 0x8000000000000001)
+EVENT_DESCRIPTOR_DECL(MILEVENT_MEDIA_UCE_PROCESSPRESENTHISTORY_GetPresentHistory_Info, 0x0040, 0x00, 0x10, 0x05, 0x00, 0x003f, 0x8000000000000001);
+EVENT_DESCRIPTOR_DECL(SCHEDULE_PRESENT_Start                                         , 0x000f, 0x00, 0x10, 0x04, 0x01, 0x000d, 0x8000000000000080);
+EVENT_DESCRIPTOR_DECL(SCHEDULE_SURFACEUPDATE_Info                                    , 0x00c4, 0x00, 0x10, 0x04, 0x00, 0x007f, 0x8000000000000080);
 
 // These events added manually:
-EVENT_DESCRIPTOR_DECL(FlipChain_Complete                                             , 0x0046, 0x00, 0x00, 0x00, 0x00, 0x0000, 0x0000000000000000)
-EVENT_DESCRIPTOR_DECL(FlipChain_Dirty                                                , 0x0065, 0x00, 0x00, 0x00, 0x00, 0x0000, 0x0000000000000000)
-EVENT_DESCRIPTOR_DECL(FlipChain_Pending                                              , 0x0045, 0x00, 0x00, 0x00, 0x00, 0x0000, 0x0000000000000000)
+EVENT_DESCRIPTOR_DECL(FlipChain_Complete                                             , 0x0046, 0x00, 0x00, 0x00, 0x00, 0x0000, 0x0000000000000000);
+EVENT_DESCRIPTOR_DECL(FlipChain_Dirty                                                , 0x0065, 0x00, 0x00, 0x00, 0x00, 0x0000, 0x0000000000000000);
+EVENT_DESCRIPTOR_DECL(FlipChain_Pending                                              , 0x0045, 0x00, 0x00, 0x00, 0x00, 0x0000, 0x0000000000000000);
 
 #undef EVENT_DESCRIPTOR_DECL
 

@@ -338,8 +338,10 @@
     <ClInclude Include="ETW\Intel_PresentMon.h" />
     <ClInclude Include="ETW\Microsoft_Windows_D3D9.h" />
     <ClInclude Include="ETW\Microsoft_Windows_Dwm_Core.h" />
+    <ClInclude Include="ETW\Microsoft_Windows_Dwm_Core_Win7.h" />
     <ClInclude Include="ETW\Microsoft_Windows_DXGI.h" />
     <ClInclude Include="ETW\Microsoft_Windows_DxgKrnl.h" />
+    <ClInclude Include="ETW\Microsoft_Windows_DxgKrnl_Win7.h" />
     <ClInclude Include="ETW\Microsoft_Windows_EventMetadata.h" />
     <ClInclude Include="ETW\Microsoft_Windows_Kernel_Process.h" />
     <ClInclude Include="ETW\Microsoft_Windows_Win32k.h" />
