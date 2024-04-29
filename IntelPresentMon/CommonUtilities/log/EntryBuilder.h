@@ -22,6 +22,7 @@ namespace pmon::util::log
 			return *this;
 		}
 		EntryBuilder& note(std::wstring note = L"") noexcept;
+		EntryBuilder& note(const std::string& note) noexcept;
 		EntryBuilder& to(IEntrySink*) noexcept;
 		EntryBuilder& trace_skip(int depth) noexcept;
 		EntryBuilder& no_trace() noexcept;

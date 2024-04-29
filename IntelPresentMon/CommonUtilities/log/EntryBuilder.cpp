@@ -1,5 +1,6 @@
 #include "EntryBuilder.h"
 #include "IChannel.h"
+#include "../str/String.h"
 #include "../win/WinAPI.h"
 #include "PanicLogger.h"
 #include "StackTrace.h"
@@ -41,6 +42,10 @@ namespace pmon::util::log
 	{
 		note_ = std::move(note);
 		return *this;
+	}
+	EntryBuilder& EntryBuilder::note(const std::string& note) noexcept
+	{
+		return this->note(str::ToWide(note));
 	}
 	EntryBuilder& EntryBuilder::to(IEntrySink* pSink) noexcept
 	{

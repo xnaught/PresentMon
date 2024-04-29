@@ -58,6 +58,7 @@
     <ClInclude Include="log\SimpleFileStrategy.h" />
     <ClInclude Include="log\PanicLogger.h" />
     <ClInclude Include="log\NamedPipeMarshallSender.h" />
+    <ClInclude Include="mt\Thread.h" />
     <ClInclude Include="str\String.h" />
     <ClInclude Include="win\Event.h" />
     <ClInclude Include="win\Handle.h" />
@@ -91,6 +92,7 @@
     <ClCompile Include="log\PanicLogger.cpp" />
     <ClCompile Include="log\MarshallDriver.cpp" />
     <ClCompile Include="log\NamedPipeMarshallSender.cpp" />
+    <ClCompile Include="mt\Thread.cpp" />
     <ClCompile Include="str\String.cpp" />
     <ClCompile Include="win\Event.cpp" />
     <ClCompile Include="win\Handle.cpp" />
