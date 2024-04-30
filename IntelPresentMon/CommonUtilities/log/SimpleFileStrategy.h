@@ -12,6 +12,10 @@ namespace pmon::util::log
 		std::shared_ptr<std::wostream> GetFileStream() const override;
 		void Cleanup() override;
 	private:
+		// functions
+		void CreateFile_();
+		// data
+		std::filesystem::path path_;
 		std::shared_ptr<std::wofstream> pFileStream_;
 	};
 }

@@ -7,11 +7,13 @@
 namespace pmon::util::log
 {
 	// this function must be implemented by the module using this log utility
-	IChannel* GetDefaultChannel() noexcept;
+	std::shared_ptr<IChannel> GetDefaultChannel() noexcept;
 	// eager initialize logging on separate thread
 	void BootDefaultChannelEager() noexcept;
+	// set the default channel directly
+	void InjectDefaultChannel(std::shared_ptr<IChannel>) noexcept;
 	// utility that client module can use to help implement GetDefaultChannel
-	IChannel* GetDefaultChannelWithFactory(std::function<std::shared_ptr<IChannel>()> factory) noexcept;
+	std::shared_ptr<IChannel> GetDefaultChannelWithFactory(std::function<std::shared_ptr<IChannel>()> factory) noexcept;
 	// DefaultChannelManager should be instantiated as early as possible in the entry point of the process/module
 	// It acts as a guard to prevent stack trace resolution in the channel worker thread after exiting main
 	struct DefaultChannelManager

@@ -12,6 +12,7 @@ namespace pmon::util::log
 	public:
 		virtual ~IEntrySink() = default;
 		virtual void Submit(Entry&&) noexcept = 0;
+		virtual void Submit(const Entry&) noexcept = 0;
 		virtual void Flush() = 0;
 	};
 

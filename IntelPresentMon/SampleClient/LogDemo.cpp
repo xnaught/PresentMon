@@ -3,7 +3,7 @@
 #include <format>
 #include <map>
 #include <conio.h>
-#include "../PresentMonAPI2/PresentMonAPI.h"
+#include "../PresentMonAPIWrapper/PresentMonAPIWrapper.h"
 #include "../CommonUtilities/win/WinAPI.h"
 // #define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Verbose
 #include "../CommonUtilities/log/Log.h"
@@ -17,6 +17,7 @@
 #include "../CommonUtilities/win/Utilities.h"
 // #define VVV_LOGDEMO
 #include "Verbose.h"
+#include "../PresentMonAPI2/Internal.h"
 
 using namespace pmon::util;
 
@@ -40,6 +41,8 @@ void RunLogDemo(int mode)
 {
 	InstallSehTranslator();
 	pmlog_setup;
+	pmInjectLoggingChannel_(log::GetDefaultChannel());
+	pmapi::Session sesh;
 	
 	// basic log info w/ message
 	if (mode == 0) {

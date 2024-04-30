@@ -1,6 +1,7 @@
 #pragma once
 #include "Entry.h"
 #include <format>
+#include <memory>
 
 namespace pmon::util::log
 {
@@ -23,7 +24,7 @@ namespace pmon::util::log
 		}
 		EntryBuilder& note(std::wstring note = L"") noexcept;
 		EntryBuilder& note(const std::string& note) noexcept;
-		EntryBuilder& to(IEntrySink*) noexcept;
+		EntryBuilder& to(std::shared_ptr<IEntrySink>) noexcept;
 		EntryBuilder& trace_skip(int depth) noexcept;
 		EntryBuilder& no_trace() noexcept;
 		EntryBuilder& trace() noexcept;
@@ -41,7 +42,7 @@ namespace pmon::util::log
 		} 
 		~EntryBuilder();
 	private:
-		IEntrySink* pDest_ = nullptr;
+		std::shared_ptr<IEntrySink> pDest_;
 		int traceSkipDepth_;
 		std::optional<bool> captureTrace_;
 	};

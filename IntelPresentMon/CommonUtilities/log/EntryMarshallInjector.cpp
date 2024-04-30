@@ -9,10 +9,10 @@
 
 namespace pmon::util::log
 {
-	EntryMarshallInjector::EntryMarshallInjector(IEntrySink* pTo, std::shared_ptr<IEntryMarshallReceiver> pSink)
+	EntryMarshallInjector::EntryMarshallInjector(std::shared_ptr<IEntrySink> pTo, std::shared_ptr<IEntryMarshallReceiver> pSink)
 		:
 		pFrom_{ std::move(pSink) },
-		pTo_{ pTo }
+		pTo_{ std::move(pTo) }
 	{
 		worker_ = mt::Thread{ L"log-prcv-inj", [this] {
 			try {

@@ -9,6 +9,7 @@
 #include "../CommonUtilities/log/ErrorCodeResolver.h"
 #include "../CommonUtilities/win/HrErrorCodeProvider.h"
 #include "../PresentMonAPIWrapperCommon/PmErrorCodeProvider.h"
+#include "../CommonUtilities/log/CopyDriver.h"
 #include <memory>
 
 
@@ -16,10 +17,10 @@ namespace pmon::util::log
 {
 	namespace
 	{
-		std::shared_ptr<IChannel> MakeChannel()
+		std::shared_ptr<IChannel> MakeChannel_(std::shared_ptr<IChannel> pCopyTargetChannel = {})
 		{
-			// channel (use custom deleter to ensure deletion in this module's heap)
-			auto pChannel = std::shared_ptr<IChannel>{ new Channel{}, [](Channel* p) { delete p; } };
+			// channel
+			auto pChannel = std::make_shared<Channel>();
 			// error resolver
 			auto pErrorResolver = std::make_shared<ErrorCodeResolver>();
 			pErrorResolver->AddProvider(std::make_unique<win::HrErrorCodeProvider>());
@@ -28,20 +29,35 @@ namespace pmon::util::log
 			auto pErrPolicy = std::make_shared<ErrorCodeResolvePolicy>();
 			pErrPolicy->SetResolver(std::move(pErrorResolver));
 			pChannel->AttachPolicy(std::move(pErrPolicy));
-			// make the formatter
-			const auto pFormatter = std::make_shared<TextFormatter>();
-			const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log.txt");
 			// make and add the line-tracking policy
 			pChannel->AttachPolicy(std::make_shared<LinePolicy>());
 			// construct and configure default logging channel
-			pChannel->AttachDriver(std::make_shared<MsvcDebugDriver>(pFormatter));
-			pChannel->AttachDriver(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy));
+			if (pCopyTargetChannel) {
+				pChannel->AttachDriver(std::make_shared<CopyDriver>(std::move(pCopyTargetChannel)));
+			}
+			else {
+				// make the formatter and file strategy
+				const auto pFormatter = std::make_shared<TextFormatter>();
+				const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log-pmapi-dll.txt");
+				pChannel->AttachDriver(std::make_shared<MsvcDebugDriver>(pFormatter));
+				pChannel->AttachDriver(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy));
+			}
 			return pChannel;
+		}
+
+		std::shared_ptr<IChannel> MakeDefaultChannel_()
+		{
+			return MakeChannel_();
 		}
 	}
 
 	std::shared_ptr<IChannel> GetDefaultChannel() noexcept
 	{
-		return GetDefaultChannelWithFactory(MakeChannel);
+		return GetDefaultChannelWithFactory(MakeDefaultChannel_);
+	}
+
+	void InjectCopyChannel(std::shared_ptr<IChannel> pCopyTargetChannel) noexcept
+	{
+		InjectDefaultChannel(MakeChannel_(std::move(pCopyTargetChannel)));
 	}
 }

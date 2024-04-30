@@ -38,7 +38,9 @@ namespace pmon::util::log
 	void BasicFileDriver::Flush()
 	{
 		if (pFileStrategy_) {
-			pFileStrategy_->GetFileStream()->flush();
+			if (auto pStream = pFileStrategy_->GetFileStream()) {
+				pStream->flush();
+			}
 		}
 		else {
 			pmlog_panic_(L"BasicFileDriver flushed without a file strategy set");

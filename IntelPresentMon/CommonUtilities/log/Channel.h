@@ -24,6 +24,7 @@ namespace pmon::util::log
 			void AttachPolicy(std::shared_ptr<IPolicy>);
 			void AttachObject(std::shared_ptr<void>);
 			void EnqueueEntry(Entry&&);
+			void EnqueueEntry(const Entry&);
 			template<class P, typename...Args>
 			void EnqueuePacketWait(Args&&...args);
 			template<class P, typename...Args>
@@ -50,6 +51,7 @@ namespace pmon::util::log
 		Channel(std::vector<std::shared_ptr<IDriver>> driverPtrs = {});
 		~Channel();
 		void Submit(Entry&&) noexcept override;
+		void Submit(const Entry&) noexcept override;
 		void Flush() override;
 		void AttachDriver(std::shared_ptr<IDriver>) override;
 		void AttachPolicy(std::shared_ptr<IPolicy>) override;

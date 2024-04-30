@@ -22,6 +22,7 @@ namespace pmon::util::log
 		// functions
 		StackTrace() = default;
 		StackTrace(std::stacktrace trace);
+		StackTrace(const StackTrace& other);
 		void Resolve();
 		std::span<const FrameInfo> GetFrames() const;
 		bool Empty() const;

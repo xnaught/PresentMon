@@ -4,12 +4,12 @@
 #include <optional>
 #include <memory>
 #include <variant>
+#include "StackTrace.h"
 #include "ErrorCode.h"
+#include "../Memory.h"
 
 namespace pmon::util::log
 {
-	class StackTrace;
-
 	struct Entry
 	{
 		struct RateControl
@@ -41,7 +41,7 @@ namespace pmon::util::log
 		std::variant<StaticSourceStrings, HeapedSourceStrings> sourceStrings_;
 		int sourceLine_ = -1;
 		std::chrono::system_clock::time_point timestamp_;
-		std::shared_ptr<StackTrace> pTrace_;
+		CloningUptr<StackTrace> pTrace_;
 		ErrorCode errorCode_;
 		uint32_t pid_;
 		uint32_t tid_;

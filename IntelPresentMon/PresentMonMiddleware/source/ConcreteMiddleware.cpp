@@ -23,6 +23,7 @@
 #include "../../ControlLib/CpuTelemetryInfo.h"
 #include "../../PresentMonService/GlobalIdentifiers.h"
 #include "FrameEventQuery.h"
+#include "../../CommonUtilities/log/Log.h"
 
 
 #define GLOG_NO_ABBREVIATED_SEVERITIES
@@ -319,6 +320,7 @@ namespace pmon::mid
     const pmapi::intro::Root& mid::ConcreteMiddleware::GetIntrospectionRoot()
     {
         if (!pIntroRoot) {
+            pmlog_info(L"Creating cached introspection root object");
             pIntroRoot = std::make_unique<pmapi::intro::Root>(GetIntrospectionData(), [this](auto p){FreeIntrospectionData(p);});
         }
         return *pIntroRoot;

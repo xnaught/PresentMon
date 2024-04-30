@@ -30,6 +30,15 @@ namespace pmon::util::log
 			});
 		}
 	}
+	StackTrace::StackTrace(const StackTrace& other)
+	{
+		if (Resolved()) {
+			frames_ = other.frames_;
+		}
+		else {
+			trace_ = other.trace_;
+		}
+	}
 	std::span<const StackTrace::FrameInfo> StackTrace::GetFrames() const
 	{
 		if (frames_.empty()) {

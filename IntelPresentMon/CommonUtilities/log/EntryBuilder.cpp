@@ -47,9 +47,9 @@ namespace pmon::util::log
 	{
 		return this->note(str::ToWide(note));
 	}
-	EntryBuilder& EntryBuilder::to(IEntrySink* pSink) noexcept
+	EntryBuilder& EntryBuilder::to(std::shared_ptr<IEntrySink> pSink) noexcept
 	{
-		pDest_ = pSink;
+		pDest_ = std::move(pSink);
 		return *this;
 	}
 	EntryBuilder& EntryBuilder::trace_skip(int depth) noexcept

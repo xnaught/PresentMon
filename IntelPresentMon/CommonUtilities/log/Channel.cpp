@@ -198,6 +198,10 @@ namespace pmon::util::log
 		{
 			Queue_(this).enqueue(std::move(e));
 		}
+		void ChannelInternal_::EnqueueEntry(const Entry& e)
+		{
+			Queue_(this).enqueue(e);
+		}
 		template<class P, typename ...Args>
 		void ChannelInternal_::EnqueuePacketWait(Args&& ...args)
 		{
@@ -233,7 +237,16 @@ namespace pmon::util::log
 			EnqueueEntry(std::move(e));
 		}
 		catch (...) {
-			pmlog_panic_(L"Exception thrown in Channel::Submit");
+			pmlog_panic_(L"Exception thrown in Channel::Submit (move)");
+		}
+	}
+	void Channel::Submit(const Entry& e) noexcept
+	{
+		try {
+			EnqueueEntry(e);
+		}
+		catch (...) {
+			pmlog_panic_(L"Exception thrown in Channel::Submit (copy)");
 		}
 	}
 	void Channel::Flush()

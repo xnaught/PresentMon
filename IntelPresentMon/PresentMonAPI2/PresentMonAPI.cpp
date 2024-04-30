@@ -6,8 +6,10 @@
 #include "../PresentMonMiddleware/source/Exception.h"
 #include "Internal.h"
 #include "PresentMonAPI.h"
+#include "Log.h"
 
 
+using namespace pmon;
 using namespace pmon::mid;
 
 // global state
@@ -136,6 +138,11 @@ PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, cons
 	catch (...) {
 		return PM_STATUS_FAILURE;
 	}
+}
+
+PRESENTMON_API2_EXPORT void pmInjectLoggingChannel_(std::shared_ptr<pmon::util::log::IChannel> pChannel)
+{
+	util::log::InjectCopyChannel(std::move(pChannel));
 }
 
 // public endpoints
