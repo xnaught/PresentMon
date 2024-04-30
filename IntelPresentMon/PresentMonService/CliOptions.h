@@ -13,6 +13,8 @@ namespace clio
 		Option<std::string> nsmPrefix{ this, "--nsm-prefix", "", "Prefix to use when naming named shared memory segments created for frame data circular buffers" };
 		Option<std::string> introNsm{ this, "--intro-nsm", "", "Name of the NSM used for introspection data" };
 		Option<long long> timedStop{ this, "--timed-stop", -1, "Signal stop event after specified number of milliseconds" };
+		Option<std::string> etwSessionName{ this, "--etw-session-name", "", "Name to use when creating the ETW session" };
+		Option<std::string> etlSessionName{ this, "--etl-session-name", "", "Name to use when creating an ETL session" };
 		static constexpr const char* description = "Intel PresentMon service for frame and system performance measurement";
 		static constexpr const char* name = "PresentMonService.exe";
 	};

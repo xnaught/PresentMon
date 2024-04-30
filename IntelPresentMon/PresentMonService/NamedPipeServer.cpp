@@ -10,6 +10,8 @@
 #include "..\CommonUtilities\str\String.h"
 #include "GlobalIdentifiers.h"
 #include "sddl.h"
+#include "CliOptions.h"
+#include "..\CommonUtilities\str\String.h"
 
 #define GLOG_NO_ABBREVIATED_SEVERITIES
 #include <glog/logging.h>
@@ -385,30 +387,63 @@ DWORD NamedPipeServer::GetNumActiveConnections() {
 DWORD NamedPipeServer::Pipe::CreatePipeInstance(LPCTSTR pipe_name, int max_pipes, uint32_t pipe_timeout) {
     LOG(INFO) << "Creating control pipe with name: [" << util::str::ToNarrow(pipe_name) << "]" << std::endl;
 
-    SECURITY_ATTRIBUTES sa = { sizeof(sa) };
-    if (ConvertStringSecurityDescriptorToSecurityDescriptorW(
-        L"D:PNO_ACCESS_CONTROLS:(ML;;NW;;;LW)", SDDL_REVISION_1,
-        &sa.lpSecurityDescriptor, NULL)) {
+    auto& opt = clio::Options::Get();
+    if (opt.etwSessionName.AsOptional().has_value()) {
+        LOG(INFO) << "Using Default Security" << std::endl;
         HANDLE tempPipeInstance =
-            CreateNamedPipe(pipe_name,                   // pipe name
-                PIPE_ACCESS_DUPLEX |         // read/write access
-                FILE_FLAG_OVERLAPPED,    // overlapped mode
-                PIPE_TYPE_MESSAGE |          // message-type pipe
-                PIPE_READMODE_MESSAGE |  // message-read mode
-                PIPE_WAIT,               // blocking mode
-                max_pipes,                   // number of instances
-                MaxBufferSize,               // output buffer size
-                MaxBufferSize,               // input buffer size
-                pipe_timeout,                // client time-out
-                &sa);  // default security attributes
+            CreateNamedPipe(pipe_name,  // pipe name
+                PIPE_ACCESS_DUPLEX |    // read/write access
+                FILE_FLAG_OVERLAPPED,   // overlapped mode
+                PIPE_TYPE_MESSAGE |     // message-type pipe
+                PIPE_READMODE_MESSAGE | // message-read mode
+                PIPE_WAIT,              // blocking mode
+                max_pipes,              // number of instances
+                MaxBufferSize,          // output buffer size
+                MaxBufferSize,          // input buffer size
+                pipe_timeout,           // client time-out
+                NULL);                  // default security attributes
         if (tempPipeInstance == INVALID_HANDLE_VALUE) {
-            return GetLastError();
+            auto error = GetLastError();
+            LOG(INFO) << "Failed to create pipe: [" <<
+                util::str::ToNarrow(pipe_name) <<
+                "] Error: " <<
+                error << std::endl;
+            return error;
         }
         mPipeInstance.reset(tempPipeInstance);
-        LocalFree(sa.lpSecurityDescriptor);
         return ERROR_SUCCESS;
     }
     else {
-        return GetLastError();
+        SECURITY_ATTRIBUTES sa = { sizeof(sa) };
+        if (ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            L"D:PNO_ACCESS_CONTROLS:(ML;;NW;;;LW)", SDDL_REVISION_1,
+            &sa.lpSecurityDescriptor, NULL)) {
+            HANDLE tempPipeInstance =
+                CreateNamedPipe(pipe_name,   // pipe name
+                    PIPE_ACCESS_DUPLEX |     // read/write access
+                    FILE_FLAG_OVERLAPPED,    // overlapped mode
+                    PIPE_TYPE_MESSAGE |      // message-type pipe
+                    PIPE_READMODE_MESSAGE |  // message-read mode
+                    PIPE_WAIT,               // blocking mode
+                    max_pipes,               // number of instances
+                    MaxBufferSize,           // output buffer size
+                    MaxBufferSize,           // input buffer size
+                    pipe_timeout,            // client time-out
+                    &sa);                    // default security attributes
+            if (tempPipeInstance == INVALID_HANDLE_VALUE) {
+                auto error = GetLastError();
+                LOG(INFO) << "Failed to create pipe: [" <<
+                    util::str::ToNarrow(pipe_name) <<
+                    "] Error: " <<
+                    error << std::endl;
+                return error;
+            }
+            mPipeInstance.reset(tempPipeInstance);
+            LocalFree(sa.lpSecurityDescriptor);
+            return ERROR_SUCCESS;
+        }
+        else {
+            return GetLastError();
+        }
     }
 }

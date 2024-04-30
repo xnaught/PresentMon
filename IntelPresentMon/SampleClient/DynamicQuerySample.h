@@ -189,7 +189,7 @@ int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, double window
             ConsolePrintLn("Present Mode = %s", dq.presentMode.As<std::string>().c_str());
             ConsolePrintLn("GPU Name = %s", dq.gpuName.As<std::string>().c_str());
             if (dq.fanSpeed.IsAvailable()) {
-                ConsolePrintLn("GPU Fan Speed = %f", dq.fanSpeed.As<int>());
+                ConsolePrintLn("GPU Fan Speed = %f", dq.fanSpeed.As<double>());
             }
             else {
                 ConsolePrintLn("GPU Fan Speed = Unavailable");

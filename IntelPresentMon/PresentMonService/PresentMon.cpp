@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: MIT
 #include "PresentMon.h"
 
+#include "CliOptions.h"
+#include "..\CommonUtilities\str\String.h"
 #include <VersionHelpers.h>
 #include <shlwapi.h>
 #include <span>
@@ -53,7 +55,14 @@ PM_STATUS PresentMonSession::StartTraceSession() {
     etl_file_name = etl_file_name_.c_str();
     pm_session_name_ = kEtlSessionName;
   } else {
-    pm_session_name_ = kRealTimeSessionName;
+      auto& opt = clio::Options::Get();
+      if (opt.etwSessionName.AsOptional().has_value()) {
+          pm_session_name_ =
+              pmon::util::str::ToWide(opt.etwSessionName.AsOptional().value());
+      }
+      else {
+          pm_session_name_ = kRealTimeSessionName;
+      }
   }
 
   // Start the session. If a session with this name is already running, we stop
@@ -291,7 +300,7 @@ void PresentMonSession::AddPresents(
         gpu_telemetry_cap_bits = {};
     // Only grab control lib data when performing real time
     // tracing
-    if ((pm_session_name_.compare(kRealTimeSessionName) == 0) &&
+    if ((pm_session_name_.compare(kEtlSessionName) != 0) &&
         (telemetry_container_)) {
       auto current_adapters = telemetry_container_->GetPowerTelemetryAdapters();
       if (current_adapters.size() != 0 && 
@@ -312,7 +321,7 @@ void PresentMonSession::AddPresents(
         cpu_telemetry_cap_bits = {};
     // Only grab control lib data when performing real time
     // tracing
-    if ((pm_session_name_.compare(kRealTimeSessionName) == 0) &&
+    if ((pm_session_name_.compare(kEtlSessionName) != 0) &&
         (cpu_)) {
       if (auto data = cpu_->GetClosest(presentEvent->PresentStartTime)) {
         cpu_telemetry = *data;
