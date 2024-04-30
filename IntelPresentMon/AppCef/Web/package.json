@@ -8,6 +8,7 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "@vue/component-compiler-utils": "file:./rollup/vue-ccu",
     "@fontsource/roboto": "^5.0.5",
     "sortablejs": "^1.15.0",
     "vue": "^2.6.14",
