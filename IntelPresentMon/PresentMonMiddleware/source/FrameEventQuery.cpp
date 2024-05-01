@@ -306,7 +306,7 @@ namespace
 		uint32_t outputOffset_;
 		uint16_t outputPaddingSize_;
 	};
-	template<uint64_t PmNsmPresentEvent::* pStart, bool doDroppedCheck>
+	template<uint64_t PmNsmPresentEvent::* pStart, bool doDroppedCheck, bool doZeroCheck>
 	class DisplayDifferenceGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
@@ -324,9 +324,22 @@ namespace
 					return;
 				}
 			}
-			const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pStart,
-				ctx.nextDisplayedQpc, ctx.performanceCounterPeriodMs);
-			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			if constexpr (doZeroCheck) {
+				const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pStart,
+					ctx.nextDisplayedQpc, ctx.performanceCounterPeriodMs);
+				if (val == 0.) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
+				}
+				else {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+				}
+			}
+			else {
+				const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pStart,
+					ctx.nextDisplayedQpc, ctx.performanceCounterPeriodMs);
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			}
 		}
 		uint32_t GetBeginOffset() const override
 		{
@@ -564,7 +577,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_GPU_WAIT:
 		return std::make_unique<GpuWaitGatherCommand_>(pos);
 	case PM_METRIC_DISPLAYED_TIME:
-		return std::make_unique<DisplayDifferenceGatherCommand_<&Pre::ScreenTime, 1>>(pos);
+		return std::make_unique<DisplayDifferenceGatherCommand_<&Pre::ScreenTime, 1, 1>>(pos);
 	case PM_METRIC_GPU_LATENCY:
 		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::GPUStartTime, 0>>(pos);
 	case PM_METRIC_DISPLAY_LATENCY:

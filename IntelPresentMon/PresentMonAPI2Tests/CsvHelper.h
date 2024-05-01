@@ -416,14 +416,21 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                 columnsMatch = Validate(v2MetricRow_.gpuWait, gpuWait);
                 break;
             case Header_DisplayLatency:
-                if (std::isnan(gpuWait)) {
-                    columnsMatch = Validate(v2MetricRow_.gpuWait, 0.);
+                if (v2MetricRow_.displayLatency.has_value()) {
+                    columnsMatch = Validate(v2MetricRow_.displayLatency.value(), displayLatency);
                 }
                 else
                 {
-                    columnsMatch = Validate(v2MetricRow_.gpuWait, gpuWait);
+                    if (std::isnan(displayLatency)) {
+                        columnsMatch = true;
+                    }
+                    else
+                    {
+                        columnsMatch = false;
+                    }
                 }
                 break;
+
             case Header_DisplayedTime:
                 if (v2MetricRow_.displayedTime.has_value()) {
                     columnsMatch = Validate(v2MetricRow_.displayedTime.value(), displayedTime);
@@ -701,31 +708,41 @@ void CsvParser::ConvertToMetricDataType(const char* data, Header columnId)
     break;
     case Header_DisplayLatency:
     {
-        if (strncmp(data, "NA",2) != 0) {
+        if (strncmp(data, "NA", 2) != 0) {
             double convertedData = 0.;
             CharConvert<double> converter;
             converter.Convert(data, convertedData, columnId, line_);
             v2MetricRow_.displayLatency = convertedData;
         }
+        else
+        {
+            v2MetricRow_.displayLatency.reset();
+        }
     }
     break;
     case Header_DisplayedTime:
     {
-        if (strncmp(data, "NA",2) != 0) {
+        if (strncmp(data, "NA", 2) != 0) {
             double convertedData = 0.;
             CharConvert<double> converter;
             converter.Convert(data, convertedData, columnId, line_);
             v2MetricRow_.displayedTime = convertedData;
         }
+        else {
+            v2MetricRow_.displayedTime.reset();
+        }
     }
     break;
     case Header_ClickToPhotonLatency:
     {
-        if (strncmp(data, "NA",2) != 0) {
+        if (strncmp(data, "NA", 2) != 0) {
             double convertedData = 0.;
             CharConvert<double> converter;
             converter.Convert(data, convertedData, columnId, line_);
             v2MetricRow_.clickToPhotonLatency = convertedData;
+        }
+        else {
+            v2MetricRow_.clickToPhotonLatency.reset();
         }
     }
     break;
