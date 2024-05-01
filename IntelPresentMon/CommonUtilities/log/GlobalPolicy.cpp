@@ -12,51 +12,51 @@ namespace pmon::util::log
 		:
 		logLevel_{ PMLOG_GPOL_DEFAULT_LEVEL }
 	{}
-	GlobalPolicy& GlobalPolicy::Get_() noexcept
+	GlobalPolicy& GlobalPolicy::Get() noexcept
 	{
 		// @SINGLETON
 		static GlobalPolicy policy;
 		return policy;
 	}
 
-	Level GlobalPolicy::GetLogLevel() noexcept
+	Level GlobalPolicy::GetLogLevel() const noexcept
 	{
-		return Get_().logLevel_;
+		return logLevel_;
 	}
 	void GlobalPolicy::SetLogLevel(Level level) noexcept
 	{
-		Get_().logLevel_ = level;
+		logLevel_ = level;
 	}
-	Level GlobalPolicy::GetTraceLevel() noexcept
+	Level GlobalPolicy::GetTraceLevel() const noexcept
 	{
-		return Get_().traceLevel_;
+		return traceLevel_;
 	}
 	void GlobalPolicy::SetTraceLevel(Level level) noexcept
 	{
-		Get_().traceLevel_ = level;
+		traceLevel_ = level;
 	}
-	bool GlobalPolicy::GetResolveTraceInClientThread() noexcept
+	bool GlobalPolicy::GetResolveTraceInClientThread() const noexcept
 	{
-		return Get_().resolveTraceInClientThread_;
+		return resolveTraceInClientThread_;
 	}
 	void GlobalPolicy::SetResolveTraceInClientThread(bool setting) noexcept
 	{
-		Get_().resolveTraceInClientThread_ = setting;
+		resolveTraceInClientThread_ = setting;
 	}
-	ExceptionTracePolicy GlobalPolicy::GetExceptionTrace() noexcept
+	ExceptionTracePolicy GlobalPolicy::GetExceptionTrace() const noexcept
 	{
-		return Get_().exceptionTracePolicy_;
+		return exceptionTracePolicy_;
 	}
 	void GlobalPolicy::SetExceptionTrace(ExceptionTracePolicy policy) noexcept
 	{
-		Get_().exceptionTracePolicy_ = policy;
+		exceptionTracePolicy_ = policy;
 	}
-	bool GlobalPolicy::TracingSehExceptions() noexcept
+	bool GlobalPolicy::GetSehTracing() const noexcept
 	{
-		return Get_().sehTraceOn_;
+		return sehTraceOn_;
 	}
 	void GlobalPolicy::SetSehTracing(bool on) noexcept
 	{
-		Get_().sehTraceOn_ = on;
+		sehTraceOn_ = on;
 	}
 }

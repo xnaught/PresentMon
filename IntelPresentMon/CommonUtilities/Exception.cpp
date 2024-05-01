@@ -63,7 +63,7 @@ namespace pmon::util
 
 	void DoCapture_(Exception& e)
 	{
-		if (log::GlobalPolicy::GetExceptionTrace() == log::ExceptionTracePolicy::OverrideOn) {
+		if (log::GlobalPolicy::Get().GetExceptionTrace() == log::ExceptionTracePolicy::OverrideOn) {
 			e.CaptureStackTrace();
 		}
 	}
@@ -91,7 +91,7 @@ namespace pmon::util
 		void seh_trans_func(unsigned int u, EXCEPTION_POINTERS*)
 		{
 			SehException ex{ u };
-			if (log::GlobalPolicy::TracingSehExceptions()) {
+			if (log::GlobalPolicy::Get().GetSehTracing()) {
 				ex.CaptureStackTrace();
 			}
 			throw ex;

@@ -41,7 +41,9 @@ void RunLogDemo(int mode)
 {
 	InstallSehTranslator();
 	pmlog_setup;
-	pmInjectLoggingChannel_(log::GetDefaultChannel());
+	auto getters = pmLinkLogging_(log::GetDefaultChannel(), []() -> log::IdentificationTable&
+		{ return log::IdentificationTable::Get_(); });
+	getters.getGlobalPolicy().SetLogLevel(log::Level::Warn);
 	pmapi::Session sesh;
 	
 	// basic log info w/ message
@@ -59,7 +61,7 @@ void RunLogDemo(int mode)
 	}
 	// disable info at runtime
 	else if (mode == 3) {
-		log::GlobalPolicy::SetLogLevel(log::Level::Warn);
+		log::GlobalPolicy::Get().SetLogLevel(log::Level::Warn);
 		pmlog_info(L"info hidden");
 		pmlog_warn(L"warn gets through");
 	}
@@ -70,7 +72,7 @@ void RunLogDemo(int mode)
 	}
 	// set trace level
 	else if (mode == 5) {
-		log::GlobalPolicy::SetTraceLevel(log::Level::Warn);
+		log::GlobalPolicy::Get().SetTraceLevel(log::Level::Warn);
 		pmlog_warn(L"enable stack trace for warning");
 	}
 	// error code logging hr
@@ -97,7 +99,7 @@ void RunLogDemo(int mode)
 	}
 	// verbose logging in a loop
 	else if (mode == 10) {
-		log::GlobalPolicy::SetLogLevel(log::Level::Verbose);
+		log::GlobalPolicy::Get().SetLogLevel(log::Level::Verbose);
 		pmlog_info(L"starting loop");
 		for (int i = 0; i < 20; i++) {
 			pmlog_verb(v::logdemo)(L"in loop").pmwatch(i);
@@ -115,7 +117,7 @@ void RunLogDemo(int mode)
 	}
 	// throw exception with trace (nested)
 	else if (mode == 12) {
-		log::GlobalPolicy::SetExceptionTrace(log::ExceptionTracePolicy::OverrideOn);
+		log::GlobalPolicy::Get().SetExceptionTrace(log::ExceptionTracePolicy::OverrideOn);
 		try {
 			g1();
 		}
@@ -143,7 +145,7 @@ void RunLogDemo(int mode)
 	}
 	// Seh exception catching with trace (nested)
 	else if (mode == 15) {
-		log::GlobalPolicy::SetExceptionTrace(log::ExceptionTracePolicy::OverrideOn);
+		log::GlobalPolicy::Get().SetExceptionTrace(log::ExceptionTracePolicy::OverrideOn);
 		try {
 			auto h = CreateEventA(nullptr, 0, 0, nullptr);
 			CloseHandle(h);

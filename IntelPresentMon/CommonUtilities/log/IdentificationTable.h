@@ -34,7 +34,7 @@ namespace pmon::util::log
 			std::vector<Thread> threads;
 			std::vector<Process> processes;
 		};
-		// functions
+		// interface global functions
 		static void AddThread(uint32_t tid, uint32_t pid, std::wstring name) noexcept;
 		static void AddProcess(uint32_t pid, std::wstring name) noexcept;
 		static void AddThisThread(std::wstring name) noexcept;
@@ -44,16 +44,21 @@ namespace pmon::util::log
 		static Bulk GetBulk() noexcept;
 		static void RegisterSink(std::shared_ptr<IIdentificationSink> pSink) noexcept;
 		static IdentificationTable* GetPtr() noexcept;
-	private:
-		// functions
-		IdentificationTable();
+
+		// implementation functions, made public for purposes of cross-module access
 		static IdentificationTable& Get_();
-		void AddThread_(uint32_t tid, uint32_t pid, std::wstring name);
-		void AddProcess_(uint32_t pid, std::wstring name);
+		// l/r-value ref semantics instead of value semantics used to enable cross-module string copying
+		void AddThread_(uint32_t tid, uint32_t pid, std::wstring&& name);
+		void AddThread_(uint32_t tid, uint32_t pid, const std::wstring& name);
+		void AddProcess_(uint32_t pid, std::wstring&& name);
+		void AddProcess_(uint32_t pid, const std::wstring& name);
 		std::optional<Thread> LookupThread_(uint32_t tid) const;
 		std::optional<Process> LookupProcess_(uint32_t pid) const;
 		Bulk GetBulk_() const noexcept;
 		void RegisterSink_(std::shared_ptr<IIdentificationSink> pSink);
+	private:
+		// functions
+		IdentificationTable();
 		// data
 		mutable std::shared_mutex mtx_;
 		std::unordered_map<uint32_t, Process> processes_;

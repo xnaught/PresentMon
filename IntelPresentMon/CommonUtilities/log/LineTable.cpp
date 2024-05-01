@@ -36,7 +36,7 @@ namespace pmon::util::log
 		}
 		catch (...) {}
 	}
-	bool LineTable::TraceOverrideActive() noexcept
+	bool LineTable::GetTraceOverride() noexcept
 	{
 		try {
 			return Get_().traceOverride_;
@@ -113,6 +113,22 @@ namespace pmon::util::log
 	void LineTable::RegisterListItem_(const std::wstring& file, int line, bool isTrace)
 	{
 		RegisterListItem_(MakeKey_(file, line), isTrace);
+	}
+	bool LineTable::GetTraceOverride_() const noexcept
+	{
+		return traceOverride_;
+	}
+	void LineTable::SetTraceOverride_(bool on) noexcept
+	{
+		traceOverride_ = on;
+	}
+	LineTable::ListMode LineTable::GetListMode_() const noexcept
+	{
+		return listMode_;
+	}
+	void LineTable::SetListMode_(ListMode mode) noexcept
+	{
+		listMode_ = mode;
 	}
 	void LineTable::RegisterListItem_(const std::wstring& key, bool isTrace)
 	{

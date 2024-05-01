@@ -140,9 +140,49 @@ PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, cons
 	}
 }
 
-PRESENTMON_API2_EXPORT void pmInjectLoggingChannel_(std::shared_ptr<pmon::util::log::IChannel> pChannel)
+PRESENTMON_API2_EXPORT LoggingSingletons pmLinkLogging_(
+	std::shared_ptr<pmon::util::log::IChannel> pChannel,
+	std::function<pmon::util::log::IdentificationTable&()> getIdTable)
 {
-	util::log::InjectCopyChannel(std::move(pChannel));
+	using namespace util::log;
+	// set api dll default logging channel to copy to exe logging channel
+	InjectCopyChannel(std::move(pChannel));
+	// connecting id tables (dll => exe)
+	if (getIdTable) {
+		// hooking exe table up so that it receives updates
+		class Sink : public IIdentificationSink
+		{
+		public:
+			Sink(std::function<IdentificationTable& ()> getIdTable)
+				:
+				getIdTable_{ std::move(getIdTable) }
+			{}
+			void AddThread(uint32_t tid, uint32_t pid, std::wstring name) override
+			{
+				getIdTable_().AddThread_(tid, pid, name);
+			}
+			void AddProcess(uint32_t pid, std::wstring name) override
+			{
+				getIdTable_().AddProcess_(pid, name);
+			}
+		private:
+			std::function<IdentificationTable& ()> getIdTable_;
+		};
+		IdentificationTable::RegisterSink(std::make_shared<Sink>(getIdTable));
+		// copying current contents of table to exe
+		const auto bulk = IdentificationTable::GetBulk();
+		for (auto& t : bulk.threads) {
+			getIdTable().AddThread_(t.tid, t.pid, t.name);
+		}
+		for (auto& p : bulk.processes) {
+			getIdTable().AddProcess_(p.pid, p.name);
+		}
+	}
+	// return functions to access the global settings objects
+	return {
+		.getGlobalPolicy = []() -> GlobalPolicy& { return GlobalPolicy::Get(); },
+		.getLineTable = []() -> LineTable& { return LineTable::Get_(); },
+	};
 }
 
 // public endpoints

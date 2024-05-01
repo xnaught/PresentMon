@@ -31,7 +31,7 @@ namespace pmon::util::log
 #endif
 #endif
 
-#define xinternal_pmlog_(lvl) ((PMLOG_BUILD_LEVEL < lvl) || (::pmon::util::log::GlobalPolicy::GetLogLevel() < lvl)) \
+#define xinternal_pmlog_(lvl) ((PMLOG_BUILD_LEVEL < lvl) || (::pmon::util::log::GlobalPolicy::Get().GetLogLevel() < lvl)) \
 	? (void)0 : (void)::pmon::util::log::EntryBuilder{ lvl, __FILEW__, __FUNCTIONW__, __LINE__ } \
 	.to(::pmon::util::log::GetDefaultChannel())
 #define pmlog_fatal	xinternal_pmlog_(::pmon::util::log::Level::Fatal).note

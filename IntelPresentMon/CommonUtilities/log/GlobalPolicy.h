@@ -14,20 +14,20 @@ namespace pmon::util::log
 	class GlobalPolicy
 	{
 	public:
-		static Level GetLogLevel() noexcept;
-		static void SetLogLevel(Level level) noexcept;
-		static Level GetTraceLevel() noexcept;
-		static void SetTraceLevel(Level level) noexcept;
-		static bool GetResolveTraceInClientThread() noexcept;
-		static void SetResolveTraceInClientThread(bool setting) noexcept;
-		static ExceptionTracePolicy GetExceptionTrace() noexcept;
-		static void SetExceptionTrace(ExceptionTracePolicy policy) noexcept;
-		static bool TracingSehExceptions() noexcept;
-		static void SetSehTracing(bool on) noexcept;
+		Level GetLogLevel() const noexcept;
+		void SetLogLevel(Level level) noexcept;
+		Level GetTraceLevel() const noexcept;
+		void SetTraceLevel(Level level) noexcept;
+		bool GetResolveTraceInClientThread() const noexcept;
+		void SetResolveTraceInClientThread(bool setting) noexcept;
+		ExceptionTracePolicy GetExceptionTrace() const noexcept;
+		void SetExceptionTrace(ExceptionTracePolicy policy) noexcept;
+		bool GetSehTracing() const noexcept;
+		void SetSehTracing(bool on) noexcept;
+		static GlobalPolicy& Get() noexcept;
 	private:
 		// functions
 		GlobalPolicy() noexcept;
-		static GlobalPolicy& Get_() noexcept;
 		// data
 		std::atomic<Level> logLevel_;
 		std::atomic<bool> resolveTraceInClientThread_ = false;

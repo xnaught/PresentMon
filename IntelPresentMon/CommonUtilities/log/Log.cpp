@@ -43,7 +43,7 @@ namespace pmon::util::log
 		{
 			// make sure singleton dependencies are booted
 			if (!dependenciesBooted_) {
-				GlobalPolicy::GetLogLevel();
+				GlobalPolicy::Get().GetLogLevel();
 				LineTable::TryLookup(L"", 0);
 				IdentificationTable::LookupThread(0);
 			}
@@ -84,7 +84,7 @@ namespace pmon::util::log
 	}
 	DefaultChannelManager::~DefaultChannelManager()
 	{
-		GlobalPolicy::SetResolveTraceInClientThread(true);
+		GlobalPolicy::Get().SetResolveTraceInClientThread(true);
 		GetDefaultChannel()->FlushEntryPointExit();
 	}
 }
