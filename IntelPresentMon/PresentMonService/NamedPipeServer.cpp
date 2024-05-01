@@ -429,7 +429,7 @@ DWORD NamedPipeServer::Pipe::CreatePipeInstance(LPCTSTR pipe_name, int max_pipes
                     MaxBufferSize,           // output buffer size
                     MaxBufferSize,           // input buffer size
                     pipe_timeout,            // client time-out
-                    &sa);                    // default security attributes
+                    &sa);                    // use specified security attributes
             if (tempPipeInstance == INVALID_HANDLE_VALUE) {
                 auto error = GetLastError();
                 LOG(INFO) << "Failed to create pipe: [" <<

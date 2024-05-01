@@ -205,10 +205,19 @@ const PmNsmFrameData* StreamClient::PeekPreviousFrame()
         {
             if (peekIndex.has_value())
             {
-                peekIndex = (peekIndex.value() == 0) ? current_max_entries : peekIndex.value() - 1;
-                if (peekIndex.value() == nsm_hdr->head_idx) {
-                    peekIndex.reset();
-                    break;
+                if (nsm_hdr->from_etl_file) {
+                    peekIndex = (peekIndex.value() == 0) ? current_max_entries : peekIndex.value() - 1;
+                    if (peekIndex.value() == nsm_hdr->tail_idx) {
+                        peekIndex.reset();
+                        break;
+                    }
+                }
+                else {
+                    peekIndex = (peekIndex.value() == 0) ? current_max_entries : peekIndex.value() - 1;
+                    if (peekIndex.value() == nsm_hdr->head_idx) {
+                        peekIndex.reset();
+                        break;
+                    }
                 }
             }
         }
@@ -252,8 +261,13 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         // dequeue frame number. This will be used to track data overruns if
         // the client does not read data fast enough.
         recording_frame_data_ = true;
-        current_dequeue_frame_num_ = nsm_hdr->num_frames_written;
-        next_dequeue_idx_ = GetLatestFrameIndex();
+        if (nsm_hdr->from_etl_file) {
+            current_dequeue_frame_num_ = nsm_hdr->head_idx;
+        }
+        else {
+            current_dequeue_frame_num_ = nsm_hdr->num_frames_written;
+            next_dequeue_idx_ = GetLatestFrameIndex();
+        }
     }
 
     // Check to see if the number of pending read frames is greater
@@ -280,6 +294,7 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
     if (*pNsmData) {
         next_dequeue_idx_ = (next_dequeue_idx_ + 1) % nsm_hdr->max_entries;
         current_dequeue_frame_num_++;
+        nsm_view->IncrementClientReadFrames();
         return PM_STATUS::PM_STATUS_SUCCESS;
     }
     else {

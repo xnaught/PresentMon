@@ -15,6 +15,7 @@ namespace clio
 		Option<long long> timedStop{ this, "--timed-stop", -1, "Signal stop event after specified number of milliseconds" };
 		Option<std::string> etwSessionName{ this, "--etw-session-name", "", "Name to use when creating the ETW session" };
 		Option<std::string> etlSessionName{ this, "--etl-session-name", "", "Name to use when creating an ETL session" };
+		Option<std::string> etlTestFile{ this, "--etl-test-file", "", "Etl test file including necessary path" };
 		static constexpr const char* description = "Intel PresentMon service for frame and system performance measurement";
 		static constexpr const char* name = "PresentMonService.exe";
 	};

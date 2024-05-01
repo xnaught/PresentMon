@@ -26,7 +26,7 @@ NamedSharedMem::NamedSharedMem()
       buf_size_(0){};
 
 
-NamedSharedMem::NamedSharedMem(std::string mapfile_name, uint64_t buf_size)
+NamedSharedMem::NamedSharedMem(std::string mapfile_name, uint64_t buf_size, bool from_etl_file)
     : mapfile_handle_(NULL),
       data_offset_base_(sizeof(NamedSharedMemoryHeader)),
       header_(NULL),
@@ -41,7 +41,7 @@ NamedSharedMem::NamedSharedMem(std::string mapfile_name, uint64_t buf_size)
     
     alloc_granularity_ = system_info.dwAllocationGranularity;
 
-    CreateSharedMem(std::move(mapfile_name), buf_size);
+    CreateSharedMem(std::move(mapfile_name), buf_size, from_etl_file);
 };
 
 void NamedSharedMem::OutputErrorLog(const char* error_string,
@@ -55,7 +55,7 @@ void NamedSharedMem::OutputErrorLog(const char* error_string,
     }
 }
 
-HRESULT NamedSharedMem::CreateSharedMem(std::string mapfile_name, uint64_t buf_size)
+HRESULT NamedSharedMem::CreateSharedMem(std::string mapfile_name, uint64_t buf_size, bool from_etl_file)
 {
     HRESULT hr = S_OK;
 
@@ -135,6 +135,7 @@ HRESULT NamedSharedMem::CreateSharedMem(std::string mapfile_name, uint64_t buf_s
     header_->buf_size = buf_size;
     header_->process_active = true;
     header_->num_frames_written = 0;
+    header_->from_etl_file = from_etl_file;
 
     // Query qpc frequency
     if (!QueryPerformanceFrequency(&header_->qpc_frequency)) {
@@ -290,6 +291,10 @@ void NamedSharedMem::DequeueFrameData() {
   if (!IsEmpty()) {
     header_->head_idx = (header_->head_idx + 1) % header_->max_entries;
   }
+}
+
+void NamedSharedMem::IncrementClientReadFrames() {
+    header_->num_client_read_frames++;
 }
 
 bool NamedSharedMem::IsFull() {

@@ -55,11 +55,12 @@ class Streamer {
   void SetStartQpc(uint64_t start_qpc) { start_qpc_ = start_qpc; };
   bool IsTimedOut() { return write_timedout_; };
   int NumActiveStreams() { return (int)process_shared_mem_map_.size(); }
+  bool AreClientsDoneConsumingETLData(DWORD process_id);
 
  private:
   FRIEND_TEST(NamedSharedMemoryTest, CreateNamedSharedMemory);
   FRIEND_TEST(NamedSharedMemoryTestCustomSize, CreateNamedSharedMemory);
-  bool CreateNamedSharedMemory(DWORD process_id, uint64_t nsm_size_in_bytes = kBufSize);
+  bool CreateNamedSharedMemory(DWORD process_id, bool from_etl_file, uint64_t nsm_size_in_bytes = kBufSize);
   void CopyFromPresentMonPresentEvent(PresentEvent* present_event,
                                       PmNsmPresentEvent* nsm_present_event);
   bool UpdateNSMAttachments(uint32_t process_id, int& ref_count);

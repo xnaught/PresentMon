@@ -59,8 +59,15 @@ namespace
 		{
 			constexpr auto pSubstruct = GetSubstructurePointer<pMember>();
 			if constexpr (std::is_array_v<Type>) {
-				const auto val = (ctx.pSourceFrameData->*pSubstruct.*pMember)[inputIndex_];
-				reinterpret_cast<std::remove_const_t<decltype(val)>&>(pDestBlob[outputOffset_]) = val;
+				if constexpr (std::is_same_v<std::remove_extent_t<Type>, char>) {
+					const auto val = (ctx.pSourceFrameData->*pSubstruct.*pMember)[inputIndex_];
+					// TODO: only getting first character of application name. Hmmm.
+					strcpy_s(reinterpret_cast<char*>(&pDestBlob[outputOffset_]), 260, &val);
+				}
+				else {
+					const auto val = (ctx.pSourceFrameData->*pSubstruct.*pMember)[inputIndex_];
+					reinterpret_cast<std::remove_const_t<decltype(val)>&>(pDestBlob[outputOffset_]) = val;
+				}
 			}
 			else {
 				const auto val = ctx.pSourceFrameData->*pSubstruct.*pMember;
@@ -445,6 +452,8 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	// temporary static metric lookup via nsm
 	// only implementing the ones used by appcef right now... others available in the future
 	// TODO: implement fill for all static OR drop support for filling static
+	case PM_METRIC_APPLICATION:
+		return std::make_unique<CopyGatherCommand_<&Pre::application>>(pos);
 	case PM_METRIC_GPU_MEM_SIZE:
 		return std::make_unique<CopyGatherCommand_<&Gpu::gpu_mem_total_size_b>>(pos);
 	case PM_METRIC_GPU_MEM_MAX_BANDWIDTH:

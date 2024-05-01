@@ -214,8 +214,9 @@ void Streamer::ProcessPresentEvent(
       std::chrono::milliseconds time_elapsed =
           std::chrono::milliseconds::zero();
 
-      while ((stream_mode_ == StreamMode::kOfflineEtl) &&
-             process_nsm->IsFull()) {
+      auto& opt = clio::Options::Get();
+      while ((stream_mode_ == StreamMode::kOfflineEtl ||
+          opt.etlTestFile.AsOptional().has_value()) && process_nsm->IsFull()) {
         auto now = std::chrono::high_resolution_clock::now();
         time_elapsed =
             std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
@@ -393,6 +394,7 @@ void Streamer::StopAllStreams() {
 }
 
 bool Streamer::CreateNamedSharedMemory(DWORD process_id,
+                                       bool from_etl_file,
                                        uint64_t nsm_size_in_bytes) {
   const std::string mapfile_name = mapfileNamePrefix_ + std::to_string(process_id);
 
@@ -400,7 +402,7 @@ bool Streamer::CreateNamedSharedMemory(DWORD process_id,
   auto iter = process_shared_mem_map_.find(process_id);
   if (iter == process_shared_mem_map_.end()) {
     auto nsm =
-        std::make_unique<NamedSharedMem>(std::move(mapfile_name), nsm_size_in_bytes);
+        std::make_unique<NamedSharedMem>(std::move(mapfile_name), nsm_size_in_bytes, from_etl_file);
     if (nsm->IsNSMCreated()) {
         process_shared_mem_map_.emplace(process_id, std::move(nsm));
         return true;
@@ -427,4 +429,29 @@ std::string Streamer::GetMapFileName(DWORD process_id) {
   }
 
   return mapfile_name;
+}
+
+bool Streamer::AreClientsDoneConsumingETLData(DWORD process_id) {
+    // Lock the nsm mutex as stop streaming calls can occur at any time
+    // and destroy the named shared memory during writing of frame data.
+    std::lock_guard<std::mutex> lock(nsm_map_mutex_);
+
+    // Search for the requested process
+    auto iter = process_shared_mem_map_.find(process_id);
+    NamedSharedMem* process_nsm = nullptr;
+    if (iter != process_shared_mem_map_.end()) {
+        process_nsm = iter->second.get();
+        auto nsm_header = process_nsm->GetHeader();
+        if (nsm_header->from_etl_file &&
+            nsm_header->num_frames_written == nsm_header->num_client_read_frames) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    // The passed in process id didn't have a matching nsm.
+    // assume it's done?
+    return true;
 }
