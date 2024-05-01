@@ -417,6 +417,7 @@ namespace pmon::mid
             case PM_METRIC_GPU_TIME:
             case PM_METRIC_DISPLAY_LATENCY:
             case PM_METRIC_DISPLAYED_TIME:
+            case PM_METRIC_ANIMATION_ERROR:
             case PM_METRIC_PRESENTED_FPS:
             case PM_METRIC_APPLICATION_FPS:
             case PM_METRIC_DISPLAYED_FPS:
@@ -1130,6 +1131,10 @@ void ReportMetrics(
         case PM_METRIC_DISPLAYED_TIME:
             output = CalculateStatistic(swapChain.mDisplayedTime, element.stat);
             break;
+        case PM_METRIC_ANIMATION_ERROR:
+            // TODO
+            output = 0.0;
+            break;
         case PM_METRIC_PRESENTED_FPS:
         {
             std::vector<double> presented_fps(swapChain.mCPUBusy.size());
@@ -1655,6 +1660,7 @@ void ReportMetrics(
                 case PM_METRIC_CPU_WAIT:
                 case PM_METRIC_GPU_TIME:
                 case PM_METRIC_DISPLAYED_TIME:
+                case PM_METRIC_ANIMATION_ERROR:
                 case PM_METRIC_APPLICATION:
                     CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
                     break;
