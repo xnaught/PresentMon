@@ -359,6 +359,36 @@ namespace
 		uint32_t outputOffset_;
 		uint16_t outputPaddingSize_;
 	};
+	template<uint64_t PmNsmPresentEvent::* pStart, bool doDroppedCheck>
+	class AnimationErrorGatherCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		AnimationErrorGatherCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t) util::GetPadding(nextAvailableByteOffset, alignof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		{
+			// TODO
+			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.0;
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + alignof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
 	class CpuFrameQpcFrameTimeCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
@@ -580,6 +610,8 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 		return std::make_unique<GpuWaitGatherCommand_>(pos);
 	case PM_METRIC_DISPLAYED_TIME:
 		return std::make_unique<DisplayDifferenceGatherCommand_<&Pre::ScreenTime, 1, 1>>(pos);
+	case PM_METRIC_ANIMATION_ERROR:
+		return std::make_unique<AnimationErrorGatherCommand_<&Pre::ScreenTime, 1>>(pos);
 	case PM_METRIC_GPU_LATENCY:
 		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::GPUStartTime, 0>>(pos);
 	case PM_METRIC_DISPLAY_LATENCY:
