@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 
 namespace pmon::util
 {
@@ -14,4 +15,23 @@ namespace pmon::util
 	{
 		return GetPadding(byteIndex, alignof(T));
 	}
+
+	template<std::copy_constructible T>
+	class CloningUptr : public std::unique_ptr<T>
+	{
+	public:
+		CloningUptr() = default;
+		explicit CloningUptr(T* p) noexcept : std::unique_ptr<T>{ p } {}
+		CloningUptr(CloningUptr&& other) noexcept : std::unique_ptr<T>{ std::move(other) } {}
+		CloningUptr(const CloningUptr& other)
+			:
+			std::unique_ptr<T>{ bool(other) ? std::make_unique<T>(*other) : std::unique_ptr<T>{} }
+		{}
+		CloningUptr(std::unique_ptr<T>&& up) : std::unique_ptr<T>{ std::move(up) } {}
+		CloningUptr& operator=(const CloningUptr& rhs)
+		{
+			std::unique_ptr<T>::reset(CloningUptr{ rhs }.std::unique_ptr<T>::release());
+			return *this;
+		}
+	};
 }

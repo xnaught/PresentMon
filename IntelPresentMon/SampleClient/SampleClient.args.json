@@ -3,6 +3,42 @@
   "Id": "79fe382a-c29c-4c32-a028-b8d1abdf51b0",
   "Items": [
     {
+      "Id": "c1c14433-3ec1-4fc3-9b3b-70b6580bc080",
+      "Command": "--log-allow-list black.txt"
+    },
+    {
+      "Id": "6248d4d3-1a61-499d-84e8-83be773d62af",
+      "Command": "--log-trace-level info"
+    },
+    {
+      "Id": "edbe1209-2ed7-4381-8cd4-5eb6fe9e966a",
+      "Command": "--log-level info"
+    },
+    {
+      "Id": "afc8e7e1-be12-46f8-aed2-d8c09c4a5cfa",
+      "Command": "--log-allow-list bbb"
+    },
+    {
+      "Id": "b8b13731-0ee5-48c0-bee5-216f8ef884d5",
+      "Command": "--log-deny-list aaa"
+    },
+    {
+      "Id": "edf9d064-e8f2-4c3c-8ab3-a70ae989a245",
+      "Command": "--log-demo 0"
+    },
+    {
+      "Id": "de172ca4-f013-4f7c-99e2-5b93c03c4ec5",
+      "Command": "--log-demo 19"
+    },
+    {
+      "Id": "50932c9f-90e3-432b-81dd-2c2471ad5eae",
+      "Command": "--do-pipe-srv"
+    },
+    {
+      "Id": "eade6b77-27bd-4f9e-9f9b-d2a7bc0e68e0",
+      "Command": "--do-pipe-cli"
+    },
+    {
       "Id": "bd38c9b9-08d6-4f8a-af30-2ca066c65af5",
       "Command": "--metric-list-sample"
     },

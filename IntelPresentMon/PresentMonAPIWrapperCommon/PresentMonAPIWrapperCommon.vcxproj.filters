@@ -24,6 +24,9 @@
     <ClCompile Include="EnumMap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PmErrorCodeProvider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Introspection.h">
@@ -33,6 +36,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="EnumMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PmErrorCodeProvider.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

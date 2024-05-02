@@ -166,6 +166,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalIncludeDirectories>..\PresentMonAPI;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -184,6 +185,8 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <AdditionalIncludeDirectories>..\PresentMonAPI;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -196,6 +199,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Console.cpp" />
+    <ClCompile Include="Log.cpp" />
+    <ClCompile Include="LogDemo.cpp" />
     <ClCompile Include="SampleClient.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -205,8 +210,11 @@
     <ClInclude Include="DynamicQuerySample.h" />
     <ClInclude Include="FrameQuerySample.h" />
     <ClInclude Include="IntrospectionSample.h" />
+    <ClInclude Include="Log.h" />
+    <ClInclude Include="LogDemo.h" />
     <ClInclude Include="MetricListSample.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="Verbose.h" />
     <ClInclude Include="WrapperStaticQuery.h" />
   </ItemGroup>
   <ItemGroup>

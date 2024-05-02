@@ -3,6 +3,8 @@
   <ItemGroup>
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="SampleClient.cpp" />
+    <ClCompile Include="Log.cpp" />
+    <ClCompile Include="LogDemo.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Console.h" />
@@ -14,5 +16,8 @@
     <ClInclude Include="Utils.h" />
     <ClInclude Include="WrapperStaticQuery.h" />
     <ClInclude Include="MetricListSample.h" />
+    <ClInclude Include="LogDemo.h" />
+    <ClInclude Include="Verbose.h" />
+    <ClInclude Include="Log.h" />
   </ItemGroup>
 </Project>

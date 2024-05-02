@@ -20,15 +20,86 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cli\CliFramework.h" />
+    <ClInclude Include="Exception.h" />
+    <ClInclude Include="log\CopyDriver.h" />
+    <ClInclude Include="log\ErrorCode.h" />
+    <ClInclude Include="log\EntryMarshallInjector.h" />
+    <ClInclude Include="log\EntryCereal.h" />
+    <ClInclude Include="log\ErrorCodeResolvePolicy.h" />
+    <ClInclude Include="log\ErrorCodeResolver.h" />
+    <ClInclude Include="log\GlobalPolicy.h" />
+    <ClInclude Include="log\IdentificationTable.h" />
+    <ClInclude Include="log\IEntryMarshallReceiver.h" />
+    <ClInclude Include="log\IEntryMarshallSender.h" />
+    <ClInclude Include="log\IErrorCodeProvider.h" />
+    <ClInclude Include="log\IErrorCodeResolver.h" />
+    <ClInclude Include="log\IFileStrategy.h" />
+    <ClInclude Include="log\Channel.h" />
+    <ClInclude Include="log\Entry.h" />
+    <ClInclude Include="log\EntryBuilder.h" />
+    <ClInclude Include="log\IChannel.h" />
+    <ClInclude Include="log\IDriver.h" />
+    <ClInclude Include="log\IPolicy.h" />
+    <ClInclude Include="log\ITextFormatter.h" />
+    <ClInclude Include="log\Level.h" />
+    <ClInclude Include="log\LinePolicy.h" />
+    <ClInclude Include="log\LineTable.h" />
+    <ClInclude Include="log\Log.h" />
+    <ClInclude Include="log\MarshallingProtocol.h" />
+    <ClInclude Include="log\MsvcDebugDriver.h" />
+    <ClInclude Include="log\NamedPipeMarshallReceiver.h" />
+    <ClInclude Include="log\StackTrace.h" />
+    <ClInclude Include="log\StackTraceCereal.h" />
+    <ClInclude Include="log\TextFormatter.h" />
+    <ClInclude Include="log\MarshallDriver.h" />
     <ClInclude Include="Memory.h" />
     <ClInclude Include="Hash.h" />
     <ClInclude Include="Meta.h" />
+    <ClInclude Include="log\BasicFileDriver.h" />
+    <ClInclude Include="log\SimpleFileStrategy.h" />
+    <ClInclude Include="log\PanicLogger.h" />
+    <ClInclude Include="log\NamedPipeMarshallSender.h" />
+    <ClInclude Include="mt\Thread.h" />
     <ClInclude Include="str\String.h" />
+    <ClInclude Include="win\Event.h" />
+    <ClInclude Include="win\Handle.h" />
+    <ClInclude Include="win\HrErrorCodeProvider.h" />
+    <ClInclude Include="win\Overlapped.h" />
+    <ClInclude Include="win\Utilities.h" />
+    <ClInclude Include="win\WinAPI.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp" />
+    <ClCompile Include="Exception.cpp" />
+    <ClCompile Include="log\CopyDriver.cpp" />
+    <ClCompile Include="log\EntryMarshallInjector.cpp" />
     <ClCompile Include="Hash.cpp" />
+    <ClCompile Include="log\Channel.cpp" />
+    <ClCompile Include="log\EntryBuilder.cpp" />
+    <ClCompile Include="log\ErrorCode.cpp" />
+    <ClCompile Include="log\ErrorCodeResolvePolicy.cpp" />
+    <ClCompile Include="log\ErrorCodeResolver.cpp" />
+    <ClCompile Include="log\GlobalPolicy.cpp" />
+    <ClCompile Include="log\IdentificationTable.cpp" />
+    <ClCompile Include="log\Level.cpp" />
+    <ClCompile Include="log\LinePolicy.cpp" />
+    <ClCompile Include="log\LineTable.cpp" />
+    <ClCompile Include="log\Log.cpp" />
+    <ClCompile Include="log\MsvcDebugDriver.cpp" />
+    <ClCompile Include="log\BasicFileDriver.cpp" />
+    <ClCompile Include="log\NamedPipeMarshallReceiver.cpp" />
+    <ClCompile Include="log\StackTrace.cpp" />
+    <ClCompile Include="log\TextFormatter.cpp" />
+    <ClCompile Include="log\SimpleFileStrategy.cpp" />
+    <ClCompile Include="log\PanicLogger.cpp" />
+    <ClCompile Include="log\MarshallDriver.cpp" />
+    <ClCompile Include="log\NamedPipeMarshallSender.cpp" />
+    <ClCompile Include="mt\Thread.cpp" />
     <ClCompile Include="str\String.cpp" />
+    <ClCompile Include="win\Event.cpp" />
+    <ClCompile Include="win\Handle.cpp" />
+    <ClCompile Include="win\HrErrorCodeProvider.cpp" />
+    <ClCompile Include="win\Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="vcpkg.json" />
@@ -151,7 +222,8 @@
       <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -168,7 +240,8 @@
       <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>
