@@ -74,9 +74,14 @@ namespace pmon::util::log
 	}
 	void BootDefaultChannelEager() noexcept
 	{
-		std::thread{ [] {
-			GetDefaultChannel();
-		} }.detach();
+		try {
+			std::thread{ [] {
+				GetDefaultChannel();
+			} }.detach();
+		}
+		catch (...) {
+			pmlog_panic_(str::ToWide(ReportException()));
+		}
 	}
 	void FlushEntryPoint() noexcept
 	{

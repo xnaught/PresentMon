@@ -90,7 +90,7 @@ namespace p2sam
 		}
 		catch (...) {}
 	}
-	LogChannelManager::LogChannelManager()
+	LogChannelManager::LogChannelManager() noexcept
 	{
 		InstallSehTranslator();
 		BootDefaultChannelEager();

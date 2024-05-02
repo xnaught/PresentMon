@@ -6,7 +6,7 @@ namespace p2sam
 	// It acts as a guard to prevent stack trace resolution in the channel worker thread after exiting main
 	struct LogChannelManager
 	{
-		LogChannelManager();
+		LogChannelManager() noexcept;
 		~LogChannelManager();
 	};
 	// call after command line arguments have been parsed
