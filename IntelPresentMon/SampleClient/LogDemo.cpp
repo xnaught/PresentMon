@@ -60,7 +60,7 @@ void RunLogDemo(int mode)
 	}
 	// disable info at runtime
 	else if (mode == 3) {
-		log::GlobalPolicy::Get().SetLogLevel(log::Level::Warn);
+		log::GlobalPolicy::Get().SetLogLevel(log::Level::Warning);
 		pmlog_info(L"info hidden");
 		pmlog_warn(L"warn gets through");
 	}
@@ -71,7 +71,7 @@ void RunLogDemo(int mode)
 	}
 	// set trace level
 	else if (mode == 5) {
-		log::GlobalPolicy::Get().SetTraceLevel(log::Level::Warn);
+		log::GlobalPolicy::Get().SetTraceLevel(log::Level::Warning);
 		pmlog_warn(L"enable stack trace for warning");
 	}
 	// error code logging hr

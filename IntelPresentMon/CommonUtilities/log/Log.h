@@ -31,7 +31,7 @@ namespace pmon::util::log
 	.to(::pmon::util::log::GetDefaultChannel())
 #define pmlog_fatal	xinternal_pmlog_(::pmon::util::log::Level::Fatal).note
 #define pmlog_error	xinternal_pmlog_(::pmon::util::log::Level::Error).note
-#define pmlog_warn	xinternal_pmlog_(::pmon::util::log::Level::Warn).note
+#define pmlog_warn	xinternal_pmlog_(::pmon::util::log::Level::Warning).note
 #define pmlog_info	xinternal_pmlog_(::pmon::util::log::Level::Info).note
 #define pmlog_dbg	xinternal_pmlog_(::pmon::util::log::Level::Debug).note
 #define pmlog_verb(vtag) !vtag ? (void)0 : xinternal_pmlog_(::pmon::util::log::Level::Verbose).note

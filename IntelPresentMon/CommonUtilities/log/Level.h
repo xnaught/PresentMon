@@ -9,7 +9,7 @@ namespace pmon::util::log
 		None,
 		Fatal,
 		Error,
-		Warn,
+		Warning,
 		Info,
 		Debug,
 		Verbose,

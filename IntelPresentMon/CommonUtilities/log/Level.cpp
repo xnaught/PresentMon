@@ -7,15 +7,17 @@ namespace pmon::util::log
 	{
 		try {
 			switch (lv) {
-			case Level::Verbose: return L"Verbose";
-			case Level::Debug: return L"Debug";
-			case Level::Info: return L"Info";
-			case Level::Warn: return L"Warning";
-			case Level::Error: return L"Error";
+			case Level::None: return L"None";
 			case Level::Fatal: return L"Fatal";
+			case Level::Error: return L"Error";
+			case Level::Warning: return L"Warning";
+			case Level::Info: return L"Info";
+			case Level::Debug: return L"Debug";
+			case Level::Verbose: return L"Verbose";
+			default: return L"Unknown";
 			}
 		} catch (...) {}
-		return L"Unknown";
+		return {};
 	}
 
 	std::map<std::string, Level> GetLevelMapNarrow() noexcept
