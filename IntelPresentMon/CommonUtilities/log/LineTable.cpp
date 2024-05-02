@@ -50,29 +50,34 @@ namespace pmon::util::log
 		}
 		catch (...) {}
 	}
-	void LineTable::RegisterListItem(const std::wstring& file, int line, bool isTrace) noexcept
+	void LineTable::RegisterListItem(const std::wstring& file, int line, TraceOverride traceOverride) noexcept
 	{
 		try {
-			Get_().RegisterListItem_(file, line, isTrace);
+			Get_().RegisterListItem_(file, line, traceOverride);
 		}
 		catch (...) {}
 	}
-		
-	bool LineTable::IngestList(const std::wstring& path)
+
+	bool LineTable::IngestList_(const std::wstring& path, bool isBlacklist)
 	{
+		TraceOverride tover = TraceOverride::None;
 		if (std::wifstream listFile{ path }) {
 			std::wstring line;
-			bool traceover = false;
+			bool hasNontraceLine = false;
 			while (std::getline(listFile, line)) {
 				line = str::TrimWhitespace(line);
 				if (line.empty()) {
 					continue;
 				}
 				// detect marker for trace control line and remove
-				const auto traceControl = line.back() == L'%';
-				if (traceControl) {
+				if (line.back() == L'%') {
+					tover = TraceOverride::ForceOff;
+				}
+				else if (line.back() == L'$') {
+					tover = TraceOverride::ForceOn;
+				}
+				if (tover != TraceOverride::None) {
 					line.pop_back();
-					traceover = true;
 				}
 				// check if pattern matches line identifier
 				std::wregex patternLogged(LR"((.+)\((\d+)\)$)");
@@ -80,16 +85,28 @@ namespace pmon::util::log
 				// try to match a line in the log line format (42)
 				if (std::regex_search(line, matches, patternLogged)) {
 					if (matches.size() == 3) {  // matches[0] is the whole string, [1] is the path, [2] is the number
-						RegisterListItem(matches[1], std::stoi(matches[2]), traceControl);
+						RegisterListItem_(matches[1], std::stoi(matches[2]), tover);
+						if (tover == TraceOverride::None) {
+							hasNontraceLine = true;
+						}
 					}
 				}
+				// set global flag to check for allow/deny rules for every log line
+				if (hasNontraceLine) {
+					listMode_ = isBlacklist ? ListMode::Black : ListMode::White;
+				}
 			}
-			return traceover;
+			return tover != TraceOverride::None;
 		}
 		else {
 			pmlog_error();
 			throw std::runtime_error{ "Failed to open listfile {}" };
 		}
+	}
+		
+	bool LineTable::IngestList(const std::wstring& path, bool isBlacklist)
+	{
+		return Get_().IngestList_(path, isBlacklist);
 	}
 
 	LineTable& LineTable::Get_()
@@ -108,11 +125,12 @@ namespace pmon::util::log
 	}
 	LineTable::Entry& LineTable::Lookup_(const std::wstring& file, int line)
 	{
+		std::shared_lock lk{ mtx_ };
 		return lines_[MakeKey_(file, line)];
 	}
-	void LineTable::RegisterListItem_(const std::wstring& file, int line, bool isTrace)
+	void LineTable::RegisterListItem_(const std::wstring& file, int line, TraceOverride traceOverride)
 	{
-		RegisterListItem_(MakeKey_(file, line), isTrace);
+		RegisterListItem_(MakeKey_(file, line), traceOverride);
 	}
 	bool LineTable::GetTraceOverride_() const noexcept
 	{
@@ -130,11 +148,13 @@ namespace pmon::util::log
 	{
 		listMode_ = mode;
 	}
-	void LineTable::RegisterListItem_(const std::wstring& key, bool isTrace)
+	void LineTable::RegisterListItem_(const std::wstring& key, TraceOverride traceOverride)
 	{
+		std::lock_guard lk{ mtx_ };
 		auto& e = lines_[key];
-		if (isTrace) {
-			e.traceOverride_ = true;
+		if (traceOverride != TraceOverride::None) {
+			e.traceOverride_ = traceOverride;
+			traceOverride_ = true;
 		}
 		else {
 			e.isListed_ = true;

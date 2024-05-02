@@ -1,4 +1,5 @@
 #include "Level.h"
+#include "../str/String.h"
 
 namespace pmon::util::log
 {
@@ -15,5 +16,17 @@ namespace pmon::util::log
 			}
 		} catch (...) {}
 		return L"Unknown";
+	}
+
+	std::map<std::string, Level> GetLevelMapNarrow() noexcept
+	{
+		using namespace pmon::util::str;
+		std::map<std::string, Level> map;
+		for (int n = (int)Level::Fatal; n <= (int)Level::Verbose; n++) {
+			const auto lvl = Level(n);
+			auto key = ToLower(ToNarrow(GetLevelName(lvl)));
+			map[std::move(key)] = lvl;
+		}
+		return map;
 	}
 }

@@ -83,4 +83,28 @@ namespace pmon::util::str
 		// Create a substring from the start to the end
 		return std::wstring(start, end);
 	}
+
+	std::string ToLower(const std::string& input)
+	{
+		return input | std::views::transform([](char c) {return (char)tolower(c); })
+			| std::ranges::to<std::basic_string>();
+	}
+
+	std::wstring ToLower(const std::wstring& input)
+	{
+		return input | std::views::transform([](wchar_t c) {return (wchar_t)towlower(c); })
+			| std::ranges::to<std::basic_string>();
+	}
+
+	std::string ToUpper(const std::string& input)
+	{
+		return input | std::views::transform([](char c) {return (char)toupper(c); })
+			| std::ranges::to<std::basic_string>();
+	}
+
+	std::wstring ToUpper(const std::wstring& input)
+	{
+		return input | std::views::transform([](wchar_t c) {return (wchar_t)towupper(c); })
+			| std::ranges::to<std::basic_string>();
+	}
 }

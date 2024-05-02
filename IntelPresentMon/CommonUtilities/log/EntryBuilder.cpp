@@ -117,9 +117,12 @@ namespace pmon::util::log
 		if (pDest_) {
 			auto tracing = captureTrace_.value_or((int)level_ <= (int)GlobalPolicy::Get().GetTraceLevel());
 			// do line override check
-			if (!tracing && LineTable::GetTraceOverride()) {
+			if (LineTable::GetTraceOverride()) {
 				if (auto pEntry = LineTable::TryLookup(GetSourceFileName(), sourceLine_)) {
-					tracing = pEntry->traceOverride_;
+					switch (pEntry->traceOverride_) {
+					case LineTable::TraceOverride::ForceOn: tracing = true; break;
+					case LineTable::TraceOverride::ForceOff: tracing = false; break;
+					}
 				}
 			}
 			if (tracing) {

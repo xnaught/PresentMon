@@ -14,13 +14,8 @@ namespace pmon::util::log
 	void InjectDefaultChannel(std::shared_ptr<IChannel>) noexcept;
 	// utility that client module can use to help implement GetDefaultChannel
 	std::shared_ptr<IChannel> GetDefaultChannelWithFactory(std::function<std::shared_ptr<IChannel>()> factory) noexcept;
-	// DefaultChannelManager should be instantiated as early as possible in the entry point of the process/module
-	// It acts as a guard to prevent stack trace resolution in the channel worker thread after exiting main
-	struct DefaultChannelManager
-	{
-		DefaultChannelManager();
-		~DefaultChannelManager();
-	};
+	// flush channel worker queue and exit thread in preparation for entry point return
+	void FlushEntryPoint() noexcept;
 }
 
 #ifndef PMLOG_BUILD_LEVEL
@@ -42,5 +37,3 @@ namespace pmon::util::log
 #define pmlog_verb(vtag) !vtag ? (void)0 : xinternal_pmlog_(::pmon::util::log::Level::Verbose).note
 
 #define pmwatch(expr) watch(L###expr, (expr))
-
-#define pmlog_setup ::pmon::util::log::DefaultChannelManager xpmlog_scope_sentinel_

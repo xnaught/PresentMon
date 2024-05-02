@@ -43,11 +43,11 @@ namespace pmon::util::log
 	{
 		resolveTraceInClientThread_ = setting;
 	}
-	ExceptionTracePolicy GlobalPolicy::GetExceptionTrace() const noexcept
+	bool GlobalPolicy::GetExceptionTrace() const noexcept
 	{
 		return exceptionTracePolicy_;
 	}
-	void GlobalPolicy::SetExceptionTrace(ExceptionTracePolicy policy) noexcept
+	void GlobalPolicy::SetExceptionTrace(bool policy) noexcept
 	{
 		exceptionTracePolicy_ = policy;
 	}

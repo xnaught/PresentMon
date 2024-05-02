@@ -26,3 +26,5 @@ struct LoggingSingletons
 PRESENTMON_API2_EXPORT LoggingSingletons pmLinkLogging_(
 	std::shared_ptr<pmon::util::log::IChannel> pChannel,
 	std::function<pmon::util::log::IdentificationTable&()> getIdTable);
+// function to flush the dll's log channel worker queue when before exiting
+PRESENTMON_API2_EXPORT void pmFlushEntryPoint_() noexcept;

@@ -8,7 +8,11 @@
 #include "../CommonUtilities/log/ErrorCodeResolvePolicy.h"
 #include "../CommonUtilities/log/ErrorCodeResolver.h"
 #include "../CommonUtilities/win/HrErrorCodeProvider.h"
+#include "../CommonUtilities/str/String.h"
 #include "../PresentMonAPIWrapperCommon/PmErrorCodeProvider.h"
+#include "../PresentMonAPI2/Internal.h"
+#include "CliOptions.h"
+#include "Log.h"
 #include <memory>
 
 
@@ -40,8 +44,60 @@ namespace pmon::util::log
 		}
 	}
 
+	// this is injected into to util::log namespace and hooks into that system
 	std::shared_ptr<IChannel> GetDefaultChannel() noexcept
 	{
 		return GetDefaultChannelWithFactory(MakeChannel);
+	}
+}
+
+namespace p2sam
+{
+	using namespace pmon::util;
+	using namespace pmon::util::log;
+
+	void ConfigureLogging() noexcept
+	{
+		try {
+			// connect dll channel and id table to exe, get access to global settings in dll
+			const auto getters = pmLinkLogging_(GetDefaultChannel(), []()
+				-> IdentificationTable& { return IdentificationTable::Get_(); });
+			// shortcut for command line
+			const auto& opt = clio::Options::Get();
+			// configure logging based on command line
+			if (opt.logLevel) {
+				GlobalPolicy::Get().SetLogLevel(*opt.logLevel);
+				getters.getGlobalPolicy().SetLogLevel(*opt.logLevel);
+			}
+			if (opt.logTraceLevel) {
+				GlobalPolicy::Get().SetTraceLevel(*opt.logTraceLevel);
+				getters.getGlobalPolicy().SetTraceLevel(*opt.logTraceLevel);
+			}
+			if (opt.logTraceExceptions) {
+				GlobalPolicy::Get().SetExceptionTrace(*opt.logTraceExceptions);
+				GlobalPolicy::Get().SetSehTracing(*opt.logTraceExceptions);
+				getters.getGlobalPolicy().SetExceptionTrace(*opt.logTraceExceptions);
+				getters.getGlobalPolicy().SetSehTracing(*opt.logTraceExceptions);
+			}
+			if (opt.logDenyList) {
+				pmquell(LineTable::IngestList(str::ToWide(*opt.logDenyList), true))
+				pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logDenyList), true))
+			}
+			else if (opt.logAllowList) {
+				pmquell(LineTable::IngestList(str::ToWide(*opt.logAllowList), false))
+				pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logAllowList), false))
+			}
+		}
+		catch (...) {}
+	}
+	LogChannelManager::LogChannelManager()
+	{
+		InstallSehTranslator();
+		BootDefaultChannelEager();
+	}
+	LogChannelManager::~LogChannelManager()
+	{
+		pmFlushEntryPoint_();
+		FlushEntryPoint();
 	}
 }

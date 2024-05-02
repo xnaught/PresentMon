@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <map>
 
 namespace pmon::util::log
 {
@@ -15,4 +16,5 @@ namespace pmon::util::log
 	};
 
 	std::wstring GetLevelName(Level) noexcept;
+	std::map<std::string, Level> GetLevelMapNarrow() noexcept;
 }

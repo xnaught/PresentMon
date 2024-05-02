@@ -185,6 +185,11 @@ PRESENTMON_API2_EXPORT LoggingSingletons pmLinkLogging_(
 	};
 }
 
+PRESENTMON_API2_EXPORT void pmFlushEntryPoint_() noexcept
+{
+	pmon::util::log::FlushEntryPoint();
+}
+
 // public endpoints
 PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession(PM_SESSION_HANDLE* pHandle)
 {

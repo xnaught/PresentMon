@@ -18,5 +18,6 @@
     <ClInclude Include="MetricListSample.h" />
     <ClInclude Include="LogDemo.h" />
     <ClInclude Include="Verbose.h" />
+    <ClInclude Include="Log.h" />
   </ItemGroup>
 </Project>

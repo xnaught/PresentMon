@@ -78,13 +78,9 @@ namespace pmon::util::log
 			GetDefaultChannel();
 		} }.detach();
 	}
-	DefaultChannelManager::DefaultChannelManager()
-	{
-		BootDefaultChannelEager();
-	}
-	DefaultChannelManager::~DefaultChannelManager()
+	void FlushEntryPoint() noexcept
 	{
 		GlobalPolicy::Get().SetResolveTraceInClientThread(true);
-		GetDefaultChannel()->FlushEntryPointExit();
+		pmquell(GetDefaultChannel()->FlushEntryPointExit())
 	}
 }

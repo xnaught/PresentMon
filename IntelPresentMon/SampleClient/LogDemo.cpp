@@ -17,6 +17,7 @@
 #include "../CommonUtilities/win/Utilities.h"
 // #define VVV_LOGDEMO
 #include "Verbose.h"
+#include "Log.h"
 #include "../PresentMonAPI2/Internal.h"
 
 using namespace pmon::util;
@@ -39,11 +40,9 @@ void g1() {
 
 void RunLogDemo(int mode)
 {
-	InstallSehTranslator();
-	pmlog_setup;
-	auto getters = pmLinkLogging_(log::GetDefaultChannel(), []() -> log::IdentificationTable&
-		{ return log::IdentificationTable::Get_(); });
-	getters.getGlobalPolicy().SetLogLevel(log::Level::Warn);
+	p2sam::LogChannelManager zLogMan_;
+	p2sam::ConfigureLogging();
+
 	pmapi::Session sesh;
 	
 	// basic log info w/ message
@@ -117,7 +116,7 @@ void RunLogDemo(int mode)
 	}
 	// throw exception with trace (nested)
 	else if (mode == 12) {
-		log::GlobalPolicy::Get().SetExceptionTrace(log::ExceptionTracePolicy::OverrideOn);
+		log::GlobalPolicy::Get().SetExceptionTrace(true);
 		try {
 			g1();
 		}
@@ -145,7 +144,7 @@ void RunLogDemo(int mode)
 	}
 	// Seh exception catching with trace (nested)
 	else if (mode == 15) {
-		log::GlobalPolicy::Get().SetExceptionTrace(log::ExceptionTracePolicy::OverrideOn);
+		log::GlobalPolicy::Get().SetExceptionTrace(true);
 		try {
 			auto h = CreateEventA(nullptr, 0, 0, nullptr);
 			CloseHandle(h);
@@ -195,7 +194,7 @@ void RunLogDemo(int mode)
 	// blacklist to disable and force trace
 	else if (mode == 19) {
 		try {
-			pmon::util::log::LineTable::IngestList(L"black.txt");
+			pmon::util::log::LineTable::IngestList(L"black.txt", true);
 			pmon::util::log::LineTable::SetListMode(pmon::util::log::LineTable::ListMode::Black);
 			pmon::util::log::LineTable::SetTraceOverride(true);
 		}

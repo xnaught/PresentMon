@@ -63,7 +63,7 @@ namespace pmon::util
 
 	void DoCapture_(Exception& e)
 	{
-		if (log::GlobalPolicy::Get().GetExceptionTrace() == log::ExceptionTracePolicy::OverrideOn) {
+		if (log::GlobalPolicy::Get().GetExceptionTrace()) {
 			e.CaptureStackTrace();
 		}
 	}
