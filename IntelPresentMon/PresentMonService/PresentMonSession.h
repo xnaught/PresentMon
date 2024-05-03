@@ -25,8 +25,8 @@ struct SwapChainData {
 struct ProcessInfo {
     std::wstring mModuleName;
     std::unordered_map<uint64_t, SwapChainData> mSwapChain;
-    HANDLE mHandle;
-    bool mTargetProcess;
+    HANDLE mHandle = INVALID_HANDLE_VALUE;
+    bool mTargetProcess = false;
 };
 
 struct HandleDeleter {

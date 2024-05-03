@@ -241,7 +241,7 @@ namespace EtlTests
 
 			std::this_thread::sleep_for(1000ms);
 		}
-		TEST_METHOD(OpenSessionTest)
+		TEST_METHOD(OpenMockSessionTest)
 		{
 			namespace bp = boost::process;
 			using namespace std::string_literals;
@@ -265,6 +265,41 @@ namespace EtlTests
 
 			std::this_thread::sleep_for(1000ms);
 			
+			std::unique_ptr<pmapi::Session> pSession;
+			{
+				try
+				{
+					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+				}
+				catch (const std::exception& e) {
+					std::cout << "Error: " << e.what() << std::endl;
+					Assert::AreEqual(false, true, L"*** Connecting to service via named pipe");
+					return;
+				}
+			}
+		}
+
+		TEST_METHOD(OpenRealtimeSessionTest)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+			using namespace std::chrono_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
+			const auto introName = "PM_intro_test_nsm_2"s;
+
+			oChild.emplace("PresentMonService.exe"s,
+				"--timed-stop"s, "10000"s,
+				"--control-pipe"s, pipeName,
+				"--nsm-prefix"s, "pmon_nsm_utest_"s,
+				"--intro-nsm"s, introName,
+				bp::std_out > out, bp::std_in < in);
+
+			std::this_thread::sleep_for(1000ms);
+
 			std::unique_ptr<pmapi::Session> pSession;
 			{
 				try

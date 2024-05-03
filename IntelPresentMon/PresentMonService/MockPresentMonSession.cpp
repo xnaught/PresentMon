@@ -209,11 +209,6 @@ void MockPresentMonSession::AddPresents(
             break;
         }
 
-        // Stop processing if streamer timed out and output_thread termination is triggered
-        if (quit_output_thread_) {
-            break;
-        }
-
         // Look up the swapchain this present belongs to.
         auto processInfo = GetProcessInfo(presentEvent->ProcessId);
         if (!processInfo->mTargetProcess) {

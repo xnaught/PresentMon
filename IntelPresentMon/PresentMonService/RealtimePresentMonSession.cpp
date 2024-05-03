@@ -207,14 +207,14 @@ void RealtimePresentMonSession::AddPresents(
         auto presentEvent = presentEvents[i];
         assert(presentEvent->IsCompleted);
 
+        // Ignore failed and lost presents.
+        if (presentEvent->IsLost || presentEvent->PresentFailed) {
+            continue;
+        }
+
         // Stop processing events if we hit the next stop time.
         if (checkStopQpc && presentEvent->PresentStartTime >= stopQpc) {
             *hitStopQpc = true;
-            break;
-        }
-
-        // Stop processing if streamer timed out and output_thread termination is triggered
-        if (quit_output_thread_) {
             break;
         }
 
@@ -331,7 +331,7 @@ void RealtimePresentMonSession::ProcessEvents(
         HandleTerminatedProcess(terminatedProcessId);
     }
 
-    if (!eventProcessingDone && !quit_output_thread_) {
+    if (!eventProcessingDone) {
         // Process all present events. The PresentMon service is always recording
         // and in this instance we are not concerned with checking for a stop QPC.
         auto hitStopQPC = false;
@@ -427,8 +427,8 @@ void RealtimePresentMonSession::StartOutputThread() {
 }
 
 void RealtimePresentMonSession::StopOutputThread() {
-    quit_output_thread_ = true;
     if (output_thread_.joinable()) {
+        quit_output_thread_ = true;
         output_thread_.join();
     }
 }

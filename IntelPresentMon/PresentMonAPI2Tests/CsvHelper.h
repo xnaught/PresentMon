@@ -67,22 +67,22 @@ enum Header {
 
 struct v2Metrics {
     std::string appName;
-    uint32_t processId;
-    uint64_t swapChain;
-    PM_GRAPHICS_RUNTIME runtime;
-    int32_t syncInterval;
-    uint32_t presentFlags;
-    uint32_t allowsTearing;
-    PM_PRESENT_MODE presentMode;
-    uint64_t cpuFrameQpc;
-    double cpuFrameTime;
-    double cpuBusy;
-    double cpuWait;
-    double gpuLatency;
-    double gpuTime;
-    double gpuBusy;
-    double gpuWait;
-    double videoBusy;
+    uint32_t processId = 0;
+    uint64_t swapChain = 0;
+    PM_GRAPHICS_RUNTIME runtime = PM_GRAPHICS_RUNTIME_UNKNOWN;
+    int32_t syncInterval = 0;
+    uint32_t presentFlags = 0;
+    uint32_t allowsTearing = 0;
+    PM_PRESENT_MODE presentMode = PM_PRESENT_MODE_UNKNOWN;
+    uint64_t cpuFrameQpc = 0;
+    double cpuFrameTime = 0.;
+    double cpuBusy = 0.;
+    double cpuWait = 0.;
+    double gpuLatency = 0.;
+    double gpuTime = 0.;
+    double gpuBusy = 0.;
+    double gpuWait = 0.;
+    double videoBusy = 0.;
     std::optional<double> displayLatency;
     std::optional<double> displayedTime;
     std::optional<double> clickToPhotonLatency;
