@@ -449,17 +449,3 @@ bool Streamer::AreClientsDoneConsumingETLData(DWORD process_id) {
     // assume it's done?
     return true;
 }
-
-void Streamer::SetDoneProcessingEtlFile(DWORD process_id) {
-    // Lock the nsm mutex as stop streaming calls can occur at any time
-    // and destroy the named shared memory.
-    std::lock_guard<std::mutex> lock(nsm_map_mutex_);
-
-    // Search for the requested process
-    auto iter = process_shared_mem_map_.find(process_id);
-    NamedSharedMem* process_nsm = nullptr;
-    if (iter != process_shared_mem_map_.end()) {
-        process_nsm = iter->second.get();
-        process_nsm->NotifyEtlProcessingComplete();
-    }
-}

@@ -57,7 +57,6 @@ class Streamer {
   bool IsTimedOut() { return write_timedout_; };
   int NumActiveStreams() { return (int)process_shared_mem_map_.size(); }
   bool AreClientsDoneConsumingETLData(DWORD process_id);
-  void SetDoneProcessingEtlFile(DWORD process_id);
 
  private:
   FRIEND_TEST(NamedSharedMemoryTest, CreateNamedSharedMemory);

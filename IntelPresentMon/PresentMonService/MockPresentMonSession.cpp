@@ -405,7 +405,6 @@ void MockPresentMonSession::Output() {
     }
 
     processes_.clear();
-    streamer_.SetDoneProcessingEtlFile(etlProcessId_);
 }
 
 void MockPresentMonSession::StartOutputThread() {
