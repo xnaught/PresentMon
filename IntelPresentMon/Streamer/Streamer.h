@@ -26,7 +26,8 @@ class Streamer {
   // Client API, start streaming data for process by name
   PM_STATUS StartStreaming(uint32_t client_process_id,
                            uint32_t target_process_id,
-                           std::string& mapfile_name);
+                           std::string& mapfile_name,
+                           bool from_etl_file);
 
   // Set streaming mode. Default value is real time streaming for single process.
   void SetStreamMode(StreamMode mode) { stream_mode_ = mode; };
@@ -56,11 +57,12 @@ class Streamer {
   bool IsTimedOut() { return write_timedout_; };
   int NumActiveStreams() { return (int)process_shared_mem_map_.size(); }
   bool AreClientsDoneConsumingETLData(DWORD process_id);
+  void SetDoneProcessingEtlFile(DWORD process_id);
 
  private:
   FRIEND_TEST(NamedSharedMemoryTest, CreateNamedSharedMemory);
   FRIEND_TEST(NamedSharedMemoryTestCustomSize, CreateNamedSharedMemory);
-  bool CreateNamedSharedMemory(DWORD process_id, bool from_etl_file, uint64_t nsm_size_in_bytes = kBufSize);
+  bool CreateNamedSharedMemory(DWORD process_id, bool from_etl_file, uint64_t nsm_size_in_bytes);
   void CopyFromPresentMonPresentEvent(PresentEvent* present_event,
                                       PmNsmPresentEvent* nsm_present_event);
   bool UpdateNSMAttachments(uint32_t process_id, int& ref_count);

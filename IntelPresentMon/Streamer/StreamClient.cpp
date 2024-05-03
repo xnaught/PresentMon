@@ -161,8 +161,9 @@ PM_STATUS StreamClient::RecordFrame(PM_FRAME_DATA** out_frame_data) {
   }
 }
 
-const PmNsmFrameData* StreamClient::PeekNextDisplayedFrame()
+const PmNsmFrameData* StreamClient::PeekNextDisplayedFrame(uint64_t& nextDisplayedIndex)
 {
+    uint64_t peekIndex = next_dequeue_idx_;
     if (recording_frame_data_) {
         auto nsm_view = GetNamedSharedMemView();
         auto nsm_hdr = nsm_view->GetHeader();
@@ -172,10 +173,10 @@ const PmNsmFrameData* StreamClient::PeekNextDisplayedFrame()
         }
 
         const PmNsmFrameData* pNsmData = nullptr;
-        uint64_t peekIndex = next_dequeue_idx_;
         pNsmData = ReadFrameByIdx(peekIndex);
         while (pNsmData) {
             if (pNsmData->present_event.ScreenTime != 0) {
+                nextDisplayedIndex = peekIndex;
                 return pNsmData;
             }
             // advance to next frame with circular buffer wrapping behavior
@@ -183,6 +184,7 @@ const PmNsmFrameData* StreamClient::PeekNextDisplayedFrame()
             pNsmData = ReadFrameByIdx(peekIndex);
         }
     }
+    nextDisplayedIndex = peekIndex;
     return nullptr;
 }
 
@@ -235,9 +237,9 @@ const PmNsmFrameData* StreamClient::PeekPreviousFrame()
     return nullptr;
 }
 
-PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData)
+PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData, const PmNsmFrameData** pNsmPreviousData, const PmNsmFrameData** pNsmNextData)
 {
-    if (pNsmData == nullptr) {
+    if (pNsmData == nullptr || pNsmPreviousData == nullptr || pNsmNextData == nullptr) {
         return PM_STATUS::PM_STATUS_FAILURE;
     }
 
@@ -263,6 +265,7 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         recording_frame_data_ = true;
         if (nsm_hdr->from_etl_file) {
             current_dequeue_frame_num_ = nsm_hdr->head_idx;
+            next_dequeue_idx_ = nsm_hdr->head_idx;
         }
         else {
             current_dequeue_frame_num_ = nsm_hdr->num_frames_written;
@@ -290,9 +293,33 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         }
     }
 
+    // Set all pointers in preparation for frame data read
+    *pNsmData = nullptr;
+    *pNsmNextData = nullptr;
+    *pNsmPreviousData = nullptr;
+
+    // First read the current frame. next_dequeue_idx_ sits
+    // at next frame we need to dequeue.
     *pNsmData = ReadFrameByIdx(next_dequeue_idx_);
     if (*pNsmData) {
+        // Good so far. Save off the queue index in case
+        // we need to reset
+        auto previous_dequeue_idx = next_dequeue_idx_;
+        // Increment the index to the next frame to dequeue as PeekNextDisplayedFrame expects
+        // the frame to be incremented. Can change this when done debugging so we don't have to
+        // reset the dequeue index.
         next_dequeue_idx_ = (next_dequeue_idx_ + 1) % nsm_hdr->max_entries;
+        uint64_t nextDisplayedIndex = 0;
+        *pNsmNextData = PeekNextDisplayedFrame(nextDisplayedIndex);
+        if (*pNsmNextData == nullptr) {
+            // We were unable to get the next displayed frame. It might not have been displayed
+            // yet. Reset the next_dequeue_idx back to where we first started.
+            next_dequeue_idx_ = previous_dequeue_idx;
+            // Also reset the current frame data pointer
+            *pNsmData = nullptr;
+            return PM_STATUS::PM_STATUS_SUCCESS;
+        }
+        *pNsmPreviousData = PeekPreviousFrame();
         current_dequeue_frame_num_++;
         nsm_view->IncrementClientReadFrames();
         return PM_STATUS::PM_STATUS_SUCCESS;

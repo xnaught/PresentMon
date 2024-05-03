@@ -210,7 +210,7 @@ void CharConvert<T>::Convert(const std::string data, T& convertedData, Header co
         else if (data == "D3D9") {
             convertedData = PM_GRAPHICS_RUNTIME_D3D9;
         }
-        else if (data == "UNKNOWN") {
+        else if (data == "Other") {
             convertedData = PM_GRAPHICS_RUNTIME_UNKNOWN;
         }
         else {
@@ -292,7 +292,7 @@ public:
     bool Open(std::wstring const& path, uint32_t processId);
     void Close();
     bool VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-        PM_QUERY_ELEMENT(&queryElements)[18], pmapi::BlobContainer& blobs);
+        PM_QUERY_ELEMENT(&queryElements)[17], pmapi::BlobContainer& blobs);
     bool ResetCsv();
 
 private:
@@ -321,29 +321,29 @@ CsvParser::CsvParser()
 {}
 
 bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-    PM_QUERY_ELEMENT(&queryElements)[18], pmapi::BlobContainer& blobs)
+    PM_QUERY_ELEMENT(&queryElements)[17], pmapi::BlobContainer& blobs)
 {
 
     for (auto pBlob : blobs) {
         // Read a row of blob data
-        const auto appName = *reinterpret_cast<const char*>(&pBlob[queryElements[0].dataOffset]);
-        const auto swapChain = *reinterpret_cast<const uint64_t*>(&pBlob[queryElements[1].dataOffset]);
-        const auto graphicsRuntime = *reinterpret_cast<const PM_GRAPHICS_RUNTIME*>(&pBlob[queryElements[2].dataOffset]);
-        const auto syncInterval = *reinterpret_cast<const int32_t*>(&pBlob[queryElements[3].dataOffset]);
-        const auto presentFlags = *reinterpret_cast<const uint32_t*>(&pBlob[queryElements[4].dataOffset]);
-        const auto allowsTearing = *reinterpret_cast<const bool*>(&pBlob[queryElements[5].dataOffset]);
-        const auto presentMode = *reinterpret_cast<const PM_PRESENT_MODE*>(&pBlob[queryElements[6].dataOffset]);
-        const auto cpuFrameQpc = *reinterpret_cast<const uint64_t*>(&pBlob[queryElements[7].dataOffset]);
-        const auto cpuFrameTime = *reinterpret_cast<const double*>(&pBlob[queryElements[8].dataOffset]);
-        const auto cpuBusy = *reinterpret_cast<const double*>(&pBlob[queryElements[9].dataOffset]);
-        const auto cpuWait = *reinterpret_cast<const double*>(&pBlob[queryElements[10].dataOffset]);
-        const auto gpuLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[11].dataOffset]);
-        const auto gpuTime = *reinterpret_cast<const double*>(&pBlob[queryElements[12].dataOffset]);
-        const auto gpuBusy = *reinterpret_cast<const double*>(&pBlob[queryElements[13].dataOffset]);
-        const auto gpuWait = *reinterpret_cast<const double*>(&pBlob[queryElements[14].dataOffset]);
-        const auto displayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[15].dataOffset]);
-        const auto displayedTime = *reinterpret_cast<const double*>(&pBlob[queryElements[16].dataOffset]);
-        const auto clickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[17].dataOffset]);
+        //const auto appName = *reinterpret_cast<const char*>(&pBlob[queryElements[0].dataOffset]);
+        const auto swapChain = *reinterpret_cast<const uint64_t*>(&pBlob[queryElements[0].dataOffset]);
+        const auto graphicsRuntime = *reinterpret_cast<const PM_GRAPHICS_RUNTIME*>(&pBlob[queryElements[1].dataOffset]);
+        const auto syncInterval = *reinterpret_cast<const int32_t*>(&pBlob[queryElements[2].dataOffset]);
+        const auto presentFlags = *reinterpret_cast<const uint32_t*>(&pBlob[queryElements[3].dataOffset]);
+        const auto allowsTearing = *reinterpret_cast<const bool*>(&pBlob[queryElements[4].dataOffset]);
+        const auto presentMode = *reinterpret_cast<const PM_PRESENT_MODE*>(&pBlob[queryElements[5].dataOffset]);
+        const auto cpuFrameQpc = *reinterpret_cast<const uint64_t*>(&pBlob[queryElements[6].dataOffset]);
+        const auto cpuFrameTime = *reinterpret_cast<const double*>(&pBlob[queryElements[7].dataOffset]);
+        const auto cpuBusy = *reinterpret_cast<const double*>(&pBlob[queryElements[8].dataOffset]);
+        const auto cpuWait = *reinterpret_cast<const double*>(&pBlob[queryElements[9].dataOffset]);
+        const auto gpuLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[10].dataOffset]);
+        const auto gpuTime = *reinterpret_cast<const double*>(&pBlob[queryElements[11].dataOffset]);
+        const auto gpuBusy = *reinterpret_cast<const double*>(&pBlob[queryElements[12].dataOffset]);
+        const auto gpuWait = *reinterpret_cast<const double*>(&pBlob[queryElements[13].dataOffset]);
+        const auto displayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[14].dataOffset]);
+        const auto displayedTime = *reinterpret_cast<const double*>(&pBlob[queryElements[15].dataOffset]);
+        const auto clickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[16].dataOffset]);
         
         // Read rows until we find one with the process we are interested in
         // or we are out of data.

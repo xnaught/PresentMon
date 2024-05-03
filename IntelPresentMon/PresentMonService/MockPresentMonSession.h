@@ -19,7 +19,7 @@ public:
 
 private:
     // functions
-    PM_STATUS StartTraceSession();
+    PM_STATUS StartTraceSession(uint32_t processId);
     void StopTraceSession();
 
     void DequeueAnalyzedInfo(
@@ -62,6 +62,9 @@ private:
 
     std::unordered_map<uint32_t, ProcessInfo> processes_;
     
+    // Note we only support a single ETL session at a time
+    uint32_t etlProcessId_ = 0;
+
     // TODO: Determine if this actually does anything!
     uint32_t target_process_count_;
 

@@ -247,7 +247,8 @@ void Streamer::ProcessPresentEvent(
 /// 
   PM_STATUS Streamer::StartStreaming(uint32_t client_process_id,
                                    uint32_t target_process_id,
-                                   std::string& mapfile_name) {
+                                   std::string& mapfile_name,
+                                   bool from_etl_file) {
     auto target_range = client_map_.equal_range(client_process_id);
     auto found = std::any_of(target_range.first, target_range.second,
                              [target_process_id](auto client_entry) {
@@ -273,7 +274,7 @@ void Streamer::ProcessPresentEvent(
     free(pValue);
 
     // create new shared mem for particular process id
-    if (CreateNamedSharedMemory(target_process_id, mem_size) == false) {
+    if (CreateNamedSharedMemory(target_process_id, from_etl_file, mem_size) == false) {
       return PM_STATUS::PM_STATUS_UNABLE_TO_CREATE_NSM;
     }
 
@@ -433,7 +434,7 @@ std::string Streamer::GetMapFileName(DWORD process_id) {
 
 bool Streamer::AreClientsDoneConsumingETLData(DWORD process_id) {
     // Lock the nsm mutex as stop streaming calls can occur at any time
-    // and destroy the named shared memory during writing of frame data.
+    // and destroy the named shared memory.
     std::lock_guard<std::mutex> lock(nsm_map_mutex_);
 
     // Search for the requested process
@@ -441,17 +442,24 @@ bool Streamer::AreClientsDoneConsumingETLData(DWORD process_id) {
     NamedSharedMem* process_nsm = nullptr;
     if (iter != process_shared_mem_map_.end()) {
         process_nsm = iter->second.get();
-        auto nsm_header = process_nsm->GetHeader();
-        if (nsm_header->from_etl_file &&
-            nsm_header->num_frames_written == nsm_header->num_client_read_frames) {
-            return true;
-        }
-        else {
-            return false;
-        }
+        return process_nsm->IsClientEtlConsumptionDone();
     }
 
     // The passed in process id didn't have a matching nsm.
     // assume it's done?
     return true;
+}
+
+void Streamer::SetDoneProcessingEtlFile(DWORD process_id) {
+    // Lock the nsm mutex as stop streaming calls can occur at any time
+    // and destroy the named shared memory.
+    std::lock_guard<std::mutex> lock(nsm_map_mutex_);
+
+    // Search for the requested process
+    auto iter = process_shared_mem_map_.find(process_id);
+    NamedSharedMem* process_nsm = nullptr;
+    if (iter != process_shared_mem_map_.end()) {
+        process_nsm = iter->second.get();
+        process_nsm->NotifyEtlProcessingComplete();
+    }
 }

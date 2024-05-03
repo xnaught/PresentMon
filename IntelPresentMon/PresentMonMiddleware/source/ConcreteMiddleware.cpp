@@ -1027,26 +1027,25 @@ void ReportMetrics(
         PM_FRAME_QUERY::Context ctx{ nsm_hdr->start_qpc, pShmClient->GetQpcFrequency().QuadPart };
 
         for (uint32_t i = 0; i < frames_to_copy; i++) {
-            const PmNsmFrameData* pNsmFrameData = nullptr;
-            const auto status = pShmClient->ConsumePtrToNextNsmFrameData(&pNsmFrameData);
+            const PmNsmFrameData* pNsmCurrentFrameData = nullptr;
+            const PmNsmFrameData* pNsmPreviousFrameData = nullptr;
+            const PmNsmFrameData* pNsmNextFrameData = nullptr;
+            const auto status = pShmClient->ConsumePtrToNextNsmFrameData(&pNsmCurrentFrameData, &pNsmPreviousFrameData, &pNsmNextFrameData);
             if (status != PM_STATUS::PM_STATUS_SUCCESS) {
                 throw std::runtime_error{ "Error while trying to get frame data from shared memory" };
             }
-            if (!pNsmFrameData) {
+            if (!pNsmCurrentFrameData) {
                 break;
             }
-
-            // if we make it here, we have a ptr to frame data in nsm, time to gather to blob
-            auto nextDisplayedFrame = pShmClient->PeekNextDisplayedFrame();
-            auto previousFrame = pShmClient->PeekPreviousFrame();
-            if (previousFrame && nextDisplayedFrame) {
-                ctx.UpdateSourceData(pNsmFrameData,
-                    nextDisplayedFrame,
-                    previousFrame);
+            if (pNsmPreviousFrameData && pNsmNextFrameData) {
+                ctx.UpdateSourceData(pNsmCurrentFrameData,
+                    pNsmNextFrameData,
+                    pNsmPreviousFrameData);
                 pQuery->GatherToBlob(ctx, pBlob);
                 pBlob += pQuery->GetBlobSize();
                 frames_copied++;
             }
+
         }
         // Set to the actual number of frames copied
         numFrames = frames_copied;

@@ -22,15 +22,13 @@ PM_STATUS MockPresentMonSession::StartStreaming(uint32_t client_process_id,
     uint32_t target_process_id,
     std::string& nsmFileName) {
 
-    auto& opt = clio::Options::Get();
-
     PM_STATUS status = streamer_.StartStreaming(client_process_id,
-        target_process_id, nsmFileName);
+        target_process_id, nsmFileName, true);
     if (status != PM_STATUS::PM_STATUS_SUCCESS) {
         return status;
     }
 
-    status = StartTraceSession();
+    status = StartTraceSession(target_process_id);
     if (status == PM_STATUS_FAILURE) {
         // Unable to start a trace session. Destroy the NSM and
         // return status
@@ -51,14 +49,8 @@ void MockPresentMonSession::StopStreaming(uint32_t client_process_id,
 
 bool MockPresentMonSession::CheckTraceSessions(bool forceTerminate) {
     if (pm_consumer_ && (process_trace_finished_ == true || streamer_.IsTimedOut())) {
-        bool clientsFinished = true;
-        for (const auto& [pid, processInfo] : processes_) {
-            clientsFinished &= streamer_.AreClientsDoneConsumingETLData(pid);
-        }
-        if (clientsFinished) {
-            StopTraceSession();
-            return true;
-        }
+        StopTraceSession();
+        return true;
     }
 
     if (forceTerminate) {
@@ -72,7 +64,7 @@ HANDLE MockPresentMonSession::GetStreamingStartHandle() {
     return INVALID_HANDLE_VALUE;
 }
 
-PM_STATUS MockPresentMonSession::StartTraceSession() {
+PM_STATUS MockPresentMonSession::StartTraceSession(uint32_t processId) {
     auto& opt = clio::Options::Get();
 
     // In a mock PresentMon session we must have an ETL process
@@ -147,6 +139,9 @@ PM_STATUS MockPresentMonSession::StartTraceSession() {
         }
     }
 
+    // Set the process id for this etl session
+    etlProcessId_ = processId;
+
     // Start the consumer and output threads
     StartConsumerThread(trace_session_.mTraceHandle);
     StartOutputThread();
@@ -202,6 +197,11 @@ void MockPresentMonSession::AddPresents(
     for (auto n = presentEvents.size(); i < n; ++i) {
         auto presentEvent = presentEvents[i];
         assert(presentEvent->IsCompleted);
+
+        // Ignore failed and lost presents.
+        if (presentEvent->IsLost || presentEvent->PresentFailed) {
+            continue;
+        }
 
         // Stop processing events if we hit the next stop time.
         if (checkStopQpc && presentEvent->PresentStartTime >= stopQpc) {
@@ -324,7 +324,7 @@ void MockPresentMonSession::ProcessEvents(
         HandleTerminatedProcess(terminatedProcessId);
     }
 
-    if (!eventProcessingDone && !quit_output_thread_) {
+    if (!eventProcessingDone) {
         // Process all present events. The PresentMon service is always recording
         // and in this instance we are not concerned with checking for a stop QPC.
         auto hitStopQPC = false;
@@ -405,6 +405,7 @@ void MockPresentMonSession::Output() {
     }
 
     processes_.clear();
+    streamer_.SetDoneProcessingEtlFile(etlProcessId_);
 }
 
 void MockPresentMonSession::StartOutputThread() {
@@ -413,8 +414,8 @@ void MockPresentMonSession::StartOutputThread() {
 }
 
 void MockPresentMonSession::StopOutputThread() {
-    quit_output_thread_ = true;
     if (output_thread_.joinable()) {
+        quit_output_thread_ = true;
         output_thread_.join();
     }
 }

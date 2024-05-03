@@ -141,7 +141,7 @@ namespace EtlTests
 		static constexpr uint32_t numberOfBlobs = 150u;
 
 		PM_QUERY_ELEMENT queryElements[]{
-			{ PM_METRIC_APPLICATION, PM_STAT_NONE, 0, 0 },
+			//{ PM_METRIC_APPLICATION, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_SWAP_CHAIN_ADDRESS, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_PRESENT_RUNTIME, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_SYNC_INTERVAL, PM_STAT_NONE, 0, 0 },
@@ -208,6 +208,297 @@ namespace EtlTests
 				oChild.reset();
 			}
 		}
+
+		TEST_METHOD(OpenCsvTest)
+		{
+			const auto goldCsvName = L"..\\..\\tests\\gold\\test_case_0.csv";
+			CsvParser goldCsvFile;
+			goldCsvFile.Open(goldCsvName, 1268);
+			goldCsvFile.Close();
+		}
+
+		TEST_METHOD(OpenServiceTest)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+			using namespace std::chrono_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
+			const auto introName = "PM_intro_test_nsm_2"s;
+			const auto etlName = "..\\..\\tests\\gold\\test_case_0.etl";
+			const auto goldCsvName = L"..\\..\\tests\\gold\\test_case_0.csv";
+
+			oChild.emplace("PresentMonService.exe"s,
+				"--timed-stop"s, "10000"s,
+				"--control-pipe"s, pipeName,
+				"--nsm-prefix"s, "pmon_nsm_utest_"s,
+				"--intro-nsm"s, introName,
+				"--etl-test-file"s, etlName,
+				bp::std_out > out, bp::std_in < in);
+
+			std::this_thread::sleep_for(1000ms);
+		}
+		TEST_METHOD(OpenSessionTest)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+			using namespace std::chrono_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
+			const auto introName = "PM_intro_test_nsm_2"s;
+			const auto etlName = "..\\..\\tests\\gold\\test_case_0.etl";
+			const auto goldCsvName = L"..\\..\\tests\\gold\\test_case_0.csv";
+
+			oChild.emplace("PresentMonService.exe"s,
+				"--timed-stop"s, "10000"s,
+				"--control-pipe"s, pipeName,
+				"--nsm-prefix"s, "pmon_nsm_utest_"s,
+				"--intro-nsm"s, introName,
+				"--etl-test-file"s, etlName,
+				bp::std_out > out, bp::std_in < in);
+
+			std::this_thread::sleep_for(1000ms);
+			
+			std::unique_ptr<pmapi::Session> pSession;
+			{
+				try
+				{
+					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+				}
+				catch (const std::exception& e) {
+					std::cout << "Error: " << e.what() << std::endl;
+					Assert::AreEqual(false, true, L"*** Connecting to service via named pipe");
+					return;
+				}
+			}
+		}
+
+		TEST_METHOD(TrackProcessTest)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+			using namespace std::chrono_literals;
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
+			const auto introName = "PM_intro_test_nsm_2"s;
+			const auto etlName = "..\\..\\tests\\gold\\test_case_0.etl";
+			const auto goldCsvName = L"..\\..\\tests\\gold\\test_case_0.csv";
+
+			oChild.emplace("PresentMonService.exe"s,
+				"--timed-stop"s, "10000"s,
+				"--control-pipe"s, pipeName,
+				"--nsm-prefix"s, "pmon_nsm_utest_"s,
+				"--intro-nsm"s, introName,
+				"--etl-test-file"s, etlName,
+				bp::std_out > out, bp::std_in < in);
+
+			std::this_thread::sleep_for(1000ms);
+
+			std::unique_ptr<pmapi::Session> pSession;
+			{
+				try
+				{
+					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+				}
+				catch (const std::exception& e) {
+					std::cout << "Error: " << e.what() << std::endl;
+					Assert::AreEqual(false, true, L"*** Connecting to service via named pipe");
+					return;
+				}
+			}
+
+			pmapi::ProcessTracker processTracker;
+			processTracker.Reset();
+		}
+
+		TEST_METHOD(ConsumeBlobsTest)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+			using namespace std::chrono_literals;
+
+			const uint32_t processId = 1268;
+			const std::string processName = "dwm.exe";
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
+			const auto introName = "PM_intro_test_nsm_2"s;
+			const auto etlName = "..\\..\\tests\\gold\\test_case_0.etl";
+			const auto goldCsvName = L"..\\..\\tests\\gold\\test_case_0.csv";
+
+			oChild.emplace("PresentMonService.exe"s,
+				"--timed-stop"s, "10000"s,
+				"--control-pipe"s, pipeName,
+				"--nsm-prefix"s, "pmon_nsm_utest_"s,
+				"--intro-nsm"s, introName,
+				"--etl-test-file"s, etlName,
+				bp::std_out > out, bp::std_in < in);
+
+			std::this_thread::sleep_for(1000ms);
+
+			std::unique_ptr<pmapi::Session> pSession;
+			{
+				try
+				{
+					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+				}
+				catch (const std::exception& e) {
+					std::cout << "Error: " << e.what() << std::endl;
+					Assert::AreEqual(false, true, L"*** Connecting to service via named pipe");
+					return;
+				}
+			}
+
+			pmapi::ProcessTracker processTracker;
+			PM_QUERY_ELEMENT queryElements[]{
+				//{ PM_METRIC_APPLICATION, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_SWAP_CHAIN_ADDRESS, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_PRESENT_RUNTIME, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_SYNC_INTERVAL, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_PRESENT_FLAGS, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_ALLOWS_TEARING, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_PRESENT_MODE, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_CPU_START_QPC, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_CPU_FRAME_TIME, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_CPU_BUSY, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_CPU_WAIT, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_GPU_LATENCY, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_GPU_TIME, PM_STAT_NONE, 0, 0},
+				{ PM_METRIC_GPU_BUSY, PM_STAT_NONE, 0, 0},
+				{ PM_METRIC_GPU_WAIT, PM_STAT_NONE, 0, 0},
+				{ PM_METRIC_DISPLAY_LATENCY, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_DISPLAYED_TIME, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_CLICK_TO_PHOTON_LATENCY, PM_STAT_NONE, 0, 0}
+			};
+
+			static constexpr uint32_t numberOfBlobs = 150u;
+
+			auto frameQuery = pSession->RegisterFrameQuery(queryElements);
+			auto blobs = frameQuery.MakeBlobContainer(numberOfBlobs);
+
+			processTracker = pSession->TrackProcess(processId);
+
+			while (1) {
+				uint32_t numFrames = numberOfBlobs;
+				try {
+					frameQuery.Consume(processTracker, blobs);
+				}
+				catch (...) {
+					// When processing ETL files an exception is generated when the
+					// middleware discovers the ETL file is done being processed by
+					// service and the client has consumed all produced frames. This
+					// is the way.
+					break;
+				}
+
+				if (blobs.GetNumBlobsPopulated() == 0) {
+					std::this_thread::sleep_for(200ms);
+				}
+			}
+
+			processTracker.Reset();
+		}
+		TEST_METHOD(PmApiConsumeFramesTest)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+			using namespace std::chrono_literals;
+
+			const uint32_t processId = 1268;
+			const std::string processName = "dwm.exe";
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
+			const auto introName = "PM_intro_test_nsm_2"s;
+			const auto etlName = "..\\..\\tests\\gold\\test_case_0.etl";
+			const auto goldCsvName = L"..\\..\\tests\\gold\\test_case_0.csv";
+
+			oChild.emplace("PresentMonService.exe"s,
+				"--timed-stop"s, "10000"s,
+				"--control-pipe"s, pipeName,
+				"--nsm-prefix"s, "pmon_nsm_utest_"s,
+				"--intro-nsm"s, introName,
+				"--etl-test-file"s, etlName,
+				bp::std_out > out, bp::std_in < in);
+
+			std::this_thread::sleep_for(1000ms);
+
+			std::unique_ptr<pmapi::Session> pSession;
+			{
+				try
+				{
+					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+				}
+				catch (const std::exception& e) {
+					std::cout << "Error: " << e.what() << std::endl;
+					Assert::AreEqual(false, true, L"*** Connecting to service via named pipe");
+					return;
+				}
+			}
+
+			pmapi::ProcessTracker processTracker;
+			PM_QUERY_ELEMENT queryElements[]{
+				{ PM_METRIC_APPLICATION, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_SWAP_CHAIN_ADDRESS, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_PRESENT_RUNTIME, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_SYNC_INTERVAL, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_PRESENT_FLAGS, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_ALLOWS_TEARING, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_PRESENT_MODE, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_CPU_START_QPC, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_CPU_FRAME_TIME, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_CPU_BUSY, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_CPU_WAIT, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_GPU_LATENCY, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_GPU_TIME, PM_STAT_NONE, 0, 0},
+				{ PM_METRIC_GPU_BUSY, PM_STAT_NONE, 0, 0},
+				{ PM_METRIC_GPU_WAIT, PM_STAT_NONE, 0, 0},
+				{ PM_METRIC_DISPLAY_LATENCY, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_DISPLAYED_TIME, PM_STAT_NONE, 0, 0 },
+				{ PM_METRIC_CLICK_TO_PHOTON_LATENCY, PM_STAT_NONE, 0, 0}
+			};
+
+			static constexpr uint32_t numberOfBlobs = 150u;
+
+			auto frameQuery = pSession->RegisterFrameQuery(queryElements);
+			auto blobs = frameQuery.MakeBlobContainer(numberOfBlobs);
+
+			processTracker = pSession->TrackProcess(processId);
+
+			while (1) {
+				uint32_t numFrames = numberOfBlobs;
+				try {
+					frameQuery.Consume(processTracker, blobs);
+				}
+				catch (...) {
+					// When processing ETL files an exception is generated when the
+					// middleware discovers the ETL file is done being processed by
+					// service and the client has consumed all produced frames. This
+					// is the way.
+					break;
+				}
+
+				if (blobs.GetNumBlobsPopulated() == 0) {
+					std::this_thread::sleep_for(200ms);
+				}
+			}
+
+			processTracker.Reset();
+		}
+
 		TEST_METHOD(Tc0v2Presenter10792)
 		{
 			namespace bp = boost::process;
@@ -736,7 +1027,7 @@ namespace EtlTests
 			goldCsvFile.Open(goldCsvName, processId);
 
 			oChild.emplace("PresentMonService.exe"s,
-				//"--timed-stop"s, "10000"s,
+				"--timed-stop"s, "10000"s,
 				"--control-pipe"s, pipeName,
 				"--nsm-prefix"s, "pmon_nsm_utest_"s,
 				"--intro-nsm"s, introName,

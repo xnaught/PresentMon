@@ -31,11 +31,19 @@ class NamedSharedMem {
           gpu_telemetry_cap_bits,
       std::bitset<static_cast<size_t>(CpuTelemetryCapBits::cpu_telemetry_count)>
           cpu_telemetry_cap_bits);
+  // Server only method to track client consumption of ETL data
+  bool IsClientEtlConsumptionDone();
+  // Server only method to update the nsm that etl processing is complete
+  void NotifyEtlProcessingComplete();
+
   // Client only method to pop already read frame data
   void DequeueFrameData();
   // Client only method to increment the number of client
   // read frames
   void IncrementClientReadFrames();
+  // Client only method to get the number of frames written by the
+  // service
+  uint64_t GetNumServiceWrittenFrames();
   // Client method to open a view into the shared mem
   void OpenSharedMemView(std::string mapfile_name);
   void NotifyProcessKilled();
