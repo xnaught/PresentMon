@@ -21,5 +21,5 @@ xcopy /SY "Web\BlockLists" "%~2BlockLists\"
 
 if "%4"=="uiAccessOn" (
 	echo "Sign executable..."
-	SignTool sign /v /s PrivateCertStore /n "Test Certificate - For Internal Use Only" /t http://timestamp.comodoca.com/authenticode /fd sha1 "%~2%~3"
+	SignTool sign /a /v /s PrivateCertStore /n "Test Certificate - For Internal Use Only" /t http://timestamp.comodoca.com/authenticode /fd sha1 "%~2%~3"
 )
