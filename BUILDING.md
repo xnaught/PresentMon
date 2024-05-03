@@ -127,3 +127,9 @@ Further, for the Release build, the application must be run from a secure locati
     > build\vcpkg\vcpkg.exe integrate install
     > build\vcpkg\vcpkg.exe install
     ```
+
+- If you get an error dialog from PresentMon.exe stating "A referral was returned form the server."
+  you most likely do not have the certificate that the PresentMon service was signed with installed
+  into your trusted root.  Ensure that the above step 4 completed successfully.  If you built the
+  installer on another PC or received it from a trusted third party, you need to install the
+  certificate on the target PC as well.
