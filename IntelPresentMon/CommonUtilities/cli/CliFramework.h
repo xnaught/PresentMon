@@ -12,6 +12,27 @@
 
 namespace pmon::util::cli
 {
+	// option elements inherit from this so we can enumerate options at runtime
+	// and iterate over them (for child process forwarding etc.)
+	// TODO: check how this interacts with std::vector etc. containers
+	class OptionsElement_
+	{
+		friend struct RuleBase_;
+		friend class OptionsContainer;
+	public:
+		virtual ~OptionsElement_() = default;
+		virtual operator bool() const = 0;
+	protected:
+		std::function<std::string(std::string)> GetCaptureCallback_();
+		void SetName_(std::string name);
+		void EnableQuote_();
+	private:
+		std::string name_;
+		std::string raw_;
+		bool forwarding_ = true;
+		bool needsQuote_ = false;
+	};
+
 	class OptionsContainer
 	{
 		template<typename T> friend class Option;
@@ -19,6 +40,9 @@ namespace pmon::util::cli
 	public:
 		OptionsContainer(const char* description, const char* name);
 		std::string GetName() const;
+		std::vector<std::pair<std::string, std::string>> GetForwardedOptions() const;
+	private:
+		void RegisterElement_(OptionsElement_* pElement);
 	protected:
 		// types
 		class ConvertedNarrowOptions_
@@ -40,6 +64,7 @@ namespace pmon::util::cli
 		void Finalize_(int argc, const char* const* argv);
 		int Exit_(const CLI::ParseError& e);
 		// data
+		std::vector<OptionsElement_*> elementPtrs_;
 		bool finalized_ = false;
 		CLI::App app_;
 	};
@@ -84,27 +109,55 @@ namespace pmon::util::cli
 	};
 
 	template<typename T>
-	class Option
+	class Option : public OptionsElement_
 	{
 		friend struct RuleBase_;
 	public:
 		template<class U>
 		Option(OptionsContainer* pParent, std::string names, const T& defaultValue, std::string description, U&& customizer)
 			:
-			Option{ pParent, std::move(names), defaultValue, std::move(description) }
+			data_{ defaultValue }
 		{
+			// create the option
+			pOption_ = pParent->app_.add_option(std::move(names), data_, std::move(description));
 			if constexpr (std::is_base_of_v<CLI::Validator, std::decay_t<U>> ) {
-				pOption_->check(std::forward<U>(customizer));
+				if (customizer.get_modifying()) {
+					pOption_->transform(std::forward<U>(customizer));
+				}
+				else {
+					pOption_->check(std::forward<U>(customizer));
+				}
 			}
 			else {
 				customizer(pOption_);
 			}
+			// capture main name for the option (used when forwarding)
+			SetName_(pOption_->get_name());
+			// surround option value in quotes when forwarding string options
+			if constexpr (std::same_as<std::string, T>) {
+				EnableQuote_();
+			}
+			// capture the raw input string
+			pOption_->transform(GetCaptureCallback_());
+			// register this element with the container dynamically
+			pParent->RegisterElement_(this);
 		}
 		Option(OptionsContainer* pParent, std::string names, const T& defaultValue, std::string description)
 			:
 			data_{ defaultValue }
 		{
+			// create the option
 			pOption_ = pParent->app_.add_option(std::move(names), data_, std::move(description));
+			// capture main name for the option (used when forwarding)
+			SetName_(pOption_->get_name());
+			// surround option value in quotes when forwarding string options
+			if constexpr (std::same_as<std::string, T>) {
+				EnableQuote_();
+			}
+			// capture the raw input string
+			pOption_->transform(GetCaptureCallback_());
+			// register this element with the container dynamically
+			pParent->RegisterElement_(this);
 		}
 		Option(const Option&) = delete;
 		Option& operator=(const Option&) = delete;
@@ -115,7 +168,7 @@ namespace pmon::util::cli
 		{
 			return data_;
 		}
-		operator bool() const
+		operator bool() const final
 		{
 			return (bool)*pOption_;
 		}
@@ -135,13 +188,13 @@ namespace pmon::util::cli
 		CLI::Option* pOption_ = nullptr;
 	};
 
-	class Flag
+	class Flag : public OptionsElement_
 	{
 		friend struct RuleBase_;
 	public:
 		Flag(OptionsContainer* pParent, std::string names, std::string description);
 		bool operator*() const;
-		operator bool() const;
+		operator bool() const final;
 		bool operator!() const;
 	private:
 		bool data_ = false;
@@ -151,24 +204,26 @@ namespace pmon::util::cli
 	struct RuleBase_
 	{
 	protected:
+		// TODO: could move pOption_ into OptionsElement_, would obviate this template
 		template<class T>
-		CLI::Option* GetOption(const T& el) const { return el.pOption_; }
+		CLI::Option* GetOption_(T& el) const { return el.pOption_; }
+		void SetForwarding_(OptionsElement_& el, bool forwarding = false) { el.forwarding_ = forwarding; }
 	};
 
 	class MutualExclusion : RuleBase_
 	{
 	public:
 		template<class...T>
-		MutualExclusion(const T&...elements)
+		MutualExclusion(T&...elements)
 		{
 			Exclude(elements...);
 		}
 	private:
 		template<class T, class...Rest>
-		void Exclude(const T& pivot, const Rest&...rest) const
+		void Exclude(T& pivot, const Rest&...rest) const
 		{
 			if constexpr (sizeof...(rest) > 0) {
-				GetOption(pivot)->excludes(GetOption(rest)...);
+				GetOption_(pivot)->excludes(GetOption_(rest)...);
 				Exclude(rest...);
 			}
 		}
@@ -178,18 +233,28 @@ namespace pmon::util::cli
 	{
 	public:
 		template<class...T>
-		MutualInclusion(const T&...elements)
+		MutualInclusion(T&...elements)
 		{
 			Include(elements...);
 		}
 	private:
 		template<class T, class...Rest>
-		void Include(const T& pivot, const Rest&...rest) const
+		void Include(T& pivot, const Rest&...rest) const
 		{
 			if constexpr (sizeof...(rest) > 0) {
-				GetOption(pivot)->needs(GetOption(rest)...);
+				GetOption_(pivot)->needs(GetOption_(rest)...);
 				Include(rest...);
 			}
+		}
+	};
+
+	class NoForward : RuleBase_
+	{
+	public:
+		template<class...T>
+		NoForward(T&...elements)
+		{
+			(..., SetForwarding_(elements));
 		}
 	};
 }

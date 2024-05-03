@@ -40,6 +40,9 @@ namespace clio
 		static constexpr const char* name = "SampleClient.exe";
 
 	private:
+		// at most only 1 of these options may be present
 		MutualExclusion logListExclusion_{ logDenyList, logAllowList };
+		// these options should not be forwarded (to child processes etc.)
+		NoForward noForward_{ logLevel };
 	};
 }

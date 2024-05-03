@@ -125,6 +125,7 @@
     <ClInclude Include="source\pmon\MetricFetcherFactory.h" />
     <ClInclude Include="source\kernel\MetricPackMapper.h" />
     <ClInclude Include="source\pmon\RawFrameDataMetricList.h" />
+    <ClInclude Include="source\opt\CliOptions.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\win\MessageMap.cpp" />

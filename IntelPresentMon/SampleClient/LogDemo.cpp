@@ -3,6 +3,7 @@
 #include <format>
 #include <map>
 #include <conio.h>
+#include "CliOptions.h"
 #include "../PresentMonAPIWrapper/PresentMonAPIWrapper.h"
 #include "../CommonUtilities/win/WinAPI.h"
 // #define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Verbose
@@ -44,6 +45,10 @@ void RunLogDemo(int mode)
 	p2sam::ConfigureLogging();
 
 	pmapi::Session sesh;
+
+	for (auto&& o : clio::Options::Get().GetForwardedOptions()) {
+		std::cout << std::format("({}, {})", o.first, o.second) << std::endl;
+	}
 	
 	// basic log info w/ message
 	if (mode == 0) {

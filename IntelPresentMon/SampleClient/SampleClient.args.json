@@ -4,7 +4,7 @@
   "Items": [
     {
       "Id": "c1c14433-3ec1-4fc3-9b3b-70b6580bc080",
-      "Command": "--log-allow-list black.txt"
+      "Command": "--log-allow-list \"black.txt\""
     },
     {
       "Id": "6248d4d3-1a61-499d-84e8-83be773d62af",

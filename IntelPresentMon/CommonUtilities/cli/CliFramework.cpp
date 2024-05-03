@@ -2,6 +2,8 @@
 #include "../str/String.h"
 #include <span>
 #include <vector>
+#include <format>
+#include <ranges>
 
 namespace pmon::util::cli
 {
@@ -9,6 +11,21 @@ namespace pmon::util::cli
 	std::string OptionsContainer::GetName() const
 	{
 		return app_.get_name();
+	}
+	std::vector<std::pair<std::string, std::string>> OptionsContainer::GetForwardedOptions() const
+	{
+		std::vector<std::pair<std::string, std::string>> options;
+		for (auto pEl : elementPtrs_) {
+			if (pEl->forwarding_ && bool(*pEl)) {
+				options.emplace_back(pEl->name_,
+					pEl->needsQuote_ ? std::format("\"{}\"", pEl->raw_) : pEl->raw_);
+			}
+		}
+		return options;
+	}
+	void OptionsContainer::RegisterElement_(OptionsElement_* pElement)
+	{
+		elementPtrs_.push_back(pElement);
 	}
 	void OptionsContainer::Finalize_(int argc, const char* const* argv)
 	{
@@ -42,7 +59,12 @@ namespace pmon::util::cli
 
 	Flag::Flag(OptionsContainer* pParent, std::string names, std::string description)
 	{
+		// create the option
 		pOption_ = pParent->app_.add_flag(std::move(names), data_, std::move(description));
+		// capture main name for the option (used when forwarding)
+		SetName_(pOption_->get_name());
+		// register this element with the options container dynamically
+		pParent->RegisterElement_(this);
 	}
 	bool Flag::operator*() const
 	{
@@ -55,5 +77,20 @@ namespace pmon::util::cli
 	bool Flag::operator!() const
 	{
 		return !bool(*this);
+	}
+	std::function<std::string(std::string)> OptionsElement_::GetCaptureCallback_()
+	{
+		return [this](std::string s) -> std::string {
+			raw_ = s;
+			return std::move(s);
+		};
+	}
+	void OptionsElement_::SetName_(std::string name)
+	{
+		name_ = std::move(name);
+	}
+	void OptionsElement_::EnableQuote_()
+	{
+		needsQuote_ = true;
 	}
 }
