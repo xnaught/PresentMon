@@ -29,9 +29,9 @@ namespace pmon::util::cli
 			const char* const* GetRawPointerArray() const;
 
 			ConvertedNarrowOptions_(const ConvertedNarrowOptions_&) = delete;
-			ConvertedNarrowOptions_ & operator=(const ConvertedNarrowOptions_&) = delete;
+			ConvertedNarrowOptions_& operator=(const ConvertedNarrowOptions_&) = delete;
 			ConvertedNarrowOptions_(ConvertedNarrowOptions_&&) = delete;
-			ConvertedNarrowOptions_ & operator=(ConvertedNarrowOptions_&&) = delete;
+			ConvertedNarrowOptions_& operator=(ConvertedNarrowOptions_&&) = delete;
 
 		private:
 			std::vector<char*> stringPointerArray;
@@ -86,7 +86,20 @@ namespace pmon::util::cli
 	template<typename T>
 	class Option
 	{
+		friend struct RuleBase_;
 	public:
+		template<class U>
+		Option(OptionsContainer* pParent, std::string names, const T& defaultValue, std::string description, U&& customizer)
+			:
+			Option{ pParent, std::move(names), defaultValue, std::move(description) }
+		{
+			if constexpr (std::is_base_of_v<CLI::Validator, std::decay_t<U>> ) {
+				pOption_->check(std::forward<U>(customizer));
+			}
+			else {
+				customizer(pOption_);
+			}
+		}
 		Option(OptionsContainer* pParent, std::string names, const T& defaultValue, std::string description)
 			:
 			data_{ defaultValue }
@@ -94,9 +107,9 @@ namespace pmon::util::cli
 			pOption_ = pParent->app_.add_option(std::move(names), data_, std::move(description));
 		}
 		Option(const Option&) = delete;
-		Option & operator=(const Option&) = delete;
+		Option& operator=(const Option&) = delete;
 		Option(Option&&) = delete;
-		Option & operator=(Option&&) = delete;
+		Option& operator=(Option&&) = delete;
 		~Option() = default;
 		const T& operator*() const
 		{
@@ -124,6 +137,7 @@ namespace pmon::util::cli
 
 	class Flag
 	{
+		friend struct RuleBase_;
 	public:
 		Flag(OptionsContainer* pParent, std::string names, std::string description);
 		bool operator*() const;
@@ -132,5 +146,50 @@ namespace pmon::util::cli
 	private:
 		bool data_ = false;
 		CLI::Option* pOption_ = nullptr;
+	};
+
+	struct RuleBase_
+	{
+	protected:
+		template<class T>
+		CLI::Option* GetOption(const T& el) const { return el.pOption_; }
+	};
+
+	class MutualExclusion : RuleBase_
+	{
+	public:
+		template<class...T>
+		MutualExclusion(const T&...elements)
+		{
+			Exclude(elements...);
+		}
+	private:
+		template<class T, class...Rest>
+		void Exclude(const T& pivot, const Rest&...rest) const
+		{
+			if constexpr (sizeof...(rest) > 0) {
+				GetOption(pivot)->excludes(GetOption(rest)...);
+				Exclude(rest...);
+			}
+		}
+	};
+
+	class MutualInclusion : RuleBase_
+	{
+	public:
+		template<class...T>
+		MutualInclusion(const T&...elements)
+		{
+			Include(elements...);
+		}
+	private:
+		template<class T, class...Rest>
+		void Include(const T& pivot, const Rest&...rest) const
+		{
+			if constexpr (sizeof...(rest) > 0) {
+				GetOption(pivot)->needs(GetOption(rest)...);
+				Include(rest...);
+			}
+		}
 	};
 }

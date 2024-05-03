@@ -2,6 +2,8 @@
 
 #define XSTR_(macro) #macro
 #define STRINGIFY_MACRO_CALL(macro) XSTR_(macro)
+#define XLONG_(macro) L##macro
+#define LONGIFY_MACRO_CALL(macro) XLONG_(macro)
 #define SHM_S_(str) ShmString{ (str), charAlloc }
 
 #define MAKE_MASTER_SYMBOL(enum_frag) PM_ENUM_##enum_frag

@@ -36,18 +36,15 @@ const char* RuntimeToString(Runtime rt)
 
 const char* FrameTypeToString(FrameType ft)
 {
-    #ifdef _DEBUG
     switch (ft) {
+    #ifdef _DEBUG
     case FrameType::NotSet:      return "NotSet";
     case FrameType::Repeated:    return "Repeated";
-    }
-    #endif
-
-    switch (ft) {
+    #else
     case FrameType::NotSet:
     case FrameType::Repeated:
+    #endif
     case FrameType::Application: return "Application";
-    case FrameType::Unspecified: return "Unspecified";
     case FrameType::AMD_AFMF:    return "AMD_AFMF";
     }
 

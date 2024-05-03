@@ -7,8 +7,10 @@
 
 #include "ETW/Microsoft_Windows_D3D9.h"
 #include "ETW/Microsoft_Windows_Dwm_Core.h"
+#include "ETW/Microsoft_Windows_Dwm_Core_Win7.h"
 #include "ETW/Microsoft_Windows_DXGI.h"
 #include "ETW/Microsoft_Windows_DxgKrnl.h"
+#include "ETW/Microsoft_Windows_DxgKrnl_Win7.h"
 #include "ETW/Microsoft_Windows_EventMetadata.h"
 #include "ETW/Microsoft_Windows_Kernel_Process.h"
 #include "ETW/Microsoft_Windows_Win32k.h"
@@ -21,16 +23,72 @@ struct TraceProperties : public EVENT_TRACE_PROPERTIES {
     wchar_t mSessionName[MAX_PATH];
 };
 
+template<typename T> void PatchKeyword(uint64_t*) {}
+template<typename T> void PatchPreWin11Keyword(uint64_t*) {}
+
+// Win11 changed some Microsoft-Windows-Dwm-Core event kewords from Composition to Scheduling:
+template<> void PatchPreWin11Keyword<Microsoft_Windows_Dwm_Core::SCHEDULE_PRESENT_Start>     (uint64_t* k) { *k = (*k & ~(uint64_t) Microsoft_Windows_Dwm_Core::Keyword::Scheduling) | (uint64_t) Microsoft_Windows_Dwm_Core::Keyword::Composition; }
+template<> void PatchPreWin11Keyword<Microsoft_Windows_Dwm_Core::SCHEDULE_SURFACEUPDATE_Info>(uint64_t* k) { *k = (*k & ~(uint64_t) Microsoft_Windows_Dwm_Core::Keyword::Scheduling) | (uint64_t) Microsoft_Windows_Dwm_Core::Keyword::Composition; }
+
+// Win11 added a Present keyword to some Microsoft-Windows-DxgKrnl events:
+template<> void PatchPreWin11Keyword<Microsoft_Windows_DxgKrnl::BlitCancel_Info>               (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Present; }
+template<> void PatchPreWin11Keyword<Microsoft_Windows_DxgKrnl::Blit_Info>                     (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Present; }
+template<> void PatchPreWin11Keyword<Microsoft_Windows_DxgKrnl::FlipMultiPlaneOverlay_Info>    (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Present; }
+template<> void PatchPreWin11Keyword<Microsoft_Windows_DxgKrnl::Flip_Info>                     (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Present; }
+template<> void PatchPreWin11Keyword<Microsoft_Windows_DxgKrnl::HSyncDPCMultiPlane_Info>       (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Present; }
+template<> void PatchPreWin11Keyword<Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay_Info>(uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Present; }
+template<> void PatchPreWin11Keyword<Microsoft_Windows_DxgKrnl::MMIOFlip_Info>                 (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Present; }
+template<> void PatchPreWin11Keyword<Microsoft_Windows_DxgKrnl::PresentHistoryDetailed_Start>  (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Present; }
+template<> void PatchPreWin11Keyword<Microsoft_Windows_DxgKrnl::PresentHistory_Info>           (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Present; }
+template<> void PatchPreWin11Keyword<Microsoft_Windows_DxgKrnl::PresentHistory_Start>          (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Present; }
+template<> void PatchPreWin11Keyword<Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info>       (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Present; }
+template<> void PatchPreWin11Keyword<Microsoft_Windows_DxgKrnl::VSyncDPC_Info>                 (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Present; }
+
+// Never filter DxgKrnl events using the Performance keyword, as that can have side-effects with
+// negative performance impact on some versions of Windows.
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::PresentHistory_Start>           (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::Blit_Info>                      (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::BlitCancel_Info>                (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::Flip_Info>                      (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::IndependentFlip_Info>           (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::FlipMultiPlaneOverlay_Info>     (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::HSyncDPCMultiPlane_Info>        (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info>        (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::MMIOFlip_Info>                  (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay_Info> (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::Present_Info>                   (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::PresentHistory_Info>            (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::PresentHistoryDetailed_Start>   (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::QueuePacket_Start>              (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::QueuePacket_Start_2>            (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::QueuePacket_Stop>               (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::VSyncDPC_Info>                  (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::Context_DCStart>                (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::Context_Start>                  (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::Context_Stop>                   (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::Device_DCStart>                 (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::Device_Start>                   (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::Device_Stop>                    (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::HwQueue_DCStart>                (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::HwQueue_Start>                  (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::DmaPacket_Info>                 (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::DmaPacket_Start>                (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::NodeMetadata_Info>              (uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+template<> void PatchKeyword<Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay3_Info>(uint64_t* k) { *k &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance; }
+
+
 struct FilteredProvider {
     EVENT_FILTER_DESCRIPTOR filterDesc_;
     ENABLE_TRACE_PARAMETERS params_;
     uint64_t anyKeywordMask_;
     uint64_t allKeywordMask_;
     uint8_t maxLevel_;
+    bool isWin11OrGreater_;
 
     FilteredProvider(
         GUID const& sessionGuid,
-        bool filterEventIds)
+        bool filterEventIds,
+        bool isWin11OrGreater)
     {
         memset(&filterDesc_, 0, sizeof(filterDesc_));
         memset(&params_,     0, sizeof(params_));
@@ -38,6 +96,7 @@ struct FilteredProvider {
         anyKeywordMask_ = 0;
         allKeywordMask_ = 0;
         maxLevel_ = 0;
+        isWin11OrGreater_ = isWin11OrGreater;
 
         if (filterEventIds) {
             static_assert(MAX_EVENT_FILTER_EVENT_ID_COUNT >= ANYSIZE_ARRAY, "Unexpected MAX_EVENT_FILTER_EVENT_ID_COUNT");
@@ -105,10 +164,12 @@ struct FilteredProvider {
             filteredEventIds->Events[filteredEventIds->Count++] = T::Id;
         }
 
-        #pragma warning(suppress: 4984) // C++17 extension
-        if constexpr ((uint64_t) T::Keyword != 0ull) {
-            AddKeyword((uint64_t) T::Keyword);
+        uint64_t keyword = (uint64_t) T::Keyword;
+        PatchKeyword<T>(&keyword);
+        if (!isWin11OrGreater_) {
+            PatchPreWin11Keyword<T>(&keyword);
         }
+        AddKeyword(keyword);
 
         maxLevel_ = std::max(maxLevel_, T::Level);
     }
@@ -171,9 +232,12 @@ ULONG EnableProviders(
 
     // Start backend providers first to reduce Presents being queued up before
     // we can track them.
-    FilteredProvider provider(sessionGuid, filterEventIds);
+    FilteredProvider provider(sessionGuid, filterEventIds, isWin11OrGreater);
 
     // Microsoft_Windows_DxgKrnl
+    //
+    // WARNING: When adding a DxgKrnl event, make sure to patch it's Performance keyword (see
+    // above).
     provider.ClearFilter();
     provider.AddEvent<Microsoft_Windows_DxgKrnl::PresentHistory_Start>();
     if (pmConsumer->mTrackDisplay) {
@@ -212,31 +276,6 @@ ULONG EnableProviders(
     if (pmConsumer->mTrackFrameType) {
         provider.AddEvent<Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay3_Info>();
     }
-    // BEGIN WORKAROUND: Windows11 adds a "Present" keyword to:
-    //     BlitCancel_Info
-    //     Blit_Info
-    //     FlipMultiPlaneOverlay_Info
-    //     Flip_Info
-    //     HSyncDPCMultiPlane_Info
-    //     MMIOFlipMultiPlaneOverlay_Info
-    //     MMIOFlip_Info
-    //     PresentHistoryDetailed_Start
-    //     PresentHistory_Info
-    //     PresentHistory_Start
-    //     Present_Info
-    //     VSyncDPC_Info
-    if (isWin11OrGreater) {
-        provider.AddKeyword((uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance |
-                            (uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Base |
-                            (uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Present);
-    }
-    // END WORKAROUND
-    // BEGIN WORKAROUND: Don't filter DXGK events using the Performance keyword,
-    // as that can have side-effects with negative performance impact on some
-    // versions of Windows.
-    provider.anyKeywordMask_ &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance;
-    provider.allKeywordMask_ &= ~(uint64_t) Microsoft_Windows_DxgKrnl::Keyword::Microsoft_Windows_DxgKrnl_Performance;
-    // END WORKAROUND
     status = provider.Enable(sessionHandle, Microsoft_Windows_DxgKrnl::GUID);
     if (status != ERROR_SUCCESS) return status;
 
@@ -276,14 +315,6 @@ ULONG EnableProviders(
         provider.AddEvent<Microsoft_Windows_Dwm_Core::FlipChain_Pending>();
         provider.AddEvent<Microsoft_Windows_Dwm_Core::FlipChain_Complete>();
         provider.AddEvent<Microsoft_Windows_Dwm_Core::FlipChain_Dirty>();
-        // BEGIN WORKAROUND: Windows11 uses Scheduling keyword instead of DwmCore keyword for:
-        //     SCHEDULE_PRESENT_Start
-        //     SCHEDULE_SURFACEUPDATE_Info
-        if (isWin11OrGreater) {
-            provider.AddKeyword((uint64_t) Microsoft_Windows_Dwm_Core::Keyword::Microsoft_Windows_Dwm_Core_Diagnostic |
-                                (uint64_t) Microsoft_Windows_Dwm_Core::Keyword::Scheduling);
-        }
-        // END WORKAROUND
         status = provider.Enable(sessionHandle, Microsoft_Windows_Dwm_Core::GUID);
         if (status != ERROR_SUCCESS) return status;
 

@@ -28,6 +28,7 @@
 #include "CheckMetricSample.h"
 #include "WrapperStaticQuery.h"
 #include "MetricListSample.h"
+#include "LogDemo.h"
 
 
 int main(int argc, char* argv[])
@@ -37,6 +38,11 @@ int main(int argc, char* argv[])
             return *e;
         }
         auto& opt = clio::Options::Get();
+
+        if (opt.logDemo) {
+            RunLogDemo(*opt.logDemo);
+            return 0;
+        }
 
         // validate options, better to do this with CLI11 validation but framework needs upgrade...
         if (bool(opt.controlPipe) != bool(opt.introNsm)) {
