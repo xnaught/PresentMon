@@ -32,9 +32,14 @@ namespace pmon::util::cli
 		app_.parse(argc, argv);
 		finalized_ = true;
 	}
-	int OptionsContainer::Exit_(const CLI::ParseError& e)
+	int OptionsContainer::Exit_(const CLI::ParseError& e, bool captureDiagnostics)
 	{
-		return app_.exit(e);
+		if (captureDiagnostics) {
+			return app_.exit(e, diagnostics_, diagnostics_);
+		}
+		else {
+			return app_.exit(e);
+		}
 	}
 
 	OptionsContainer::ConvertedNarrowOptions_::ConvertedNarrowOptions_(int argc, const wchar_t* const* wargv)

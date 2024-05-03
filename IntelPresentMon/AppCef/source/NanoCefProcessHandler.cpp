@@ -17,7 +17,7 @@
 #include "include/base/cef_callback.h"
 #include "util/AsyncEndpointManager.h"
 #include "util/CefValues.h"
-#include <Core/source/infra/opt/Options.h>
+#include <Core/source/cli/CliOptions.h>
 #include <include/cef_parser.h>
 
 
@@ -32,7 +32,7 @@ namespace p2c::client::cef
 #else
         constexpr bool is_debug = true;
 #endif
-        const auto& opt = infra::opt::get();
+        const auto& opt = cli::Options::Get();
         std::string host;
         std::string port;
 
@@ -80,12 +80,12 @@ namespace p2c::client::cef
     {
         // propagate custom cli switches to children
         auto pCmdLine = CefCommandLine::GetGlobalCommandLine();
-        for (auto& opt : infra::opt::get_forwarding()) {
-            if (opt.value.empty()) {
-                pChildCommandLine->AppendSwitch(std::move(opt.name));
+        for (auto&&[name, val] : cli::Options::Get().GetForwardedOptions()) {
+            if (val.empty()) {
+                pChildCommandLine->AppendSwitch(std::move(name));
             }
             else {
-                pChildCommandLine->AppendSwitchWithValue(std::move(opt.name), std::move(opt.value));
+                pChildCommandLine->AppendSwitchWithValue(std::move(name), std::move(val));
             }
         }
     }

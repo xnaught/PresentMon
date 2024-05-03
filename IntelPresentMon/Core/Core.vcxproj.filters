@@ -116,8 +116,6 @@
     <ClInclude Include="source\infra\util\Meta.h" />
     <ClInclude Include="source\win\GpuUtilization.h" />
     <ClInclude Include="source\infra\util\rn\PairToRange.h" />
-    <ClInclude Include="source\infra\opt\Options.h" />
-    <ClInclude Include="source\infra\opt\Framework.h" />
     <ClInclude Include="source\pmon\AdapterInfo.h" />
     <ClInclude Include="source\pmon\metric\DynamicPollingFetcher.h" />
     <ClInclude Include="source\pmon\DynamicQuery.h" />
@@ -125,7 +123,7 @@
     <ClInclude Include="source\pmon\MetricFetcherFactory.h" />
     <ClInclude Include="source\kernel\MetricPackMapper.h" />
     <ClInclude Include="source\pmon\RawFrameDataMetricList.h" />
-    <ClInclude Include="source\opt\CliOptions.h" />
+    <ClInclude Include="source\cli\CliOptions.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\win\MessageMap.cpp" />
@@ -205,7 +203,6 @@
     <ClCompile Include="source\pmon\StatisticsTracker.cpp" />
     <ClCompile Include="source\infra\util\Hash.cpp" />
     <ClCompile Include="source\win\GpuUtilization.cpp" />
-    <ClCompile Include="source\infra\opt\Framework.cpp" />
     <ClCompile Include="source\pmon\DynamicQuery.cpp" />
     <ClCompile Include="source\pmon\metric\DynamicPollingFetcher.cpp" />
   </ItemGroup>

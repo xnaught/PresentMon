@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 #include "ServiceBooter.h"
 #include <Core/source/infra/svc/Services.h>
-#include <Core/source/infra/opt/Options.h>
+#include <Core/source/cli/CliOptions.h>
 #include <Core/source/infra/util/errtl/HResult.h>
 #include <Core/source/infra/util/errtl/PMStatus.h>
 #include <Core/source/infra/util/FolderResolver.h>
@@ -12,7 +12,7 @@
 void p2c::client::util::BootServices()
 {
 	using infra::svc::Services;
-	auto&& cli = infra::opt::get();
+	auto&& cli = cli::Options::Get();
 	
 	if (cli.filesWorking)
 	{

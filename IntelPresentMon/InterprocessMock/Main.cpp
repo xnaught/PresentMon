@@ -11,17 +11,14 @@ int main(int argc, char** argv)
 	using namespace pmon::ipc::mock;
 
 	// parse command line options
-	try {
-		opt::init(argc, argv);
+	if (auto ecode = opt::Options::Init(argc, argv)) {
+		return *ecode;
 	}
-	catch (const CLI::ParseError& e) {
-		return e.get_exit_code();
-	};
 
 	// shortcut for command line options
 	try
 	{
-		const auto& opts = opt::get();
+		const auto& opts = opt::Options::Get();
 
 		if (opts.testF) {
 			std::cout << experimental::f() << std::endl;

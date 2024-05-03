@@ -9,6 +9,7 @@
 #include <cassert>
 #include <string>
 #include <span>
+#include <sstream>
 
 namespace pmon::util::cli
 {
@@ -37,6 +38,7 @@ namespace pmon::util::cli
 	{
 		template<typename T> friend class Option;
 		friend class Flag;
+		friend struct RuleBase_;
 	public:
 		OptionsContainer(const char* description, const char* name);
 		std::string GetName() const;
@@ -62,8 +64,9 @@ namespace pmon::util::cli
 		};
 		// functions
 		void Finalize_(int argc, const char* const* argv);
-		int Exit_(const CLI::ParseError& e);
+		int Exit_(const CLI::ParseError& e, bool captureDiagnostics);
 		// data
+		std::ostringstream diagnostics_;
 		std::vector<OptionsElement_*> elementPtrs_;
 		bool finalized_ = false;
 		CLI::App app_;
@@ -80,12 +83,12 @@ namespace pmon::util::cli
 			assert(opts.finalized_);
 			return opts;
 		}
-		static std::optional<int> Init(int argc, const wchar_t* const* wargv)
+		static std::optional<int> Init(int argc, const wchar_t* const* wargv, bool captureDiagnostics = false)
 		{
 			ConvertedNarrowOptions_ narrowArgs{ argc, wargv };
-			return Init(argc, narrowArgs.GetRawPointerArray());
+			return Init(argc, narrowArgs.GetRawPointerArray(), captureDiagnostics);
 		}
-		static std::optional<int> Init(int argc, const char* const* argv)
+		static std::optional<int> Init(int argc, const char* const* argv, bool captureDiagnostics = false)
 		{
 			auto& opts = Get_();
 			try {
@@ -93,12 +96,16 @@ namespace pmon::util::cli
 				return {};
 			}
 			catch (const CLI::ParseError& e) {
-				return opts.Exit_(e);
+				return opts.Exit_(e, captureDiagnostics);
 			}
 		}
 		static bool IsInitialized()
 		{
 			return Get_().finalized_;
+		}
+		static std::string GetDiagnostics()
+		{
+			return Get_().diagnostics_.str();
 		}
 	private:
 		static T& Get_()
@@ -208,6 +215,7 @@ namespace pmon::util::cli
 		template<class T>
 		CLI::Option* GetOption_(T& el) const { return el.pOption_; }
 		void SetForwarding_(OptionsElement_& el, bool forwarding = false) { el.forwarding_ = forwarding; }
+		void AllowExtras_(OptionsContainer& con) { con.app_.allow_extras(); }
 	};
 
 	class MutualExclusion : RuleBase_
@@ -255,6 +263,15 @@ namespace pmon::util::cli
 		NoForward(T&...elements)
 		{
 			(..., SetForwarding_(elements));
+		}
+	};
+
+	class AllowExtras : RuleBase_
+	{
+	public:
+		AllowExtras(OptionsContainer* pCon)
+		{
+			AllowExtras_(*pCon);
 		}
 	};
 }

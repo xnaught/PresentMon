@@ -7,7 +7,7 @@
 #include <Core/source/infra/log/Logging.h>
 #include <Core/source/infra/svc/Services.h>
 #include <Core/source/infra/util/FolderResolver.h>
-#include <Core/source/infra/opt/Options.h>
+#include <Core/source/cli/CliOptions.h>
 #include <dwmapi.h>
 
 #pragma comment(lib, "Dwmapi.lib")
@@ -15,7 +15,6 @@
 using namespace p2c;
 namespace ccef = client::cef;
 using infra::svc::Services;
-namespace opt = infra::opt;
 
 // globals
 constexpr const char* BrowserWindowClassName = "BrowserWindowClass";
@@ -53,8 +52,8 @@ LRESULT CALLBACK BrowserWindowWndProc(HWND window_handle, UINT message, WPARAM w
         CefBrowserSettings settings;
         // this special url (domain+schema) triggers load-from-disk behavior
         std::string url = "https://app/index.html";
-        if (opt::get().url) {
-            url = *opt::get().url;
+        if (cli::Options::Get().url) {
+            url = cli::Options::Get().url;
         }
         CefBrowserHost::CreateBrowser(
             info, pBrowserClient.get(), url,
@@ -174,7 +173,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 {
     using namespace client;
     try {
-        opt::init();
+        if (auto err = cli::Options::Init(__argc, __argv, true)) {
+            MessageBoxA(nullptr, cli::Options::GetDiagnostics().c_str(), "Command Line Parse Error", MB_ICONERROR);
+        }
         util::BootServices();
 
         CefMainArgs main_args{ hInstance };

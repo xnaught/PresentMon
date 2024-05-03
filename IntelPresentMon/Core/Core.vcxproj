@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="source\cli\CliOptions.h" />
     <ClInclude Include="source\gfx\base\ComPtr.h" />
     <ClInclude Include="source\gfx\base\Geometry.h" />
     <ClInclude Include="source\gfx\base\InternalGeometry.h" />
@@ -51,8 +52,6 @@
     <ClInclude Include="source\gfx\prim\RectPrimitive.h" />
     <ClInclude Include="source\gfx\prim\TextPrimitive.h" />
     <ClInclude Include="source\gfx\prim\TextStylePrimitive.h" />
-    <ClInclude Include="source\infra\opt\Framework.h" />
-    <ClInclude Include="source\infra\opt\Options.h" />
     <ClInclude Include="source\infra\log\Blacklist.h" />
     <ClInclude Include="source\infra\log\Channel.h" />
     <ClInclude Include="source\infra\log\DefaultChannel.h" />
@@ -90,7 +89,6 @@
     <ClInclude Include="source\infra\util\Util.h" />
     <ClInclude Include="source\kernel\DataFetchPack.h" />
     <ClInclude Include="source\kernel\MetricPackMapper.h" />
-    <ClInclude Include="source\opt\CliOptions.h" />
     <ClInclude Include="source\pmon\AdapterInfo.h" />
     <ClInclude Include="source\pmon\DynamicQuery.h" />
     <ClInclude Include="source\pmon\metric\DynamicPollingFetcher.h" />
@@ -162,7 +160,6 @@
     <ClCompile Include="source\gfx\prim\RetainedPrimitive.cpp" />
     <ClCompile Include="source\gfx\prim\TextPrimitive.cpp" />
     <ClCompile Include="source\gfx\prim\TextStylePrimitive.cpp" />
-    <ClCompile Include="source\infra\opt\Framework.cpp" />
     <ClCompile Include="source\infra\log\Blacklist.cpp" />
     <ClCompile Include="source\infra\log\Channel.cpp" />
     <ClCompile Include="source\infra\log\DefaultChannel.cpp" />

@@ -12,7 +12,7 @@
 #include "TargetLostException.h"
 #include <Core/source/win/ProcessMapBuilder.h>
 #include <Core/source/win/com/WbemConnection.h>
-#include <Core/source/infra/opt/Options.h>
+#include <Core/source/cli/CliOptions.h>
 #include <CommonUtilities\str\String.h>
 
 using namespace std::literals;
@@ -150,7 +150,7 @@ namespace p2c::kern
             p2clog.info(L"== kernel thread starting ==").pid().tid().commit();
 
             // command line options
-            auto& opt = infra::opt::get();
+            auto& opt = cli::Options::Get();
 
             // connect to wbem
             win::com::WbemConnection wbemConn;

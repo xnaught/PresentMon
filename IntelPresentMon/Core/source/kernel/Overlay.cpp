@@ -12,7 +12,7 @@
 #include <Core/source/infra/util/rn/ToVector.h>
 #include <Core/source/win/StandardWindow.h>
 #include <Core/source/win/OverlayWindow.h>
-#include <Core/source/infra/opt/Options.h>
+#include <Core/source/cli/CliOptions.h>
 #include <ranges>
 #include <set>
 #include <chrono>
@@ -124,7 +124,7 @@ namespace p2c::kern
         graphicsDimensions{ pSpec->overlayWidth, 240 },
         windowDimensions{ Dimensions{ graphicsDimensions } * upscaleFactor },
         pWindow{ MakeWindow_(pos_) },
-        gfx{ pWindow->GetHandle(), graphicsDimensions, upscaleFactor, infra::opt::get().allowTearing },
+        gfx{ pWindow->GetHandle(), graphicsDimensions, upscaleFactor, cli::Options::Get().allowTearing},
         samplingPeriodMs{ pSpec->samplingPeriodMs },
         samplesPerFrame{ pSpec->samplesPerFrame },
         hideDuringCapture{ pSpec->hideDuringCapture },
