@@ -184,7 +184,7 @@
     <CustomBuild Include="Intel-PresentMon.man">
       <FileType>Document</FileType>
       <Message>Compiling manifest...</Message>
-      <Command>cd "$(IntDir)" &amp;&amp; "$(WindowsSdkDir)\bin\x64\mc.exe" -um "%(FullPath)"</Command>
+      <Command>cd "$(IntDir)" &amp;&amp; "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\mc.exe" -um "%(FullPath)"</Command>
       <Outputs>
         $(IntDir)%(Filename).h;
         $(IntDir)%(Filename).rc;
