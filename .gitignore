@@ -32,7 +32,7 @@ ipch/
 *.vspx
 *.sap
 
-
+# Commandline extension args
 IntelPresentMon/AppCef/CefNano.args.json
-
 IntelPresentMon/PresentMonService/PresentMonService.args.json
+PresentMon/PresentMon.args.json
