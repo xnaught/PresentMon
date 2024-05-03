@@ -293,10 +293,6 @@ void NamedSharedMem::DequeueFrameData() {
   }
 }
 
-void NamedSharedMem::IncrementClientReadFrames() {
-    header_->num_client_read_frames++;
-}
-
 uint64_t NamedSharedMem::GetNumServiceWrittenFrames() {
     return header_->num_frames_written;
 }
@@ -350,20 +346,4 @@ void NamedSharedMem::WriteTelemetryCapBits(
         cpu_telemetry_cap_bits) {
   header_->gpuTelemetryCapBits = gpu_telemetry_cap_bits;
   header_->cpuTelemetryCapBits = cpu_telemetry_cap_bits;
-}
-
-bool NamedSharedMem::IsClientEtlConsumptionDone() {
-    if (header_->from_etl_file) {
-        if (header_->done_processing_etl_file &&
-            header_->num_frames_written == header_->num_client_read_frames) {
-            return true;
-        }
-    }
-    return false;
-}
-
-void NamedSharedMem::NotifyEtlProcessingComplete() {
-    if (header_->from_etl_file) {
-        header_->done_processing_etl_file = true;
-    }
 }

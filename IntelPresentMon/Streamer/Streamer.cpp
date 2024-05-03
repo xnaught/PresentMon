@@ -431,21 +431,3 @@ std::string Streamer::GetMapFileName(DWORD process_id) {
 
   return mapfile_name;
 }
-
-bool Streamer::AreClientsDoneConsumingETLData(DWORD process_id) {
-    // Lock the nsm mutex as stop streaming calls can occur at any time
-    // and destroy the named shared memory.
-    std::lock_guard<std::mutex> lock(nsm_map_mutex_);
-
-    // Search for the requested process
-    auto iter = process_shared_mem_map_.find(process_id);
-    NamedSharedMem* process_nsm = nullptr;
-    if (iter != process_shared_mem_map_.end()) {
-        process_nsm = iter->second.get();
-        return process_nsm->IsClientEtlConsumptionDone();
-    }
-
-    // The passed in process id didn't have a matching nsm.
-    // assume it's done?
-    return true;
-}

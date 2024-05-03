@@ -319,7 +319,6 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         }
         *pNsmPreviousData = PeekPreviousFrame();
         current_dequeue_frame_num_++;
-        nsm_view->IncrementClientReadFrames();
         return PM_STATUS::PM_STATUS_SUCCESS;
     }
     else {

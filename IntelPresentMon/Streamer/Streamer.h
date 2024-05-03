@@ -56,7 +56,6 @@ class Streamer {
   void SetStartQpc(uint64_t start_qpc) { start_qpc_ = start_qpc; };
   bool IsTimedOut() { return write_timedout_; };
   int NumActiveStreams() { return (int)process_shared_mem_map_.size(); }
-  bool AreClientsDoneConsumingETLData(DWORD process_id);
 
  private:
   FRIEND_TEST(NamedSharedMemoryTest, CreateNamedSharedMemory);
