@@ -35,9 +35,6 @@ class StreamClient {
                      GpuTelemetryBitset gpu_telemetry_cap_bits,
                      CpuTelemetryBitset cpu_telemetry_cap_bits,
                      PM_FRAME_DATA* dst_frame);
-  // While capturing frame data search for the NEXT frame that is displayed
-  const PmNsmFrameData* PeekNextDisplayedFrame(uint64_t& nextDisplayedIndex);
-  const PmNsmFrameData* PeekPreviousFrame();
 
   std::optional<std::bitset<
       static_cast<size_t>(GpuTelemetryCapBits::gpu_telemetry_count)>>
@@ -48,6 +45,9 @@ class StreamClient {
 
  private:
   uint64_t CheckPendingReadFrames();
+  const PmNsmFrameData* PeekNextDisplayedFrame();
+  const PmNsmFrameData* PeekPreviousFrame();
+
   void OutputErrorLog(const char* error_string, DWORD last_error);
   // Shared memory view that the client opened into based on mapfile name
   std::unique_ptr<NamedSharedMem> shared_mem_view_;

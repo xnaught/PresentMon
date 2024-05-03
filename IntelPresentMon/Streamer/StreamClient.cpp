@@ -161,7 +161,7 @@ PM_STATUS StreamClient::RecordFrame(PM_FRAME_DATA** out_frame_data) {
   }
 }
 
-const PmNsmFrameData* StreamClient::PeekNextDisplayedFrame(uint64_t& nextDisplayedIndex)
+const PmNsmFrameData* StreamClient::PeekNextDisplayedFrame()
 {
     uint64_t peekIndex = next_dequeue_idx_;
     if (recording_frame_data_) {
@@ -176,7 +176,6 @@ const PmNsmFrameData* StreamClient::PeekNextDisplayedFrame(uint64_t& nextDisplay
         pNsmData = ReadFrameByIdx(peekIndex);
         while (pNsmData) {
             if (pNsmData->present_event.ScreenTime != 0) {
-                nextDisplayedIndex = peekIndex;
                 return pNsmData;
             }
             // advance to next frame with circular buffer wrapping behavior
@@ -184,7 +183,6 @@ const PmNsmFrameData* StreamClient::PeekNextDisplayedFrame(uint64_t& nextDisplay
             pNsmData = ReadFrameByIdx(peekIndex);
         }
     }
-    nextDisplayedIndex = peekIndex;
     return nullptr;
 }
 
@@ -237,7 +235,8 @@ const PmNsmFrameData* StreamClient::PeekPreviousFrame()
     return nullptr;
 }
 
-PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData, const PmNsmFrameData** pNsmPreviousData, const PmNsmFrameData** pNsmNextData)
+PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData, 
+    const PmNsmFrameData** pNsmPreviousData, const PmNsmFrameData** pNsmNextData)
 {
     if (pNsmData == nullptr || pNsmPreviousData == nullptr || pNsmNextData == nullptr) {
         return PM_STATUS::PM_STATUS_FAILURE;
@@ -309,8 +308,7 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         // the frame to be incremented. Can change this when done debugging so we don't have to
         // reset the dequeue index.
         next_dequeue_idx_ = (next_dequeue_idx_ + 1) % nsm_hdr->max_entries;
-        uint64_t nextDisplayedIndex = 0;
-        *pNsmNextData = PeekNextDisplayedFrame(nextDisplayedIndex);
+        *pNsmNextData = PeekNextDisplayedFrame();
         if (*pNsmNextData == nullptr) {
             // We were unable to get the next displayed frame. It might not have been displayed
             // yet. Reset the next_dequeue_idx back to where we first started.
