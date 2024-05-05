@@ -120,17 +120,17 @@ PM_STATUS RealtimePresentMonSession::StartTraceSession() {
         pm_session_name_ = kRealTimeSessionName;
     }
 
-    std::wstring etl_file_name;
+    const wchar_t* etl_file_name = nullptr;
     // Start the session. If a session with this name is already running, we stop
     // it and start a new session. This is useful if a previous process failed to
     // properly shut down the session for some reason.
     trace_session_.mPMConsumer = pm_consumer_.get();
-    auto status = trace_session_.Start(etl_file_name.c_str(), pm_session_name_.c_str());
+    auto status = trace_session_.Start(etl_file_name, pm_session_name_.c_str());
 
     if (status == ERROR_ALREADY_EXISTS) {
         status = StopNamedTraceSession(pm_session_name_.c_str());
         if (status == ERROR_SUCCESS) {
-            status = trace_session_.Start(etl_file_name.c_str(), pm_session_name_.c_str());
+            status = trace_session_.Start(etl_file_name, pm_session_name_.c_str());
         }
     }
 
@@ -200,8 +200,9 @@ void RealtimePresentMonSession::AddPresents(
     uint64_t stopQpc, bool* hitStopQpc) {
     auto i = *presentEventIndex;
 
-    // If mStartTimestamp contains a value an etl file is being processed.
-    assert(trace_session_.mStartTimestamp.QuadPart == 0);
+    if (trace_session_.mStartTimestamp.QuadPart != 0) {
+        streamer_.SetStartQpc(trace_session_.mStartTimestamp.QuadPart);
+    }
 
     for (auto n = presentEvents.size(); i < n; ++i) {
         auto presentEvent = presentEvents[i];
