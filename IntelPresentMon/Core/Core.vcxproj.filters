@@ -3,7 +3,6 @@
   <ItemGroup>
     <ClInclude Include="source\win\WndClass.h" />
     <ClInclude Include="source\gfx\base\Geometry.h" />
-    <ClInclude Include="source\infra\log\Logging.h" />
     <ClInclude Include="source\win\MessageMap.h" />
     <ClInclude Include="source\win\OverlayWindow.h" />
     <ClInclude Include="source\infra\svc\Params.h" />
@@ -19,17 +18,6 @@
     <ClInclude Include="source\infra\util\StackTrace.h" />
     <ClInclude Include="source\infra\util\errtl\HResult.h" />
     <ClInclude Include="source\infra\svc\Exceptions.h" />
-    <ClInclude Include="source\infra\log\Channel.h" />
-    <ClInclude Include="source\infra\log\Entry.h" />
-    <ClInclude Include="source\infra\log\EntryOutputBase.h" />
-    <ClInclude Include="source\infra\log\Level.h" />
-    <ClInclude Include="source\infra\log\LogData.h" />
-    <ClInclude Include="source\infra\log\Driver.h" />
-    <ClInclude Include="source\infra\log\Policy.h" />
-    <ClInclude Include="source\infra\log\Formatter.h" />
-    <ClInclude Include="source\infra\log\DefaultChannel.h" />
-    <ClInclude Include="source\infra\log\drv\SimpleFileDriver.h" />
-    <ClInclude Include="source\infra\log\fmt\DefaultFormatter.h" />
     <ClInclude Include="source\gfx\base\ComPtr.h" />
     <ClInclude Include="source\gfx\Graphics.h" />
     <ClInclude Include="source\gfx\base\InternalGeometry.h" />
@@ -37,7 +25,6 @@
     <ClInclude Include="source\gfx\layout\Geometry.h" />
     <ClInclude Include="source\gfx\layout\AxisMapping.h" />
     <ClInclude Include="source\kernel\Kernel.h" />
-    <ClInclude Include="source\infra\log\drv\DebugOutDriver.h" />
     <ClInclude Include="source\win\MessageBox.h" />
     <ClInclude Include="source\gfx\prim\RectPrimitive.h" />
     <ClInclude Include="source\gfx\prim\RetainedPrimitive.h" />
@@ -104,14 +91,10 @@
     <ClInclude Include="source\win\com\WbemSink.h" />
     <ClInclude Include="source\win\com\Comdef.h" />
     <ClInclude Include="source\kernel\WindowSpawnHandler.h" />
-    <ClInclude Include="source\infra\log\Blacklist.h" />
     <ClInclude Include="source\win\KernelWindow.h" />
-    <ClInclude Include="source\infra\log\v\ProcWatch.h" />
     <ClInclude Include="source\infra\util\IntervalWaiter.h" />
-    <ClInclude Include="source\infra\log\v\Window.h" />
     <ClInclude Include="source\win\com\ProcessSpawnSink.h" />
     <ClInclude Include="source\pmon\StatisticsTracker.h" />
-    <ClInclude Include="source\infra\log\v\Hotkey.h" />
     <ClInclude Include="source\infra\util\Hash.h" />
     <ClInclude Include="source\infra\util\Meta.h" />
     <ClInclude Include="source\win\GpuUtilization.h" />
@@ -125,6 +108,7 @@
     <ClInclude Include="source\pmon\RawFrameDataMetricList.h" />
     <ClInclude Include="source\cli\CliOptions.h" />
     <ClInclude Include="source\gfx\Exception.h" />
+    <ClInclude Include="source\infra\Logging.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\win\MessageMap.cpp" />
@@ -140,18 +124,9 @@
     <ClCompile Include="source\infra\util\ErrorCode.cpp" />
     <ClCompile Include="source\infra\util\errtl\HResult.cpp" />
     <ClCompile Include="source\infra\svc\Services.cpp" />
-    <ClCompile Include="source\infra\log\Level.cpp" />
-    <ClCompile Include="source\infra\log\EntryOutputBase.cpp" />
-    <ClCompile Include="source\infra\log\Entry.cpp" />
-    <ClCompile Include="source\infra\log\Channel.cpp" />
-    <ClCompile Include="source\infra\log\Driver.cpp" />
-    <ClCompile Include="source\infra\log\DefaultChannel.cpp" />
-    <ClCompile Include="source\infra\log\drv\SimpleFileDriver.cpp" />
-    <ClCompile Include="source\infra\log\fmt\DefaultFormatter.cpp" />
     <ClCompile Include="source\gfx\Graphics.cpp" />
     <ClCompile Include="source\gfx\layout\Element.cpp" />
     <ClCompile Include="source\gfx\layout\AxisMapping.cpp" />
-    <ClCompile Include="source\infra\log\drv\DebugOutDriver.cpp" />
     <ClCompile Include="source\win\MessageBox.cpp" />
     <ClCompile Include="source\gfx\prim\RetainedPrimitive.cpp" />
     <ClCompile Include="source\gfx\prim\RectPrimitive.cpp" />
@@ -198,7 +173,6 @@
     <ClCompile Include="source\win\com\WbemListener.cpp" />
     <ClCompile Include="source\win\com\WbemSink.cpp" />
     <ClCompile Include="source\kernel\WindowSpawnHandler.cpp" />
-    <ClCompile Include="source\infra\log\Blacklist.cpp" />
     <ClCompile Include="source\infra\util\IntervalWaiter.cpp" />
     <ClCompile Include="source\win\com\ProcessSpawnSink.cpp" />
     <ClCompile Include="source\pmon\StatisticsTracker.cpp" />
@@ -206,6 +180,7 @@
     <ClCompile Include="source\win\GpuUtilization.cpp" />
     <ClCompile Include="source\pmon\DynamicQuery.cpp" />
     <ClCompile Include="source\pmon\metric\DynamicPollingFetcher.cpp" />
+    <ClCompile Include="source\infra\Logging.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />
