@@ -24,7 +24,7 @@
 #ifdef DEBUG
 static constexpr int PRESENTEVENT_CIRCULAR_BUFFER_SIZE = 32768;
 #else
-static constexpr int PRESENTEVENT_CIRCULAR_BUFFER_SIZE = 8192;
+static constexpr int PRESENTEVENT_CIRCULAR_BUFFER_SIZE = 1024;
 #endif
 
 // These macros, when enabled, record what PresentMon analysis below was done
