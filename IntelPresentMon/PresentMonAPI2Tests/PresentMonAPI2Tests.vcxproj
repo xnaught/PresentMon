@@ -103,6 +103,7 @@
     <ClCompile Include="InterprocessTests.cpp" />
     <ClCompile Include="InterprocessExperimentTests.cpp" />
     <ClCompile Include="MiddlewareTests.cpp" />
+    <ClCompile Include="RealtimeMetricTests.cpp" />
     <ClCompile Include="WrapperDatasetTests.cpp" />
     <ClCompile Include="WrapperSessionTests.cpp" />
   </ItemGroup>
