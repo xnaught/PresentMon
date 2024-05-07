@@ -7,7 +7,7 @@
 #include <map>
 #include <stdexcept>
 #include <format>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include "Exceptions.h"
 
 namespace p2c::infra::svc

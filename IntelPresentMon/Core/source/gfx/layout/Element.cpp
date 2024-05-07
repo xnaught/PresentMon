@@ -3,7 +3,7 @@
 #include "Element.h"
 #include "style/StyleProcessor.h"
 #include "style/ReadOnlyAttributes.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include "AxisMapping.h"
 #include "../prim/BrushPrimitive.h"
 #include "../prim/RectPrimitive.h"
@@ -69,7 +69,8 @@ namespace p2c::gfx::lay
 
 		if (!boxDimensions)
 		{
-			p2clog.note(L"Attempt to set element position without dimensions").commit();
+			pmlog_error(L"Attempt to set element position without dimensions");
+			throw Except<Exception>();
 		}
 
 		if (attrCache->display == Display::None)
@@ -161,7 +162,8 @@ namespace p2c::gfx::lay
 	{
 		if (!IsLaidOut())
 		{
-			p2clog.note(L"Trying to access element rect before laid out").commit();
+			pmlog_error(L"Trying to access element rect before laid out");
+			throw Except<Exception>();
 		}
 		return { *boxPosition, { *boxDimensions.width, *boxDimensions.height } };
 	}
@@ -185,7 +187,8 @@ namespace p2c::gfx::lay
 	{
 		if (!boxDimensions)
 		{
-			p2clog.note(L"Trying to access box dims before set").commit();
+			pmlog_error(L"Trying to access box dims before set");
+			throw Except<Exception>();
 		}
 		const auto marginDims = attrCache->margin.ToDimensions();
 		return { *boxDimensions.width + marginDims.width, *boxDimensions.height + marginDims.height };

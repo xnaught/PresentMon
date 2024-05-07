@@ -1,4 +1,5 @@
 #pragma once
+#include <CommonUtilities/log/Log.h>
 
 namespace p2c
 {

@@ -1,9 +1,13 @@
 #include "IntervalWaiter.h"
 #include <Core/source/win/WinAPI.h>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/Exception.h>
+#include <thread>
 
 namespace p2c::infra::util
 {
+	using namespace ::pmon::util;
+
 	IntervalWaiter::IntervalWaiter(double interval)
 		:
 		interval_{ interval }
@@ -14,7 +18,8 @@ namespace p2c::infra::util
 			CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
 			TIMER_ALL_ACCESS);
 		if (!waitableTimerHandle_) {
-			p2clog.note(L"Failed creating high resolution timer").hr().commit();
+			pmlog_error(L"Failed creating high resolution timer").hr();
+			throw Except<Exception>();
 		}
 	}
 
@@ -53,10 +58,12 @@ namespace p2c::infra::util
 			nullptr,
 			0
 		)) {
-			p2clog.note(L"Failed setting high resolution timer").hr().commit();
+			pmlog_error(L"Failed setting high resolution timer").hr();
+			throw Except<Exception>();
 		}
 		if (auto code = WaitForSingleObject(waitableTimerHandle_, INFINITE)) {
-			p2clog.note(std::format(L"Failed waiting on high resolution timer CODE:{:8x}", code)).hr().commit();
+			pmlog_error(std::format(L"Failed waiting on high resolution timer CODE:{:8x}", code)).hr();
+			throw Except<Exception>();
 		}
 		// spin wait remaining time to obtain more accurate wait
 		while (timer_.Peek() < lastTargetTime_) {
@@ -67,7 +74,7 @@ namespace p2c::infra::util
 	IntervalWaiter::~IntervalWaiter()
 	{
 		if (!CloseHandle(waitableTimerHandle_)) {
-			p2clog.note(L"Failed closing high resolution timer").nox().notrace().hr().commit();
+			pmlog_error(L"Failed closing high resolution timer").no_trace().hr();
 		}
 	}
 }

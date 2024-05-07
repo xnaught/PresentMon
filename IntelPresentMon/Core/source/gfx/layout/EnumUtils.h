@@ -29,8 +29,9 @@ template<> struct EnumRegistry<name> \
 	{ \
 		using enum name; \
 		list(XEN_PARSE_TEM) \
-		p2clog.note(L"cannot convert to enum type: " L ## #name).commit(); \
-		return name(0); \
+		pmlog_error(L"cannot convert to enum type: " L ## #name); \
+		throw Except<Exception>();
+				return name(0); \
 	} \
 	static std::wstring FromEnum(name e) \
 	{ \
@@ -39,7 +40,8 @@ template<> struct EnumRegistry<name> \
 		{ \
 		list(XEN_STRING_TEM) \
 		} \
-		p2clog.note(L"cannot convert from enum type: " L ## #name).commit(); \
-		return L""; \
+		pmlog_error(L"cannot convert from enum type: " L ## #name); \
+		throw Except<Exception>();
+				return L""; \
 	} \
 };

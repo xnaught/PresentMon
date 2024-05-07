@@ -319,7 +319,8 @@ namespace p2c::kern
     {
         if (position == OverlaySpec::OverlayPosition::Center)
         {
-            p2clog.note(L"center overlay position unimplimented").commit();
+            pmlog_error(L"center overlay position unimplimented");
+            throw Except<Exception>();
         }
 
         int x, y;

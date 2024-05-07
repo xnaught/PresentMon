@@ -1,18 +1,22 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "ComManager.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/Exception.h>
 #include "Comdef.h"
 
 
 namespace p2c::win::com
 {
+	using namespace ::pmon::util;
+
 	ComManager::ComManager()
 	{
         if (auto hr = CoInitializeEx(0, COINIT_MULTITHREADED); FAILED(hr))
         {
-			p2clog.note(L"Failed to init COM").hr(hr).commit();
-        }
+			pmlog_error(L"Failed to init COM").hr(hr);
+			throw Except<Exception>();
+		}
 
 		if (auto hr = CoInitializeSecurity(
             nullptr,
@@ -27,7 +31,8 @@ namespace p2c::win::com
         ); FAILED(hr) && hr != RPC_E_TOO_LATE)
 		{
             CoUninitialize();
-			p2clog.note(L"Failed to init COM security").hr(hr).commit();
+			pmlog_error(L"Failed to init COM security").hr(hr);
+			throw Except<Exception>();
 		}
 	}
 

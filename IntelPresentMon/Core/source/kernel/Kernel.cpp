@@ -4,7 +4,7 @@
 #include <Core/source/win/WinAPI.h>
 #include <Core/source/win/MessageBox.h>
 #include <Core/source/infra/util/Util.h>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include <Core/source/infra/svc/Services.h>
 #include <Core/source/infra/util/FolderResolver.h>
 #include <random>
@@ -15,6 +15,7 @@
 #include <Core/source/cli/CliOptions.h>
 #include <CommonUtilities/str/String.h>
 #include <CommonUtilities/Exception.h>
+
 
 using namespace std::literals;
 using namespace ::pmon::util;
@@ -161,7 +162,7 @@ namespace p2c::kern
             try { pm.emplace(opt.controlPipe.AsOptional(), opt.shmName.AsOptional()); }
             catch (...) {
                 pHandler->OnPresentmonInitFailed();
-                p2clog.note(L"Failed to init presentmon api").nox().notrace().commit();
+                pmlog_error(L"Failed to init presentmon api").no_trace();
                 throw;
             }
 
@@ -201,6 +202,7 @@ namespace p2c::kern
                         pHandler->OnStalePidSelected();
                     }
                 }
+                // TODO: improve this report
                 catch (const std::exception& e) {
                     pHandler->OnOverlayDied();
                     auto note = std::format(L"Overlay died with error: {}", pmon::ToWide(e.what()));
@@ -210,7 +212,7 @@ namespace p2c::kern
                 }
                 catch (...) {
                     pHandler->OnOverlayDied();
-                    p2clog.note(L"Overlay died").nox().notrace().commit();
+                    pmlog_error(L"Overlay died").no_trace();
                     pOverlayContainer.reset();
                     pPushedSpec.reset();
                 }
@@ -223,7 +225,7 @@ namespace p2c::kern
         // this catch section handles failures to initialize kernel, or rare error that escape the main loop catch
         // possibility to marshall exceptions to js whenever an interface function is called (async rejection path)
         catch (...) {
-            p2clog.note(ToWide(ReportException())).nox().notrace().commit();
+            pmlog_error(ToWide(ReportException())).no_trace();
             marshalledException = std::current_exception();
             hasMarshalledException.store(true);
         }

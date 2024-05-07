@@ -14,7 +14,8 @@
 #include <type_traits>
 #include <concepts>
 #include <shared_mutex>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/Exception.h>
 #include <Core/source/infra/util/Util.h>
 #include "Exceptions.h"
 #include "Params.h"
@@ -294,7 +295,8 @@ namespace p2c::infra::svc
             {
                 if (throwForKey)
                 {
-                    p2clog.note(std::format(L"Service type not found in service map [{}]", util::ToWide(typeid(T).name()))).ex(NotFound{}).commit();
+                    pmlog_error(std::format(L"Service type not found in service map [{}]", util::ToWide(typeid(T).name())));
+                    throw Except<Exception>();
                 }
                 return {};
             }
@@ -334,8 +336,7 @@ namespace p2c::infra::svc
             }
             catch (const NotFound& e)
             {
-                p2clog.note(std::format(L"Type found in service map but resolve failed [{}]", util::ToWide(typeid(T).name())))
-                    .ex(NotFound{}).nested(e).commit();
+                pmlog_error(std::format(L"Type found in service map but resolve failed [{}]", util::ToWide(typeid(T).name())));
                 return {};
             }
         }

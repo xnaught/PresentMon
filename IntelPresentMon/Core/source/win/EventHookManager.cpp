@@ -1,9 +1,12 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "EventHookManager.h"
+#include <CommonUtilities/Exception.h>
 
 namespace p2c::win
 {
+    using namespace ::pmon::util;
+
     EventHookManager::Token EventHookManager::AddHandler(std::shared_ptr<EventHookHandler> pHandler)
     {
         return { Get().AddHandlerInternal(pHandler) };
@@ -17,7 +20,8 @@ namespace p2c::win
         );
         if (!hHook)
         {
-            p2clog.note(std::format(L"Failure hooking process {}", filter.pid)).hr().commit();
+            pmlog_error(std::format(L"Failure hooking process {}", filter.pid)).hr();
+            throw Except<Exception>();
         }
         handlerMap.emplace(hHook, pHandler);
         return hHook;

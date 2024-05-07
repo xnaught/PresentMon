@@ -2,12 +2,16 @@
 // SPDX-License-Identifier: MIT
 #include "FastRenderer.h"
 #include <d3dcompiler.h>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/Exception.h>
+#include "../Exception.h"
 
 #pragma comment(lib, "d3dcompiler")
 
 namespace p2c::gfx::impl
 {
+    using namespace ::pmon::util;
+
 	FastRenderer::FastRenderer(ID3D11Device& device, const DimensionsI& dims)
         :
         dims{ dims }
@@ -176,7 +180,8 @@ namespace p2c::gfx::impl
         }
         if (!vertexMapping || !indexMapping)
         {
-            p2clog.note(L"Vertex or index mapping not open").commit();
+            pmlog_error(L"Vertex or index mapping not open");
+            throw Except<GraphicsException>();
         }
         if (chainSize)
         {
@@ -375,7 +380,8 @@ namespace p2c::gfx::impl
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_LINELIST)
         {
-            p2clog.note(L"Not line topology").commit();
+            pmlog_error(L"Not line topology");
+            throw Except<GraphicsException>();
         }
 #endif
         chainColor = c;
@@ -397,7 +403,8 @@ namespace p2c::gfx::impl
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_LINELIST)
         {
-            p2clog.note(L"Not line topology").commit();
+            pmlog_error(L"Not line topology");
+            throw Except<GraphicsException>();
         }
 #endif
         chainSize++;
@@ -419,7 +426,8 @@ namespace p2c::gfx::impl
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_LINELIST)
         {
-            p2clog.note(L"Not line topology").commit();
+            pmlog_error(L"Not line topology");
+            throw Except<GraphicsException>();
         }
 #endif
         WriteIndex(nVertices);
@@ -440,7 +448,8 @@ namespace p2c::gfx::impl
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
         {
-            p2clog.note(L"Not triangle topology").commit();
+            pmlog_error(L"Not triangle topology");
+            throw Except<GraphicsException>();
         }
 #endif
         chainColor = c;
@@ -462,7 +471,8 @@ namespace p2c::gfx::impl
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
         {
-            p2clog.note(L"Not triangle topology").commit();
+            pmlog_error(L"Not triangle topology");
+            throw Except<GraphicsException>();
         }
 #endif
         chainSize++;
@@ -489,7 +499,8 @@ namespace p2c::gfx::impl
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
         {
-            p2clog.note(L"Not triangle topology").commit();
+            pmlog_error(L"Not triangle topology");
+            throw Except<GraphicsException>();
         }
 #endif
         WriteVertex(top);
@@ -516,7 +527,8 @@ namespace p2c::gfx::impl
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
         {
-            p2clog.note(L"Not triangle topology").commit();
+            pmlog_error(L"Not triangle topology");
+            throw Except<GraphicsException>();
         }
 #endif
         chainColor = c;
@@ -545,7 +557,8 @@ namespace p2c::gfx::impl
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_LINELIST)
         {
-            p2clog.note(L"Not line topology").commit();
+            pmlog_error(L"Not line topology");
+            throw Except<GraphicsException>();
         }
 #endif
         chainColor = c;
@@ -576,7 +589,8 @@ namespace p2c::gfx::impl
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_LINELIST)
         {
-            p2clog.note(L"Not line topology").commit();
+            pmlog_error(L"Not line topology");
+            throw Except<GraphicsException>();
         }
 #endif
         chainColor = c;

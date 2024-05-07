@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: MIT
 #include "FlexElement.h"
 #include "AxisMapping.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/Exception.h>
 #include <numeric>
 #include "style/StyleProcessor.h"
 
@@ -168,8 +169,8 @@ namespace p2c::gfx::lay
 			case Center:
 				return CalculateCenteredLeadingEdge(start, end, size);
 			default:
-				p2clog.note(L"bad flex alignment").commit();
-				return {};
+				pmlog_error(L"bad flex alignment");
+				throw Except<Exception>();
 			}
 		};
 
@@ -326,8 +327,8 @@ namespace p2c::gfx::lay
 		case Around: return std::make_unique<SpaceDistributorAround>(space, count);
 		case Even: return std::make_unique<SpaceDistributorEven>(space, count);
 		default:
-			p2clog.note(L"unimplemented space distro for justification").commit();
-			return {};
+			pmlog_error(L"unimplemented space distro for justification");
+			throw Except<Exception>();
 		}
 	}
 }

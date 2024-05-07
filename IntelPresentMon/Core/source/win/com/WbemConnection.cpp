@@ -3,13 +3,15 @@
 #include "WbemConnection.h"
 #include "Comdef.h"
 #include <Wbemidl.h>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/Exception.h>
 #include "WbemListener.h"
 
 #pragma comment(lib, "wbemuuid.lib")
 
 namespace p2c::win::com
 {
+	using namespace ::pmon::util;
 	using Microsoft::WRL::ComPtr;
 
 	WbemConnection::WbemConnection()
@@ -23,7 +25,8 @@ namespace p2c::win::com
 			IID_PPV_ARGS(&pLocator)
 		); FAILED(hr))
 		{
-			p2clog.note(L"Failed to create wbem locator").hr(hr).commit();
+			pmlog_error(L"Failed to create wbem locator").hr(hr);
+			throw Except<Exception>();
 		}
 
 		// Connect to WMI through the IWbemLocator::ConnectServer method
@@ -40,7 +43,8 @@ namespace p2c::win::com
 			&pConnection
 		); FAILED(hr))
 		{
-			p2clog.note(L"Failed to connect to wbem connection").hr(hr).commit();
+			pmlog_error(L"Failed to connect to wbem connection").hr(hr);
+			throw Except<Exception>();
 		}
 
 		// Set security levels on the proxy (pConnection)
@@ -55,7 +59,8 @@ namespace p2c::win::com
 			EOAC_NONE                    // proxy capabilities 
 		); FAILED(hr))
 		{
-			p2clog.note(L"Failed to set proxy security blanket on wbem connection").hr(hr).commit();
+			pmlog_error(L"Failed to set proxy security blanket on wbem connection").hr(hr);
+			throw Except<Exception>();
 		}
 	}
 	std::unique_ptr<WbemListener> WbemConnection::CreateListener_(WbemSink* pSink)

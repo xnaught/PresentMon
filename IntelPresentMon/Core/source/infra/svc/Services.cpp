@@ -6,6 +6,8 @@
 
 namespace p2c::infra::svc
 {
+    using namespace ::pmon::util;
+
     void Services::Clear()
     {
         std::unique_lock lock{ Get_().readWriteMutex };
@@ -111,7 +113,8 @@ namespace p2c::infra::svc
                 }
                 if (!tag.empty())
                 {
-                    p2clog.note(L"Tag passed in, but entry was not multitagged").commit();
+                    pmlog_error(L"Tag passed in, but entry was not multitagged");
+                    throw Except<Exception>();
                 }
                 Singleton_& singleton = opt;
                 return GetSingleton(singleton, params);
@@ -120,8 +123,9 @@ namespace p2c::infra::svc
             {
                 if (!tag.empty())
                 {
-                    p2clog.note(L"Tag passed in, but entry was not multitagged").commit();
-                }
+                    pmlog_error(L"Tag passed in, but entry was not multitagged");
+                    throw Except<Exception>();
+                                    }
                 Generator_& generator = opt;
                 return GetGenerated(generator.generator, params);
             }
@@ -150,7 +154,8 @@ namespace p2c::infra::svc
                         {
                             if (throwForKey)
                             {
-                                p2clog.note(L"Primary service type resolved to multitagged with empty primary").ex(NotFound{}).commit();
+                                pmlog_error(L"Primary service type resolved to multitagged with empty primary");
+                                throw Except<Exception>();
                             }
                             return {};
                         }
@@ -186,15 +191,16 @@ namespace p2c::infra::svc
                         }
                         else
                         {
-                            p2clog.note(L"logic error: invalid variant state for tagged entry").commit();
+                            pmlog_error(L"logic error: invalid variant state for tagged entry");
+                            throw Except<Exception>();
                         }
                     }, multiEntryIt->second);
                 }
             }
             else // monostate
             {
-                p2clog.note(L"logic error: invalid variant state (monostate) for root entry").commit();
-                return {};
+                pmlog_error(L"logic error: invalid variant state (monostate) for root entry");
+                throw Except<Exception>();
             }
         }, entry);
     }

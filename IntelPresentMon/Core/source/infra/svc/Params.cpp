@@ -31,7 +31,7 @@ namespace p2c::infra::svc
             return container.at(key);
         }
         catch (const std::out_of_range& e) {
-            p2clog.note(std::format(L"Params::Get unavailable key: {}", util::ToWide(key))).ex(WrongType{}).nested(e).commit();
+            pmlog_error(std::format(L"Params::Get unavailable key: {}", util::ToWide(key)));
             throw;
         }
     }

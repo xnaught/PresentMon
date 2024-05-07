@@ -3,12 +3,14 @@
 #pragma once
 #include "WbemListener.h"
 #include "WbemSink.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/Exception.h>
 #include <Core/source/infra/util/Util.h>
 #include "Comdef.h"
 
 namespace p2c::win::com
 {
+	using namespace ::pmon::util;
 	using Microsoft::WRL::ComPtr;
 
 	WbemListener::WbemListener(
@@ -30,18 +32,21 @@ namespace p2c::win::com
 			&pUnsecApp
 		); FAILED(hr))
 		{
-			p2clog.note(L"Failed to create unsecured apartment").hr(hr).commit();
+			pmlog_error(L"Failed to create unsecured apartment").hr(hr);
+			throw Except<Exception>();
 		}
 
 		// create stub wrapping our sink object, forwarding to assist in async recv
 		ComPtr<IUnknown> pStubUnk;
 		if (auto hr = pUnsecApp->CreateObjectStub(pSink_, &pStubUnk); FAILED(hr))
 		{
-			p2clog.note(L"Failed to create stub for this sink").hr(hr).commit();
+			pmlog_error(L"Failed to create stub for this sink").hr(hr);
+			throw Except<Exception>();
 		}
 		if (auto hr = pStubUnk->QueryInterface<IWbemObjectSink>(&pStub); FAILED(hr))
 		{
-			p2clog.note(L"Failed to query sink interface from stub").hr(hr).commit();
+			pmlog_error(L"Failed to query sink interface from stub").hr(hr);
+			throw Except<Exception>();
 		}
 
 		// Register the notification query
@@ -53,9 +58,10 @@ namespace p2c::win::com
 			pStub.Get()
 		); FAILED(hr))
 		{
-			p2clog.note(std::format(L"Failed to execute notification query: ",
+			pmlog_error(std::format(L"Failed to execute notification query: ",
 				infra::util::ToWide(pSink->GetQueryString())))
-				.hr(hr).commit();
+				.hr(hr);
+			throw Except<Exception>();
 		}
 	}
 	WbemListener::~WbemListener()
@@ -63,9 +69,12 @@ namespace p2c::win::com
 		// cancel the notification query
 		if (auto hr = pConnection->CancelAsyncCall(pStub.Get()); FAILED(hr))
 		{
-			try { p2clog.warn(std::format(L"Failed to cancel notification query: ",
+			try {
+				pmlog_error(std::format(L"Failed to cancel notification query: ",
 					infra::util::ToWide(pSink->GetQueryString())))
-					.hr(hr).commit(); }
+					.hr(hr);
+				throw Except<Exception>();
+			}
 			catch (...) {}
 		}
 		// release sink reference
