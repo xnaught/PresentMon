@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: MIT
 #include "WndClass.h"
 #include "Window.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/Exception.h>
 
 namespace p2c::win
 {
+    using namespace ::pmon::util;
+
     WndClass::WndClass()
     {
         WNDCLASS wc = {};
@@ -17,7 +20,8 @@ namespace p2c::win
         atom = RegisterClassW(&wc);
         if (atom == 0)
         {
-            p2clog.hr().commit();
+            pmlog_error().hr();
+            throw Except<Exception>();
         }
     }
 
@@ -25,7 +29,7 @@ namespace p2c::win
     {
         if (UnregisterClassW(MAKEINTATOM(atom), nullptr) == FALSE)
         {
-            p2clog.hr().nox().commit();
+            pmlog_error().hr();
         }
     }
 
@@ -52,7 +56,8 @@ namespace p2c::win
                 {
                     if (const auto hr = GetLastError(); FAILED(hr))
                     {
-                        p2clog.hr(hr).commit();
+                        pmlog_error().hr(hr);
+                        throw Except<Exception>();
                     }                    
                 }
             }
@@ -64,7 +69,8 @@ namespace p2c::win
                 {
                     if (const auto hr = GetLastError(); FAILED(hr))
                     {
-                        p2clog.hr(hr).commit();
+                        pmlog_error().hr(hr);
+                        throw Except<Exception>();
                     }
                 }
             }

@@ -2,16 +2,13 @@
 // SPDX-License-Identifier: MIT
 #include "Window.h"
 #include <format>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include <Core/source/infra/util/Util.h>
 #include "MessageMap.h"
 #include "WndClass.h"
-#include <Core/source/infra/log/v/Window.h>
 
 namespace p2c::win
 {
-    using namespace infra::log;
-
     Window::Window(std::wstring title, DWORD styles)
         :
         title{ std::move(title) }, 
@@ -23,7 +20,7 @@ namespace p2c::win
         p2cvlog(v::window).note(std::format(L"window dying hwn:[{:8x}] tit:[{}]", (uint64_t)hWnd, GetTitle())).commit();
         if (DestroyWindow(hWnd) == FALSE)
         {
-            p2clog.hr().nox().commit();
+            pmlog_error().hr().nox();
         }
     }
 
@@ -42,7 +39,7 @@ namespace p2c::win
         RECT rect{}; 
         if (GetWindowRect(hWnd, &rect) == FALSE)
         {
-            p2clog.hr().warn(std::format(L"failed to get window rect {}", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to get window rect {}", GetTitle())).hr();
         }
         return { rect.left, rect.top };
     }
@@ -52,7 +49,7 @@ namespace p2c::win
         p2cvlog(v::window).note(std::format(L"pos:[{},{}]", pos.x, pos.y)).commit();
         if (SetWindowPos(hWnd, nullptr, pos.x, pos.y, 0, 0, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE) == FALSE)
         {
-            p2clog.hr().warn(std::format(L"failed to move window {}", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to move window {}", GetTitle())).hr();
         }
     }
 
@@ -61,7 +58,7 @@ namespace p2c::win
         p2cvlog(v::window).note(std::format(L"hwnd:{:8x}", (uint64_t)base)).commit();
         if (SetWindowPos(hWnd, GetNextWindow(base, GW_HWNDPREV), 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE)
         {
-            p2clog.hr().warn(std::format(L"failed to reorder window {}", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to reorder window {}", GetTitle())).hr();
         }
     }
 
@@ -69,7 +66,7 @@ namespace p2c::win
     {
         p2cvlog(v::window).note(std::format(L"hwnd:{:8x}", (uint64_t)base)).commit();
         if (SetWindowPos(hWnd, base, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE) {
-            p2clog.hr().warn(std::format(L"failed to reorder window {} behind", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to reorder window {} behind", GetTitle())).hr();
         }
     }
 
@@ -78,7 +75,7 @@ namespace p2c::win
         p2cvlog(v::window).commit();
         if (SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE)
         {
-            p2clog.hr().warn(std::format(L"failed to make window topmost {}", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to make window topmost {}", GetTitle())).hr();
         }
     }
 
@@ -87,7 +84,7 @@ namespace p2c::win
         p2cvlog(v::window).commit();
         if (SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE)
         {
-            p2clog.hr().warn(std::format(L"failed to make window non-topmost {}", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to make window non-topmost {}", GetTitle())).hr();
         }
     }
 
@@ -96,7 +93,7 @@ namespace p2c::win
         p2cvlog(v::window).commit();
         if (PostMessage(hWnd, WM_CLOSE, 0, 0) == FALSE)
         {
-            p2clog.hr().warn(std::format(L"failed to close window {}", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to close window {}", GetTitle())).hr();
         }
     }
 
@@ -141,7 +138,7 @@ namespace p2c::win
         const auto size = ComputeWindowDimensions(clientSize);
         if (SetWindowPos(hWnd, nullptr, 0, 0, size.width, size.height, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOMOVE) == FALSE)
         {
-            p2clog.hr().warn(std::format(L"failed to resize window {}", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to resize window {}", GetTitle())).hr();
         }
     }
 
@@ -155,7 +152,7 @@ namespace p2c::win
         };
         if (AdjustWindowRect(&wr, styles, FALSE) == FALSE)
         {
-            p2clog.hr().warn(L"Failed to adjust window rect").commit();
+            pmlog_warn(L"Failed to adjust window rect").hr();
         }
         return RectToDims(wr);
     }
@@ -176,7 +173,7 @@ namespace p2c::win
         p2cvlog(v::window).note(std::format(L"hwnd:{:8x}", (uint64_t)hWnd_)).commit();
         if (hWnd != nullptr)
         {
-            p2clog.warn(L"handle already set for window").commit();
+            pmlog_warn(L"handle already set for window");
         }
         hWnd = hWnd_;
     }
@@ -185,7 +182,7 @@ namespace p2c::win
     {
         if (loggingMessages)
         {
-            p2clog.info(std::format(L"WinMsg@[{}] : {}", GetTitle(), LookupMessageName(msg))).commit();
+            pmlog_info(std::format(L"WinMsg@[{}] : {}", GetTitle(), LookupMessageName(msg)));
         }
     }
 

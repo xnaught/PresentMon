@@ -134,28 +134,28 @@ namespace p2c::gfx::impl
 	void FastRenderer::StartFrame(ID3D11DeviceContext& context)
 	{
         if (vertexLimitExceededAmount || indexLimitExceededAmount) {
-            p2clog.warn(L"Limit on vtx or idx buffer exceeded last frame and not resized, resetting tripwire").commit();
+            pmlog_warn(L"Limit on vtx or idx buffer exceeded last frame and not resized, resetting tripwire");
             vertexLimitExceededAmount.reset();
             indexLimitExceededAmount.reset();
         }
         if (!batches.empty())
         {
-            p2clog.warn(L"batches not empty").commit();
+            pmlog_warn(L"batches not empty");
             context.Unmap(pIndexBuffer.Get(), 0);
         }
         if (vertexMapping || indexMapping)
         {
-            p2clog.warn(L"mapping already open").commit();
+            pmlog_warn(L"mapping already open");
             context.Unmap(pVertexBuffer.Get(), 0);
         }
         if (chainSize)
         {
-            p2clog.warn(L"chain not closed").commit();
+            pmlog_warn(L"chain not closed");
             chainSize = {};
         }
         if (activeBatch)
         {
-            p2clog.warn(L"batch was already active").commit();
+            pmlog_warn(L"batch was already active");
             activeBatch = std::nullopt;
         }
 
@@ -175,7 +175,7 @@ namespace p2c::gfx::impl
 	{
         if (activeBatch)
         {
-            p2clog.warn(L"Batch still open").commit();
+            pmlog_warn(L"Batch still open");
             activeBatch = std::nullopt;
         }
         if (!vertexMapping || !indexMapping)
@@ -185,12 +185,12 @@ namespace p2c::gfx::impl
         }
         if (chainSize)
         {
-            p2clog.warn(L"chain not closed").commit();
+            pmlog_warn(L"chain not closed");
             chainSize = {};
         }
         if (activeBatch)
         {
-            p2clog.warn(L"batch was still active").commit();
+            pmlog_warn(L"batch was still active");
             activeBatch = std::nullopt;
         }
 
@@ -266,7 +266,7 @@ namespace p2c::gfx::impl
         else  {
             if (!vertexLimitExceededAmount) {
                 vertexLimitExceededAmount = 0;
-                p2clog.warn(L"Vertex limit exceeded!").commit();
+                pmlog_warn(L"Vertex limit exceeded!");
             }
             *vertexLimitExceededAmount += 1;
         }
@@ -277,7 +277,7 @@ namespace p2c::gfx::impl
 #ifdef _DEBUG
         if (i < activeBatch->vertexOffset || i > nVertices)
         {
-            p2clog.warn(std::format(L"writing index out of range: {}", i)).commit();
+            pmlog_warn(std::format(L"writing index out of range: {}", i));
         }
 #endif
         if (nIndices < indexBufferSize) {
@@ -286,7 +286,7 @@ namespace p2c::gfx::impl
         else {
             if (!indexLimitExceededAmount) {
                 indexLimitExceededAmount = 0;
-                p2clog.warn(L"Index limit exceeded!").commit();
+                pmlog_warn(L"Index limit exceeded!");
             }
             *indexLimitExceededAmount += 1;
         }
@@ -328,7 +328,7 @@ namespace p2c::gfx::impl
 #ifdef _DEBUG
         if (activeBatch)
         {
-            p2clog.warn(L"Batch still open").commit();
+            pmlog_warn(L"Batch still open");
         }
 #endif
         activeBatch = {
@@ -355,11 +355,11 @@ namespace p2c::gfx::impl
 #ifdef _DEBUG
         if (!activeBatch)
         {
-            p2clog.warn(L"Batch not open").commit();
+            pmlog_warn(L"Batch not open");
         }
         if (chainSize)
         {
-            p2clog.warn(L"Chain not closed").commit();
+            pmlog_warn(L"Chain not closed");
         }
 #endif
         activeBatch->indexEnd = nIndices;
@@ -372,11 +372,11 @@ namespace p2c::gfx::impl
 #ifdef _DEBUG
         if (!activeBatch)
         {
-            p2clog.warn(L"Batch not open").commit();
+            pmlog_warn(L"Batch not open");
         }
         if (chainSize)
         {
-            p2clog.warn(L"Chain not closed").commit();
+            pmlog_warn(L"Chain not closed");
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_LINELIST)
         {
@@ -395,11 +395,11 @@ namespace p2c::gfx::impl
 #ifdef _DEBUG
         if (!activeBatch)
         {
-            p2clog.warn(L"Batch not open").commit();
+            pmlog_warn(L"Batch not open");
         }
         if (!chainSize)
         {
-            p2clog.warn(L"Chain not open").commit();
+            pmlog_warn(L"Chain not open");
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_LINELIST)
         {
@@ -418,11 +418,11 @@ namespace p2c::gfx::impl
 #ifdef _DEBUG
         if (!activeBatch)
         {
-            p2clog.warn(L"Batch not open").commit();
+            pmlog_warn(L"Batch not open");
         }
         if (chainSize < 1)
         {
-            p2clog.warn(L"Chain not long enough to realize geometry").commit();
+            pmlog_warn(L"Chain not long enough to realize geometry");
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_LINELIST)
         {
@@ -440,11 +440,11 @@ namespace p2c::gfx::impl
 #ifdef _DEBUG
         if (!activeBatch)
         {
-            p2clog.warn(L"Batch not open").commit();
+            pmlog_warn(L"Batch not open");
         }
         if (chainSize)
         {
-            p2clog.warn(L"Chain not closed").commit();
+            pmlog_warn(L"Chain not closed");
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
         {
@@ -463,11 +463,11 @@ namespace p2c::gfx::impl
 #ifdef _DEBUG
         if (!activeBatch)
         {
-            p2clog.warn(L"Batch not open").commit();
+            pmlog_warn(L"Batch not open");
         }
         if (!chainSize)
         {
-            p2clog.warn(L"Chain not open").commit();
+            pmlog_warn(L"Chain not open");
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
         {
@@ -491,11 +491,11 @@ namespace p2c::gfx::impl
 #ifdef _DEBUG
         if (!activeBatch)
         {
-            p2clog.warn(L"Batch not open").commit();
+            pmlog_warn(L"Batch not open");
         }
         if (chainSize < 1)
         {
-            p2clog.warn(L"Chain not long enough to realize geometry").commit();
+            pmlog_warn(L"Chain not long enough to realize geometry");
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
         {
@@ -519,11 +519,11 @@ namespace p2c::gfx::impl
 #ifdef _DEBUG
         if (!activeBatch)
         {
-            p2clog.warn(L"Batch not open").commit();
+            pmlog_warn(L"Batch not open");
         }
         if (chainSize > 0)
         {
-            p2clog.warn(L"Chain not closed").commit();
+            pmlog_warn(L"Chain not closed");
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST)
         {
@@ -549,11 +549,11 @@ namespace p2c::gfx::impl
 #ifdef _DEBUG
         if (!activeBatch)
         {
-            p2clog.warn(L"Batch not open").commit();
+            pmlog_warn(L"Batch not open");
         }
         if (chainSize > 0)
         {
-            p2clog.warn(L"Chain not closed").commit();
+            pmlog_warn(L"Chain not closed");
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_LINELIST)
         {
@@ -581,11 +581,11 @@ namespace p2c::gfx::impl
 #ifdef _DEBUG
         if (!activeBatch)
         {
-            p2clog.warn(L"Batch not open").commit();
+            pmlog_warn(L"Batch not open");
         }
         if (chainSize > 0)
         {
-            p2clog.warn(L"Chain not closed").commit();
+            pmlog_warn(L"Chain not closed");
         }
         if (activeBatch->topology != D3D11_PRIMITIVE_TOPOLOGY_LINELIST)
         {

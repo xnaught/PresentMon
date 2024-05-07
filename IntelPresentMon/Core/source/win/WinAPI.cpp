@@ -11,13 +11,13 @@ namespace p2c::win
         RECT cr;
         if (!GetClientRect(hWnd, &cr))
         {
-            p2clog.warn().hr().commit();
+            pmlog_warn().hr();
             return { 0,0,0,0 };
         }
         POINT tl{ 0, 0 };
         if (!ClientToScreen(hWnd, &tl))
         {
-            p2clog.warn().hr().commit();
+            pmlog_warn().hr();
             return { 0,0,0,0 };
         }
         return { tl.x, tl.y, tl.x + cr.right, tl.y + cr.bottom };

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 #include "Graphics.h"
 #include "Exception.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 
 #pragma comment(lib, "dxgi")
 #pragma comment(lib, "d3d11")
@@ -65,14 +65,14 @@ namespace p2c::gfx
                 }
                 tearingActive = tearing != 0;
                 if (tearingActive) {
-                    p2clog.info(L"Tearing graphics support enabled").commit();
+                    pmlog_info(L"Tearing graphics support enabled");
                 }
                 else {
-                    p2clog.warn(L"Tearing requested but not supported, disabling").commit();
+                    pmlog_warn(L"Tearing requested but not supported, disabling");
                 }
             }
             catch (...) {
-                p2clog.warn(L"Failed checking tearing support, disabling tearing").commit();
+                pmlog_warn(L"Failed checking tearing support, disabling tearing");
             }
         }
 
@@ -243,7 +243,7 @@ namespace p2c::gfx
         FreeBackbufferDependentResources_();
         const UINT flags = tearingActive ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
         if (auto hr = pSwapChain->ResizeBuffers(2, dims.width, dims.height, DXGI_FORMAT_UNKNOWN, flags); FAILED(hr)) {
-            p2clog.warn(L"Failed to resize buffers").hr(hr).commit();
+            pmlog_warn(L"Failed to resize buffers").hr(hr);
         }
         CreateBackbufferDependentResources_();
         fastRenderer->Resize(dims);
@@ -256,7 +256,7 @@ namespace p2c::gfx
 #ifdef _DEBUG
         if (!Rect{ {}, dims }.Contains(clip))
         {
-            p2clog.warn(L"scissor rect outside window").commit();
+            pmlog_warn(L"scissor rect outside window");
         }
 #endif
         fastRenderer->StartLineBatch(clip, aa);
@@ -267,7 +267,7 @@ namespace p2c::gfx
 #ifdef _DEBUG
         if (!Rect{ {}, dims }.Contains(clip))
         {
-            p2clog.warn(L"scissor rect outside window").commit();
+            pmlog_warn(L"scissor rect outside window");
         }
 #endif
         fastRenderer->StartTriangleBatch(clip);

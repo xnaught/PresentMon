@@ -35,7 +35,7 @@ namespace p2c::win
         }
         else
         {
-            p2clog.warn(L"Received unhandled win hook callback invocation").commit();
+            pmlog_warn(L"Received unhandled win hook callback invocation");
         }
     }
 
@@ -55,7 +55,7 @@ namespace p2c::win
                 return;
             }
         }
-        p2clog.warn(L"Failure unhooking windows event listener").commit();
+        pmlog_warn(L"Failure unhooking windows event listener");
     }
 
     EventHookManager::~EventHookManager()

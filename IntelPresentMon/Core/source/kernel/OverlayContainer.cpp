@@ -57,7 +57,7 @@ namespace p2c::kern
         }
         else
         {
-            p2clog.warn(L"spec-specified pid not in process map").commit();
+            pmlog_warn(L"spec-specified pid not in process map");
             throw Except<TargetLostException>();
         }
     }

@@ -19,7 +19,7 @@ namespace p2c::gfx::prim
 		case ExtraBold: return DWRITE_FONT_WEIGHT_EXTRA_BOLD;
 		case UltraLight: return DWRITE_FONT_WEIGHT_ULTRA_LIGHT;
 		default:
-			p2clog.warn(std::format(L"Bad weight: {}", (int)w)).commit();
+			pmlog_warn(std::format(L"Bad weight: {}", (int)w));
 			return DWRITE_FONT_WEIGHT_NORMAL;
 		}
 	}
@@ -33,7 +33,7 @@ namespace p2c::gfx::prim
 		case Oblique: return DWRITE_FONT_STYLE_OBLIQUE;
 		case Italic: return DWRITE_FONT_STYLE_ITALIC;
 		default:
-			p2clog.warn(std::format(L"Bad style: {}", (int)s)).commit();
+			pmlog_warn(std::format(L"Bad style: {}", (int)s));
 			return DWRITE_FONT_STYLE_NORMAL;
 		}
 	}
@@ -47,7 +47,7 @@ namespace p2c::gfx::prim
 		case Top: return DWRITE_PARAGRAPH_ALIGNMENT_NEAR;
 		case Bottom: return DWRITE_PARAGRAPH_ALIGNMENT_FAR;
 		default:
-			p2clog.warn(std::format(L"Bad algnment: {}", (int)a)).commit();
+			pmlog_warn(std::format(L"Bad algnment: {}", (int)a));
 			return DWRITE_PARAGRAPH_ALIGNMENT_NEAR;
 		}
 	}
@@ -62,7 +62,7 @@ namespace p2c::gfx::prim
 		case Right: return DWRITE_TEXT_ALIGNMENT_TRAILING;
 		case Full: return DWRITE_TEXT_ALIGNMENT_JUSTIFIED;
 		default:
-			p2clog.warn(std::format(L"Bad justification: {}", (int)j)).commit();
+			pmlog_warn(std::format(L"Bad justification: {}", (int)j));
 			return DWRITE_TEXT_ALIGNMENT_LEADING;
 		}
 	}

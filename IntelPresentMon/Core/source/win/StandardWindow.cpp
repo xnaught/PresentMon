@@ -32,7 +32,7 @@ namespace p2c::win
         // check for error
         if (GetHandle() == nullptr)
         {
-            p2clog.hr().commit();
+            pmlog_error().hr();
         }
         // bring to front
         if (bringToFront) {

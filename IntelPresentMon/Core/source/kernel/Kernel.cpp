@@ -92,7 +92,7 @@ namespace p2c::kern
         HandleMarshalledException_();
         std::lock_guard lk{ mtx };
         if (!pm) {
-            p2clog.warn(L"presentmon not initialized").commit();
+            pmlog_warn(L"presentmon not initialized");
             return;
         }
         pm->SetAdapter(id);
@@ -110,12 +110,12 @@ namespace p2c::kern
         HandleMarshalledException_();
         std::lock_guard lk{ mtx };
         if (!pm) {
-            p2clog.warn(L"presentmon not initialized").commit();
+            pmlog_warn(L"presentmon not initialized");
             return {};
         }
         try { return pm->EnumerateAdapters(); }
         catch (...) { 
-            p2clog.warn(L"failed to enumerate adapters, returning empty set").commit();
+            pmlog_warn(L"failed to enumerate adapters, returning empty set");
             return {};
         }
     }
@@ -150,7 +150,7 @@ namespace p2c::kern
         try {
             // mutex that prevents frontend from accessing before pmon is connected
             std::unique_lock startLck{ mtx };
-            p2clog.info(L"== kernel thread starting ==").pid().tid().commit();
+            pmlog_info(L"== kernel thread starting ==").pid().tid();
 
             // command line options
             auto& opt = cli::Options::Get();
@@ -220,7 +220,7 @@ namespace p2c::kern
 
             pm.reset();
 
-            p2clog.info(L"== core thread exiting ==").pid().commit();
+            pmlog_info(L"== core thread exiting ==").pid();
         }
         // this catch section handles failures to initialize kernel, or rare error that escape the main loop catch
         // possibility to marshall exceptions to js whenever an interface function is called (async rejection path)

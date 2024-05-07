@@ -106,7 +106,7 @@ namespace p2c::gfx::lay
 			switch (type_)
 			{
 			case GraphType::Histogram:
-				if (packs.size() > 1) p2clog.warn(L"Histogram with multiple data packs").commit();
+				if (packs.size() > 1) pmlog_warn(L"Histogram with multiple data packs");
 				return std::make_shared<HistogramPlotElement>(packs.front(), std::vector<std::string>{"$body-plot"});
 			case GraphType::Line: return std::make_shared<LinePlotElement>(packs, std::vector<std::string>{"$body-plot"});
 			default: p2clog.note(L"Bad graph type").commit(); return {};

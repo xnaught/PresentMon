@@ -32,7 +32,7 @@ namespace p2c::gfx::lay
 
 		if (dir == FlexDirection::Column && !boxDimensions.width)
 		{
-			p2clog.warn(L"querying element height constraints before width set").commit();
+			pmlog_warn(L"querying element height constraints before width set");
 		}
 
 		if (attrCache->display == Display::None)

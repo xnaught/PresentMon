@@ -109,7 +109,7 @@ namespace p2c::infra::svc
             {
                 if (!params.IsEmpty())
                 {
-                    p2clog.warn(L"Don't pass params when resolving a singleton").commit();
+                    pmlog_warn(L"Don't pass params when resolving a singleton");
                 }
                 if (!tag.empty())
                 {
@@ -140,7 +140,7 @@ namespace p2c::infra::svc
                         {
                             if (!params.IsEmpty())
                             {
-                                p2clog.warn(L"Don't pass params when resolving a singleton").commit();
+                                pmlog_warn(L"Don't pass params when resolving a singleton");
                             }
                             Singleton_& singleton = opt;
                             return GetSingleton(singleton, params);
@@ -179,7 +179,7 @@ namespace p2c::infra::svc
                         {
                             if (!params.IsEmpty())
                             {
-                                p2clog.warn(L"Don't pass params when resolving a singleton").commit();
+                                pmlog_warn(L"Don't pass params when resolving a singleton");
                             }
                             Singleton_& singleton = opt;
                             return GetSingleton(singleton, params);

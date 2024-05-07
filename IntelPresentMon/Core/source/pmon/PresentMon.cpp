@@ -28,7 +28,7 @@ namespace p2c::pmon
 			pSession = std::make_unique<pmapi::Session>(std::move(pipeName), std::move(shmName));
 		}
 		else {
-			p2clog.info(L"Connecting to service with default pipe name").commit();
+			pmlog_info(L"Connecting to service with default pipe name");
 			pSession = std::make_unique<pmapi::Session>();
 		}
 
@@ -51,18 +51,18 @@ namespace p2c::pmon
 				pid_, processTracker.GetPid())).commit();
 		}
 		processTracker = pSession->TrackProcess(pid_);
-		p2clog.info(std::format(L"started pmon stream for pid {}", pid_)).commit();
+		pmlog_info(std::format(L"started pmon stream for pid {}", pid_));
 	}
 	void PresentMon::StopTracking()
 	{
 		if (!processTracker) {
-			p2clog.warn(L"Cannot stop stream: no stream active").commit();
+			pmlog_warn(L"Cannot stop stream: no stream active");
 			return;
 		}
 		const auto pid = processTracker.GetPid();
 		processTracker.Reset();
 		// TODO: caches cleared here maybe
-		p2clog.info(std::format(L"stopped pmon stream for pid {}", pid)).commit();
+		pmlog_info(std::format(L"stopped pmon stream for pid {}", pid));
 	}
 	double PresentMon::GetWindow() const { return window; }
 	void PresentMon::SetWindow(double window_) { window = window_; }
@@ -82,12 +82,12 @@ namespace p2c::pmon
 	//	char buffer[512];
 	//	uint32_t bufferSize = sizeof(buffer);
 	//	if (auto sta = pmGetCpuName(buffer, &bufferSize); sta != PM_STATUS_SUCCESS) {
-	//		p2clog.warn(L"could not get cpu name").code(sta).commit();
+	//		pmlog_warn(L"could not get cpu name").code(sta);
 	//		return {};
 	//	}
 	//	pmapi::PollStatic(*pSession, )
 	//	if (bufferSize >= sizeof(buffer)) {
-	//		p2clog.warn(std::format(L"insufficient buffer size to get cpu name. written: {}", bufferSize)).commit();
+	//		pmlog_warn(std::format(L"insufficient buffer size to get cpu name. written: {}", bufferSize));
 	//	}
 	//	return infra::util::ToWide(std::string{ buffer, bufferSize });
 	//}
@@ -108,9 +108,9 @@ namespace p2c::pmon
 	}
 	void PresentMon::SetAdapter(uint32_t id)
 	{
-		p2clog.info(std::format(L"Set active adapter to [{}]", id)).commit();
+		pmlog_info(std::format(L"Set active adapter to [{}]", id));
 		if (id == 0) {
-			p2clog.warn(L"Adapter was set to id 0; resetting").commit();
+			pmlog_warn(L"Adapter was set to id 0; resetting");
 			selectedAdapter.reset();
 		}
 		else {
