@@ -15,6 +15,7 @@
     <ClInclude Include="source\gfx\base\ComPtr.h" />
     <ClInclude Include="source\gfx\base\Geometry.h" />
     <ClInclude Include="source\gfx\base\InternalGeometry.h" />
+    <ClInclude Include="source\gfx\Exception.h" />
     <ClInclude Include="source\gfx\impl\FastRenderer.h" />
     <ClInclude Include="source\gfx\layout\Enums.h" />
     <ClInclude Include="source\gfx\layout\EnumUtils.h" />

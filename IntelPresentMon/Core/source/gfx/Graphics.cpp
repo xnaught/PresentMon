@@ -1,6 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "Graphics.h"
+#include "Exception.h"
 #include <Core/source/infra/log/Logging.h>
 
 #pragma comment(lib, "dxgi")
@@ -12,6 +13,8 @@
 
 namespace p2c::gfx
 {
+    using namespace ::pmon::util;
+
 	Graphics::Graphics(HWND hWnd, DimensionsI dimensions, float upscaleFactor, bool enableTearing)
         :
         dims{ dimensions }
@@ -53,12 +56,12 @@ namespace p2c::gfx
                 BOOL tearing{};
                 ComPtr<IDXGIFactory5> factory5;
                 if (auto hr = pDxgiFactory.As(&factory5); FAILED(hr)) {
-                    throw false;
+                    throw Except<GraphicsException>();
                 }
                 if (auto hr = factory5->CheckFeatureSupport(
                     DXGI_FEATURE_PRESENT_ALLOW_TEARING, &tearing, sizeof(tearing)
                 ); FAILED(hr)) {
-                    throw false;
+                    throw Except<GraphicsException>();
                 }
                 tearingActive = tearing != 0;
                 if (tearingActive) {

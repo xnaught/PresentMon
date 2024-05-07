@@ -6,6 +6,7 @@
 #include <Core/source/infra/log/v/ProcWatch.h>
 
 using p2c::infra::log::v::procwatch;
+using namespace pmon::util;
 
 namespace p2c::kern
 {
@@ -57,7 +58,7 @@ namespace p2c::kern
         else
         {
             p2clog.warn(L"spec-specified pid not in process map").commit();
-            throw TargetLostException{};
+            throw Except<TargetLostException>();
         }
     }
     void OverlayContainer::RebuildDocument(std::shared_ptr<OverlaySpec> pSpec_)

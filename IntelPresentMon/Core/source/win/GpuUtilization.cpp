@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 #include "GpuUtilization.h"
 #include <Core/source/infra/util/rn/PairToRange.h>
+#include <CommonUtilities/Exception.h>
 #include <chrono>
 #include <vector>
 #include <regex>
@@ -15,9 +16,12 @@
 
 namespace rn = std::ranges;
 namespace vi = rn::views;
+using namespace pmon::util;
 
 namespace p2c::win
 {
+    PM_DEFINE_EX(PdhException);
+
     std::optional<uint32_t> GetTopGpuProcess(const std::vector<Process>& candidates)
 	{
         // query size of counter and instance buffers
@@ -27,7 +31,7 @@ namespace p2c::win
             nullptr, nullptr, "GPU Engine", nullptr,
             &counterListSize, nullptr, &instanceListSize,
             PERF_DETAIL_WIZARD, 0); status != PDH_MORE_DATA) {
-            throw std::runtime_error("failed PdhEnumObjectItems()");
+            throw Except<PdhException>("failed PdhEnumObjectItems()");
         }
 
         // enumerate counters and instances for GPU Engine
@@ -38,7 +42,7 @@ namespace p2c::win
             counterList.data(), &counterListSize,
             instanceList.data(), &instanceListSize,
             PERF_DETAIL_WIZARD, 0)) {
-            throw std::runtime_error("failed PdhEnumObjectItems()");
+            throw Except<PdhException>("failed PdhEnumObjectItems()");
         }
 
         // lambda to parse out null terminated sequence of strings from a buffer into vectors of string
@@ -70,7 +74,7 @@ namespace p2c::win
         // open pdh query
         HQUERY hQuery = nullptr;
         if (PdhOpenQueryA(NULL, 0, &hQuery)) {
-            throw std::runtime_error("Failed opening pdh query");
+            throw Except<PdhException>("Failed opening pdh query");
         }
 
         // matching instances with filter candidates and add counters to query
@@ -87,7 +91,7 @@ namespace p2c::win
                 counterHandles.emplace_back();
                 const auto counterPath = std::format("\\GPU Engine({})\\Running time", inst);
                 if (PdhAddCounterA(hQuery, counterPath.c_str(), 0, &counterHandles.back())) {
-                    throw std::runtime_error("Failed adding pdh counter");
+                    throw Except<PdhException>("Failed adding pdh counter");
                 }
             }
             if (!counterHandles.empty()) {
@@ -102,19 +106,19 @@ namespace p2c::win
 
         // prime the counter with an initial polling call
         if (PdhCollectQueryData(hQuery)) {
-            throw std::runtime_error("Failed collecting query data");
+            throw Except<PdhException>("Failed collecting query data");
         }
 
         // lambda to poll counters and gather results
         const auto RunPoll = [&](double factor) {
             if (PdhCollectQueryData(hQuery)) {
-                throw std::runtime_error("Failed collecting query data");
+                throw Except<PdhException>("Failed collecting query data");
             }
             for (auto& proc : countedProcesses) {
                 for (auto& hCounter : proc.counters) {
                     PDH_FMT_COUNTERVALUE counterValue;
                     if (PdhGetFormattedCounterValue(hCounter, PDH_FMT_DOUBLE, nullptr, &counterValue)) {
-                        throw std::runtime_error("Failed formatting counter value");
+                        throw Except<PdhException>("Failed formatting counter value");
                     }
                     proc.totalValue += counterValue.doubleValue * factor;
                 }

@@ -13,13 +13,15 @@
 #include <Core/source/win/ProcessMapBuilder.h>
 #include <Core/source/win/com/WbemConnection.h>
 #include <Core/source/cli/CliOptions.h>
-#include <CommonUtilities\str\String.h>
+#include <CommonUtilities/str/String.h>
+#include <CommonUtilities/Exception.h>
 
 using namespace std::literals;
+using namespace ::pmon::util;
 
 namespace p2c::kern
 {
-    using ::pmon::util::str::ToWide;
+    using str::ToWide;
 
     Kernel::Kernel(KernelHandler* pHandler)
         :
@@ -220,16 +222,8 @@ namespace p2c::kern
         }
         // this catch section handles failures to initialize kernel, or rare error that escape the main loop catch
         // possibility to marshall exceptions to js whenever an interface function is called (async rejection path)
-        catch (const std::exception& e) {
-            // TODO: instead of duplicating for std::ex+..., just catch ... and use a function that can throw/catch
-            // std::current_exception to extract useful info, if any
-            auto msg = std::format("Exception in PresentMon Kernel thread [{}]: {}", typeid(e).name(), e.what());
-            p2clog.note(ToWide(msg)).nox().notrace().commit();
-            marshalledException = std::current_exception();
-            hasMarshalledException.store(true);
-        }
         catch (...) {
-            p2clog.note(L"Unknown exception in PresentMon Kernel thread").nox().notrace().commit();
+            p2clog.note(ToWide(ReportException())).nox().notrace().commit();
             marshalledException = std::current_exception();
             hasMarshalledException.store(true);
         }

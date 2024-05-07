@@ -23,13 +23,16 @@
 #include "TargetLostException.h"
 #include "MetricPackMapper.h"
 #include <PresentMonAPIWrapper/StaticQuery.h>
+#include <CommonUtilities/Exception.h>
 
 
 namespace p2c::kern
 {
     using namespace gfx;
     using namespace lay;
+    using namespace ::pmon::util;
 
+    PM_DEFINE_EX(OverlayDocumentException);
 
     // free functions used by Overlay
     namespace
@@ -75,7 +78,7 @@ namespace p2c::kern
                         ));
                     }
                     else {
-                        throw std::runtime_error{ "Bad widget variant" };
+                        throw Except<OverlayDocumentException>("Bad widget variant");
                     }
                 }
                 catch (...) {
