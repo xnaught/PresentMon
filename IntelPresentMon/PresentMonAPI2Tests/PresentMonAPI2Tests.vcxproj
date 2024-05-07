@@ -99,9 +99,11 @@
     <ClCompile Include="CAPIIntrospectionTests.cpp" />
     <ClCompile Include="CAPIStaticQueryTests.cpp" />
     <ClCompile Include="EndToEndTests.cpp" />
+    <ClCompile Include="EtlTests.cpp" />
     <ClCompile Include="InterprocessTests.cpp" />
     <ClCompile Include="InterprocessExperimentTests.cpp" />
     <ClCompile Include="MiddlewareTests.cpp" />
+    <ClCompile Include="RealtimeMetricTests.cpp" />
     <ClCompile Include="WrapperDatasetTests.cpp" />
     <ClCompile Include="WrapperSessionTests.cpp" />
   </ItemGroup>
@@ -124,6 +126,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BoostProcess.h" />
+    <ClInclude Include="CsvHelper.h" />
     <ClInclude Include="StatusComparison.h" />
     <ClInclude Include="Utilities.h" />
   </ItemGroup>

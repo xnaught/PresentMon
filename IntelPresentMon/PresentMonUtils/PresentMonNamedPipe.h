@@ -87,7 +87,8 @@ struct NamedSharedMemoryHeader {
 	  num_frames_written(0),
 	  head_idx(0),
 	  tail_idx(0),
-      process_active(true){};
+      process_active(true),
+	  from_etl_file(false) {};
   // start QPC time of the very first frame recorderd after PmStartStream
   char application[MAX_PATH] = {};
   uint64_t start_qpc;
@@ -104,6 +105,7 @@ struct NamedSharedMemoryHeader {
       gpuTelemetryCapBits{};
   std::bitset<static_cast<size_t>(CpuTelemetryCapBits::cpu_telemetry_count)>
       cpuTelemetryCapBits{};
+  bool from_etl_file;
 };
 
 struct PmNsmPresentEvent {

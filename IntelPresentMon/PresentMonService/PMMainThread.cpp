@@ -340,13 +340,13 @@ void PresentMonMainThread(Service* const pSvc)
             pComms->RegisterCpuDevice(vendor, cpu->GetCpuName(), cpu->GetCpuTelemetryCapBits());
         }
 
-        while (WaitForSingleObjectEx(pSvc->GetServiceStopHandle(), INFINITE, (bool)opt.timedStop) != WAIT_OBJECT_0) {
+        while (WaitForSingleObjectEx(pSvc->GetServiceStopHandle(), 0, (bool)opt.timedStop) != WAIT_OBJECT_0) {
             pm.CheckTraceSessions();
-            PmSleep(500, opt.timedStop);
+            PmSleep(1000, opt.timedStop);
         }
 
-        // Stop the PresentMon session
-        pm.StopTraceSession();
+        // Stop the PresentMon sessions
+        pm.StopTraceSessions();
     }
     catch (...) {
         LOG(ERROR) << "Exception in PMMainThread, bailing" << std::endl;

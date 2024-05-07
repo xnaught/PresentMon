@@ -8,6 +8,9 @@
     <ClCompile Include="PresentMon.cpp" />
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="ServiceMain.cpp" />
+    <ClCompile Include="PresentMonSession.cpp" />
+    <ClCompile Include="RealtimePresentMonSession.cpp" />
+    <ClCompile Include="MockPresentMonSession.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LateStageReprojectionData.hpp" />
@@ -19,5 +22,8 @@
     <ClInclude Include="CliOptions.h" />
     <ClInclude Include="GlobalIdentifiers.h" />
     <ClInclude Include="PMMainThread.h" />
+    <ClInclude Include="PresentMonSession.h" />
+    <ClInclude Include="RealtimePresentMonSession.h" />
+    <ClInclude Include="MockPresentMonSession.h" />
   </ItemGroup>
 </Project>
