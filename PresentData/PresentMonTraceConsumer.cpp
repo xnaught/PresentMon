@@ -21,11 +21,7 @@
 #include <stdlib.h>
 #include <unordered_set>
 
-#ifdef DEBUG
-static constexpr int PRESENTEVENT_CIRCULAR_BUFFER_SIZE = 32768;
-#else
 static constexpr int PRESENTEVENT_CIRCULAR_BUFFER_SIZE = 1024;
-#endif
 
 // These macros, when enabled, record what PresentMon analysis below was done
 // for each present.  The primary use case is to compute usage statistics and
