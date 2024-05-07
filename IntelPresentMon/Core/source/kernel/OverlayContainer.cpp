@@ -112,6 +112,7 @@ namespace p2c::kern
     void OverlayContainer::RegisterWindowSpawn(DWORD pid, HWND hWnd, const RECT& r)
     {
         p2cvlog(procwatch).note(std::format(L"register-win-spawn-entry | hwn:{:8x}", (uintptr_t)hWnd)).commit();
+        // update "main" window in ancestor map for related process
         // no need for mtx here since the window event listener runs on kernel thread (msg pump)
         if (auto i = ancestorMap.find(pid); i != ancestorMap.end()) {
             const auto prevHwnd = i->second.hWnd;
@@ -137,8 +138,9 @@ namespace p2c::kern
             // if an update occurred, consider retargetting process
             if (i->second.hWnd == hWnd) {
                 // case when we are in root and hit a child spawn window of interest
-                if (pid != rootPid && curPid == rootPid) {
-                    p2cvlog(procwatch).note(std::format(L"register-win-spawn-upg-root-to-child | hwn: {:5} => {:5}", rootPid, pid)).commit();
+                // only migrate to child if window area is greater than 640x480
+                if (pid != rootPid && curPid == rootPid && win::RectToDims(r).GetArea() >= (640 * 480)) {
+                    p2cvlog(procwatch).note(std::format(L"register-win-spawn-upg-root-to-child | pid: {:5} => {:5}", rootPid, pid)).commit();
                     curPid = pid;
                     pOverlay = pOverlay->RetargetPidClone(i->second);
                 }

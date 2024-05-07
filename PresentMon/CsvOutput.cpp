@@ -165,6 +165,10 @@ void WriteCsvHeader<FrameMetrics1>(FILE* fp)
         fwprintf(fp, L",QPCTime");
     }
     fwprintf(fp, L"\n");
+
+    if (args.mCSVOutput == CSVOutput::Stdout) {
+        fflush(fp);
+    }
 }
 
 template<>
@@ -229,6 +233,10 @@ void WriteCsvRow<FrameMetrics1>(
         break;
     }
     fwprintf(fp, L"\n");
+
+    if (args.mCSVOutput == CSVOutput::Stdout) {
+        fflush(fp);
+    }
 }
 
 template<>
