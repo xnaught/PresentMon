@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "PresentMon.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include <PresentMonAPI2/PresentMonAPI.h>
 #include <PresentMonAPIWrapper/PresentMonAPIWrapper.h>
 #include <PresentMonAPIWrapperCommon/EnumMap.h>
@@ -21,10 +21,10 @@ namespace p2c::pmon
 		if (namedPipeName && sharedMemoryName) {
 			auto pipeName = RemoveDoubleQuotes(*namedPipeName);
 			auto shmName = RemoveDoubleQuotes(*sharedMemoryName);
-			p2clog.info(std::format(L"Connecting to service with custom pipe [{}] and nsm [{}]",
+			pmlog_info(std::format(L"Connecting to service with custom pipe [{}] and nsm [{}]",
 				infra::util::ToWide(pipeName),
 				infra::util::ToWide(shmName)
-			)).commit();
+			));
 			pSession = std::make_unique<pmapi::Session>(std::move(pipeName), std::move(shmName));
 		}
 		else {
@@ -47,8 +47,8 @@ namespace p2c::pmon
 			if (processTracker.GetPid() == pid_) {
 				return;
 			}
-			p2clog.warn(std::format(L"Starting stream [{}] while previous stream [{}] still active",
-				pid_, processTracker.GetPid())).commit();
+			pmlog_warn(std::format(L"Starting stream [{}] while previous stream [{}] still active",
+				pid_, processTracker.GetPid()));
 		}
 		processTracker = pSession->TrackProcess(pid_);
 		pmlog_info(std::format(L"started pmon stream for pid {}", pid_));

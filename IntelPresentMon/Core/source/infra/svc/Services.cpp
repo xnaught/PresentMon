@@ -125,7 +125,7 @@ namespace p2c::infra::svc
                 {
                     pmlog_error(L"Tag passed in, but entry was not multitagged");
                     throw Except<Exception>();
-                                    }
+                }
                 Generator_& generator = opt;
                 return GetGenerated(generator.generator, params);
             }
@@ -168,8 +168,7 @@ namespace p2c::infra::svc
                     {
                         if (throwForKey)
                         {
-                            p2clog.note(std::format(L"Service type resolved to multitagged, but tag was not found [{}]", util::ToWide(tag)))
-                                .ex(NotFound{}).commit();
+                            pmlog_error(std::format(L"Service type resolved to multitagged, but tag was not found [{}]", str::ToWide(tag)));
                         }
                         return {};
                     }

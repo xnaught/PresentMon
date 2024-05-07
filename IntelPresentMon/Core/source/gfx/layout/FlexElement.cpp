@@ -5,9 +5,11 @@
 #include <Core/source/infra/Logging.h>
 #include <CommonUtilities/Exception.h>
 #include <numeric>
+#include <algorithm>
 #include "style/StyleProcessor.h"
 
 namespace rn = std::ranges;
+using namespace pmon::util;
 
 namespace p2c::gfx::lay
 {

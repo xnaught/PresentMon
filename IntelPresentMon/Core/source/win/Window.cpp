@@ -17,10 +17,10 @@ namespace p2c::win
 
     Window::~Window()
     {
-        p2cvlog(v::window).note(std::format(L"window dying hwn:[{:8x}] tit:[{}]", (uint64_t)hWnd, GetTitle())).commit();
+        pmlog_verb(v::window)(std::format(L"window dying hwn:[{:8x}] tit:[{}]", (uint64_t)hWnd, GetTitle()));
         if (DestroyWindow(hWnd) == FALSE)
         {
-            pmlog_error().hr().nox();
+            pmlog_error().hr();
         }
     }
 
@@ -46,7 +46,7 @@ namespace p2c::win
 
     void Window::Move(gfx::Vec2I pos)
     {
-        p2cvlog(v::window).note(std::format(L"pos:[{},{}]", pos.x, pos.y)).commit();
+        pmlog_verb(v::window)(std::format(L"pos:[{},{}]", pos.x, pos.y));
         if (SetWindowPos(hWnd, nullptr, pos.x, pos.y, 0, 0, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE) == FALSE)
         {
             pmlog_warn(std::format(L"failed to move window {}", GetTitle())).hr();
@@ -55,7 +55,7 @@ namespace p2c::win
 
     void Window::Reorder(HWND base)
     {
-        p2cvlog(v::window).note(std::format(L"hwnd:{:8x}", (uint64_t)base)).commit();
+        pmlog_verb(v::window)(std::format(L"hwnd:{:8x}", (uint64_t)base));
         if (SetWindowPos(hWnd, GetNextWindow(base, GW_HWNDPREV), 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE)
         {
             pmlog_warn(std::format(L"failed to reorder window {}", GetTitle())).hr();
@@ -64,7 +64,7 @@ namespace p2c::win
 
     void Window::ReorderBehind(HWND base)
     {
-        p2cvlog(v::window).note(std::format(L"hwnd:{:8x}", (uint64_t)base)).commit();
+        pmlog_verb(v::window)(std::format(L"hwnd:{:8x}", (uint64_t)base));
         if (SetWindowPos(hWnd, base, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE) {
             pmlog_warn(std::format(L"failed to reorder window {} behind", GetTitle())).hr();
         }
@@ -72,7 +72,7 @@ namespace p2c::win
 
     void Window::SetTopmost()
     {
-        p2cvlog(v::window).commit();
+        pmlog_verb(v::window)();
         if (SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE)
         {
             pmlog_warn(std::format(L"failed to make window topmost {}", GetTitle())).hr();
@@ -81,7 +81,7 @@ namespace p2c::win
 
     void Window::ClearTopmost()
     {
-        p2cvlog(v::window).commit();
+        pmlog_verb(v::window)();
         if (SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE)
         {
             pmlog_warn(std::format(L"failed to make window non-topmost {}", GetTitle())).hr();
@@ -90,7 +90,7 @@ namespace p2c::win
 
     void Window::Close()
     {
-        p2cvlog(v::window).commit();
+        pmlog_verb(v::window)();
         if (PostMessage(hWnd, WM_CLOSE, 0, 0) == FALSE)
         {
             pmlog_warn(std::format(L"failed to close window {}", GetTitle())).hr();
@@ -122,19 +122,19 @@ namespace p2c::win
 
     void Window::Hide()
     {
-        p2cvlog(v::window).commit();
+        pmlog_verb(v::window)();
         ShowWindow(hWnd, SW_HIDE);
     }
 
     void Window::Show()
     {
-        p2cvlog(v::window).commit();
+        pmlog_verb(v::window)();
         ShowWindow(hWnd, SW_SHOWNOACTIVATE);
     }
 
     void Window::Resize(gfx::DimensionsI clientSize)
     {
-        p2cvlog(v::window).commit();
+        pmlog_verb(v::window)();
         const auto size = ComputeWindowDimensions(clientSize);
         if (SetWindowPos(hWnd, nullptr, 0, 0, size.width, size.height, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOMOVE) == FALSE)
         {
@@ -170,7 +170,7 @@ namespace p2c::win
 
     void Window::SetHandle(HWND hWnd_)
     {
-        p2cvlog(v::window).note(std::format(L"hwnd:{:8x}", (uint64_t)hWnd_)).commit();
+        pmlog_verb(v::window)(std::format(L"hwnd:{:8x}", (uint64_t)hWnd_));
         if (hWnd != nullptr)
         {
             pmlog_warn(L"handle already set for window");

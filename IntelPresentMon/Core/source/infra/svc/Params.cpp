@@ -1,10 +1,12 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "Params.h"
-
+#include <CommonUtilities/str/String.h>
 
 namespace p2c::infra::svc
 {
+    using namespace pmon::util;
+
     Params& Params::At(const std::string& key)
     {
         return Get<Params>(key);
@@ -30,8 +32,8 @@ namespace p2c::infra::svc
         try {
             return container.at(key);
         }
-        catch (const std::out_of_range& e) {
-            pmlog_error(std::format(L"Params::Get unavailable key: {}", util::ToWide(key)));
+        catch (const std::out_of_range&) {
+            pmlog_error(std::format(L"Params::Get unavailable key: {}", str::ToWide(key)));
             throw;
         }
     }

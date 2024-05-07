@@ -150,7 +150,7 @@ namespace p2c::kern
         try {
             // mutex that prevents frontend from accessing before pmon is connected
             std::unique_lock startLck{ mtx };
-            pmlog_info(L"== kernel thread starting ==").pid().tid();
+            pmlog_info(L"== kernel thread starting ==");
 
             // command line options
             auto& opt = cli::Options::Get();
@@ -202,17 +202,9 @@ namespace p2c::kern
                         pHandler->OnStalePidSelected();
                     }
                 }
-                // TODO: improve this report
-                catch (const std::exception& e) {
-                    pHandler->OnOverlayDied();
-                    auto note = std::format(L"Overlay died with error: {}", pmon::ToWide(e.what()));
-                    p2clog.note(std::move(note)).nox().notrace().commit();
-                    pOverlayContainer.reset();
-                    pPushedSpec.reset();
-                }
                 catch (...) {
                     pHandler->OnOverlayDied();
-                    pmlog_error(L"Overlay died").no_trace();
+                    pmlog_error(L"Overlay died w/ except. => " + str::ToWide(ReportException())).no_trace();
                     pOverlayContainer.reset();
                     pPushedSpec.reset();
                 }
@@ -220,7 +212,7 @@ namespace p2c::kern
 
             pm.reset();
 
-            pmlog_info(L"== core thread exiting ==").pid();
+            pmlog_info(L"== core thread exiting ==");
         }
         // this catch section handles failures to initialize kernel, or rare error that escape the main loop catch
         // possibility to marshall exceptions to js whenever an interface function is called (async rejection path)

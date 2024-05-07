@@ -1,14 +1,12 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "StandardWindow.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include <Core/source/gfx/Graphics.h>
-#include <Core/source/infra/log/v/Window.h>
 
  
 namespace p2c::win 
 {
-    namespace vvv = infra::log::v;
     using namespace p2c::gfx;
 
     StandardWindow::StandardWindow(int x, int y, DimensionsI clientDimensions, std::wstring name, bool bringToFront)
@@ -17,7 +15,7 @@ namespace p2c::win
     {
         const DWORD exStyles = WS_EX_NOREDIRECTIONBITMAP;
 
-        p2cvlog(vvv::window).note(std::format(L"x:{} y:{} dim:[{},{}] name:{}", x, y, clientDimensions.width, clientDimensions.height, GetTitle())).commit();
+        pmlog_verb(v::window)(std::format(L"x:{} y:{} dim:[{},{}] name:{}", x, y, clientDimensions.width, clientDimensions.height, GetTitle()));
 
         const auto windowArea = ComputeWindowDimensions(clientDimensions);
         CreateWindowExW(

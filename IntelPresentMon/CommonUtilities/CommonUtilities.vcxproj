@@ -28,6 +28,7 @@
     <ClInclude Include="log\ErrorCodeResolvePolicy.h" />
     <ClInclude Include="log\ErrorCodeResolver.h" />
     <ClInclude Include="log\GlobalPolicy.h" />
+    <ClInclude Include="log\HrLogger.h" />
     <ClInclude Include="log\IdentificationTable.h" />
     <ClInclude Include="log\IEntryMarshallReceiver.h" />
     <ClInclude Include="log\IEntryMarshallSender.h" />
@@ -80,6 +81,7 @@
     <ClCompile Include="log\ErrorCodeResolvePolicy.cpp" />
     <ClCompile Include="log\ErrorCodeResolver.cpp" />
     <ClCompile Include="log\GlobalPolicy.cpp" />
+    <ClCompile Include="log\HrLogger.cpp" />
     <ClCompile Include="log\IdentificationTable.cpp" />
     <ClCompile Include="log\Level.cpp" />
     <ClCompile Include="log\LinePolicy.cpp" />

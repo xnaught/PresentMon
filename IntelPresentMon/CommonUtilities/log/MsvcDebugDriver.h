@@ -11,7 +11,7 @@ namespace pmon::util::log
 	public:
 		MsvcDebugDriver(std::shared_ptr<ITextFormatter> pFormatter = {});
 		void Submit(const Entry&) override;
-		virtual void SetFormatter(std::shared_ptr<ITextFormatter> pFormatter) override;
+		void SetFormatter(std::shared_ptr<ITextFormatter> pFormatter) override;
 		void Flush() override;
 	private:
 		std::shared_ptr<ITextFormatter> pFormatter_;

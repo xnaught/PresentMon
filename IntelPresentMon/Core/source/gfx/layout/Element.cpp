@@ -4,6 +4,7 @@
 #include "style/StyleProcessor.h"
 #include "style/ReadOnlyAttributes.h"
 #include <Core/source/infra/Logging.h>
+#include <CommonUtilities/Exception.h>
 #include "AxisMapping.h"
 #include "../prim/BrushPrimitive.h"
 #include "../prim/RectPrimitive.h"
@@ -14,6 +15,7 @@
 
 namespace p2c::gfx::lay
 {
+	using namespace ::pmon::util;
 	using namespace sty;
 
 	Element::Element(std::vector<std::string> classes_)

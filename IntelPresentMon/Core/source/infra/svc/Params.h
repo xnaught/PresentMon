@@ -8,10 +8,12 @@
 #include <stdexcept>
 #include <format>
 #include <Core/source/infra/Logging.h>
-#include "Exceptions.h"
+#include <CommonUtilities/str/String.h>
 
 namespace p2c::infra::svc
 {
+    using namespace ::pmon::util;
+
     class Params
     {
     private:
@@ -76,12 +78,12 @@ namespace p2c::infra::svc
             try {
                 return std::any_cast<T&>(any);
             }
-            catch (const std::bad_any_cast& e) {
-                p2clog.note(std::format(L"Params::Get wrong type at @{}; wanted: {}; actual: {}",
-                    util::ToWide(key),
-                    util::ToWide(typeid(T).name()),
-                    util::ToWide(any.type().name())
-                )).ex(NotFound{}).nested(e).commit();
+            catch (const std::bad_any_cast&) {
+                pmlog_error(std::format(L"Params::Get wrong type at @{}; wanted: {}; actual: {}",
+                    str::ToWide(key),
+                    str::ToWide(typeid(T).name()),
+                    str::ToWide(any.type().name())
+                ));
                 throw;
             }
         }

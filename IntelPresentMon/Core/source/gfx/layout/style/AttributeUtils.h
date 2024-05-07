@@ -10,6 +10,8 @@
 
 namespace p2c::gfx::lay::sty::at
 {
+	using namespace ::pmon::util;
+
 	template<class V, std::size_t I = 0>
 	constexpr bool CanInherit()
 	{

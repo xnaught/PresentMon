@@ -3,6 +3,7 @@
 #include "Graphics.h"
 #include "Exception.h"
 #include <Core/source/infra/Logging.h>
+#include <CommonUtilities/log/HrLogger.h>
 
 #pragma comment(lib, "dxgi")
 #pragma comment(lib, "d3d11")
@@ -32,13 +33,13 @@ namespace p2c::gfx
             &pContext3d// Device context
         ); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
         }
 
         ComPtr<IDXGIDevice> pDxgiDevice;
         if (auto hr = pDevice.As(&pDxgiDevice); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
         }
 
         ComPtr<IDXGIFactory2> pDxgiFactory;
@@ -47,7 +48,7 @@ namespace p2c::gfx
             IID_PPV_ARGS(&pDxgiFactory)
         ); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
         }
 
         if (enableTearing) {
@@ -96,7 +97,7 @@ namespace p2c::gfx
                 &pSwapChain
             ); FAILED(hr))
             {
-                p2clog.hr(hr).commit();
+                pmlog_error().hr(hr);
             }
         }
 
@@ -107,7 +108,7 @@ namespace p2c::gfx
             IID_PPV_ARGS(&pCompositionDevice)
         ); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
         }
 
         if (auto hr = pCompositionDevice->CreateTargetForHwnd(
@@ -116,33 +117,33 @@ namespace p2c::gfx
             &pCompositionTarget
         ); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
         }
 
         if (auto hr = pCompositionDevice->CreateVisual(&pCompositionVisual); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
         }
 
         if (auto hr = pCompositionVisual->SetContent(pSwapChain.Get()); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
         }
         if (upscaleFactor != 1.f) {
             if (auto hr = pCompositionVisual->SetTransform(D2D1::Matrix3x2F::Scale(upscaleFactor, upscaleFactor)); FAILED(hr))
             {
-                p2clog.hr(hr).commit();
+                pmlog_error().hr(hr);
             }
         }
 
         if (auto hr = pCompositionTarget->SetRoot(pCompositionVisual.Get()); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
         }
 
         if (auto hr = pCompositionDevice->Commit(); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
         }
 
 
@@ -154,7 +155,7 @@ namespace p2c::gfx
             pFactory2d.GetAddressOf()
         ); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
         }
 
         // Create the Direct2D device that links back to the Direct3D device
@@ -164,7 +165,7 @@ namespace p2c::gfx
             &pDevice2d
         ); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
         }
 
         // Create the Direct2D device context that exposes drawing commands
@@ -173,7 +174,7 @@ namespace p2c::gfx
             &pContext2d
         ); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
         }
 
 
@@ -184,7 +185,7 @@ namespace p2c::gfx
             (IUnknown**)&pWriteFactory
         ); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
         }
 
         CreateBackbufferDependentResources_();
@@ -218,7 +219,7 @@ namespace p2c::gfx
     {
         if (auto hr = pContext2d->EndDraw(); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
         }
 
         fastRenderer->EndFrame(*pContext3d);
@@ -226,7 +227,7 @@ namespace p2c::gfx
         {
             const UINT interval = tearingActive ? 0 : 1;
             const UINT flags = tearingActive ? DXGI_PRESENT_ALLOW_TEARING : 0;
-            p2chrlog << pSwapChain->Present(interval, flags);
+            pmlog_hr << pSwapChain->Present(interval, flags);
         }
 
         fastRenderer->ResizeGeometryBuffersIfNecessary(*pDevice);
@@ -328,10 +329,7 @@ namespace p2c::gfx
     {
         // getting access to that sweet backbuffer
         ComPtr<ID3D11Texture2D> pBackBuffer;
-        if (auto hr = pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer)); FAILED(hr))
-        {
-            p2clog.hr(hr).commit();
-        }
+        pmlog_hr << pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
 
         // get information from texture about dimensions
         D3D11_TEXTURE2D_DESC textureDesc;
@@ -343,17 +341,11 @@ namespace p2c::gfx
         rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
         rtvDesc.Texture2D.MipSlice = 0;
 
-        if (auto hr = pDevice->CreateRenderTargetView(pBackBuffer.Get(), &rtvDesc, &pTarget); FAILED(hr))
-        {
-            p2clog.hr(hr).commit();
-        }
+        pmlog_hr << pDevice->CreateRenderTargetView(pBackBuffer.Get(), &rtvDesc, &pTarget);
 
         // Retrieve the swap chain's back buffer
         ComPtr<IDXGISurface2> pSurface;
-        if (auto hr = pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pSurface)); FAILED(hr))
-        {
-            p2clog.hr(hr).commit();
-        }
+        pmlog_hr << pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pSurface));
 
         {
             // Create a Direct2D bitmap that points to the swap chain surface
@@ -363,14 +355,11 @@ namespace p2c::gfx
             properties.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW;
 
             ComPtr<ID2D1Bitmap1> pBitmap;
-            if (auto hr = pContext2d->CreateBitmapFromDxgiSurface(
+            pmlog_hr << pContext2d->CreateBitmapFromDxgiSurface(
                 pSurface.Get(),
                 properties,
                 &pBitmap
-            ); FAILED(hr))
-            {
-                p2clog.hr(hr).commit();
-            }
+            );
 
             // Point the device context to the bitmap for rendering
             pContext2d->SetTarget(pBitmap.Get());

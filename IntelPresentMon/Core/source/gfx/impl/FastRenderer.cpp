@@ -21,7 +21,8 @@ namespace p2c::gfx::impl
             ComPtr<ID3DBlob> pBlob;
             if (auto hr = D3DReadFileToBlob(L"Shaders\\Line_PS.cso", &pBlob); FAILED(hr))
             {
-                p2clog.hr(hr).note(L"Failure reading Shaders\\Line_PS.cso").commit();
+                pmlog_error(L"Failure reading Shaders\\Line_PS.cso").hr(hr);
+                throw Except<Exception>();
             }
             if (auto hr = device.CreatePixelShader(
                 pBlob->GetBufferPointer(),
@@ -30,7 +31,8 @@ namespace p2c::gfx::impl
                 &pPixelShader
             ); FAILED(hr))
             {
-                p2clog.hr(hr).commit();
+                pmlog_error().hr(hr);
+                throw Except<Exception>();
             }
         }
         // vertex shader & input layout
@@ -38,7 +40,8 @@ namespace p2c::gfx::impl
             ComPtr<ID3DBlob> pBlob;
             if (auto hr = D3DReadFileToBlob(L"Shaders\\Line_VS.cso", &pBlob); FAILED(hr))
             {
-                p2clog.hr(hr).note(L"Failure reading Shaders\\Line_VS.cso").commit();
+                pmlog_error(L"Failure reading Shaders\\Line_VS.cso").hr(hr);
+                throw Except<Exception>();
             }
             if (auto hr = device.CreateVertexShader(
                 pBlob->GetBufferPointer(),
@@ -47,7 +50,8 @@ namespace p2c::gfx::impl
                 &pVertexShader
             ); FAILED(hr))
             {
-                p2clog.hr(hr).commit();
+                pmlog_error().hr(hr);
+                throw Except<Exception>();
             }
 
             constexpr D3D11_INPUT_ELEMENT_DESC input_descs[] = {
@@ -78,7 +82,8 @@ namespace p2c::gfx::impl
                 &pInputLayout
             ); FAILED(hr))
             {
-                p2clog.hr(hr).commit();
+                pmlog_error().hr(hr);
+                throw Except<Exception>();
             }
         }
         // geometry buffers (vtx + idx)
@@ -90,7 +95,8 @@ namespace p2c::gfx::impl
             rasterDesc.ScissorEnable = TRUE;
             if (auto hr = device.CreateRasterizerState(&rasterDesc, &pRasterizer); FAILED(hr))
             {
-                p2clog.hr(hr).commit();
+                pmlog_error().hr(hr);
+                throw Except<Exception>();
             }
         }
         // rasterizer AA
@@ -100,7 +106,8 @@ namespace p2c::gfx::impl
             rasterDesc.AntialiasedLineEnable = TRUE;
             if (auto hr = device.CreateRasterizerState(&rasterDesc, &pRasterizerAnti); FAILED(hr))
             {
-                p2clog.hr(hr).commit();
+                pmlog_error().hr(hr);
+                throw Except<Exception>();
             }
         }
         // depth stencil
@@ -110,7 +117,8 @@ namespace p2c::gfx::impl
             dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
             if (auto hr = device.CreateDepthStencilState(&dsDesc, &pDepthStencil); FAILED(hr))
             {
-                p2clog.hr(hr).commit();
+                pmlog_error().hr(hr);
+                throw Except<Exception>();
             }
         }
         // blend
@@ -126,7 +134,8 @@ namespace p2c::gfx::impl
             rt.BlendOpAlpha = D3D11_BLEND_OP_ADD;
             if (auto hr = device.CreateBlendState(&blendDesc, &pBlender); FAILED(hr))
             {
-                p2clog.hr(hr).commit();
+                pmlog_error().hr(hr);
+                throw Except<Exception>();
             }
         }
 	}
@@ -162,12 +171,14 @@ namespace p2c::gfx::impl
         vertexMapping.emplace();
         if (auto hr = context.Map(pVertexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &*vertexMapping); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
+            throw Except<Exception>();
         }
         indexMapping.emplace();
         if (auto hr = context.Map(pIndexBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &*indexMapping); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
+            throw Except<Exception>();
         }
 	}
 
@@ -303,7 +314,8 @@ namespace p2c::gfx::impl
         bd.StructureByteStride = sizeof(Point);
         if (auto hr = device.CreateBuffer(&bd, nullptr, &pVertexBuffer); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
+            throw Except<Exception>();
         }
     }
 
@@ -318,7 +330,8 @@ namespace p2c::gfx::impl
         ibd.StructureByteStride = sizeof(UINT16);
         if (auto hr = device.CreateBuffer(&ibd, nullptr, &pIndexBuffer); FAILED(hr))
         {
-            p2clog.hr(hr).commit();
+            pmlog_error().hr(hr);
+            throw Except<Exception>();
         }
     }
 
@@ -615,16 +628,16 @@ namespace p2c::gfx::impl
     {
         if (vertexLimitExceededAmount) {
             const auto newSize = UINT(float(vertexBufferSize + *vertexLimitExceededAmount) * 2.f);
-            p2clog.info(std::format(L"Vertex limit exceeded last frame, resizing from {} to {}",
-                vertexBufferSize, newSize)).commit();
+            pmlog_info(std::format(L"Vertex limit exceeded last frame, resizing from {} to {}",
+                vertexBufferSize, newSize));
             vertexBufferSize = newSize;
             MakeVertexBuffer(device);
             vertexLimitExceededAmount.reset();
         }
         if (indexLimitExceededAmount) {
             const auto newSize = UINT(float(indexBufferSize + *indexLimitExceededAmount) * 2.f);
-            p2clog.info(std::format(L"Index limit exceeded last frame, resizing from {} to {}",
-                indexBufferSize, newSize)).commit();
+            pmlog_info(std::format(L"Index limit exceeded last frame, resizing from {} to {}",
+                indexBufferSize, newSize));
             indexBufferSize = newSize;
             MakeIndexBuffer(device);
             indexLimitExceededAmount.reset();

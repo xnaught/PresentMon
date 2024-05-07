@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include <deque>
-#include <Core/source/infra/util/Assert.h>
 #include <functional>
+#include <algorithm>
 #include <Core/source/gfx/base/Geometry.h>
 #include <Core/source/gfx/layout/Enums.h>
 

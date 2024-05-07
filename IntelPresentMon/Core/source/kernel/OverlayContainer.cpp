@@ -3,17 +3,13 @@
 #include "OverlayContainer.h"
 #include <Core/source/win/ProcessMapBuilder.h>
 #include "TargetLostException.h"
-#include <Core/source/infra/log/v/ProcWatch.h>
 
-using p2c::infra::log::v::procwatch;
 using namespace pmon::util;
 
 namespace p2c::kern
 {
-    using infra::log::v::procwatch;
     using namespace gfx;
     using namespace lay;
-#define vlog p2cvlog(procwatch)
 
     OverlayContainer::OverlayContainer(
         win::com::WbemConnection& wbemConn_, std::shared_ptr<OverlaySpec> pSpec_,
@@ -35,16 +31,16 @@ namespace p2c::kern
             if (auto j = std::ranges::find_if(ancestorMap, filter); j != ancestorMap.end())
             {
                 curPid = j->second.pid;
-                vlog.note(std::format(L"overlay container found candidate child process|pid:{} hwn:{:6x}",
-                    curPid, (uintptr_t)j->second.hWnd)).commit();
+                pmlog_verb(v::procwatch)(std::format(L"overlay container found candidate child process|pid:{} hwn:{:6x}",
+                    curPid, (uintptr_t)j->second.hWnd));
                 pOverlay = std::make_unique<Overlay>(j->second, std::move(pSpec_), pm_, std::make_unique<MetricPackMapper>());
             }
             // if no windowed child exists, use the root
             else
             {
                 curPid = rootPid;
-                vlog.note(std::format(L"overlay container using root process|pid:{} hwn:{:6x}",
-                    curPid, (uintptr_t)i->second.hWnd)).commit();
+                pmlog_verb(v::procwatch)(std::format(L"overlay container using root process|pid:{} hwn:{:6x}",
+                    curPid, (uintptr_t)i->second.hWnd));
                 pOverlay = std::make_unique<Overlay>(i->second, std::move(pSpec_), pm_, std::make_unique<MetricPackMapper>());
             }
             // begin listening for children
@@ -112,13 +108,13 @@ namespace p2c::kern
     }
     void OverlayContainer::RegisterWindowSpawn(DWORD pid, HWND hWnd, const RECT& r)
     {
-        p2cvlog(procwatch).note(std::format(L"register-win-spawn-entry | hwn:{:8x}", (uintptr_t)hWnd)).commit();
+        pmlog_verb(v::procwatch)(std::format(L"register-win-spawn-entry | hwn:{:8x}", (uintptr_t)hWnd));
         // no need for mtx here since the window event listener runs on kernel thread (msg pump)
         if (auto i = ancestorMap.find(pid); i != ancestorMap.end()) {
             const auto prevHwnd = i->second.hWnd;
             // select update hwnd if current is none or invalid
             if (!prevHwnd || !IsWindow(prevHwnd)) {
-                p2cvlog(procwatch).note(std::format(L"register-win-spawn-sel-nul | hwn: {:8x} => {:8x}", (uintptr_t)i->second.hWnd, (uintptr_t)hWnd)).commit();
+                pmlog_verb(v::procwatch)(std::format(L"register-win-spawn-sel-nul | hwn: {:8x} => {:8x}", (uintptr_t)i->second.hWnd, (uintptr_t)hWnd));
                 i->second.hWnd = hWnd;
             }
             // select update hwnd if current smaller
@@ -128,9 +124,9 @@ namespace p2c::kern
                     prevRect = { 0, 0, 0, 0 };
                 }
                 if (win::RectToDims(prevRect) < win::RectToDims(r)) {
-                    p2cvlog(procwatch).note(std::format(L"register-win-spawn-sel-size | hwn: {:8x}@{} sq px => {:8x}@{} sq px",
+                    pmlog_verb(v::procwatch)(std::format(L"register-win-spawn-sel-size | hwn: {:8x}@{} sq px => {:8x}@{} sq px",
                         (uintptr_t)i->second.hWnd, win::RectToDims(prevRect).GetArea(),
-                        (uintptr_t)hWnd, win::RectToDims(r).GetArea())).commit();
+                        (uintptr_t)hWnd, win::RectToDims(r).GetArea()));
                     i->second.hWnd = hWnd;
                 }
             }
@@ -139,13 +135,13 @@ namespace p2c::kern
             if (i->second.hWnd == hWnd) {
                 // case when we are in root and hit a child spawn window of interest
                 if (pid != rootPid && curPid == rootPid) {
-                    p2cvlog(procwatch).note(std::format(L"register-win-spawn-upg-root-to-child | hwn: {:5} => {:5}", rootPid, pid)).commit();
+                    pmlog_verb(v::procwatch)(std::format(L"register-win-spawn-upg-root-to-child | hwn: {:5} => {:5}", rootPid, pid));
                     curPid = pid;
                     pOverlay = pOverlay->RetargetPidClone(i->second);
                 }
                 // case when we are in child and window upgrade occurs
                 else if (pid != rootPid && pid == curPid) {
-                    p2cvlog(procwatch).note(std::format(L"register-win-spawn-upg-child | hwn: {:8x} => {:8x}", (uintptr_t)prevHwnd, (uintptr_t)hWnd)).commit();
+                    pmlog_verb(v::procwatch)(std::format(L"register-win-spawn-upg-child | hwn: {:8x} => {:8x}", (uintptr_t)prevHwnd, (uintptr_t)hWnd));
                     // standard overlay doesn't really care what window is being targetted
                     if (!pOverlay->IsStandardWindow()) {
                         pOverlay = pOverlay->SacrificeClone(hWnd);
@@ -153,7 +149,7 @@ namespace p2c::kern
                 }
                 // case of window upgrade in root
                 else if (pid == rootPid && curPid == rootPid) {
-					p2cvlog(procwatch).note(std::format(L"register-win-spawn-upg-root | hwn: {:8x} => {:8x}", (uintptr_t)prevHwnd, (uintptr_t)hWnd)).commit();
+					pmlog_verb(v::procwatch)(std::format(L"register-win-spawn-upg-root | hwn: {:8x} => {:8x}", (uintptr_t)prevHwnd, (uintptr_t)hWnd));
                     // standard overlay doesn't really care what window is being targetted
                     if (!pOverlay->IsStandardWindow()) {
                         pOverlay = pOverlay->SacrificeClone(hWnd);
@@ -162,7 +158,7 @@ namespace p2c::kern
             }
         }
         else {
-            p2cvlog(procwatch).note(std::format(L"register-win-spawn-reject | hwn: {:8x}", (uintptr_t)hWnd)).commit();
+            pmlog_verb(v::procwatch)(std::format(L"register-win-spawn-reject | hwn: {:8x}", (uintptr_t)hWnd));
         }
     }
     void OverlayContainer::RebootOverlay(std::shared_ptr<OverlaySpec> pSpec_)
@@ -174,11 +170,11 @@ namespace p2c::kern
         std::optional<DWORD> nextPid;
         while (auto spawnOpt = spawnQueue.Pop()) {
             auto spawnProc = std::move(*spawnOpt);
-            p2cvlog(procwatch).note(std::format(L"handle-proc-spawn | pid: {:5}", spawnProc.pid)).commit();
+            pmlog_verb(v::procwatch)(std::format(L"handle-proc-spawn | pid: {:5}", spawnProc.pid));
             // check if event process is part of ancestry, discard if not
             const auto parentId = spawnProc.parentId;
             if (!ancestorMap.contains(parentId)) {
-                p2cvlog(procwatch).note(L"handle-proc-spawn-not-ancestor").commit();
+                pmlog_verb(v::procwatch)(L"handle-proc-spawn-not-ancestor");
                 continue;
             }
             // pull event off queue and insert into ancestor map
@@ -201,17 +197,17 @@ namespace p2c::kern
                     GetWindowThreadProcessId(hWnd, &pid);
 
                     if (pid == pProc->pid) {
-                        if constexpr (procwatch) {
+                        if constexpr (v::procwatch) {
                             RECT r;
                             GetWindowRect(hWnd, &r);
-                            p2clog.verbose(std::format(L"handle-proc-spawn-enum-win | pid:{:5} hwd:{:8x} own:{:8x} vis:{} siz:{} nam:{}",
+                            pmlog_verb(true)(std::format(L"handle-proc-spawn-enum-win | pid:{:5} hwd:{:8x} own:{:8x} vis:{} siz:{} nam:{}",
                                 pid,
                                 reinterpret_cast<uintptr_t>(hWnd),
                                 reinterpret_cast<uintptr_t>(GetWindow(hWnd, GW_OWNER)),
                                 IsWindowVisible(hWnd),
                                 win::RectToDims(r).GetArea(),
                                 win::GetWindowTitle(hWnd)
-                            )).commit();
+                            ));
                         }
 
                         // Enumeration only walks top level windows
@@ -241,13 +237,13 @@ namespace p2c::kern
             EnumWindows(&WindowEnum::Callback, reinterpret_cast<LPARAM>(&itProc->second));
             // check if promotion required
             if (itProc->second.hWnd && curPid == rootPid) {
-                p2cvlog(procwatch).note(std::format(L"handle-proc-spawn-sel | pid: {:5}", itProc->second.pid)).commit();
+                pmlog_verb(v::procwatch)(std::format(L"handle-proc-spawn-sel | pid: {:5}", itProc->second.pid));
                 nextPid = itProc->second.pid;
             }
         }
         // retarget for promotion if required
         if (nextPid) {
-            p2cvlog(procwatch).note(std::format(L"handle-proc-spawn-sel-upg | pid: {:5} => {:5}", curPid, *nextPid)).commit();
+            pmlog_verb(v::procwatch)(std::format(L"handle-proc-spawn-sel-upg | pid: {:5} => {:5}", curPid, *nextPid));
             curPid = *nextPid;
             pOverlay = pOverlay->RetargetPidClone(ancestorMap[curPid]);
         }

@@ -16,8 +16,6 @@
 #include <shared_mutex>
 #include <Core/source/infra/Logging.h>
 #include <CommonUtilities/Exception.h>
-#include <Core/source/infra/util/Util.h>
-#include "Exceptions.h"
 #include "Params.h"
 
 
@@ -32,6 +30,8 @@ namespace p2c::con::svc
 
 namespace p2c::infra::svc
 {
+    using namespace ::pmon::util;
+
     class Services
     {
         struct Singleton_
@@ -277,12 +277,12 @@ namespace p2c::infra::svc
             {
                 return std::any_cast<Generator<T>>(gen)(p);
             }
-            catch (const std::bad_any_cast& e)
+            catch (const std::bad_any_cast&)
             {
-                p2clog.nested(e).note(std::format(L"Service found by type does not match tried:[{}] actual:[{}]",
-                    util::ToWide(typeid(std::shared_ptr<T>).name()),
-                    util::ToWide(gen.type().name())
-                )).ex(WrongType{}).commit();
+                pmlog_error(std::format(L"Service found by type does not match tried:[{}] actual:[{}]",
+                    str::ToWide(typeid(std::shared_ptr<T>).name()),
+                    str::ToWide(gen.type().name())
+                ));
                 return {};
             }
         }
@@ -295,7 +295,7 @@ namespace p2c::infra::svc
             {
                 if (throwForKey)
                 {
-                    pmlog_error(std::format(L"Service type not found in service map [{}]", util::ToWide(typeid(T).name())));
+                    pmlog_error(std::format(L"Service type not found in service map [{}]", str::ToWide(typeid(T).name())));
                     throw Except<Exception>();
                 }
                 return {};
@@ -334,9 +334,9 @@ namespace p2c::infra::svc
                     throwForKey
                 ));
             }
-            catch (const NotFound& e)
+            catch (...)
             {
-                pmlog_error(std::format(L"Type found in service map but resolve failed [{}]", util::ToWide(typeid(T).name())));
+                pmlog_error(std::format(L"resolve failed [{}]",  str::ToWide(typeid(T).name())));
                 return {};
             }
         }
