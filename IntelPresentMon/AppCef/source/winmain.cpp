@@ -177,6 +177,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     constexpr bool is_debug = true;
 #endif
 
+    LogChannelManager zLogMan_;
+    ConfigureLogging();
+
     using namespace client;
     try {
         if (auto err = cli::Options::Init(__argc, __argv, true)) {
@@ -187,12 +190,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         CefMainArgs main_args{ hInstance };
         CefRefPtr<ccef::NanoCefProcessHandler> app = new ccef::NanoCefProcessHandler{};
 
-        if (const auto code = CefExecuteProcess(main_args, app.get(), nullptr); code >= 0)
-        {
+        if (const auto code = CefExecuteProcess(main_args, app.get(), nullptr); code >= 0) {
             return (int)code;
         }
 
-        // from here on is only executed by the root process (browser window process)
+        // code from here on is only executed by the root process (browser window process)
+
+        pmlog_info(L"== client process section starting ==");
 
         {
             const auto pFolderResolver = Services::Resolve<infra::util::FolderResolver>();
@@ -208,11 +212,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         auto hwndBrowser = CreateBrowserWindow(hInstance, nCmdShow);
         hwndAppMsg = CreateMessageWindow(hInstance);
 
-        pmlog_info(L"== hello from client process ==");
 
         MSG msg;
-        while (GetMessage(&msg, nullptr, 0, 0))
-        {
+        while (GetMessage(&msg, nullptr, 0, 0)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
@@ -223,6 +225,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
         UnregisterClass(BrowserWindowClassName, hInstance);
         UnregisterClass(MessageWindowClassName, hInstance);
+
+        pmlog_info(L"== client process exiting ==");
 
         return (int)msg.wParam;
     }

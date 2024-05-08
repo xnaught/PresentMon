@@ -7,6 +7,7 @@
 #include <CommonUtilities/log/LinePolicy.h>
 #include <CommonUtilities/log/ErrorCodeResolvePolicy.h>
 #include <CommonUtilities/log/ErrorCodeResolver.h>
+#include <CommonUtilities/win/WinAPI.h>
 #include <CommonUtilities/win/HrErrorCodeProvider.h>
 #include <CommonUtilities/str/String.h>
 #include <PresentMonAPIWrapperCommon/PmErrorCodeProvider.h>
@@ -14,6 +15,7 @@
 #include "../cli/CliOptions.h"
 #include "Logging.h"
 #include <memory>
+#include <format>
 
 
 namespace pmon::util::log
@@ -32,13 +34,13 @@ namespace pmon::util::log
 			auto pErrPolicy = std::make_shared<ErrorCodeResolvePolicy>();
 			pErrPolicy->SetResolver(std::move(pErrorResolver));
 			pChannel->AttachPolicy(std::move(pErrPolicy));
-			// make the formatter
-			const auto pFormatter = std::make_shared<TextFormatter>();
-			const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log.txt");
 			// make and add the line-tracking policy
 			pChannel->AttachPolicy(std::make_shared<LinePolicy>());
-			// construct and configure default logging channel
+			// make the formatter
+			const auto pFormatter = std::make_shared<TextFormatter>();
+			// attach drivers
 			pChannel->AttachDriver(std::make_shared<MsvcDebugDriver>(pFormatter));
+			const auto pFileStrategy = std::make_shared<SimpleFileStrategy>(std::format("log-{}.txt", GetCurrentProcessId()));
 			pChannel->AttachDriver(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy));
 			return pChannel;
 		}
@@ -63,7 +65,7 @@ namespace p2c
 			const auto getters = pmLinkLogging_(GetDefaultChannel(), []()
 				-> IdentificationTable& { return IdentificationTable::Get_(); });
 			// shortcut for command line
-			const auto& opt = cli::Options::Get();
+			//const auto& opt = cli::Options::Get();
 			// configure logging based on command line
 			//if (opt.logLevel) {
 			//	GlobalPolicy::Get().SetLogLevel(*opt.logLevel);

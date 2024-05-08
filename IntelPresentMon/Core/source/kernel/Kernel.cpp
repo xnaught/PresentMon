@@ -212,7 +212,7 @@ namespace p2c::kern
 
             pm.reset();
 
-            pmlog_info(L"== core thread exiting ==");
+            pmlog_info(L"== kernel thread exiting ==");
         }
         // this catch section handles failures to initialize kernel, or rare error that escape the main loop catch
         // possibility to marshall exceptions to js whenever an interface function is called (async rejection path)
@@ -222,6 +222,11 @@ namespace p2c::kern
             hasMarshalledException.store(true);
         }
         constructionSemaphore.release();
+
+        // make sure all the logging messages from kernel thread are processed
+        if (auto chan = log::GetDefaultChannel()) {
+            chan->Flush();
+        }
     }
 
     void Kernel::RunOverlayLoop_()
