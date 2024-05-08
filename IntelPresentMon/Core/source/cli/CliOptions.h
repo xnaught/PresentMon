@@ -18,13 +18,14 @@ namespace p2c::cli
 		Option<std::string> url{ this, "--p2c-url", "", "URL to load instead of app files" };
 		Option<std::string> controlPipe{ this, "--p2c-control-pipe", "", "Named pipe to connect to the service with" };
 		Option<std::string> shmName{ this, "--p2c-shm-name", "", "Shared memory to connect to the service with" };
+		Option<std::string> logPipeName{ this, "--p2c-log-pipe-name", "", "The postfix used to create the named pipe for logging source server" };
 		Option<std::string> cefType{ this, "--type", "", "Type of the current chromium process" };
 
 		static constexpr const char* description = "PresentMon performance overlay and trace capture application";
 		static constexpr const char* name = "PresentMon.exe";
 
 	private:
-		NoForward noForward_{ cefType };
+		NoForward noForward_{ cefType, logPipeName };
 		AllowExtras ext_{ this };
 	};
 }

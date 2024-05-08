@@ -2,6 +2,8 @@
 #include <CommonUtilities/log/Channel.h>
 #include <CommonUtilities/log/MsvcDebugDriver.h>
 #include <CommonUtilities/log/BasicFileDriver.h>
+#include <CommonUtilities/log/MarshallDriver.h>
+#include <CommonUtilities/log/NamedPipeMarshallSender.h>
 #include <CommonUtilities/log/TextFormatter.h>
 #include <CommonUtilities/log/SimpleFileStrategy.h>
 #include <CommonUtilities/log/LinePolicy.h>
@@ -10,13 +12,16 @@
 #include <CommonUtilities/win/WinAPI.h>
 #include <CommonUtilities/win/HrErrorCodeProvider.h>
 #include <CommonUtilities/str/String.h>
+#include <CommonUtilities/log/PanicLogger.h>
 #include <PresentMonAPIWrapperCommon/PmErrorCodeProvider.h>
 #include <PresentMonAPI2/Internal.h>
 #include "../cli/CliOptions.h"
 #include "Logging.h"
 #include <memory>
 #include <format>
+#include <chrono>
 
+using namespace std::chrono_literals;
 
 namespace pmon::util::log
 {
@@ -61,11 +66,12 @@ namespace p2c
 	void ConfigureLogging() noexcept
 	{
 		try {
+			auto pChan = GetDefaultChannel();
 			// connect dll channel and id table to exe, get access to global settings in dll
-			const auto getters = pmLinkLogging_(GetDefaultChannel(), []()
-				-> IdentificationTable& { return IdentificationTable::Get_(); });
+			const auto getters = pmLinkLogging_(pChan, []() -> IdentificationTable& {
+				return IdentificationTable::Get_(); });
 			// shortcut for command line
-			//const auto& opt = cli::Options::Get();
+			const auto& opt = cli::Options::Get();
 			// configure logging based on command line
 			//if (opt.logLevel) {
 			//	GlobalPolicy::Get().SetLogLevel(*opt.logLevel);
@@ -89,8 +95,25 @@ namespace p2c
 			//	pmquell(LineTable::IngestList(str::ToWide(*opt.logAllowList), false))
 			//		pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logAllowList), false))
 			//}
+			// setup server to ipc logging connection
+			if (opt.logPipeName) {
+				try {
+					auto pSender = std::make_shared<log::NamedPipeMarshallSender>(str::ToWide(*opt.logPipeName), 1);
+					auto pDriver = std::make_shared<log::MarshallDriver>(pSender);
+					pChan->AttachComponent(std::move(pDriver));
+					// block here waiting for the browser process to connect
+					if (!pSender->WaitForConnection(1000ms)) {
+						pmlog_warn(L"browser process did not connect to ipc logging pipe");
+					}
+				}
+				catch (...) {
+					pmlog_panic_(ReportExceptionWide());
+				}
+			}
 		}
-		catch (...) {}
+		catch (...) {
+			pmlog_panic_(ReportExceptionWide());
+		}
 	}
 	LogChannelManager::LogChannelManager() noexcept
 	{

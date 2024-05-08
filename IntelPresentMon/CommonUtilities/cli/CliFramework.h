@@ -193,6 +193,10 @@ namespace pmon::util::cli
 			}
 			return {};
 		}
+		std::string GetName() const
+		{
+			return pOption_->get_name();
+		}
 	private:
 		T data_;
 		CLI::Option* pOption_ = nullptr;
@@ -206,6 +210,10 @@ namespace pmon::util::cli
 		bool operator*() const;
 		operator bool() const final;
 		bool operator!() const;
+		std::string GetName() const
+		{
+			return pOption_->get_name();
+		}
 	private:
 		bool data_ = false;
 		CLI::Option* pOption_ = nullptr;

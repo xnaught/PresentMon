@@ -5,10 +5,13 @@
 #include "../win/Handle.h"
 #include "../win/Event.h"
 #include "../win/Overlapped.h"
+#include "../Exception.h"
 
 
 namespace pmon::util::log
 {
+    PM_DEFINE_EX(PipeConnectionError);
+
 	class NamedPipeMarshallReceiver : public IEntryMarshallReceiver
 	{
     public:

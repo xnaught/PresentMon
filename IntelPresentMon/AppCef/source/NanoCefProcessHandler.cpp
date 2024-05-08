@@ -15,8 +15,13 @@
 #include "util/AsyncEndpointManager.h"
 #include "util/CefValues.h"
 #include <Core/source/cli/CliOptions.h>
+#include <CommonUtilities/mt/Thread.h>
+#include <CommonUtilities/log/NamedPipeMarshallReceiver.h>
+#include <CommonUtilities/log/EntryMarshallInjector.h>
 #include <include/cef_parser.h>
 
+using namespace pmon::util;
+using namespace std::chrono_literals;
 
 namespace p2c::client::cef
 {
@@ -75,9 +80,10 @@ namespace p2c::client::cef
 
     void NanoCefProcessHandler::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> pChildCommandLine)
     {
+        auto& opt = cli::Options::Get();
         // propagate custom cli switches to children
         auto pCmdLine = CefCommandLine::GetGlobalCommandLine();
-        for (auto&&[name, val] : cli::Options::Get().GetForwardedOptions()) {
+        for (auto&&[name, val] : opt.GetForwardedOptions()) {
             if (val.empty()) {
                 pChildCommandLine->AppendSwitch(std::move(name));
             }
@@ -85,6 +91,33 @@ namespace p2c::client::cef
                 pChildCommandLine->AppendSwitchWithValue(std::move(name), std::move(val));
             }
         }
+        // inject logging cli option
+        static int count = 0;
+        std::string pipePrefix = std::format("p2c-logpipe-{}-{}", GetCurrentProcessId(), ++count);
+        pChildCommandLine->AppendSwitchWithValue(opt.logPipeName.GetName(), pipePrefix);
+        // launch connector thread
+        mt::Thread{ L"logconn", count, [pipePrefix = str::ToWide(pipePrefix)] {
+            try {
+                // retry connection maximum 100 times, every 10ms
+                const int nAttempts = 100;
+                for (int i = 0; i < nAttempts; i++) {
+                    try {
+                        auto pChan = log::GetDefaultChannel();
+                        auto pReceiver = std::make_shared<log::NamedPipeMarshallReceiver>(pipePrefix, log::IdentificationTable::GetPtr());
+                        auto pInjector = std::make_shared<log::EntryMarshallInjector>(pChan, std::move(pReceiver));
+                        pChan->AttachComponent(std::move(pInjector));
+                        break;
+                    }
+                    catch (const log::PipeConnectionError&) {
+                        std::this_thread::sleep_for(10ms);
+                    }
+                }
+                pmlog_warn(std::format(L"Failed to connect to logging source server {} after {} attempts", pipePrefix, nAttempts));
+            }
+            catch (...) {
+                pmlog_error(ReportExceptionWide());
+            }
+        } }.detach();
     }
 
     void NanoCefProcessHandler::AddFunctionToObject_(CefString name, CefRefPtr<CefV8Value>& pObj, CefRefPtr<DataBindAccessor>& pAccessor)
