@@ -213,6 +213,7 @@
     <ClInclude Include="PMMainThread.h" />
     <ClInclude Include="PresentMonSession.h" />
     <ClInclude Include="RealtimePresentMonSession.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Service.h" />
   </ItemGroup>
   <ItemGroup>
@@ -234,6 +235,9 @@
     <ProjectReference Include="..\Streamer\Streamer.vcxproj">
       <Project>{bf43064b-01f0-4c69-91fb-c2122baf621d}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="PresentMonService.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

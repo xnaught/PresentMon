@@ -25,5 +25,9 @@
     <ClInclude Include="PresentMonSession.h" />
     <ClInclude Include="RealtimePresentMonSession.h" />
     <ClInclude Include="MockPresentMonSession.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="PresentMonService.rc" />
   </ItemGroup>
 </Project>
