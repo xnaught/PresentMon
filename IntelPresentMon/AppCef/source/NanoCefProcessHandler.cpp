@@ -9,7 +9,6 @@
 #include <Core/source/infra/svc/Services.h>
 #include "util/CefProcessCompass.h"
 #include <Core/source/infra/Logging.h>
-#include "util/CefIpcLogDriver.h"
 #include "include/wrapper/cef_closure_task.h"
 #include <include/cef_task.h>
 #include "include/base/cef_callback.h"
@@ -109,11 +108,11 @@ namespace p2c::client::cef
 
         if (!Services::Resolve<client::util::CefProcessCompass>()->IsClient())
         {
-            // setup ipc logging
-            auto pChan = infra::log::GetDefaultChannel();
-            pChan->ClearDrivers();
-            pChan->AddDriver(std::make_unique<util::log::CefIpcLogDriver>(pBrowser));
-            pChan->AddDriver(std::make_unique<infra::log::drv::DebugOutDriver>());
+            //// setup ipc logging
+            //auto pChan = infra::log::GetDefaultChannel();
+            //pChan->ClearDrivers();
+            //pChan->AddDriver(std::make_unique<util::log::CefIpcLogDriver>(pBrowser));
+            //pChan->AddDriver(std::make_unique<infra::log::drv::DebugOutDriver>());
         }
 
         CefRenderProcessHandler::OnBrowserCreated(std::move(browser_), std::move(extra_info));
