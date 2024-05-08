@@ -7,6 +7,7 @@
 #include "Core/source/infra/util/FolderResolver.h"
 #include <commdlg.h>
 #include <fstream>
+#include <filesystem>
 
 namespace p2c::client::util::async
 {

@@ -5,7 +5,8 @@
 #include <d2d1_3.h>
 #include "../base/InternalGeometry.h"
 #include <array>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/log/HrLogger.h>
 
 
 namespace p2c::gfx::prim
@@ -23,8 +24,8 @@ namespace p2c::gfx::prim
 		bottom{ std::move(pBrushPrimBottom_) }
 	{
 		const auto InitGeometry = [this, &gfx](const D2D1_RECT_F& rect, Side& side) {
-			p2chrlog << Factory(gfx).CreateRectangleGeometry(rect, &side.pGeometry);
-			p2chrlog << Context(gfx).CreateFilledGeometryRealization(side.pGeometry.Get(), D2D1_DEFAULT_FLATTENING_TOLERANCE, &side.pRealized);
+			pmlog_hr << Factory(gfx).CreateRectangleGeometry(rect, &side.pGeometry);
+			pmlog_hr << Context(gfx).CreateFilledGeometryRealization(side.pGeometry.Get(), D2D1_DEFAULT_FLATTENING_TOLERANCE, &side.pRealized);
 		};
 		InitGeometry({ rect.left, rect.top, rect.right, rect.top + stroke.top }, top);
 		InitGeometry({ rect.left, rect.bottom - stroke.bottom, rect.right, rect.bottom }, bottom);

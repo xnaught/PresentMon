@@ -100,14 +100,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Exception.cpp" />
     <ClCompile Include="ExtremeQueue.cpp" />
-    <ClCompile Include="Logging.cpp" />
     <ClCompile Include="ServiceParams.cpp" />
     <ClCompile Include="Services.cpp" />
     <ClCompile Include="Style.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">
+      <Project>{08a704d8-ca1c-45e9-8ede-542a1a43b53e}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\Core\Core.vcxproj">
       <Project>{808f5ea9-ea09-4d72-87b4-5397d43cba54}</Project>
     </ProjectReference>

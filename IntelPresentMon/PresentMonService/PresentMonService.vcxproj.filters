@@ -8,6 +8,7 @@
     <ClCompile Include="PresentMon.cpp" />
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="ServiceMain.cpp" />
+    <ClCompile Include="Logging.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LateStageReprojectionData.hpp" />

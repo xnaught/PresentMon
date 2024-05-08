@@ -34,6 +34,7 @@ namespace pmon::util
 	}
 
 	std::string ReportException(std::exception_ptr pEx = {}) noexcept;
+	std::wstring ReportExceptionWide(std::exception_ptr pEx = {}) noexcept;
 
 	class SehException : public Exception
 	{

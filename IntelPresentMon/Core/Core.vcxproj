@@ -58,9 +58,6 @@
     <ClInclude Include="source\infra\svc\Services.h" />
     <ClInclude Include="source\infra\util\ChiliTimer.h" />
     <ClInclude Include="source\infra\util\CooldownTimer.h" />
-    <ClInclude Include="source\infra\util\ErrorCode.h" />
-    <ClInclude Include="source\infra\util\errtl\HResult.h" />
-    <ClInclude Include="source\infra\util\errtl\PMStatus.h" />
     <ClInclude Include="source\infra\util\FolderResolver.h" />
     <ClInclude Include="source\infra\util\Hash.h" />
     <ClInclude Include="source\infra\util\IntervalWaiter.h" />
@@ -113,8 +110,6 @@
     <ClInclude Include="source\win\WinAPI.h" />
     <ClInclude Include="source\win\Window.h" />
     <ClInclude Include="source\win\WndClass.h" />
-    <ClInclude Include="source\infra\util\StackTrace.h" />
-    <ClInclude Include="Third\backward\backward.hpp" />
     <ClInclude Include="Third\dxerr\dxerr.h" />
   </ItemGroup>
   <ItemGroup>
@@ -147,9 +142,6 @@
     <ClCompile Include="source\infra\svc\Services.cpp" />
     <ClCompile Include="source\infra\util\ChiliTimer.cpp" />
     <ClCompile Include="source\infra\util\CooldownTimer.cpp" />
-    <ClCompile Include="source\infra\util\ErrorCode.cpp" />
-    <ClCompile Include="source\infra\util\errtl\HResult.cpp" />
-    <ClCompile Include="source\infra\util\errtl\PMStatus.cpp" />
     <ClCompile Include="source\infra\util\FolderResolver.cpp" />
     <ClCompile Include="source\infra\util\Hash.cpp" />
     <ClCompile Include="source\infra\util\IntervalWaiter.cpp" />
@@ -184,7 +176,6 @@
     <ClCompile Include="source\win\WinAPI.cpp" />
     <ClCompile Include="source\win\Window.cpp" />
     <ClCompile Include="source\win\WndClass.cpp" />
-    <ClCompile Include="source\infra\util\StackTrace.cpp" />
     <ClCompile Include="Third\dxerr\dxerr.cpp" />
   </ItemGroup>
   <ItemGroup>

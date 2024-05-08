@@ -5,7 +5,6 @@
 #include <ranges>
 #include <algorithm>
 #include <numeric>
-#include <Core/source/infra/util/Assert.h>
 
 namespace rn = std::ranges;
 namespace vi = rn::views;

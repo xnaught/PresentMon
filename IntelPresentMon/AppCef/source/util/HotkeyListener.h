@@ -37,7 +37,7 @@ namespace p2c::client::util
 			win::ModSet mods;
 		};		
 		// functions
-		void Kernel_();
+		void Kernel_() noexcept;
 		void DispatchHotkey_(Action action) const;
 		win::ModSet GatherModifiers_() const;
 		// data

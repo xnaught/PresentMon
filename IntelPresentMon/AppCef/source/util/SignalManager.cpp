@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MIT
 #include "SignalManager.h"
 #include "CefValues.h"
-#include <Core/source/infra/log/Logging.h>
-#include <Core/source/infra/util/Util.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/str/String.h>
 #include <algorithm>
 #include <include/wrapper/cef_helpers.h>
 
@@ -14,7 +14,7 @@ namespace p2c::client::util
 	{
 		if (auto i = std::find(std::begin(keyList), std::end(keyList), key); i == std::end(keyList))
 		{
-			p2clog.warn(std::format(L"Key [{}] not a valid signal key", infra::util::ToWide(key))).commit();
+			pmlog_warn(std::format(L"Key [{}] not a valid signal key", str::ToWide(key)));
 		}
 		callbacks[key] = std::move(ctx);
 	}
@@ -31,7 +31,7 @@ namespace p2c::client::util
 		}
 		else
 		{
-			p2clog.warn(std::format(L"Signal fired for [{}] with no handler set", infra::util::ToWide(key))).commit();
+			pmlog_warn(std::format(L"Signal fired for [{}] with no handler set", str::ToWide(key)));
 		}
 	}
 

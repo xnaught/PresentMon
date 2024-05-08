@@ -204,7 +204,7 @@ namespace p2c::kern
                 }
                 catch (...) {
                     pHandler->OnOverlayDied();
-                    pmlog_error(L"Overlay died w/ except. => " + str::ToWide(ReportException())).no_trace();
+                    pmlog_error(L"Overlay died w/ except. => " + ReportExceptionWide()).no_trace();
                     pOverlayContainer.reset();
                     pPushedSpec.reset();
                 }
@@ -217,7 +217,7 @@ namespace p2c::kern
         // this catch section handles failures to initialize kernel, or rare error that escape the main loop catch
         // possibility to marshall exceptions to js whenever an interface function is called (async rejection path)
         catch (...) {
-            pmlog_error(ToWide(ReportException())).no_trace();
+            pmlog_error(ReportExceptionWide()).no_trace();
             marshalledException = std::current_exception();
             hasMarshalledException.store(true);
         }

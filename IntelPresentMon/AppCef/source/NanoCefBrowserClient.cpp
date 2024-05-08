@@ -3,7 +3,7 @@
 #include "NanoCefBrowserClient.h"
 #include <include/wrapper/cef_helpers.h>
 #include "util/CefIpcLogRouter.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include <format>
 #include <fstream>
 #include <streambuf>
@@ -78,7 +78,7 @@ namespace p2c::client::cef
             }
             else
             {
-                p2clog.warn(std::format(L"Endpoint async not found: {}", message->GetArgumentList()->GetString(0).ToWString())).commit();
+                pmlog_warn(std::format(L"Endpoint async not found: {}", message->GetArgumentList()->GetString(0).ToWString()));
             }
             return true;
         }
@@ -114,7 +114,7 @@ namespace p2c::client::cef
                 std::this_thread::sleep_for(1000ms);
                 shutdownAcknowledgementFlag = true;
                 pBrowser->GetHost()->CloseBrowser(true);
-                p2clog.warn(L"Shutdown ack timed out").commit();
+                pmlog_warn(L"Shutdown ack timed out");
             } }.detach();
             return 0;
         }

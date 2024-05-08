@@ -126,7 +126,7 @@ namespace pmon::util::log
 									}
 								}
 								catch (...) {
-									pmlog_panic_(str::ToWide(ReportException()));
+									pmlog_panic_(ReportExceptionWide());
 								}
 							}
 							// resolve trace if one is present
@@ -137,14 +137,14 @@ namespace pmon::util::log
 									}
 								}
 								catch (...) {
-									pmlog_panic_(str::ToWide(ReportException()));
+									pmlog_panic_(ReportExceptionWide());
 								}
 							}
 							// submit entry to all drivers (by copy)
 							for (auto& pDriver : driverPtrs_) {
 								try { pDriver->Submit(entry); }
 								catch (...) {
-									pmlog_panic_(str::ToWide(ReportException()));
+									pmlog_panic_(ReportExceptionWide());
 								}
 							}
 							if (driverPtrs_.empty()) {
@@ -163,7 +163,7 @@ namespace pmon::util::log
 					}
 				}
 				catch (...) {
-					pmlog_panic_(str::ToWide(ReportException()));
+					pmlog_panic_(ReportExceptionWide());
 				}
 			});
 		}

@@ -190,6 +190,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Logging.cpp" />
     <ClCompile Include="NamedPipeServer.cpp" />
     <ClCompile Include="PMMainThread.cpp" />
     <ClCompile Include="PowerTelemetryContainer.cpp" />

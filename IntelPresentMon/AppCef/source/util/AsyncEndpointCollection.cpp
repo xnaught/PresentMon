@@ -1,8 +1,8 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "AsyncEndpointCollection.h"
-#include <Core/source/infra/log/Logging.h>
-#include <Core/source/infra/util/Util.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/str/String.h>
 
 #include "async/BrowseReadSpec.h"
 #include "async/BrowseStoreSpec.h"
@@ -29,7 +29,7 @@ namespace p2c::client::util
 	{
 		if (auto&& [i, inserted] = endpoints.insert({ T::GetKey(), std::make_unique<T>() }); !inserted)
 		{
-			p2clog.warn(std::format(L"Duplicate key for async {}", infra::util::ToWide(T::GetKey()))).commit();
+			pmlog_warn(std::format(L"Duplicate key for async {}", infra::util::ToWide(T::GetKey())));
 		}
 	}
 

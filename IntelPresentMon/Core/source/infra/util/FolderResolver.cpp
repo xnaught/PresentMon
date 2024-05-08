@@ -30,7 +30,7 @@ namespace p2c::infra::util
 				std::filesystem::create_directories(dir);
 				appPath = dir;
 			}
-			catch (const std::exception& e) {
+			catch (const std::exception&) {
 				CoTaskMemFree(pPath);
 				pPath = nullptr;
 				// TODO: logging: we can't use logging service here during resolve creation
@@ -63,7 +63,7 @@ namespace p2c::infra::util
 				std::filesystem::create_directories(dir);
 				docPath = dir;
 			}
-			catch (const std::exception& e) {
+			catch (const std::exception&) {
 				CoTaskMemFree(pPath);
 				pPath = nullptr;
 				// TODO: logging: we can't use logging service here during resolve creation
@@ -86,7 +86,7 @@ namespace p2c::infra::util
 			try {
 				std::filesystem::create_directory(std::format(L"{}\\{}", docPath, capturesSubdirectory));
 			}
-			catch (const std::exception& e) {
+			catch (const std::exception&) {
 				// TODO: logging: we can't use logging service here during resolve creation
 				pmlog_error(L"Failed creating directory: " + std::format(L"{}\\{}", docPath, capturesSubdirectory));
 				throw Except<Exception>();
@@ -95,7 +95,7 @@ namespace p2c::infra::util
 			try {
 				std::filesystem::create_directory(std::format(L"{}\\{}", docPath, loadoutsSubdirectory));
 			}
-			catch (const std::exception& e) {
+			catch (const std::exception&) {
 				// TODO: logging: we can't use logging service here during resolve creation
 				pmlog_error(L"Failed creating directory: " + std::format(L"{}\\{}", docPath, loadoutsSubdirectory));
 				throw Except<Exception>();

@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "AsyncEndpointManager.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include <Core/source/infra/util/Util.h>
 #include <algorithm>
 #include "CefValues.h"
@@ -74,8 +74,7 @@ namespace p2c::client::util
 			}
 		}
 		else {
-			p2clog.note(std::format(L"Key [{}] does not have an async endpoint registered", infra::util::ToWide(key)))
-				.nox().notrace().commit();
+			pmlog_error(std::format(L"Key [{}] does not have an async endpoint registered", infra::util::ToWide(key))).no_trace();
 		}
 	}
 
@@ -108,7 +107,7 @@ namespace p2c::client::util
 		else
 		{
 			lck.unlock();
-			p2clog.note(L"Failed to resolve async invocation (not registered).").nox().notrace().commit();
+			pmlog_error(L"Failed to resolve async invocation (not registered).").no_trace();
 		}
 	}
 }

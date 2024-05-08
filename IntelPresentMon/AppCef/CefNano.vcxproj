@@ -23,8 +23,6 @@
     <ClCompile Include="source\util\AsyncEndpoint.cpp" />
     <ClCompile Include="source\util\AsyncEndpointCollection.cpp" />
     <ClCompile Include="source\util\AsyncEndpointManager.cpp" />
-    <ClCompile Include="source\util\CefIpcLogDriver.cpp" />
-    <ClCompile Include="source\util\CefIpcLogRouter.cpp" />
     <ClCompile Include="source\util\CefProcessCompass.cpp" />
     <ClCompile Include="source\util\CefValues.cpp" />
     <ClCompile Include="source\util\FontEnumerator.cpp" />
@@ -69,8 +67,6 @@
     <ClInclude Include="source\util\async\SetCapture.h" />
     <ClInclude Include="source\util\async\SetAdapter.h" />
     <ClInclude Include="source\util\CefValues.h" />
-    <ClInclude Include="source\util\CefIpcLogDriver.h" />
-    <ClInclude Include="source\util\CefIpcLogRouter.h" />
     <ClInclude Include="source\util\CefProcessCompass.h" />
     <ClInclude Include="source\util\FileLocation.h" />
     <ClInclude Include="source\util\KernelWrapper.h" />

@@ -11,11 +11,7 @@
     <ClInclude Include="source\infra\util\Util.h" />
     <ClInclude Include="source\win\WinAPI.h" />
     <ClInclude Include="source\win\Window.h" />
-    <ClInclude Include="Third\backward\backward.hpp" />
     <ClInclude Include="Third\dxerr\dxerr.h" />
-    <ClInclude Include="source\infra\util\ErrorCode.h" />
-    <ClInclude Include="source\infra\util\StackTrace.h" />
-    <ClInclude Include="source\infra\util\errtl\HResult.h" />
     <ClInclude Include="source\gfx\base\ComPtr.h" />
     <ClInclude Include="source\gfx\Graphics.h" />
     <ClInclude Include="source\gfx\base\InternalGeometry.h" />
@@ -45,7 +41,6 @@
     <ClInclude Include="source\gfx\layout\PlotElement.h" />
     <ClInclude Include="source\gfx\prim\ForwardInterfaces.h" />
     <ClInclude Include="source\gfx\prim\RectMultiBorderPrimitive.h" />
-    <ClInclude Include="source\infra\util\errtl\PMStatus.h" />
     <ClInclude Include="source\win\EventHookManager.h" />
     <ClInclude Include="source\win\Util.h" />
     <ClInclude Include="source\win\ProcessMapBuilder.h" />
@@ -116,9 +111,6 @@
     <ClCompile Include="source\win\WndClass.cpp" />
     <ClCompile Include="source\infra\svc\Params.cpp" />
     <ClCompile Include="Third\dxerr\dxerr.cpp" />
-    <ClCompile Include="source\infra\util\StackTrace.cpp" />
-    <ClCompile Include="source\infra\util\ErrorCode.cpp" />
-    <ClCompile Include="source\infra\util\errtl\HResult.cpp" />
     <ClCompile Include="source\infra\svc\Services.cpp" />
     <ClCompile Include="source\gfx\Graphics.cpp" />
     <ClCompile Include="source\gfx\layout\Element.cpp" />
@@ -142,7 +134,6 @@
     <ClCompile Include="source\gfx\layout\HistogramPlotElement.cpp" />
     <ClCompile Include="source\gfx\layout\PlotElement.cpp" />
     <ClCompile Include="source\gfx\prim\RectMultiBorderPrimitive.cpp" />
-    <ClCompile Include="source\infra\util\errtl\PMStatus.cpp" />
     <ClCompile Include="source\win\ProcessMapBuilder.cpp" />
     <ClCompile Include="source\win\EventHookManager.cpp" />
     <ClCompile Include="source\win\WinAPI.cpp" />

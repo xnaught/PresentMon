@@ -4,7 +4,8 @@
 #include <Core/source/win/WinAPI.h>
 #include <d2d1_3.h>
 #include "../base/InternalGeometry.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/log/HrLogger.h>
 
 namespace p2c::gfx::prim
 {
@@ -12,7 +13,7 @@ namespace p2c::gfx::prim
 		:
 		color{ color_ }
 	{
-		p2chrlog << Context(gfx).CreateSolidColorBrush(d2d::Color{ color }, &pBrush);
+		pmlog_hr << Context(gfx).CreateSolidColorBrush(d2d::Color{ color }, &pBrush);
 	}
 
 	void BrushPrimitive::SetColor(const Color& color_)

@@ -3,8 +3,6 @@
   <ItemGroup>
     <ClCompile Include="ServiceParams.cpp" />
     <ClCompile Include="Services.cpp" />
-    <ClCompile Include="Logging.cpp" />
-    <ClCompile Include="Exception.cpp" />
     <ClCompile Include="Style.cpp" />
     <ClCompile Include="ExtremeQueue.cpp" />
   </ItemGroup>

@@ -4,7 +4,7 @@
 #include "NanoCefProcessHandler.h"
 #include "util/ServiceBooter.h"
 #include "../resource.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include <Core/source/infra/svc/Services.h>
 #include <Core/source/infra/util/FolderResolver.h>
 #include <Core/source/cli/CliOptions.h>
@@ -171,6 +171,12 @@ void AppQuitMessageLoop()
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+#ifdef NDEBUG
+    constexpr bool is_debug = false;
+#else
+    constexpr bool is_debug = true;
+#endif
+
     using namespace client;
     try {
         if (auto err = cli::Options::Init(__argc, __argv, true)) {
@@ -186,12 +192,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             return (int)code;
         }
 
+        // from here on is only executed by the root process (browser window process)
+
         {
-#ifdef NDEBUG
-            constexpr bool is_debug = false;
-#else
-            constexpr bool is_debug = true;
-#endif
             const auto pFolderResolver = Services::Resolve<infra::util::FolderResolver>();
             CefSettings settings;
             settings.multi_threaded_message_loop = true;
@@ -205,7 +208,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         auto hwndBrowser = CreateBrowserWindow(hInstance, nCmdShow);
         hwndAppMsg = CreateMessageWindow(hInstance);
 
-        p2clog.info(L"== hello from client process ==").pid().commit();
+        pmlog_info(L"== hello from client process ==");
 
         MSG msg;
         while (GetMessage(&msg, nullptr, 0, 0))

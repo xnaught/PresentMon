@@ -417,7 +417,7 @@ namespace pmon::util::log
 			}
 			catch (...) {
 				deactivated_ = true;
-				pmlog_panic_(str::ToWide(ReportException()));
+				pmlog_panic_(ReportExceptionWide());
 			}
 		}
 		void TransmissionThreadProcedure_()
@@ -462,7 +462,7 @@ namespace pmon::util::log
 			}
 			catch (...) {
 				deactivated_ = true;
-				pmlog_panic_(str::ToWide(ReportException()));
+				pmlog_panic_(ReportExceptionWide());
 			}
 		}
 		// data

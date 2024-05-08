@@ -8,9 +8,7 @@
 #include "DataBindAccessor.h"
 #include <Core/source/infra/svc/Services.h>
 #include "util/CefProcessCompass.h"
-#include <Core/source/infra/log/DefaultChannel.h>
-#include <Core/source/infra/log/Channel.h>
-#include <Core/source/infra/log/drv/DebugOutDriver.h>
+#include <Core/source/infra/Logging.h>
 #include "util/CefIpcLogDriver.h"
 #include "include/wrapper/cef_closure_task.h"
 #include <include/cef_task.h>
@@ -44,7 +42,7 @@ namespace p2c::client::cef
                 port = CefString(&url_parts.port);
             }
             else {
-                p2clog.warn(L"Bad cli-passed url").commit();
+                pmlog_warn(L"Bad cli-passed url");
             }
         }
         // use url parts to determine the scheme mode
