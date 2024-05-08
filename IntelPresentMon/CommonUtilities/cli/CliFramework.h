@@ -88,16 +88,19 @@ namespace pmon::util::cli
 			ConvertedNarrowOptions_ narrowArgs{ argc, wargv };
 			return Init(argc, narrowArgs.GetRawPointerArray(), captureDiagnostics);
 		}
-		static std::optional<int> Init(int argc, const char* const* argv, bool captureDiagnostics = false)
+		static std::optional<int> Init(int argc, const char* const* argv, bool captureDiagnostics = false) noexcept
 		{
-			auto& opts = Get_();
 			try {
-				opts.Finalize_(argc, argv);
-				return {};
+				auto& opts = Get_();
+				try {
+					opts.Finalize_(argc, argv);
+					return {};
+				}
+				catch (const CLI::ParseError& e) {
+					return opts.Exit_(e, captureDiagnostics);
+				}
 			}
-			catch (const CLI::ParseError& e) {
-				return opts.Exit_(e, captureDiagnostics);
-			}
+			catch (...) { return -1; }
 		}
 		static bool IsInitialized()
 		{

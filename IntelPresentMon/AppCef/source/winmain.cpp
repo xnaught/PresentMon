@@ -176,15 +176,19 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 #else
     constexpr bool is_debug = true;
 #endif
-
+    // create logging system and ensure cleanup before main ext
     LogChannelManager zLogMan_;
+    // parse the command line arguments and make them globally available
+    if (auto err = cli::Options::Init(__argc, __argv, true)) {
+        MessageBoxA(nullptr, cli::Options::GetDiagnostics().c_str(), "Command Line Parse Error",
+            MB_ICONERROR | MB_APPLMODAL | MB_SETFOREGROUND);
+        return -1;
+    }
+    // configure the logging system (partially based on command line options)
     ConfigureLogging();
 
     using namespace client;
     try {
-        if (auto err = cli::Options::Init(__argc, __argv, true)) {
-            MessageBoxA(nullptr, cli::Options::GetDiagnostics().c_str(), "Command Line Parse Error", MB_ICONERROR);
-        }
         util::BootServices();
 
         CefMainArgs main_args{ hInstance };
