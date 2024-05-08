@@ -529,7 +529,7 @@ namespace pmon::util::log
 	bool NamedPipeMarshallSender::WaitForConnection(std::chrono::duration<float> timeout) noexcept
 	{
 		try {
-			std::static_pointer_cast<NamedPipe>(pNamedPipe_)->WaitForConnection(timeout);
+			return std::static_pointer_cast<NamedPipe>(pNamedPipe_)->WaitForConnection(timeout);
 		}
 		catch (...) {
 			pmlog_panic_(L"failed to wait for connection");

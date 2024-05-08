@@ -31,15 +31,15 @@ namespace pmon::util::log
 			// error resolving policy
 			auto pErrPolicy = std::make_shared<ErrorCodeResolvePolicy>();
 			pErrPolicy->SetResolver(std::move(pErrorResolver));
-			pChannel->AttachPolicy(std::move(pErrPolicy));
+			pChannel->AttachComponent(std::move(pErrPolicy));
 			// make the formatter
 			const auto pFormatter = std::make_shared<TextFormatter>();
 			const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log.txt");
 			// make and add the line-tracking policy
-			pChannel->AttachPolicy(std::make_shared<LinePolicy>());
+			pChannel->AttachComponent(std::make_shared<LinePolicy>());
 			// construct and configure default logging channel
-			pChannel->AttachDriver(std::make_shared<MsvcDebugDriver>(pFormatter));
-			pChannel->AttachDriver(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy));
+			pChannel->AttachComponent(std::make_shared<MsvcDebugDriver>(pFormatter));
+			pChannel->AttachComponent(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy));
 			return pChannel;
 		}
 	}

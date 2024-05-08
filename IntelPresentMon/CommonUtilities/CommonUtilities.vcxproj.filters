@@ -162,6 +162,12 @@
     <ClInclude Include="log\HrLogger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="log\IChannelObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="log\IChannelComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">

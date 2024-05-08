@@ -29,6 +29,8 @@
     <ClInclude Include="log\ErrorCodeResolver.h" />
     <ClInclude Include="log\GlobalPolicy.h" />
     <ClInclude Include="log\HrLogger.h" />
+    <ClInclude Include="log\IChannelComponent.h" />
+    <ClInclude Include="log\IChannelObject.h" />
     <ClInclude Include="log\IdentificationTable.h" />
     <ClInclude Include="log\IEntryMarshallReceiver.h" />
     <ClInclude Include="log\IEntryMarshallSender.h" />

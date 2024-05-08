@@ -1,6 +1,7 @@
 #include "Channel.h"
 #include "IPolicy.h"
 #include "IDriver.h"
+#include "IChannelObject.h"
 #include "Entry.h"
 #include <concurrentqueue\blockingconcurrentqueue.h>
 #include <variant>
@@ -22,36 +23,6 @@ namespace pmon::util::log
 		{
 			std::binary_semaphore semaphore{ 0 };
 			void WaitUntilProcessed() { semaphore.acquire(); }
-		};
-		struct AttachDriverPacket_ : public Packet_
-		{
-			std::shared_ptr<IDriver> pDriver;
-			AttachDriverPacket_(std::shared_ptr<IDriver> pDriver) : pDriver{ std::move(pDriver) } {}
-			void Process(ChannelInternal_& channel)
-			{
-				channel.AttachDriver(std::move(pDriver));
-				semaphore.release();
-			}
-		};
-		struct AttachPolicyPacket_ : public Packet_
-		{
-			std::shared_ptr<IPolicy> pPolicy;
-			AttachPolicyPacket_(std::shared_ptr<IPolicy> pPolicy) : pPolicy{ std::move(pPolicy) } {}
-			void Process(ChannelInternal_& channel)
-			{
-				channel.AttachPolicy(std::move(pPolicy));
-				semaphore.release();
-			}
-		};
-		struct AttachObjectPacket_ : public Packet_
-		{
-			std::shared_ptr<void> pObject;
-			AttachObjectPacket_(std::shared_ptr<void> pObject) : pObject{ std::move(pObject) } {}
-			void Process(ChannelInternal_& channel)
-			{
-				channel.AttachObject(std::move(pObject));
-				semaphore.release();
-			}
 		};
 		struct FlushPacket_ : public Packet_
 		{
@@ -80,9 +51,6 @@ namespace pmon::util::log
 		};
 		// aliases for variant / queue typenames
 		using QueueElementType_ = std::variant<Entry,
-			std::shared_ptr<AttachDriverPacket_>,
-			std::shared_ptr<AttachPolicyPacket_>,
-			std::shared_ptr<AttachObjectPacket_>,
 			std::shared_ptr<FlushPacket_>,
 			std::shared_ptr<KillPacket_>,
 			std::shared_ptr<FlushEntryPointPacket_>>;
@@ -105,11 +73,13 @@ namespace pmon::util::log
 		}
 		// internal implementation of the channel, with public functions hidden from the external interface
 		// but available to packet processing functions to use
-		ChannelInternal_::ChannelInternal_(std::vector<std::shared_ptr<IDriver>> driverPtrs)
+		ChannelInternal_::ChannelInternal_(std::vector<std::shared_ptr<IChannelComponent>> componentPtrs)
 			:
-			driverPtrs_{ std::move(driverPtrs) },
 			pEntryQueue_{ std::make_shared<QueueType_>() }
 		{
+			for (auto& p : componentPtrs) {
+				AttachComponent_(std::move(p));
+			}
 			worker_ = mt::Thread(L"log-chan", [this] {
 				try {
 					auto visitor = [this](auto& el) {
@@ -159,6 +129,7 @@ namespace pmon::util::log
 					QueueElementType_ el;
 					while (!exiting_) {
 						Queue_(this).wait_dequeue(el);
+						std::lock_guard lk{ mtx_ };
 						std::visit(visitor, el);
 					}
 				}
@@ -182,17 +153,25 @@ namespace pmon::util::log
 		{
 			resolvingTraces_ = false;
 		}
-		void ChannelInternal_::AttachDriver(std::shared_ptr<IDriver> pDriver)
+		void ChannelInternal_::AttachComponentBlocking(std::shared_ptr<IChannelComponent> pComponent)
 		{
-			driverPtrs_.push_back(std::move(pDriver));
+			std::lock_guard lk{ mtx_ };
+			AttachComponent_(std::move(pComponent));
 		}
-		void ChannelInternal_::AttachPolicy(std::shared_ptr<IPolicy> pPolicy)
+		void ChannelInternal_::AttachComponent_(std::shared_ptr<IChannelComponent> pComponent)
 		{
-			policyPtrs_.push_back(std::move(pPolicy));
-		}
-		void ChannelInternal_::AttachObject(std::shared_ptr<void> pObj)
-		{
-			objectPtrs_.push_back(std::move(pObj));
+			if (auto pDriver = std::dynamic_pointer_cast<IDriver>(pComponent)) {
+				driverPtrs_.push_back(std::move(pDriver));
+			}
+			else if (auto pPolicy = std::dynamic_pointer_cast<IPolicy>(pComponent)) {
+				policyPtrs_.push_back(std::move(pPolicy));
+			}
+			else if (auto pObject = std::dynamic_pointer_cast<IChannelObject>(pComponent)) {
+				objectPtrs_.push_back(std::move(pObject));
+			}
+			else {
+				throw Except<Exception>("bad type for component attachment in channel");
+			}
 		}
 		void ChannelInternal_::EnqueueEntry(Entry&& e)
 		{
@@ -218,9 +197,9 @@ namespace pmon::util::log
 
 
 	// implementation of external interfaces
-	Channel::Channel(std::vector<std::shared_ptr<IDriver>> driverPtrs)
+	Channel::Channel(std::vector<std::shared_ptr<IChannelComponent>> componentPtrs)
 		:
-		ChannelInternal_{ std::move(driverPtrs) }
+		ChannelInternal_{ std::move(componentPtrs) }
 	{}
 	Channel::~Channel()
 	{
@@ -253,17 +232,9 @@ namespace pmon::util::log
 	{
 		EnqueuePacketWait<FlushPacket_>();
 	}
-	void Channel::AttachDriver(std::shared_ptr<IDriver> pDriver)
+	void Channel::AttachComponent(std::shared_ptr<IChannelComponent> pComponent)
 	{
-		EnqueuePacketWait<AttachDriverPacket_>(std::move(pDriver));
-	}
-	void Channel::AttachPolicy(std::shared_ptr<IPolicy> pPolicy)
-	{
-		EnqueuePacketWait<AttachPolicyPacket_>(std::move(pPolicy));
-	}
-	void Channel::AttachObject(std::shared_ptr<void> pObj)
-	{
-		EnqueuePacketWait<AttachObjectPacket_>(std::move(pObj));
+		AttachComponentBlocking(std::move(pComponent));
 	}
 	void Channel::FlushEntryPointExit()
 	{

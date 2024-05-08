@@ -171,7 +171,7 @@ void RunLogDemo(int mode)
 		{
 			log::IdentificationTable::RegisterSink(pSender);
 			auto pDriver = std::make_shared<log::MarshallDriver>(pSender);
-			log::GetDefaultChannel()->AttachDriver(std::move(pDriver));
+			log::GetDefaultChannel()->AttachComponent(std::move(pDriver));
 		}
 		std::wstring note;
 		while (true) {
@@ -197,7 +197,7 @@ void RunLogDemo(int mode)
 	}
 	// ipc client
 	else if (mode == 18) {
-		log::GetDefaultChannel()->AttachObject(std::make_shared<log::EntryMarshallInjector>(log::GetDefaultChannel(),
+		log::GetDefaultChannel()->AttachComponent(std::make_shared<log::EntryMarshallInjector>(log::GetDefaultChannel(),
 			std::make_shared<log::NamedPipeMarshallReceiver>(L"pml_demopipe", log::IdentificationTable::GetPtr())));
 		while (!_kbhit());
 	}

@@ -8,6 +8,10 @@
 
 namespace pmon::util::log
 {
+	class IPolicy;
+	class IDriver;
+	class IChannelObject;
+
 	namespace
 	{
 		// internal channel implementation, has functions that are called only from the worker thread
@@ -20,9 +24,7 @@ namespace pmon::util::log
 			void Flush();
 			void SignalExit();
 			void DisableTraceResolution();
-			void AttachDriver(std::shared_ptr<IDriver>);
-			void AttachPolicy(std::shared_ptr<IPolicy>);
-			void AttachObject(std::shared_ptr<void>);
+			void AttachComponentBlocking(std::shared_ptr<IChannelComponent>);
 			void EnqueueEntry(Entry&&);
 			void EnqueueEntry(const Entry&);
 			template<class P, typename...Args>
@@ -30,13 +32,18 @@ namespace pmon::util::log
 			template<class P, typename...Args>
 			void EnqueuePacketAsync(Args&&...args);
 		protected:
-			ChannelInternal_(std::vector<std::shared_ptr<IDriver>> driverPtrs);
+			ChannelInternal_(std::vector<std::shared_ptr<IChannelComponent>> components);
 		private:
+			// functions
+			void AttachComponent_(std::shared_ptr<IChannelComponent>);
+			// data
+			// mutex used for infrequent operations like managing components
+			std::mutex mtx_;
 			bool resolvingTraces_ = true;
 			bool exiting_ = false;
 			std::vector<std::shared_ptr<IDriver>> driverPtrs_;
 			std::vector<std::shared_ptr<IPolicy>> policyPtrs_;
-			std::vector<std::shared_ptr<void>> objectPtrs_;
+			std::vector<std::shared_ptr<IChannelObject>> objectPtrs_;
 			std::shared_ptr<void> pEntryQueue_;
 			mt::Thread worker_;
 		};
@@ -48,14 +55,12 @@ namespace pmon::util::log
 	class Channel : public IChannel, private ChannelInternal_
 	{
 	public:
-		Channel(std::vector<std::shared_ptr<IDriver>> driverPtrs = {});
+		Channel(std::vector<std::shared_ptr<IChannelComponent>> componentPtrs = {});
 		~Channel();
 		void Submit(Entry&&) noexcept override;
 		void Submit(const Entry&) noexcept override;
 		void Flush() override;
-		void AttachDriver(std::shared_ptr<IDriver>) override;
-		void AttachPolicy(std::shared_ptr<IPolicy>) override;
-		void AttachObject(std::shared_ptr<void>) override;
+		void AttachComponent(std::shared_ptr<IChannelComponent>) override;
 		void FlushEntryPointExit() override;
 	};
 }
