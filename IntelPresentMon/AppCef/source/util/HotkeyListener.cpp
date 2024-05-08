@@ -19,7 +19,7 @@ namespace p2c::client::util
 {
 	Hotkeys::Hotkeys()
 		:
-		thread_{ &Hotkeys::Kernel_, this }
+		thread_{ L"hotkey", & Hotkeys::Kernel_, this}
 	{
 		startupSemaphore_.acquire();
 		pmlog_verb(v::hotkey)(L"Hotkey process ctor complete");

@@ -8,11 +8,14 @@
 #include <Core/source/infra/svc/Services.h>
 #include <Core/source/infra/util/FolderResolver.h>
 #include <Core/source/cli/CliOptions.h>
+#include <CommonUtilities/log/IdentificationTable.h>
 #include <dwmapi.h>
 
 #pragma comment(lib, "Dwmapi.lib")
 
 using namespace p2c;
+using namespace pmon::util;
+using p2c::cli::Options;
 namespace ccef = client::cef;
 using infra::svc::Services;
 
@@ -52,8 +55,8 @@ LRESULT CALLBACK BrowserWindowWndProc(HWND window_handle, UINT message, WPARAM w
         CefBrowserSettings settings;
         // this special url (domain+schema) triggers load-from-disk behavior
         std::string url = "https://app/index.html";
-        if (cli::Options::Get().url) {
-            url = cli::Options::Get().url;
+        if (Options::Get().url) {
+            url = Options::Get().url;
         }
         CefBrowserHost::CreateBrowser(
             info, pBrowserClient.get(), url,
@@ -179,16 +182,22 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     // create logging system and ensure cleanup before main ext
     LogChannelManager zLogMan_;
     // parse the command line arguments and make them globally available
-    if (auto err = cli::Options::Init(__argc, __argv, true)) {
-        MessageBoxA(nullptr, cli::Options::GetDiagnostics().c_str(), "Command Line Parse Error",
+    if (auto err = Options::Init(__argc, __argv, true)) {
+        MessageBoxA(nullptr, Options::GetDiagnostics().c_str(), "Command Line Parse Error",
             MB_ICONERROR | MB_APPLMODAL | MB_SETFOREGROUND);
         return -1;
     }
+    // name this process / thread
+    log::IdentificationTable::AddThisProcess(str::ToWide(Options::Get().cefType.AsOptional().value_or("browser")));
+    log::IdentificationTable::AddThisThread(L"main");
     // configure the logging system (partially based on command line options)
     ConfigureLogging();
 
+    pmlog_info(L"== process starting up ==");
+
     using namespace client;
     try {
+        // TODO: remove services system
         util::BootServices();
 
         CefMainArgs main_args{ hInstance };

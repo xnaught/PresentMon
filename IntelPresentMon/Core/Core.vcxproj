@@ -110,7 +110,6 @@
     <ClInclude Include="source\win\WinAPI.h" />
     <ClInclude Include="source\win\Window.h" />
     <ClInclude Include="source\win\WndClass.h" />
-    <ClInclude Include="Third\dxerr\dxerr.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\gfx\impl\FastRenderer.cpp" />
@@ -176,7 +175,6 @@
     <ClCompile Include="source\win\WinAPI.cpp" />
     <ClCompile Include="source\win\Window.cpp" />
     <ClCompile Include="source\win\WndClass.cpp" />
-    <ClCompile Include="Third\dxerr\dxerr.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />

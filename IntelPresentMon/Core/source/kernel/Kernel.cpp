@@ -28,7 +28,7 @@ namespace p2c::kern
         :
         pHandler{ pHandler },
         constructionSemaphore{ 0 },
-        thread{ &Kernel::ThreadProcedure_, this }
+        thread{ L"kernel", &Kernel::ThreadProcedure_, this}
     {
         constructionSemaphore.acquire();
         HandleMarshalledException_();
@@ -150,6 +150,8 @@ namespace p2c::kern
         try {
             // mutex that prevents frontend from accessing before pmon is connected
             std::unique_lock startLck{ mtx };
+
+            // name this thread
             pmlog_info(L"== kernel thread starting ==");
 
             // command line options

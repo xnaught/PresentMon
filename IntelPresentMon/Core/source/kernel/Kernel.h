@@ -10,6 +10,7 @@
 #include <semaphore>
 #include <Core/source/win/Process.h>
 #include <Core/source/pmon/PresentMon.h>
+#include <CommonUtilities/mt/Thread.h>
 #include "OverlaySpec.h"
 #include "KernelHandler.h"
 
@@ -74,6 +75,6 @@ namespace p2c::kern
         std::binary_semaphore constructionSemaphore;
         std::exception_ptr marshalledException;
         std::atomic<bool> hasMarshalledException = false;
-        std::jthread thread;
+        ::pmon::util::mt::Thread thread;
     };
 }

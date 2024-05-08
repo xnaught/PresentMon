@@ -91,33 +91,37 @@ namespace p2c::client::cef
                 pChildCommandLine->AppendSwitchWithValue(std::move(name), std::move(val));
             }
         }
-        // inject logging cli option
-        static int count = 0;
-        std::string pipePrefix = std::format("p2c-logpipe-{}-{}", GetCurrentProcessId(), ++count);
-        pChildCommandLine->AppendSwitchWithValue(opt.logPipeName.GetName(), pipePrefix);
-        // launch connector thread
-        mt::Thread{ L"logconn", count, [pipePrefix = str::ToWide(pipePrefix)] {
-            try {
-                // retry connection maximum 100 times, every 10ms
-                const int nAttempts = 100;
-                for (int i = 0; i < nAttempts; i++) {
-                    try {
-                        auto pChan = log::GetDefaultChannel();
-                        auto pReceiver = std::make_shared<log::NamedPipeMarshallReceiver>(pipePrefix, log::IdentificationTable::GetPtr());
-                        auto pInjector = std::make_shared<log::EntryMarshallInjector>(pChan, std::move(pReceiver));
-                        pChan->AttachComponent(std::move(pInjector));
-                        break;
+        if (pChildCommandLine->GetSwitchValue("type") == "renderer") {
+            // inject logging cli option
+            static int count = 0;
+            std::string pipePrefix = std::format("p2c-logpipe-{}-{}", GetCurrentProcessId(), ++count);
+            pChildCommandLine->AppendSwitchWithValue(opt.logPipeName.GetName(), pipePrefix);
+            // launch connector thread
+            mt::Thread{ L"logconn", count, [pipePrefix = str::ToWide(pipePrefix)] {
+                try {
+                    // initially wait for 50ms to give child time to spawn
+                    std::this_thread::sleep_for(50ms);
+                    // retry connection maximum 100 times, every 10ms
+                    const int nAttempts = 100;
+                    for (int i = 0; i < nAttempts; i++) {
+                        try {
+                            auto pChan = log::GetDefaultChannel();
+                            auto pReceiver = std::make_shared<log::NamedPipeMarshallReceiver>(pipePrefix, log::IdentificationTable::GetPtr());
+                            auto pInjector = std::make_shared<log::EntryMarshallInjector>(pChan, std::move(pReceiver));
+                            pChan->AttachComponent(std::move(pInjector));
+                            return;
+                        }
+                        catch (const log::PipeConnectionError&) {
+                            std::this_thread::sleep_for(10ms);
+                        }
                     }
-                    catch (const log::PipeConnectionError&) {
-                        std::this_thread::sleep_for(10ms);
-                    }
+                    pmlog_warn(std::format(L"Failed to connect to logging source server {} after {} attempts", pipePrefix, nAttempts));
                 }
-                pmlog_warn(std::format(L"Failed to connect to logging source server {} after {} attempts", pipePrefix, nAttempts));
-            }
-            catch (...) {
-                pmlog_error(ReportExceptionWide());
-            }
-        } }.detach();
+                catch (...) {
+                    pmlog_error(ReportExceptionWide());
+                }
+            } }.detach();
+        }
     }
 
     void NanoCefProcessHandler::AddFunctionToObject_(CefString name, CefRefPtr<CefV8Value>& pObj, CefRefPtr<DataBindAccessor>& pAccessor)
@@ -137,16 +141,9 @@ namespace p2c::client::cef
 
     void NanoCefProcessHandler::OnBrowserCreated(CefRefPtr<CefBrowser> browser_, CefRefPtr<CefDictionaryValue> extra_info)
     {
-        pBrowser = browser_;
+        log::IdentificationTable::AddThisThread(L"cef-proc");
 
-        if (!Services::Resolve<client::util::CefProcessCompass>()->IsClient())
-        {
-            //// setup ipc logging
-            //auto pChan = infra::log::GetDefaultChannel();
-            //pChan->ClearDrivers();
-            //pChan->AddDriver(std::make_unique<util::log::CefIpcLogDriver>(pBrowser));
-            //pChan->AddDriver(std::make_unique<infra::log::drv::DebugOutDriver>());
-        }
+        pBrowser = browser_;
 
         CefRenderProcessHandler::OnBrowserCreated(std::move(browser_), std::move(extra_info));
     }

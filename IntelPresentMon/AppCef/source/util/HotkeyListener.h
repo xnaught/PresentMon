@@ -10,6 +10,7 @@
 #include <bitset>
 #include <Core/source/win/Key.h>
 #include <Core/source/win/ModSet.h>
+#include <CommonUtilities/mt/Thread.h>
 #include "../Action.h"
 
 namespace p2c::client::util
@@ -42,7 +43,7 @@ namespace p2c::client::util
 		win::ModSet GatherModifiers_() const;
 		// data
 		std::binary_semaphore startupSemaphore_{ 0 };
-		std::jthread thread_;
+		::pmon::util::mt::Thread thread_;
 		unsigned long threadId_{};
 		void* messageWindowHandle_ = nullptr;
 		std::bitset<win::Key::virtualKeyTableSize> pressedKeys_;
