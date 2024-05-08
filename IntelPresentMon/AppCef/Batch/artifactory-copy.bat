@@ -1,6 +1,6 @@
 @echo off
-if not exist "%~1\PresentMon2.sln" (
-    echo error: could not find %~1\PresentMon2.sln
+if not exist "%~1\PresentMon.sln" (
+    echo error: could not find %~1\PresentMon.sln
     echo usage: artifactory-copy.bat present_mon_root_dir destination_dir
     exit /b 1
 )
