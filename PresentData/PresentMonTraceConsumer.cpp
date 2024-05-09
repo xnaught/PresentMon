@@ -689,296 +689,9 @@ void PMTraceConsumer::HandleDxgkPresentHistoryInfo(EVENT_HEADER const& hdr, uint
 void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
 {
     auto const& hdr = pEventRecord->EventHeader;
-    switch (hdr.EventDescriptor.Id) {
-    case Microsoft_Windows_DxgKrnl::Flip_Info::Id:
-    {
-        EventDataDesc desc[] = {
-            { L"FlipInterval" },
-            { L"MMIOFlip" },
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto FlipInterval = desc[0].GetData<uint32_t>();
-        auto MMIOFlip     = desc[1].GetData<BOOL>() != 0;
 
-        TRACK_PRESENT_PATH_GENERATE_ID();
-        HandleDxgkFlip(hdr, FlipInterval, MMIOFlip, false);
-        return;
-    }
-    case Microsoft_Windows_DxgKrnl::IndependentFlip_Info::Id:
-    {
-        EventDataDesc desc[] = {
-            { L"SubmitSequence" },
-            { L"FlipInterval" },
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto SubmitSequence = desc[0].GetData<uint32_t>();
-        auto FlipInterval   = desc[1].GetData<uint32_t>();
-
-        auto pEvent = FindPresentBySubmitSequence(SubmitSequence);
-        if (pEvent != nullptr) {
-            // We should not have already identified as hardware_composed - this
-            // can only be detected around Vsync/HsyncDPC time.
-            DebugAssert(pEvent->PresentMode != PresentMode::Hardware_Composed_Independent_Flip);
-
-            VerboseTraceBeforeModifyingPresent(pEvent.get());
-            pEvent->PresentMode = PresentMode::Hardware_Independent_Flip;
-            pEvent->SyncInterval = FlipInterval;
-        }
-        return;
-    }
-    case Microsoft_Windows_DxgKrnl::FlipMultiPlaneOverlay_Info::Id:
-        TRACK_PRESENT_PATH_GENERATE_ID();
-        HandleDxgkFlip(hdr, -1, true, true);
-        return;
-    // QueuPacket_Start are used for render queue packets
-    // QueuPacket_Start_2 are used for monitor wait packets
-    // QueuPacket_Start_3 are used for monitor signal packets
-    case Microsoft_Windows_DxgKrnl::QueuePacket_Start::Id:
-    {
-        EventDataDesc desc[] = {
-            { L"PacketType" },
-            { L"SubmitSequence" },
-            { L"hContext" },
-            { L"bPresent" },
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto PacketType     = desc[0].GetData<uint32_t>();
-        auto SubmitSequence = desc[1].GetData<uint32_t>();
-        auto hContext       = desc[2].GetData<uint64_t>();
-        auto bPresent       = desc[3].GetData<BOOL>() != 0;
-
-        HandleDxgkQueueSubmit(hdr, hContext, SubmitSequence, PacketType, bPresent, false);
-        return;
-    }
-    case Microsoft_Windows_DxgKrnl::QueuePacket_Start_2::Id:
-    {
-        EventDataDesc desc[] = {
-            { L"hContext" },
-            { L"SubmitSequence" },
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto hContext       = desc[0].GetData<uint64_t>();
-        auto SubmitSequence = desc[1].GetData<uint32_t>();
-
-        uint32_t PacketType = (uint32_t) Microsoft_Windows_DxgKrnl::QueuePacketType::DXGKETW_WAIT_COMMAND_BUFFER;
-        bool bPresent = false;
-        HandleDxgkQueueSubmit(hdr, hContext, SubmitSequence, PacketType, bPresent, false);
-        return;
-    }
-    case Microsoft_Windows_DxgKrnl::QueuePacket_Stop::Id:
-    {
-        EventDataDesc desc[] = {
-            { L"hContext" },
-            { L"SubmitSequence" },
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto hContext       = desc[0].GetData<uint64_t>();
-        auto SubmitSequence = desc[1].GetData<uint32_t>();
-
-        TRACK_PRESENT_PATH_GENERATE_ID();
-        HandleDxgkQueueComplete(hdr.TimeStamp.QuadPart, hContext, SubmitSequence);
-        return;
-    }
-    case Microsoft_Windows_DxgKrnl::MMIOFlip_Info::Id:
-    {
-        EventDataDesc desc[] = {
-            { L"FlipSubmitSequence" },
-            { L"Flags" },
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto FlipSubmitSequence = desc[0].GetData<uint32_t>();
-        auto Flags              = desc[1].GetData<uint32_t>();
-
-        TRACK_PRESENT_PATH_GENERATE_ID();
-        HandleDxgkMMIOFlip(hdr.TimeStamp.QuadPart, FlipSubmitSequence, Flags);
-        return;
-    }
-    case Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay_Info::Id:
-    {
-        auto flipEntryStatusAfterFlipValid = hdr.EventDescriptor.Version >= 2;
-        EventDataDesc desc[] = {
-            { L"FlipSubmitSequence" },
-            { L"FlipEntryStatusAfterFlip" }, // optional
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc) - (flipEntryStatusAfterFlipValid ? 0 : 1));
-        auto FlipSubmitSequence = desc[0].GetData<uint64_t>();
-
-        auto submitSequence = (uint32_t) (FlipSubmitSequence >> 32u);
-        auto present = FindPresentBySubmitSequence(submitSequence);
-        if (present != nullptr) {
-
-            TRACK_PRESENT_PATH(present);
-
-            // Complete the GPU tracking for this frame.
-            //
-            // For some present modes (e.g., Hardware_Legacy_Flip) this may be
-            // the first event telling us the present is ready.
-            mGpuTrace.CompleteFrame(present.get(), hdr.TimeStamp.QuadPart);
-
-            // Check and handle the post-flip status if available.
-            if (flipEntryStatusAfterFlipValid) {
-                auto FlipEntryStatusAfterFlip = desc[1].GetData<uint32_t>();
-
-                // Nothing to do for FlipWaitVSync other than wait for the VSync events.
-                if (FlipEntryStatusAfterFlip != (uint32_t) Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitVSync) {
-
-                    TRACK_PRESENT_PATH(present);
-
-                    // Any of the non-vsync status present modes can tear.
-                    VerboseTraceBeforeModifyingPresent(present.get());
-                    present->SupportsTearing = true;
-
-                    // For FlipWaitVSync and FlipWaitHSync, we'll wait for the
-                    // corresponding ?SyncDPC event.  Otherwise we consider
-                    // this the present screen time.
-                    if (FlipEntryStatusAfterFlip != (uint32_t) Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitHSync) {
-
-                        TRACK_PRESENT_PATH(present);
-
-                        present->FinalState = PresentResult::Presented;
-
-                        if (FlipEntryStatusAfterFlip == (uint32_t) Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitComplete) {
-                            present->ScreenTime = hdr.TimeStamp.QuadPart;
-                        }
-
-                        if (present->PresentMode == PresentMode::Hardware_Legacy_Flip) {
-                            CompletePresent(present);
-                        }
-                    }
-                }
-            }
-        }
-        return;
-    }
-
-    // VSyncDPC_Info only includes the FlipSubmitSequence for one layer.
-    //
-    // *SyncDPCMultiPlane_Info is sent afterward for non-legacy flip paths, and
-    // contains info on whether this vsync/hsync contains an overlay.  So, we
-    // avoid updating ScreenTime and FinalState with the second event, but
-    // update isMultiPlane with the correct information when we have them.
-    //
-    // On Windows >= 10.17134 HSyncDPCMultiPlane_Info is used when the
-    // associated display is connected to integrated graphics.
-    case Microsoft_Windows_DxgKrnl::VSyncDPC_Info::Id:
-    {
-        TRACK_PRESENT_PATH_GENERATE_ID();
-
-        auto FlipFenceId = mMetadata.GetEventData<uint64_t>(pEventRecord, L"FlipFenceId");
-        if (FlipFenceId != 0) {
-            HandleDxgkSyncDPC(hdr.TimeStamp.QuadPart, (uint32_t)(FlipFenceId >> 32u));
-        }
-        return;
-    }
-    case Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id:
-    case Microsoft_Windows_DxgKrnl::HSyncDPCMultiPlane_Info::Id:
-    {
-        TRACK_PRESENT_PATH_GENERATE_ID();
-
-        EventDataDesc desc[] = {
-            { L"PlaneCount" },
-            { L"ScannedPhysicalAddress" },
-            { L"FlipEntryCount" },
-            { L"FlipSubmitSequence" },
-        };
-
-        // Name changed from "ScannedPhysicalAddress" to "PresentIdOrPhysicalAddress"
-        if (hdr.EventDescriptor.Id == Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id &&
-            hdr.EventDescriptor.Version >= 1) {
-            desc[1].name_ = L"PresentIdOrPhysicalAddress";
-        }
-
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto PlaneCount         = desc[0].GetData<uint32_t>();
-        auto PlaneAddress       = desc[1].GetArray<uint64_t>(PlaneCount);
-        auto FlipEntryCount     = desc[2].GetData<uint32_t>();
-        auto FlipSubmitSequence = desc[3].GetArray<uint64_t>(FlipEntryCount);
-
-        if (FlipEntryCount > 0) {
-            // The number of active planes is determined by the number of
-            // non-zero addresses.  All we care about is if there are more
-            // than one or not.
-            bool isMultiPlane = false;
-            for (uint32_t i = 0, activePlaneCount = 0; i < PlaneCount; ++i) {
-                if (PlaneAddress[i] != 0) {
-                    if (activePlaneCount == 1) {
-                        isMultiPlane = true;
-                        break;
-                    }
-                    activePlaneCount += 1;
-                }
-            }
-
-            for (uint32_t i = 0; i < FlipEntryCount; ++i) {
-                if (FlipSubmitSequence[i] > 0) {
-                    auto submitSequence = (uint32_t)(FlipSubmitSequence[i] >> 32u);
-                    auto pEvent = FindPresentBySubmitSequence(submitSequence);
-                    if (pEvent != nullptr) {
-                        TRACK_PRESENT_PATH_SAVE_GENERATED_ID(pEvent);
-
-                        if (isMultiPlane &&
-                            (pEvent->PresentMode == PresentMode::Hardware_Independent_Flip || pEvent->PresentMode == PresentMode::Composed_Flip)) {
-                            VerboseTraceBeforeModifyingPresent(pEvent.get());
-                            pEvent->PresentMode = PresentMode::Hardware_Composed_Independent_Flip;
-                        }
-
-                        // ScreenTime may have already been written by a preceding
-                        // VSyncDPC_Info event, which is more accurate, so don't
-                        // overwrite it in that case.
-                        if (pEvent->FinalState != PresentResult::Presented) {
-                            VerboseTraceBeforeModifyingPresent(pEvent.get());
-                            pEvent->ScreenTime = hdr.TimeStamp.QuadPart;
-                            pEvent->FinalState = PresentResult::Presented;
-                        }
-
-                        // Complete the present.
-                        CompletePresent(pEvent);
-                    }
-                }
-            }
-        }
-        return;
-    }
-    case Microsoft_Windows_DxgKrnl::Present_Info::Id:
-    {
-        // This event is emitted at the end of the kernel present.
-        auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
-        if (eventIter != mPresentByThreadId.end()) {
-            auto present = eventIter->second;
-
-            TRACK_PRESENT_PATH(present);
-
-            // Store the fact we've seen this present.  This is used to improve
-            // tracking and to defer blt present completion until both Present_Info
-            // and present QueuePacket_Stop have been seen.
-            VerboseTraceBeforeModifyingPresent(present.get());
-            present->SeenDxgkPresent = true;
-
-            if (present->Hwnd == 0) {
-                present->Hwnd = mMetadata.GetEventData<uint64_t>(pEventRecord, L"hWindow");
-            }
-
-            // If we are not expecting an API present end event, then this
-            // should be the last operation on this thread.  This can happen
-            // due to batched presents or non-instrumented present APIs (i.e.,
-            // not DXGI nor D3D9).
-            if (present->Runtime == Runtime::Other ||
-                present->ThreadId != hdr.ThreadId) {
-                mPresentByThreadId.erase(eventIter);
-            }
-
-            // If this is a deferred blit that's already seen QueuePacket_Stop,
-            // then complete it now.
-            if (present->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer &&
-                present->ScreenTime != 0) {
-                CompletePresent(present);
-            }
-        }
-        return;
-    }
-    case Microsoft_Windows_DxgKrnl::PresentHistoryDetailed_Start::Id:
-    case Microsoft_Windows_DxgKrnl::PresentHistory_Start::Id:
-    {
+    if (hdr.EventDescriptor.Id == Microsoft_Windows_DxgKrnl::PresentHistory_Start::Id ||
+       (hdr.EventDescriptor.Id == Microsoft_Windows_DxgKrnl::PresentHistoryDetailed_Start::Id && mTrackDisplay)) {
         EventDataDesc desc[] = {
             { L"Token" },
             { L"Model" },
@@ -995,40 +708,330 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
         }
         return;
     }
-    case Microsoft_Windows_DxgKrnl::PresentHistory_Info::Id:
-        TRACK_PRESENT_PATH_GENERATE_ID();
-        HandleDxgkPresentHistoryInfo(hdr, mMetadata.GetEventData<uint64_t>(pEventRecord, L"Token"));
-        return;
-    case Microsoft_Windows_DxgKrnl::Blit_Info::Id:
-    {
-        EventDataDesc desc[] = {
-            { L"hwnd" },
-            { L"bRedirectedPresent" },
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto hwnd               = desc[0].GetData<uint64_t>();
-        auto bRedirectedPresent = desc[1].GetData<uint32_t>() != 0;
 
-        TRACK_PRESENT_PATH_GENERATE_ID();
-        HandleDxgkBlt(hdr, hwnd, bRedirectedPresent);
-        return;
-    }
+    if (mTrackDisplay) {
+        switch (hdr.EventDescriptor.Id) {
+        case Microsoft_Windows_DxgKrnl::Flip_Info::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"FlipInterval" },
+                { L"MMIOFlip" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto FlipInterval = desc[0].GetData<uint32_t>();
+            auto MMIOFlip     = desc[1].GetData<BOOL>() != 0;
 
-    // BlitCancel_Info indicates that DxgKrnl optimized a present blt away, and
-    // no further work was needed.
-    case Microsoft_Windows_DxgKrnl::BlitCancel_Info::Id:
-    {
-        auto present = FindThreadPresent(hdr.ThreadId);
-        if (present != nullptr) {
-            TRACK_PRESENT_PATH(present);
-
-            VerboseTraceBeforeModifyingPresent(present.get());
-            present->FinalState = PresentResult::Discarded;
-
-            CompletePresent(present);
+            TRACK_PRESENT_PATH_GENERATE_ID();
+            HandleDxgkFlip(hdr, FlipInterval, MMIOFlip, false);
+            return;
         }
-        return;
-    }
+        case Microsoft_Windows_DxgKrnl::IndependentFlip_Info::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"SubmitSequence" },
+                { L"FlipInterval" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto SubmitSequence = desc[0].GetData<uint32_t>();
+            auto FlipInterval   = desc[1].GetData<uint32_t>();
+
+            auto pEvent = FindPresentBySubmitSequence(SubmitSequence);
+            if (pEvent != nullptr) {
+                // We should not have already identified as hardware_composed - this
+                // can only be detected around Vsync/HsyncDPC time.
+                DebugAssert(pEvent->PresentMode != PresentMode::Hardware_Composed_Independent_Flip);
+
+                VerboseTraceBeforeModifyingPresent(pEvent.get());
+                pEvent->PresentMode = PresentMode::Hardware_Independent_Flip;
+                pEvent->SyncInterval = FlipInterval;
+            }
+            return;
+        }
+        case Microsoft_Windows_DxgKrnl::FlipMultiPlaneOverlay_Info::Id:
+            TRACK_PRESENT_PATH_GENERATE_ID();
+            HandleDxgkFlip(hdr, -1, true, true);
+            return;
+        // QueuPacket_Start are used for render queue packets
+        // QueuPacket_Start_2 are used for monitor wait packets
+        // QueuPacket_Start_3 are used for monitor signal packets
+        case Microsoft_Windows_DxgKrnl::QueuePacket_Start::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"PacketType" },
+                { L"SubmitSequence" },
+                { L"hContext" },
+                { L"bPresent" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto PacketType     = desc[0].GetData<uint32_t>();
+            auto SubmitSequence = desc[1].GetData<uint32_t>();
+            auto hContext       = desc[2].GetData<uint64_t>();
+            auto bPresent       = desc[3].GetData<BOOL>() != 0;
+
+            HandleDxgkQueueSubmit(hdr, hContext, SubmitSequence, PacketType, bPresent, false);
+            return;
+        }
+        case Microsoft_Windows_DxgKrnl::QueuePacket_Start_2::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"hContext" },
+                { L"SubmitSequence" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto hContext       = desc[0].GetData<uint64_t>();
+            auto SubmitSequence = desc[1].GetData<uint32_t>();
+
+            uint32_t PacketType = (uint32_t) Microsoft_Windows_DxgKrnl::QueuePacketType::DXGKETW_WAIT_COMMAND_BUFFER;
+            bool bPresent = false;
+            HandleDxgkQueueSubmit(hdr, hContext, SubmitSequence, PacketType, bPresent, false);
+            return;
+        }
+        case Microsoft_Windows_DxgKrnl::QueuePacket_Stop::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"hContext" },
+                { L"SubmitSequence" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto hContext       = desc[0].GetData<uint64_t>();
+            auto SubmitSequence = desc[1].GetData<uint32_t>();
+
+            TRACK_PRESENT_PATH_GENERATE_ID();
+            HandleDxgkQueueComplete(hdr.TimeStamp.QuadPart, hContext, SubmitSequence);
+            return;
+        }
+        case Microsoft_Windows_DxgKrnl::MMIOFlip_Info::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"FlipSubmitSequence" },
+                { L"Flags" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto FlipSubmitSequence = desc[0].GetData<uint32_t>();
+            auto Flags              = desc[1].GetData<uint32_t>();
+
+            TRACK_PRESENT_PATH_GENERATE_ID();
+            HandleDxgkMMIOFlip(hdr.TimeStamp.QuadPart, FlipSubmitSequence, Flags);
+            return;
+        }
+        case Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay_Info::Id:
+        {
+            auto flipEntryStatusAfterFlipValid = hdr.EventDescriptor.Version >= 2;
+            EventDataDesc desc[] = {
+                { L"FlipSubmitSequence" },
+                { L"FlipEntryStatusAfterFlip" }, // optional
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc) - (flipEntryStatusAfterFlipValid ? 0 : 1));
+            auto FlipSubmitSequence = desc[0].GetData<uint64_t>();
+
+            auto submitSequence = (uint32_t) (FlipSubmitSequence >> 32u);
+            auto present = FindPresentBySubmitSequence(submitSequence);
+            if (present != nullptr) {
+
+                TRACK_PRESENT_PATH(present);
+
+                // Complete the GPU tracking for this frame.
+                //
+                // For some present modes (e.g., Hardware_Legacy_Flip) this may be
+                // the first event telling us the present is ready.
+                mGpuTrace.CompleteFrame(present.get(), hdr.TimeStamp.QuadPart);
+
+                // Check and handle the post-flip status if available.
+                if (flipEntryStatusAfterFlipValid) {
+                    auto FlipEntryStatusAfterFlip = desc[1].GetData<uint32_t>();
+
+                    // Nothing to do for FlipWaitVSync other than wait for the VSync events.
+                    if (FlipEntryStatusAfterFlip != (uint32_t) Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitVSync) {
+
+                        TRACK_PRESENT_PATH(present);
+
+                        // Any of the non-vsync status present modes can tear.
+                        VerboseTraceBeforeModifyingPresent(present.get());
+                        present->SupportsTearing = true;
+
+                        // For FlipWaitVSync and FlipWaitHSync, we'll wait for the
+                        // corresponding ?SyncDPC event.  Otherwise we consider
+                        // this the present screen time.
+                        if (FlipEntryStatusAfterFlip != (uint32_t) Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitHSync) {
+
+                            TRACK_PRESENT_PATH(present);
+
+                            present->FinalState = PresentResult::Presented;
+
+                            if (FlipEntryStatusAfterFlip == (uint32_t) Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitComplete) {
+                                present->ScreenTime = hdr.TimeStamp.QuadPart;
+                            }
+
+                            if (present->PresentMode == PresentMode::Hardware_Legacy_Flip) {
+                                CompletePresent(present);
+                            }
+                        }
+                    }
+                }
+            }
+            return;
+        }
+
+        // VSyncDPC_Info only includes the FlipSubmitSequence for one layer.
+        //
+        // *SyncDPCMultiPlane_Info is sent afterward for non-legacy flip paths, and
+        // contains info on whether this vsync/hsync contains an overlay.  So, we
+        // avoid updating ScreenTime and FinalState with the second event, but
+        // update isMultiPlane with the correct information when we have them.
+        //
+        // On Windows >= 10.17134 HSyncDPCMultiPlane_Info is used when the
+        // associated display is connected to integrated graphics.
+        case Microsoft_Windows_DxgKrnl::VSyncDPC_Info::Id:
+        {
+            TRACK_PRESENT_PATH_GENERATE_ID();
+
+            auto FlipFenceId = mMetadata.GetEventData<uint64_t>(pEventRecord, L"FlipFenceId");
+            if (FlipFenceId != 0) {
+                HandleDxgkSyncDPC(hdr.TimeStamp.QuadPart, (uint32_t)(FlipFenceId >> 32u));
+            }
+            return;
+        }
+        case Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id:
+        case Microsoft_Windows_DxgKrnl::HSyncDPCMultiPlane_Info::Id:
+        {
+            TRACK_PRESENT_PATH_GENERATE_ID();
+
+            EventDataDesc desc[] = {
+                { L"PlaneCount" },
+                { L"ScannedPhysicalAddress" },
+                { L"FlipEntryCount" },
+                { L"FlipSubmitSequence" },
+            };
+
+            // Name changed from "ScannedPhysicalAddress" to "PresentIdOrPhysicalAddress"
+            if (hdr.EventDescriptor.Id == Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info::Id &&
+                hdr.EventDescriptor.Version >= 1) {
+                desc[1].name_ = L"PresentIdOrPhysicalAddress";
+            }
+
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto PlaneCount         = desc[0].GetData<uint32_t>();
+            auto PlaneAddress       = desc[1].GetArray<uint64_t>(PlaneCount);
+            auto FlipEntryCount     = desc[2].GetData<uint32_t>();
+            auto FlipSubmitSequence = desc[3].GetArray<uint64_t>(FlipEntryCount);
+
+            if (FlipEntryCount > 0) {
+                // The number of active planes is determined by the number of
+                // non-zero addresses.  All we care about is if there are more
+                // than one or not.
+                bool isMultiPlane = false;
+                for (uint32_t i = 0, activePlaneCount = 0; i < PlaneCount; ++i) {
+                    if (PlaneAddress[i] != 0) {
+                        if (activePlaneCount == 1) {
+                            isMultiPlane = true;
+                            break;
+                        }
+                        activePlaneCount += 1;
+                    }
+                }
+
+                for (uint32_t i = 0; i < FlipEntryCount; ++i) {
+                    if (FlipSubmitSequence[i] > 0) {
+                        auto submitSequence = (uint32_t)(FlipSubmitSequence[i] >> 32u);
+                        auto pEvent = FindPresentBySubmitSequence(submitSequence);
+                        if (pEvent != nullptr) {
+                            TRACK_PRESENT_PATH_SAVE_GENERATED_ID(pEvent);
+
+                            if (isMultiPlane &&
+                                (pEvent->PresentMode == PresentMode::Hardware_Independent_Flip || pEvent->PresentMode == PresentMode::Composed_Flip)) {
+                                VerboseTraceBeforeModifyingPresent(pEvent.get());
+                                pEvent->PresentMode = PresentMode::Hardware_Composed_Independent_Flip;
+                            }
+
+                            // ScreenTime may have already been written by a preceding
+                            // VSyncDPC_Info event, which is more accurate, so don't
+                            // overwrite it in that case.
+                            if (pEvent->FinalState != PresentResult::Presented) {
+                                VerboseTraceBeforeModifyingPresent(pEvent.get());
+                                pEvent->ScreenTime = hdr.TimeStamp.QuadPart;
+                                pEvent->FinalState = PresentResult::Presented;
+                            }
+
+                            // Complete the present.
+                            CompletePresent(pEvent);
+                        }
+                    }
+                }
+            }
+            return;
+        }
+        case Microsoft_Windows_DxgKrnl::Present_Info::Id:
+        {
+            // This event is emitted at the end of the kernel present.
+            auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
+            if (eventIter != mPresentByThreadId.end()) {
+                auto present = eventIter->second;
+
+                TRACK_PRESENT_PATH(present);
+
+                // Store the fact we've seen this present.  This is used to improve
+                // tracking and to defer blt present completion until both Present_Info
+                // and present QueuePacket_Stop have been seen.
+                VerboseTraceBeforeModifyingPresent(present.get());
+                present->SeenDxgkPresent = true;
+
+                if (present->Hwnd == 0) {
+                    present->Hwnd = mMetadata.GetEventData<uint64_t>(pEventRecord, L"hWindow");
+                }
+
+                // If we are not expecting an API present end event, then this
+                // should be the last operation on this thread.  This can happen
+                // due to batched presents or non-instrumented present APIs (i.e.,
+                // not DXGI nor D3D9).
+                if (present->Runtime == Runtime::Other ||
+                    present->ThreadId != hdr.ThreadId) {
+                    mPresentByThreadId.erase(eventIter);
+                }
+
+                // If this is a deferred blit that's already seen QueuePacket_Stop,
+                // then complete it now.
+                if (present->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer &&
+                    present->ScreenTime != 0) {
+                    CompletePresent(present);
+                }
+            }
+            return;
+        }
+        case Microsoft_Windows_DxgKrnl::PresentHistory_Info::Id:
+            TRACK_PRESENT_PATH_GENERATE_ID();
+            HandleDxgkPresentHistoryInfo(hdr, mMetadata.GetEventData<uint64_t>(pEventRecord, L"Token"));
+            return;
+        case Microsoft_Windows_DxgKrnl::Blit_Info::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"hwnd" },
+                { L"bRedirectedPresent" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto hwnd               = desc[0].GetData<uint64_t>();
+            auto bRedirectedPresent = desc[1].GetData<uint32_t>() != 0;
+
+            TRACK_PRESENT_PATH_GENERATE_ID();
+            HandleDxgkBlt(hdr, hwnd, bRedirectedPresent);
+            return;
+        }
+
+        // BlitCancel_Info indicates that DxgKrnl optimized a present blt away, and
+        // no further work was needed.
+        case Microsoft_Windows_DxgKrnl::BlitCancel_Info::Id:
+        {
+            auto present = FindThreadPresent(hdr.ThreadId);
+            if (present != nullptr) {
+                TRACK_PRESENT_PATH(present);
+
+                VerboseTraceBeforeModifyingPresent(present.get());
+                present->FinalState = PresentResult::Discarded;
+
+                CompletePresent(present);
+            }
+            return;
+        }
+        }
     }
 
     if (mTrackGPU) {
@@ -1376,203 +1379,208 @@ std::size_t PMTraceConsumer::Win32KPresentHistoryTokenHash::operator()(PMTraceCo
 void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
 {
     auto const& hdr = pEventRecord->EventHeader;
-    switch (hdr.EventDescriptor.Id) {
-    case Microsoft_Windows_Win32k::TokenCompositionSurfaceObject_Info::Id:
-    {
-        EventDataDesc desc[] = {
-            { L"CompositionSurfaceLuid" },
-            { L"PresentCount" },
-            { L"BindId" },
-            { L"DestWidth" },  // version >= 1
-            { L"DestHeight" }, // version >= 1
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc) - (hdr.EventDescriptor.Version == 0 ? 2 : 0));
-        auto CompositionSurfaceLuid = desc[0].GetData<uint64_t>();
-        auto PresentCount           = desc[1].GetData<uint64_t>();
-        auto BindId                 = desc[2].GetData<uint64_t>();
 
-        // Lookup the in-progress present.  It should not have seen any Win32K
-        // events yet, so if it has we assume we looked up a present whose
-        // tracking was lost.
-        std::shared_ptr<PresentEvent> present;
-        for (;;) {
-            present = FindOrCreatePresent(hdr);
-            if (present == nullptr) {
-                return;
+    if (mTrackDisplay) {
+        switch (hdr.EventDescriptor.Id) {
+        case Microsoft_Windows_Win32k::TokenCompositionSurfaceObject_Info::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"CompositionSurfaceLuid" },
+                { L"PresentCount" },
+                { L"BindId" },
+                { L"DestWidth" },  // version >= 1
+                { L"DestHeight" }, // version >= 1
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc) - (hdr.EventDescriptor.Version == 0 ? 2 : 0));
+            auto CompositionSurfaceLuid = desc[0].GetData<uint64_t>();
+            auto PresentCount           = desc[1].GetData<uint64_t>();
+            auto BindId                 = desc[2].GetData<uint64_t>();
+
+            // Lookup the in-progress present.  It should not have seen any Win32K
+            // events yet, so if it has we assume we looked up a present whose
+            // tracking was lost.
+            std::shared_ptr<PresentEvent> present;
+            for (;;) {
+                present = FindOrCreatePresent(hdr);
+                if (present == nullptr) {
+                    return;
+                }
+
+                if (!present->SeenWin32KEvents) {
+                    break;
+                }
+
+                RemoveLostPresent(present);
             }
 
-            if (!present->SeenWin32KEvents) {
+            TRACK_PRESENT_PATH(present);
+
+            present->PresentMode = PresentMode::Composed_Flip;
+            present->SeenWin32KEvents = true;
+
+            if (hdr.EventDescriptor.Version >= 1) {
+                present->DestWidth  = desc[3].GetData<uint32_t>();
+                present->DestHeight = desc[4].GetData<uint32_t>();
+            }
+
+            Win32KPresentHistoryToken key(CompositionSurfaceLuid, PresentCount, BindId);
+            DebugAssert(mPresentByWin32KPresentHistoryToken.find(key) == mPresentByWin32KPresentHistoryToken.end());
+            mPresentByWin32KPresentHistoryToken[key] = present;
+            present->CompositionSurfaceLuid = CompositionSurfaceLuid;
+            present->Win32KPresentCount = PresentCount;
+            present->Win32KBindId = BindId;
+            return;
+        }
+
+        case Microsoft_Windows_Win32k::TokenStateChanged_Info::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"CompositionSurfaceLuid" },
+                { L"PresentCount" },
+                { L"BindId" },
+                { L"NewState" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto CompositionSurfaceLuid = desc[0].GetData<uint64_t>();
+            auto PresentCount           = desc[1].GetData<uint32_t>();
+            auto BindId                 = desc[2].GetData<uint64_t>();
+            auto NewState               = desc[3].GetData<uint32_t>();
+
+            Win32KPresentHistoryToken key(CompositionSurfaceLuid, PresentCount, BindId);
+            auto eventIter = mPresentByWin32KPresentHistoryToken.find(key);
+            if (eventIter == mPresentByWin32KPresentHistoryToken.end()) {
+                return;
+            }
+            auto presentEvent = eventIter->second;
+
+            switch (NewState) {
+            case (uint32_t) Microsoft_Windows_Win32k::TokenState::InFrame: // Composition is starting
+            {
+                TRACK_PRESENT_PATH(presentEvent);
+
+                VerboseTraceBeforeModifyingPresent(presentEvent.get());
+                presentEvent->SeenInFrameEvent = true;
+
+                bool iFlip = mMetadata.GetEventData<BOOL>(pEventRecord, L"IndependentFlip") != 0;
+                if (iFlip && presentEvent->PresentMode == PresentMode::Composed_Flip) {
+                    presentEvent->PresentMode = PresentMode::Hardware_Independent_Flip;
+                }
+
+                // We won't necessarily see a transition to Discarded for all
+                // presents so we check here instead: if we're compositing a newer
+                // present than the window's last known present, then the last
+                // known one will be discarded.
+                if (presentEvent->Hwnd) {
+                    auto hWndIter = mLastPresentByWindow.find(presentEvent->Hwnd);
+                    if (hWndIter == mLastPresentByWindow.end()) {
+                        mLastPresentByWindow.emplace(presentEvent->Hwnd, presentEvent);
+                    } else if (hWndIter->second != presentEvent) {
+                        auto prevPresent = hWndIter->second;
+                        hWndIter->second = presentEvent;
+
+                        // Even though we know it will be discarded at this point,
+                        // we keep tracking it through the composition steps
+                        // instead of completing it now, to ensure that the
+                        // collector will get presents from each swap chain in
+                        // order.
+                        //
+                        // That said, we do need to remove it from the submit
+                        // sequence id tracking to reduce the likelyhood of id
+                        // collisions during lookup for events that don't reference
+                        // a context.
+                        VerboseTraceBeforeModifyingPresent(prevPresent.get());
+                        prevPresent->FinalState = PresentResult::Discarded;
+                        RemovePresentFromSubmitSequenceIdTracking(prevPresent);
+                    }
+                }
                 break;
             }
 
-            RemoveLostPresent(present);
-        }
+            case (uint32_t) Microsoft_Windows_Win32k::TokenState::Confirmed: // Present has been submitted
+                TRACK_PRESENT_PATH(presentEvent);
 
-        TRACK_PRESENT_PATH(present);
+                // Handle DO_NOT_SEQUENCE presents, which may get marked as confirmed,
+                // if a frame was composed when this token was completed
+                if (presentEvent->FinalState == PresentResult::Unknown &&
+                    (presentEvent->PresentFlags & DXGI_PRESENT_DO_NOT_SEQUENCE) != 0) {
+                    VerboseTraceBeforeModifyingPresent(presentEvent.get());
+                    presentEvent->FinalState = PresentResult::Discarded;
+                    RemovePresentFromSubmitSequenceIdTracking(presentEvent);
+                }
+                if (presentEvent->Hwnd) {
+                    mLastPresentByWindow.erase(presentEvent->Hwnd);
+                }
+                break;
 
-        present->PresentMode = PresentMode::Composed_Flip;
-        present->SeenWin32KEvents = true;
+            // Note: Going forward, TokenState::Retired events are no longer
+            // guaranteed to be sent at the end of a frame in multi-monitor
+            // scenarios.  Instead, we use DWM's present stats to understand the
+            // Composed Flip timeline.
+            case (uint32_t) Microsoft_Windows_Win32k::TokenState::Discarded: // Present has been discarded
+            {
+                TRACK_PRESENT_PATH(presentEvent);
 
-        if (hdr.EventDescriptor.Version >= 1) {
-            present->DestWidth  = desc[3].GetData<uint32_t>();
-            present->DestHeight = desc[4].GetData<uint32_t>();
-        }
+                // Nullptr as we don't want to report clearing the key in the verbose trace
+                VerboseTraceBeforeModifyingPresent(nullptr);
+                presentEvent->CompositionSurfaceLuid = 0;
+                presentEvent->Win32KPresentCount = 0;
+                presentEvent->Win32KBindId = 0;
+                mPresentByWin32KPresentHistoryToken.erase(eventIter);
 
-        Win32KPresentHistoryToken key(CompositionSurfaceLuid, PresentCount, BindId);
-        DebugAssert(mPresentByWin32KPresentHistoryToken.find(key) == mPresentByWin32KPresentHistoryToken.end());
-        mPresentByWin32KPresentHistoryToken[key] = present;
-        present->CompositionSurfaceLuid = CompositionSurfaceLuid;
-        present->Win32KPresentCount = PresentCount;
-        present->Win32KBindId = BindId;
-        break;
-    }
-
-    case Microsoft_Windows_Win32k::TokenStateChanged_Info::Id:
-    {
-        EventDataDesc desc[] = {
-            { L"CompositionSurfaceLuid" },
-            { L"PresentCount" },
-            { L"BindId" },
-            { L"NewState" },
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto CompositionSurfaceLuid = desc[0].GetData<uint64_t>();
-        auto PresentCount           = desc[1].GetData<uint32_t>();
-        auto BindId                 = desc[2].GetData<uint64_t>();
-        auto NewState               = desc[3].GetData<uint32_t>();
-
-        Win32KPresentHistoryToken key(CompositionSurfaceLuid, PresentCount, BindId);
-        auto eventIter = mPresentByWin32KPresentHistoryToken.find(key);
-        if (eventIter == mPresentByWin32KPresentHistoryToken.end()) {
+                if (!presentEvent->SeenInFrameEvent && (presentEvent->FinalState == PresentResult::Unknown || presentEvent->ScreenTime == 0)) {
+                    VerboseTraceBeforeModifyingPresent(presentEvent.get());
+                    presentEvent->FinalState = PresentResult::Discarded;
+                    CompletePresent(presentEvent);
+                } else if (presentEvent->PresentMode != PresentMode::Composed_Flip) {
+                    CompletePresent(presentEvent);
+                }
+                break;
+            }
+            }
             return;
         }
-        auto presentEvent = eventIter->second;
+        }
+    }
 
-        switch (NewState) {
-        case (uint32_t) Microsoft_Windows_Win32k::TokenState::InFrame: // Composition is starting
+    if (mTrackInput) {
+        switch (hdr.EventDescriptor.Id) {
+        case Microsoft_Windows_Win32k::InputDeviceRead_Stop::Id:
         {
-            TRACK_PRESENT_PATH(presentEvent);
+            EventDataDesc desc[] = {
+                { L"DeviceType" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto DeviceType = desc[0].GetData<uint32_t>();
 
-            VerboseTraceBeforeModifyingPresent(presentEvent.get());
-            presentEvent->SeenInFrameEvent = true;
-
-            bool iFlip = mMetadata.GetEventData<BOOL>(pEventRecord, L"IndependentFlip") != 0;
-            if (iFlip && presentEvent->PresentMode == PresentMode::Composed_Flip) {
-                presentEvent->PresentMode = PresentMode::Hardware_Independent_Flip;
+            switch (DeviceType) {
+            case 0: mLastInputDeviceType = InputDeviceType::Mouse; break;
+            case 1: mLastInputDeviceType = InputDeviceType::Keyboard; break;
+            default: mLastInputDeviceType = InputDeviceType::Unknown; break;
             }
 
-            // We won't necessarily see a transition to Discarded for all
-            // presents so we check here instead: if we're compositing a newer
-            // present than the window's last known present, then the last
-            // known one will be discarded.
-            if (presentEvent->Hwnd) {
-                auto hWndIter = mLastPresentByWindow.find(presentEvent->Hwnd);
-                if (hWndIter == mLastPresentByWindow.end()) {
-                    mLastPresentByWindow.emplace(presentEvent->Hwnd, presentEvent);
-                } else if (hWndIter->second != presentEvent) {
-                    auto prevPresent = hWndIter->second;
-                    hWndIter->second = presentEvent;
+            mLastInputDeviceReadTime = hdr.TimeStamp.QuadPart;
+            return;
+        }
 
-                    // Even though we know it will be discarded at this point,
-                    // we keep tracking it through the composition steps
-                    // instead of completing it now, to ensure that the
-                    // collector will get presents from each swap chain in
-                    // order.
-                    //
-                    // That said, we do need to remove it from the submit
-                    // sequence id tracking to reduce the likelyhood of id
-                    // collisions during lookup for events that don't reference
-                    // a context.
-                    VerboseTraceBeforeModifyingPresent(prevPresent.get());
-                    prevPresent->FinalState = PresentResult::Discarded;
-                    RemovePresentFromSubmitSequenceIdTracking(prevPresent);
+        case Microsoft_Windows_Win32k::RetrieveInputMessage_Info::Id:
+        {
+            auto ii = mRetrievedInput.find(hdr.ProcessId);
+            if (ii == mRetrievedInput.end()) {
+                mRetrievedInput.emplace(hdr.ProcessId, std::make_pair(
+                    mLastInputDeviceReadTime,
+                    mLastInputDeviceType));
+            } else {
+                if (ii->second.first < mLastInputDeviceReadTime) {
+                    ii->second.first = mLastInputDeviceReadTime;
+                    ii->second.second = mLastInputDeviceType;
                 }
             }
-            break;
-        }
-
-        case (uint32_t) Microsoft_Windows_Win32k::TokenState::Confirmed: // Present has been submitted
-            TRACK_PRESENT_PATH(presentEvent);
-
-            // Handle DO_NOT_SEQUENCE presents, which may get marked as confirmed,
-            // if a frame was composed when this token was completed
-            if (presentEvent->FinalState == PresentResult::Unknown &&
-                (presentEvent->PresentFlags & DXGI_PRESENT_DO_NOT_SEQUENCE) != 0) {
-                VerboseTraceBeforeModifyingPresent(presentEvent.get());
-                presentEvent->FinalState = PresentResult::Discarded;
-                RemovePresentFromSubmitSequenceIdTracking(presentEvent);
-            }
-            if (presentEvent->Hwnd) {
-                mLastPresentByWindow.erase(presentEvent->Hwnd);
-            }
-            break;
-
-        // Note: Going forward, TokenState::Retired events are no longer
-        // guaranteed to be sent at the end of a frame in multi-monitor
-        // scenarios.  Instead, we use DWM's present stats to understand the
-        // Composed Flip timeline.
-        case (uint32_t) Microsoft_Windows_Win32k::TokenState::Discarded: // Present has been discarded
-        {
-            TRACK_PRESENT_PATH(presentEvent);
-
-            // Nullptr as we don't want to report clearing the key in the verbose trace
-            VerboseTraceBeforeModifyingPresent(nullptr);
-            presentEvent->CompositionSurfaceLuid = 0;
-            presentEvent->Win32KPresentCount = 0;
-            presentEvent->Win32KBindId = 0;
-            mPresentByWin32KPresentHistoryToken.erase(eventIter);
-
-            if (!presentEvent->SeenInFrameEvent && (presentEvent->FinalState == PresentResult::Unknown || presentEvent->ScreenTime == 0)) {
-                VerboseTraceBeforeModifyingPresent(presentEvent.get());
-                presentEvent->FinalState = PresentResult::Discarded;
-                CompletePresent(presentEvent);
-            } else if (presentEvent->PresentMode != PresentMode::Composed_Flip) {
-                CompletePresent(presentEvent);
-            }
-            break;
+            return;
         }
         }
-        break;
     }
 
-    case Microsoft_Windows_Win32k::InputDeviceRead_Stop::Id:
-    {
-        EventDataDesc desc[] = {
-            { L"DeviceType" },
-        };
-        mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-        auto DeviceType = desc[0].GetData<uint32_t>();
-
-        switch (DeviceType) {
-        case 0: mLastInputDeviceType = InputDeviceType::Mouse; break;
-        case 1: mLastInputDeviceType = InputDeviceType::Keyboard; break;
-        default: mLastInputDeviceType = InputDeviceType::Unknown; break;
-        }
-
-        mLastInputDeviceReadTime = hdr.TimeStamp.QuadPart;
-        break;
-    }
-
-    case Microsoft_Windows_Win32k::RetrieveInputMessage_Info::Id:
-    {
-        auto ii = mRetrievedInput.find(hdr.ProcessId);
-        if (ii == mRetrievedInput.end()) {
-            mRetrievedInput.emplace(hdr.ProcessId, std::make_pair(
-                mLastInputDeviceReadTime,
-                mLastInputDeviceType));
-        } else {
-            if (ii->second.first < mLastInputDeviceReadTime) {
-                ii->second.first = mLastInputDeviceReadTime;
-                ii->second.second = mLastInputDeviceType;
-            }
-        }
-        break;
-    }
-
-    default:
-        assert(!mFilteredEvents); // Assert that filtering is working if expected
-        break;
-    }
+    assert(!mFilteredEvents); // Assert that filtering is working if expected
 }
 
 void PMTraceConsumer::HandleDWMEvent(EVENT_RECORD* pEventRecord)
@@ -2322,53 +2330,52 @@ void PMTraceConsumer::HandleProcessEvent(EVENT_RECORD* pEventRecord)
 
 void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
 {
-    switch (pEventRecord->EventHeader.EventDescriptor.Id) {
+    if (mTrackFrameType) {
+        switch (pEventRecord->EventHeader.EventDescriptor.Id) {
+        case Intel_PresentMon::PresentFrameType_Info::Id: {
+            DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::PresentFrameType_Info_Props));
 
-    case Intel_PresentMon::PresentFrameType_Info::Id: {
-        DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::PresentFrameType_Info_Props));
+            auto props = (Intel_PresentMon::PresentFrameType_Info_Props*) pEventRecord->UserData;
+            auto event = &mPendingPresentFrameTypeEvents[pEventRecord->EventHeader.ThreadId];
+            event->FrameId   = props->FrameId;
+            event->FrameType = ConvertPMPFrameTypeToFrameType(props->FrameType);
+        }   return;
 
-        auto props = (Intel_PresentMon::PresentFrameType_Info_Props*) pEventRecord->UserData;
-        auto event = &mPendingPresentFrameTypeEvents[pEventRecord->EventHeader.ThreadId];
-        event->FrameId   = props->FrameId;
-        event->FrameType = ConvertPMPFrameTypeToFrameType(props->FrameType);
-    }   break;
+        case Intel_PresentMon::FlipFrameType_Info::Id:
+            if (mEnableFlipFrameTypeEvents) {
+                DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::FlipFrameType_Info_Props));
 
-    case Intel_PresentMon::FlipFrameType_Info::Id:
-        if (mEnableFlipFrameTypeEvents) {
-            DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::FlipFrameType_Info_Props));
+                auto props = (Intel_PresentMon::FlipFrameType_Info_Props*) pEventRecord->UserData;
+                auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+                auto frameType = ConvertPMPFrameTypeToFrameType(props->FrameType);
 
-            auto props = (Intel_PresentMon::FlipFrameType_Info_Props*) pEventRecord->UserData;
-            auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-            auto frameType = ConvertPMPFrameTypeToFrameType(props->FrameType);
+                // Look up the present associated with this (VidPnSourceId, LayerIndex, PresentId).
+                //
+                // It is possible to see the FlipFrameType event before the MMIOFlipMultiPlaneOverlay3_Info
+                // event, in which case the lookup will fail.  In this case we deferr application of the
+                // FlipFrameType until we see the MMIOFlipMultiPlaneOverlay3_Info event.
+                auto vidPnLayerId = GenerateVidPnLayerId(props->VidPnSourceId, props->LayerIndex);
+                auto ii = mPresentByVidPnLayerId.find(vidPnLayerId);
+                if (ii == mPresentByVidPnLayerId.end()) {
+                    DeferFlipFrameType(vidPnLayerId, props->PresentId, timestamp, frameType);
+                    return;
+                }
 
-            // Look up the present associated with this (VidPnSourceId, LayerIndex, PresentId).
-            //
-            // It is possible to see the FlipFrameType event before the MMIOFlipMultiPlaneOverlay3_Info
-            // event, in which case the lookup will fail.  In this case we deferr application of the
-            // FlipFrameType until we see the MMIOFlipMultiPlaneOverlay3_Info event.
-            auto vidPnLayerId = GenerateVidPnLayerId(props->VidPnSourceId, props->LayerIndex);
-            auto ii = mPresentByVidPnLayerId.find(vidPnLayerId);
-            if (ii == mPresentByVidPnLayerId.end()) {
-                DeferFlipFrameType(vidPnLayerId, props->PresentId, timestamp, frameType);
-                return;
+                auto present = ii->second;
+                auto jj = present->PresentIds.find(vidPnLayerId);
+                if (jj == present->PresentIds.end() || jj->second != props->PresentId) {
+                    DeferFlipFrameType(vidPnLayerId, props->PresentId, timestamp, frameType);
+                    return;
+                }
+
+                // Create a PresentEvent for this flip time
+                ApplyFlipFrameType(present, timestamp, frameType);
             }
-
-            auto present = ii->second;
-            auto jj = present->PresentIds.find(vidPnLayerId);
-            if (jj == present->PresentIds.end() || jj->second != props->PresentId) {
-                DeferFlipFrameType(vidPnLayerId, props->PresentId, timestamp, frameType);
-                return;
-            }
-
-            // Create a PresentEvent for this flip time
-            ApplyFlipFrameType(present, timestamp, frameType);
+            return;
         }
-        break;
-
-    default:
-        assert(!mFilteredEvents); // Assert that filtering is working if expected
-        break;
     }
+
+    assert(!mFilteredEvents); // Assert that filtering is working if expected
 }
 
 void PMTraceConsumer::DeferFlipFrameType(
