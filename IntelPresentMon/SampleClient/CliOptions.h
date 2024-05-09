@@ -26,12 +26,8 @@ namespace clio
 		Option<std::string> metric{ this, "--metric", "", "PM_METRIC, ex. PM_METRIC_PRESENTED_FPS" };
 		Option<int> logDemo{ this, "--log-demo", 0, "Demos of log utility features" };
 
-		Option<log::Level> logLevel{ this, "--log-level", log::Level::Error, "Severity to log at", [](CLI::Option* pOpt) {
-			pOpt->transform(CLI::CheckedTransformer{ log::GetLevelMapNarrow(), CLI::ignore_case});
-		} };
-		Option<log::Level> logTraceLevel{ this, "--log-trace-level", log::Level::Error, "Severity to print stacktrace at", [](CLI::Option* pOpt) {
-			pOpt->transform(CLI::CheckedTransformer{ log::GetLevelMapNarrow(), CLI::ignore_case});
-		} };
+		Option<log::Level> logLevel{ this, "--log-level", log::Level::Error, "Severity to log at", CLI::CheckedTransformer{ log::GetLevelMapNarrow(), CLI::ignore_case } };
+		Option<log::Level> logTraceLevel{ this, "--log-trace-level", log::Level::Error, "Severity to print stacktrace at", CLI::CheckedTransformer{ log::GetLevelMapNarrow(), CLI::ignore_case } };
 		Flag logTraceExceptions{ this, "--log-trace-exceptions", "Add stack trace to all thrown exceptions (including SEH exceptions)" };
 		Option<std::string> logDenyList{ this, "--log-deny-list", "", "Path to log deny list (with trace overrides)", CLI::ExistingFile };
 		Option<std::string> logAllowList{ this, "--log-allow-list", "", "Path to log allow list (with trace overrides)", CLI::ExistingFile };

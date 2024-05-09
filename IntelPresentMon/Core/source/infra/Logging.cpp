@@ -75,12 +75,6 @@ namespace p2c
 			const auto& opt = cli::Options::Get();
 
 			// configure logging based on command line
-			// tracing for thrown exceptions (explicitly thrown and seh)
-			if (opt.traceExceptions) {
-				log::GlobalPolicy::Get().SetSehTracing(true);
-				log::GlobalPolicy::Get().SetExceptionTrace(true);
-			}
-			// once we have cli info, change the logfile name (either add process type, or remove pid in case of main process)
 			if (!opt.cefType) {
 				const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log.txt");
 				pChan->AttachComponent(std::make_shared<BasicFileDriver>(std::make_shared<TextFormatter>(), pFileStrategy), "drv:file");
@@ -89,28 +83,28 @@ namespace p2c
 				const auto pFileStrategy = std::make_shared<SimpleFileStrategy>(std::format("log-{}-{}.txt", *opt.cefType, GetCurrentProcessId()));
 				pChan->AttachComponent(std::make_shared<BasicFileDriver>(std::make_shared<TextFormatter>(), pFileStrategy), "drv:file");
 			}
-			//if (opt.logLevel) {
-			//	GlobalPolicy::Get().SetLogLevel(*opt.logLevel);
-			//	getters.getGlobalPolicy().SetLogLevel(*opt.logLevel);
-			//}
-			//if (opt.logTraceLevel) {
-			//	GlobalPolicy::Get().SetTraceLevel(*opt.logTraceLevel);
-			//	getters.getGlobalPolicy().SetTraceLevel(*opt.logTraceLevel);
-			//}
-			//if (opt.logTraceExceptions) {
-			//	GlobalPolicy::Get().SetExceptionTrace(*opt.logTraceExceptions);
-			//	GlobalPolicy::Get().SetSehTracing(*opt.logTraceExceptions);
-			//	getters.getGlobalPolicy().SetExceptionTrace(*opt.logTraceExceptions);
-			//	getters.getGlobalPolicy().SetSehTracing(*opt.logTraceExceptions);
-			//}
-			//if (opt.logDenyList) {
-			//	pmquell(LineTable::IngestList(str::ToWide(*opt.logDenyList), true))
-			//		pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logDenyList), true))
-			//}
-			//else if (opt.logAllowList) {
-			//	pmquell(LineTable::IngestList(str::ToWide(*opt.logAllowList), false))
-			//		pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logAllowList), false))
-			//}
+			if (opt.logLevel) {
+				GlobalPolicy::Get().SetLogLevel(*opt.logLevel);
+				getters.getGlobalPolicy().SetLogLevel(*opt.logLevel);
+			}
+			if (opt.logTraceLevel) {
+				GlobalPolicy::Get().SetTraceLevel(*opt.logTraceLevel);
+				getters.getGlobalPolicy().SetTraceLevel(*opt.logTraceLevel);
+			}
+			if (opt.traceExceptions) {
+				GlobalPolicy::Get().SetExceptionTrace(*opt.traceExceptions);
+				GlobalPolicy::Get().SetSehTracing(*opt.traceExceptions);
+				getters.getGlobalPolicy().SetExceptionTrace(*opt.traceExceptions);
+				getters.getGlobalPolicy().SetSehTracing(*opt.traceExceptions);
+			}
+			if (opt.logDenyList) {
+				pmquell(LineTable::IngestList(str::ToWide(*opt.logDenyList), true));
+				pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logDenyList), true));
+			}
+			else if (opt.logAllowList) {
+				pmquell(LineTable::IngestList(str::ToWide(*opt.logAllowList), false));
+				pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logAllowList), false));
+			}
 			// setup server to ipc logging connection for child processes (renderer)
 			if (opt.logPipeName) {
 				try {
@@ -119,8 +113,8 @@ namespace p2c
 					auto pDriver = std::make_shared<log::MarshallDriver>(pSender);
 					pChan->AttachComponent(std::move(pDriver));
 					// block here waiting for the browser process to connect
-					if (!pSender->WaitForConnection(1000ms)) {
-						pmlog_warn(L"browser process did not connect to ipc logging pipe");
+					if (!pSender->WaitForConnection(1500ms)) {
+						pmlog_warn(L"browser process did not connect to ipc logging pipe before timeout (it might have connected later)");
 					}
 					else {
 						// remove independent output drivers (only copy to main process via IPC)

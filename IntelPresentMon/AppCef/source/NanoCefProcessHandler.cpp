@@ -102,7 +102,7 @@ namespace p2c::client::cef
                 try {
                     // initially wait for 50ms to give child time to spawn
                     std::this_thread::sleep_for(50ms);
-                    // retry connection maximum 100 times, every 10ms
+                    // retry connection maximum 100 times, every 15ms
                     const int nAttempts = 100;
                     for (int i = 0; i < nAttempts; i++) {
                         try {
@@ -113,7 +113,7 @@ namespace p2c::client::cef
                             return;
                         }
                         catch (const log::PipeConnectionError&) {
-                            std::this_thread::sleep_for(10ms);
+                            std::this_thread::sleep_for(15ms);
                         }
                     }
                     pmlog_warn(std::format(L"Failed to connect to logging source server {} after {} attempts", pipePrefix, nAttempts));
