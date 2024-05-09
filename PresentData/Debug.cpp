@@ -282,6 +282,7 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintBool,           WaitForMPOFlipEvent)
     FLUSH_MEMBER(PrintBool,           SeenDxgkPresent)
     FLUSH_MEMBER(PrintBool,           SeenWin32KEvents)
+    FLUSH_MEMBER(PrintBool,           PresentInDwmWaitingStruct)
     FLUSH_MEMBER(PrintBool,           IsCompleted)
     FLUSH_MEMBER(PrintBool,           IsLost)
     FLUSH_MEMBER(PrintBool,           PresentFailed)
@@ -564,12 +565,12 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
         if (pmConsumer->mTrackDisplay) {
             switch (hdr.EventDescriptor.Id) {
             case MILEVENT_MEDIA_UCE_PROCESSPRESENTHISTORY_GetPresentHistory_Info::Id:
-                                                  PrintEventHeader(hdr, "DWM_GetPresentHistory"); break;
+                                                  PrintEventHeader(hdr, "DWM_MILEVENT_MEDIA_UCS_PROCESSPRESENTHISTORY_GetPresentHistory"); break;
             case SCHEDULE_PRESENT_Start::Id:      PrintEventHeader(hdr, "DWM_SCHEDULE_PRESENT_Start"); break;
             case FlipChain_Pending::Id:           PrintEventHeader(hdr, "DWM_FlipChain_Pending"); break;
             case FlipChain_Complete::Id:          PrintEventHeader(hdr, "DWM_FlipChain_Complete"); break;
             case FlipChain_Dirty::Id:             PrintEventHeader(hdr, "DWM_FlipChain_Dirty"); break;
-            case SCHEDULE_SURFACEUPDATE_Info::Id: PrintEventHeader(hdr, "DWM_Schedule_SurfaceUpdate"); break;
+            case SCHEDULE_SURFACEUPDATE_Info::Id: PrintEventHeader(hdr, "DWM_SCHEDULE_SURFACEUPDATE"); break;
             }
         }
         return;

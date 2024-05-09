@@ -248,60 +248,104 @@ void PMTraceConsumer::HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool
     }
 }
 
-// A flip event is emitted during fullscreen present submission.  The only
-// events that we expect before a Flip/FlipMPO are a runtime present start, or
-// a previous FlipMPO.  Afterwards, we expect an MMIOFlip packet on the same
-// thread used to trace the flip to screen.
+// A flip event is emitted during fullscreen present submission.
+//
+// We expect the following event sequence emitted on the same thread:
+//     PresentStart
+//     FlipMultiPlaneOverlay_Info
+//     QueuePacket_Start SubmitSequence MMIOFLIP bPresent=1
+//     QueuePacket_Stop SubmitSequence
+//     PresentStop
 void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterval, bool isMMIOFlip, bool isMPOFlip)
 {
-    // Lookup the in-progress present. It should not have a known
-    // QueueSubmitSequence nor seen a DxgkPresent yet, so if it has we assume
-    // we looked up a present whose tracking was lost.
+    // First, lookup the in-progress present on the same thread.
+    //
+    // The present should not have a known QueueSubmitSequence nor seen a DxgkPresent yet, so if it
+    // does then we've looked up the wrong present.  Typically, this means we've lost tracking for
+    // the looked-up present, and it should be discarded.
+    //
+    // However, DWM on recent windows may omit the PresentStart/PresentStop events.  In this case,
+    // we'll end up creating the present here and, because there is no PresentStop, it will be left
+    // in mPresentByThreadId and looked up again in the next HandleDxgkFlip().
     std::shared_ptr<PresentEvent> presentEvent;
     for (;;) {
-        presentEvent = FindOrCreatePresent(hdr);
-        if (presentEvent == nullptr) {
+        // Lookup the in-progress present on this thread.
+        auto ii = mPresentByThreadId.find(hdr.ThreadId);
+        if (ii != mPresentByThreadId.end()) {
+            presentEvent = ii->second;
+
+            // If the in-progress present has seen DxgkPresent, it has lost tracking.
+            if (presentEvent->SeenDxgkPresent) {
+                RemoveLostPresent(presentEvent);
+                continue;
+            }
+
+            // If the in-progress present has seen PresentStop, it has lost tracking.
+            if (presentEvent->QueueSubmitSequence != 0 &&
+                presentEvent->TimeInPresent != 0 &&
+                presentEvent->Runtime != Runtime::Other) {
+                RemoveLostPresent(presentEvent);
+                continue;
+            }
+
+            // If we did see a PresentStart, then use this present
+            if (presentEvent->Runtime != Runtime::Other) {
+                // There may be duplicate flip events for MPO situations, so only handle the first.
+                if ( presentEvent->PresentMode != PresentMode::Unknown) {
+                    return;
+                }
+                break;
+            }
+
+            // The looked-up present was created by the last Flip, and didn't see a PresentStop; remove
+            // it from the thread tracking and create a new present for this flip.
+            mPresentByThreadId.erase(ii);
+        }
+
+        // Create a new present for this flip
+        if (!IsProcessTrackedForFiltering(hdr.ProcessId)) {
             return;
         }
 
-        if (presentEvent->QueueSubmitSequence == 0 && !presentEvent->SeenDxgkPresent) {
-            break;
-        }
+        presentEvent = std::make_shared<PresentEvent>();
 
-        RemoveLostPresent(presentEvent);
+        VerboseTraceBeforeModifyingPresent(presentEvent.get());
+        presentEvent->PresentStartTime = *(uint64_t*) &hdr.TimeStamp;
+        presentEvent->ProcessId = hdr.ProcessId;
+        presentEvent->ThreadId = hdr.ThreadId;
+
+        TrackPresent(presentEvent, &mOrderedPresentsByProcessId[hdr.ProcessId]);
+        break;
     }
 
+    // Update the present based on the flip event...
     TRACK_PRESENT_PATH_SAVE_GENERATED_ID(presentEvent);
+    VerboseTraceBeforeModifyingPresent(presentEvent.get());
 
-    // There may be duplicate flip events for MPO situations, so only handle
-    // the first.
-    if (presentEvent->PresentMode == PresentMode::Unknown) {
-        VerboseTraceBeforeModifyingPresent(presentEvent.get());
+    presentEvent->PresentMode = PresentMode::Hardware_Legacy_Flip;
 
-        presentEvent->PresentMode = PresentMode::Hardware_Legacy_Flip;
+    if (flipInterval != -1) {
+        presentEvent->SyncInterval = flipInterval;
+    }
+    if (isMMIOFlip) {
+        presentEvent->WaitForFlipEvent = true;
+    }
+    if (isMPOFlip) {
+        presentEvent->WaitForMPOFlipEvent = true;
+    }
+    if (!isMMIOFlip && flipInterval == 0) {
+        presentEvent->SupportsTearing = true;
+    }
 
-        if (flipInterval != -1) {
-            presentEvent->SyncInterval = flipInterval;
-        }
-        if (isMMIOFlip) {
-            presentEvent->WaitForFlipEvent = true;
-        }
-        if (isMPOFlip) {
-            presentEvent->WaitForMPOFlipEvent = true;
-        }
-        if (!isMMIOFlip && flipInterval == 0) {
-            presentEvent->SupportsTearing = true;
-        }
+    // If this is the DWM thread, make any presents waiting for DWM dependent on it (i.e., they will
+    // be displayed when it is).
+    if (hdr.ThreadId == DwmPresentThreadId) {
+        DebugAssert(presentEvent->DependentPresents.empty());
 
-        // If this is the DWM thread, piggyback these pending presents on our fullscreen present
-        if (hdr.ThreadId == DwmPresentThreadId) {
-            DebugAssert(presentEvent->DependentPresents.empty());
-
-            for (auto& p : mPresentsWaitingForDWM) {
-                p->PresentInDwmWaitingStruct = false;
-            }
-            std::swap(presentEvent->DependentPresents, mPresentsWaitingForDWM);
+        for (auto& p : mPresentsWaitingForDWM) {
+            p->PresentInDwmWaitingStruct = false;
         }
+        std::swap(presentEvent->DependentPresents, mPresentsWaitingForDWM);
     }
 }
 
