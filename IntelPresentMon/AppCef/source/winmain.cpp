@@ -18,6 +18,7 @@ using namespace pmon::util;
 using p2c::cli::Options;
 namespace ccef = client::cef;
 using infra::svc::Services;
+using namespace std::chrono_literals;
 
 // globals
 constexpr const char* BrowserWindowClassName = "BrowserWindowClass";
@@ -183,17 +184,29 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     LogChannelManager zLogMan_;
     // parse the command line arguments and make them globally available
     if (auto err = Options::Init(__argc, __argv, true)) {
-        MessageBoxA(nullptr, Options::GetDiagnostics().c_str(), "Command Line Parse Error",
-            MB_ICONERROR | MB_APPLMODAL | MB_SETFOREGROUND);
-        return -1;
+        if (*err == 0) {
+            MessageBoxA(nullptr, Options::GetDiagnostics().c_str(), "Command Line Help",
+                MB_ICONINFORMATION | MB_APPLMODAL | MB_SETFOREGROUND);
+        }
+        else {
+            MessageBoxA(nullptr, Options::GetDiagnostics().c_str(), "Command Line Parse Error",
+                MB_ICONERROR | MB_APPLMODAL | MB_SETFOREGROUND);
+        }
+        return *err;
+    }
+    const auto& opt = Options::Get();
+    // wait for debugger connection
+    if (opt.cefType && *opt.cefType == "renderer" && opt.debugWaitRender) {
+        while (!IsDebuggerPresent()) {
+            std::this_thread::sleep_for(20ms);
+        }
+        DebugBreak();
     }
     // name this process / thread
     log::IdentificationTable::AddThisProcess(str::ToWide(Options::Get().cefType.AsOptional().value_or("browser")));
     log::IdentificationTable::AddThisThread(L"main");
     // configure the logging system (partially based on command line options)
     ConfigureLogging();
-
-    pmlog_info(L"== process starting up ==");
 
     using namespace client;
     try {

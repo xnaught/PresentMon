@@ -39,10 +39,6 @@
       "Command": "--log-demo 19"
     },
     {
-      "Id": "bd38c9b9-08d6-4f8a-af30-2ca066c65af5",
-      "Command": "--metric-list-sample"
-    },
-    {
       "Id": "55055cc7-7bbb-4db3-8f8f-27f1b5994bd2",
       "Command": "--wrapper-static-query-sample"
     },

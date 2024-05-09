@@ -44,9 +44,10 @@ namespace pmon::util::log
 			// make the formatter
 			const auto pFormatter = std::make_shared<TextFormatter>();
 			// attach drivers
-			pChannel->AttachComponent(std::make_shared<MsvcDebugDriver>(pFormatter));
+			pChannel->AttachComponent(std::make_shared<MsvcDebugDriver>(pFormatter), "drv:dbg");
 			const auto pFileStrategy = std::make_shared<SimpleFileStrategy>(std::format("log-{}.txt", GetCurrentProcessId()));
-			pChannel->AttachComponent(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy));
+			pChannel->AttachComponent(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy), "drv:file");
+
 			return pChannel;
 		}
 	}
@@ -72,7 +73,22 @@ namespace p2c
 				return IdentificationTable::Get_(); });
 			// shortcut for command line
 			const auto& opt = cli::Options::Get();
+
 			// configure logging based on command line
+			// tracing for thrown exceptions (explicitly thrown and seh)
+			if (opt.traceExceptions) {
+				log::GlobalPolicy::Get().SetSehTracing(true);
+				log::GlobalPolicy::Get().SetExceptionTrace(true);
+			}
+			// once we have cli info, change the logfile name (either add process type, or remove pid in case of main process)
+			if (!opt.cefType) {
+				const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log.txt");
+				pChan->AttachComponent(std::make_shared<BasicFileDriver>(std::make_shared<TextFormatter>(), pFileStrategy), "drv:file");
+			}
+			else {
+				const auto pFileStrategy = std::make_shared<SimpleFileStrategy>(std::format("log-{}-{}.txt", *opt.cefType, GetCurrentProcessId()));
+				pChan->AttachComponent(std::make_shared<BasicFileDriver>(std::make_shared<TextFormatter>(), pFileStrategy), "drv:file");
+			}
 			//if (opt.logLevel) {
 			//	GlobalPolicy::Get().SetLogLevel(*opt.logLevel);
 			//	getters.getGlobalPolicy().SetLogLevel(*opt.logLevel);
@@ -95,7 +111,7 @@ namespace p2c
 			//	pmquell(LineTable::IngestList(str::ToWide(*opt.logAllowList), false))
 			//		pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logAllowList), false))
 			//}
-			// setup server to ipc logging connection
+			// setup server to ipc logging connection for child processes (renderer)
 			if (opt.logPipeName) {
 				try {
 					auto pSender = std::make_shared<log::NamedPipeMarshallSender>(str::ToWide(*opt.logPipeName), 1);
@@ -105,6 +121,11 @@ namespace p2c
 					// block here waiting for the browser process to connect
 					if (!pSender->WaitForConnection(1000ms)) {
 						pmlog_warn(L"browser process did not connect to ipc logging pipe");
+					}
+					else {
+						// remove independent output drivers (only copy to main process via IPC)
+						pChan->AttachComponent({}, "drv:dbg");
+						pChan->AttachComponent({}, "drv:file");
 					}
 				}
 				catch (...) {
