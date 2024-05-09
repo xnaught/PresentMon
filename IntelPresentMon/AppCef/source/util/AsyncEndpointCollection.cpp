@@ -21,6 +21,7 @@
 #include "async/LoadFile.h"
 #include "async/StoreFile.h"
 #include "async/GetTopGpuProcess.h"
+#include "async/LoadEnvVars.h"
 
 namespace p2c::client::util
 {
@@ -53,6 +54,7 @@ namespace p2c::client::util
 		AddEndpoint<LoadFile>();
 		AddEndpoint<StoreFile>();
 		AddEndpoint<GetTopGpuProcess>();
+		AddEndpoint<LoadEnvVars>();
 	}
 
 	const AsyncEndpoint* AsyncEndpointCollection::Find(const std::string& key) const

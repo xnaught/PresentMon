@@ -7,6 +7,7 @@ import { Process } from '@/core/process'
 import { Adapter } from './adapter'
 import { Spec } from '@/core/spec'
 import { Binding, KeyOption, ModifierOption, Action } from '@/core/hotkey'
+import { EnvVars } from './env-vars'
 import { delayFor } from './timing'
 
 
@@ -52,6 +53,9 @@ export class Api {
             throw new Error('Bad (non-array) type returned from enumerateKeys');
         }
         return keys;
+    }
+    static async loadEnvVars(): Promise<EnvVars> {
+        return await this.invokeEndpointFuture('getEnvVars', {});
     }
     static async introspect(): Promise<{metrics: Metric[], stats: Stat[], units: Unit[]}> {
         const introData = await this.invokeEndpointFuture('introspect', {});

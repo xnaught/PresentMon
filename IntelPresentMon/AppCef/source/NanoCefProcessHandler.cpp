@@ -91,8 +91,9 @@ namespace p2c::client::cef
                 pChildCommandLine->AppendSwitchWithValue(std::move(name), std::move(val));
             }
         }
+        // initiate logging ipc connection for renderer children
         if (pChildCommandLine->GetSwitchValue("type") == "renderer") {
-            // inject logging cli option
+            // inject logging ipc pipe cli option to child
             static int count = 0;
             std::string pipePrefix = std::format("p2c-logpipe-{}-{}", GetCurrentProcessId(), ++count);
             pChildCommandLine->AppendSwitchWithValue(opt.logPipeName.GetName(), pipePrefix);

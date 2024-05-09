@@ -1,10 +1,12 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 import { Api, FileLocation } from "./api";
+import { GetEnvVars } from "./env-vars";
 
 var targetBlocklist:Set<string> = new Set();
 
 const targetBlocklistPath = 'TargetBlockList.txt';
+const targetBlocklistPathDebug = 'BlockLists\\TargetBlockList.txt'
 
 function constructSetFromString(text: string): Set<string> {
     const lines: string[] = text.split("\n");
@@ -21,19 +23,31 @@ function constructSetFromString(text: string): Set<string> {
   }
 
 export async function LoadBlocklists(): Promise<void> {
-    // try loading custom block list from appData
-    try {
-        const procs = (await Api.loadFile(FileLocation.Data, targetBlocklistPath)).payload;
-        targetBlocklist = constructSetFromString(procs);
-        return;
-    } catch (e) {}
-    // try loading default block list from install directory
-    try {
-        const procs = (await Api.loadFile(FileLocation.Install, targetBlocklistPath)).payload;
-        targetBlocklist = constructSetFromString(procs);
-        return;
-    } catch (e) {}
+    const env = await GetEnvVars();
+    if (env.useDebugBlocklist) {
+      // try loading default block list from debug directory
+      try {
+          const procs = (await Api.loadFile(FileLocation.Install, targetBlocklistPathDebug)).payload;
+          targetBlocklist = constructSetFromString(procs);
+          return;
+      } catch (e) {}
+    }
+    else {
+      // try loading custom block list from appData
+      try {
+          const procs = (await Api.loadFile(FileLocation.Data, targetBlocklistPath)).payload;
+          targetBlocklist = constructSetFromString(procs);
+          return;
+      } catch (e) {}
+      // try loading default block list from install directory
+      try {
+          const procs = (await Api.loadFile(FileLocation.Install, targetBlocklistPath)).payload;
+          targetBlocklist = constructSetFromString(procs);
+          return;
+      } catch (e) {}
+    }
     // if all else fails, clear the blocklist
+    console.warn('failed to load a blocklist');
     targetBlocklist.clear();
 }
 

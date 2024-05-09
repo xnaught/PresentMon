@@ -60,16 +60,6 @@ namespace p2c::client::cef
 
     bool NanoCefBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
     {
-        // Handle log messages from other processes
-        //if (message->GetName() == util::log::CefIpcLogRouter::ipcChannelName)
-        //{
-        //    util::log::CefIpcLogRouter::Route(
-        //        message->GetArgumentList()->GetString(0).ToWString()
-        //    );
-        //    return true;
-        //}
-        // 0: endpoint id (name), 1: uid, 2: args (obj/dict)
-        // else
         if (message->GetName() == util::AsyncEndpointManager::GetDispatchMessageName())
         {
             if (auto pEndpoint = endpoints.Find(message->GetArgumentList()->GetString(0)))
