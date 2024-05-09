@@ -11,6 +11,7 @@ namespace pmon::util::log
 	{
 	public:
 		EntryBuilder(Level lvl, const wchar_t* sourceFile, const wchar_t* sourceFunctionName, int sourceLine) noexcept;
+		EntryBuilder(Level lvl, std::wstring sourceFile, std::wstring, int sourceLine) noexcept;
 		template<typename T>
 		EntryBuilder& watch(const wchar_t* symbol, const T& value) noexcept
 		{

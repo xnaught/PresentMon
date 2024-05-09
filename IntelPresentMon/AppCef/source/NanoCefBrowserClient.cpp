@@ -12,6 +12,8 @@
 // implemented in winmain.cpp
 void AppQuitMessageLoop();
 
+using namespace pmon::util;
+
 namespace p2c::client::cef
 {
     NanoCefBrowserClient::NanoCefBrowserClient()
@@ -39,6 +41,11 @@ namespace p2c::client::cef
     }
 
     CefRefPtr<CefLifeSpanHandler> NanoCefBrowserClient::GetLifeSpanHandler()
+    {
+        return this;
+    }
+
+    CefRefPtr<CefDisplayHandler> NanoCefBrowserClient::GetDisplayHandler()
     {
         return this;
     }
@@ -113,5 +120,32 @@ namespace p2c::client::cef
     CefRefPtr<CefContextMenuHandler> NanoCefBrowserClient::GetContextMenuHandler()
     {
         return pContextMenuHandler;
+    }
+
+#define xjs_pmlog_(lvl) ((PMLOG_BUILD_LEVEL < lvl) || (::pmon::util::log::GlobalPolicy::Get().GetLogLevel() < lvl)) \
+	? (void)0 : (void)::pmon::util::log::EntryBuilder{ lvl, source.ToWString(), {}, line } \
+	.to(::pmon::util::log::GetDefaultChannel()).no_trace().note(message.ToWString())
+
+    bool NanoCefBrowserClient::OnConsoleMessage(
+        CefRefPtr<CefBrowser> browser,
+        cef_log_severity_t level,
+        const CefString& message,
+        const CefString& source,
+        int line)
+    {
+        switch (level) {
+        case cef_log_severity_t::LOGSEVERITY_FATAL:
+            xjs_pmlog_(log::Level::Fatal); break;
+        case cef_log_severity_t::LOGSEVERITY_ERROR:
+            xjs_pmlog_(log::Level::Error); break;
+        case cef_log_severity_t::LOGSEVERITY_WARNING:
+            xjs_pmlog_(log::Level::Warning); break;
+        case cef_log_severity_t::LOGSEVERITY_DEFAULT:
+        case cef_log_severity_t::LOGSEVERITY_INFO:
+            xjs_pmlog_(log::Level::Info); break;
+        case cef_log_severity_t::LOGSEVERITY_DEBUG:
+            xjs_pmlog_(log::Level::Debug); break;
+        }
+        return true;
     }
 }

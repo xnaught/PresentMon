@@ -55,7 +55,7 @@ export class Api {
         return keys;
     }
     static async loadEnvVars(): Promise<EnvVars> {
-        return await this.invokeEndpointFuture('getEnvVars', {});
+        return await this.invokeEndpointFuture('loadEnvVars', {});
     }
     static async introspect(): Promise<{metrics: Metric[], stats: Stat[], units: Unit[]}> {
         const introData = await this.invokeEndpointFuture('introspect', {});

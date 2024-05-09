@@ -151,6 +151,7 @@ export default Vue.extend({
       if (PrefStore.preferences.enableAutotargetting) {
         launchAutotargetting();
       }
+      console.warn('henlooooo$$$$$$$$$$$$$$$$$$$$$$$$$');
     } catch (e) {
       this.fatalError = {
         title: 'Fatal Frontend Initialization Error',

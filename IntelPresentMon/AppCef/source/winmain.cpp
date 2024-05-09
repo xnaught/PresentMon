@@ -57,7 +57,7 @@ LRESULT CALLBACK BrowserWindowWndProc(HWND window_handle, UINT message, WPARAM w
         // this special url (domain+schema) triggers load-from-disk behavior
         std::string url = "https://app/index.html";
         if (Options::Get().url) {
-            url = Options::Get().url;
+            url = *Options::Get().url;
         }
         CefBrowserHost::CreateBrowser(
             info, pBrowserClient.get(), url,

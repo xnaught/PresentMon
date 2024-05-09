@@ -13,12 +13,14 @@ namespace p2c::client::cef
 {
     class NanoCefBrowserClient :
         public CefClient,
-        public CefLifeSpanHandler
+        public CefLifeSpanHandler,
+        public CefDisplayHandler
     {
     public:
         NanoCefBrowserClient();
         CefRefPtr<CefBrowser> GetBrowser();
         CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() override;
+        CefRefPtr<CefDisplayHandler> GetDisplayHandler() override;
         void OnAfterCreated(CefRefPtr<CefBrowser> browser_) override;
         void OnBeforeClose(CefRefPtr<CefBrowser> browser_) override;
         bool OnProcessMessageReceived(
@@ -28,6 +30,12 @@ namespace p2c::client::cef
             CefRefPtr<CefProcessMessage> message) override;
         std::optional<LRESULT> HandleCloseMessage();
         CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override;
+        bool OnConsoleMessage(
+            CefRefPtr<CefBrowser> browser,
+            cef_log_severity_t level,
+            const CefString& message,
+            const CefString& source,
+            int line) override;
 
     protected:
         // this semaphore protects from race condition between normal shutdown ack sequence and timeout fallback sequence
