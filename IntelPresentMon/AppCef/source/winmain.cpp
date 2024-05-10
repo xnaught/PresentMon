@@ -9,6 +9,7 @@
 #include <Core/source/infra/util/FolderResolver.h>
 #include <Core/source/cli/CliOptions.h>
 #include <CommonUtilities/log/IdentificationTable.h>
+#include <CommonUtilities/generated/build_id.h>
 #include <dwmapi.h>
 
 #pragma comment(lib, "Dwmapi.lib")
@@ -203,7 +204,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         DebugBreak();
     }
     // name this process / thread
-    log::IdentificationTable::AddThisProcess(str::ToWide(Options::Get().cefType.AsOptional().value_or("browser")));
+    log::IdentificationTable::AddThisProcess(str::ToWide(Options::Get().cefType.AsOptional().value_or("main-client")));
     log::IdentificationTable::AddThisThread(L"main");
     // configure the logging system (partially based on command line options)
     ConfigureLogging();
@@ -222,7 +223,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
         // code from here on is only executed by the root process (browser window process)
 
-        pmlog_info(L"== client process section starting ==");
+        pmlog_info(std::format(L"== client section starting build#{} dirty:{} ==", PM_BID_GIT_HASH_SHORT, PM_BID_DIRTY));
 
         {
             const auto pFolderResolver = Services::Resolve<infra::util::FolderResolver>();
