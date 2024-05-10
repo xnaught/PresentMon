@@ -38,7 +38,6 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_GPU_WAIT, .deviceId = 0 },
             Element{.metricId = PM_METRIC_DISPLAY_LATENCY, .deviceId = 0 },
             Element{.metricId = PM_METRIC_DISPLAYED_TIME, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_ANIMATION_ERROR, .deviceId = 0 },
             Element{.metricId = PM_METRIC_CLICK_TO_PHOTON_LATENCY, .deviceId = 0 },
 
             Element{.metricId = PM_METRIC_GPU_POWER, .deviceId = activeDeviceId },

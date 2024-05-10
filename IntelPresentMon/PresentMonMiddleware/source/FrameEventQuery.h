@@ -24,22 +24,14 @@ public:
 		Context(uint64_t qpcStart, long long perfCounterFrequency) : qpcStart{ qpcStart },
 			performanceCounterPeriodMs{ perfCounterFrequency != 0.f ? 1000.0 / perfCounterFrequency : 0.f } {}
 		void UpdateSourceData(const PmNsmFrameData* pSourceFrameData_in,
-			const PmNsmFrameData* pFrameDataOfNextDisplayed,
-			const PmNsmFrameData* pFrameDataofLastPresented,
-			const PmNsmFrameData* pFrameDataOfLastDisplayed,
-			const PmNsmFrameData* pPreviousFrameDataOfLastDisplayed);
+			const PmNsmFrameData* pNextDisplayedFrameData,
+			const PmNsmFrameData* pPreviousFrameData);
 		// data
 		const PmNsmFrameData* pSourceFrameData = nullptr;
 		const double performanceCounterPeriodMs{};
 		const uint64_t qpcStart{};
 		bool dropped{};
-		// Start qpc of the previous frame, displayed or not
 		uint64_t cpuFrameQpc = 0;
-		// Start qpc of the previously DISPLAYED frame.
-		uint64_t previousDisplayedCpuStartQpc = 0;
-		// Screen time qpc of the previously displayed frame.
-		uint64_t previousDisplayedQpc = 0;
-		// Screen time qpc of the next displayed frame
 		uint64_t nextDisplayedQpc = 0;
 	};
 	// functions

@@ -237,15 +237,13 @@ static void UpdateChain(
     SwapChainData* chain,
     std::shared_ptr<PresentEvent> const& p)
 {
-    if (p->FinalState == PresentResult::Presented) {
-        if (chain->mLastPresent != nullptr) {
-            chain->mLastDisplayedCPUStart = chain->mLastPresent->PresentStartTime + chain->mLastPresent->TimeInPresent;
-        }
-        chain->mLastDisplayedScreenTime = p->ScreenTime;
-    }
-
     chain->mLastPresent = p;
     chain->mIncludeFrameData = true;
+
+    // Only used for v1 metrics:
+    if (p->FinalState == PresentResult::Presented) {
+        chain->mLastDisplayedScreenTime = p->ScreenTime;
+    }
 }
 
 static void ReportMetrics1(
@@ -355,13 +353,10 @@ static void ReportMetrics(
     if (displayed) {
         metrics.mDisplayLatency       = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->ScreenTime);
         metrics.mDisplayedTime        = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ScreenTime, nextDisplayedPresent->ScreenTime);
-        metrics.mAnimationError       = chain->mLastDisplayedCPUStart == 0 ? 0 : pmSession.TimestampDeltaToMilliSeconds(p->ScreenTime - chain->mLastDisplayedScreenTime,
-                                                                                                                        metrics.mCPUStart - chain->mLastDisplayedCPUStart);
         metrics.mClickToPhotonLatency = p->InputTime == 0 ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, p->ScreenTime);
     } else {
         metrics.mDisplayLatency       = 0;
         metrics.mDisplayedTime        = 0;
-        metrics.mAnimationError       = 0;
         metrics.mClickToPhotonLatency = 0;
     }
 

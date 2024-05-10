@@ -48,14 +48,12 @@ namespace pmon::mid
         std::vector<double> mDisplayLatency;
         std::vector<double> mDisplayedTime;
         std::vector<double> mAppDisplayedTime;
-		std::vector<double> mAnimationError;
         std::vector<double> mClickToPhotonLatency;
         std::vector<double> mDropped;
 
         // begin/end screen times to optimize average calculation:
 		uint64_t display_n_screen_time = 0;       // The last presented frame's ScreenTime (qpc)
 		uint64_t display_0_screen_time = 0;       // The first presented frame's ScreenTime (qpc)
-		uint64_t mLastDisplayedCPUStart = 0;      // The CPU start of the last presented frame
 		uint32_t display_count = 0;               // The number of presented frames
 	};
 

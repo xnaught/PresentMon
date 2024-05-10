@@ -1,7 +1,7 @@
 #pragma once
 
 void WriteToCSV(std::ofstream& csvFile, const std::string& processName, const unsigned int& processId,
-    PM_QUERY_ELEMENT(&queryElements)[16], pmapi::BlobContainer& blobs)
+    PM_QUERY_ELEMENT(&queryElements)[15], pmapi::BlobContainer& blobs)
 {
 
     try {
@@ -22,8 +22,7 @@ void WriteToCSV(std::ofstream& csvFile, const std::string& processName, const un
             const auto gpuBusyTime = *reinterpret_cast<const double*>(&pBlob[queryElements[11].dataOffset]);
             const auto gpuDisplayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[12].dataOffset]);
             const auto gpuDisplayDuration = *reinterpret_cast<const double*>(&pBlob[queryElements[13].dataOffset]);
-            const auto animationError = *reinterpret_cast<const double*>(&pBlob[queryElements[14].dataOffset]);
-            const auto inputLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[15].dataOffset]);
+            const auto inputLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[14].dataOffset]);
             csvFile << processName << ",";
             csvFile << processId << ",";
             csvFile << std::hex << "0x" << std::dec << swapChain << ",";
@@ -40,7 +39,6 @@ void WriteToCSV(std::ofstream& csvFile, const std::string& processName, const un
             csvFile << gpuBusyTime << ",";
             csvFile << gpuDisplayLatency << ",";
             csvFile << gpuDisplayDuration << ",";
-            csvFile << animationError << ",";
             csvFile << inputLatency << "\n";
         }
     }
@@ -121,7 +119,6 @@ int GenCsv(pmapi::Session& pSession, std::string processName, unsigned int proce
             { PM_METRIC_GPU_BUSY, PM_STAT_NONE, 0, 0},
             { PM_METRIC_DISPLAY_LATENCY, PM_STAT_NONE, 0, 0 },
             { PM_METRIC_DISPLAYED_TIME, PM_STAT_NONE, 0, 0 },
-            { PM_METRIC_ANIMATION_ERROR, PM_STAT_NONE, 0, 0 },
             { PM_METRIC_CLICK_TO_PHOTON_LATENCY, PM_STAT_NONE, 0, 0}
         };
 
@@ -200,7 +197,6 @@ int FrameQuerySample(std::unique_ptr<pmapi::Session>&& pSession)
             FixedQueryElement gpuBusyTime{ this, PM_METRIC_GPU_BUSY, PM_STAT_NONE };
             FixedQueryElement gpuDisplayLatency{ this, PM_METRIC_DISPLAY_LATENCY, PM_STAT_NONE };
             FixedQueryElement gpuDisplayDuration{ this, PM_METRIC_DISPLAYED_TIME, PM_STAT_NONE};
-            FixedQueryElement animationError{ this, PM_METRIC_ANIMATION_ERROR, PM_STAT_NONE};
             FixedQueryElement inputLatency{ this, PM_METRIC_CLICK_TO_PHOTON_LATENCY, PM_STAT_NONE };
             FixedQueryElement gpuPower{ this, PM_METRIC_GPU_POWER, PM_STAT_NONE, 1 };
             FixedQueryElement presentRuntime{ this, PM_METRIC_PRESENT_RUNTIME, PM_STAT_NONE };
@@ -221,7 +217,6 @@ int FrameQuerySample(std::unique_ptr<pmapi::Session>&& pSession)
                 std::cout << fq.gpuBusyTime.As<double>() << ",";
                 std::cout << fq.gpuDisplayLatency.As<double>() << ",";
                 std::cout << fq.gpuDisplayDuration.As<double>() << ",";
-                std::cout << fq.animationError.As<double>() << ",";
                 std::cout << fq.inputLatency.As<double>() << ",";
                 std::cout << fq.gpuPower.As<double>() << ",";
                 std::cout << fq.presentRuntime.As<std::string>() << ",";
