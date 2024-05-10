@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: MIT
 #include "NanoCefBrowserClient.h"
 #include "NanoCefProcessHandler.h"
-#include "util/ServiceBooter.h"
 #include "../resource.h"
 #include <Core/source/infra/Logging.h>
-#include <Core/source/infra/svc/Services.h>
 #include <Core/source/infra/util/FolderResolver.h>
 #include <Core/source/cli/CliOptions.h>
 #include <CommonUtilities/log/IdentificationTable.h>
@@ -18,7 +16,6 @@ using namespace p2c;
 using namespace pmon::util;
 using p2c::cli::Options;
 namespace ccef = client::cef;
-using infra::svc::Services;
 using namespace std::chrono_literals;
 
 // globals
@@ -211,9 +208,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
     using namespace client;
     try {
-        // TODO: remove services system
-        util::BootServices();
-
         CefMainArgs main_args{ hInstance };
         CefRefPtr<ccef::NanoCefProcessHandler> app = new ccef::NanoCefProcessHandler{};
 
@@ -223,16 +217,21 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
         // code from here on is only executed by the root process (browser window process)
 
-        pmlog_info(std::format(L"== client section starting build#{} dirty:{} ==", PM_BID_GIT_HASH_SHORT, PM_BID_DIRTY));
+        pmlog_info(std::format(L"== client section starting build#{} clean:{} ==", PM_BID_GIT_HASH_SHORT, !PM_BID_DIRTY));
 
         {
-            const auto pFolderResolver = Services::Resolve<infra::util::FolderResolver>();
+            auto& folderResolver = infra::util::FolderResolver::Get();
             CefSettings settings;
             settings.multi_threaded_message_loop = true;
             settings.remote_debugging_port = is_debug ? 9009 : 0;
             settings.background_color = { 0x000000 };
-            CefString(&settings.cache_path).FromWString(pFolderResolver->Resolve(infra::util::FolderResolver::Folder::App, L"cef-cache"));
-            CefString(&settings.log_file).FromWString(pFolderResolver->Resolve(infra::util::FolderResolver::Folder::App, L"logs\\cef-debug.log"));
+            CefString(&settings.cache_path).FromWString(folderResolver.Resolve(infra::util::FolderResolver::Folder::App, L"cef-cache"));
+            if (opt.logFolder) {
+                CefString(&settings.log_file).FromString(*opt.logFolder + "\\cef-debug.log");
+            }
+            else {
+                CefString(&settings.log_file).FromWString(folderResolver.Resolve(infra::util::FolderResolver::Folder::App, L"logs\\cef-debug.log"));
+            }
             settings.log_severity = is_debug ? cef_log_severity_t::LOGSEVERITY_DEFAULT : cef_log_severity_t::LOGSEVERITY_ERROR;
             CefInitialize(main_args, settings, app.get(), nullptr);
         }

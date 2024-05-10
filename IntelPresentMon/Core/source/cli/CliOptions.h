@@ -30,6 +30,7 @@ namespace p2c::cli
 		Option<log::Level> logTraceLevel{ this, "--p2c-log-trace-level", log::Level::Error, "Severity to print stacktrace at", logLevelTf_ };
 		Option<std::string> logDenyList{ this, "--p2c-log-deny-list", "", "Path to log deny list (with trace overrides)", CLI::ExistingFile };
 		Option<std::string> logAllowList{ this, "--p2c-log-allow-list", "", "Path to log allow list (with trace overrides)", CLI::ExistingFile };
+		Option<std::string> logFolder{ this, "--p2c-log-folder", "", "Path to directory in which to store files" }; // TODO: validate path existence
 
 	private: Group gi_{ this, "Internal", "Internal options, do not supply manually"}; public:
 		Option<std::string> cefType{ this, "--type", "", "Type of the current chromium process" };

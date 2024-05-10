@@ -15,13 +15,16 @@
 #include <CommonUtilities/log/PanicLogger.h>
 #include <PresentMonAPIWrapperCommon/PmErrorCodeProvider.h>
 #include <PresentMonAPI2/Internal.h>
+#include <Core/source/infra/util/FolderResolver.h>
 #include "../cli/CliOptions.h"
 #include "Logging.h"
 #include <memory>
 #include <format>
 #include <chrono>
+#include <filesystem>
 
 using namespace std::chrono_literals;
+using namespace std::string_literals;
 
 namespace pmon::util::log
 {
@@ -44,8 +47,9 @@ namespace pmon::util::log
 			// make the formatter
 			const auto pFormatter = std::make_shared<TextFormatter>();
 			// attach drivers
+			// TODO: test if cwd is writeable, if not write to some other location (temp?)
 			pChannel->AttachComponent(std::make_shared<MsvcDebugDriver>(pFormatter), "drv:dbg");
-			const auto pFileStrategy = std::make_shared<SimpleFileStrategy>(std::format("log-{}.txt", GetCurrentProcessId()));
+			const auto pFileStrategy = std::make_shared<SimpleFileStrategy>(std::format("pm-early-log-{}.txt", GetCurrentProcessId()));
 			pChannel->AttachComponent(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy), "drv:file");
 
 			return pChannel;
@@ -75,13 +79,20 @@ namespace p2c
 			const auto& opt = cli::Options::Get();
 
 			// configure logging based on command line
-			if (!opt.cefType) {
-				const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log.txt");
-				pChan->AttachComponent(std::make_shared<BasicFileDriver>(std::make_shared<TextFormatter>(), pFileStrategy), "drv:file");
-			}
-			else {
-				const auto pFileStrategy = std::make_shared<SimpleFileStrategy>(std::format("log-{}-{}.txt", *opt.cefType, GetCurrentProcessId()));
-				pChan->AttachComponent(std::make_shared<BasicFileDriver>(std::make_shared<TextFormatter>(), pFileStrategy), "drv:file");
+			{
+				auto logfileName = bool(opt.cefType) ? std::format(L"log-{}-{}.txt", 
+					str::ToWide(*opt.cefType), GetCurrentProcessId()) : L"log.txt"s;
+				std::wstring path;
+				if (opt.logFolder) {
+					path = std::format(L"{}\\{}", str::ToWide(*opt.logFolder), logfileName);
+				}
+				else {
+					path = infra::util::FolderResolver::Get().Resolve(
+						infra::util::FolderResolver::Folder::Documents,
+						std::format(L"logs\\{}", logfileName));
+				}
+				pChan->AttachComponent(std::make_shared<BasicFileDriver>(std::make_shared<TextFormatter>(),
+					std::make_shared<SimpleFileStrategy>(path)), "drv:file");
 			}
 			if (opt.logLevel) {
 				GlobalPolicy::Get().SetLogLevel(*opt.logLevel);

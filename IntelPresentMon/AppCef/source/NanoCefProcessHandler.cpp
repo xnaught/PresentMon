@@ -6,8 +6,6 @@
 #include "NanoCefProcessHandler.h"
 #include "SchemeHandlerFactory.h"
 #include "DataBindAccessor.h"
-#include <Core/source/infra/svc/Services.h>
-#include "util/CefProcessCompass.h"
 #include <Core/source/infra/Logging.h>
 #include "include/wrapper/cef_closure_task.h"
 #include <include/cef_task.h>
@@ -25,8 +23,6 @@ using namespace std::chrono_literals;
 
 namespace p2c::client::cef
 {
-    using namespace infra::svc;
-
     void NanoCefProcessHandler::OnContextInitialized()
     {
 #ifdef NDEBUG

@@ -5,7 +5,6 @@
 #include <Core/source/win/MessageBox.h>
 #include <Core/source/infra/util/Util.h>
 #include <Core/source/infra/Logging.h>
-#include <Core/source/infra/svc/Services.h>
 #include <Core/source/infra/util/FolderResolver.h>
 #include <random>
 #include "OverlayContainer.h"
@@ -266,10 +265,8 @@ namespace p2c::kern
                 }
                 else if (pushedCaptureActive)
                 {
-                    std::wstring path;
-                    if (auto pFolder = infra::svc::Services::ResolveOrNull<infra::util::FolderResolver>()) {
-                        path = pFolder->Resolve(infra::util::FolderResolver::Folder::Documents) + L"\\Captures\\";
-                    }
+                    std::wstring path = infra::util::FolderResolver::Get()
+                        .Resolve(infra::util::FolderResolver::Folder::Documents) + L"\\Captures\\";
                     pOverlayContainer->SetCaptureState(*pushedCaptureActive, std::move(path), pOverlayContainer->GetSpec().captureName);
                     pushedCaptureActive.reset();
                 }

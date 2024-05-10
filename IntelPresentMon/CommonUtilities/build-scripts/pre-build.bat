@@ -9,7 +9,7 @@ for /f "delims=" %%i in ('git rev-parse HEAD') do set GIT_HASH=%%i
 for /f "delims=" %%i in ('git rev-parse --short HEAD') do set GIT_HASH_SHORT=%%i
 
 :: Check for uncommitted changes
-git diff-index --quiet HEAD --
+git diff --quiet
 if errorlevel 1 (
     set UNCOMMITTED_CHANGES=true
 ) else (

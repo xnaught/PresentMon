@@ -6,7 +6,6 @@
 #include "../FileLocation.h"
 #include "../PathSanitaryCheck.h"
 #include <Core/source/kernel/Kernel.h>
-#include <Core/source/infra/svc/Services.h>
 #include <Core/source/infra/util/FolderResolver.h>
 #include <fstream>
 
@@ -25,23 +24,21 @@ namespace p2c::client::util::async
 
             // try to resolve configs folder, fallback to cwd
             std::filesystem::path base;
-            if (auto fr = svc::Services::ResolveOrNull<FolderResolver>()) {
+            {
+                auto& fr = FolderResolver::Get();
                 const FileLocation loc = Traverse(pArgObj)["location"];
                 if (loc == FileLocation::Install) {
-                    base = fr->Resolve(FolderResolver::Folder::Install, L"");
+                    base = fr.Resolve(FolderResolver::Folder::Install, L"");
                 }
                 else if (loc == FileLocation::Data) {
-                    base = fr->Resolve(FolderResolver::Folder::App, L"");
+                    base = fr.Resolve(FolderResolver::Folder::App, L"");
                 }
                 else if (loc == FileLocation::Documents) {
-                    base = fr->Resolve(FolderResolver::Folder::Documents, L"");
+                    base = fr.Resolve(FolderResolver::Folder::Documents, L"");
                 }
                 else {
                     throw std::runtime_error{ std::format("Bad file location: {}", uint32_t(loc)) };
                 }
-            }
-            else {
-                base = std::filesystem::current_path();
             }
 
             // compose path and make sure nobody is trying to escape sandbox

@@ -101,8 +101,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ExtremeQueue.cpp" />
-    <ClCompile Include="ServiceParams.cpp" />
-    <ClCompile Include="Services.cpp" />
     <ClCompile Include="Style.cpp" />
   </ItemGroup>
   <ItemGroup>

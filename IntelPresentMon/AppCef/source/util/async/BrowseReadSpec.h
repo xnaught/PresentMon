@@ -5,7 +5,6 @@
 #include "../AsyncEndpointManager.h"
 #include <fstream>
 #include "../CefValues.h"
-#include "Core/source/infra/svc/Services.h"
 #include "Core/source/infra/util/FolderResolver.h"
 #include <commdlg.h>
 
@@ -20,11 +19,8 @@ namespace p2c::client::util::async
 		void ExecuteOnBrowser(uint64_t uid, CefRefPtr<CefValue> pArgObj, CefRefPtr<CefBrowser> pBrowser) const override
 		{
             using infra::util::FolderResolver;
-            using infra::svc::Services;
-            std::wstring startPath;
-            if (auto fr = Services::ResolveOrNull<FolderResolver>()) {
-                startPath = fr->Resolve(FolderResolver::Folder::Documents, L"Loadouts\\");
-            }
+            std::wstring startPath = infra::util::FolderResolver::Get()
+                .Resolve(FolderResolver::Folder::Documents, L"Loadouts\\");
 
             wchar_t pathBuffer[MAX_PATH] = { 0 };
             OPENFILENAMEW ofn{
