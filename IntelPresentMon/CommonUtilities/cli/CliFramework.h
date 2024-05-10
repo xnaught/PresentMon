@@ -44,6 +44,7 @@ namespace pmon::util::cli
 		std::string GetName() const;
 		std::vector<std::pair<std::string, std::string>> GetForwardedOptions() const;
 	private:
+		void AddGroup_(std::string name, std::string desc);
 		void RegisterElement_(OptionsElement_* pElement);
 	protected:
 		// types
@@ -69,6 +70,7 @@ namespace pmon::util::cli
 		std::ostringstream diagnostics_;
 		std::vector<OptionsElement_*> elementPtrs_;
 		bool finalized_ = false;
+		std::string activeGroup_;
 		CLI::App app_;
 	};
 	
@@ -141,16 +143,7 @@ namespace pmon::util::cli
 			else {
 				customizer(pOption_);
 			}
-			// capture main name for the option (used when forwarding)
-			SetName_(pOption_->get_name());
-			// surround option value in quotes when forwarding string options
-			if constexpr (std::same_as<std::string, T>) {
-				EnableQuote_();
-			}
-			// capture the raw input string
-			pOption_->transform(GetCaptureCallback_());
-			// register this element with the container dynamically
-			pParent->RegisterElement_(this);
+			OptionCommonPostCreate_(pParent);
 		}
 		Option(OptionsContainer* pParent, std::string names, const T& defaultValue, std::string description)
 			:
@@ -158,16 +151,7 @@ namespace pmon::util::cli
 		{
 			// create the option
 			pOption_ = pParent->app_.add_option(std::move(names), data_, std::move(description));
-			// capture main name for the option (used when forwarding)
-			SetName_(pOption_->get_name());
-			// surround option value in quotes when forwarding string options
-			if constexpr (std::same_as<std::string, T>) {
-				EnableQuote_();
-			}
-			// capture the raw input string
-			pOption_->transform(GetCaptureCallback_());
-			// register this element with the container dynamically
-			pParent->RegisterElement_(this);
+			OptionCommonPostCreate_(pParent);
 		}
 		Option(const Option&) = delete;
 		Option& operator=(const Option&) = delete;
@@ -198,6 +182,23 @@ namespace pmon::util::cli
 			return pOption_->get_name();
 		}
 	private:
+		// functions
+		void OptionCommonPostCreate_(OptionsContainer* pParent)
+		{
+			// add to active group
+			pOption_->group(pParent->activeGroup_);
+			// capture main name for the option (used when forwarding)
+			SetName_(pOption_->get_name());
+			// surround option value in quotes when forwarding string options
+			if constexpr (std::same_as<std::string, T>) {
+				EnableQuote_();
+			}
+			// capture the raw input string
+			pOption_->transform(GetCaptureCallback_());
+			// register this element with the container dynamically
+			pParent->RegisterElement_(this);
+		}
+		// data
 		T data_;
 		CLI::Option* pOption_ = nullptr;
 	};
@@ -225,8 +226,9 @@ namespace pmon::util::cli
 		// TODO: could move pOption_ into OptionsElement_, would obviate this template
 		template<class T>
 		CLI::Option* GetOption_(T& el) const { return el.pOption_; }
+		CLI::App& GetApp_(OptionsContainer& con) const { return con.app_; }
 		void SetForwarding_(OptionsElement_& el, bool forwarding = false) { el.forwarding_ = forwarding; }
-		void AllowExtras_(OptionsContainer& con) { con.app_.allow_extras(); }
+		void AddGroup_(OptionsContainer& con, std::string name, std::string desc = {}) { con.AddGroup_(std::move(name), std::move(desc)); }
 	};
 
 	class MutualExclusion : RuleBase_
@@ -282,7 +284,25 @@ namespace pmon::util::cli
 	public:
 		AllowExtras(OptionsContainer* pCon)
 		{
-			AllowExtras_(*pCon);
+			GetApp_(*pCon).allow_extras(true);
+		}
+	};
+
+	class Group : RuleBase_
+	{
+	public:
+		Group(OptionsContainer* pCon, std::string name, std::string desc = {})
+		{
+			AddGroup_(*pCon, std::move(name), std::move(desc));
+		}
+	};
+
+	class SilentGroup : RuleBase_
+	{
+	public:
+		SilentGroup(OptionsContainer* pCon)
+		{
+			AddGroup_(*pCon, {});
 		}
 	};
 }

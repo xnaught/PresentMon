@@ -23,6 +23,16 @@ namespace pmon::util::cli
 		}
 		return options;
 	}
+	void OptionsContainer::AddGroup_(std::string name, std::string desc)
+	{
+		activeGroup_ = name;
+		if (name.empty()) {
+			app_.add_option_group({})->silent();
+		}
+		else {
+			app_.add_option_group(std::move(name), std::move(desc));
+		}
+	}
 	void OptionsContainer::RegisterElement_(OptionsElement_* pElement)
 	{
 		elementPtrs_.push_back(pElement);
@@ -66,6 +76,8 @@ namespace pmon::util::cli
 	{
 		// create the option
 		pOption_ = pParent->app_.add_flag(std::move(names), data_, std::move(description));
+		// add to active group
+		pOption_->group(pParent->activeGroup_);
 		// capture main name for the option (used when forwarding)
 		SetName_(pOption_->get_name());
 		// register this element with the options container dynamically
