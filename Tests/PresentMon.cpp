@@ -165,7 +165,8 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
         auto track_display    = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_AllowsTearing,
                                                                                 Header_PresentMode,
                                                                                 Header_DisplayLatency,
-                                                                                Header_DisplayedTime });
+                                                                                Header_DisplayedTime,
+                                                                                Header_AnimationError });
         auto track_gpu        = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_GPULatency,
                                                                                 Header_GPUTime,
                                                                                 Header_GPUBusy,

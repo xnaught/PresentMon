@@ -36,6 +36,7 @@ struct PresentMonCsv
         Header_VideoBusy,
         Header_DisplayLatency,
         Header_DisplayedTime,
+        Header_AnimationError,
         Header_ClickToPhotonLatency,
 
         // --v1_metrics
@@ -88,6 +89,7 @@ struct PresentMonCsv
         case Header_VideoBusy:              return "VideoBusy";
         case Header_DisplayLatency:         return "DisplayLatency";
         case Header_DisplayedTime:          return "DisplayedTime";
+        case Header_AnimationError:         return "AnimationError";
         case Header_ClickToPhotonLatency:   return "ClickToPhotonLatency";
 
         case Header_Runtime:                return "Runtime";
