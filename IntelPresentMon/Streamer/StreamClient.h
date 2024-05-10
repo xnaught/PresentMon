@@ -23,7 +23,11 @@ class StreamClient {
   // Dequeue a frame of data from shared mem and update the last_read_idx
   PM_STATUS RecordFrame(PM_FRAME_DATA** out_frame_data);
   // Dequeue a frame of data from shared mem and update the last_read_idx (just get pointer to NsmData)
-  PM_STATUS ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData, const PmNsmFrameData** pNsmPreviousData, const PmNsmFrameData** pNsmNextData);
+  PM_STATUS ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData, 
+                                         const PmNsmFrameData** pFrameDataOfNextDisplayed,
+                                         const PmNsmFrameData** pFrameDataOfLastPresented,
+                                         const PmNsmFrameData** pFrameDataOfLastDisplayed,
+                                         const PmNsmFrameData** pPreviousFrameDataOfLastDisplayed);
   // Dequeue from the head idx and update the head pointer as soon as out_frame_data is populated.
   PM_STATUS DequeueFrame(PM_FRAME_DATA** out_frame_data);
   // Return the last frame id that holds valid data
@@ -46,7 +50,9 @@ class StreamClient {
  private:
   uint64_t CheckPendingReadFrames();
   const PmNsmFrameData* PeekNextDisplayedFrame();
-  const PmNsmFrameData* PeekPreviousFrame();
+  void PeekPreviousFrames(const PmNsmFrameData** pFrameDataOfLastPresented,
+                          const PmNsmFrameData** pFrameDataOfLastDisplayed,
+                          const PmNsmFrameData** pPreviousFrameDataOfLastDisplayed);
 
   void OutputErrorLog(const char* error_string, DWORD last_error);
   // Shared memory view that the client opened into based on mapfile name
