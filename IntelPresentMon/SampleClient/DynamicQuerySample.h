@@ -1,3 +1,5 @@
+// Copyright (C) 2017-2024 Intel Corporation
+// SPDX-License-Identifier: MIT
 #pragma once
 
 bool FindFirstAvailableGpuMetric(pmapi::Session& pSession, PM_METRIC& gpuMetric, uint32_t& gpuMetricDeviceId, std::string& gpuMetricName)

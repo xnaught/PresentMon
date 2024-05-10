@@ -1,3 +1,5 @@
+// Copyright (C) 2017-2024 Intel Corporation
+// SPDX-License-Identifier: MIT
 #pragma once
 #include "../../../PresentMonAPI2/PresentMonAPI.h"
 #include "StatsShortcuts.h"

@@ -1,3 +1,5 @@
+// Copyright (C) 2017-2024 Intel Corporation
+// SPDX-License-Identifier: MIT
 #define NOMINMAX
 #include "../../PresentMonUtils/PresentMonNamedPipe.h"
 #include "FrameEventQuery.h"

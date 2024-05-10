@@ -1,3 +1,5 @@
+// Copyright (C) 2017-2024 Intel Corporation
+// SPDX-License-Identifier: MIT
 #pragma once
 
 void WriteToCSV(std::ofstream& csvFile, const std::string& processName, const unsigned int& processId,

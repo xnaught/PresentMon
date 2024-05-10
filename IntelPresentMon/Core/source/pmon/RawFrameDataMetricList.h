@@ -1,3 +1,5 @@
+// Copyright (C) 2017-2024 Intel Corporation
+// SPDX-License-Identifier: MIT
 #pragma once
 // must include PresentMonAPI.h before including this file
 #include <optional>
