@@ -39,6 +39,13 @@ namespace
 			TimestampDeltaToMilliSeconds(timestampTo - timestampFrom, performanceCounterPeriodMs);
 	}
 
+	double TimestampDeltaToMilliSeconds(uint64_t timestampFrom, uint64_t timestampTo, double performanceCounterPeriodMs)
+	{
+		return timestampFrom == 0 || timestampTo == 0 || timestampFrom == timestampTo ? 0.0 :
+			timestampTo > timestampFrom ? TimestampDeltaToMilliSeconds(timestampTo - timestampFrom, performanceCounterPeriodMs)
+			: -TimestampDeltaToMilliSeconds(timestampFrom - timestampTo, performanceCounterPeriodMs);
+	}
+
 	template<auto pMember>
 	constexpr auto GetSubstructurePointer()
 	{
@@ -357,7 +364,7 @@ namespace
 		uint32_t outputOffset_;
 		uint16_t outputPaddingSize_;
 	};
-	template<uint64_t PmNsmPresentEvent::* pStart, bool doDroppedCheck>
+	template<uint64_t PmNsmPresentEvent::* pStart, bool doDroppedCheck, bool doZeroCheck>
 	class AnimationErrorGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
@@ -368,8 +375,22 @@ namespace
 		}
 		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
 		{
-			// TODO
-			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.0;
+			if constexpr (doDroppedCheck) {
+				if (ctx.dropped) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
+					return;
+				}
+			}
+			if constexpr (doZeroCheck) {
+				if (ctx.previousDisplayedCpuStartQpc == 0) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.0;
+					return;
+				}
+			}
+			const auto val = TimestampDeltaToMilliSeconds(ctx.pSourceFrameData->present_event.*pStart - ctx.previousDisplayedQpc,
+				ctx.cpuFrameQpc - ctx.previousDisplayedCpuStartQpc, ctx.performanceCounterPeriodMs);
+			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 		}
 		uint32_t GetBeginOffset() const override
 		{
@@ -609,7 +630,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_DISPLAYED_TIME:
 		return std::make_unique<DisplayDifferenceGatherCommand_<&Pre::ScreenTime, 1, 1>>(pos);
 	case PM_METRIC_ANIMATION_ERROR:
-		return std::make_unique<AnimationErrorGatherCommand_<&Pre::ScreenTime, 1>>(pos);
+		return std::make_unique<AnimationErrorGatherCommand_<&Pre::ScreenTime, 1, 1>>(pos);
 	case PM_METRIC_GPU_LATENCY:
 		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::GPUStartTime, 0>>(pos);
 	case PM_METRIC_DISPLAY_LATENCY:
@@ -621,22 +642,39 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	}
 }
 
-void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFrameData_in, const PmNsmFrameData* pNextDisplayedFrameData, const PmNsmFrameData* pPreviousFrameData)
+void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFrameData_in,
+											   const PmNsmFrameData* pFrameDataOfNextDisplayed,
+										       const PmNsmFrameData* pFrameDataOfLastPresented,
+										       const PmNsmFrameData* pFrameDataOfLastDisplayed,
+										       const PmNsmFrameData* pPreviousFrameDataOfLastDisplayed)
 {
 	pSourceFrameData = pSourceFrameData_in;
 	dropped = pSourceFrameData->present_event.FinalState != PresentResult::Presented;
-	if (pPreviousFrameData) {
-		cpuFrameQpc = pPreviousFrameData->present_event.PresentStartTime + pPreviousFrameData->present_event.TimeInPresent;
+	if (pFrameDataOfLastPresented) {
+		cpuFrameQpc = pFrameDataOfLastPresented->present_event.PresentStartTime + pFrameDataOfLastPresented->present_event.TimeInPresent;
 	}
 	else {
 		// TODO: log issue or invalidate related columns or drop frame (or some combination)
 		cpuFrameQpc = 0;
 	}
-	if (pNextDisplayedFrameData) {
-		nextDisplayedQpc = pNextDisplayedFrameData->present_event.ScreenTime;
+	if (pFrameDataOfNextDisplayed) {
+		nextDisplayedQpc = pFrameDataOfNextDisplayed->present_event.ScreenTime;
 	}
 	else {
 		// TODO: log issue or invalidate related columns or drop frame (or some combination)
 		nextDisplayedQpc = 0;
+	}
+	if (pFrameDataOfLastDisplayed) {
+		previousDisplayedQpc = pFrameDataOfLastDisplayed->present_event.ScreenTime;
+	}
+	else {
+		// TODO: log issue or invalidate related columns or drop frame (or some combination)
+		previousDisplayedQpc = 0;
+	}
+	if (pPreviousFrameDataOfLastDisplayed) {
+		previousDisplayedCpuStartQpc = pPreviousFrameDataOfLastDisplayed->present_event.PresentStartTime + pPreviousFrameDataOfLastDisplayed->present_event.TimeInPresent;
+	}
+	else {
+		previousDisplayedCpuStartQpc = 0;
 	}
 }
