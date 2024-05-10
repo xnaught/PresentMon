@@ -1149,7 +1149,7 @@ void ReportMetrics(
             output = CalculateStatistic(swapChain.mDisplayedTime, element.stat);
             break;
         case PM_METRIC_ANIMATION_ERROR:
-            output = CalculateStatistic(swapChain.mAnimationError, element.stat);
+            output = std::abs(CalculateStatistic(swapChain.mAnimationError, element.stat));
             break;
         case PM_METRIC_PRESENTED_FPS:
         {
