@@ -388,7 +388,9 @@ namespace p2c::kern
             {
                 samplingWaiter.Wait();
                 pmon::Timekeeper::LockNow();
+                pmlog_mark mkPoll;
                 UpdateGraphData_(pmon::Timekeeper::GetLockedNow());
+                pmlog_perf(v::overlay)(L"Data update time").mark(mkPoll);
             }
         }
 
@@ -409,7 +411,9 @@ namespace p2c::kern
 
         if (!IsHidden_())
         {
+            pmlog_mark mkRender;
             Render_();
+            pmlog_perf(v::overlay)(L"Overlay draw time").mark(mkRender);
         }
     }
 

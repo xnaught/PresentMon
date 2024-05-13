@@ -21,7 +21,8 @@ namespace p2c::cli
 		Option<std::string> controlPipe{ this, "--p2c-control-pipe", "", "Named pipe to connect to the service with" };
 		Option<std::string> shmName{ this, "--p2c-shm-name", "", "Shared memory to connect to the service with" };
 		Flag noNetFail{ this, "--p2c-no-net-fail", "Disable error modal for bad url accesses" };
-		Flag debugWaitRender{ this, "--p2c-debug-wait-render", "Force all render child processes wait for debugger connection" };
+		Flag debugWaitRender{ this, "--p2c-debug-wait-render", "Force all render child processes to wait for debugger connection" };
+		Flag debugWaitClient{ this, "--p2c-debug-wait-client", "Force main client process to wait for debugger connection" };
 		Flag filesWorking{ this, "--p2c-files-working", "Use the working directory for file storage" };
 		Flag traceExceptions{ this, "--p2c-trace-exceptions", "Add stack trace to all thrown exceptions (including SEH exceptions)" };
 

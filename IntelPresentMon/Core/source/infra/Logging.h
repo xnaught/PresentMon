@@ -19,6 +19,11 @@ namespace p2c
 		inline constexpr bool hotkey = false;
 #else
 		inline constexpr bool hotkey = true;
+#endif	
+#ifndef VVV_OVERLAY // system that controls overlay
+		inline constexpr bool overlay = false;
+#else
+		inline constexpr bool overlay = true;
 #endif
 	}
 

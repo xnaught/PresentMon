@@ -55,6 +55,7 @@
     <ClInclude Include="log\StackTraceCereal.h" />
     <ClInclude Include="log\TextFormatter.h" />
     <ClInclude Include="log\MarshallDriver.h" />
+    <ClInclude Include="log\TimePoint.h" />
     <ClInclude Include="Memory.h" />
     <ClInclude Include="Hash.h" />
     <ClInclude Include="Meta.h" />

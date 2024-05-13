@@ -35,5 +35,8 @@ namespace pmon::util::log
 #define pmlog_info	xinternal_pmlog_(::pmon::util::log::Level::Info).note
 #define pmlog_dbg	xinternal_pmlog_(::pmon::util::log::Level::Debug).note
 #define pmlog_verb(vtag) !vtag ? (void)0 : xinternal_pmlog_(::pmon::util::log::Level::Verbose).note
+#define pmlog_perf(ptag) !ptag ? (void)0 : xinternal_pmlog_(::pmon::util::log::Level::Performance).note
 
 #define pmwatch(expr) watch(L###expr, (expr))
+
+#define pmlog_mark ::pmon::util::log::TimePoint

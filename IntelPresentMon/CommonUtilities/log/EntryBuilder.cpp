@@ -53,6 +53,20 @@ namespace pmon::util::log
 		traceSkipDepth_{ PM_LOG_DEFAULT_TRACE_SKIP }
 	{
 	}
+	EntryBuilder& EntryBuilder::mark(const TimePoint& tp) noexcept
+	{
+		const auto now = std::chrono::high_resolution_clock::now();
+		const auto duration = std::chrono::duration<double, std::milli>(now - tp.value).count();
+
+		if (note_.empty()) {
+			note_ += std::format(L"    Marked: {:.3f}ms", duration);
+		}
+		else {
+			note_ += std::format(L"\n    Marked: {:.3f}ms", duration);
+		}
+		return *this;
+	}
+
 	EntryBuilder& EntryBuilder::note(std::wstring note) noexcept
 	{
 		note_ = std::move(note);
