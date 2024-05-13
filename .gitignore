@@ -36,6 +36,5 @@ ipch/
 IntelPresentMon/AppCef/CefNano.args.json
 IntelPresentMon/PresentMonService/PresentMonService.args.json
 PresentMon/PresentMon.args.json
-PresentData/PresentData.args.json
 
 IntelPresentMon/SampleClient/log.txt

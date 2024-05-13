@@ -186,88 +186,59 @@ const PmNsmFrameData* StreamClient::PeekNextDisplayedFrame()
     return nullptr;
 }
 
-void StreamClient::PeekPreviousFrames(const PmNsmFrameData** pFrameDataOfLastPresented,
-                                      const PmNsmFrameData** pFrameDataOfLastDisplayed,
-                                      const PmNsmFrameData** pPreviousFrameDataOfLastDisplayed)
+const PmNsmFrameData* StreamClient::PeekPreviousFrame()
 {
-    *pFrameDataOfLastPresented         = nullptr;
-    *pFrameDataOfLastDisplayed         = nullptr;
-    *pPreviousFrameDataOfLastDisplayed = nullptr;
     if (recording_frame_data_) {
         auto nsm_view = GetNamedSharedMemView();
         auto nsm_hdr = nsm_view->GetHeader();
         if (!nsm_hdr->process_active) {
             // Service destroyed the named shared memory.
-            return;
+            return nullptr;
         }
 
         uint64_t current_max_entries =
             (nsm_view->IsFull()) ? nsm_hdr->max_entries - 1 : nsm_hdr->tail_idx;
 
-        uint64_t peekIndex{ next_dequeue_idx_ };
-        auto pTempFrameData = ReadFrameByIdx(peekIndex);
-        uint32_t numFramesTraversed = 0;
-        while (pTempFrameData)
+        // previous idx is 2 before next
+        std::optional<uint64_t> peekIndex{ next_dequeue_idx_ };
+        for (int i = 0; i < 2; i++)
         {
-            if (nsm_hdr->from_etl_file) {
-                peekIndex = (peekIndex == 0) ? current_max_entries : peekIndex - 1;
-                if (peekIndex == nsm_hdr->tail_idx) {
-                    return;
-                }
-            }
-            else {
-                peekIndex = (peekIndex == 0) ? current_max_entries : peekIndex - 1;
-                if (peekIndex == nsm_hdr->head_idx) {
-                    return;
-                }
-            }
-            numFramesTraversed++;
-            auto pTempFrameData = ReadFrameByIdx(peekIndex);
-            // We need to traverse back two frames from the next_dequeue_idx to
-            // get to the start of the previous frames
-            if (numFramesTraversed > 1) {
-                if (pTempFrameData) {
-                    if (numFramesTraversed == 2) {
-                        // If we made it here we were able to go back two frames
-                        // from the current next_deque_index. This is the frame
-                        // data of the last presented frame before the current frame.
-                        *pFrameDataOfLastPresented = pTempFrameData;
-                    }
-                    if (*pFrameDataOfLastDisplayed == nullptr) {
-                        // If we haven't found the last displayed frame check to see if
-                        // the current one is presented. This could point to the same frame
-                        // as the last presented one above.
-                        if (pTempFrameData->present_event.FinalState == PresentResult::Presented) {
-                            *pFrameDataOfLastDisplayed = pTempFrameData;
-                        }
-                    }
-                    else {
-                        // If we have set the last displayed from then we grab the previous frame
-                        // before it to be able to calculate the CPU Start QPC for it.
-                        *pPreviousFrameDataOfLastDisplayed = pTempFrameData;
-                        return;
+            if (peekIndex.has_value())
+            {
+                if (nsm_hdr->from_etl_file) {
+                    peekIndex = (peekIndex.value() == 0) ? current_max_entries : peekIndex.value() - 1;
+                    if (peekIndex.value() == nsm_hdr->tail_idx) {
+                        peekIndex.reset();
+                        break;
                     }
                 }
                 else {
-                    // The read frame data is null.
-                    // TODO log this as the index is supposed to be valid!
-                    return;
+                    peekIndex = (peekIndex.value() == 0) ? current_max_entries : peekIndex.value() - 1;
+                    if (peekIndex.value() == nsm_hdr->head_idx) {
+                        peekIndex.reset();
+                        break;
+                    }
                 }
             }
         }
+
+        if (peekIndex.has_value())
+        {
+            return ReadFrameByIdx(peekIndex.value());
+        }
+        else
+        {
+            return nullptr;
+        }
+        
     }
-    return;
+    return nullptr;
 }
 
-PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData,
-                                                     const PmNsmFrameData** pFrameDataOfNextDisplayed,
-                                                     const PmNsmFrameData** pFrameDataOfLastPresented,
-                                                     const PmNsmFrameData** pFrameDataOfLastDisplayed,
-                                                     const PmNsmFrameData** pPreviousFrameDataOfLastDisplayed)
+PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData, 
+    const PmNsmFrameData** pNsmPreviousData, const PmNsmFrameData** pNsmNextData)
 {
-    if (pNsmData == nullptr || pFrameDataOfNextDisplayed == nullptr ||
-        pFrameDataOfLastPresented == nullptr || pFrameDataOfLastDisplayed == nullptr ||
-        pPreviousFrameDataOfLastDisplayed == nullptr) {
+    if (pNsmData == nullptr || pNsmPreviousData == nullptr || pNsmNextData == nullptr) {
         return PM_STATUS::PM_STATUS_FAILURE;
     }
 
@@ -321,13 +292,10 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         }
     }
 
-    // Set the rest of the incoming frame pointers in
-    // preparation for the various frame data peeks and
-    // reads
-    *pFrameDataOfNextDisplayed         = nullptr;
-    *pFrameDataOfLastPresented         = nullptr;
-    *pFrameDataOfLastDisplayed         = nullptr;
-    *pPreviousFrameDataOfLastDisplayed = nullptr;
+    // Set all pointers in preparation for frame data read
+    *pNsmData = nullptr;
+    *pNsmNextData = nullptr;
+    *pNsmPreviousData = nullptr;
 
     // First read the current frame. next_dequeue_idx_ sits
     // at next frame we need to dequeue.
@@ -340,8 +308,8 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         // the frame to be incremented. Can change this when done debugging so we don't have to
         // reset the dequeue index.
         next_dequeue_idx_ = (next_dequeue_idx_ + 1) % nsm_hdr->max_entries;
-        *pFrameDataOfNextDisplayed = PeekNextDisplayedFrame();
-        if (*pFrameDataOfNextDisplayed == nullptr) {
+        *pNsmNextData = PeekNextDisplayedFrame();
+        if (*pNsmNextData == nullptr) {
             // We were unable to get the next displayed frame. It might not have been displayed
             // yet. Reset the next_dequeue_idx back to where we first started.
             next_dequeue_idx_ = previous_dequeue_idx;
@@ -349,7 +317,7 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
             *pNsmData = nullptr;
             return PM_STATUS::PM_STATUS_SUCCESS;
         }
-        PeekPreviousFrames(pFrameDataOfLastPresented, pFrameDataOfLastDisplayed, pPreviousFrameDataOfLastDisplayed);
+        *pNsmPreviousData = PeekPreviousFrame();
         current_dequeue_frame_num_++;
         return PM_STATUS::PM_STATUS_SUCCESS;
     }

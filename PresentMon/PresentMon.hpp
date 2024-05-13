@@ -96,7 +96,6 @@ struct FrameMetrics {
     double mGPUWait;
     double mDisplayLatency;
     double mDisplayedTime;
-    double mAnimationError;
     double mClickToPhotonLatency;
 };
 
@@ -125,8 +124,7 @@ struct SwapChainData {
     // statistics).
     std::shared_ptr<PresentEvent> mLastPresent;
 
-    // The CPU start and screen time for the most recent frame that was displayed
-    uint64_t mLastDisplayedCPUStart = 0;
+    // The screen time for most recent present that was displayed (required for v1 metrics only)
     uint64_t mLastDisplayedScreenTime = 0;
 
     // Whether to include frame data in the next PresentEvent's FrameMetrics.
