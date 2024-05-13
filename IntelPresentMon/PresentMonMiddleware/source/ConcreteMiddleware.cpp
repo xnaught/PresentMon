@@ -719,7 +719,7 @@ void ReportMetrics(
         chain->mGPUBusy       .push_back(metrics.mGPUBusy);
         chain->mVideoBusy     .push_back(metrics.mVideoBusy);
         chain->mGPUWait       .push_back(metrics.mGPUWait);
-        chain->mAnimationError.push_back(metrics.mAnimationError);
+        chain->mAnimationError.push_back(std::abs(metrics.mAnimationError));
     }
 
     if (displayed) {
@@ -1149,7 +1149,7 @@ void ReportMetrics(
             output = CalculateStatistic(swapChain.mDisplayedTime, element.stat);
             break;
         case PM_METRIC_ANIMATION_ERROR:
-            output = std::abs(CalculateStatistic(swapChain.mAnimationError, element.stat));
+            output = CalculateStatistic(swapChain.mAnimationError, element.stat);
             break;
         case PM_METRIC_PRESENTED_FPS:
         {
