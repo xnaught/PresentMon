@@ -76,8 +76,8 @@ namespace p2c::kern
         int overlayWidth;
         bool upscale;
         float upscaleFactor;
-        int samplingPeriodMs = 4;
-        int samplesPerFrame = 4;
+        uint64_t metricPollRate = 10;
+        uint64_t overlayDrawRate = 10;
         uint32_t telemetrySamplingPeriodMs;
         bool hideDuringCapture;
         bool hideAlways;

@@ -23,8 +23,8 @@ export interface Preferences {
     hideDuringCapture: boolean;
     hideAlways: boolean;
     independentWindow: boolean;
-    samplingPeriodMs: number;
-    samplesPerFrame: number;
+    metricPollRate: number;
+    overlayDrawRate: number;
     telemetrySamplingPeriodMs: number;
     metricsOffset: number;
     metricsWindow: number;
@@ -62,8 +62,8 @@ export function makeDefaultPreferences(): Preferences {
         hideDuringCapture: true, 
         hideAlways: false, 
         independentWindow: false,
-        samplingPeriodMs: 100, 
-        samplesPerFrame: 1, 
+        metricPollRate: 10,
+        overlayDrawRate: 10,
         telemetrySamplingPeriodMs: 100, 
         metricsOffset: 1020, 
         metricsWindow: 1000, 
@@ -103,7 +103,7 @@ export function makeDefaultPreferences(): Preferences {
 
 export const signature: Signature = {
     code: "p2c-cap-pref",
-    version: "0.16.0",
+    version: "0.17.0",
 };
 
 export interface PreferenceFile {

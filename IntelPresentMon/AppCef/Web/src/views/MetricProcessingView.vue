@@ -12,14 +12,14 @@
 
     <v-row class="mt-5">
       <v-col cols="3">
-        Sampling Period
-        <p class="text--secondary text-sm-caption mb-0">Time between polls to API for metric data (ms). Directly affects temporal resolution of graphs and readouts.</p>
+        Polling Rate
+        <p class="text--secondary text-sm-caption mb-0">Rate at which to poll API for metric data (Hz). Controls temporal resolution of graphs and readouts.</p>
       </v-col>
       <v-col cols="9">
         <v-slider
-          v-model="samplingPeriod"
-          :max="250"
-          :min="2"
+          v-model="metricPollRate"
+          :max="240"
+          :min="1"
           thumb-label="always"
           hide-details
         ></v-slider>
@@ -100,10 +100,10 @@ export default Vue.extend({
   },  
   computed: {
     // v-model enablers
-    samplingPeriod: {
-      get(): number { return Preferences.preferences.samplingPeriodMs; },
-      set(period: number) {
-        Preferences.writeAttribute({ attr: 'samplingPeriodMs', val: period });
+    metricPollRate: {
+      get(): number { return Preferences.preferences.metricPollRate; },
+      set(rate: number) {
+        Preferences.writeAttribute({ attr: 'metricPollRate', val: rate });
       },
     },
     offset: {

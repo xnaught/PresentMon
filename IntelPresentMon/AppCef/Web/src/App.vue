@@ -81,8 +81,8 @@
       </div>
       <div class="sta-region">
         <div>{{ visibilityString }}</div>
-        <div>{{ pref.samplingPeriodMs }}ms</div>
-        <div>{{ drawRateString }}fps</div>
+        <div>{{ pref.metricPollRate }}Hz</div>
+        <div>{{ pref.overlayDrawRate }}fps</div>
       </div>
     </v-footer>
 
@@ -143,10 +143,6 @@ export default Vue.extend({
       await Hotkey.initBindings();
       Api.registerHotkeyHandler(this.handleHotkeyFired);
       await this.initPreferences();
-      PrefStore.writeAttribute({
-        attr: 'samplesPerFrame',
-        val: this.calculateSamplesPerFrame(this.desiredDrawRate, this.samplePeriod),
-      });
       await LoadBlocklists();
       if (PrefStore.preferences.enableAutotargetting) {
         launchAutotargetting();
@@ -289,11 +285,11 @@ export default Vue.extend({
     pref(): Preferences {
       return PrefStore.preferences;
     },
-    samplePeriod(): number {
-      return this.pref.samplingPeriodMs;
+    metricPollRate(): number {
+      return this.pref.metricPollRate;
     },
-    desiredDrawRate(): number {
-      return PrefStore.desiredOverlayDrawRate;
+    overlayDrawRate(): number {
+      return this.pref.overlayDrawRate;
     },
     pid(): number|null {
       return PrefStore.pid;
@@ -306,9 +302,6 @@ export default Vue.extend({
         return '';
       }
       return Processes.processes.find(p => p.pid === this.pid)?.name ?? '';
-    },
-    drawRateString(): string {
-      return (1000 / (this.pref.samplingPeriodMs * this.pref.samplesPerFrame)).toFixed(1);
     },
     visibilityString(): string {
       if (this.pref.hideAlways) {
@@ -343,19 +336,6 @@ export default Vue.extend({
     },
     async pid() {
       await this.pushSpecification();
-    },
-    // watchers for calculating sample/frame ratio
-    samplePeriod(newPeriod: number) {
-      PrefStore.writeAttribute({
-        attr: 'samplesPerFrame',
-        val: this.calculateSamplesPerFrame(this.desiredDrawRate, newPeriod),
-      });
-    },
-    desiredDrawRate(newRate: number) {
-      PrefStore.writeAttribute({
-        attr: 'samplesPerFrame',
-        val: this.calculateSamplesPerFrame(newRate, this.samplePeriod),
-      });
     },
     // capture watch
     async capturing(newCapturing: boolean) {

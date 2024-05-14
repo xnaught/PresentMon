@@ -19,15 +19,8 @@ export class PreferencesModule extends VuexModule {
   captureDurationToken:DelayToken|null = null;
   capturingActive = false; // capture status considering delay
   pid:number|null = null;
-  // front-end only section
-  desiredOverlayDrawRate = 10; // derives samplesPerFrame
   // debouncing
   debounceToken: number|null = null;
-
-  @Mutation
-  setDesiredOverlayDrawRate(rate: number) {
-      this.desiredOverlayDrawRate = rate;
-  }
 
   @Mutation
   setCapture(active: boolean) {
@@ -57,7 +50,6 @@ export class PreferencesModule extends VuexModule {
   @Mutation
   setAllPreferences(prefs: PreferencesType) {
     this.preferences = Object.assign({}, this.preferences, prefs);
-    this.desiredOverlayDrawRate = 10;
     this.capturing = false;
     this.captureDurationToken = null;
     this.capturingActive = false;

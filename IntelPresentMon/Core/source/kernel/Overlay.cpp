@@ -116,8 +116,7 @@ namespace p2c::kern
         proc{ std::move(proc_) },
         pm{ pm_ },
         pSpec{ std::move(pSpec_) },
-        scheduler_{ size_t(std::round(1000.f / pSpec->samplingPeriodMs)),
-            size_t(std::round(1000.f / (pSpec->samplingPeriodMs * pSpec->samplesPerFrame))), 10 },
+        scheduler_{ pSpec->metricPollRate, pSpec->overlayDrawRate, 10 },
         fetcherFactory{ *pm },
         pPackMapper{ std::move(pPackMapper_) },
         hProcess{ OpenProcess(SYNCHRONIZE, TRUE, proc.pid) },
@@ -132,7 +131,7 @@ namespace p2c::kern
         gfx{ pWindow->GetHandle(), graphicsDimensions, upscaleFactor, cli::Options::Get().allowTearing},
         hideDuringCapture{ pSpec->hideDuringCapture },
         hideAlways{ pSpec->hideAlways },
-        samplingWaiter{ float(pSpec->samplingPeriodMs) / 1'000.f }
+        samplingWaiter{ 1.f / pSpec->metricPollRate }
     {
         UpdateDataSets_();
         pRoot = MakeDocument_(gfx, *pSpec, *pPackMapper, fetcherFactory, pCaptureIndicatorText);
@@ -224,8 +223,7 @@ namespace p2c::kern
         UpdateDataSets_();
         pRoot = MakeDocument_(gfx, *pSpec, *pPackMapper, fetcherFactory, pCaptureIndicatorText);
         UpdateCaptureStatusText_();
-        scheduler_ = { size_t(std::round(1000.f / pSpec->samplingPeriodMs)),
-            size_t(std::round(1000.f / (pSpec->samplingPeriodMs * pSpec->samplesPerFrame))), 10 },
+        scheduler_ = { pSpec->metricPollRate, pSpec->overlayDrawRate, 10 },
         hideDuringCapture = pSpec->hideDuringCapture;
         hideAlways = pSpec->hideAlways;
         AdjustOverlaySituation_(pSpec->overlayPosition);
