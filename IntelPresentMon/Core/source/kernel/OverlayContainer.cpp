@@ -134,7 +134,7 @@ namespace p2c::kern
             // if an update occurred, consider retargetting process
             if (i->second.hWnd == hWnd) {
                 // case when we are in root and hit a child spawn window of interest
-                if (pid != rootPid && curPid == rootPid) {
+                if (pid != rootPid && curPid == rootPid && win::RectToDims(r).GetArea() >= (640 * 480)) {
                     pmlog_verb(v::procwatch)(std::format(L"register-win-spawn-upg-root-to-child | hwn: {:5} => {:5}", rootPid, pid));
                     curPid = pid;
                     pOverlay = pOverlay->RetargetPidClone(i->second);

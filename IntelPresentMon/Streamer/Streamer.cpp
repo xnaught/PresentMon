@@ -214,8 +214,9 @@ void Streamer::ProcessPresentEvent(
       std::chrono::milliseconds time_elapsed =
           std::chrono::milliseconds::zero();
 
-      while ((stream_mode_ == StreamMode::kOfflineEtl) &&
-             process_nsm->IsFull()) {
+      auto& opt = clio::Options::Get();
+      while ((stream_mode_ == StreamMode::kOfflineEtl ||
+          opt.etlTestFile.AsOptional().has_value()) && process_nsm->IsFull()) {
         auto now = std::chrono::high_resolution_clock::now();
         time_elapsed =
             std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
@@ -246,7 +247,8 @@ void Streamer::ProcessPresentEvent(
 /// 
   PM_STATUS Streamer::StartStreaming(uint32_t client_process_id,
                                    uint32_t target_process_id,
-                                   std::string& mapfile_name) {
+                                   std::string& mapfile_name,
+                                   bool from_etl_file) {
     auto target_range = client_map_.equal_range(client_process_id);
     auto found = std::any_of(target_range.first, target_range.second,
                              [target_process_id](auto client_entry) {
@@ -272,7 +274,7 @@ void Streamer::ProcessPresentEvent(
     free(pValue);
 
     // create new shared mem for particular process id
-    if (CreateNamedSharedMemory(target_process_id, mem_size) == false) {
+    if (CreateNamedSharedMemory(target_process_id, from_etl_file, mem_size) == false) {
       return PM_STATUS::PM_STATUS_UNABLE_TO_CREATE_NSM;
     }
 
@@ -393,6 +395,7 @@ void Streamer::StopAllStreams() {
 }
 
 bool Streamer::CreateNamedSharedMemory(DWORD process_id,
+                                       bool from_etl_file,
                                        uint64_t nsm_size_in_bytes) {
   const std::string mapfile_name = mapfileNamePrefix_ + std::to_string(process_id);
 
@@ -400,7 +403,7 @@ bool Streamer::CreateNamedSharedMemory(DWORD process_id,
   auto iter = process_shared_mem_map_.find(process_id);
   if (iter == process_shared_mem_map_.end()) {
     auto nsm =
-        std::make_unique<NamedSharedMem>(std::move(mapfile_name), nsm_size_in_bytes);
+        std::make_unique<NamedSharedMem>(std::move(mapfile_name), nsm_size_in_bytes, from_etl_file);
     if (nsm->IsNSMCreated()) {
         process_shared_mem_map_.emplace(process_id, std::move(nsm));
         return true;

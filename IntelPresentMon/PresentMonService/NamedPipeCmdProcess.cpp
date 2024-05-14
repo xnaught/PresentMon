@@ -19,9 +19,6 @@ bool EncodeStartStream(PresentMon* pm, MemBuffer* rqstBuf, MemBuffer* rspBuf) {
   if (genRqstInfo->etlFileNameLength == 0) {
     rspStatus = pm->StartStreaming(genRqstInfo->clientProcessId,
                                    genRqstInfo->targetProcessId, nsmFileName);
-  } else {
-    std::wstring wetlFileName(genRqstInfo->etlFileName, genRqstInfo->etlFileName + strlen(genRqstInfo->etlFileName));
-    rspStatus = pm->ProcessEtlFile(genRqstInfo->clientProcessId, wetlFileName, nsmFileName);
   }
 
   IPMSMResponseHeader response{};

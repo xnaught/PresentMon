@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="NamedPipeCmdProcess.cpp" />
@@ -9,6 +9,9 @@
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="ServiceMain.cpp" />
     <ClCompile Include="Logging.cpp" />
+    <ClCompile Include="PresentMonSession.cpp" />
+    <ClCompile Include="RealtimePresentMonSession.cpp" />
+    <ClCompile Include="MockPresentMonSession.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LateStageReprojectionData.hpp" />
@@ -20,5 +23,12 @@
     <ClInclude Include="CliOptions.h" />
     <ClInclude Include="GlobalIdentifiers.h" />
     <ClInclude Include="PMMainThread.h" />
+    <ClInclude Include="PresentMonSession.h" />
+    <ClInclude Include="RealtimePresentMonSession.h" />
+    <ClInclude Include="MockPresentMonSession.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="PresentMonService.rc" />
   </ItemGroup>
 </Project>

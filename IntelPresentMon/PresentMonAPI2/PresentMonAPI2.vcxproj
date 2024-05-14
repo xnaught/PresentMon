@@ -106,6 +106,7 @@
     <ClInclude Include="Internal.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="PresentMonAPI.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">
@@ -114,6 +115,9 @@
     <ProjectReference Include="..\PresentMonMiddleware\PresentMonMiddleware.vcxproj">
       <Project>{34b60aac-4646-4aa8-a267-9a5dd7c097d5}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="PresentMonAPI2.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

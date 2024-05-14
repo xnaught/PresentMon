@@ -1,7 +1,5 @@
 # Building PresentMon
 
-Note: if you only want to build the PresentData/ library, or the PresentMon Console application you only need Visual Studio: open or build `PresentMon.sln`.
-
 ## Install Build Tool Dependencies
 
 - Visual Studio 2022
@@ -11,6 +9,10 @@ Note: if you only want to build the PresentData/ library, or the PresentMon Cons
 - [Node.js / NPM](https://nodejs.org/en/download)
 
 - [v3 of the WiX toolset and VS extension](https://wixtoolset.org/docs/wix3/)
+
+Note: if you only want to build the PresentData library, or the PresentMon Console application
+you only need Visual Studio.  Ignore the other build and source dependency instructions and build
+`PresentData\PresentData.vcxproj` or `PresentMon\ConsoleApplication.sln`.
 
 ## Install Source Dependencies
 
@@ -68,10 +70,10 @@ Note: if you only want to build the PresentData/ library, or the PresentMon Cons
 
 ## Building PresentMon
 
-Build `PresentMon2.sln` in Visual Studio or msbuild.  e.g.:
+Build `PresentMon.sln` in Visual Studio or msbuild.  e.g.:
 
 ```bat
-> msbuild /p:Platform=x64,Configuration=Release PresentMon2.sln
+> msbuild /p:Platform=x64,Configuration=Release PresentMon.sln
 ```
 
 ## Running PresentMon
@@ -125,3 +127,9 @@ Further, for the Release build, the application must be run from a secure locati
     > build\vcpkg\vcpkg.exe integrate install
     > build\vcpkg\vcpkg.exe install
     ```
+
+- If you get an error dialog from PresentMon.exe stating "A referral was returned form the server."
+  you most likely do not have the certificate that the PresentMon service was signed with installed
+  into your trusted root.  Ensure that the above step 4 completed successfully.  If you built the
+  installer on another PC or received it from a trusted third party, you need to install the
+  certificate on the target PC as well.

@@ -191,23 +191,30 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Logging.cpp" />
+    <ClCompile Include="MockPresentMonSession.cpp" />
     <ClCompile Include="NamedPipeServer.cpp" />
     <ClCompile Include="PMMainThread.cpp" />
     <ClCompile Include="PowerTelemetryContainer.cpp" />
+    <ClCompile Include="RealtimePresentMonSession.cpp" />
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="ServiceMain.cpp" />
     <ClCompile Include="PresentMon.cpp" />
     <ClCompile Include="NamedPipeCmdProcess.cpp" />
+    <ClCompile Include="PresentMonSession.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CliOptions.h" />
     <ClInclude Include="GlobalIdentifiers.h" />
+    <ClInclude Include="MockPresentMonSession.h" />
     <ClInclude Include="NamedPipeCmdProcess.h" />
     <ClInclude Include="LateStageReprojectionData.hpp" />
     <ClInclude Include="NamedPipeServer.h" />
     <ClInclude Include="PowerTelemetryContainer.h" />
     <ClInclude Include="PresentMon.h" />
     <ClInclude Include="PMMainThread.h" />
+    <ClInclude Include="PresentMonSession.h" />
+    <ClInclude Include="RealtimePresentMonSession.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Service.h" />
   </ItemGroup>
   <ItemGroup>
@@ -229,6 +236,9 @@
     <ProjectReference Include="..\Streamer\Streamer.vcxproj">
       <Project>{bf43064b-01f0-4c69-91fb-c2122baf621d}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="PresentMonService.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

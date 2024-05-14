@@ -3,6 +3,9 @@
 #include <format>
 #include "WmiCpu.h"
 
+#define GLOG_NO_ABBREVIATED_SEVERITIES
+#include <glog/logging.h>
+
 namespace pwr::cpu::wmi {
 
 std::wstring kProcessorFrequency =
@@ -24,32 +27,23 @@ WmiCpu::WmiCpu() {
           PdhAddEnglishCounterW(query_.get(), kProcessorFrequency.c_str(), 0,
                                         &processor_frequency_counter_);
       result != ERROR_SUCCESS) {
-    throw std::runtime_error{
-        std::format("PdhAddEnglishCounter failed when adding processor frequency "
-                    "counter. Result: {}",
-                    result)
-            .c_str()};
+    LOG(INFO) << "PdhAddEnglishCounter failed when adding processor frequency counter. Result:"
+        << result << std::endl;
   }
 
   if (const auto result =
           PdhAddEnglishCounterW(query_.get(), kProcessorPerformance.c_str(),
                                         0, &processor_performance_counter_);
       result != ERROR_SUCCESS) {
-    throw std::runtime_error{
-        std::format("PdhAddEnglishCounter failed when adding processor performance "
-                    "counter. Result: {}",
-                    result)
-            .c_str()};
+    LOG(INFO) << "PdhAddEnglishCounter failed when adding processor performance counter. Result:"
+        << result << std::endl;
   }
 
   if (const auto result = PdhAddEnglishCounterW(query_.get(), kProcessorIdleTime.c_str(), 0,
                                 &processor_idle_time_counter_);
       result != ERROR_SUCCESS) {
-    throw std::runtime_error{
-        std::format("PdhAddEnglishCounter failed when adding "
-                    "processor time counter. Result: {}",
-                    result)
-            .c_str()};
+    LOG(INFO) << "PdhAddEnglishCounter failed when adding processor time counter. Result:"
+        << result << std::endl;
   }
 
   // Most counters require two sample values to display a formatted value.

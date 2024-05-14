@@ -11,7 +11,7 @@ static const std::string kGlobalPrefix = "Global\\NamedSharedMem_";
 class NamedSharedMem {
  public:
   NamedSharedMem();
-  NamedSharedMem(std::string mapfile_name, uint64_t buf_size);
+  NamedSharedMem(std::string mapfile_name, uint64_t buf_size, bool from_etl_file);
   ~NamedSharedMem();
   NamedSharedMem(const NamedSharedMem& t) = delete;
   NamedSharedMem& operator=(const NamedSharedMem& t) = delete;
@@ -31,8 +31,12 @@ class NamedSharedMem {
           gpu_telemetry_cap_bits,
       std::bitset<static_cast<size_t>(CpuTelemetryCapBits::cpu_telemetry_count)>
           cpu_telemetry_cap_bits);
+
   // Client only method to pop already read frame data
   void DequeueFrameData();
+  // Client only method to get the number of frames written by the
+  // service
+  uint64_t GetNumServiceWrittenFrames();
   // Client method to open a view into the shared mem
   void OpenSharedMemView(std::string mapfile_name);
   void NotifyProcessKilled();
@@ -55,7 +59,7 @@ class NamedSharedMem {
 
  private:
   // Server method to create a shared mem in buf_size bytes
-  HRESULT CreateSharedMem(std::string mapfile_name, uint64_t buf_size);
+  HRESULT CreateSharedMem(std::string mapfile_name, uint64_t buf_size, bool from_etl_file);
   void OutputErrorLog(const char* error_string, DWORD last_error);
   std::string mapfile_name_;
   HANDLE mapfile_handle_;

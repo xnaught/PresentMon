@@ -338,15 +338,20 @@ void PresentMonMainThread(Service* const pSvc)
             }();
             // register cpu
             pComms->RegisterCpuDevice(vendor, cpu->GetCpuName(), cpu->GetCpuTelemetryCapBits());
+        } else {
+            // We were unable to determine the cpu.
+            std::bitset<static_cast<size_t>(CpuTelemetryCapBits::cpu_telemetry_count)>
+                cpuTelemetryCapBits_{};
+            pComms->RegisterCpuDevice(PM_DEVICE_VENDOR_UNKNOWN, "UNKNOWN_CPU", cpuTelemetryCapBits_);
         }
 
-        while (WaitForSingleObjectEx(pSvc->GetServiceStopHandle(), INFINITE, (bool)opt.timedStop) != WAIT_OBJECT_0) {
+        while (WaitForSingleObjectEx(pSvc->GetServiceStopHandle(), 0, (bool)opt.timedStop) != WAIT_OBJECT_0) {
             pm.CheckTraceSessions();
-            PmSleep(500, opt.timedStop);
+            PmSleep(1000, opt.timedStop);
         }
 
-        // Stop the PresentMon session
-        pm.StopTraceSession();
+        // Stop the PresentMon sessions
+        pm.StopTraceSessions();
     }
     catch (...) {
         LOG(ERROR) << "Exception in PMMainThread, bailing" << std::endl;

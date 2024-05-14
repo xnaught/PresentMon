@@ -179,11 +179,11 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
         case 2: params_.emplace_back(L"--qpc_time_ms"); break;
         case 3: params_.emplace_back(L"--date_time");   break;
         }
-        if (!track_display)    params_.emplace_back(L"--no_track_display");
-        if (!track_gpu)        params_.emplace_back(L"--no_track_gpu");
-        if (track_gpu_video)   params_.emplace_back(L"--track_gpu_video");
-        if (!track_input)      params_.emplace_back(L"--no_track_input");
-        if (!track_frame_type) params_.emplace_back(L"--track_frame_type");
+        if (!track_display)   params_.emplace_back(L"--no_track_display");
+        if (!track_gpu)       params_.emplace_back(L"--no_track_gpu");
+        if (track_gpu_video)  params_.emplace_back(L"--track_gpu_video");
+        if (!track_input)     params_.emplace_back(L"--no_track_input");
+        if (track_frame_type) params_.emplace_back(L"--track_frame_type");
     }
 
     if (!columnsOK) {
