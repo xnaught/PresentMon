@@ -1,4 +1,4 @@
-// Copyright (C) 2022 Intel Corporation
+// Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "RawFrameDataWriter.h"
 #include <Core/source/infra/util/Util.h>
@@ -123,6 +123,7 @@ namespace p2c::pmon
                 uint32_t flags = Annotation_::FLAG_NONE;
                 if (metricId == PM_METRIC_DISPLAYED_TIME ||
                     metricId == PM_METRIC_DISPLAY_LATENCY ||
+                    metricId == PM_METRIC_ANIMATION_ERROR ||
                     metricId == PM_METRIC_CLICK_TO_PHOTON_LATENCY) {
                     flags |= Annotation_::FLAG_NAN_MEANS_NOT_AVAILABLE;
                 }

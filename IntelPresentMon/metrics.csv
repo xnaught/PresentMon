@@ -25,6 +25,7 @@ PM_METRIC_VIDEO_BUSY,,Video Busy,How long the GPU video encode/decode engines we
 ,,,
 PM_METRIC_DISPLAY_LATENCY,,Display Latency,How long it took from the start of this frame until the frame was displayed on the screen.
 PM_METRIC_DISPLAYED_TIME,,Displayed Time,"How long the frame was displayed on the screen, or 'NA' if the frame was not displayed."
+PM_METRIC_ANIMATION_ERROR,,Animation Error,"The difference between the previous frame's CPU delta and display delta."
 PM_METRIC_CLICK_TO_PHOTON_LATENCY,,Click-To-Photon Latency,How long it took from the earliest keyboard or mouse interaction that contributed to this frame until this frame was displayed.
 ,,,
 PM_METRIC_DISPLAYED_FPS,1,Displayed FPS,The rate at which new frames are being displayed on the screen.

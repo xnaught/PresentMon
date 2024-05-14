@@ -158,6 +158,7 @@ namespace EtlTests
 			{ PM_METRIC_GPU_WAIT, PM_STAT_NONE, 0, 0},
 			{ PM_METRIC_DISPLAY_LATENCY, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_DISPLAYED_TIME, PM_STAT_NONE, 0, 0 },
+			{ PM_METRIC_ANIMATION_ERROR, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_CLICK_TO_PHOTON_LATENCY, PM_STAT_NONE, 0, 0}
 		};
 
@@ -431,7 +432,7 @@ namespace EtlTests
 			goldCsvFile.Open(goldCsvName, processId);
 
 			oChild.emplace("PresentMonService.exe"s,
-				"--timed-stop"s, "10000"s,
+				//"--timed-stop"s, "10000"s,
 				"--control-pipe"s, pipeName,
 				"--nsm-prefix"s, "pmon_nsm_utest_"s,
 				"--intro-nsm"s, introName,

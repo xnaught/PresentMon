@@ -1,3 +1,5 @@
+// Copyright (C) 2017-2024 Intel Corporation
+// SPDX-License-Identifier: MIT
 #define NOMINMAX
 #include "ConcreteMiddleware.h"
 #include <cstring>
@@ -417,6 +419,7 @@ namespace pmon::mid
             case PM_METRIC_GPU_TIME:
             case PM_METRIC_DISPLAY_LATENCY:
             case PM_METRIC_DISPLAYED_TIME:
+            case PM_METRIC_ANIMATION_ERROR:
             case PM_METRIC_PRESENTED_FPS:
             case PM_METRIC_APPLICATION_FPS:
             case PM_METRIC_DISPLAYED_FPS:
@@ -596,6 +599,7 @@ struct FrameMetrics {
     double mDisplayLatency;
     double mDisplayedTime;
     double mClickToPhotonLatency;
+    double mAnimationError;
 };
 
 // Copied from: PresentMon/OutputThread.cpp
@@ -603,18 +607,23 @@ void UpdateChain(
     fpsSwapChainData* chain,
     PmNsmPresentEvent const& p)
 {
-    chain->mLastPresent = p;
-    chain->mLastPresentIsValid = true;
-    chain->mIncludeFrameData = true;
 
-    // IntelPresentMon specifics:
     if (p.FinalState == PresentResult::Presented) {
+        // Used when calculating animation error
+        if (chain->mLastPresentIsValid == true) {
+            chain->mLastDisplayedCPUStart = chain->mLastPresent.PresentStartTime + chain->mLastPresent.TimeInPresent;
+        }
+        // IntelPresentMon specifics:
         if (chain->display_count == 0) {
             chain->display_0_screen_time = p.ScreenTime;
         }
         chain->display_n_screen_time = p.ScreenTime;
         chain->display_count += 1;
     }
+
+    chain->mLastPresent = p;
+    chain->mLastPresentIsValid = true;
+    chain->mIncludeFrameData = true;
 }
 
 // Copied from: PresentMon/OutputThread.cpp
@@ -683,10 +692,13 @@ void ReportMetrics(
     if (displayed) {
         metrics.mDisplayLatency       = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->ScreenTime);
         metrics.mDisplayedTime        = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ScreenTime, nextDisplayedPresent->ScreenTime);
+        metrics.mAnimationError       = chain->mLastDisplayedCPUStart == 0 ? 0 : pmSession.TimestampDeltaToMilliSeconds(p->ScreenTime - chain->display_n_screen_time,
+                                                                                                                        metrics.mCPUStart - chain->mLastDisplayedCPUStart);
         metrics.mClickToPhotonLatency = p->InputTime == 0 ? 0.0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, p->ScreenTime);
     } else {
         metrics.mDisplayLatency       = 0.0;
         metrics.mDisplayedTime        = 0.0;
+        metrics.mAnimationError       = 0.0;
         metrics.mClickToPhotonLatency = 0.0;
     }
 
@@ -701,12 +713,13 @@ void ReportMetrics(
     // IntelPresentMon specifics:
 
     if (includeFrameData) {
-        chain->mCPUBusy   .push_back(metrics.mCPUBusy);
-        chain->mCPUWait   .push_back(metrics.mCPUWait);
-        chain->mGPULatency.push_back(metrics.mGPULatency);
-        chain->mGPUBusy   .push_back(metrics.mGPUBusy);
-        chain->mVideoBusy .push_back(metrics.mVideoBusy);
-        chain->mGPUWait   .push_back(metrics.mGPUWait);
+        chain->mCPUBusy       .push_back(metrics.mCPUBusy);
+        chain->mCPUWait       .push_back(metrics.mCPUWait);
+        chain->mGPULatency    .push_back(metrics.mGPULatency);
+        chain->mGPUBusy       .push_back(metrics.mGPUBusy);
+        chain->mVideoBusy     .push_back(metrics.mVideoBusy);
+        chain->mGPUWait       .push_back(metrics.mGPUWait);
+        chain->mAnimationError.push_back(std::abs(metrics.mAnimationError));
     }
 
     if (displayed) {
@@ -1040,20 +1053,25 @@ void ReportMetrics(
         PM_FRAME_QUERY::Context ctx{ nsm_hdr->start_qpc, pShmClient->GetQpcFrequency().QuadPart };
 
         for (uint32_t i = 0; i < frames_to_copy; i++) {
-            const PmNsmFrameData* pNsmCurrentFrameData = nullptr;
-            const PmNsmFrameData* pNsmPreviousFrameData = nullptr;
-            const PmNsmFrameData* pNsmNextFrameData = nullptr;
-            const auto status = pShmClient->ConsumePtrToNextNsmFrameData(&pNsmCurrentFrameData, &pNsmPreviousFrameData, &pNsmNextFrameData);
+            const PmNsmFrameData* pCurrentFrameData = nullptr;
+            const PmNsmFrameData* pFrameDataOfLastPresented = nullptr;
+            const PmNsmFrameData* pFrameDataOfNextDisplayed = nullptr;
+            const PmNsmFrameData* pFrameDataOfLastDisplayed = nullptr;
+            const PmNsmFrameData* pPreviousFrameDataOfLastDisplayed = nullptr;
+            const auto status = pShmClient->ConsumePtrToNextNsmFrameData(&pCurrentFrameData, 
+                &pFrameDataOfNextDisplayed, &pFrameDataOfLastPresented, &pFrameDataOfLastDisplayed, &pPreviousFrameDataOfLastDisplayed);
             if (status != PM_STATUS::PM_STATUS_SUCCESS) {
                 throw std::runtime_error{ "Error while trying to get frame data from shared memory" };
             }
-            if (!pNsmCurrentFrameData) {
+            if (!pCurrentFrameData) {
                 break;
             }
-            if (pNsmPreviousFrameData && pNsmNextFrameData) {
-                ctx.UpdateSourceData(pNsmCurrentFrameData,
-                    pNsmNextFrameData,
-                    pNsmPreviousFrameData);
+            if (pFrameDataOfLastPresented && pFrameDataOfNextDisplayed) {
+                ctx.UpdateSourceData(pCurrentFrameData,
+                    pFrameDataOfNextDisplayed,
+                    pFrameDataOfLastPresented,
+                    pFrameDataOfLastDisplayed,
+                    pPreviousFrameDataOfLastDisplayed);
                 pQuery->GatherToBlob(ctx, pBlob);
                 pBlob += pQuery->GetBlobSize();
                 frames_copied++;
@@ -1129,6 +1147,9 @@ void ReportMetrics(
             break;
         case PM_METRIC_DISPLAYED_TIME:
             output = CalculateStatistic(swapChain.mDisplayedTime, element.stat);
+            break;
+        case PM_METRIC_ANIMATION_ERROR:
+            output = CalculateStatistic(swapChain.mAnimationError, element.stat);
             break;
         case PM_METRIC_PRESENTED_FPS:
         {
@@ -1655,6 +1676,7 @@ void ReportMetrics(
                 case PM_METRIC_CPU_WAIT:
                 case PM_METRIC_GPU_TIME:
                 case PM_METRIC_DISPLAYED_TIME:
+                case PM_METRIC_ANIMATION_ERROR:
                 case PM_METRIC_APPLICATION:
                     CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
                     break;

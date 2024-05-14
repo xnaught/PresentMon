@@ -39,6 +39,7 @@ enum Header {
     Header_VideoBusy,
     Header_DisplayLatency,
     Header_DisplayedTime,
+    Header_AnimationError,
     Header_ClickToPhotonLatency,
 
     // --v1_metrics
@@ -85,6 +86,7 @@ struct v2Metrics {
     double videoBusy = 0.;
     std::optional<double> displayLatency;
     std::optional<double> displayedTime;
+    std::optional<double> animationError;
     std::optional<double> clickToPhotonLatency;
 };
 
@@ -114,6 +116,7 @@ constexpr char const* GetHeaderString(Header h)
     case Header_GPUWait:                return "GPUWait";
     case Header_DisplayLatency:         return "DisplayLatency";
     case Header_DisplayedTime:          return "DisplayedTime";
+    case Header_AnimationError:         return "AnimationError";
     case Header_ClickToPhotonLatency:   return "ClickToPhotonLatency";
 
     case Header_Runtime:                return "Runtime";
@@ -292,7 +295,7 @@ public:
     bool Open(std::wstring const& path, uint32_t processId);
     void Close();
     bool VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-        PM_QUERY_ELEMENT(&queryElements)[17], pmapi::BlobContainer& blobs);
+        PM_QUERY_ELEMENT(&queryElements)[18], pmapi::BlobContainer& blobs);
     bool ResetCsv();
 
 private:
@@ -321,7 +324,7 @@ CsvParser::CsvParser()
 {}
 
 bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-    PM_QUERY_ELEMENT(&queryElements)[17], pmapi::BlobContainer& blobs)
+    PM_QUERY_ELEMENT(&queryElements)[18], pmapi::BlobContainer& blobs)
 {
 
     for (auto pBlob : blobs) {
@@ -343,7 +346,8 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
         const auto gpuWait = *reinterpret_cast<const double*>(&pBlob[queryElements[13].dataOffset]);
         const auto displayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[14].dataOffset]);
         const auto displayedTime = *reinterpret_cast<const double*>(&pBlob[queryElements[15].dataOffset]);
-        const auto clickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[16].dataOffset]);
+        const auto animationError = *reinterpret_cast<const double*>(&pBlob[queryElements[16].dataOffset]);
+        const auto clickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[17].dataOffset]);
         
         // Read rows until we find one with the process we are interested in
         // or we are out of data.
@@ -438,6 +442,21 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                 else
                 {
                     if (std::isnan(displayedTime)) {
+                        columnsMatch = true;
+                    }
+                    else
+                    {
+                        columnsMatch = false;
+                    }
+                }
+                break;
+            case Header_AnimationError:
+                if (v2MetricRow_.animationError.has_value()) {
+                    columnsMatch = Validate(v2MetricRow_.animationError.value(), animationError);
+                }
+                else
+                {
+                    if (std::isnan(animationError)) {
                         columnsMatch = true;
                     }
                     else
@@ -565,6 +584,7 @@ bool CsvParser::Open(std::wstring const& path, uint32_t processId) {
                                                Header_VideoBusy,
                                                Header_DisplayLatency,
                                                Header_DisplayedTime,
+                                               Header_AnimationError,
                                                Header_ClickToPhotonLatency, });
 
     if (!columnsOK) {
@@ -730,6 +750,19 @@ void CsvParser::ConvertToMetricDataType(const char* data, Header columnId)
         }
         else {
             v2MetricRow_.displayedTime.reset();
+        }
+    }
+    break;
+    case Header_AnimationError:
+    {
+        if (strncmp(data, "NA", 2) != 0) {
+            double convertedData = 0.;
+            CharConvert<double> converter;
+            converter.Convert(data, convertedData, columnId, line_);
+            v2MetricRow_.animationError = convertedData;
+        }
+        else {
+            v2MetricRow_.animationError.reset();
         }
     }
     break;
