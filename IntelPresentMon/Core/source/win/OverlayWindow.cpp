@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: MIT
 #include "OverlayWindow.h" 
 #include <Core/source/infra/Logging.h>
+#include <CommonUtilities/Exception.h>
 
 #ifdef _DEBUG
 #define ZBAND_DISABLED
 #endif
  
+using namespace pmon::util;
+
 namespace p2c::win 
 {
     enum class ZBID
@@ -66,14 +69,14 @@ namespace p2c::win
                     DWORD band
                 );
                 const auto hmod = LoadLibraryExA("user32.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-                if (hmod == nullptr)
-                {
+                if (hmod == nullptr) {
                     pmlog_error().hr();
+                    throw Except<Exception>();
                 }
                 const auto pCreateWindowInBand = reinterpret_cast<CreateWindowInBand>(GetProcAddress(hmod, "CreateWindowInBand"));
-                if (pCreateWindowInBand == nullptr)
-                {
+                if (pCreateWindowInBand == nullptr) {
                     pmlog_error().hr();
+                    throw Except<Exception>();
                 }
 
                 pmlog_verb(v::window)(std::format(L"OVR-Z-CREATE: x:{} y:{} dim:[{},{}] area:[{},{}] name:{}",
@@ -90,6 +93,7 @@ namespace p2c::win
                     (DWORD)ZBID::ZBID_UIACCESS
                 )) {
                     pmlog_error().hr();
+                    throw Except<Exception>();
                 }
             }
         }
@@ -112,16 +116,15 @@ namespace p2c::win
         }
 
         // check for error
-        if (GetHandle() == nullptr)
-        {
+        if (GetHandle() == nullptr) {
             pmlog_error().hr();
+            throw Except<Exception>();
         }
     }
 
     std::optional<LRESULT> OverlayWindow::CustomHandleMessage(UINT msg, WPARAM wParam, LPARAM lParam)
     {
-        if (msg == WM_CLOSE)
-        {
+        if (msg == WM_CLOSE) {
             PostQuitMessage(0);
             return 0;
         }

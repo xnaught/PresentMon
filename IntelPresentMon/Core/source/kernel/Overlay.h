@@ -73,9 +73,31 @@ namespace p2c::kern
             Capture,
             Always,
         };
+        class TaskScheduler
+        {
+            enum Task_ : size_t
+            {
+                Poll_,
+                Render_,
+                Trace_,
+                Count_,
+            };
+            using nano = std::chrono::nanoseconds;
+        public:
+            TaskScheduler(size_t pollRate, size_t renderRate, size_t traceRate);
+            nano GetNextWait();
+            bool AtPoll() const;
+            bool AtRender() const;
+            bool AtTrace() const;
+        private:
+            std::chrono::duration<double, std::milli> tickDuration_;
+            size_t periods_[Count_];
+            size_t remainings_[Count_];
+        };
         // data
         win::Process proc;
         std::shared_ptr<OverlaySpec> pSpec;
+        TaskScheduler scheduler_;
         pmon::PresentMon* pm;
         pmon::MetricFetcherFactory fetcherFactory;
         std::unique_ptr<MetricPackMapper> pPackMapper;
@@ -93,8 +115,6 @@ namespace p2c::kern
         std::shared_ptr<gfx::lay::Element> pRoot;
         std::shared_ptr<pmon::RawFrameDataWriter> pWriter;
         std::shared_ptr<gfx::lay::TextElement> pCaptureIndicatorText;
-        int samplingPeriodMs;
-        int samplesPerFrame;
         infra::util::IntervalWaiter samplingWaiter;
         bool hideDuringCapture;
         bool hideAlways;

@@ -8,9 +8,9 @@ namespace p2c::infra::util
 {
 	using namespace ::pmon::util;
 
-	IntervalWaiter::IntervalWaiter(double interval)
+	IntervalWaiter::IntervalWaiter(double intervalSeconds)
 		:
-		interval_{ interval }
+		intervalSeconds_{ intervalSeconds }
 	{
 		waitableTimerHandle_ = CreateWaitableTimerExW(
 			nullptr,
@@ -23,16 +23,21 @@ namespace p2c::infra::util
 		}
 	}
 
-	void IntervalWaiter::SetInterval(double interval)
+	void IntervalWaiter::SetInterval(double intervalSeconds)
 	{
-		interval_ = interval;
+		intervalSeconds_ = intervalSeconds;
+	}
+
+	void IntervalWaiter::SetInterval(std::chrono::nanoseconds interval)
+	{
+		intervalSeconds_ = double(interval.count()) / 1'000'000'000.;
 	}
 
 	void IntervalWaiter::Wait()
 	{
 		const auto waitTimeSeconds = [=, this] {
 			const auto t = timer_.Peek();
-			auto targetCandidate = lastTargetTime_ + interval_;
+			auto targetCandidate = lastTargetTime_ + intervalSeconds_;
 			// if we are on-time
 			if (t <= targetCandidate) {
 				lastTargetTime_ = targetCandidate;
@@ -74,7 +79,7 @@ namespace p2c::infra::util
 	IntervalWaiter::~IntervalWaiter()
 	{
 		if (!CloseHandle(waitableTimerHandle_)) {
-			pmlog_error(L"Failed closing high resolution timer").no_trace().hr();
+			pmlog_warn(L"Failed closing high resolution timer").hr();
 		}
 	}
 }

@@ -5,6 +5,7 @@ namespace pmon::util::log
 {
 	struct TimePoint
 	{
-		std::chrono::high_resolution_clock::time_point value = std::chrono::high_resolution_clock::now();
+		TimePoint() noexcept;
+		std::chrono::high_resolution_clock::time_point value;
 	};
 }
