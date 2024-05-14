@@ -118,11 +118,9 @@
       </v-col>
       <v-col cols="9">
         <v-slider
-            class="overlay-draw-rate"
             v-model="overlayDrawRate"
             :max="120"
             :min="1"
-            :messages="[drawRateMessage]"
             thumb-label="always"
         ></v-slider>
       </v-col>
@@ -253,10 +251,6 @@ export default Vue.extend({
     margin: 0;
     padding: 0;
     height: auto;
-}
-.overlay-draw-rate >>> .v-messages__message {
-  color: blueviolet;
-  padding-left: 10px;
 }
 .link-head {
   color: white;

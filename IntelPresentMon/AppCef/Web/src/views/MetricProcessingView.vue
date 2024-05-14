@@ -17,11 +17,12 @@
       </v-col>
       <v-col cols="9">
         <v-slider
+          class="metric-poll-rate"
           v-model="metricPollRate"
           :max="240"
           :min="1"
+          :messages="metricPollMessages"
           thumb-label="always"
-          hide-details
         ></v-slider>
       </v-col>
     </v-row>
@@ -106,6 +107,15 @@ export default Vue.extend({
         Preferences.writeAttribute({ attr: 'metricPollRate', val: rate });
       },
     },
+    overlayDrawRate(): number {
+      return Preferences.preferences.overlayDrawRate;
+    },
+    metricPollMessages(): string[] {
+      if (this.metricPollRate % this.overlayDrawRate !== 0) {
+        return [`Recommend setting poll rate to be a whole multiple of the overlay draw rate (currently ${this.overlayDrawRate}fps).`];
+      }
+      return [];
+    },
     offset: {
       get(): number { return Preferences.preferences.metricsOffset; },
       set(metricsOffset: number) {
@@ -154,5 +164,9 @@ export default Vue.extend({
 .page-wrap {
   max-width: 750px;
   flex-grow: 1;
+}
+.metric-poll-rate >>> .v-messages__message {
+  color: blueviolet;
+  padding-left: 10px;
 }
 </style>
