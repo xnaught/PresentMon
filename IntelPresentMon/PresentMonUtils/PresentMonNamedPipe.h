@@ -122,8 +122,6 @@ struct PmNsmPresentEvent {
   uint64_t
       GPUVideoDuration;  // QPC duration during which a frame's DMA packet was
                          // running on a video node (if mTrackGPUVideo==true)
-  uint64_t ScreenTime;   // QPC value when the present was displayed on screen
-
   uint64_t InputTime;  // Earliest QPC value when the keyboard/mouse was clicked
                        // and used by this frame
 
@@ -131,6 +129,11 @@ struct PmNsmPresentEvent {
   uint64_t SwapChainAddress;
   int32_t SyncInterval;
   uint32_t PresentFlags;
+
+  // (FrameType, DisplayedQPC) for each time the frame was displayed
+  uint64_t Displayed_ScreenTime[16];
+  FrameType Displayed_FrameType[16];
+  uint32_t DisplayedCount;
 
   // Keys used to index into PMTraceConsumer's tracking data structures:
   uint64_t CompositionSurfaceLuid;   // mPresentByWin32KPresentHistoryToken
@@ -155,7 +158,6 @@ struct PmNsmPresentEvent {
   PresentMode PresentMode;
   PresentResult FinalState;
   InputDeviceType InputType;
-  FrameType FrameType;
 
   bool SupportsTearing;
   bool WaitForFlipEvent;

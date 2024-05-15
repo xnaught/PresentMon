@@ -307,7 +307,7 @@ void WriteCsvRow<FrameMetrics>(
                                  PresentModeToString(p.PresentMode));
     }
     if (args.mTrackFrameType) {
-        fwprintf(fp, L",%hs", FrameTypeToString(p.FrameType));
+        fwprintf(fp, L",%hs", FrameTypeToString(metrics.mFrameType));
     }
     switch (args.mTimeUnit) {
     case TimeUnit::MilliSeconds:
@@ -346,11 +346,15 @@ void WriteCsvRow<FrameMetrics>(
     }
     if (args.mTrackDisplay) {
         if (metrics.mDisplayedTime == 0.0) {
-            fwprintf(fp, L",NA,NA,NA");
+            fwprintf(fp, L",NA,NA");
         } else {
-            fwprintf(fp, L",%.4lf,%.4lf,%.4lf", metrics.mDisplayLatency,
-                                                metrics.mDisplayedTime,
-                                                metrics.mAnimationError);
+            fwprintf(fp, L",%.4lf,%.4lf", metrics.mDisplayLatency,
+                                          metrics.mDisplayedTime);
+        }
+        if (metrics.mAnimationErrorValid) {
+            fwprintf(fp, L",%.4lf", metrics.mAnimationError);
+        } else {
+            fwprintf(fp, L",NA");
         }
     }
     if (args.mTrackInput) {

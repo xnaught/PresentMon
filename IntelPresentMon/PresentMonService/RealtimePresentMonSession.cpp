@@ -275,7 +275,7 @@ void RealtimePresentMonSession::AddPresents(
 
         chain->mLastPresentQPC = presentEvent->PresentStartTime;
         if (presentEvent->FinalState == PresentResult::Presented) {
-            chain->mLastDisplayedPresentQPC = presentEvent->ScreenTime;
+            chain->mLastDisplayedPresentQPC = presentEvent->Displayed.empty() ? 0 : presentEvent->Displayed[0].second;
         }
         else if (chain->mLastDisplayedPresentQPC == chain->mLastPresentQPC) {
             chain->mLastDisplayedPresentQPC = 0;

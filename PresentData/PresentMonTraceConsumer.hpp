@@ -159,13 +159,15 @@ struct PresentEvent {
     uint64_t GPUDuration;       // QPC duration during which a frame's DMA packet was running on
                                 // ... any node (if mTrackGPUVideo==false) or non-video nodes (if mTrackGPUVideo==true)
     uint64_t GPUVideoDuration;  // QPC duration during which a frame's DMA packet was running on a video node (if mTrackGPUVideo==true)
-    uint64_t ScreenTime;        // QPC value when the present was displayed on screen
     uint64_t InputTime;         // Earliest QPC value when the keyboard/mouse was clicked and used by this frame
 
     // Extra present parameters obtained through DXGI or D3D9 present
     uint64_t SwapChainAddress;
     int32_t SyncInterval;
     uint32_t PresentFlags;
+
+    // (FrameType, DisplayedQPC) for each time the frame was displayed
+    std::vector<std::pair<FrameType, uint64_t>> Displayed;
 
     // Keys used to index into PMTraceConsumer's tracking data structures:
     uint64_t CompositionSurfaceLuid;      // mPresentByWin32KPresentHistoryToken
@@ -198,7 +200,6 @@ struct PresentEvent {
     PresentMode PresentMode;
     PresentResult FinalState;
     InputDeviceType InputType;
-    FrameType FrameType;
     bool SupportsTearing;
     bool WaitForFlipEvent;
     bool WaitForMPOFlipEvent;
@@ -220,8 +221,15 @@ struct PresentEvent {
     bool WaitingForPresentStop;
 
     // If WaitingForFlipFrameType, the present is waiting for a FlipFrameType event (or, until an
-    // MMIOFlipMultiPlaneOverlay3_Info event signals a higher present id).
+    // MMIOFlipMultiPlaneOverlay3_Info event signals a higher present id). If
+    // DoneWaitingForFlipFrameType, then the present did WaitingForFlipFrameType but is no longer
+    // waiting.
     bool WaitingForFlipFrameType;
+    bool DoneWaitingForFlipFrameType;
+
+    // If WaitingForFrameId, the present is waiting for another present with the same FrameId (or,
+    // until a PresentFrameType_Info event with a different FrameId).
+    bool WaitingForFrameId;
 
 
     PresentEvent();
@@ -417,7 +425,7 @@ struct PMTraceConsumer
     PMTraceConsumer();
 
     void HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool redirectedPresent);
-    void HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterval, bool isMMIOFlip, bool isMPOFlip);
+    std::shared_ptr<PresentEvent> HandleDxgkFlip(EVENT_HEADER const& hdr);
     void HandleDxgkQueueSubmit(EVENT_HEADER const& hdr, uint64_t hContext, uint32_t submitSequence, uint32_t packetType, bool isPresentPacket, bool isWin7);
     void HandleDxgkQueueComplete(uint64_t timestamp, uint64_t hContext, uint32_t submitSequence);
     void HandleDxgkMMIOFlip(uint64_t timestamp, uint32_t submitSequence, uint32_t flags);
@@ -456,8 +464,7 @@ struct PMTraceConsumer
     void CompletePresent(std::shared_ptr<PresentEvent> const& present);
     void RemoveLostPresent(std::shared_ptr<PresentEvent> present);
 
-    void AddPresentToCompletedList(std::shared_ptr<PresentEvent> const& present);
-    void UpdateReadyCount(std::shared_ptr<PresentEvent> const& present);
+    void UpdateReadyCount();
 
     void DeferFlipFrameType(uint64_t vidPnLayerId, uint64_t presentId, uint64_t timestamp, FrameType frameType);
     void ApplyFlipFrameType(std::shared_ptr<PresentEvent> const& present, uint64_t timestamp, FrameType frameType);

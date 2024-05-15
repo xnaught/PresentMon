@@ -30,16 +30,17 @@ public:
 			const PmNsmFrameData* pPreviousFrameDataOfLastDisplayed);
 		// data
 		const PmNsmFrameData* pSourceFrameData = nullptr;
+		uint32_t sourceFrameDisplayIndex = 0;
 		const double performanceCounterPeriodMs{};
 		const uint64_t qpcStart{};
 		bool dropped{};
-		// Start qpc of the previous frame, displayed or not
+		// qpc of the frame's cpu start time, displayed or not
 		uint64_t cpuFrameQpc = 0;
 		// Start qpc of the previously DISPLAYED frame.
 		uint64_t previousDisplayedCpuStartQpc = 0;
 		// Screen time qpc of the previously displayed frame.
 		uint64_t previousDisplayedQpc = 0;
-		// Screen time qpc of the next displayed frame
+		// Screen time qpc of the first display in the next displayed PmNsmFrameData
 		uint64_t nextDisplayedQpc = 0;
 	};
 	// functions

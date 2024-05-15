@@ -48,6 +48,51 @@ static inline FrameType ConvertPMPFrameTypeToFrameType(Intel_PresentMon::FrameTy
     return FrameType::Unspecified;
 }
 
+// Returns true if a ScreenTime has been set for this present.
+static inline bool HasScreenTime(std::shared_ptr<PresentEvent> const& p)
+{
+    for (auto const& pr : p->Displayed) {
+        if (pr.second != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Set a ScreenTime for this present.
+//
+// If a ScreenTime has not yet been set, add it to Displayed and set Presented.
+//
+// Otherwise, if the set ScreenTime has no FrameType, overwrite both ScreenTime and FrameType.
+//
+// Otherwise, if the set ScreenTime is zero, overwrite ScreenTime.
+//
+// Otherwise, if the call has a FrameType, add it to the list.
+static inline void SetScreenTime(std::shared_ptr<PresentEvent> const& p, uint64_t screenTime, FrameType frameType = FrameType::NotSet)
+{
+    DebugAssert(screenTime != 0);
+
+    auto displayedCount = p->Displayed.size();
+    if (displayedCount == 0) {
+        p->Displayed.emplace_back(frameType, screenTime);
+        p->FinalState = PresentResult::Presented;
+    } else if (p->Displayed.back().first == FrameType::NotSet) {
+        p->Displayed.back().first = frameType;
+        p->Displayed.back().second = screenTime;
+    } else if (p->Displayed.back().second == 0) {
+        DebugAssert(frameType == FrameType::NotSet);
+        for (size_t i = 0; i < displayedCount; ++i) {
+            if (p->Displayed[i].second == 0) {
+                p->Displayed.back().second = screenTime;
+                p->FinalState = PresentResult::Presented;
+                break;
+            }
+        }
+    } else if (frameType != FrameType::NotSet) {
+        p->Displayed.emplace_back(frameType, screenTime);
+    }
+}
+
 PresentEvent::PresentEvent()
     : PresentStartTime(0)
     , ProcessId(0)
@@ -57,7 +102,6 @@ PresentEvent::PresentEvent()
     , ReadyTime(0)
     , GPUDuration(0)
     , GPUVideoDuration(0)
-    , ScreenTime(0)
     , InputTime(0)
 
     , SwapChainAddress(0)
@@ -84,7 +128,6 @@ PresentEvent::PresentEvent()
     , PresentMode(PresentMode::Unknown)
     , FinalState(PresentResult::Unknown)
     , InputType(InputDeviceType::None)
-    , FrameType(FrameType::NotSet)
 
     , SupportsTearing(false)
     , WaitForFlipEvent(false)
@@ -100,6 +143,8 @@ PresentEvent::PresentEvent()
 
     , WaitingForPresentStop(false)
     , WaitingForFlipFrameType(false)
+    , DoneWaitingForFlipFrameType(false)
+    , WaitingForFrameId(false)
 {
 }
 
@@ -220,7 +265,7 @@ void PMTraceConsumer::HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool
 //     QueuePacket_Start SubmitSequence MMIOFLIP bPresent=1
 //     QueuePacket_Stop SubmitSequence
 //     PresentStop
-void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterval, bool isMMIOFlip, bool isMPOFlip)
+std::shared_ptr<PresentEvent> PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr)
 {
     // First, lookup the in-progress present on the same thread.
     //
@@ -255,8 +300,8 @@ void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterv
             // If we did see a PresentStart, then use this present
             if (presentEvent->Runtime != Runtime::Other) {
                 // There may be duplicate flip events for MPO situations, so only handle the first.
-                if ( presentEvent->PresentMode != PresentMode::Unknown) {
-                    return;
+                if (presentEvent->PresentMode != PresentMode::Unknown) {
+                    return nullptr;
                 }
                 break;
             }
@@ -268,7 +313,7 @@ void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterv
 
         // Create a new present for this flip
         if (!IsProcessTrackedForFiltering(hdr.ProcessId)) {
-            return;
+            return nullptr;
         }
 
         presentEvent = std::make_shared<PresentEvent>();
@@ -287,19 +332,6 @@ void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterv
 
     presentEvent->PresentMode = PresentMode::Hardware_Legacy_Flip;
 
-    if (flipInterval != -1) {
-        presentEvent->SyncInterval = flipInterval;
-    }
-    if (isMMIOFlip) {
-        presentEvent->WaitForFlipEvent = true;
-    }
-    if (isMPOFlip) {
-        presentEvent->WaitForMPOFlipEvent = true;
-    }
-    if (!isMMIOFlip && flipInterval == 0) {
-        presentEvent->SupportsTearing = true;
-    }
-
     // If this is the DWM thread, make any presents waiting for DWM dependent on it (i.e., they will
     // be displayed when it is).
     if (hdr.ThreadId == DwmPresentThreadId) {
@@ -310,6 +342,8 @@ void PMTraceConsumer::HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterv
         }
         std::swap(presentEvent->DependentPresents, mPresentsWaitingForDWM);
     }
+
+    return presentEvent;
 }
 
 void PMTraceConsumer::HandleDxgkQueueSubmit(
@@ -342,7 +376,7 @@ void PMTraceConsumer::HandleDxgkQueueSubmit(
                 present->SeenDxgkPresent = true;
 
                 // If the work is already done, complete it now.
-                if (present->ScreenTime != 0) {
+                if (HasScreenTime(present)) {
                     CompletePresent(present);
                 }
             }
@@ -418,8 +452,7 @@ void PMTraceConsumer::HandleDxgkQueueComplete(uint64_t timestamp, uint64_t hCont
                     pEvent->ReadyTime = timestamp;
                 }
 
-                pEvent->ScreenTime = timestamp;
-                pEvent->FinalState = PresentResult::Presented;
+                SetScreenTime(pEvent, timestamp);
 
                 // Sometimes, the queue packets associated with a present will complete
                 // before the DxgKrnl PresentInfo event is fired.  For blit presents in
@@ -470,7 +503,6 @@ void PMTraceConsumer::HandleDxgkMMIOFlip(uint64_t timestamp, uint32_t submitSequ
 {
     auto pEvent = FindPresentBySubmitSequence(submitSequence);
     if (pEvent != nullptr) {
-
         VerboseTraceBeforeModifyingPresent(pEvent.get());
         pEvent->ReadyTime = timestamp;
 
@@ -479,9 +511,9 @@ void PMTraceConsumer::HandleDxgkMMIOFlip(uint64_t timestamp, uint32_t submitSequ
         }
 
         if (flags & (uint32_t) Microsoft_Windows_DxgKrnl::SetVidPnSourceAddressFlags::FlipImmediate) {
-            pEvent->FinalState = PresentResult::Presented;
-            pEvent->ScreenTime = timestamp;
+            SetScreenTime(pEvent, timestamp);
             pEvent->SupportsTearing = true;
+
             if (pEvent->PresentMode == PresentMode::Hardware_Legacy_Flip) {
                 CompletePresent(pEvent);
             }
@@ -497,8 +529,7 @@ void PMTraceConsumer::HandleDxgkSyncDPC(uint64_t timestamp, uint32_t submitSeque
     if (pEvent != nullptr) {
 
         VerboseTraceBeforeModifyingPresent(pEvent.get());
-        pEvent->ScreenTime = timestamp;
-        pEvent->FinalState = PresentResult::Presented;
+        SetScreenTime(pEvent, timestamp);
 
         // For Hardware_Legacy_Flip, we are done tracking the present.  If we
         // aren't expecting a subsequent *SyncMultiPlaneDPC_Info event, then we
@@ -543,10 +574,14 @@ void PMTraceConsumer::HandleDxgkPresentHistory(
 
     VerboseTraceBeforeModifyingPresent(presentEvent.get());
     presentEvent->ReadyTime = 0;
-    presentEvent->ScreenTime = 0;
     presentEvent->SupportsTearing = false;
-    presentEvent->FinalState = PresentResult::Unknown;
     presentEvent->DxgkPresentHistoryToken = token;
+
+    if (presentEvent->Displayed.size() == 1 &&
+        presentEvent->Displayed[0].first == FrameType::NotSet) {
+        presentEvent->Displayed.clear();
+        presentEvent->FinalState = PresentResult::Unknown;
+    }
 
     auto iter = mPresentByDxgkPresentHistoryToken.find(token);
     if (iter != mPresentByDxgkPresentHistoryToken.end()) {
@@ -670,7 +705,16 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
             auto FlipInterval = desc[0].GetData<uint32_t>();
             auto MMIOFlip     = desc[1].GetData<BOOL>() != 0;
 
-            HandleDxgkFlip(hdr, FlipInterval, MMIOFlip, false);
+            auto p = HandleDxgkFlip(hdr);
+            if (p != nullptr) {
+                p->SyncInterval = FlipInterval;
+
+                if (MMIOFlip) {
+                    p->WaitForFlipEvent = true;
+                } else if (FlipInterval == 0) {
+                    p->SupportsTearing = true;
+                }
+            }
             return;
         }
         case Microsoft_Windows_DxgKrnl::IndependentFlip_Info::Id:
@@ -696,8 +740,26 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
             return;
         }
         case Microsoft_Windows_DxgKrnl::FlipMultiPlaneOverlay_Info::Id:
-            HandleDxgkFlip(hdr, -1, true, true);
+        {
+            EventDataDesc desc[] = {
+                { L"VidPnSourceId" },
+                { L"LayerIndex" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto VidPnSourceId = desc[0].GetData<uint32_t>();
+            auto LayerIndex    = desc[1].GetData<uint32_t>();
+
+            auto p = HandleDxgkFlip(hdr);
+            if (p != nullptr) {
+                p->WaitForFlipEvent    = true;
+                p->WaitForMPOFlipEvent = true;
+
+                if (p->SwapChainAddress == 0) {
+                    p->SwapChainAddress = GenerateVidPnLayerId(VidPnSourceId, LayerIndex);
+                }
+            }
             return;
+        }
         // QueuPacket_Start are used for render queue packets
         // QueuPacket_Start_2 are used for monitor wait packets
         // QueuPacket_Start_3 are used for monitor signal packets
@@ -795,11 +857,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
                         // this the present screen time.
                         if (FlipEntryStatusAfterFlip != (uint32_t) Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitHSync) {
 
-                            present->FinalState = PresentResult::Presented;
-
-                            if (FlipEntryStatusAfterFlip == (uint32_t) Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitComplete) {
-                                present->ScreenTime = hdr.TimeStamp.QuadPart;
-                            }
+                            SetScreenTime(present, hdr.TimeStamp.QuadPart);
 
                             if (present->PresentMode == PresentMode::Hardware_Legacy_Flip) {
                                 CompletePresent(present);
@@ -881,8 +939,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
                             // overwrite it in that case.
                             if (pEvent->FinalState != PresentResult::Presented) {
                                 VerboseTraceBeforeModifyingPresent(pEvent.get());
-                                pEvent->ScreenTime = hdr.TimeStamp.QuadPart;
-                                pEvent->FinalState = PresentResult::Presented;
+                                SetScreenTime(pEvent, hdr.TimeStamp.QuadPart);
                             }
 
                             // Complete the present.
@@ -921,8 +978,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
 
                 // If this is a deferred blit that's already seen QueuePacket_Stop,
                 // then complete it now.
-                if (present->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer &&
-                    present->ScreenTime != 0) {
+                if (present->PresentMode == PresentMode::Hardware_Legacy_Copy_To_Front_Buffer && HasScreenTime(present)) {
                     CompletePresent(present);
                 }
             }
@@ -1154,15 +1210,23 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
                             auto ii = mPresentByVidPnLayerId.find(vidPnLayerId);
                             if (ii != mPresentByVidPnLayerId.end()) {
                                 auto p2 = ii->second;
-                                mPresentByVidPnLayerId.erase(ii);   // Remove first because UpdateReadyCount() may
-                                                                    // call StopTrackingPresent()
+                                p2->PresentIds.clear();
+                                mPresentByVidPnLayerId.erase(ii);
 
                                 VerboseTraceBeforeModifyingPresent(p2.get());
+                                p2->DoneWaitingForFlipFrameType = true;
+
                                 if (p2->WaitingForFlipFrameType) {
                                     p2->WaitingForFlipFrameType = false;
-                                    UpdateReadyCount(p2);
-                                } else {
-                                    p2->PresentIds.clear();
+                                    StopTrackingPresent(p2);
+
+                                    for (auto p3 : p2->DependentPresents) {
+                                        VerboseTraceBeforeModifyingPresent(p3.get());
+                                        p3->WaitingForFlipFrameType = false;
+                                        StopTrackingPresent(p2);
+                                    }
+
+                                    UpdateReadyCount();
                                 }
                             }
                         }
@@ -1209,11 +1273,16 @@ void PMTraceConsumer::HandleWin7DxgkFlip(EVENT_RECORD* pEventRecord)
     using namespace Microsoft_Windows_DxgKrnl::Win7;
 
     auto pFlipEvent = reinterpret_cast<DXGKETW_FLIPEVENT*>(pEventRecord->UserData);
-    HandleDxgkFlip(
-        pEventRecord->EventHeader,
-        pFlipEvent->FlipInterval,
-        pFlipEvent->MMIOFlip != 0,
-        false);
+    auto p = HandleDxgkFlip(pEventRecord->EventHeader);
+    if (p != nullptr) {
+        p->SyncInterval = pFlipEvent->FlipInterval;
+
+        if (pFlipEvent->MMIOFlip != 0) {
+            p->WaitForFlipEvent = true;
+        } else if (pFlipEvent->FlipInterval == 0) {
+            p->SupportsTearing = true;
+        }
+    }
 }
 
 void PMTraceConsumer::HandleWin7DxgkPresentHistory(EVENT_RECORD* pEventRecord)
@@ -1437,7 +1506,7 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
                 presentEvent->Win32KBindId = 0;
                 mPresentByWin32KPresentHistoryToken.erase(eventIter);
 
-                if (!presentEvent->SeenInFrameEvent && (presentEvent->FinalState == PresentResult::Unknown || presentEvent->ScreenTime == 0)) {
+                if (!presentEvent->SeenInFrameEvent && presentEvent->FinalState == PresentResult::Unknown) {
                     VerboseTraceBeforeModifyingPresent(presentEvent.get());
                     presentEvent->FinalState = PresentResult::Discarded;
                     CompletePresent(presentEvent);
@@ -1655,11 +1724,11 @@ void PMTraceConsumer::StopTrackingPresent(std::shared_ptr<PresentEvent> const& p
         if (ii != mPresentByThreadId.end() && ii->second == p) {
             mPresentByThreadId.erase(ii);
         }
-        if (p->DriverThreadId != 0) {
-            ii = mPresentByThreadId.find(p->DriverThreadId);
-            if (ii != mPresentByThreadId.end() && ii->second == p) {
-                mPresentByThreadId.erase(ii);
-            }
+    }
+    if (p->DriverThreadId != 0) {
+        auto ii = mPresentByThreadId.find(p->DriverThreadId);
+        if (ii != mPresentByThreadId.end() && ii->second == p) {
+            mPresentByThreadId.erase(ii);
         }
     }
 
@@ -1788,44 +1857,75 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
         return;
     }
 
-    // Complete the present.
+    // Mark the present as completed.
     VerboseTraceBeforeModifyingPresent(p.get());
     p->IsCompleted = true;
 
-    // If this is a DWM present, complete any other present that contributed to
-    // it.  A DWM present only completes each HWND's most-recent Composed_Flip
-    // PresentEvent, so we mark any others as discarded.
-    //
-    // PresentEvents that become lost are not removed from DependentPresents
-    // tracking, so we need to protect against lost events (but they have
-    // already been added to mCompletedPresents etc.).
-    if (!p->DependentPresents.empty()) {
-        std::unordered_set<uint64_t> completedComposedFlipHwnds;
-        for (auto ii = p->DependentPresents.rbegin(), ie = p->DependentPresents.rend(); ii != ie; ++ii) {
-            auto p2 = *ii;
-            if (!p2->IsCompleted) {
-                if (p2->PresentMode == PresentMode::Composed_Flip && !completedComposedFlipHwnds.emplace(p2->Hwnd).second) {
-                    VerboseTraceBeforeModifyingPresent(p2.get());
-                    p2->FinalState = PresentResult::Discarded;
-                } else if (p2->FinalState != PresentResult::Discarded) {
-                    VerboseTraceBeforeModifyingPresent(p2.get());
-                    p2->FinalState = p->FinalState;
-                    p2->ScreenTime = p->ScreenTime;
-                }
+    // It is possible for a present to be displayed or discarded before Present_Stop.  If this
+    // happens, we stop tracking the present (except for mPresentByThreadId which is required by
+    // Present_Stop to lookup the present) but do not add the present to the dequeue list yet.
+    // Present_Stop will check if the present is completed and add it to the dequeue list if so.
+    if (!p->IsLost && p->Runtime != Runtime::Other && p->TimeInPresent == 0) {
+        VerboseTraceBeforeModifyingPresent(p.get());
+        p->WaitingForPresentStop = true;
+    }
 
-                if (p->IsLost) {
-                    VerboseTraceBeforeModifyingPresent(p2.get());
-                    p2->IsLost = true;
+    // If flip frame type tracking is enabled, we defer the completion because we may see subsequent
+    // FlipFrameType events that need to refer back to this PresentEvent.  The deferral will be
+    // completed when we see another MMIOFlipMultiPlaneOverlay3_Info event for the same
+    // (VidPnSourceId, LayerIndex) pair.
+    if (!p->IsLost && !p->DoneWaitingForFlipFrameType && mEnableFlipFrameTypeEvents && p->FinalState == PresentResult::Presented) {
+        VerboseTraceBeforeModifyingPresent(p.get());
+        p->WaitingForFlipFrameType = true;
+    }
+
+    // If this is a DWM present, update the dependent presents' final state and complete them as
+    // well.
+    //
+    // Note: we need to check if the dependent presents are already completed because if they were
+    // completed or lost elsewhere during analysis, they wouldn't have been removed from the
+    // DependentPresents list.
+    if (!p->DependentPresents.empty()) {
+        if (p->IsLost) {
+            for (auto p2 : p->DependentPresents) {
+                VerboseTraceBeforeModifyingPresent(p2.get());
+                p2->IsLost = true;
+            }
+        } else {
+            // If there are multiple dependent presents from the same HWND, then discard all but the
+            // last one.
+            std::unordered_set<uint64_t> completedComposedFlipHwnds;
+            for (auto ii = p->DependentPresents.rbegin(), ie = p->DependentPresents.rend(); ii != ie; ++ii) {
+                auto p2 = *ii;
+                if (!p2->IsCompleted) {
+                    if ((p2->PresentMode == PresentMode::Composed_Flip ||
+                         p2->PresentMode == PresentMode::Composed_Copy_GPU_GDI ||
+                         p2->PresentMode == PresentMode::Composed_Copy_CPU_GDI) &&
+                        !completedComposedFlipHwnds.emplace(p2->Hwnd).second) {
+                        VerboseTraceBeforeModifyingPresent(p2.get());
+                        p2->FinalState = PresentResult::Discarded;
+                        p2->Displayed.clear();
+                    } else if (p2->FinalState != PresentResult::Discarded) {
+                        VerboseTraceBeforeModifyingPresent(p2.get());
+                        p2->FinalState = p->FinalState;
+                        p2->Displayed = p->Displayed;
+                        p2->WaitingForFlipFrameType = p->WaitingForFlipFrameType;
+                        p2->DoneWaitingForFlipFrameType = p->DoneWaitingForFlipFrameType;
+                    }
                 }
             }
         }
-        for (auto p2 : p->DependentPresents) {
+
+        for (auto ii = p->DependentPresents.rbegin(), ie = p->DependentPresents.rend(); ii != ie; ++ii) {
+            auto p2 = *ii;
             if (!p2->IsCompleted) {
                 CompletePresent(p2);
             }
         }
-        p->DependentPresents.clear();
-        p->DependentPresents.shrink_to_fit();
+        if (!p->WaitingForFlipFrameType) {
+            p->DependentPresents.clear();
+            p->DependentPresents.shrink_to_fit();
+        }
     }
 
     // If presented, remove any earlier presents made on the same swap chain.
@@ -1843,57 +1943,35 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
                     p2->IsLost = true;
                 }
 
-                if (p2->WaitingForFlipFrameType) {
-                    VerboseTraceBeforeModifyingPresent(p2.get());
-                    p2->WaitingForFlipFrameType = false;
-                    UpdateReadyCount(p2);
-                } else {
-                    CompletePresent(p2);
-                }
+                CompletePresent(p2);
             }
         }
-    }
-
-    // It is possible for a present to be displayed or discarded before Present_Stop.  If this
-    // happens, we stop tracking the present (except for mPresentByThreadId which is required by
-    // Present_Stop to lookup the present) but do not add the present to the dequeue list yet.
-    // Present_Stop will check if the present is completed and add it to the dequeue list if so.
-    if (!p->IsLost && p->Runtime != Runtime::Other && p->TimeInPresent == 0) {
-        VerboseTraceBeforeModifyingPresent(p.get());
-        p->WaitingForPresentStop = true;
-    }
-
-    // If flip frame type tracking is enabled, we defer the completion because we may see subsequent
-    // FlipFrameType events that need to refer back to this PresentEvent.  The deferral will be
-    // completed when we see another MMIOFlipMultiPlaneOverlay3_Info event for the same
-    // (VidPnSourceId, LayerIndex) pair.
-    if (mTrackFrameType && !p->PresentIds.empty()) {
-        VerboseTraceBeforeModifyingPresent(p.get());
-        p->WaitingForFlipFrameType = true;
     }
 
     // Remove the present from tracking structures.
     StopTrackingPresent(p);
 
-    DebugAssert(p->IsCompleted);
-    DebugAssert(p->CompositionSurfaceLuid == 0);
-    DebugAssert(p->Win32KPresentCount == 0);
-    DebugAssert(p->Win32KBindId == 0);
-    DebugAssert(p->DxgkPresentHistoryToken == 0);
-    DebugAssert(p->DxgkPresentHistoryTokenData == 0);
-    DebugAssert(p->DxgkContext == 0);
-    DebugAssert(p->Hwnd == 0);
-    DebugAssert(p->QueueSubmitSequence == 0);
-    DebugAssert(p->RingIndex == UINT32_MAX);
-    DebugAssert(p->PresentInDwmWaitingStruct == false);
+    // If the present has a PresentFrameType, try to merge it with an existing present first.
+    auto present = p;
+    auto presentStartTime = p->PresentStartTime;
+    if (present->WaitingForFrameId) {
+        for (uint32_t i = mReadyCount; i < mCompletedCount; ++i) {
+            auto const& p2 = mCompletedPresents[GetRingIndex(mCompletedIndex + i)];
+            if (p2->WaitingForFrameId && p2->ProcessId == present->ProcessId) {
+                VerboseTraceBeforeModifyingPresent(p2.get());
+                if (p2->FrameId == present->FrameId) {
+                    p2->Displayed.insert(p2->Displayed.end(), present->Displayed.begin(), present->Displayed.end());
+                    present = nullptr;
+                    break;
+                }
+
+                p2->WaitingForFrameId = false;
+            }
+        }
+    }
 
     // Add the present to the completed list
-    AddPresentToCompletedList(p);
-}
-
-void PMTraceConsumer::AddPresentToCompletedList(std::shared_ptr<PresentEvent> const& present)
-{
-    {
+    if (present != nullptr) {
         std::lock_guard<std::mutex> lock(mPresentEventMutex);
 
         // If the completed list is full, throw away the oldest completed present, if it IsLost; or this
@@ -1917,45 +1995,44 @@ void PMTraceConsumer::AddPresentToCompletedList(std::shared_ptr<PresentEvent> co
         mCompletedPresents[index] = present;
     }
 
-    UpdateReadyCount(present);
+    // Update the ready count
+    UpdateReadyCount();
 
     // It's possible for a deferred condition to never be cleared.  e.g., a process' last present
     // doesn't get a Present_Stop event.  When this happens the deferred present will prevent all
     // subsequent presents from other processes from being dequeued until the ring buffer wraps and
-    // forces it out, which is likely longer than we want to wait.  So we check here if there is 
+    // forces it out, which is likely longer than we want to wait.  So we check here if there is
     // a stuck deferred present and clear the deferral if it gets too old.
     if (mReadyCount == 0) {
         auto const& deferredPresent = mCompletedPresents[mCompletedIndex];
-        if (present->PresentStartTime >= deferredPresent->PresentStartTime &&
-            present->PresentStartTime - deferredPresent->PresentStartTime > mDeferralTimeLimit) {
+        if (presentStartTime >= deferredPresent->PresentStartTime &&
+            presentStartTime - deferredPresent->PresentStartTime > mDeferralTimeLimit) {
+
             VerboseTraceBeforeModifyingPresent(deferredPresent.get());
-            deferredPresent->IsLost = true;
-            deferredPresent->WaitingForPresentStop = false;
+
+            if (deferredPresent->WaitingForPresentStop) {
+                deferredPresent->WaitingForPresentStop = false;
+                deferredPresent->IsLost = true;
+            }
+
             deferredPresent->WaitingForFlipFrameType = false;
-            UpdateReadyCount(deferredPresent);
+
+            StopTrackingPresent(deferredPresent);
+            UpdateReadyCount();
         }
     }
 }
 
-void PMTraceConsumer::UpdateReadyCount(std::shared_ptr<PresentEvent> const& present)
+void PMTraceConsumer::UpdateReadyCount()
 {
-    if (!present->WaitingForPresentStop &&
-        !present->WaitingForFlipFrameType) {
+    std::lock_guard<std::mutex> lock(mPresentEventMutex);
 
-        StopTrackingPresent(present);
-
-        {
-            std::lock_guard<std::mutex> lock(mPresentEventMutex);
-
-            uint32_t i = GetRingIndex(mCompletedIndex + mReadyCount);
-            if (present == mCompletedPresents[i]) {
-                DebugAssert(mReadyCount < mCompletedCount);
-                do {
-                    mReadyCount += 1;
-                    i = GetRingIndex(i + 1);
-                } while (mReadyCount < mCompletedCount && !mCompletedPresents[i]->WaitingForPresentStop
-                                                       && !mCompletedPresents[i]->WaitingForFlipFrameType);
-            }
+    for (; mReadyCount < mCompletedCount; ++mReadyCount) {
+        auto const& p = mCompletedPresents[GetRingIndex(mCompletedIndex + mReadyCount)];
+        if (p->WaitingForPresentStop ||
+            p->WaitingForFlipFrameType ||
+            p->WaitingForFrameId) {
+            break;
         }
     }
 }
@@ -2114,9 +2191,12 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
     // If this present completed early and was deferred until the Present_Stop, then no more
     // analysis is needed; we just clear the deferral.
     if (present->WaitingForPresentStop) {
+        VerboseTraceBeforeModifyingPresent(present.get());
         present->WaitingForPresentStop = false;
+
         mPresentByThreadId.erase(eventIter);
-        UpdateReadyCount(present);
+
+        UpdateReadyCount();
         return;
     }
 
@@ -2274,11 +2354,9 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
                 auto jj = present->PresentIds.find(vidPnLayerId);
                 if (jj == present->PresentIds.end() || jj->second != props->PresentId) {
                     DeferFlipFrameType(vidPnLayerId, props->PresentId, timestamp, frameType);
-                    return;
+                } else {
+                    ApplyFlipFrameType(present, timestamp, frameType);
                 }
-
-                // Create a PresentEvent for this flip time
-                ApplyFlipFrameType(present, timestamp, frameType);
             }
             return;
         }
@@ -2307,31 +2385,29 @@ void PMTraceConsumer::ApplyFlipFrameType(
     uint64_t timestamp,
     FrameType frameType)
 {
-    // Create a copy of the present for this flip to add to the complete list, and mark the base
-    // present as lost.
-    auto copy = std::make_shared<PresentEvent>();
-    *copy = *present;
-    copy->IsLost = false;
-    copy->WaitingForFlipFrameType = false;
+    DebugAssert(frameType != FrameType::NotSet);
+
+    for (auto p2 : present->DependentPresents) {
+        if (p2->FinalState != PresentResult::Discarded) {
+            VerboseTraceBeforeModifyingPresent(p2.get());
+            SetScreenTime(p2, timestamp, frameType);
+        }
+    }
 
     VerboseTraceBeforeModifyingPresent(present.get());
-    present->IsLost = true;
-
-    VerboseTraceBeforeModifyingPresent(copy.get());
-    copy->ScreenTime = timestamp;
-    copy->FrameType = frameType;
-    copy->FinalState = PresentResult::Presented;
-
-    AddPresentToCompletedList(copy);
+    SetScreenTime(present, timestamp, frameType);
 }
 
 void PMTraceConsumer::ApplyPresentFrameType(
     std::shared_ptr<PresentEvent> const& present)
 {
+    DebugAssert(present->Displayed.empty());
+
     auto ii = mPendingPresentFrameTypeEvents.find(present->ThreadId);
     if (ii != mPendingPresentFrameTypeEvents.end()) {
-        present->FrameId   = ii->second.FrameId;
-        present->FrameType = ii->second.FrameType;
+        present->FrameId = ii->second.FrameId;
+        present->Displayed.emplace_back(ii->second.FrameType, 0);
+        present->WaitingForFrameId = true;
         mPendingPresentFrameTypeEvents.erase(ii);
     }
 }
@@ -2392,7 +2468,3 @@ void PMTraceConsumer::DequeuePresentEvents(std::vector<std::shared_ptr<PresentEv
         mReadyCount = 0;
     }
 }
-
-#ifdef TRACK_PRESENT_PATHS
-static_assert(__COUNTER__ <= 64, "Too many TRACK_PRESENT ids to store in PresentEvent::AnalysisPath");
-#endif

@@ -741,10 +741,10 @@ bool PmFrameGenerator::CalculateFpsMetrics(
           pmft_frames_[current_frame_number].time_in_seconds;
       swap_chain->cpu_0_time = swap_chain->cpu_n_time;
       if (pmft_frames_[current_frame_number].dropped == false) {
-        swap_chain->display_n_screen_time =
+        swap_chain->mLastDisplayedScreenTime =
             pmft_frames_[current_frame_number].time_in_seconds +
             (pmft_frames_[current_frame_number].ms_until_displayed / 1000.);
-        swap_chain->display_0_screen_time = swap_chain->display_n_screen_time;
+        swap_chain->display_0_screen_time = swap_chain->mLastDisplayedScreenTime;
         swap_chain->dropped.push_back(0);
       } else {
         swap_chain->dropped.push_back(1);
@@ -776,7 +776,7 @@ bool PmFrameGenerator::CalculateFpsMetrics(
                 1. / (swap_chain->display_0_screen_time -
                       current_display_screen_time_s));
           } else {
-            swap_chain->display_n_screen_time = current_display_screen_time_s;
+            swap_chain->mLastDisplayedScreenTime = current_display_screen_time_s;
           }
           swap_chain->display_0_screen_time = current_display_screen_time_s;
           swap_chain->dropped.push_back(0);
@@ -800,7 +800,7 @@ bool PmFrameGenerator::CalculateFpsMetrics(
     CalcMetricStats(swap_chain.gpu_sum_ms, temp_fps_data.gpu_busy);
     // Overwrite the average both the display and cpu average fps.
     auto avg_fps =
-        swap_chain.display_n_screen_time - swap_chain.display_0_screen_time;
+        swap_chain.mLastDisplayedScreenTime - swap_chain.display_0_screen_time;
     avg_fps /= swap_chain.display_fps.size();
     avg_fps = 1. / avg_fps;
     temp_fps_data.displayed_fps.avg = avg_fps;

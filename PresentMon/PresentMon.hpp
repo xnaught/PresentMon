@@ -98,6 +98,10 @@ struct FrameMetrics {
     double mDisplayedTime;
     double mAnimationError;
     double mClickToPhotonLatency;
+
+    FrameType mFrameType;
+
+    bool mAnimationErrorValid;
 };
 
 struct FrameMetrics1 {
@@ -128,9 +132,6 @@ struct SwapChainData {
     // The CPU start and screen time for the most recent frame that was displayed
     uint64_t mLastDisplayedCPUStart = 0;
     uint64_t mLastDisplayedScreenTime = 0;
-
-    // Whether to include frame data in the next PresentEvent's FrameMetrics.
-    bool mIncludeFrameData = true;
 
     // Frame statistics
     float mAvgCPUDuration = 0.f;

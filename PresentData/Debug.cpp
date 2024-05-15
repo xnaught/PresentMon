@@ -252,7 +252,6 @@ void FlushModifiedPresent()
     }
     FLUSH_MEMBER(PrintTimeDelta,      TimeInPresent)
     FLUSH_MEMBER(PrintTime,           ReadyTime)
-    FLUSH_MEMBER(PrintTime,           ScreenTime)
     FLUSH_MEMBER(PrintTime,           InputTime)
     FLUSH_MEMBER(PrintTime,           GPUStartTime)
     FLUSH_MEMBER(PrintTimeDelta,      GPUDuration)
@@ -277,8 +276,26 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintBool,           PresentFailed)
     FLUSH_MEMBER(PrintBool,           WaitingForPresentStop)
     FLUSH_MEMBER(PrintBool,           WaitingForFlipFrameType)
-    FLUSH_MEMBER(PrintFrameType,      FrameType)
+    FLUSH_MEMBER(PrintBool,           DoneWaitingForFlipFrameType)
+    FLUSH_MEMBER(PrintBool,           WaitingForFrameId)
 #undef FLUSH_MEMBER
+
+    // Displayed
+    if (gModifiedPresent->Displayed != gOriginalPresentValues.Displayed) {
+        if (changedCount++ == 0) {
+            wprintf(L"%*hsp%u", 17 + 6 + 6, "", gModifiedPresent->FrameId);
+        }
+        wprintf(L" Displayed=");
+        auto first = true;
+        for (auto const& pr : gModifiedPresent->Displayed) {
+            wprintf(L"%c ", first ? L'[' : L',');
+            PrintFrameType(pr.first);
+            wprintf(L":");
+            PrintTime(pr.second);
+            first = false;
+        }
+        wprintf(L"%c]", first ? L'[' : L' ');
+    }
 
     // PresentIds
     if (gModifiedPresent->PresentIds != gOriginalPresentValues.PresentIds) {
@@ -406,7 +423,8 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
             case Blit_Info::Id:                    PrintEventHeader(eventRecord, metadata, "Blit_Info",                    { L"hwnd",               PrintU64x,
                                                                                                                              L"bRedirectedPresent", PrintU32 }); break;
             case BlitCancel_Info::Id:              PrintEventHeader(hdr, "BlitCancel_Info"); break;
-            case FlipMultiPlaneOverlay_Info::Id:   PrintEventHeader(hdr, "FlipMultiPlaneOverlay_Info"); break;
+            case FlipMultiPlaneOverlay_Info::Id:   PrintEventHeader(eventRecord, metadata, "FlipMultiPlaneOverlay_Info",   { L"VidPnSourceId",      PrintU32,
+                                                                                                                             L"LayerIndex",         PrintU32 }); break;
             case Present_Info::Id:                 PrintEventHeader(hdr, "DxgKrnl_Present_Info"); break;
 
             case MMIOFlip_Info::Id:                PrintEventHeader(eventRecord, metadata, "MMIOFlip_Info",                { L"FlipSubmitSequence", PrintU64, }); break;

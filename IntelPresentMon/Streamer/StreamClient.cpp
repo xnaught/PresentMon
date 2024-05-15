@@ -175,7 +175,7 @@ const PmNsmFrameData* StreamClient::PeekNextDisplayedFrame()
         const PmNsmFrameData* pNsmData = nullptr;
         pNsmData = ReadFrameByIdx(peekIndex);
         while (pNsmData) {
-            if (pNsmData->present_event.ScreenTime != 0) {
+            if (pNsmData->present_event.DisplayedCount != 0) {
                 return pNsmData;
             }
             // advance to next frame with circular buffer wrapping behavior
@@ -386,11 +386,11 @@ void StreamClient::CopyFrameData(uint64_t start_qpc,
     // displayed frame. 
     if (src_frame->present_event.last_displayed_qpc > 0) {
       dst_frame->ms_between_display_change =
-          QpcDeltaToMs(src_frame->present_event.ScreenTime -
+          QpcDeltaToMs(src_frame->present_event.Displayed_ScreenTime[0] -
                            src_frame->present_event.last_displayed_qpc,
                        GetQpcFrequency());
     }
-    dst_frame->ms_until_displayed = QpcDeltaToMs(src_frame->present_event.ScreenTime -
+    dst_frame->ms_until_displayed = QpcDeltaToMs(src_frame->present_event.Displayed_ScreenTime[0] -
                          src_frame->present_event.PresentStartTime,
         GetQpcFrequency());
   } else {
