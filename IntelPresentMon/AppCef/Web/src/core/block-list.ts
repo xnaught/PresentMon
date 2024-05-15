@@ -35,15 +35,17 @@ export async function LoadBlocklists(): Promise<void> {
     else {
       // try loading custom block list from appData
       try {
+        if (await Api.checkPathExistence(FileLocation.Data, targetBlocklistPath)) {
           const procs = (await Api.loadFile(FileLocation.Data, targetBlocklistPath)).payload;
           targetBlocklist = constructSetFromString(procs);
           return;
+        }
       } catch (e) {}
       // try loading default block list from install directory
       try {
-          const procs = (await Api.loadFile(FileLocation.Install, targetBlocklistPath)).payload;
-          targetBlocklist = constructSetFromString(procs);
-          return;
+        const procs = (await Api.loadFile(FileLocation.Install, targetBlocklistPath)).payload;
+        targetBlocklist = constructSetFromString(procs);
+        return;
       } catch (e) {}
     }
     // if all else fails, clear the blocklist

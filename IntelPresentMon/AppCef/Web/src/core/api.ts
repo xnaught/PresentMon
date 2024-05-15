@@ -110,6 +110,9 @@ export class Api {
     static async storeFile(payload: string, location: FileLocation, path: string): Promise<void> {
         await this.invokeEndpointFuture('storeFile', {payload, location, path});
     }
+    static async checkPathExistence(location: FileLocation, path: string): Promise<boolean> {
+        return await this.invokeEndpointFuture('checkPathExistence', {location, path});
+    }
     static async browseStoreSpec(payload: string): Promise<void> {
         await this.invokeEndpointFuture('browseStoreSpec', {payload});
     }

@@ -47,6 +47,7 @@
     <ClInclude Include="source\util\AsyncEndpoint.h" />
     <ClInclude Include="source\util\AsyncEndpointCollection.h" />
     <ClInclude Include="source\util\AsyncEndpointManager.h" />
+    <ClInclude Include="source\util\async\CheckPathExistence.h" />
     <ClInclude Include="source\util\async\GetTopGpuProcess.h" />
     <ClInclude Include="source\util\async\LoadEnvVars.h" />
     <ClInclude Include="source\util\async\LoadFile.h" />
