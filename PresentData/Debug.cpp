@@ -124,15 +124,6 @@ void PrintPresentResult(PresentResult value)
     default:                       wprintf(L"Unknown (%u)", value); assert(false); break;
     }
 }
-void PrintDeferredReason(uint32_t value)
-{
-    switch (value) {
-    case DeferredReason_None:                    wprintf(L"None"); break;
-    case DeferredReason_WaitingForPresentStop:   wprintf(L"WaitingForPresentStop"); break;
-    case DeferredReason_WaitingForFlipFrameType: wprintf(L"WaitingForFlipFrameType"); break;
-    default:                                     wprintf(L"Unknown (%u)", value); assert(false); break;
-    }
-}
 void PrintPresentHistoryModel(uint32_t model)
 {
     using namespace Microsoft_Windows_DxgKrnl;
@@ -286,7 +277,8 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintBool,           IsCompleted)
     FLUSH_MEMBER(PrintBool,           IsLost)
     FLUSH_MEMBER(PrintBool,           PresentFailed)
-    FLUSH_MEMBER(PrintDeferredReason, DeferredReason)
+    FLUSH_MEMBER(PrintBool,           WaitingForPresentStop)
+    FLUSH_MEMBER(PrintBool,           WaitingForFlipFrameType)
     FLUSH_MEMBER(PrintFrameType,      FrameType)
 #undef FLUSH_MEMBER
 

@@ -125,12 +125,6 @@ enum class FrameType {
     AMD_AFMF = 100,
 };
 
-enum DeferredReason {
-    DeferredReason_None                    = 0,
-    DeferredReason_WaitingForPresentStop   = 1 << 0,
-    DeferredReason_WaitingForFlipFrameType = 1 << 1,
-};
-
 struct InputEvent {
     uint64_t Time;
     InputDeviceType Type;
@@ -189,6 +183,9 @@ struct PresentEvent {
     //       ThreadId, DriverThreadId  -> mPresentByThreadId
     //       PresentInDwmWaitingStruct -> mPresentsWaitingForDWM
 
+    // Additional transient tracking state
+    std::deque<std::shared_ptr<PresentEvent>> DependentPresents;
+
     // Properties deduced by watching events through present pipeline
     uint32_t DestWidth;
     uint32_t DestHeight;
@@ -217,10 +214,14 @@ struct PresentEvent {
     bool PresentInDwmWaitingStruct; // Whether this PresentEvent is currently stored in
                                     // PMTraceConsumer::mPresentsWaitingForDWM
 
-    // Additional transient tracking state
-    std::deque<std::shared_ptr<PresentEvent>> DependentPresents;
+    // If WaitingForPresentStop, then the present has been completed but it has not seen a
+    // PresentStop event yet. The present is marked not-ready for dequeue until the PresentStop is
+    // seen.
+    bool WaitingForPresentStop;
 
-    uint32_t DeferredReason;    // The reason(s) this present is being deferred (see DeferredReason enum).
+    // If WaitingForFlipFrameType, the present is waiting for a FlipFrameType event (or, until an
+    // MMIOFlipMultiPlaneOverlay3_Info event signals a higher present id).
+    bool WaitingForFlipFrameType;
 
     // Track the path the present took through the PresentMon analysis.
     #ifdef TRACK_PRESENT_PATHS
@@ -447,9 +448,9 @@ struct PMTraceConsumer
 
 
     void SetThreadPresent(uint32_t threadId, std::shared_ptr<PresentEvent> const& present);
-    std::shared_ptr<PresentEvent> FindThreadPresent(uint32_t threadId);
-    std::shared_ptr<PresentEvent> FindOrCreatePresent(EVENT_HEADER const& hdr);
+    std::shared_ptr<PresentEvent> FindPresentByThreadId(uint32_t threadId);
     std::shared_ptr<PresentEvent> FindPresentBySubmitSequence(uint32_t submitSequence);
+    std::shared_ptr<PresentEvent> FindOrCreatePresent(EVENT_HEADER const& hdr);
 
     void TrackPresent(std::shared_ptr<PresentEvent> present, OrderedPresents* presentsByThisProcess);
     void StopTrackingPresent(std::shared_ptr<PresentEvent> const& present);
@@ -457,11 +458,11 @@ struct PMTraceConsumer
 
     void RuntimePresentStart(Runtime runtime, EVENT_HEADER const& hdr, uint64_t swapchainAddr, uint32_t dxgiPresentFlags, int32_t syncInterval);
     void RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hdr, uint32_t result);
-    void CompletePresent(std::shared_ptr<PresentEvent> const& p);
+    void CompletePresent(std::shared_ptr<PresentEvent> const& present);
     void RemoveLostPresent(std::shared_ptr<PresentEvent> present);
 
     void AddPresentToCompletedList(std::shared_ptr<PresentEvent> const& present);
-    void ClearDeferredReason(std::shared_ptr<PresentEvent> const& present, uint32_t deferredReason);
+    void UpdateReadyCount(std::shared_ptr<PresentEvent> const& present);
 
     void DeferFlipFrameType(uint64_t vidPnLayerId, uint64_t presentId, uint64_t timestamp, FrameType frameType);
     void ApplyFlipFrameType(std::shared_ptr<PresentEvent> const& present, uint64_t timestamp, FrameType frameType);

@@ -101,9 +101,6 @@ void Streamer::CopyFromPresentMonPresentEvent(
     nsm_present_event->RingIndex =
         present_event->RingIndex;
 
-    nsm_present_event->DeferredReason =
-        present_event->DeferredReason;
-
     nsm_present_event->DestWidth = present_event->DestWidth;
     nsm_present_event->DestHeight = present_event->DestHeight;
     nsm_present_event->DriverThreadId = present_event->DriverThreadId;

@@ -124,7 +124,8 @@ PresentEvent::PresentEvent()
     , PresentFailed(false)
     , PresentInDwmWaitingStruct(false)
 
-    , DeferredReason(DeferredReason_None)
+    , WaitingForPresentStop(false)
+    , WaitingForFlipFrameType(false)
 
     #ifdef TRACK_PRESENT_PATHS
     , AnalysisPath(0ull)
@@ -400,7 +401,7 @@ void PMTraceConsumer::HandleDxgkQueueSubmit(
     if (packetType == (uint32_t) Microsoft_Windows_DxgKrnl::QueuePacketType::DXGKETW_MMIOFLIP_COMMAND_BUFFER ||
         packetType == (uint32_t) Microsoft_Windows_DxgKrnl::QueuePacketType::DXGKETW_SOFTWARE_COMMAND_BUFFER ||
         isPresentPacket) {
-        auto present = FindThreadPresent(hdr.ThreadId);
+        auto present = FindPresentByThreadId(hdr.ThreadId);
         if (present != nullptr && present->QueueSubmitSequence == 0) {
 
             TRACK_PRESENT_PATH(present);
@@ -1020,7 +1021,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
         // no further work was needed.
         case Microsoft_Windows_DxgKrnl::BlitCancel_Info::Id:
         {
-            auto present = FindThreadPresent(hdr.ThreadId);
+            auto present = FindPresentByThreadId(hdr.ThreadId);
             if (present != nullptr) {
                 TRACK_PRESENT_PATH(present);
 
@@ -1219,18 +1220,21 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
                     DebugAssert(present == nullptr || present->PresentIds.empty());
 
                     for (uint32_t i = 0; i < PlaneCount; ++i) {
-                        // Any previous present on this VidPnLayer will not get any more
-                        // FlipFrameType events.
+
+                        // Mark any present already assigned to this VidPnLayer as they will not be
+                        // getting any more FlipFrameType events.
                         auto vidPnLayerId = GenerateVidPnLayerId(VidPnSourceId, LayerIndex[i]);
                         {
                             auto ii = mPresentByVidPnLayerId.find(vidPnLayerId);
                             if (ii != mPresentByVidPnLayerId.end()) {
                                 auto p2 = ii->second;
-                                mPresentByVidPnLayerId.erase(ii);   // Remove first because ClearDeferredReason() may
-                                                                    // complete the present can trigger removal.
+                                mPresentByVidPnLayerId.erase(ii);   // Remove first because UpdateReadyCount() may
+                                                                    // call StopTrackingPresent()
 
-                                if (p2->DeferredReason & DeferredReason_WaitingForFlipFrameType) {
-                                    ClearDeferredReason(p2, DeferredReason_WaitingForFlipFrameType);
+                                VerboseTraceBeforeModifyingPresent(p2.get());
+                                if (p2->WaitingForFlipFrameType) {
+                                    p2->WaitingForFlipFrameType = false;
+                                    UpdateReadyCount(p2);
                                 } else {
                                     p2->PresentIds.clear();
                                 }
@@ -1242,7 +1246,6 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
                         if (present != nullptr) {
                             VerboseTraceBeforeModifyingPresent(present.get());
                             present->PresentIds.emplace(vidPnLayerId, PresentId[i]);
-
                             mPresentByVidPnLayerId.emplace(vidPnLayerId, present);
                         }
 
@@ -1706,8 +1709,9 @@ void PMTraceConsumer::RemovePresentFromSubmitSequenceIdTracking(std::shared_ptr<
             // presentsBySubmitSequence is expected to be small (typically one element)
             // this should be faster.
             if (presentsBySubmitSequence->size() == 1) {
-                DebugAssert(presentsBySubmitSequence->begin()->second == present);
-                mPresentBySubmitSequence.erase(ii);
+                if (presentsBySubmitSequence->begin()->second == present) {
+                    mPresentBySubmitSequence.erase(ii);
+                }
             } else {
                 for (auto jj = presentsBySubmitSequence->begin(), je = presentsBySubmitSequence->end(); jj != je; ++jj) {
                     if (jj->second == present) {
@@ -1743,7 +1747,7 @@ void PMTraceConsumer::StopTrackingPresent(std::shared_ptr<PresentEvent> const& p
     //
     // We don't reset ThreadId nor DriverThreadId as both are useful outside of
     // tracking.
-    if ((p->DeferredReason & DeferredReason_WaitingForPresentStop) == 0) {
+    if (!p->WaitingForPresentStop) {
         auto ii = mPresentByThreadId.find(p->ThreadId);
         if (ii != mPresentByThreadId.end() && ii->second == p) {
             mPresentByThreadId.erase(ii);
@@ -1808,7 +1812,7 @@ void PMTraceConsumer::StopTrackingPresent(std::shared_ptr<PresentEvent> const& p
     }
 
     // mPresentByVidPnLayerId (unless it will be needed by deferred FlipFrameType handling)
-    if ((p->DeferredReason & DeferredReason_WaitingForFlipFrameType) == 0 ) {
+    if (!p->WaitingForFlipFrameType) {
         for (auto const& pr : p->PresentIds) {
             auto ii = mPresentByVidPnLayerId.find(pr.first);
             if (ii != mPresentByVidPnLayerId.end() && ii->second == p) {
@@ -1936,8 +1940,10 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
                     p2->IsLost = true;
                 }
 
-                if (p2->DeferredReason & DeferredReason_WaitingForFlipFrameType) {
-                    ClearDeferredReason(p2, DeferredReason_WaitingForFlipFrameType);
+                if (p2->WaitingForFlipFrameType) {
+                    VerboseTraceBeforeModifyingPresent(p2.get());
+                    p2->WaitingForFlipFrameType = false;
+                    UpdateReadyCount(p2);
                 } else {
                     CompletePresent(p2);
                 }
@@ -1951,7 +1957,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
     // Present_Stop will check if the present is completed and add it to the dequeue list if so.
     if (!p->IsLost && p->Runtime != Runtime::Other && p->TimeInPresent == 0) {
         VerboseTraceBeforeModifyingPresent(p.get());
-        p->DeferredReason |= DeferredReason_WaitingForPresentStop;
+        p->WaitingForPresentStop = true;
     }
 
     // If flip frame type tracking is enabled, we defer the completion because we may see subsequent
@@ -1960,7 +1966,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
     // (VidPnSourceId, LayerIndex) pair.
     if (mTrackFrameType && !p->PresentIds.empty()) {
         VerboseTraceBeforeModifyingPresent(p.get());
-        p->DeferredReason |= DeferredReason_WaitingForFlipFrameType;
+        p->WaitingForFlipFrameType = true;
     }
 
     // Remove the present from tracking structures.
@@ -2006,11 +2012,9 @@ void PMTraceConsumer::AddPresentToCompletedList(std::shared_ptr<PresentEvent> co
         }
 
         mCompletedPresents[index] = present;
-
-        if (present->DeferredReason == DeferredReason_None && index == GetRingIndex(mCompletedIndex + mReadyCount)) {
-            mReadyCount++;
-        }
     }
+
+    UpdateReadyCount(present);
 
     // It's possible for a deferred condition to never be cleared.  e.g., a process' last present
     // doesn't get a Present_Stop event.  When this happens the deferred present will prevent all
@@ -2023,27 +2027,31 @@ void PMTraceConsumer::AddPresentToCompletedList(std::shared_ptr<PresentEvent> co
             present->PresentStartTime - deferredPresent->PresentStartTime > mDeferralTimeLimit) {
             VerboseTraceBeforeModifyingPresent(deferredPresent.get());
             deferredPresent->IsLost = true;
-            ClearDeferredReason(deferredPresent, deferredPresent->DeferredReason);
+            deferredPresent->WaitingForPresentStop = false;
+            deferredPresent->WaitingForFlipFrameType = false;
+            UpdateReadyCount(deferredPresent);
         }
     }
 }
 
-void PMTraceConsumer::ClearDeferredReason(std::shared_ptr<PresentEvent> const& present, uint32_t deferredReason)
+void PMTraceConsumer::UpdateReadyCount(std::shared_ptr<PresentEvent> const& present)
 {
-    // Remove the deferred reason
-    if (present->DeferredReason != DeferredReason_None) {
-        VerboseTraceBeforeModifyingPresent(present.get());
-        present->DeferredReason &= ~deferredReason;
+    if (!present->WaitingForPresentStop &&
+        !present->WaitingForFlipFrameType) {
 
         StopTrackingPresent(present);
 
-        if (present->DeferredReason == DeferredReason_None) {
+        {
             std::lock_guard<std::mutex> lock(mPresentEventMutex);
 
-            uint32_t nextIndex = GetRingIndex(mCompletedIndex + mReadyCount);
-            while (mReadyCount < mCompletedCount && mCompletedPresents[nextIndex]->DeferredReason == DeferredReason_None) {
-                mReadyCount++;
-                nextIndex = GetRingIndex(mCompletedIndex + mReadyCount);
+            uint32_t i = GetRingIndex(mCompletedIndex + mReadyCount);
+            if (present == mCompletedPresents[i]) {
+                DebugAssert(mReadyCount < mCompletedCount);
+                do {
+                    mReadyCount += 1;
+                    i = GetRingIndex(i + 1);
+                } while (mReadyCount < mCompletedCount && !mCompletedPresents[i]->WaitingForPresentStop
+                                                       && !mCompletedPresents[i]->WaitingForFlipFrameType);
             }
         }
     }
@@ -2061,7 +2069,7 @@ void PMTraceConsumer::SetThreadPresent(uint32_t threadId, std::shared_ptr<Presen
     mPresentByThreadId.emplace(threadId, present);
 }
 
-std::shared_ptr<PresentEvent> PMTraceConsumer::FindThreadPresent(uint32_t threadId)
+std::shared_ptr<PresentEvent> PMTraceConsumer::FindPresentByThreadId(uint32_t threadId)
 {
     auto ii = mPresentByThreadId.find(threadId);
     return ii == mPresentByThreadId.end() ? std::shared_ptr<PresentEvent>() : ii->second;
@@ -2071,7 +2079,7 @@ std::shared_ptr<PresentEvent> PMTraceConsumer::FindOrCreatePresent(EVENT_HEADER 
 {
     // First, we check if there is an in-progress present that was last
     // operated on from this same thread.
-    auto present = FindThreadPresent(hdr.ThreadId);
+    auto present = FindPresentByThreadId(hdr.ThreadId);
     if (present != nullptr) {
         return present;
     }
@@ -2204,19 +2212,19 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
 
     // If this present completed early and was deferred until the Present_Stop, then no more
     // analysis is needed; we just clear the deferral.
-    if (present->DeferredReason & DeferredReason_WaitingForPresentStop) {
+    if (present->WaitingForPresentStop) {
+        present->WaitingForPresentStop = false;
         mPresentByThreadId.erase(eventIter);
-        ClearDeferredReason(present, DeferredReason_WaitingForPresentStop);
+        UpdateReadyCount(present);
         return;
     }
 
     // If the Present() call failed, no more analysis is needed.
     if (FAILED(result)) {
         // Check expected state (a new Present() that has only been started).
-        DebugAssert(present->TimeInPresent   == 0);
-        DebugAssert(present->IsCompleted     == false);
-        DebugAssert(present->IsLost          == false);
-        DebugAssert(present->DeferredReason  == 0);
+        DebugAssert(present->TimeInPresent == 0);
+        DebugAssert(present->IsCompleted   == false);
+        DebugAssert(present->IsLost        == false);
         DebugAssert(present->DependentPresents.empty());
 
         present->PresentFailed = true;
@@ -2403,7 +2411,7 @@ void PMTraceConsumer::ApplyFlipFrameType(
     auto copy = std::make_shared<PresentEvent>();
     *copy = *present;
     copy->IsLost = false;
-    copy->DeferredReason &= ~DeferredReason_WaitingForFlipFrameType;
+    copy->WaitingForFlipFrameType = false;
 
     VerboseTraceBeforeModifyingPresent(present.get());
     present->IsLost = true;

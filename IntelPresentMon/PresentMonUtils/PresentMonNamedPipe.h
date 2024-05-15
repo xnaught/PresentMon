@@ -144,8 +144,6 @@ struct PmNsmPresentEvent {
   uint32_t QueueSubmitSequence;        // mPresentBySubmitSequence
   uint32_t RingIndex;                   // mTrackedPresents and mCompletedPresents
 
-  uint32_t DeferredReason;    // The reason(s) this present is being deferred (see DeferredReason enum).
-
   // Properties deduced by watching events through present pipeline
   uint32_t DestWidth;
   uint32_t DestHeight;
