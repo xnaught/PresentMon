@@ -17,8 +17,7 @@ namespace pmon::util::cli
 		std::vector<std::pair<std::string, std::string>> options;
 		for (auto pEl : elementPtrs_) {
 			if (pEl->forwarding_ && bool(*pEl)) {
-				options.emplace_back(pEl->name_,
-					pEl->needsQuote_ ? std::format("\"{}\"", pEl->raw_) : pEl->raw_);
+				options.emplace_back(pEl->name_, pEl->raw_);
 			}
 		}
 		return options;
@@ -105,9 +104,5 @@ namespace pmon::util::cli
 	void OptionsElement_::SetName_(std::string name)
 	{
 		name_ = std::move(name);
-	}
-	void OptionsElement_::EnableQuote_()
-	{
-		needsQuote_ = true;
 	}
 }

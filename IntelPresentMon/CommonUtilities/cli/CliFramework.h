@@ -26,12 +26,10 @@ namespace pmon::util::cli
 	protected:
 		std::function<std::string(std::string)> GetCaptureCallback_();
 		void SetName_(std::string name);
-		void EnableQuote_();
 	private:
 		std::string name_;
 		std::string raw_;
 		bool forwarding_ = true;
-		bool needsQuote_ = false;
 	};
 
 	class OptionsContainer
@@ -189,10 +187,6 @@ namespace pmon::util::cli
 			pOption_->group(pParent->activeGroup_);
 			// capture main name for the option (used when forwarding)
 			SetName_(pOption_->get_name());
-			// surround option value in quotes when forwarding string options
-			if constexpr (std::same_as<std::string, T>) {
-				EnableQuote_();
-			}
 			// capture the raw input string
 			pOption_->transform(GetCaptureCallback_());
 			// register this element with the container dynamically
