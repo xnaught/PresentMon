@@ -248,8 +248,6 @@ void FlushModifiedPresent()
             wprintf(L"%*hsp%u", 17 + 6 + 6, "", gModifiedPresent->FrameId); \
         } \
         wprintf(L" " L#_Name L"="); \
-        _Fn(gOriginalPresentValues._Name); \
-        wprintf(L"->"); \
         _Fn(gModifiedPresent->_Name); \
     }
     FLUSH_MEMBER(PrintTimeDelta,      TimeInPresent)
@@ -287,23 +285,15 @@ void FlushModifiedPresent()
         if (changedCount++ == 0) {
             wprintf(L"%*hsp%u", 17 + 6 + 6, "", gModifiedPresent->FrameId);
         }
-        wprintf(L" PresentId=[");
+        wprintf(L" PresentId=");
         auto first = true;
-        for (auto const& pr : gOriginalPresentValues.PresentIds) {
-            if (first) first = false; else wprintf(L",");
-            auto vidPnSourceId = uint32_t(pr.first >> 32);
-            auto layerIndex = uint32_t(pr.first & 0xffffffff);
-            wprintf(L" %u:%u:%llu", vidPnSourceId, layerIndex, pr.second);
-        }
-        wprintf(L" ]->[");
-        first = true;
         for (auto const& pr : gModifiedPresent->PresentIds) {
-            if (first) first = false; else wprintf(L",");
             auto vidPnSourceId = uint32_t(pr.first >> 32);
             auto layerIndex = uint32_t(pr.first & 0xffffffff);
-            wprintf(L" %u:%u:%llu", vidPnSourceId, layerIndex, pr.second);
+            wprintf(L"%c %u:%u:%llu", first ? L'[' : L',', vidPnSourceId, layerIndex, pr.second);
+            first = false;
         }
-        wprintf(L" ]");
+        wprintf(L"%c]", first ? L'[' : L' ');
     }
 
     if (changedCount > 0) {
@@ -413,7 +403,8 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
         using namespace Microsoft_Windows_DxgKrnl;
         if (pmConsumer->mTrackDisplay) {
             switch (hdr.EventDescriptor.Id) {
-            case Blit_Info::Id:                    PrintEventHeader(hdr, "Blit_Info"); break;
+            case Blit_Info::Id:                    PrintEventHeader(eventRecord, metadata, "Blit_Info",                    { L"hwnd",               PrintU64x,
+                                                                                                                             L"bRedirectedPresent", PrintU32 }); break;
             case BlitCancel_Info::Id:              PrintEventHeader(hdr, "BlitCancel_Info"); break;
             case FlipMultiPlaneOverlay_Info::Id:   PrintEventHeader(hdr, "FlipMultiPlaneOverlay_Info"); break;
             case Present_Info::Id:                 PrintEventHeader(hdr, "DxgKrnl_Present_Info"); break;
