@@ -2,7 +2,7 @@
 :: SPDX-License-Identifier: MIT
 @echo off
 setlocal
-set xperf="%ProgramFiles(x86)%\Windows Kits\10\Windows Performance Toolkit\xperf.exe"
+set xperf=xperf.exe
 
 if "%~1" equ "" goto check_args
 if "%~1" neq "" set xperf=%1

@@ -2,7 +2,7 @@
 :: SPDX-License-Identifier: MIT
 @echo off
 setlocal
-set xperf="%ProgramFiles(x86)%\Windows Kits\10\Windows Performance Toolkit\xperf.exe"
+set xperf=xperf.exe
 
 if "%~1" equ "" goto check_args
 if "%~1" neq "" set xperf=%1
@@ -17,6 +17,12 @@ if "%~2" neq "" goto usage
     echo usage: stop_etl_collection.cmd path_to_xperf_exe
     exit /b 1
 :args_ok
+
+net session >nul 2>&1
+if errorlevel 1 (
+    echo error: must run as administrator
+    exit /b 1
+)
 
 set error=0
 

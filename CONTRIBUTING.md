@@ -23,12 +23,12 @@ Provide a user-mode minidump of the crash:
 
 Provide an ETL trace:
 
-1. Install the [Windows Performance Toolkit](https://www.google.com/search?q=windows+performance+toolkit+download&btnI).
-2. Start a capture by running "%ProgramFiles(x86)%\Windows Kits\10\Windows Performance Toolkit\gpuview\log.cmd" as administrator.
+1. Install the [Windows Performance Toolkit](https://www.google.com/search?q=windows+performance+toolkit+download&btnI) and ensure xperf.exe is in your path.
+2. Start a capture by running `Tools\start_etl_collection.cmd` in the PresentMon repository as administrator.
 3. Run the test scenario.
-4. Stop the capture by running log.cmd again. The capture will be output to Merged.etl in the working directory.  Try to capture for as short as possible to limit the size of the file, while still capturing the problem.
-5. Test that the .etl capture exhibits the issue you are reporting, by running the PresentMon console application with "-etl_file Merged.etl" (to read from the capture instead of the system).
-6. Provide the resulting Merged.etl file.  ETL files compress well, so consider compressing to simplify sharing e.g.: `7z a MergeCompressed.7z Merged.etl`).
+4. Stop the capture by running `Tools\stop_etl_collection.cmd` as administrator. The capture will be output to trace.etl in the working directory.  Try to capture for as short as possible to limit the size of the file, while still capturing the problem.
+5. Test that the .etl capture exhibits the issue you are reporting, by running the PresentMon console application with "-etl_file trace.etl" (to read from the capture instead of the system).
+6. Provide the resulting trace.etl file along with your report.
 
 ## Contributing Source Code
 
