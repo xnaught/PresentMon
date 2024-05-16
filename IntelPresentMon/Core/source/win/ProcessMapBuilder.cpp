@@ -1,7 +1,8 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "ProcessMapBuilder.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/Exception.h>
 #include <unordered_set>
 #include <ranges>
 #include <cwctype>
@@ -11,6 +12,7 @@ namespace p2c::win
 {
     namespace rn = std::ranges;
     namespace vi = rn::views;
+    using namespace ::pmon::util;
 
     ProcessMapBuilder::ProcessMapBuilder()
     {
@@ -113,7 +115,8 @@ namespace p2c::win
         HANDLE processes_snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
         if (processes_snapshot == INVALID_HANDLE_VALUE)
         {
-            p2clog.hr().note(L"Failed to get process snapshot").commit();
+            pmlog_error(L"Failed to get process snapshot").hr();
+            throw Except<Exception>();
         }
 
         Process32FirstW(processes_snapshot, &process_info);

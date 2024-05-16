@@ -21,7 +21,7 @@ namespace pmon::util::log
 				}
 			}
 			catch (...) {
-				pmlog_panic_(str::ToWide(ReportException()));
+				pmlog_panic_(ReportExceptionWide());
 			}
 		}};
 	}

@@ -3,10 +3,10 @@
 #pragma once
 #include "../AsyncEndpoint.h"
 #include "../AsyncEndpointManager.h"
-#include "Core/source/infra/svc/Services.h"
 #include "Core/source/infra/util/FolderResolver.h"
 #include <commdlg.h>
 #include <fstream>
+#include <filesystem>
 
 namespace p2c::client::util::async
 {
@@ -19,11 +19,7 @@ namespace p2c::client::util::async
 		void ExecuteOnBrowser(uint64_t uid, CefRefPtr<CefValue> pArgObj, CefRefPtr<CefBrowser> pBrowser) const override
 		{
             using infra::util::FolderResolver;
-            using infra::svc::Services;
-            std::wstring startPath;
-            if (auto fr = Services::ResolveOrNull<FolderResolver>()) {
-                startPath = fr->Resolve(FolderResolver::Folder::Documents, L"Loadouts\\");
-            }
+            std::wstring startPath = FolderResolver::Get().Resolve(FolderResolver::Folder::Documents, L"Loadouts\\");
 
             wchar_t pathBuffer[MAX_PATH] = { 0 };
             OPENFILENAMEW ofn{

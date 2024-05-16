@@ -7,9 +7,8 @@
 #include <algorithm>
 #include <functional>
 #include <ranges>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include <Core/source/gfx/layout/style/StyleProcessor.h>
-#include <Core/source/infra/util/Assert.h>
 
 
 namespace p2c::gfx::lay

@@ -32,7 +32,7 @@ namespace pmon::util::log
 	}
 	StackTrace::StackTrace(const StackTrace& other)
 	{
-		if (Resolved()) {
+		if (other.Resolved()) {
 			frames_ = other.frames_;
 		}
 		else {

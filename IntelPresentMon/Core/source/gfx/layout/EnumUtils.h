@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include <string>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/Exception.h>
 
 namespace p2c::gfx::lay
 {
@@ -29,8 +30,8 @@ template<> struct EnumRegistry<name> \
 	{ \
 		using enum name; \
 		list(XEN_PARSE_TEM) \
-		p2clog.note(L"cannot convert to enum type: " L ## #name).commit(); \
-		return name(0); \
+		pmlog_error(L"cannot convert to enum type: " L ## #name); \
+		throw ::pmon::util::Except<::pmon::util::Exception>(); \
 	} \
 	static std::wstring FromEnum(name e) \
 	{ \
@@ -39,7 +40,7 @@ template<> struct EnumRegistry<name> \
 		{ \
 		list(XEN_STRING_TEM) \
 		} \
-		p2clog.note(L"cannot convert from enum type: " L ## #name).commit(); \
-		return L""; \
+		pmlog_error(L"cannot convert from enum type: " L ## #name); \
+		throw ::pmon::util::Except<::pmon::util::Exception>(); \
 	} \
 };

@@ -6,7 +6,8 @@
 #include <dwrite.h>
 #include "../base/InternalGeometry.h"
 #include "EnumConversion.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/log/HrLogger.h>
 
 namespace p2c::gfx::prim
 {
@@ -16,19 +17,19 @@ namespace p2c::gfx::prim
 		pBrush{ Brush(*pBrushPrim) },
 		position{ pos }
 	{
-		p2chrlog << Write(gfx).CreateTextLayout(text.c_str(), (UINT32)text.size(), style, dims.width, dims.height, &pLayout);
+		pmlog_hr << Write(gfx).CreateTextLayout(text.c_str(), (UINT32)text.size(), style, dims.width, dims.height, &pLayout);
 	}
 
 	void TextPrimitive::SetMaxDimensions(const Dimensions& dims)
 	{
-		p2chrlog << pLayout->SetMaxWidth(dims.width);
-		p2chrlog << pLayout->SetMaxHeight(dims.height);
+		pmlog_hr << pLayout->SetMaxWidth(dims.width);
+		pmlog_hr << pLayout->SetMaxHeight(dims.height);
 	}
 
 	Dimensions TextPrimitive::GetActualDimensions() const
 	{
 		DWRITE_TEXT_METRICS metrics{};
-		p2chrlog << pLayout->GetMetrics(&metrics);
+		pmlog_hr << pLayout->GetMetrics(&metrics);
 		return { metrics.width, metrics.height };
 	}
 
@@ -44,12 +45,12 @@ namespace p2c::gfx::prim
 
 	void TextPrimitive::SetAlignment(Alignment align)
 	{
-		p2chrlog << pLayout->SetParagraphAlignment(ConvertAlignment(align));
+		pmlog_hr << pLayout->SetParagraphAlignment(ConvertAlignment(align));
 	}
 
 	void TextPrimitive::SetJustification(Justification justify)
 	{
-		p2chrlog << pLayout->SetTextAlignment(ConvertJustification(justify));
+		pmlog_hr << pLayout->SetTextAlignment(ConvertJustification(justify));
 	}
 
 	TextPrimitive::~TextPrimitive() {}
@@ -57,7 +58,7 @@ namespace p2c::gfx::prim
 	void TextPrimitive::SetText(const std::wstring& text, Graphics& gfx)
 	{
 		auto pOld = std::move(pLayout);
-		p2chrlog << Write(gfx).CreateTextLayout(text.c_str(), (UINT32)text.size(), pOld.Get(), pOld->GetMaxWidth(), pOld->GetMaxHeight(), &pLayout);
+		pmlog_hr << Write(gfx).CreateTextLayout(text.c_str(), (UINT32)text.size(), pOld.Get(), pOld->GetMaxWidth(), pOld->GetMaxHeight(), &pLayout);
 	}
 
 	void TextPrimitive::Draw(Graphics& gfx) const

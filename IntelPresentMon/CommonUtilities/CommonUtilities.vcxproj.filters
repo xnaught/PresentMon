@@ -159,6 +159,15 @@
     <ClInclude Include="log\CopyDriver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="log\HrLogger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="log\IChannelObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="log\IChannelComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">
@@ -254,8 +263,15 @@
     <ClCompile Include="log\CopyDriver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="log\HrLogger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="vcpkg.json" />
+    <None Include="build-scripts\pre-build.bat">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="generated\.gitignore" />
   </ItemGroup>
 </Project>

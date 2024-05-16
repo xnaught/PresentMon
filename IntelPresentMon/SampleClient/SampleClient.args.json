@@ -3,8 +3,16 @@
   "Id": "79fe382a-c29c-4c32-a028-b8d1abdf51b0",
   "Items": [
     {
+      "Id": "3c5a7c74-4cc0-4251-8cef-a3c5dc135a1d",
+      "Command": "--log-demo 17"
+    },
+    {
+      "Id": "bb813e93-75af-46b5-9d4f-d4051007e9e8",
+      "Command": "--log-demo 18"
+    },
+    {
       "Id": "c1c14433-3ec1-4fc3-9b3b-70b6580bc080",
-      "Command": "--log-allow-list black.txt"
+      "Command": "--log-allow-list \"black.txt\""
     },
     {
       "Id": "6248d4d3-1a61-499d-84e8-83be773d62af",
@@ -29,18 +37,6 @@
     {
       "Id": "de172ca4-f013-4f7c-99e2-5b93c03c4ec5",
       "Command": "--log-demo 19"
-    },
-    {
-      "Id": "50932c9f-90e3-432b-81dd-2c2471ad5eae",
-      "Command": "--do-pipe-srv"
-    },
-    {
-      "Id": "eade6b77-27bd-4f9e-9f9b-d2a7bc0e68e0",
-      "Command": "--do-pipe-cli"
-    },
-    {
-      "Id": "bd38c9b9-08d6-4f8a-af30-2ca066c65af5",
-      "Command": "--metric-list-sample"
     },
     {
       "Id": "55055cc7-7bbb-4db3-8f8f-27f1b5994bd2",

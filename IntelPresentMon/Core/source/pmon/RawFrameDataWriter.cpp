@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 #include "RawFrameDataWriter.h"
 #include <Core/source/infra/util/Util.h>
-#include <Core/source/infra/util/Assert.h>
 #include <CommonUtilities//str/String.h>
 #include <PresentMonAPIWrapper/FrameQuery.h>
 #include <PresentMonAPIWrapperCommon/EnumMap.h>

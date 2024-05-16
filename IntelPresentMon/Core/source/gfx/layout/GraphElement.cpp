@@ -7,7 +7,8 @@
 #include "GraphData.h"
 #include <cmath>
 #include <format>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/Exception.h>
 #include <Core/source/gfx/layout/style/StyleProcessor.h>
 #include <ranges>
 #include <Core/source/infra/util/rn/ToVector.h>
@@ -18,6 +19,7 @@ namespace p2c::gfx::lay
 	using namespace std::string_literals;
 	namespace rn = std::ranges;
 	namespace vi = rn::views;
+	using namespace ::pmon::util;
 
 	// invisible element used so that we can target individual metrics (lines) with styles
 	class GraphElement::VirtualLineElement : public Element
@@ -106,10 +108,10 @@ namespace p2c::gfx::lay
 			switch (type_)
 			{
 			case GraphType::Histogram:
-				if (packs.size() > 1) p2clog.warn(L"Histogram with multiple data packs").commit();
+				if (packs.size() > 1) pmlog_warn(L"Histogram with multiple data packs");
 				return std::make_shared<HistogramPlotElement>(packs.front(), std::vector<std::string>{"$body-plot"});
 			case GraphType::Line: return std::make_shared<LinePlotElement>(packs, std::vector<std::string>{"$body-plot"});
-			default: p2clog.note(L"Bad graph type").commit(); return {};
+			default: pmlog_error(L"Bad graph type"); throw Except<Exception>();
 			}
 		};
 		AddChild( FlexElement::Make(

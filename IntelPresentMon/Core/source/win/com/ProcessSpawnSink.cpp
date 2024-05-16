@@ -2,11 +2,8 @@
 // SPDX-License-Identifier: MIT
 #include "ProcessSpawnSink.h"
 #include <Core/source/gfx/base/ComPtr.h>
-#include <Core/source/infra/log/Logging.h>
-#include <Core/source/infra/log/v/ProcWatch.h>
+#include <Core/source/infra/Logging.h>
 #include <format>
-
-using p2c::infra::log::v::procwatch;
 
 namespace p2c::win::com
 {
@@ -34,14 +31,14 @@ namespace p2c::win::com
                     nullptr
                 ); FAILED(hr))
                 {
-                    p2clog.warn(L"Failed to read wbem event").commit();
+                    pmlog_warn(L"Failed to read wbem event");
                     continue;
                 }
                 // query for actual wbem inteface
                 if (auto hr = varTgtObj.punkVal->QueryInterface<IWbemClassObject>(&pProcInfo);
                     FAILED(hr))
                 {
-                    p2clog.warn(L"Failed to query interface for process info").commit();
+                    pmlog_warn(L"Failed to query interface for process info");
                     continue;
                 }
                 // release original interface reference
@@ -59,7 +56,7 @@ namespace p2c::win::com
                     nullptr
                 ); FAILED(hr))
                 {
-                    p2clog.warn(L"Failed to read wbem parent pid").commit();
+                    pmlog_warn(L"Failed to read wbem parent pid");
                     continue;
                 }
                 parentPid = varParentPid.uintVal;
@@ -76,7 +73,7 @@ namespace p2c::win::com
                     nullptr
                 ); FAILED(hr))
                 {
-                    p2clog.warn(L"Failed to read wbem pid").commit();
+                    pmlog_warn(L"Failed to read wbem pid");
                     continue;
                 }
                 pid = varPid.uintVal;
@@ -93,14 +90,14 @@ namespace p2c::win::com
                     nullptr
                 ); FAILED(hr))
                 {
-                    p2clog.warn(L"Failed to read wbem proc name").commit();
+                    pmlog_warn(L"Failed to read wbem proc name");
                 }
                 else if (varName.bstrVal) {
                     name = varName.bstrVal;
                 }
             }
 
-            p2cvlog(procwatch).note(std::format(L"proc-spawn event | pid:{:5} par:{:5} nam:{}", pid, parentPid, name)).commit();
+            pmlog_verb(v::procwatch)(std::format(L"proc-spawn event | pid:{:5} par:{:5} nam:{}", pid, parentPid, name));
 
             // queue notification for handling on kernel thread
             eventQueue_.Push({

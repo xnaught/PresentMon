@@ -25,7 +25,7 @@ namespace pmon::util::log
             NULL);                        // No template file 
         // Check if the pipe handle is valid
         if (!hPipe_) {
-            throw std::runtime_error("Failed to open named pipe");
+            throw Except<PipeConnectionError>("Failed to open named pipe");
         }
     }
 

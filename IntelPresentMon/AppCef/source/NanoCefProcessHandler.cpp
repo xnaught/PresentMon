@@ -6,25 +6,23 @@
 #include "NanoCefProcessHandler.h"
 #include "SchemeHandlerFactory.h"
 #include "DataBindAccessor.h"
-#include <Core/source/infra/svc/Services.h>
-#include "util/CefProcessCompass.h"
-#include <Core/source/infra/log/DefaultChannel.h>
-#include <Core/source/infra/log/Channel.h>
-#include <Core/source/infra/log/drv/DebugOutDriver.h>
-#include "util/CefIpcLogDriver.h"
+#include <Core/source/infra/Logging.h>
 #include "include/wrapper/cef_closure_task.h"
 #include <include/cef_task.h>
 #include "include/base/cef_callback.h"
 #include "util/AsyncEndpointManager.h"
 #include "util/CefValues.h"
-#include <Core/source/infra/opt/Options.h>
+#include <Core/source/cli/CliOptions.h>
+#include <CommonUtilities/mt/Thread.h>
+#include <CommonUtilities/log/NamedPipeMarshallReceiver.h>
+#include <CommonUtilities/log/EntryMarshallInjector.h>
 #include <include/cef_parser.h>
 
+using namespace pmon::util;
+using namespace std::chrono_literals;
 
 namespace p2c::client::cef
 {
-    using namespace infra::svc;
-
     void NanoCefProcessHandler::OnContextInitialized()
     {
 #ifdef NDEBUG
@@ -32,7 +30,7 @@ namespace p2c::client::cef
 #else
         constexpr bool is_debug = true;
 #endif
-        const auto& opt = infra::opt::get();
+        const auto& opt = cli::Options::Get();
         std::string host;
         std::string port;
 
@@ -44,7 +42,7 @@ namespace p2c::client::cef
                 port = CefString(&url_parts.port);
             }
             else {
-                p2clog.warn(L"Bad cli-passed url").commit();
+                pmlog_warn(L"Bad cli-passed url");
             }
         }
         // use url parts to determine the scheme mode
@@ -78,15 +76,48 @@ namespace p2c::client::cef
 
     void NanoCefProcessHandler::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> pChildCommandLine)
     {
+        auto& opt = cli::Options::Get();
         // propagate custom cli switches to children
         auto pCmdLine = CefCommandLine::GetGlobalCommandLine();
-        for (auto& opt : infra::opt::get_forwarding()) {
-            if (opt.value.empty()) {
-                pChildCommandLine->AppendSwitch(std::move(opt.name));
+        for (auto&&[name, val] : opt.GetForwardedOptions()) {
+            if (val.empty()) {
+                pChildCommandLine->AppendSwitch(std::move(name));
             }
             else {
-                pChildCommandLine->AppendSwitchWithValue(std::move(opt.name), std::move(opt.value));
+                pChildCommandLine->AppendSwitchWithValue(std::move(name), std::move(val));
             }
+        }
+        // initiate logging ipc connection for renderer children
+        if (pChildCommandLine->GetSwitchValue("type") == "renderer") {
+            // inject logging ipc pipe cli option to child
+            static int count = 0;
+            std::string pipePrefix = std::format("p2c-logpipe-{}-{}", GetCurrentProcessId(), ++count);
+            pChildCommandLine->AppendSwitchWithValue(opt.logPipeName.GetName(), pipePrefix);
+            // launch connector thread
+            mt::Thread{ L"logconn", count, [pipePrefix = str::ToWide(pipePrefix)] {
+                try {
+                    // initially wait for 50ms to give child time to spawn
+                    std::this_thread::sleep_for(50ms);
+                    // retry connection maximum 100 times, every 15ms
+                    const int nAttempts = 100;
+                    for (int i = 0; i < nAttempts; i++) {
+                        try {
+                            auto pChan = log::GetDefaultChannel();
+                            auto pReceiver = std::make_shared<log::NamedPipeMarshallReceiver>(pipePrefix, log::IdentificationTable::GetPtr());
+                            auto pInjector = std::make_shared<log::EntryMarshallInjector>(pChan, std::move(pReceiver));
+                            pChan->AttachComponent(std::move(pInjector));
+                            return;
+                        }
+                        catch (const log::PipeConnectionError&) {
+                            std::this_thread::sleep_for(15ms);
+                        }
+                    }
+                    pmlog_warn(std::format(L"Failed to connect to logging source server {} after {} attempts", pipePrefix, nAttempts));
+                }
+                catch (...) {
+                    pmlog_error(ReportExceptionWide());
+                }
+            } }.detach();
         }
     }
 
@@ -107,16 +138,9 @@ namespace p2c::client::cef
 
     void NanoCefProcessHandler::OnBrowserCreated(CefRefPtr<CefBrowser> browser_, CefRefPtr<CefDictionaryValue> extra_info)
     {
-        pBrowser = browser_;
+        log::IdentificationTable::AddThisThread(L"cef-proc");
 
-        if (!Services::Resolve<client::util::CefProcessCompass>()->IsClient())
-        {
-            // setup ipc logging
-            auto pChan = infra::log::GetDefaultChannel();
-            pChan->ClearDrivers();
-            pChan->AddDriver(std::make_unique<util::log::CefIpcLogDriver>(pBrowser));
-            pChan->AddDriver(std::make_unique<infra::log::drv::DebugOutDriver>());
-        }
+        pBrowser = browser_;
 
         CefRenderProcessHandler::OnBrowserCreated(std::move(browser_), std::move(extra_info));
     }

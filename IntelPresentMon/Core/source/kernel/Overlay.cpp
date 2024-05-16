@@ -12,7 +12,7 @@
 #include <Core/source/infra/util/rn/ToVector.h>
 #include <Core/source/win/StandardWindow.h>
 #include <Core/source/win/OverlayWindow.h>
-#include <Core/source/infra/opt/Options.h>
+#include <Core/source/cli/CliOptions.h>
 #include <ranges>
 #include <set>
 #include <chrono>
@@ -23,13 +23,16 @@
 #include "TargetLostException.h"
 #include "MetricPackMapper.h"
 #include <PresentMonAPIWrapper/StaticQuery.h>
+#include <CommonUtilities/Exception.h>
 
 
 namespace p2c::kern
 {
     using namespace gfx;
     using namespace lay;
+    using namespace ::pmon::util;
 
+    PM_DEFINE_EX(OverlayDocumentException);
 
     // free functions used by Overlay
     namespace
@@ -75,11 +78,11 @@ namespace p2c::kern
                         ));
                     }
                     else {
-                        throw std::runtime_error{ "Bad widget variant" };
+                        throw Except<OverlayDocumentException>("Bad widget variant");
                     }
                 }
                 catch (...) {
-                    p2clog.warn(L"Failed building a widget into document").commit();
+                    pmlog_warn(L"Failed building a widget into document");
                 }
             }
 
@@ -124,7 +127,7 @@ namespace p2c::kern
         graphicsDimensions{ pSpec->overlayWidth, 240 },
         windowDimensions{ Dimensions{ graphicsDimensions } * upscaleFactor },
         pWindow{ MakeWindow_(pos_) },
-        gfx{ pWindow->GetHandle(), graphicsDimensions, upscaleFactor, infra::opt::get().allowTearing },
+        gfx{ pWindow->GetHandle(), graphicsDimensions, upscaleFactor, cli::Options::Get().allowTearing},
         samplingPeriodMs{ pSpec->samplingPeriodMs },
         samplesPerFrame{ pSpec->samplesPerFrame },
         hideDuringCapture{ pSpec->hideDuringCapture },
@@ -186,11 +189,11 @@ namespace p2c::kern
                         pos_ = Vec2I{ controlRect.left + 25, controlRect.top + 25 };
                     }
                     else {
-                        p2clog.warn(L"failed to get rect of control window").hr().commit();
+                        pmlog_warn(L"failed to get rect of control window").hr();
                     }
                 }
                 else {
-                    p2clog.warn(L"failed to find control window").commit();
+                    pmlog_warn(L"failed to find control window");
                 }
             }
             // make the metrics window
@@ -316,7 +319,8 @@ namespace p2c::kern
     {
         if (position == OverlaySpec::OverlayPosition::Center)
         {
-            p2clog.note(L"center overlay position unimplimented").commit();
+            pmlog_error(L"center overlay position unimplimented");
+            throw Except<Exception>();
         }
 
         int x, y;
@@ -411,7 +415,7 @@ namespace p2c::kern
 
     void Overlay::SetCaptureState(bool active, std::wstring path, std::wstring name)
     {
-        p2clog.info(std::format(L"Capture set to {}", active)).commit();
+        pmlog_info(std::format(L"Capture set to {}", active));
 
         if (active && !pWriter)
         {
@@ -453,7 +457,7 @@ namespace p2c::kern
         const auto ret = WaitForSingleObject(hProcess, 0);
         if (ret == WAIT_FAILED)
         {
-            p2clog.hr().commit();
+            pmlog_error().hr();
         }
         return ret != WAIT_OBJECT_0;
     }
@@ -478,11 +482,11 @@ namespace p2c::kern
                 targetFullscreen = targetRect == monRect;
             }
             else {
-                p2clog.warn(L"didn't get monitor info").commit();
+                pmlog_warn(L"didn't get monitor info");
             }
         }
         else {
-            p2clog.warn(L"didn't get monitor from window").commit();
+            pmlog_warn(L"didn't get monitor from window");
         }
     }
 
@@ -498,7 +502,7 @@ namespace p2c::kern
 
     std::unique_ptr<Overlay> Overlay::SacrificeClone(std::optional<HWND> hWnd_, std::shared_ptr<OverlaySpec> pSpec_)
     {
-        p2clog.info(L"doing SacrificeClone").commit();
+        pmlog_info(L"doing SacrificeClone");
 
         std::optional<Vec2I> pos;
         if (pWindow->Standard()) {
@@ -526,7 +530,7 @@ namespace p2c::kern
     }
     std::unique_ptr<Overlay> Overlay::RetargetPidClone(win::Process proc_)
     {
-        p2clog.info(L"doing RetargetPidClone").commit();
+        pmlog_info(L"doing RetargetPidClone");
 
         std::optional<Vec2I> pos;
         if (pWindow->Standard()) {

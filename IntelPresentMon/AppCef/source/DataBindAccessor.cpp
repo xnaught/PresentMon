@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 #include "DataBindAccessor.h"
 #include <Core/source/kernel/Kernel.h>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include <include/cef_task.h> 
 #include <include/base/cef_callback.h> 
 #include <include/wrapper/cef_closure_task.h> 
@@ -75,7 +75,7 @@ namespace p2c::client::cef
                     pKernelWrapper->signals.RegisterCallback(arguments[0]->GetStringValue(), { arguments[1], CefV8Context::GetCurrentContext() });
                 }
                 else {
-                    p2clog.warn(L"registerSignalHandler called with incorrect parameter signature").commit();
+                    pmlog_error(L"registerSignalHandler called with incorrect parameter signature");
                     exception = "registerSignalHandler called with incorrect parameter signature";
                 }
                 return true;
@@ -84,7 +84,7 @@ namespace p2c::client::cef
             // only allow launchKernel async endpoint if we have not yet launched the kernel
             if (!pKernelWrapper->pKernel && arguments[0]->GetStringValue() != "launchKernel")
             {
-                p2clog.warn(std::format(L"js endpoint called without kernel: {}", std::wstring(name))).commit();
+                pmlog_error(std::format(L"js endpoint called without kernel: {}", std::wstring(name)));
                 exception = "core kernel not launched";
                 return true;
             }
@@ -105,7 +105,7 @@ namespace p2c::client::cef
                 }
                 else
                 {
-                    p2clog.warn(L"invokeEndpoint called with incorrect parameter signature").commit();
+                    pmlog_error(L"invokeEndpoint called with incorrect parameter signature");
                     exception = "invokeEndpoint called with incorrect parameter signature";
                 }
                 return true;
@@ -170,7 +170,7 @@ namespace p2c::client::cef
         if (pKernelWrapper) {
             if (pKernelWrapper->pKernel)
             {
-                p2clog.warn(L"launchKernel called but kernel already exists").commit();
+                pmlog_warn(L"launchKernel called but kernel already exists");
                 return;
             }
 

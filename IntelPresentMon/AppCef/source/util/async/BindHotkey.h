@@ -6,7 +6,6 @@
 #include "include/base/cef_callback.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "../../DataBindAccessor.h"
-#include <Core/source/infra/log/Logging.h>
 #include "../CefValues.h"
 
 namespace p2c::client::util::async

@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "PresentMon.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include <PresentMonAPI2/PresentMonAPI.h>
 #include <PresentMonAPIWrapper/PresentMonAPIWrapper.h>
 #include <PresentMonAPIWrapperCommon/EnumMap.h>
@@ -21,14 +21,14 @@ namespace p2c::pmon
 		if (namedPipeName && sharedMemoryName) {
 			auto pipeName = RemoveDoubleQuotes(*namedPipeName);
 			auto shmName = RemoveDoubleQuotes(*sharedMemoryName);
-			p2clog.info(std::format(L"Connecting to service with custom pipe [{}] and nsm [{}]",
+			pmlog_info(std::format(L"Connecting to service with custom pipe [{}] and nsm [{}]",
 				infra::util::ToWide(pipeName),
 				infra::util::ToWide(shmName)
-			)).commit();
+			));
 			pSession = std::make_unique<pmapi::Session>(std::move(pipeName), std::move(shmName));
 		}
 		else {
-			p2clog.info(L"Connecting to service with default pipe name").commit();
+			pmlog_info(L"Connecting to service with default pipe name");
 			pSession = std::make_unique<pmapi::Session>();
 		}
 
@@ -47,22 +47,22 @@ namespace p2c::pmon
 			if (processTracker.GetPid() == pid_) {
 				return;
 			}
-			p2clog.warn(std::format(L"Starting stream [{}] while previous stream [{}] still active",
-				pid_, processTracker.GetPid())).commit();
+			pmlog_warn(std::format(L"Starting stream [{}] while previous stream [{}] still active",
+				pid_, processTracker.GetPid()));
 		}
 		processTracker = pSession->TrackProcess(pid_);
-		p2clog.info(std::format(L"started pmon stream for pid {}", pid_)).commit();
+		pmlog_info(std::format(L"started pmon stream for pid {}", pid_));
 	}
 	void PresentMon::StopTracking()
 	{
 		if (!processTracker) {
-			p2clog.warn(L"Cannot stop stream: no stream active").commit();
+			pmlog_warn(L"Cannot stop stream: no stream active");
 			return;
 		}
 		const auto pid = processTracker.GetPid();
 		processTracker.Reset();
 		// TODO: caches cleared here maybe
-		p2clog.info(std::format(L"stopped pmon stream for pid {}", pid)).commit();
+		pmlog_info(std::format(L"stopped pmon stream for pid {}", pid));
 	}
 	double PresentMon::GetWindow() const { return window; }
 	void PresentMon::SetWindow(double window_) { window = window_; }
@@ -82,12 +82,12 @@ namespace p2c::pmon
 	//	char buffer[512];
 	//	uint32_t bufferSize = sizeof(buffer);
 	//	if (auto sta = pmGetCpuName(buffer, &bufferSize); sta != PM_STATUS_SUCCESS) {
-	//		p2clog.warn(L"could not get cpu name").code(sta).commit();
+	//		pmlog_warn(L"could not get cpu name").code(sta);
 	//		return {};
 	//	}
 	//	pmapi::PollStatic(*pSession, )
 	//	if (bufferSize >= sizeof(buffer)) {
-	//		p2clog.warn(std::format(L"insufficient buffer size to get cpu name. written: {}", bufferSize)).commit();
+	//		pmlog_warn(std::format(L"insufficient buffer size to get cpu name. written: {}", bufferSize));
 	//	}
 	//	return infra::util::ToWide(std::string{ buffer, bufferSize });
 	//}
@@ -108,9 +108,9 @@ namespace p2c::pmon
 	}
 	void PresentMon::SetAdapter(uint32_t id)
 	{
-		p2clog.info(std::format(L"Set active adapter to [{}]", id)).commit();
+		pmlog_info(std::format(L"Set active adapter to [{}]", id));
 		if (id == 0) {
-			p2clog.warn(L"Adapter was set to id 0; resetting").commit();
+			pmlog_warn(L"Adapter was set to id 0; resetting");
 			selectedAdapter.reset();
 		}
 		else {

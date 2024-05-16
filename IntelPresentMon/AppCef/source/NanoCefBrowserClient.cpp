@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT
 #include "NanoCefBrowserClient.h"
 #include <include/wrapper/cef_helpers.h>
-#include "util/CefIpcLogRouter.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include <format>
 #include <fstream>
 #include <streambuf>
@@ -12,6 +11,8 @@
 
 // implemented in winmain.cpp
 void AppQuitMessageLoop();
+
+using namespace pmon::util;
 
 namespace p2c::client::cef
 {
@@ -44,6 +45,11 @@ namespace p2c::client::cef
         return this;
     }
 
+    CefRefPtr<CefDisplayHandler> NanoCefBrowserClient::GetDisplayHandler()
+    {
+        return this;
+    }
+
     void NanoCefBrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser_)
     {
         pBrowser = browser_;
@@ -61,16 +67,7 @@ namespace p2c::client::cef
 
     bool NanoCefBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
     {
-        // Handle log messages from other processes
-        if (message->GetName() == util::log::CefIpcLogRouter::ipcChannelName)
-        {
-            util::log::CefIpcLogRouter::Route(
-                message->GetArgumentList()->GetString(0).ToWString()
-            );
-            return true;
-        }
-        // 0: endpoint id (name), 1: uid, 2: args (obj/dict)
-        else if (message->GetName() == util::AsyncEndpointManager::GetDispatchMessageName())
+        if (message->GetName() == util::AsyncEndpointManager::GetDispatchMessageName())
         {
             if (auto pEndpoint = endpoints.Find(message->GetArgumentList()->GetString(0)))
             {
@@ -78,7 +75,7 @@ namespace p2c::client::cef
             }
             else
             {
-                p2clog.warn(std::format(L"Endpoint async not found: {}", message->GetArgumentList()->GetString(0).ToWString())).commit();
+                pmlog_warn(std::format(L"Endpoint async not found: {}", message->GetArgumentList()->GetString(0).ToWString()));
             }
             return true;
         }
@@ -114,7 +111,7 @@ namespace p2c::client::cef
                 std::this_thread::sleep_for(1000ms);
                 shutdownAcknowledgementFlag = true;
                 pBrowser->GetHost()->CloseBrowser(true);
-                p2clog.warn(L"Shutdown ack timed out").commit();
+                pmlog_warn(L"Shutdown ack timed out");
             } }.detach();
             return 0;
         }
@@ -123,5 +120,32 @@ namespace p2c::client::cef
     CefRefPtr<CefContextMenuHandler> NanoCefBrowserClient::GetContextMenuHandler()
     {
         return pContextMenuHandler;
+    }
+
+#define xjs_pmlog_(lvl) ((PMLOG_BUILD_LEVEL < lvl) || (::pmon::util::log::GlobalPolicy::Get().GetLogLevel() < lvl)) \
+	? (void)0 : (void)::pmon::util::log::EntryBuilder{ lvl, source.ToWString(), {}, line } \
+	.to(::pmon::util::log::GetDefaultChannel()).no_trace().note(message.ToWString())
+
+    bool NanoCefBrowserClient::OnConsoleMessage(
+        CefRefPtr<CefBrowser> browser,
+        cef_log_severity_t level,
+        const CefString& message,
+        const CefString& source,
+        int line)
+    {
+        switch (level) {
+        case cef_log_severity_t::LOGSEVERITY_FATAL:
+            xjs_pmlog_(log::Level::Fatal); break;
+        case cef_log_severity_t::LOGSEVERITY_ERROR:
+            xjs_pmlog_(log::Level::Error); break;
+        case cef_log_severity_t::LOGSEVERITY_WARNING:
+            xjs_pmlog_(log::Level::Warning); break;
+        case cef_log_severity_t::LOGSEVERITY_DEFAULT:
+        case cef_log_severity_t::LOGSEVERITY_INFO:
+            xjs_pmlog_(log::Level::Info); break;
+        case cef_log_severity_t::LOGSEVERITY_DEBUG:
+            xjs_pmlog_(log::Level::Debug); break;
+        }
+        return true;
     }
 }

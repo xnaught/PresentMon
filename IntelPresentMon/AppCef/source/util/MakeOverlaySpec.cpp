@@ -406,7 +406,7 @@ namespace p2c::client::util
                     auto& sheets = pSpec->sheets;
                     const auto tag = std::format("r{}", i);
                     if (Traverse(vReadout)["metrics"].GetArrayLength() > 1) {
-                        p2clog.warn(L"Too many metricIds for readout widget").commit();
+                        pmlog_warn(L"Too many metricIds for readout widget");
                     }
                     auto qualifiedMetric = Traverse(vReadout)["metrics"][0ull]["metric"];
                     pSpec->widgets.push_back(kern::ReadoutSpec{
@@ -444,7 +444,7 @@ namespace p2c::client::util
                     sheets.back()->InsertRaw<at::paddingLeft>(fontSize / 5.);
                 }
                 else {
-                    p2clog.warn(std::format(L"Unknown widget type [{}]", (int)widgetType)).commit();
+                    pmlog_warn(std::format(L"Unknown widget type [{}]", (int)widgetType));
                 }
             }
         }

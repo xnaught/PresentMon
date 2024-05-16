@@ -7,6 +7,8 @@
 #include <cwctype>
 // TODO: replace with with properly wrapped winapi include
 #include <Windows.h>
+#include "../log/Log.h"
+#include "../Exception.h"
 
 namespace pmon::util::str
 {
@@ -28,36 +30,46 @@ namespace pmon::util::str
 		return tokens;
 	}
 
-	std::wstring ToWide(const std::string& narrow)
+	std::wstring ToWide(const std::string& narrow) noexcept
 	{
-		if (narrow.empty()) {
-			return {};
+		try {
+			if (narrow.empty()) {
+				return {};
+			}
+			std::wstring wide;
+			// TODO: replace with resize_and_overwrite when it becomes widely available
+			wide.resize(narrow.size() + 1);
+			const auto actual = MultiByteToWideChar(CP_UTF8, 0, narrow.data(), (int)narrow.size(), wide.data(), (int)wide.size());
+			if (actual > 0) {
+				wide.resize(actual);
+				return wide;
+			}
+			pmlog_error(L"failed conversion to wide").hr();
 		}
-		std::wstring wide;
-		// TODO: replace with resize_and_overwrite when it becomes widely available
-		wide.resize(narrow.size() + 1);
-		const auto actual = MultiByteToWideChar(CP_UTF8, 0, narrow.data(), (int)narrow.size(), wide.data(), (int)wide.size());
-		if (actual > 0) {
-			wide.resize(actual);
-			return wide;
+		catch (...) {
+			pmlog_error(ReportExceptionWide());
 		}
-		// TODO: log error here
 		return {};
 	}
 
-	std::string ToNarrow(const std::wstring& wide)
+	std::string ToNarrow(const std::wstring& wide) noexcept
 	{
-		std::string narrow;
-		// TODO: replace with resize_and_overwrite when it becomes widely available
-		narrow.resize(wide.size() * 2);
-		const auto actual = WideCharToMultiByte(CP_UTF8, 0, wide.data(), (int)wide.size(),
-			narrow.data(), (int)narrow.size(), nullptr, nullptr);
-		if (actual > 0) {
-			narrow.resize(actual);
-			return narrow;
+		try {
+			std::string narrow;
+			// TODO: replace with resize_and_overwrite when it becomes widely available
+			narrow.resize(wide.size() * 2);
+			const auto actual = WideCharToMultiByte(CP_UTF8, 0, wide.data(), (int)wide.size(),
+				narrow.data(), (int)narrow.size(), nullptr, nullptr);
+			if (actual > 0) {
+				narrow.resize(actual);
+				return narrow;
+			}
+			// TODO: (maybe) check for insufficient buffer error and do redo with two-pass (or just double buffer again)
+			pmlog_error(L"failed conversion to narrow").hr();
 		}
-		// TODO: (maybe) check for insufficient buffer error and do redo with two-pass (or just double buffer again)
-		// TODO: log error here
+		catch (...) {
+			pmlog_error(ReportExceptionWide());
+		}
 		return {};
 	}
 

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MIT
 #include "HotkeyListener.h"
 #include <Core/source/win/WinAPI.h>
-#include <Core/source/infra/log/Logging.h>
-#include <Core/source/infra/log/v/Hotkey.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/Exception.h>
 #include <ranges>
 #include <include/cef_task.h> 
 #include "include/base/cef_callback.h" 
@@ -11,9 +11,7 @@
 
 namespace rn = std::ranges;
 namespace vi = rn::views;
-using p2c::infra::log::v::hotkey;
-
-#define vlog p2cvlog(hotkey)
+using namespace pmon::util;
 
 // TODO: general logging in this codebase (winapi calls like PostThreadMessage etc.)
 
@@ -21,179 +19,184 @@ namespace p2c::client::util
 {
 	Hotkeys::Hotkeys()
 		:
-		thread_{ &Hotkeys::Kernel_, this }
+		thread_{ L"hotkey", & Hotkeys::Kernel_, this}
 	{
 		startupSemaphore_.acquire();
-		vlog.note(L"Hotkey process ctor complete").commit();
+		pmlog_verb(v::hotkey)(L"Hotkey process ctor complete");
 	}
 	Hotkeys::~Hotkeys()
 	{
-		vlog.note(L"Destroying hotkey processor").commit();
+		pmlog_verb(v::hotkey)(L"Destroying hotkey processor");
 		PostThreadMessageA(threadId_, WM_QUIT, 0, 0);
 	}
-	void Hotkeys::Kernel_()
+	void Hotkeys::Kernel_() noexcept
 	{
-		vlog.note(L"Hotkey processor kernel start").tid().commit();
+		try {
+			pmlog_verb(v::hotkey)(L"Hotkey processor kernel start");
 
-		// capture thread id
-		threadId_ = GetCurrentThreadId();
+			// capture thread id
+			threadId_ = GetCurrentThreadId();
 
-		// create message window class
-		const WNDCLASSEXA wx = {
-			.cbSize = sizeof(WNDCLASSEX),
-			.lpfnWndProc = DefWindowProc,
-			.hInstance = GetModuleHandle(nullptr),
-			.lpszClassName = "$PresentmonMessageWindowClass$",
-		};
-		const auto atom = RegisterClassEx(&wx);
-		if (!atom) {
-			p2clog.nox().commit();
-			return;
-		}
+			// create message window class
+			const WNDCLASSEXA wx = {
+				.cbSize = sizeof(WNDCLASSEX),
+				.lpfnWndProc = DefWindowProc,
+				.hInstance = GetModuleHandle(nullptr),
+				.lpszClassName = "$PresentmonMessageWindowClass$",
+			};
+			const auto atom = RegisterClassEx(&wx);
+			if (!atom) {
+				pmlog_error().hr();
+				return;
+			}
 
-		vlog.note(std::format(L"Hotkey processor wndclass registered: {:X}", atom)).commit();
+			pmlog_verb(v::hotkey)(std::format(L"Hotkey processor wndclass registered: {:X}", atom));
 
-		// create message window
-		messageWindowHandle_ = CreateWindowExA(
-			0, MAKEINTATOM(atom), "$PresentmonMessageWindow$",
-			0, 0, 0, 0, 0, HWND_MESSAGE, nullptr, nullptr, nullptr
-		);
-		if (!messageWindowHandle_) {
-			p2clog.nox().commit();
-			return;
-		}
+			// create message window
+			messageWindowHandle_ = CreateWindowExA(
+				0, MAKEINTATOM(atom), "$PresentmonMessageWindow$",
+				0, 0, 0, 0, 0, HWND_MESSAGE, nullptr, nullptr, nullptr
+			);
+			if (!messageWindowHandle_) {
+				pmlog_error().hr();
+				return;
+			}
 
-		vlog.note(std::format(L"Hotkey processor wnd created: {:X}",
-			reinterpret_cast<uintptr_t>(messageWindowHandle_))).commit();
+			pmlog_verb(v::hotkey)(std::format(L"Hotkey processor wnd created: {:X}",
+				reinterpret_cast<uintptr_t>(messageWindowHandle_)));
 
-		// register to receive raw keyboard input
-		const RAWINPUTDEVICE rid{
-			.usUsagePage = 0x01,
-			.usUsage = 0x06,
-			.dwFlags = RIDEV_INPUTSINK,
-			.hwndTarget = static_cast<HWND>(messageWindowHandle_),
-		};
-		if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) {
-			p2clog.nox().commit();
-			return;
-		}
+			// register to receive raw keyboard input
+			const RAWINPUTDEVICE rid{
+				.usUsagePage = 0x01,
+				.usUsage = 0x06,
+				.dwFlags = RIDEV_INPUTSINK,
+				.hwndTarget = static_cast<HWND>(messageWindowHandle_),
+			};
+			if (!RegisterRawInputDevices(&rid, 1, sizeof(rid))) {
+				pmlog_error().hr();
+				return;
+			}
 
-		vlog.note(L"Raw input registered").commit();
+			pmlog_verb(v::hotkey)(L"Raw input registered");
 
-		// signal that constuction is complete
-		startupSemaphore_.release();
+			// signal that constuction is complete
+			startupSemaphore_.release();
 
-		MSG msg;
-		while (GetMessageA(&msg, nullptr, 0, 0)) {
-			if (msg.message == WM_INPUT) {
-				vlog.note(L"WM_INPUT received").commit();
+			MSG msg;
+			while (GetMessageA(&msg, nullptr, 0, 0)) {
+				if (msg.message == WM_INPUT) {
+					pmlog_verb(v::hotkey)(L"WM_INPUT received");
 
-				auto& lParam = msg.lParam;
-				// allocate memory for raw input data
-				UINT dwSize{};
-				if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, nullptr, &dwSize, sizeof(RAWINPUTHEADER))) {
-					p2clog.nox().commit();
-					return;
-				}
-				const auto inputBackingBuffer = std::make_unique<BYTE[]>(dwSize);
-
-				// read in raw input data
-				if (const auto size = GetRawInputData((HRAWINPUT)lParam, RID_INPUT, inputBackingBuffer.get(),
-					&dwSize, sizeof(RAWINPUTHEADER)); size != dwSize) {
-					p2clog.nox().commit();
-					return;
-				}
-				const auto& input = reinterpret_cast<const RAWINPUT&>(*inputBackingBuffer.get());
-
-				// handle raw input data for keyboard device
-				if (input.header.dwType == RIM_TYPEKEYBOARD)
-				{
-					const auto& keyboard = input.data.keyboard;
-
-					vlog.note(std::format(L"KBD| vk:{} msg:{}", keyboard.VKey, keyboard.Message)).commit();
-
-					// check for keycode outside of range of our table
-					if (keyboard.VKey >= win::Key::virtualKeyTableSize) {
-						vlog.note(L"KBD| vk out of range").commit();
-						continue;
+					auto& lParam = msg.lParam;
+					// allocate memory for raw input data
+					UINT dwSize{};
+					if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, nullptr, &dwSize, sizeof(RAWINPUTHEADER))) {
+						pmlog_error().hr();
+						return;
 					}
-					// key presses
-					if (keyboard.Message == WM_KEYDOWN || keyboard.Message == WM_SYSKEYDOWN) {
-						vlog.note(L"key press").commit();
-						// don't handle autorepeat presses
-						if (!pressedKeys_[keyboard.VKey]) {
-							// mark key as in down state
-							pressedKeys_[keyboard.VKey] = true;
-							// if key is not modifier
-							if (const auto key = win::Key::FromPlatformCode(keyboard.VKey)) {
-								if (!key->IsModifierKey()) {
-									// gather currently pressed modifiers
-									const auto mods = GatherModifiers_();
-									// check for matching registered hotkey action
-									std::lock_guard lk{ mtx_ };
-									if (auto i = registeredHotkeys_.find({ *key, mods });
-										i != registeredHotkeys_.cend()) {
-										// if match found dispatch action on renderer thread
-										vlog.note(L"hotkey dispatching").commit();
-										CefPostTask(TID_RENDERER, base::BindOnce(
-											&Hotkeys::DispatchHotkey_,
-											base::Unretained(this), i->second
-										));
+					const auto inputBackingBuffer = std::make_unique<BYTE[]>(dwSize);
+
+					// read in raw input data
+					if (const auto size = GetRawInputData((HRAWINPUT)lParam, RID_INPUT, inputBackingBuffer.get(),
+						&dwSize, sizeof(RAWINPUTHEADER)); size != dwSize) {
+						pmlog_error().hr();
+						return;
+					}
+					const auto& input = reinterpret_cast<const RAWINPUT&>(*inputBackingBuffer.get());
+
+					// handle raw input data for keyboard device
+					if (input.header.dwType == RIM_TYPEKEYBOARD)
+					{
+						const auto& keyboard = input.data.keyboard;
+
+						pmlog_verb(v::hotkey)(std::format(L"KBD| vk:{} msg:{}", keyboard.VKey, keyboard.Message));
+
+						// check for keycode outside of range of our table
+						if (keyboard.VKey >= win::Key::virtualKeyTableSize) {
+							pmlog_verb(v::hotkey)(L"KBD| vk out of range");
+							continue;
+						}
+						// key presses
+						if (keyboard.Message == WM_KEYDOWN || keyboard.Message == WM_SYSKEYDOWN) {
+							pmlog_verb(v::hotkey)(L"key press");
+							// don't handle autorepeat presses
+							if (!pressedKeys_[keyboard.VKey]) {
+								// mark key as in down state
+								pressedKeys_[keyboard.VKey] = true;
+								// if key is not modifier
+								if (const auto key = win::Key::FromPlatformCode(keyboard.VKey)) {
+									if (!key->IsModifierKey()) {
+										// gather currently pressed modifiers
+										const auto mods = GatherModifiers_();
+										// check for matching registered hotkey action
+										std::lock_guard lk{ mtx_ };
+										if (auto i = registeredHotkeys_.find({ *key, mods });
+											i != registeredHotkeys_.cend()) {
+											// if match found dispatch action on renderer thread
+											pmlog_verb(v::hotkey)(L"hotkey dispatching");
+											CefPostTask(TID_RENDERER, base::BindOnce(
+												&Hotkeys::DispatchHotkey_,
+												base::Unretained(this), i->second
+											));
+										}
 									}
 								}
 							}
+							else {
+								pmlog_verb(v::hotkey)(L"key repeat");
+							}
 						}
-						else {
-							vlog.note(L"key repeat").commit();
+						// key releases
+						else if (keyboard.Message == WM_KEYUP || keyboard.Message == WM_SYSKEYUP) {
+							pmlog_verb(v::hotkey)(L"Key up");
+							pressedKeys_[keyboard.VKey] = false;
 						}
 					}
-					// key releases
-					else if (keyboard.Message == WM_KEYUP || keyboard.Message == WM_SYSKEYUP) {
-						vlog.note(L"Key up").commit();
-						pressedKeys_[keyboard.VKey] = false;
+					else {
+						pmlog_warn(L"Unknown raw input type");
 					}
-				}
-				else {
-					p2clog.warn(L"Unknown raw input type").commit();
 				}
 			}
-		}
 
-		if (!DestroyWindow(static_cast<HWND>(messageWindowHandle_))) {
-			p2clog.warn().commit();
-		}
-		if (!UnregisterClass(MAKEINTATOM(atom), GetModuleHandle(nullptr))) {
-			p2clog.warn().commit();
-		}
+			if (!DestroyWindow(static_cast<HWND>(messageWindowHandle_))) {
+				pmlog_warn(L"failed window destroy").hr();
+			}
+			if (!UnregisterClass(MAKEINTATOM(atom), GetModuleHandle(nullptr))) {
+				pmlog_warn(L"failed unreg class").hr();
+			}
 
-		vlog.note(L"exiting hotkey kernel").commit();
+			pmlog_verb(v::hotkey)();
+		}
+		catch (...) {
+			pmlog_error(ReportExceptionWide());
+		}
 	}
 	void Hotkeys::DispatchHotkey_(Action action) const
 	{
 		std::lock_guard lk{ mtx_ };
 		if (Handler_) {
-			vlog.note(L"execute handler with hotkey action").commit();
+			pmlog_verb(v::hotkey)(L"execute handler with hotkey action");
 			Handler_(action);
 		}
 		else {
-			p2clog.warn(L"Hotkey handler not set").commit();
+			pmlog_warn(L"Hotkey handler not set");
 		}
 	}
 	void Hotkeys::SetHandler(std::function<void(Action)> handler)
 	{
 		std::lock_guard lk{ mtx_ };
-		vlog.note(L"Hotkey handler set").commit();
+		pmlog_verb(v::hotkey)(L"Hotkey handler set");
 		Handler_ = std::move(handler);
 	}
 	void Hotkeys::BindAction(Action action, win::Key key, win::ModSet mods, std::function<void(bool)> resultCallback)
 	{
-		vlog.note(L"Hotkey action binding").commit();
+		pmlog_verb(v::hotkey)(L"Hotkey action binding");
 		std::lock_guard lk{ mtx_ };
 		// if action is already bound, remove it
 		if (const auto i = rn::find_if(registeredHotkeys_, [action](const auto& i) {
 			return i.second == action;
 		}); i != registeredHotkeys_.cend()) {
-			vlog.note(L"Hotkey action binding remove existing action").commit();
+			pmlog_verb(v::hotkey)(L"Hotkey action binding remove existing action");
 			registeredHotkeys_.erase(i);
 		}
 		// if hotkey combination is already bound, remove it
@@ -208,7 +211,7 @@ namespace p2c::client::util
 	}
 	void Hotkeys::ClearAction(Action action, std::function<void(bool)> resultCallback)
 	{
-		vlog.note(L"Hotkey action clearing").commit();
+		pmlog_verb(v::hotkey)(L"Hotkey action clearing");
 		std::lock_guard lk{ mtx_ };
 		// if action is bound, remove it
 		if (const auto i = rn::find_if(registeredHotkeys_, [action](const auto& i) {
@@ -217,7 +220,7 @@ namespace p2c::client::util
 			registeredHotkeys_.erase(i);
 		}
 		else {
-			p2clog.warn(L"Attempted to clear unregistered hotkey").nox().commit();
+			pmlog_warn(L"Attempted to clear unregistered hotkey");
 		}
 		// signal callback success
 		resultCallback(true);

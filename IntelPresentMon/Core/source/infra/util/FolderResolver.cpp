@@ -5,10 +5,14 @@
 #include <ShlObj.h>
 #include <filesystem>
 #include <format>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/Exception.h>
+#include <Core/source/cli/CliOptions.h>
 
 namespace p2c::infra::util
 {
+	using namespace ::pmon::util;
+
 	FolderResolver::FolderResolver(std::wstring appPathSubdir, std::wstring docPathSubdir, bool createSubdirectories)
 	{
 		if (!appPathSubdir.empty())
@@ -19,18 +23,20 @@ namespace p2c::infra::util
 				CoTaskMemFree(pPath);
 				pPath = nullptr;
 				// TODO: logging: we can't use logging service here during resolve creation
-				p2clog.note(L"Failed getting local app data path").commit();
-			}
+				pmlog_error(L"Failed getting local app data path");
+				throw Except<Exception>();
+							}
 			const auto dir = std::format(L"{}\\{}", pPath, appPathSubdir);
 			try {
 				std::filesystem::create_directories(dir);
 				appPath = dir;
 			}
-			catch (const std::exception& e) {
+			catch (const std::exception&) {
 				CoTaskMemFree(pPath);
 				pPath = nullptr;
 				// TODO: logging: we can't use logging service here during resolve creation
-				p2clog.note(L"Failed creating directory: " + dir).nested(e).commit();
+				pmlog_error(L"Failed creating directory: " + dir);
+				throw Except<Exception>();
 			}
 			if (pPath)
 			{
@@ -50,18 +56,20 @@ namespace p2c::infra::util
 				CoTaskMemFree(pPath);
 				pPath = nullptr;
 				// TODO: logging: we can't use logging service here during resolve creation
-				p2clog.note(L"Failed getting user documents path").commit();
-			}
+				pmlog_error(L"Failed getting user documents path");
+				throw Except<Exception>();
+							}
 			const auto dir = std::format(L"{}\\{}", pPath, docPathSubdir);
 			try {
 				std::filesystem::create_directories(dir);
 				docPath = dir;
 			}
-			catch (const std::exception& e) {
+			catch (const std::exception&) {
 				CoTaskMemFree(pPath);
 				pPath = nullptr;
 				// TODO: logging: we can't use logging service here during resolve creation
-				p2clog.note(L"Failed creating directory: " + dir).nested(e).commit();
+				pmlog_error(L"Failed creating directory: " + dir);
+				throw Except<Exception>();
 			}
 			if (pPath)
 			{
@@ -79,17 +87,19 @@ namespace p2c::infra::util
 			try {
 				std::filesystem::create_directory(std::format(L"{}\\{}", docPath, capturesSubdirectory));
 			}
-			catch (const std::exception& e) {
+			catch (const std::exception&) {
 				// TODO: logging: we can't use logging service here during resolve creation
-				p2clog.note(L"Failed creating directory: " + std::format(L"{}\\{}", docPath, capturesSubdirectory)).nested(e).commit();
+				pmlog_error(L"Failed creating directory: " + std::format(L"{}\\{}", docPath, capturesSubdirectory));
+				throw Except<Exception>();
 			}
 			// custom loadouts folder
 			try {
 				std::filesystem::create_directory(std::format(L"{}\\{}", docPath, loadoutsSubdirectory));
 			}
-			catch (const std::exception& e) {
+			catch (const std::exception&) {
 				// TODO: logging: we can't use logging service here during resolve creation
-				p2clog.note(L"Failed creating directory: " + std::format(L"{}\\{}", docPath, loadoutsSubdirectory)).nested(e).commit();
+				pmlog_error(L"Failed creating directory: " + std::format(L"{}\\{}", docPath, loadoutsSubdirectory));
+				throw Except<Exception>();
 			}
 		}
 	}
@@ -101,8 +111,8 @@ namespace p2c::infra::util
 		case Folder::App:
 			if (appPath.empty())
 			{
-				p2clog.note(L"Failed to resolve app path: not initialized").commit();
-				return {};
+				pmlog_error(L"Failed to resolve app path: not initialized");
+				throw Except<Exception>();
 			}
 			if (path.empty())
 			{
@@ -116,8 +126,8 @@ namespace p2c::infra::util
 		{
 			if (docPath.empty())
 			{
-				p2clog.note(L"Failed to resolve documents path: not initialized").commit();
-				return {};
+				pmlog_error(L"Failed to resolve documents path: not initialized");
+				throw Except<Exception>();
 			}
 			if (path.empty())
 			{
@@ -133,7 +143,8 @@ namespace p2c::infra::util
 			wchar_t tempPath[MAX_PATH + 1];
 			if (!GetTempPathW(MAX_PATH, tempPath))
 			{
-				p2clog.note(L"failed resolving temp dir").hr().commit();
+				pmlog_error(L"failed resolving temp dir").hr();
+				throw Except<Exception>();
 			}
 			return std::format(L"{}{}", tempPath, path);
 		}
@@ -146,5 +157,12 @@ namespace p2c::infra::util
 		}
 		}
 		return {};
+	}
+	FolderResolver& FolderResolver::Get()
+	{
+		static FolderResolver res{
+			cli::Options::Get().filesWorking ? L"" : L"Intel\\PresentMon",
+			cli::Options::Get().filesWorking ? L"" : L"PresentMon" };
+		return res;
 	}
 }

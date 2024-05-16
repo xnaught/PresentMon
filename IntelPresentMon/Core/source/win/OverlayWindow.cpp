@@ -1,8 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "OverlayWindow.h" 
-#include <Core/source/infra/log/Logging.h>
-#include <Core/source/infra/log/v/Window.h> 
+#include <Core/source/infra/Logging.h>
 
 #ifdef _DEBUG
 #define ZBAND_DISABLED
@@ -10,8 +9,6 @@
  
 namespace p2c::win 
 {
-    namespace vvv = infra::log::v;
-
     enum class ZBID
     {
         ZBID_DEFAULT = 0,
@@ -71,17 +68,17 @@ namespace p2c::win
                 const auto hmod = LoadLibraryExA("user32.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
                 if (hmod == nullptr)
                 {
-                    p2clog.hr().commit();
+                    pmlog_error().hr();
                 }
                 const auto pCreateWindowInBand = reinterpret_cast<CreateWindowInBand>(GetProcAddress(hmod, "CreateWindowInBand"));
                 if (pCreateWindowInBand == nullptr)
                 {
-                    p2clog.hr().commit();
+                    pmlog_error().hr();
                 }
 
-                p2cvlog(vvv::window).note(std::format(L"OVR-Z-CREATE: x:{} y:{} dim:[{},{}] area:[{},{}] name:{}",
+                pmlog_verb(v::window)(std::format(L"OVR-Z-CREATE: x:{} y:{} dim:[{},{}] area:[{},{}] name:{}",
                     x, y, clientDimensions.width, clientDimensions.height,
-                    windowArea.width, windowArea.height, GetTitle())).commit();
+                    windowArea.width, windowArea.height, GetTitle()));
                 if (!pCreateWindowInBand(
                     exStyles,
                     GetDefaultClass(),
@@ -92,7 +89,7 @@ namespace p2c::win
                     this,
                     (DWORD)ZBID::ZBID_UIACCESS
                 )) {
-                    p2clog.hr().commit();
+                    pmlog_error().hr();
                 }
             }
         }
@@ -100,9 +97,9 @@ namespace p2c::win
 
         // fallback in any case to normal window creation
         if (GetHandle() == nullptr) {
-            p2cvlog(vvv::window).note(std::format(L"OVR-N-CREATE: x:{} y:{} dim:[{},{}] area:[{},{}] name:{}",
+            pmlog_verb(v::window)(std::format(L"OVR-N-CREATE: x:{} y:{} dim:[{},{}] area:[{},{}] name:{}",
                 x, y, clientDimensions.width, clientDimensions.height,
-                windowArea.width, windowArea.height, GetTitle())).commit();
+                windowArea.width, windowArea.height, GetTitle()));
             CreateWindowExW(
                 exStyles,
                 MAKEINTATOM(GetDefaultClass()),
@@ -117,7 +114,7 @@ namespace p2c::win
         // check for error
         if (GetHandle() == nullptr)
         {
-            p2clog.hr().commit();
+            pmlog_error().hr();
         }
     }
 

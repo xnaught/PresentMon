@@ -38,6 +38,21 @@ namespace pmon::util::log
 		},
 		traceSkipDepth_{ PM_LOG_DEFAULT_TRACE_SKIP }
 	{}
+	EntryBuilder::EntryBuilder(Level lvl, std::wstring sourceFile, std::wstring, int sourceLine) noexcept
+		:
+		Entry{
+			.level_ = lvl,
+			.sourceStrings_ = Entry::HeapedSourceStrings{
+				.file_ = sourceFile,
+			},
+			.sourceLine_ = sourceLine,
+			.timestamp_ = std::chrono::system_clock::now(),
+			.pid_ = GetCurrentProcessId(),
+			.tid_ = GetCurrentThreadId(),
+		},
+		traceSkipDepth_{ PM_LOG_DEFAULT_TRACE_SKIP }
+	{
+	}
 	EntryBuilder& EntryBuilder::note(std::wstring note) noexcept
 	{
 		note_ = std::move(note);

@@ -331,9 +331,6 @@ namespace pmon::mid
     {
         if (!pIntroRoot) {
             pmlog_info(L"Creating cached introspection root object");
-            util::mt::Thread t{ L"sike", [] {
-                pmlog_info(L"some logging from a named boi");
-            } };
             pIntroRoot = std::make_unique<pmapi::intro::Root>(GetIntrospectionData(), [this](auto p){FreeIntrospectionData(p);});
         }
         return *pIntroRoot;

@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "WinAPI.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 
 
 namespace p2c::win
@@ -11,13 +11,13 @@ namespace p2c::win
         RECT cr;
         if (!GetClientRect(hWnd, &cr))
         {
-            p2clog.warn().hr().commit();
+            pmlog_warn().hr();
             return { 0,0,0,0 };
         }
         POINT tl{ 0, 0 };
         if (!ClientToScreen(hWnd, &tl))
         {
-            p2clog.warn().hr().commit();
+            pmlog_warn().hr();
             return { 0,0,0,0 };
         }
         return { tl.x, tl.y, tl.x + cr.right, tl.y + cr.bottom };

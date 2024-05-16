@@ -1,6 +1,7 @@
 #include "NamedPipeMarshallSender.h"
 #include <vector>
 #include <atomic>
+#include <semaphore>
 #include <span>
 #include <variant>
 #include "../mt/Thread.h"
@@ -113,7 +114,6 @@ namespace pmon::util::log
 				}
 				// finalization routine, switch over to active mode
 				inst.ResolveOverlapped_(std::nullopt);
-				inst.state_ = State::Active;
 				return StepResult::Completed;
 			}
 		private:
@@ -158,7 +158,20 @@ namespace pmon::util::log
 			std::optional<TransmitPayloadStep> payloadStep_;
 			bool headerStepActive_ = true;
 		};
-		using Step = std::variant<TransmitHeaderStep, TransmitPayloadStep, ConnectStep, IdTableBulkStep>;
+		class ActivateStep
+		{
+		public:
+			ActivateStep(std::binary_semaphore& connSema) : connSema_{ connSema } {}
+			StepResult Execute(NamedPipeInstance& inst)
+			{
+				inst.state_ = State::Active;
+				connSema_.release();
+				return StepResult::Completed;
+			}
+		private:
+			std::binary_semaphore& connSema_;
+		};
+		using Step = std::variant<TransmitHeaderStep, TransmitPayloadStep, ConnectStep, IdTableBulkStep, ActivateStep>;
 	public:
 		// functions
 		NamedPipeInstance(const std::wstring& address, size_t nInstances, win::Event& decomissionEvent)
@@ -204,10 +217,11 @@ namespace pmon::util::log
 			steps_.push_back(TransmitHeaderStep{ data });
 			steps_.push_back(TransmitPayloadStep{ data });
 		}
-		void SetConnectionSequence()
+		void SetConnectionSequence(std::binary_semaphore& connSema)
 		{
 			steps_.push_back(ConnectStep{});
 			steps_.push_back(IdTableBulkStep{});
+			steps_.push_back(ActivateStep{ connSema });
 		}
 		bool IsActive() const
 		{
@@ -387,6 +401,16 @@ namespace pmon::util::log
 				entryEvent_.Set();
 			}
 		}
+		bool WaitForConnection(std::chrono::duration<float> timeout)
+		{
+			if (timeout.count() > 0.f) {
+				return connectionSema_.try_acquire_for(timeout);
+			}
+			else {
+				connectionSema_.acquire();
+				return true;
+			}
+		}
 	private:
 		// function
 		void ConnectionThreadProcedure_()
@@ -396,7 +420,7 @@ namespace pmon::util::log
 				while (!deactivated_) {
 					// for all inactive pipe connections, set connection sequence and add to action list
 					for (auto& pInst : instances_ | vi::filter(&NamedPipeInstance::NeedsConnection)) {
-						pInst->SetConnectionSequence();
+						pInst->SetConnectionSequence(connectionSema_);
 						actions_.Push(pInst.get());
 					}
 					// loop as long as not interrupted
@@ -417,7 +441,7 @@ namespace pmon::util::log
 			}
 			catch (...) {
 				deactivated_ = true;
-				pmlog_panic_(str::ToWide(ReportException()));
+				pmlog_panic_(ReportExceptionWide());
 			}
 		}
 		void TransmissionThreadProcedure_()
@@ -462,10 +486,11 @@ namespace pmon::util::log
 			}
 			catch (...) {
 				deactivated_ = true;
-				pmlog_panic_(str::ToWide(ReportException()));
+				pmlog_panic_(ReportExceptionWide());
 			}
 		}
 		// data
+		std::binary_semaphore connectionSema_{ 0 };
 		std::atomic<bool> deactivated_ = false;
 		std::wstring pipeAddress_;
 		win::Event exitEvent_;
@@ -478,9 +503,9 @@ namespace pmon::util::log
 		mt::Thread transmissionThread_;
 	};
 
-    NamedPipeMarshallSender::NamedPipeMarshallSender(const std::wstring& pipeName)
+    NamedPipeMarshallSender::NamedPipeMarshallSender(const std::wstring& pipeName, size_t nInstances)
 		:
-		pNamedPipe_{ std::make_shared<NamedPipe>(pipeName, 12) }
+		pNamedPipe_{ std::make_shared<NamedPipe>(pipeName, nInstances) }
 	{}
 
     NamedPipeMarshallSender::~NamedPipeMarshallSender() = default;
@@ -500,5 +525,15 @@ namespace pmon::util::log
 		std::static_pointer_cast<NamedPipe>(pNamedPipe_)->Send(
 			IdentificationTable::Bulk{ .processes = { { pid, std::move(name) } } }
 		);
+	}
+	bool NamedPipeMarshallSender::WaitForConnection(std::chrono::duration<float> timeout) noexcept
+	{
+		try {
+			return std::static_pointer_cast<NamedPipe>(pNamedPipe_)->WaitForConnection(timeout);
+		}
+		catch (...) {
+			pmlog_panic_(L"failed to wait for connection");
+			return false;
+		}
 	}
 }

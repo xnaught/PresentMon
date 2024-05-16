@@ -3,7 +3,7 @@
 #pragma once
 #include "WinAPI.h"
 #include <memory>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include "EventHookHandler.h"
 #include <mutex>
 

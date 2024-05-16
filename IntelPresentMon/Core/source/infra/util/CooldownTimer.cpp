@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "CooldownTimer.h"
-#include "Assert.h"
+#include <cassert>
 
 
 namespace p2c::infra::util
@@ -9,7 +9,7 @@ namespace p2c::infra::util
 	CooldownTimer::CooldownTimer(float period, size_t threshold)
 		: period_{ period }, threshold_{ threshold }
 	{
-		CORE_ASSERT(threshold > 0);
+		assert(threshold > 0);
 	}
 
 	bool CooldownTimer::Trigger()

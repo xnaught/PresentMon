@@ -58,7 +58,7 @@ namespace pmon::util::log
 			return GetDefaultChannelContainer_(std::move(factory)).Lock();
 		}
 		catch (...) {
-			pmlog_panic_(str::ToWide(ReportException()));
+			pmlog_panic_(ReportExceptionWide());
 		}
 		return {};
 	}
@@ -69,7 +69,7 @@ namespace pmon::util::log
 				.Inject(std::move(pChannel));
 		}
 		catch (...) {
-			pmlog_panic_(str::ToWide(ReportException()));
+			pmlog_panic_(ReportExceptionWide());
 		}
 	}
 	void BootDefaultChannelEager() noexcept
@@ -80,7 +80,7 @@ namespace pmon::util::log
 			} }.detach();
 		}
 		catch (...) {
-			pmlog_panic_(str::ToWide(ReportException()));
+			pmlog_panic_(ReportExceptionWide());
 		}
 	}
 	void FlushEntryPoint() noexcept

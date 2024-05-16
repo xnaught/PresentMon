@@ -7,15 +7,18 @@
 #include <string>
 #include <algorithm>
 #include <iterator>
-#include <Core/source/infra/log/Logging.h>
-#include <Core/source/infra/util/Exception.h>
-#include <Core/source/infra/util/Util.h>
-#include <Core/source/infra/util/Assert.h>
+#include <Core/source/infra/Logging.h>
+#include <CommonUtilities/str/String.h>
 #include <Core/source/infra/util/Meta.h>
+#include <CommonUtilities/Exception.h>
 #include <string_view>
 
 namespace p2c::client::util
 {
+	using namespace ::pmon::util;
+
+	PM_DEFINE_EX(BadCefValueTraversal);
+
 	inline CefRefPtr<CefValue> CefValueNull() noexcept
 	{
 		auto null_val = CefValue::Create();
@@ -77,7 +80,10 @@ namespace p2c::client::util
 		{
 			return CefV8Value::CreateString(val);
 		}
-		// TODO: error (preferably compile-time) when there is no match for T
+		else
+		{
+			static_assert(!std::is_same_v<T, T>, "Unsupported type for MakeV8Value");
+		}
 	}
 
 	template<typename T1>
@@ -127,8 +133,8 @@ namespace p2c::client::util
 		else
 		{
 			// TODO: make this compile-time
-			p2clog.warn(std::format(L"Encountered unknown value type [{}]",
-				infra::util::ToWide(typeid(T).name()))).commit();
+			pmlog_warn(std::format(L"Encountered unknown value type [{}]",
+				str::ToWide(typeid(T).name())));
 		}
 		return v;
 	}
@@ -159,8 +165,6 @@ namespace p2c::client::util
 		return {};
 	}
 
-	P2C_DEF_EX(BadCefValueTraversal);
-
 	std::string CefValueTypeToString(CefValueType type) noexcept;
 
 	class CefValueTraverser
@@ -172,7 +176,7 @@ namespace p2c::client::util
 		template<typename T>
 		operator T()
 		{
-			using infra::util::ToWide;
+			using str::ToWide;
 			if constexpr (std::is_same_v<T, bool>)
 			{
 				if (pCefValue->GetType() == CefValueType::VTYPE_BOOL)
@@ -202,11 +206,11 @@ namespace p2c::client::util
 			{
 				return AsCefValue();
 			}
-			p2clog.note(std::format(L"Cannot extract {} from CEF {}",
+			pmlog_error(std::format(L"Cannot extract {} from CEF {}",
 				ToWide(typeid(T).name()),
 				ToWide(CefValueTypeToString(pCefValue->GetType()))
-			)).ex(BadCefValueTraversal{}).commit();
-			return T{};
+			));
+			throw Except<BadCefValueTraversal>();
 		}
 		template<typename T>
 		std::vector<T> ToVector()

@@ -1,4 +1,5 @@
 #pragma once
+#include "IChannelComponent.h"
 #include <memory>
 
 namespace pmon::util::log
@@ -6,10 +7,9 @@ namespace pmon::util::log
 	struct Entry;
 	class ITextFormatter;
 
-	class IDriver
+	class IDriver : public IChannelComponent
 	{
 	public:
-		virtual ~IDriver() = default;
 		virtual void Submit(const Entry&) = 0;
 		virtual void Flush() = 0;
 	};

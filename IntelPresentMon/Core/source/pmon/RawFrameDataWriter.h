@@ -9,7 +9,7 @@
 #include <PresentMonAPI2/PresentMonAPI.h>
 #include <PresentMonAPIWrapper/Session.h>
 #include <PresentMonAPIWrapper/BlobContainer.h>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include <Core/source/infra/util/Util.h>
 
 namespace p2c::pmon

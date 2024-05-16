@@ -3,6 +3,7 @@
 #include <format>
 #include <map>
 #include <conio.h>
+#include "CliOptions.h"
 #include "../PresentMonAPIWrapper/PresentMonAPIWrapper.h"
 #include "../CommonUtilities/win/WinAPI.h"
 // #define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Verbose
@@ -44,6 +45,10 @@ void RunLogDemo(int mode)
 	p2sam::ConfigureLogging();
 
 	pmapi::Session sesh;
+
+	for (auto&& o : clio::Options::Get().GetForwardedOptions()) {
+		std::cout << std::format("({}, {})", o.first, o.second) << std::endl;
+	}
 	
 	// basic log info w/ message
 	if (mode == 0) {
@@ -162,11 +167,11 @@ void RunLogDemo(int mode)
 	}
 	// ipc server setup (server always setup), set thread name special command
 	else if (mode == 17) {
+		auto pSender = std::make_shared<log::NamedPipeMarshallSender>(L"pml_demopipe");
 		{
-			auto pSender = std::make_shared<log::NamedPipeMarshallSender>(L"pml_demopipe");
 			log::IdentificationTable::RegisterSink(pSender);
-			auto pDriver = std::make_shared<log::MarshallDriver>(std::move(pSender));
-			log::GetDefaultChannel()->AttachDriver(std::move(pDriver));
+			auto pDriver = std::make_shared<log::MarshallDriver>(pSender);
+			log::GetDefaultChannel()->AttachComponent(std::move(pDriver));
 		}
 		std::wstring note;
 		while (true) {
@@ -180,6 +185,11 @@ void RunLogDemo(int mode)
 			else if (note.front() == L'$') {
 				log::IdentificationTable::AddThisProcess(note);
 			}
+			else if (note.front() == L'#') {
+				std::cout << "Waiting for connection..." << std::endl;
+				pSender->WaitForConnection();
+				std::cout << "We in there!" << std::endl;
+			}
 			else {
 				pmlog_info(note);
 			}
@@ -187,7 +197,7 @@ void RunLogDemo(int mode)
 	}
 	// ipc client
 	else if (mode == 18) {
-		log::GetDefaultChannel()->AttachObject(std::make_shared<log::EntryMarshallInjector>(log::GetDefaultChannel(),
+		log::GetDefaultChannel()->AttachComponent(std::make_shared<log::EntryMarshallInjector>(log::GetDefaultChannel(),
 			std::make_shared<log::NamedPipeMarshallReceiver>(L"pml_demopipe", log::IdentificationTable::GetPtr())));
 		while (!_kbhit());
 	}

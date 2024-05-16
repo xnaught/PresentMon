@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "AsyncEndpoint.h"
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 
 namespace p2c::client::util
 {
@@ -9,17 +9,17 @@ namespace p2c::client::util
 
 	void AsyncEndpoint::ExecuteOnBrowser(uint64_t uid, CefRefPtr<CefValue> pArgObj, CefRefPtr<CefBrowser> pBrowser) const
 	{
-		p2clog.warn(L"virtual not implemented").commit();
+		pmlog_warn(L"virtual not implemented");
 	}
 
 	void AsyncEndpoint::ExecuteOnRenderAccessor(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor& accessor) const
 	{
-		p2clog.warn(L"virtual not implemented").commit();
+		pmlog_warn(L"virtual not implemented");
 	}
 
 	AsyncEndpoint::Result AsyncEndpoint::ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const
 	{
-		p2clog.warn(L"virtual not implemented").commit();
+		pmlog_warn(L"virtual not implemented");
 		return {};
 	}
 

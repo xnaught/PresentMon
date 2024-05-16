@@ -2,6 +2,8 @@
 #include "../str/String.h"
 #include <span>
 #include <vector>
+#include <format>
+#include <ranges>
 
 namespace pmon::util::cli
 {
@@ -10,14 +12,43 @@ namespace pmon::util::cli
 	{
 		return app_.get_name();
 	}
+	std::vector<std::pair<std::string, std::string>> OptionsContainer::GetForwardedOptions() const
+	{
+		std::vector<std::pair<std::string, std::string>> options;
+		for (auto pEl : elementPtrs_) {
+			if (pEl->forwarding_ && bool(*pEl)) {
+				options.emplace_back(pEl->name_, pEl->raw_);
+			}
+		}
+		return options;
+	}
+	void OptionsContainer::AddGroup_(std::string name, std::string desc)
+	{
+		activeGroup_ = name;
+		if (name.empty()) {
+			app_.add_option_group({})->silent();
+		}
+		else {
+			app_.add_option_group(std::move(name), std::move(desc));
+		}
+	}
+	void OptionsContainer::RegisterElement_(OptionsElement_* pElement)
+	{
+		elementPtrs_.push_back(pElement);
+	}
 	void OptionsContainer::Finalize_(int argc, const char* const* argv)
 	{
 		app_.parse(argc, argv);
 		finalized_ = true;
 	}
-	int OptionsContainer::Exit_(const CLI::ParseError& e)
+	int OptionsContainer::Exit_(const CLI::ParseError& e, bool captureDiagnostics)
 	{
-		return app_.exit(e);
+		if (captureDiagnostics) {
+			return app_.exit(e, diagnostics_, diagnostics_);
+		}
+		else {
+			return app_.exit(e);
+		}
 	}
 
 	OptionsContainer::ConvertedNarrowOptions_::ConvertedNarrowOptions_(int argc, const wchar_t* const* wargv)
@@ -42,7 +73,14 @@ namespace pmon::util::cli
 
 	Flag::Flag(OptionsContainer* pParent, std::string names, std::string description)
 	{
+		// create the option
 		pOption_ = pParent->app_.add_flag(std::move(names), data_, std::move(description));
+		// add to active group
+		pOption_->group(pParent->activeGroup_);
+		// capture main name for the option (used when forwarding)
+		SetName_(pOption_->get_name());
+		// register this element with the options container dynamically
+		pParent->RegisterElement_(this);
 	}
 	bool Flag::operator*() const
 	{
@@ -55,5 +93,16 @@ namespace pmon::util::cli
 	bool Flag::operator!() const
 	{
 		return !bool(*this);
+	}
+	std::function<std::string(std::string)> OptionsElement_::GetCaptureCallback_()
+	{
+		return [this](std::string s) -> std::string {
+			raw_ = s;
+			return std::move(s);
+		};
+	}
+	void OptionsElement_::SetName_(std::string name)
+	{
+		name_ = std::move(name);
 	}
 }

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 #include "SchemeFileHandler.h"
 #include <include/cef_parser.h>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 
 
 namespace p2c::client::cef
@@ -30,7 +30,7 @@ namespace p2c::client::cef
         CefURLParts url_parts;
         if (!CefParseURL(request->GetURL(), url_parts))
         {
-            p2clog.note(std::format(L"Failed parsing URL: {}", request->GetURL().ToWString())).nox().commit();
+            pmlog_error(std::format(L"Failed parsing URL: {}", request->GetURL().ToWString()));
             return false;
         }
 
@@ -40,7 +40,7 @@ namespace p2c::client::cef
         file_path_ = directory_ / path_part;
         if (!std::filesystem::is_regular_file(file_path_))
         {
-            p2clog.note(std::format(L"Failed locating file: {}", file_path_.wstring())).nox().commit();
+            pmlog_error(std::format(L"Failed locating file: {}", file_path_.wstring()));
             return false;
         }
         file_size_ = std::filesystem::file_size(file_path_);
@@ -54,11 +54,11 @@ namespace p2c::client::cef
         file_stream_ = std::ifstream(file_path_, std::ios::binary);
         if (!file_stream_)
         {
-            p2clog.note(std::format(L"Failed opening file: {}", file_path_.wstring())).nox().commit();
+            pmlog_error(std::format(L"Failed opening file: {}", file_path_.wstring()));
             return false;
         }
 
-        p2clog.info(std::format(L"Opening file: {}", file_path_.wstring())).nox().commit();
+        pmlog_info(std::format(L"Opening file: {}", file_path_.wstring()));
         return true;
     }
 
@@ -77,7 +77,7 @@ namespace p2c::client::cef
 
         if (response_length < 0)
         {
-            p2clog.note(std::format(L"File too large: {}", file_size_)).nox().commit();
+            pmlog_error(std::format(L"File too large: {}", file_size_));
         }
     }
 

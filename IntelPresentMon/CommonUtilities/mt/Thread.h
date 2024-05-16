@@ -2,6 +2,7 @@
 #include <thread>
 #include "../Exception.h"
 #include "../log/IdentificationTable.h"
+#include "../log/Log.h"
 
 namespace pmon::util::mt
 {

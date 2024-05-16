@@ -23,16 +23,12 @@
     <ClCompile Include="source\util\AsyncEndpoint.cpp" />
     <ClCompile Include="source\util\AsyncEndpointCollection.cpp" />
     <ClCompile Include="source\util\AsyncEndpointManager.cpp" />
-    <ClCompile Include="source\util\CefIpcLogDriver.cpp" />
-    <ClCompile Include="source\util\CefIpcLogRouter.cpp" />
-    <ClCompile Include="source\util\CefProcessCompass.cpp" />
     <ClCompile Include="source\util\CefValues.cpp" />
     <ClCompile Include="source\util\FontEnumerator.cpp" />
     <ClCompile Include="source\util\HotkeyListener.cpp" />
     <ClCompile Include="source\util\KernelWrapper.cpp" />
     <ClCompile Include="source\util\MakeOverlaySpec.cpp" />
     <ClCompile Include="source\util\PathSanitaryCheck.cpp" />
-    <ClCompile Include="source\util\ServiceBooter.cpp" />
     <ClCompile Include="source\util\SignalManager.cpp" />
     <ClCompile Include="source\util\ThreadCompass.cpp" />
     <ClCompile Include="source\winmain.cpp" />
@@ -51,7 +47,9 @@
     <ClInclude Include="source\util\AsyncEndpoint.h" />
     <ClInclude Include="source\util\AsyncEndpointCollection.h" />
     <ClInclude Include="source\util\AsyncEndpointManager.h" />
+    <ClInclude Include="source\util\async\CheckPathExistence.h" />
     <ClInclude Include="source\util\async\GetTopGpuProcess.h" />
+    <ClInclude Include="source\util\async\LoadEnvVars.h" />
     <ClInclude Include="source\util\async\LoadFile.h" />
     <ClInclude Include="source\util\async\StoreFile.h" />
     <ClInclude Include="source\util\async\BrowseReadSpec.h" />
@@ -69,9 +67,6 @@
     <ClInclude Include="source\util\async\SetCapture.h" />
     <ClInclude Include="source\util\async\SetAdapter.h" />
     <ClInclude Include="source\util\CefValues.h" />
-    <ClInclude Include="source\util\CefIpcLogDriver.h" />
-    <ClInclude Include="source\util\CefIpcLogRouter.h" />
-    <ClInclude Include="source\util\CefProcessCompass.h" />
     <ClInclude Include="source\util\FileLocation.h" />
     <ClInclude Include="source\util\KernelWrapper.h" />
     <ClInclude Include="source\util\MakeOverlaySpec.h" />
@@ -79,10 +74,12 @@
     <ClInclude Include="source\util\SignalManager.h" />
     <ClInclude Include="source\util\FontEnumerator.h" />
     <ClInclude Include="source\util\HotkeyListener.h" />
-    <ClInclude Include="source\util\ServiceBooter.h" />
     <ClInclude Include="source\util\ThreadCompass.h" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">
+      <Project>{08a704d8-ca1c-45e9-8ede-542a1a43b53e}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\Core\Core.vcxproj">
       <Project>{808f5ea9-ea09-4d72-87b4-5397d43cba54}</Project>
     </ProjectReference>

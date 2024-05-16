@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include <deque>
-#include <Core/source/infra/util/Assert.h>
 #include <functional>
+#include <algorithm>
 #include <Core/source/gfx/base/Geometry.h>
 #include <Core/source/gfx/layout/Enums.h>
 
@@ -51,7 +51,7 @@ namespace p2c::gfx::lay
 		void Pop(float value)
 		{
 			if (Empty()) {
-				p2clog.warn(L"Trying to pop from empty extremeq").commit();
+				pmlog_warn(L"Trying to pop from empty extremeq");
 				return;
 			}
 			if (candidates.front() == value) {

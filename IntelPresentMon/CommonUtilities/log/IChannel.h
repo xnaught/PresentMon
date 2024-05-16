@@ -1,11 +1,11 @@
 #pragma once
 #include <memory>
+#include <string>
 
 namespace pmon::util::log
 {
 	struct Entry;
-	class IDriver;
-	class IPolicy;
+	class IChannelComponent;
 
 	class IEntrySink
 	{
@@ -19,9 +19,7 @@ namespace pmon::util::log
 	class IChannel : public IEntrySink
 	{
 	public:
-		virtual void AttachDriver(std::shared_ptr<IDriver>) = 0;
-		virtual void AttachPolicy(std::shared_ptr<IPolicy>) = 0;
-		virtual void AttachObject(std::shared_ptr<void>) = 0;
+		virtual void AttachComponent(std::shared_ptr<IChannelComponent>, std::string = {}) = 0;
 		virtual void FlushEntryPointExit() = 0;
 	};
 }

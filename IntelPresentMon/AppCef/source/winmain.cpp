@@ -2,20 +2,21 @@
 // SPDX-License-Identifier: MIT
 #include "NanoCefBrowserClient.h"
 #include "NanoCefProcessHandler.h"
-#include "util/ServiceBooter.h"
 #include "../resource.h"
-#include <Core/source/infra/log/Logging.h>
-#include <Core/source/infra/svc/Services.h>
+#include <Core/source/infra/Logging.h>
 #include <Core/source/infra/util/FolderResolver.h>
-#include <Core/source/infra/opt/Options.h>
+#include <Core/source/cli/CliOptions.h>
+#include <CommonUtilities/log/IdentificationTable.h>
+#include <CommonUtilities/generated/build_id.h>
 #include <dwmapi.h>
 
 #pragma comment(lib, "Dwmapi.lib")
 
 using namespace p2c;
+using namespace pmon::util;
+using p2c::cli::Options;
 namespace ccef = client::cef;
-using infra::svc::Services;
-namespace opt = infra::opt;
+using namespace std::chrono_literals;
 
 // globals
 constexpr const char* BrowserWindowClassName = "BrowserWindowClass";
@@ -53,8 +54,8 @@ LRESULT CALLBACK BrowserWindowWndProc(HWND window_handle, UINT message, WPARAM w
         CefBrowserSettings settings;
         // this special url (domain+schema) triggers load-from-disk behavior
         std::string url = "https://app/index.html";
-        if (opt::get().url) {
-            url = *opt::get().url;
+        if (Options::Get().url) {
+            url = *Options::Get().url;
         }
         CefBrowserHost::CreateBrowser(
             info, pBrowserClient.get(), url,
@@ -172,43 +173,74 @@ void AppQuitMessageLoop()
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+#ifdef NDEBUG
+    constexpr bool is_debug = false;
+#else
+    constexpr bool is_debug = true;
+#endif
+    // create logging system and ensure cleanup before main ext
+    LogChannelManager zLogMan_;
+    // parse the command line arguments and make them globally available
+    if (auto err = Options::Init(__argc, __argv, true)) {
+        if (*err == 0) {
+            MessageBoxA(nullptr, Options::GetDiagnostics().c_str(), "Command Line Help",
+                MB_ICONINFORMATION | MB_APPLMODAL | MB_SETFOREGROUND);
+        }
+        else {
+            MessageBoxA(nullptr, Options::GetDiagnostics().c_str(), "Command Line Parse Error",
+                MB_ICONERROR | MB_APPLMODAL | MB_SETFOREGROUND);
+        }
+        return *err;
+    }
+    const auto& opt = Options::Get();
+    // wait for debugger connection
+    if (opt.cefType && *opt.cefType == "renderer" && opt.debugWaitRender) {
+        while (!IsDebuggerPresent()) {
+            std::this_thread::sleep_for(20ms);
+        }
+        DebugBreak();
+    }
+    // name this process / thread
+    log::IdentificationTable::AddThisProcess(str::ToWide(Options::Get().cefType.AsOptional().value_or("main-client")));
+    log::IdentificationTable::AddThisThread(L"main");
+    // configure the logging system (partially based on command line options)
+    ConfigureLogging();
+
     using namespace client;
     try {
-        opt::init();
-        util::BootServices();
-
         CefMainArgs main_args{ hInstance };
         CefRefPtr<ccef::NanoCefProcessHandler> app = new ccef::NanoCefProcessHandler{};
 
-        if (const auto code = CefExecuteProcess(main_args, app.get(), nullptr); code >= 0)
-        {
+        if (const auto code = CefExecuteProcess(main_args, app.get(), nullptr); code >= 0) {
             return (int)code;
         }
 
+        // code from here on is only executed by the root process (browser window process)
+
+        pmlog_info(std::format(L"== client section starting build#{} clean:{} ==", PM_BID_GIT_HASH_SHORT, !PM_BID_DIRTY));
+
         {
-#ifdef NDEBUG
-            constexpr bool is_debug = false;
-#else
-            constexpr bool is_debug = true;
-#endif
-            const auto pFolderResolver = Services::Resolve<infra::util::FolderResolver>();
+            auto& folderResolver = infra::util::FolderResolver::Get();
             CefSettings settings;
             settings.multi_threaded_message_loop = true;
             settings.remote_debugging_port = is_debug ? 9009 : 0;
             settings.background_color = { 0x000000 };
-            CefString(&settings.cache_path).FromWString(pFolderResolver->Resolve(infra::util::FolderResolver::Folder::App, L"cef-cache"));
-            CefString(&settings.log_file).FromWString(pFolderResolver->Resolve(infra::util::FolderResolver::Folder::App, L"logs\\cef-debug.log"));
+            CefString(&settings.cache_path).FromWString(folderResolver.Resolve(infra::util::FolderResolver::Folder::App, L"cef-cache"));
+            if (opt.logFolder) {
+                CefString(&settings.log_file).FromString(*opt.logFolder + "\\cef-debug.log");
+            }
+            else {
+                CefString(&settings.log_file).FromWString(folderResolver.Resolve(infra::util::FolderResolver::Folder::App, L"logs\\cef-debug.log"));
+            }
             settings.log_severity = is_debug ? cef_log_severity_t::LOGSEVERITY_DEFAULT : cef_log_severity_t::LOGSEVERITY_ERROR;
             CefInitialize(main_args, settings, app.get(), nullptr);
         }
         auto hwndBrowser = CreateBrowserWindow(hInstance, nCmdShow);
         hwndAppMsg = CreateMessageWindow(hInstance);
 
-        p2clog.info(L"== hello from client process ==").pid().commit();
 
         MSG msg;
-        while (GetMessage(&msg, nullptr, 0, 0))
-        {
+        while (GetMessage(&msg, nullptr, 0, 0)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
@@ -219,6 +251,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
         UnregisterClass(BrowserWindowClassName, hInstance);
         UnregisterClass(MessageWindowClassName, hInstance);
+
+        pmlog_info(L"== client process exiting ==");
 
         return (int)msg.wParam;
     }

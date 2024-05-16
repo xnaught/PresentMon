@@ -2,16 +2,13 @@
 // SPDX-License-Identifier: MIT
 #include "Window.h"
 #include <format>
-#include <Core/source/infra/log/Logging.h>
+#include <Core/source/infra/Logging.h>
 #include <Core/source/infra/util/Util.h>
 #include "MessageMap.h"
 #include "WndClass.h"
-#include <Core/source/infra/log/v/Window.h>
 
 namespace p2c::win
 {
-    using namespace infra::log;
-
     Window::Window(std::wstring title, DWORD styles)
         :
         title{ std::move(title) }, 
@@ -20,10 +17,10 @@ namespace p2c::win
 
     Window::~Window()
     {
-        p2cvlog(v::window).note(std::format(L"window dying hwn:[{:8x}] tit:[{}]", (uint64_t)hWnd, GetTitle())).commit();
+        pmlog_verb(v::window)(std::format(L"window dying hwn:[{:8x}] tit:[{}]", (uint64_t)hWnd, GetTitle()));
         if (DestroyWindow(hWnd) == FALSE)
         {
-            p2clog.hr().nox().commit();
+            pmlog_error().hr();
         }
     }
 
@@ -42,61 +39,61 @@ namespace p2c::win
         RECT rect{}; 
         if (GetWindowRect(hWnd, &rect) == FALSE)
         {
-            p2clog.hr().warn(std::format(L"failed to get window rect {}", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to get window rect {}", GetTitle())).hr();
         }
         return { rect.left, rect.top };
     }
 
     void Window::Move(gfx::Vec2I pos)
     {
-        p2cvlog(v::window).note(std::format(L"pos:[{},{}]", pos.x, pos.y)).commit();
+        pmlog_verb(v::window)(std::format(L"pos:[{},{}]", pos.x, pos.y));
         if (SetWindowPos(hWnd, nullptr, pos.x, pos.y, 0, 0, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE) == FALSE)
         {
-            p2clog.hr().warn(std::format(L"failed to move window {}", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to move window {}", GetTitle())).hr();
         }
     }
 
     void Window::Reorder(HWND base)
     {
-        p2cvlog(v::window).note(std::format(L"hwnd:{:8x}", (uint64_t)base)).commit();
+        pmlog_verb(v::window)(std::format(L"hwnd:{:8x}", (uint64_t)base));
         if (SetWindowPos(hWnd, GetNextWindow(base, GW_HWNDPREV), 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE)
         {
-            p2clog.hr().warn(std::format(L"failed to reorder window {}", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to reorder window {}", GetTitle())).hr();
         }
     }
 
     void Window::ReorderBehind(HWND base)
     {
-        p2cvlog(v::window).note(std::format(L"hwnd:{:8x}", (uint64_t)base)).commit();
+        pmlog_verb(v::window)(std::format(L"hwnd:{:8x}", (uint64_t)base));
         if (SetWindowPos(hWnd, base, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE) {
-            p2clog.hr().warn(std::format(L"failed to reorder window {} behind", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to reorder window {} behind", GetTitle())).hr();
         }
     }
 
     void Window::SetTopmost()
     {
-        p2cvlog(v::window).commit();
+        pmlog_verb(v::window)();
         if (SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE)
         {
-            p2clog.hr().warn(std::format(L"failed to make window topmost {}", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to make window topmost {}", GetTitle())).hr();
         }
     }
 
     void Window::ClearTopmost()
     {
-        p2cvlog(v::window).commit();
+        pmlog_verb(v::window)();
         if (SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE)
         {
-            p2clog.hr().warn(std::format(L"failed to make window non-topmost {}", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to make window non-topmost {}", GetTitle())).hr();
         }
     }
 
     void Window::Close()
     {
-        p2cvlog(v::window).commit();
+        pmlog_verb(v::window)();
         if (PostMessage(hWnd, WM_CLOSE, 0, 0) == FALSE)
         {
-            p2clog.hr().warn(std::format(L"failed to close window {}", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to close window {}", GetTitle())).hr();
         }
     }
 
@@ -125,23 +122,23 @@ namespace p2c::win
 
     void Window::Hide()
     {
-        p2cvlog(v::window).commit();
+        pmlog_verb(v::window)();
         ShowWindow(hWnd, SW_HIDE);
     }
 
     void Window::Show()
     {
-        p2cvlog(v::window).commit();
+        pmlog_verb(v::window)();
         ShowWindow(hWnd, SW_SHOWNOACTIVATE);
     }
 
     void Window::Resize(gfx::DimensionsI clientSize)
     {
-        p2cvlog(v::window).commit();
+        pmlog_verb(v::window)();
         const auto size = ComputeWindowDimensions(clientSize);
         if (SetWindowPos(hWnd, nullptr, 0, 0, size.width, size.height, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOMOVE) == FALSE)
         {
-            p2clog.hr().warn(std::format(L"failed to resize window {}", GetTitle())).commit();
+            pmlog_warn(std::format(L"failed to resize window {}", GetTitle())).hr();
         }
     }
 
@@ -155,7 +152,7 @@ namespace p2c::win
         };
         if (AdjustWindowRect(&wr, styles, FALSE) == FALSE)
         {
-            p2clog.hr().warn(L"Failed to adjust window rect").commit();
+            pmlog_warn(L"Failed to adjust window rect").hr();
         }
         return RectToDims(wr);
     }
@@ -173,10 +170,10 @@ namespace p2c::win
 
     void Window::SetHandle(HWND hWnd_)
     {
-        p2cvlog(v::window).note(std::format(L"hwnd:{:8x}", (uint64_t)hWnd_)).commit();
+        pmlog_verb(v::window)(std::format(L"hwnd:{:8x}", (uint64_t)hWnd_));
         if (hWnd != nullptr)
         {
-            p2clog.warn(L"handle already set for window").commit();
+            pmlog_warn(L"handle already set for window");
         }
         hWnd = hWnd_;
     }
@@ -185,7 +182,7 @@ namespace p2c::win
     {
         if (loggingMessages)
         {
-            p2clog.info(std::format(L"WinMsg@[{}] : {}", GetTitle(), LookupMessageName(msg))).commit();
+            pmlog_info(std::format(L"WinMsg@[{}] : {}", GetTitle(), LookupMessageName(msg)));
         }
     }
 

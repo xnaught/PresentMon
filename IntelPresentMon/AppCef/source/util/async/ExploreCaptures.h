@@ -5,9 +5,9 @@
 #include <Core/source/kernel/Kernel.h>
 #include "../CefValues.h"
 #include <fstream>
-#include <Core/source/infra/svc/Services.h>
 #include <Core/source/infra/util/FolderResolver.h>
 #include <Core/source/win/WinAPI.h>
+#include <CommonUtilities/Exception.h>
 #include <shellapi.h>
 
 namespace p2c::client::util::async
@@ -21,14 +21,12 @@ namespace p2c::client::util::async
         Result ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const override
         {
             // try to resolve app folder, fallback to cwd
-            std::wstring path;
-            if (auto fr = infra::svc::Services::ResolveOrNull<infra::util::FolderResolver>()) {
-                path = fr->Resolve(infra::util::FolderResolver::Folder::Documents, L"Captures");
-            }
+            std::wstring path = infra::util::FolderResolver::Get()
+                .Resolve(infra::util::FolderResolver::Folder::Documents, L"Captures");
 
             if ((INT_PTR)ShellExecuteW(nullptr, L"open", path.c_str(), nullptr, nullptr, SW_SHOWDEFAULT) <= 32) {
-                p2clog.note(L"Failed to explore Captures folder").commit();
-                return Result{ false, CefValueNull() };
+                pmlog_error(L"Failed to explore Captures folder");
+                throw ::pmon::util::Except<::pmon::util::Exception>();
             }
 
             return Result{ true, CefValueNull() };

@@ -18,9 +18,10 @@ namespace p2c::infra::util
 		};
 		// functions
 		// defaulted subdir means using the cwd to store files of that category
-		FolderResolver(std::wstring appPathSubdir = {}, std::wstring docPathSubdir = {}, bool createSubdirectories = true);
 		std::wstring Resolve(Folder f, std::wstring path = {}) const;
+		static FolderResolver& Get();
 	private:
+		FolderResolver(std::wstring appPathSubdir = {}, std::wstring docPathSubdir = {}, bool createSubdirectories = true);
 		static constexpr const wchar_t* loadoutsSubdirectory = L"Loadouts";
 		static constexpr const wchar_t* capturesSubdirectory = L"Captures";
 		std::wstring appPath;

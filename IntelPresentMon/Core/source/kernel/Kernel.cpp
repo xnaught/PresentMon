@@ -4,28 +4,30 @@
 #include <Core/source/win/WinAPI.h>
 #include <Core/source/win/MessageBox.h>
 #include <Core/source/infra/util/Util.h>
-#include <Core/source/infra/log/Logging.h>
-#include <Core/source/infra/svc/Services.h>
+#include <Core/source/infra/Logging.h>
 #include <Core/source/infra/util/FolderResolver.h>
 #include <random>
 #include "OverlayContainer.h"
 #include "TargetLostException.h"
 #include <Core/source/win/ProcessMapBuilder.h>
 #include <Core/source/win/com/WbemConnection.h>
-#include <Core/source/infra/opt/Options.h>
-#include <CommonUtilities\str\String.h>
+#include <Core/source/cli/CliOptions.h>
+#include <CommonUtilities/str/String.h>
+#include <CommonUtilities/Exception.h>
+
 
 using namespace std::literals;
+using namespace ::pmon::util;
 
 namespace p2c::kern
 {
-    using ::pmon::util::str::ToWide;
+    using str::ToWide;
 
     Kernel::Kernel(KernelHandler* pHandler)
         :
         pHandler{ pHandler },
         constructionSemaphore{ 0 },
-        thread{ &Kernel::ThreadProcedure_, this }
+        thread{ L"kernel", &Kernel::ThreadProcedure_, this}
     {
         constructionSemaphore.acquire();
         HandleMarshalledException_();
@@ -89,7 +91,7 @@ namespace p2c::kern
         HandleMarshalledException_();
         std::lock_guard lk{ mtx };
         if (!pm) {
-            p2clog.warn(L"presentmon not initialized").commit();
+            pmlog_warn(L"presentmon not initialized");
             return;
         }
         pm->SetAdapter(id);
@@ -107,12 +109,12 @@ namespace p2c::kern
         HandleMarshalledException_();
         std::lock_guard lk{ mtx };
         if (!pm) {
-            p2clog.warn(L"presentmon not initialized").commit();
+            pmlog_warn(L"presentmon not initialized");
             return {};
         }
         try { return pm->EnumerateAdapters(); }
         catch (...) { 
-            p2clog.warn(L"failed to enumerate adapters, returning empty set").commit();
+            pmlog_warn(L"failed to enumerate adapters, returning empty set");
             return {};
         }
     }
@@ -147,10 +149,12 @@ namespace p2c::kern
         try {
             // mutex that prevents frontend from accessing before pmon is connected
             std::unique_lock startLck{ mtx };
-            p2clog.info(L"== kernel thread starting ==").pid().tid().commit();
+
+            // name this thread
+            pmlog_info(L"== kernel thread starting ==");
 
             // command line options
-            auto& opt = infra::opt::get();
+            auto& opt = cli::Options::Get();
 
             // connect to wbem
             win::com::WbemConnection wbemConn;
@@ -159,7 +163,7 @@ namespace p2c::kern
             try { pm.emplace(opt.controlPipe.AsOptional(), opt.shmName.AsOptional()); }
             catch (...) {
                 pHandler->OnPresentmonInitFailed();
-                p2clog.note(L"Failed to init presentmon api").nox().notrace().commit();
+                pmlog_error(L"Failed to init presentmon api").no_trace();
                 throw;
             }
 
@@ -199,16 +203,9 @@ namespace p2c::kern
                         pHandler->OnStalePidSelected();
                     }
                 }
-                catch (const std::exception& e) {
-                    pHandler->OnOverlayDied();
-                    auto note = std::format(L"Overlay died with error: {}", pmon::ToWide(e.what()));
-                    p2clog.note(std::move(note)).nox().notrace().commit();
-                    pOverlayContainer.reset();
-                    pPushedSpec.reset();
-                }
                 catch (...) {
                     pHandler->OnOverlayDied();
-                    p2clog.note(L"Overlay died").nox().notrace().commit();
+                    pmlog_error(L"Overlay died w/ except. => " + ReportExceptionWide()).no_trace();
                     pOverlayContainer.reset();
                     pPushedSpec.reset();
                 }
@@ -216,24 +213,21 @@ namespace p2c::kern
 
             pm.reset();
 
-            p2clog.info(L"== core thread exiting ==").pid().commit();
+            pmlog_info(L"== kernel thread exiting ==");
         }
         // this catch section handles failures to initialize kernel, or rare error that escape the main loop catch
         // possibility to marshall exceptions to js whenever an interface function is called (async rejection path)
-        catch (const std::exception& e) {
-            // TODO: instead of duplicating for std::ex+..., just catch ... and use a function that can throw/catch
-            // std::current_exception to extract useful info, if any
-            auto msg = std::format("Exception in PresentMon Kernel thread [{}]: {}", typeid(e).name(), e.what());
-            p2clog.note(ToWide(msg)).nox().notrace().commit();
-            marshalledException = std::current_exception();
-            hasMarshalledException.store(true);
-        }
         catch (...) {
-            p2clog.note(L"Unknown exception in PresentMon Kernel thread").nox().notrace().commit();
+            pmlog_error(ReportExceptionWide()).no_trace();
             marshalledException = std::current_exception();
             hasMarshalledException.store(true);
         }
         constructionSemaphore.release();
+
+        // make sure all the logging messages from kernel thread are processed
+        if (auto chan = log::GetDefaultChannel()) {
+            chan->Flush();
+        }
     }
 
     void Kernel::RunOverlayLoop_()
@@ -271,10 +265,8 @@ namespace p2c::kern
                 }
                 else if (pushedCaptureActive)
                 {
-                    std::wstring path;
-                    if (auto pFolder = infra::svc::Services::ResolveOrNull<infra::util::FolderResolver>()) {
-                        path = pFolder->Resolve(infra::util::FolderResolver::Folder::Documents) + L"\\Captures\\";
-                    }
+                    std::wstring path = infra::util::FolderResolver::Get()
+                        .Resolve(infra::util::FolderResolver::Folder::Documents) + L"\\Captures\\";
                     pOverlayContainer->SetCaptureState(*pushedCaptureActive, std::move(path), pOverlayContainer->GetSpec().captureName);
                     pushedCaptureActive.reset();
                 }
