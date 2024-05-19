@@ -14,6 +14,7 @@ namespace p2c::pmon
 		double GetMax();
 		double GetMean() const;
 		size_t GetCount() const;
+		double GetSum() const;
 	private:
 		void Sort_();
 		bool sorted = false;

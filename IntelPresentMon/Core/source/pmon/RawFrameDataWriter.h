@@ -36,6 +36,7 @@ namespace p2c::pmon
 		std::unique_ptr<QueryElementContainer_> pQueryElementContainer;
 		std::optional<std::wstring> frameStatsPath;
 		std::unique_ptr<StatisticsTracker> pStatsTracker;
+		std::unique_ptr<StatisticsTracker> pAnimationErrorTracker;
 		pmapi::BlobContainer blobs;
 		double startTime = -1.;
 		double endTime = -1.;
