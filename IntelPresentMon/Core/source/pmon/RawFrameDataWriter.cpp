@@ -189,6 +189,9 @@ namespace p2c::pmon
                 else if (el.metricId == PM_METRIC_CPU_FRAME_TIME) {
                     frametimeElementIdx_ = int(queryElements_.size() - 1);
                 }
+                else if (el.metricId == PM_METRIC_ANIMATION_ERROR) {
+                    animationErrorElementIdx_ = int(queryElements_.size() - 1);
+                }
             }
             // if any specially-required fields are missing, add to query (but not to annotations)
             if (totalTimeElementIdx_ < 0) {
@@ -209,6 +212,16 @@ namespace p2c::pmon
                 });
                 frametimeElementIdx_ = int(queryElements_.size() - 1);
             }
+            if (animationErrorElementIdx_ < 0) {
+                queryElements_.push_back(PM_QUERY_ELEMENT{
+                    .metric = PM_METRIC_ANIMATION_ERROR,
+                    .stat = PM_STAT_NONE,
+                    .deviceId = 0,
+                    .arrayIndex = 0,
+                    });
+                animationErrorElementIdx_ = int(queryElements_.size() - 1);
+            }
+
             // register query
             query_ = session.RegisterFrameQuery(queryElements_);
         }
@@ -227,6 +240,10 @@ namespace p2c::pmon
         double ExtractFrameTimeFromBlob(const uint8_t* pBlob) const
         {
             return reinterpret_cast<const double&>(pBlob[queryElements_[frametimeElementIdx_].dataOffset]);
+        }
+        double ExtractAnimationErrorFromBlob(const uint8_t* pBlob) const
+        {
+            return reinterpret_cast<const double&>(pBlob[queryElements_[animationErrorElementIdx_].dataOffset]);
         }
         void WriteFrame(uint32_t pid, const std::string& procName, std::ostream& out, const uint8_t* pBlob)
         {
@@ -260,6 +277,7 @@ namespace p2c::pmon
         // query elements referenced used for summary stats gathering
         int totalTimeElementIdx_ = -1;
         int frametimeElementIdx_ = -1;
+        int animationErrorElementIdx_ = -1;
     };
 
     RawFrameDataWriter::RawFrameDataWriter(std::wstring path, const pmapi::ProcessTracker& procTrackerIn, std::wstring processName, uint32_t activeDeviceId,
@@ -269,6 +287,7 @@ namespace p2c::pmon
         procName{ ToNarrow(processName) },
         frameStatsPath{ std::move(frameStatsPathIn) },
         pStatsTracker{ frameStatsPath ? std::make_unique<StatisticsTracker>() : nullptr },
+        pAnimationErrorTracker{ frameStatsPath ? std::make_unique<StatisticsTracker>() : nullptr },
         file{ path }
     {
         auto queryElements = GetRawFrameDataMetricList(activeDeviceId);
@@ -298,6 +317,12 @@ namespace p2c::pmon
                     // tracking frame times
                     pStatsTracker->Push(pQueryElementContainer->ExtractFrameTimeFromBlob(pBlob));
                 }
+                if (pAnimationErrorTracker) {
+                    auto animationError = (pQueryElementContainer->ExtractAnimationErrorFromBlob(pBlob));
+                    if (std::isnan(animationError) == false) {
+                        pAnimationErrorTracker->Push(std::abs(animationError));
+                    }
+                }
                 pQueryElementContainer->WriteFrame(procTracker.GetPid(), procName, file, pBlob);
             }
         } while (blobs.AllBlobsPopulated()); // if container filled, means more might be left
@@ -312,6 +337,7 @@ namespace p2c::pmon
     void RawFrameDataWriter::WriteStats_()
     {
         auto& stats = *pStatsTracker;
+        auto& aeStats = *pAnimationErrorTracker;
 
         std::ofstream statsFile{ *frameStatsPath, std::ios::trunc };
 
@@ -323,7 +349,9 @@ namespace p2c::pmon
             "Minimum FPS,"
             "99th Percentile FPS,"
             "95th Percentile FPS,"
-            "Maximum FPS\n";
+            "Maximum FPS,"
+            "AnimationErrorPerSecond,"
+            "AnimationErrorPerFrame\n";
 
         // lambda to make sure we don't divide by zero
         // caps max fps output to 1,000,000 fps
@@ -340,7 +368,16 @@ namespace p2c::pmon
                 SafeInvert(stats.GetMax()) << "," <<
                 SafeInvert(stats.GetPercentile(.99)) << "," <<
                 SafeInvert(stats.GetPercentile(.95)) << "," <<
-                SafeInvert(stats.GetMin()) << "\n";
+                SafeInvert(stats.GetMin()) << ",";
+            if (aeStats.GetCount() > 0 && GetDuration_() != 0.) {
+                const double aeSumSecs = aeStats.GetSum() / 1000.;
+                statsFile << (aeSumSecs / GetDuration_()) << "," <<
+                    (aeStats.GetSum() / aeStats.GetCount()) << "\n";
+            }
+            else {
+                statsFile << 0. << 0. << "\n";
+            }
+
         }
         else {
 			// write null data
@@ -351,6 +388,7 @@ namespace p2c::pmon
 				0. << "," <<
 				0. << "," <<
 				0. << "," <<
+                0. << "," <<
 				0. << "\n";
         }
     }
