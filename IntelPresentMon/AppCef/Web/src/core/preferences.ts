@@ -63,7 +63,7 @@ export function makeDefaultPreferences(): Preferences {
         hideDuringCapture: true, 
         hideAlways: false, 
         independentWindow: false,
-        metricPollRate: 10,
+        metricPollRate: 40,
         overlayDrawRate: 10,
         telemetrySamplingPeriodMs: 100, 
         metricsOffset: 1020, 
