@@ -85,9 +85,13 @@ namespace p2c::gfx::lay
 		GraphData(double timeWindow);
 		DataPoint& operator[](size_t i);
 		const DataPoint& operator[](size_t i) const;
+		// newest sample
 		DataPoint& Front();
+		// newest sample
 		const DataPoint& Front() const;
+		// oldest sample
 		DataPoint& Back();
+		// oldest sample
 		const DataPoint& Back() const;
 		void Push(const DataPoint& data);
 		size_t Size() const;
