@@ -166,6 +166,7 @@ export default Vue.extend({
         await Hotkey.bindDefaults();
         PrefStore.resetPreferences();
         PrefStore.setAttribute({attr:'selectedPreset', val:Preset.Slot1});
+        console.warn('Preferences reset due to load failure: ' + e)
       }
     },
     async doPresetUpdate() {

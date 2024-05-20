@@ -9,6 +9,7 @@ export function isValidVersion(version: string): boolean {
     return /^(\d+\.)?(\d+\.)?(\d+)$/.test(version);
 }
 
+// returns +ve if v1 > v2
 export function compareVersions(version1: string, version2: string): number {
     if (!isValidVersion(version1) || !isValidVersion(version2)) {
         throw new Error('Invalid version format. Versions must be in the format x.y.z where x, y, and z are integers.');

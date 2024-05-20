@@ -9,6 +9,7 @@ import { Hotkey } from './hotkey'
 import { Api } from '@/core/api'
 import { DelayToken, dispatchDelayedTask } from '@/core/timing'
 import { Adapters } from './adapters'
+import { migratePreferences } from '@/core/preferences-migration'
 
 @Module({name: 'preferences', dynamic: true, store, namespaced: true})
 export class PreferencesModule extends VuexModule {
@@ -119,7 +120,9 @@ export class PreferencesModule extends VuexModule {
   async parseAndReplaceRawPreferenceString(payload: {payload: string}) {
       const config = JSON.parse(payload.payload) as PreferenceFile;
       if (config.signature.code !== signature.code) throw new Error('Bad file format');
-      if (config.signature.version !== signature.version) throw new Error('Bad config file version');
+      if (config.signature.version !== signature.version) {
+        migratePreferences(config);
+      }
       
       Object.assign(this.preferences, config.preferences);
       
