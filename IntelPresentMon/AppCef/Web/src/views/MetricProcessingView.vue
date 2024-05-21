@@ -12,16 +12,17 @@
 
     <v-row class="mt-5">
       <v-col cols="3">
-        Sampling Period
-        <p class="text--secondary text-sm-caption mb-0">Time between polls to API for metric data (ms). Directly affects temporal resolution of graphs and readouts.</p>
+        Polling Rate
+        <p class="text--secondary text-sm-caption mb-0">Rate at which to poll API for metric data (Hz). Controls temporal resolution of graphs and readouts.</p>
       </v-col>
       <v-col cols="9">
         <v-slider
-          v-model="samplingPeriod"
-          :max="250"
-          :min="2"
+          class="metric-poll-rate"
+          v-model="metricPollRate"
+          :max="240"
+          :min="1"
+          :messages="metricPollMessages"
           thumb-label="always"
-          hide-details
         ></v-slider>
       </v-col>
     </v-row>
@@ -100,11 +101,20 @@ export default Vue.extend({
   },  
   computed: {
     // v-model enablers
-    samplingPeriod: {
-      get(): number { return Preferences.preferences.samplingPeriodMs; },
-      set(period: number) {
-        Preferences.writeAttribute({ attr: 'samplingPeriodMs', val: period });
+    metricPollRate: {
+      get(): number { return Preferences.preferences.metricPollRate; },
+      set(rate: number) {
+        Preferences.writeAttribute({ attr: 'metricPollRate', val: rate });
       },
+    },
+    overlayDrawRate(): number {
+      return Preferences.preferences.overlayDrawRate;
+    },
+    metricPollMessages(): string[] {
+      if (this.metricPollRate % this.overlayDrawRate !== 0) {
+        return [`Recommend setting poll rate to be a whole multiple of the overlay draw rate (currently ${this.overlayDrawRate}fps).`];
+      }
+      return [];
     },
     offset: {
       get(): number { return Preferences.preferences.metricsOffset; },
@@ -154,5 +164,9 @@ export default Vue.extend({
 .page-wrap {
   max-width: 750px;
   flex-grow: 1;
+}
+.metric-poll-rate >>> .v-messages__message {
+  color: blueviolet;
+  padding-left: 10px;
 }
 </style>

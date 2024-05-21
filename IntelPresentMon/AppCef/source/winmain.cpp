@@ -194,7 +194,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     }
     const auto& opt = Options::Get();
     // wait for debugger connection
-    if (opt.cefType && *opt.cefType == "renderer" && opt.debugWaitRender) {
+    if ((opt.cefType && *opt.cefType == "renderer" && opt.debugWaitRender) ||
+        (!opt.cefType && opt.debugWaitClient)) {
         while (!IsDebuggerPresent()) {
             std::this_thread::sleep_for(20ms);
         }

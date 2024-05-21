@@ -9,13 +9,13 @@ import { Graph, migrateGraph } from "./graph";
 
 export function migrateLoadout(file: LoadoutFile): void {
     if (file.signature.code !== signature.code) {
-        throw new Error('wrong signature code in loadout migration');
+        throw new Error(`wrong signature code in preferences migration: ${file.signature.code}`);
     }
     if (compareVersions(file.signature.version, signature.version) > 0) {
-        throw new Error('error attempted migration from newer to older version');
+        throw new Error(`error attempted migration from newer to older version: ${file.signature.version} => ${signature.version}`);
     }
     if (compareVersions(file.signature.version, signature.version) === 0) {
-        console.warn('migrateLoadout called but version up to date');
+        console.warn(`migrateLoadout called but version up to date ${file.signature.version}`);
         return;
     }
     for (const widget of file.widgets) {

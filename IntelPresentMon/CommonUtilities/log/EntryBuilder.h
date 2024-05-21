@@ -2,6 +2,7 @@
 #include "Entry.h"
 #include <format>
 #include <memory>
+#include "TimePoint.h"
 
 namespace pmon::util::log
 {
@@ -23,6 +24,7 @@ namespace pmon::util::log
 			}
 			return *this;
 		}
+		EntryBuilder& mark(const TimePoint& tp) noexcept;
 		EntryBuilder& note(std::wstring note = L"") noexcept;
 		EntryBuilder& note(const std::string& note) noexcept;
 		EntryBuilder& to(std::shared_ptr<IEntrySink>) noexcept;

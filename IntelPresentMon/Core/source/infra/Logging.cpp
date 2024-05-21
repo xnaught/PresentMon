@@ -72,11 +72,15 @@ namespace p2c
 	{
 		try {
 			auto pChan = GetDefaultChannel();
-			// connect dll channel and id table to exe, get access to global settings in dll
-			const auto getters = pmLinkLogging_(pChan, []() -> IdentificationTable& {
-				return IdentificationTable::Get_(); });
 			// shortcut for command line
 			const auto& opt = cli::Options::Get();
+			const auto render = !opt.cefType;
+			// connect dll channel and id table to exe, get access to global settings in dll
+			LoggingSingletons getters;
+			if (render) {
+				getters = pmLinkLogging_(pChan, []() -> IdentificationTable& {
+					return IdentificationTable::Get_(); });
+			}
 
 			// configure logging based on command line
 			{
@@ -88,7 +92,7 @@ namespace p2c
 				}
 				else {
 					path = infra::util::FolderResolver::Get().Resolve(
-						infra::util::FolderResolver::Folder::Documents,
+						infra::util::FolderResolver::Folder::App,
 						std::format(L"logs\\{}", logfileName));
 				}
 				pChan->AttachComponent(std::make_shared<BasicFileDriver>(std::make_shared<TextFormatter>(),
@@ -96,25 +100,35 @@ namespace p2c
 			}
 			if (opt.logLevel) {
 				GlobalPolicy::Get().SetLogLevel(*opt.logLevel);
-				getters.getGlobalPolicy().SetLogLevel(*opt.logLevel);
+				if (render) {
+					getters.getGlobalPolicy().SetLogLevel(*opt.logLevel);
+				}
 			}
 			if (opt.logTraceLevel) {
 				GlobalPolicy::Get().SetTraceLevel(*opt.logTraceLevel);
-				getters.getGlobalPolicy().SetTraceLevel(*opt.logTraceLevel);
+				if (render) {
+					getters.getGlobalPolicy().SetTraceLevel(*opt.logTraceLevel);
+				}
 			}
 			if (opt.traceExceptions) {
 				GlobalPolicy::Get().SetExceptionTrace(*opt.traceExceptions);
 				GlobalPolicy::Get().SetSehTracing(*opt.traceExceptions);
-				getters.getGlobalPolicy().SetExceptionTrace(*opt.traceExceptions);
-				getters.getGlobalPolicy().SetSehTracing(*opt.traceExceptions);
+				if (render) {
+					getters.getGlobalPolicy().SetExceptionTrace(*opt.traceExceptions);
+					getters.getGlobalPolicy().SetSehTracing(*opt.traceExceptions);
+				}
 			}
 			if (opt.logDenyList) {
 				pmquell(LineTable::IngestList(str::ToWide(*opt.logDenyList), true));
-				pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logDenyList), true));
+				if (render) {
+					pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logDenyList), true));
+				}
 			}
 			else if (opt.logAllowList) {
 				pmquell(LineTable::IngestList(str::ToWide(*opt.logAllowList), false));
-				pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logAllowList), false));
+				if (render) {
+					pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logAllowList), false));
+				}
 			}
 			// setup server to ipc logging connection for child processes (renderer)
 			if (opt.logPipeName) {

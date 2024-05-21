@@ -116,6 +116,7 @@ namespace p2c::kern
         proc{ std::move(proc_) },
         pm{ pm_ },
         pSpec{ std::move(pSpec_) },
+        scheduler_{ pSpec->metricPollRate, pSpec->overlayDrawRate, 10 },
         fetcherFactory{ *pm },
         pPackMapper{ std::move(pPackMapper_) },
         hProcess{ OpenProcess(SYNCHRONIZE, TRUE, proc.pid) },
@@ -128,11 +129,9 @@ namespace p2c::kern
         windowDimensions{ Dimensions{ graphicsDimensions } * upscaleFactor },
         pWindow{ MakeWindow_(pos_) },
         gfx{ pWindow->GetHandle(), graphicsDimensions, upscaleFactor, cli::Options::Get().allowTearing},
-        samplingPeriodMs{ pSpec->samplingPeriodMs },
-        samplesPerFrame{ pSpec->samplesPerFrame },
         hideDuringCapture{ pSpec->hideDuringCapture },
         hideAlways{ pSpec->hideAlways },
-        samplingWaiter{ float(pSpec->samplingPeriodMs) / 1'000.f }
+        samplingWaiter{ 1.f / pSpec->metricPollRate }
     {
         UpdateDataSets_();
         pRoot = MakeDocument_(gfx, *pSpec, *pPackMapper, fetcherFactory, pCaptureIndicatorText);
@@ -224,9 +223,7 @@ namespace p2c::kern
         UpdateDataSets_();
         pRoot = MakeDocument_(gfx, *pSpec, *pPackMapper, fetcherFactory, pCaptureIndicatorText);
         UpdateCaptureStatusText_();
-        samplingPeriodMs = pSpec->samplingPeriodMs;
-        samplingWaiter.SetInterval(pSpec->samplingPeriodMs / 1'000.f);
-        samplesPerFrame = pSpec->samplesPerFrame;
+        scheduler_ = { pSpec->metricPollRate, pSpec->overlayDrawRate, 10 },
         hideDuringCapture = pSpec->hideDuringCapture;
         hideAlways = pSpec->hideAlways;
         AdjustOverlaySituation_(pSpec->overlayPosition);
@@ -374,42 +371,35 @@ namespace p2c::kern
 
     void Overlay::RunTick()
     {
-        using namespace std::chrono_literals;
-        // polling data sources multiple times per drawn overlay frame
-        if (IsHidden_())
-        {
-            // hardcode this slow overlay tick for now during capture
-            std::this_thread::sleep_for(100ms);
-            pmon::Timekeeper::LockNow();
-        }
-        else
-        {
-            for (int i = 0; i < samplesPerFrame; i++)
-            {
-                samplingWaiter.Wait();
-                pmon::Timekeeper::LockNow();
-                UpdateGraphData_(pmon::Timekeeper::GetLockedNow());
-            }
-        }
+        const auto wait = scheduler_.GetNextWait();
+        samplingWaiter.SetInterval(wait);
+        samplingWaiter.Wait();
+        pmon::Timekeeper::LockNow();
 
-        if (pWriter) {
-            pWriter->Process();
+        if (scheduler_.AtPoll() && !IsHidden_()) {
+            pmlog_mark mkPoll;
+            UpdateGraphData_(pmon::Timekeeper::GetLockedNow());
+            pmlog_perf(v::overlay)(L"Data update time").mark(mkPoll);
         }
-
-        // handle hide during move logic (show if time elapsed and now otherwise hidden)
-        if (lastMoveTime) {
-            const auto now = std::chrono::high_resolution_clock::now();
-            if (std::chrono::duration<float>(now - *lastMoveTime).count() >= 0.1f) {
-                lastMoveTime = {};
-                if (!IsHidden_()) {
-                    pWindow->Show();
+        if (scheduler_.AtRender()) {
+            // handle hide during move logic (show if time elapsed and now otherwise hidden)
+            if (lastMoveTime) {
+                const auto now = std::chrono::high_resolution_clock::now();
+                if (std::chrono::duration<float>(now - *lastMoveTime).count() >= 0.1f) {
+                    lastMoveTime = {};
+                    if (!IsHidden_()) {
+                        pWindow->Show();
+                    }
                 }
             }
+            if (!IsHidden_()) {
+                pmlog_mark mkRender;
+                Render_();
+                pmlog_perf(v::overlay)(L"Overlay draw time").mark(mkRender);
+            }
         }
-
-        if (!IsHidden_())
-        {
-            Render_();
+        if (scheduler_.AtTrace() && pWriter) {
+            pWriter->Process();
         }
     }
 
@@ -554,5 +544,48 @@ namespace p2c::kern
     const gfx::RectI& Overlay::GetTargetRect() const
     {
         return targetRect;
+    }
+
+    Overlay::TaskScheduler::TaskScheduler(size_t pollRate, size_t renderRate, size_t traceRate)
+    {
+        assert(pollRate != 0);
+        assert(renderRate != 0);
+        assert(traceRate != 0);
+        const size_t tickRate = std::lcm(pollRate, std::lcm(renderRate, traceRate));
+        periods_[Poll_] = tickRate / pollRate;
+        periods_[Render_] = tickRate / renderRate;
+        periods_[Trace_] = tickRate / traceRate;
+        for (int i = 0; i < Count_; i++) {
+            remainings_[i] = periods_[i];
+        }
+        using namespace std::chrono_literals;
+        tickDuration_ = 1s / double(tickRate);
+    }
+    Overlay::TaskScheduler::nano Overlay::TaskScheduler::GetNextWait()
+    {
+        // reset all zeros
+        for (auto&&[r, p] : vi::zip(remainings_, periods_)) {
+            if (r == 0) r = p;
+        }
+        // find the lowest remaining
+        const auto min = *rn::min_element(remainings_);
+        // step all by lowest
+        for (auto& r : remainings_) {
+            r -= min;
+        }
+        // return step duration
+        return std::chrono::duration_cast<std::chrono::nanoseconds>(tickDuration_) * min;
+    }
+    bool Overlay::TaskScheduler::AtPoll() const
+    {
+        return remainings_[Poll_] == 0;
+    }
+    bool Overlay::TaskScheduler::AtRender() const
+    {
+        return remainings_[Render_] == 0;
+    }
+    bool Overlay::TaskScheduler::AtTrace() const
+    {
+        return remainings_[Trace_] == 0;
     }
 }
