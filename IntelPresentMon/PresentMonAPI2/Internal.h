@@ -20,7 +20,7 @@ struct LoggingSingletons
 	std::function<pmon::util::log::LineTable& ()> getLineTable;
 };
 // function to connect (subordinate) the dll logging system to the exe one
-// replace default channel (file+dbout) with a channel that copies entries to pChannel
+// replace default channel (nullptr) with a channel that copies entries to pChannel
 // optionally hook up an id table to copy entries to as well
 // return getters for config singletons in the dll to config from the exe
 PRESENTMON_API2_EXPORT LoggingSingletons pmLinkLogging_(

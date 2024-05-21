@@ -86,6 +86,8 @@ namespace pmon::util::log
 	void FlushEntryPoint() noexcept
 	{
 		GlobalPolicy::Get().SetResolveTraceInClientThread(true);
-		pmquell(GetDefaultChannel()->FlushEntryPointExit())
+		if (auto pChan = GetDefaultChannel()) {
+			pmquell(pChan->FlushEntryPointExit())
+		}
 	}
 }

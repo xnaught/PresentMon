@@ -1,9 +1,11 @@
 #include "GlobalPolicy.h"
 
+#ifndef PMLOG_GPOL_DEFAULT_LEVEL
 #ifndef NDEBUG
 #define PMLOG_GPOL_DEFAULT_LEVEL Level::Info
 #else
 #define PMLOG_GPOL_DEFAULT_LEVEL Level::Error
+#endif
 #endif
 
 namespace pmon::util::log
@@ -26,6 +28,10 @@ namespace pmon::util::log
 	void GlobalPolicy::SetLogLevel(Level level) noexcept
 	{
 		logLevel_ = level;
+	}
+	void GlobalPolicy::SetLogLevelDefault() noexcept
+	{
+		SetLogLevel(PMLOG_GPOL_DEFAULT_LEVEL);
 	}
 	Level GlobalPolicy::GetTraceLevel() const noexcept
 	{

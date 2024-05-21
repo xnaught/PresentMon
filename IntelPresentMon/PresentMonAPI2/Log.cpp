@@ -17,8 +17,10 @@ namespace pmon::util::log
 {
 	namespace
 	{
+		// creates an independent logging channel or a copy channel, resets log level to default
 		std::shared_ptr<IChannel> MakeChannel_(std::shared_ptr<IChannel> pCopyTargetChannel = {})
 		{
+			GlobalPolicy::Get().SetLogLevelDefault();
 			// channel
 			auto pChannel = std::make_shared<Channel>();
 			// error resolver
@@ -44,20 +46,26 @@ namespace pmon::util::log
 			}
 			return pChannel;
 		}
-
-		std::shared_ptr<IChannel> MakeDefaultChannel_()
+		// creates a null channel and configures logging to be disabled as much as possible
+		std::shared_ptr<IChannel> MakeNullChannel_()
 		{
-			return MakeChannel_();
+			GlobalPolicy::Get().SetLogLevel(Level::None);
+			return {};
 		}
 	}
 
 	std::shared_ptr<IChannel> GetDefaultChannel() noexcept
 	{
-		return GetDefaultChannelWithFactory(MakeDefaultChannel_);
+		return GetDefaultChannelWithFactory(MakeNullChannel_);
 	}
 
 	void InjectCopyChannel(std::shared_ptr<IChannel> pCopyTargetChannel) noexcept
 	{
 		InjectDefaultChannel(MakeChannel_(std::move(pCopyTargetChannel)));
+	}
+
+	void InjectStandaloneChannel() noexcept
+	{
+		InjectDefaultChannel(MakeChannel_());
 	}
 }
