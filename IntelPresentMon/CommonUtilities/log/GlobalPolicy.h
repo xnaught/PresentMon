@@ -9,6 +9,7 @@ namespace pmon::util::log
 	public:
 		Level GetLogLevel() const noexcept;
 		void SetLogLevel(Level level) noexcept;
+		void SetLogLevelDefault() noexcept;
 		Level GetTraceLevel() const noexcept;
 		void SetTraceLevel(Level level) noexcept;
 		bool GetResolveTraceInClientThread() const noexcept;

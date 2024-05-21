@@ -5,4 +5,5 @@
 namespace pmon::util::log
 {
 	void InjectCopyChannel(std::shared_ptr<IChannel> pCopyTargetChannel) noexcept;
+	void InjectStandaloneChannel() noexcept;
 }
