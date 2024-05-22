@@ -114,15 +114,13 @@
     <v-row class="mt-8">       
       <v-col cols="3">
         Draw Rate
-        <p class="text--secondary text-sm-caption mb-0">Closest valid rate will be targeted (depends on metric sample period)</p>
+        <p class="text--secondary text-sm-caption mb-0">Rate at which to draw the overlay</p>
       </v-col>
       <v-col cols="9">
         <v-slider
-            class="overlay-draw-rate"
-            v-model="desiredDrawRate"
+            v-model="overlayDrawRate"
             :max="120"
             :min="1"
-            :messages="[drawRateMessage]"
             thumb-label="always"
         ></v-slider>
       </v-col>
@@ -184,8 +182,7 @@ export default Vue.extend({
       },
     },
     drawRateMessage(): string {
-      const actual = 1000 / (Preferences.preferences.samplingPeriodMs * Preferences.preferences.samplesPerFrame);
-      return `Actual target overlay FPS: ${actual.toFixed(1)}`;
+      return `we are pogging`;
     },
 
     // v-model enablers
@@ -231,11 +228,10 @@ export default Vue.extend({
         Preferences.writeAttribute({ attr: 'independentWindow', val: independent });
       },
     },
-    // this is used to calculate spec.samplesPerFrame in App.vue
-    desiredDrawRate: {
-      get(): number { return Preferences.desiredOverlayDrawRate; },
+    overlayDrawRate: {
+      get(): number { return Preferences.preferences.overlayDrawRate; },
       set(drawRate: number) {
-        Preferences.setDesiredOverlayDrawRate(drawRate);
+        Preferences.writeAttribute({ attr: 'overlayDrawRate', val: drawRate });
       },
     },
     backgroundColor: {
@@ -255,10 +251,6 @@ export default Vue.extend({
     margin: 0;
     padding: 0;
     height: auto;
-}
-.overlay-draw-rate >>> .v-messages__message {
-  color: blueviolet;
-  padding-left: 10px;
 }
 .link-head {
   color: white;

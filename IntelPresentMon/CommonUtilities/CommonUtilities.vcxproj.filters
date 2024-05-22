@@ -168,6 +168,12 @@
     <ClInclude Include="log\IChannelComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="log\TimePoint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Math.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">
@@ -264,6 +270,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="log\HrLogger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="log\TimePoint.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

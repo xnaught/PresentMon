@@ -4,6 +4,7 @@ import { Binding } from "./hotkey";
 import { Signature } from "./signature";
 import { OverlayPosition } from "./overlay-position";
 import { RgbaColor } from "./color";
+import { compareVersions } from "./signature";
 
 
 export enum Preset {
@@ -23,8 +24,8 @@ export interface Preferences {
     hideDuringCapture: boolean;
     hideAlways: boolean;
     independentWindow: boolean;
-    samplingPeriodMs: number;
-    samplesPerFrame: number;
+    metricPollRate: number;
+    overlayDrawRate: number;
     telemetrySamplingPeriodMs: number;
     metricsOffset: number;
     metricsWindow: number;
@@ -62,8 +63,8 @@ export function makeDefaultPreferences(): Preferences {
         hideDuringCapture: true, 
         hideAlways: false, 
         independentWindow: false,
-        samplingPeriodMs: 100, 
-        samplesPerFrame: 1, 
+        metricPollRate: 40,
+        overlayDrawRate: 10,
         telemetrySamplingPeriodMs: 100, 
         metricsOffset: 1020, 
         metricsWindow: 1000, 
@@ -103,7 +104,7 @@ export function makeDefaultPreferences(): Preferences {
 
 export const signature: Signature = {
     code: "p2c-cap-pref",
-    version: "0.16.0",
+    version: "0.17.0",
 };
 
 export interface PreferenceFile {
@@ -112,3 +113,39 @@ export interface PreferenceFile {
     hotkeyBindings: {[key: string]: Binding};
 }
 
+
+interface Migration {
+    version: string;
+    migrate: (prefs: Preferences) => void;
+}
+  
+const migrations: Migration[] = [
+    {
+        version: '0.16.0',
+        migrate: (prefs: Preferences) => {
+            let e = new Error('Preferences file version too old to migrate (<0.16.0).');
+            (e as any).noticeOverride = true;
+            throw e;
+        }
+    },
+    {
+        version: '0.17.0',
+        migrate: (prefs: Preferences) => {
+            const drawRate = Math.round(1000 / ((prefs as any).samplingPeriodMs * (prefs as any).samplesPerFrame));
+            const pollRate = Math.round(1000 / (prefs as any).samplingPeriodMs);
+            console.info(`Migrating preferences to 0.17.0; samplingPeriodMs:${(prefs as any).samplingPeriodMs} => metricPollRate:${pollRate}, samplesPerFrame:${(prefs as any).samplesPerFrame} => overlayDrawRate:${drawRate}`);
+            prefs.metricPollRate = pollRate;
+            prefs.overlayDrawRate = drawRate;
+        }
+    },
+];
+
+migrations.sort((a, b) => compareVersions(a.version, b.version));
+
+export function migratePreferences(prefs: Preferences, sourceVersion: string): void {
+    for (const mig of migrations) {
+        if (compareVersions(mig.version, sourceVersion) > 0) {
+            mig.migrate(prefs);
+        }
+    }
+}

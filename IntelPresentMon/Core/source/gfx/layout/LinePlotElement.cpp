@@ -9,7 +9,9 @@
 #include <Core/source/infra/Logging.h>
 #include <Core/source/gfx/layout/style/StyleProcessor.h>
 #include <Core/source/pmon/Timekeeper.h>
+#include <CommonUtilities/Math.h>
 
+using namespace pmon;
 
 namespace p2c::gfx::lay
 {
@@ -51,19 +53,23 @@ namespace p2c::gfx::lay
 
 		DrawGrid(gfx, port, hDivs, vDivs, gridColor);
 
-		for (const auto& pack : packs)
-		{
+		for (const auto& pack : packs) {
 			const auto& pData = pack->data;
 			const auto dataSize = pData->Size();
 			const auto& data = *pData;
-			if (dataSize >= 2)
-			{
+			if (dataSize >= 2) { // a line needs at least 2 points
 				const auto cutoff = xBias - timeWindow;
-				// fill 
-				if (pack->fillColor.a != 0.f)
-				{
-					const auto MakePeak = [&](const DataPoint& data)
-					{
+				// HACK: if the most recent sample is not t=0 (relative to graph rhs), we add t=0 with the same value
+				// as the most recent sample and adjust looping
+				DataPoint first = data.Front();
+				size_t iStart = 1;
+				if (!util::EpsilonEqual(first.time, xBias)) {
+					first.time = xBias;
+					iStart = 0;
+				}
+				// fill (drawing oldest to newest sample)
+				if (pack->fillColor.a != 0.f) {
+					const auto MakePeak = [&](const DataPoint& data) {
 						const auto top = ComputeScreen(data, pack->axisAffinity);
 						const auto bottom = Vec2{ top.x, port.bottom };
 						return std::pair{ top, bottom };
@@ -71,32 +77,27 @@ namespace p2c::gfx::lay
 
 					gfx.FastTriangleBatchStart(port);
 					{
-						const auto p = MakePeak(data.Front());
+						const auto p = MakePeak(first);
 						gfx.FastPeakStart(p.first, p.second, pack->fillColor);
 					}
-					size_t i = 1;
-					for (; i < dataSize - 1; i++)
-					{
+					for (size_t i = iStart; i < dataSize - 1; i++) {
 						const auto p = MakePeak(data[i]);
 						gfx.FastPeakAdd(p.first, p.second);
 					}
 					{
-						const auto p = MakePeak(data[i]);
+						const auto p = MakePeak(data.Back());
 						gfx.FastPeakEnd(p.first, p.second);
 					}
 					gfx.FastBatchEnd();
 				}
-				// line 
-				if (pack->lineColor.a != 0.f)
-				{
+				// line (drawing oldest to newest sample)
+				if (pack->lineColor.a != 0.f) {
 					gfx.FastLineBatchStart(port, aa);
-					gfx.FastLineStart(ComputeScreen(data.Front(), pack->axisAffinity), pack->lineColor);
-					size_t i = 1;
-					for (; i < dataSize - 1; i++)
-					{
+					gfx.FastLineStart(ComputeScreen(first, pack->axisAffinity), pack->lineColor);
+					for (size_t i = iStart; i < dataSize - 1; i++) {
 						gfx.FastLineAdd(ComputeScreen(data[i], pack->axisAffinity));
 					}
-					gfx.FastLineEnd(ComputeScreen(data[i], pack->axisAffinity));
+					gfx.FastLineEnd(ComputeScreen(data.Back(), pack->axisAffinity));
 					gfx.FastBatchEnd();
 				}
 			}

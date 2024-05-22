@@ -6,13 +6,14 @@ namespace pmon::util::log
 {
 	enum class Level
 	{
-		None,
-		Fatal,
-		Error,
-		Warning,
-		Info,
-		Debug,
-		Verbose,
+		None = 0,
+		Fatal = 10,
+		Error = 20,
+		Warning = 30,
+		Info = 40,
+		Performance = 50,
+		Debug = 60,
+		Verbose = 70,
 	};
 
 	std::wstring GetLevelName(Level) noexcept;

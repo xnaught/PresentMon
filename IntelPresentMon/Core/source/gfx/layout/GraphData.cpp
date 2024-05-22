@@ -62,7 +62,7 @@ namespace p2c::gfx::lay
 		const auto i = ri.base();
 		const auto end = data.end();
 		// remove all in range from the extreme queue
-		for (const auto& d : rn::subrange{ i, end }) {
+		for (const auto& d : rn::subrange{ data.rbegin(), ri }) {
 			if (d.value.has_value()) {
 				min.Pop(*d.value);
 				max.Pop(*d.value);
