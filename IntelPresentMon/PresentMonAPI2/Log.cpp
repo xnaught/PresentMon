@@ -10,6 +10,8 @@
 #include "../CommonUtilities/win/HrErrorCodeProvider.h"
 #include "../PresentMonAPIWrapperCommon/PmErrorCodeProvider.h"
 #include "../CommonUtilities/log/CopyDriver.h"
+#include "../CommonUtilities/log/DiagnosticDriver.h"
+#include "PresentMonDiagnostics.h"
 #include <memory>
 
 
@@ -33,7 +35,7 @@ namespace pmon::util::log
 			pChannel->AttachComponent(std::move(pErrPolicy));
 			// make and add the line-tracking policy
 			pChannel->AttachComponent(std::make_shared<LinePolicy>());
-			// construct and configure default logging channel
+			// configure drivers
 			if (pCopyTargetChannel) {
 				pChannel->AttachComponent(std::make_shared<CopyDriver>(std::move(pCopyTargetChannel)));
 			}
@@ -41,9 +43,29 @@ namespace pmon::util::log
 				// make the formatter and file strategy
 				const auto pFormatter = std::make_shared<TextFormatter>();
 				const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("log-pmapi-dll.txt");
-				pChannel->AttachComponent(std::make_shared<MsvcDebugDriver>(pFormatter));
-				pChannel->AttachComponent(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy));
+				pChannel->AttachComponent(std::make_shared<MsvcDebugDriver>(pFormatter), "drv:dbg");
+				pChannel->AttachComponent(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy), "drv:file");
 			}
+			return pChannel;
+		}
+		// creates a channel for debug diagnostic purposes
+		std::shared_ptr<IChannel> MakeDiagnosticChannel_(std::shared_ptr<DiagnosticDriver> pDiag)
+		{
+			GlobalPolicy::Get().SetLogLevelDefault();
+			// channel
+			auto pChannel = std::make_shared<Channel>();
+			// error resolver
+			auto pErrorResolver = std::make_shared<ErrorCodeResolver>();
+			pErrorResolver->AddProvider(std::make_unique<win::HrErrorCodeProvider>());
+			pErrorResolver->AddProvider(std::make_unique<pmapi::PmErrorCodeProvider>());
+			// error resolving policy
+			auto pErrPolicy = std::make_shared<ErrorCodeResolvePolicy>();
+			pErrPolicy->SetResolver(std::move(pErrorResolver));
+			pChannel->AttachComponent(std::move(pErrPolicy));
+			// make and add the line-tracking policy
+			pChannel->AttachComponent(std::make_shared<LinePolicy>());
+			// configure drivers
+			pChannel->AttachComponent(pDiag, "drv:diag");
 			return pChannel;
 		}
 		// creates a null channel and configures logging to be disabled as much as possible
@@ -52,6 +74,8 @@ namespace pmon::util::log
 			GlobalPolicy::Get().SetLogLevel(Level::None);
 			return {};
 		}
+		// cache reference to diagnostics system here for C-Api interaction
+		std::shared_ptr<DiagnosticDriver> pDiagnostics_;
 	}
 
 	std::shared_ptr<IChannel> GetDefaultChannel() noexcept
@@ -67,5 +91,23 @@ namespace pmon::util::log
 	void InjectStandaloneChannel() noexcept
 	{
 		InjectDefaultChannel(MakeChannel_());
+	}
+
+	void SetupDiagnosticLayer(PM_DIAGNOSTIC_OUTPUT_FLAGS flags)
+	{
+		if (!pDiagnostics_) {
+			pDiagnostics_ = std::make_shared<log::DiagnosticDriver>(flags);
+		}
+		if (auto pChan = GetDefaultChannel()) {
+			pChan->AttachComponent(pDiagnostics_, "drv:diag");
+		}
+		else {
+			InjectDefaultChannel(MakeDiagnosticChannel_(pDiagnostics_));
+		}
+	}
+
+	std::shared_ptr<class DiagnosticDriver> GetDiagnostics()
+	{
+		return pDiagnostics_;
 	}
 }

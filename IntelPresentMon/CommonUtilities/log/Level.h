@@ -4,7 +4,7 @@
 
 namespace pmon::util::log
 {
-	enum class Level
+	enum class Level : uint16_t
 	{
 		None = 0,
 		Fatal = 10,

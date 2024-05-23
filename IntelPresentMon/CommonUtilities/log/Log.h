@@ -2,6 +2,7 @@
 #include "EntryBuilder.h"
 #include "IChannel.h"
 #include "GlobalPolicy.h"
+#include "Subsystem.h"
 #include <functional>
 
 namespace pmon::util::log
@@ -26,8 +27,12 @@ namespace pmon::util::log
 #endif
 #endif
 
+#ifndef PMLOG_SUBSYSTEM
+#define PMLOG_SUBSYSTEM ::pmon::util::log::Subsystem::None
+#endif
+
 #define xinternal_pmlog_(lvl) ((PMLOG_BUILD_LEVEL < lvl) || (::pmon::util::log::GlobalPolicy::Get().GetLogLevel() < lvl)) \
-	? (void)0 : (void)::pmon::util::log::EntryBuilder{ lvl, __FILEW__, __FUNCTIONW__, __LINE__ } \
+	? (void)0 : (void)::pmon::util::log::EntryBuilder{ lvl, __FILEW__, __FUNCTIONW__, __LINE__ }.subsys(PMLOG_SUBSYSTEM) \
 	.to(::pmon::util::log::GetDefaultChannel())
 #define pmlog_fatal	xinternal_pmlog_(::pmon::util::log::Level::Fatal).note
 #define pmlog_error	xinternal_pmlog_(::pmon::util::log::Level::Error).note

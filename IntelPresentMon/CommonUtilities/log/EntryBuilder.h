@@ -37,6 +37,8 @@ namespace pmon::util::log
 		EntryBuilder& first(int n) noexcept;
 		EntryBuilder& after(int n) noexcept;
 		EntryBuilder& hitcount() noexcept;
+		EntryBuilder& diag() noexcept;
+		EntryBuilder& subsys(Subsystem sys) noexcept;
 		template<typename T>
 		EntryBuilder& code(const T& code) noexcept
 		{
