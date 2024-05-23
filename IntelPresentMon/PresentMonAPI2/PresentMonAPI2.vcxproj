@@ -101,11 +101,13 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="PresentMonAPI.cpp" />
+    <ClCompile Include="PresentMonDiagnostics.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Internal.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="PresentMonAPI.h" />
+    <ClInclude Include="PresentMonDiagnostics.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>

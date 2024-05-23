@@ -18,7 +18,9 @@ namespace pmon::util::win
         Handle& operator=(Handle&& other) noexcept;
         operator HandleType() const;
         HandleType Get() const;
+        // empties this container (closes owned handle if any)
         void Clear();
+        // empties this resource, returning owned handle value without closing
         HandleType Release();
         operator bool() const noexcept;
     private:

@@ -141,6 +141,16 @@ namespace pmon::util::log
 		rateControl_ = { .type = RateControl::Type::Hitcount };
 		return *this;
 	}
+	EntryBuilder& EntryBuilder::diag() noexcept
+	{
+		diagnosticLayer_ = true;
+		return *this;
+	}
+	EntryBuilder& EntryBuilder::subsys(Subsystem sys) noexcept
+	{
+		subsystem_ = sys;
+		return *this;
+	}
 	EntryBuilder::~EntryBuilder()
 	{
 		if (pDest_) {

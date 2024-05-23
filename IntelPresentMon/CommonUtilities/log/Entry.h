@@ -1,5 +1,6 @@
 #pragma once
 #include "Level.h"
+#include "Subsystem.h"
 #include <chrono>
 #include <optional>
 #include <memory>
@@ -12,6 +13,7 @@ namespace pmon::util::log
 {
 	struct Entry
 	{
+		// type
 		struct RateControl
 		{
 			enum class Type : int
@@ -37,6 +39,7 @@ namespace pmon::util::log
 		};
 		// data fields 
 		Level level_ = Level::Error;
+		Subsystem subsystem_ = Subsystem::None;
 		std::wstring note_;
 		std::variant<StaticSourceStrings, HeapedSourceStrings> sourceStrings_;
 		int sourceLine_ = -1;
@@ -46,7 +49,8 @@ namespace pmon::util::log
 		uint32_t pid_;
 		uint32_t tid_;
 		RateControl rateControl_;
-		int hitCount_ = -1;		
+		int hitCount_ = -1;
+		bool diagnosticLayer_ = false;
 		// accessors
 		std::wstring GetSourceFileName() const
 		{
