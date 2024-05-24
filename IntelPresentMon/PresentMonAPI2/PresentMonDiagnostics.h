@@ -8,13 +8,14 @@ extern "C" {
 
 	enum PM_DIAGNOSTIC_LEVEL
 	{
-		PM_DIAGNOSTIC_LEVEL_NONE,
-		PM_DIAGNOSTIC_LEVEL_FATAL,
-		PM_DIAGNOSTIC_LEVEL_ERROR,
-		PM_DIAGNOSTIC_LEVEL_WARNING,
-		PM_DIAGNOSTIC_LEVEL_INFO,
-		PM_DIAGNOSTIC_LEVEL_DEBUG,
-		PM_DIAGNOSTIC_LEVEL_VERBOSE,
+		PM_DIAGNOSTIC_LEVEL_NONE = 0,
+		PM_DIAGNOSTIC_LEVEL_FATAL = 10,
+		PM_DIAGNOSTIC_LEVEL_ERROR = 20,
+		PM_DIAGNOSTIC_LEVEL_WARNING = 30,
+		PM_DIAGNOSTIC_LEVEL_INFO = 40,
+		PM_DIAGNOSTIC_LEVEL_PERFORMANCE = 50,
+		PM_DIAGNOSTIC_LEVEL_DEBUG = 60,
+		PM_DIAGNOSTIC_LEVEL_VERBOSE = 70,
 	};
 
 	enum PM_DIAGNOSTIC_SUBSYSTEM
@@ -50,20 +51,57 @@ extern "C" {
 		PM_DIAGNOSTIC_LEVEL level;
 		PM_DIAGNOSTIC_SUBSYSTEM system;
 		const char* pText;
+		const char* pLocation;
+		const char* pTrace;
+		const char* pTimestamp;
+		uint32_t pid;
+		uint32_t tid;
+	};
+
+	struct PM_DIAGNOSTIC_CONFIGURATION
+	{
+		// ignores all messages greater than filterLevel
+		PM_DIAGNOSTIC_LEVEL filterLevel;
+		// bitmask of destinations to transmit diagnostics to
+		PM_DIAGNOSTIC_OUTPUT_FLAGS outputFlags;
+		// array of subsystems, ignore all not in this array (nullptr to accept all)
+		PM_DIAGNOSTIC_SUBSYSTEM* pSubsystems;
+		// number of elements in above array subsystems
+		uint32_t nSubsystems;
+		// capture timestamps as a string and add to all non-queue outputs
+		bool enableTimestamp;
+		// capture stack traces as a string when available (typically for error-level messages)
+		bool enableTrace;
+		// capture source file and line number as a string
+		bool enableLocation;
 	};
 
 	// all pmDiagnostic functions must NOT be invoked concurrently
 	// the only exception is pmDiagnosticSignalWaiter which can be called concurrently with the other functions
 	// from any number of threads
 	// ideally, after setup is completed only one thread shfould be calling the get/dequeue/wait functions
-	PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticSetup(PM_DIAGNOSTIC_OUTPUT_FLAGS);
+
+	// initialize and configure the diagnostic system; passing in nullptr yield default config
+	PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticSetup(const PM_DIAGNOSTIC_CONFIGURATION* pConfig);
+	// get number of messages in the queue
 	PRESENTMON_API2_EXPORT uint32_t pmDiagnosticGetQueuedMessageCount();
+	// get max capacity of the message queue
 	PRESENTMON_API2_EXPORT uint32_t pmDiagnosticGetMaxQueuedMessages();
+	// set max capacity of the message queue
 	PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticSetMaxQueuedMessages(uint32_t);
+	// get total number of messages discarded from queue due to insufficient capacity (does not reset)
 	PRESENTMON_API2_EXPORT uint32_t pmDiagnosticGetDiscardedMessageCount();
+	// retrieve a message from the queue; sets pointer to NULL when no message available
+	// use pmDiagnosticFreeMessage to delete the message after processed to avoid memory leaks
 	PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticDequeueMessage(PM_DIAGNOSTIC_MESSAGE** ppMessage);
+	// inject a message into the queue; messages must use a user-range subsystem id
+	PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticEnqueueMessage(const PM_DIAGNOSTIC_MESSAGE* pMessage);
+	// free the resources associated with a retrieved message
 	PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticFreeMessage(PM_DIAGNOSTIC_MESSAGE* pMessage);
+	// block calling thread until message is available in queue or timeout exceeded
+	// set timeoutMs to 0 to indicate indefinite wait time
 	PRESENTMON_API2_EXPORT PM_DIAGNOSTIC_WAKE_REASON pmDiagnosticWaitForMessage(uint32_t timeoutMs);
+	// unblock the thread which is blocked on pmDiagnosticWaitForMessage
 	// useful during shutdown if you have a worker thread blocked waiting for a message, you can
 	// wake it up so that it can exit gracefully
 	PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticUnblockWaitingThread();

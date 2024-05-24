@@ -93,10 +93,10 @@ namespace pmon::util::log
 		InjectDefaultChannel(MakeChannel_());
 	}
 
-	void SetupDiagnosticLayer(PM_DIAGNOSTIC_OUTPUT_FLAGS flags)
+	void SetupDiagnosticLayer(const PM_DIAGNOSTIC_CONFIGURATION* pConfig)
 	{
 		if (!pDiagnostics_) {
-			pDiagnostics_ = std::make_shared<log::DiagnosticDriver>(flags);
+			pDiagnostics_ = std::make_shared<log::DiagnosticDriver>(pConfig);
 		}
 		if (auto pChan = GetDefaultChannel()) {
 			pChan->AttachComponent(pDiagnostics_, "drv:diag");

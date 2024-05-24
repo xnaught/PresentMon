@@ -7,6 +7,6 @@ namespace pmon::util::log
 {
 	void InjectCopyChannel(std::shared_ptr<IChannel> pCopyTargetChannel) noexcept;
 	void InjectStandaloneChannel() noexcept;
-	void SetupDiagnosticLayer(PM_DIAGNOSTIC_OUTPUT_FLAGS flags);
+	void SetupDiagnosticLayer(const PM_DIAGNOSTIC_CONFIGURATION* pConfig);
 	std::shared_ptr<class DiagnosticDriver> GetDiagnostics();
 }
