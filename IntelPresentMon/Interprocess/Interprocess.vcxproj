@@ -45,7 +45,6 @@
     <ClInclude Include="source\IntrospectionTransfer.h" />
     <ClInclude Include="source\IntrospectionMacroHelpers.h" />
     <ClInclude Include="source\IntrospectionMetadata.h" />
-    <ClInclude Include="..\..\build\obj\generated\EnumMetric.h" />
     <ClInclude Include="source\metadata\EnumMetricType.h" />
     <ClInclude Include="source\metadata\EnumPresentMode.h" />
     <ClInclude Include="source\metadata\EnumStatus.h" />

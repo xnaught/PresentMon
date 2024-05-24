@@ -45,7 +45,12 @@ void RunLogDemo(int mode)
 {
 	p2sam::LogChannelManager zLogMan_;
 	p2sam::ConfigureLogging();
-	pmDiagnosticSetup(PM_DIAGNOSTIC_OUTPUT_FLAGS::PM_DIAGNOSTIC_OUTPUT_FLAGS_QUEUE);
+	{
+		PM_DIAGNOSTIC_CONFIGURATION cfg{};
+		cfg.filterLevel = PM_DIAGNOSTIC_LEVEL_INFO;
+		cfg.outputFlags = PM_DIAGNOSTIC_OUTPUT_FLAGS_DEBUGGER;
+		pmDiagnosticSetup(&cfg);
+	}
 
 	pmapi::Session sesh;
 
@@ -56,6 +61,12 @@ void RunLogDemo(int mode)
 	// basic log info w/ message
 	if (mode == 0) {
 		pmlog_info(L"information goes here");
+		PM_DIAGNOSTIC_MESSAGE dm{
+			.level = PM_DIAGNOSTIC_LEVEL_WARNING,
+			.system = PM_DIAGNOSTIC_SUBSYSTEM(PM_DIAGNOSTIC_SUBSYSTEM_USER + 2),
+			.pText = "@#$ test test test",
+		};
+		pmDiagnosticEnqueueMessage(&dm);
 	}
 	// basic warn w/ format message
 	else if (mode == 1) {

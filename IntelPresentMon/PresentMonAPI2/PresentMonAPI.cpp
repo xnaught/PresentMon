@@ -126,7 +126,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, cons
 			if (introNsmOverride) {
 				introNsm = std::string(introNsmOverride);
 			}
-			pMiddleware = std::make_shared<ConcreteMiddleware>(std::move(pipeName), std::move(introNsm));
+ 			pMiddleware = std::make_shared<ConcreteMiddleware>(std::move(pipeName), std::move(introNsm));
 		}
 		*pHandle = pMiddleware.get();
 		handleMap_[*pHandle] = std::move(pMiddleware);

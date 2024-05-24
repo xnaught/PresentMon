@@ -7,10 +7,10 @@
 using namespace pmon;
 using namespace pmon::util;
 
-PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticSetup(PM_DIAGNOSTIC_OUTPUT_FLAGS flags)
+PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticSetup(const PM_DIAGNOSTIC_CONFIGURATION* pConfig)
 {
 	try {
-		log::SetupDiagnosticLayer(flags);
+		log::SetupDiagnosticLayer(pConfig);
 		return PM_STATUS_SUCCESS;
 	} pmcatch_report;
 	return PM_STATUS_FAILURE;
@@ -69,6 +69,19 @@ PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticDequeueMessage(PM_DIAGNOSTIC_MESSAG
 				else {
 					return PM_STATUS_NO_DATA;
 				}
+			}
+		}
+	} pmcatch_report;
+	return PM_STATUS_FAILURE;
+}
+
+PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticEnqueueMessage(const PM_DIAGNOSTIC_MESSAGE* pMessage)
+{
+	try {
+		if (pMessage) {
+			if (auto pDiag = log::GetDiagnostics()) {
+				pDiag->EnqueueMessage(pMessage);
+				return PM_STATUS_SUCCESS;
 			}
 		}
 	} pmcatch_report;
