@@ -11,7 +11,7 @@
 #include "../PresentMonAPIWrapperCommon/PmErrorCodeProvider.h"
 #include "../CommonUtilities/log/CopyDriver.h"
 #include "../CommonUtilities/log/DiagnosticDriver.h"
-#include "PresentMonDiagnostics.h"
+#include "LogSetup.h"
 #include <memory>
 
 

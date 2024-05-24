@@ -98,6 +98,6 @@ namespace pmon::util::log
 	}
 	void DiagnosticDriver::UnblockWaitingThread()
 	{
-		messageWaitEvent_.Set();
+		manualUnblockEvent_.Set();
 	}
 }

@@ -9,9 +9,9 @@
 #include "../PresentMonAPIWrapper/PresentMonAPIWrapper.h"
 #include "../PresentMonAPI2/Internal.h"
 #include "BoostProcess.h"
-#include "../PresentMonMiddleware/source/MockCommon.h"
-#include "../PresentMonMiddleware/source/MockMiddleware.h"
-#include "../CommonUtilities//Memory.h"
+#include "../PresentMonMiddleware/MockCommon.h"
+#include "../PresentMonMiddleware/MockMiddleware.h"
+#include "../CommonUtilities/Memory.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 

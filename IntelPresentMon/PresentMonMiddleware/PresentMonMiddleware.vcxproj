@@ -11,19 +11,21 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\ConcreteMiddleware.h" />
-    <ClInclude Include="source\DynamicQuery.h" />
-    <ClInclude Include="source\Exception.h" />
-    <ClInclude Include="source\FrameEventQuery.h" />
-    <ClInclude Include="source\Middleware.h" />
-    <ClInclude Include="source\MockCommon.h" />
-    <ClInclude Include="source\MockMiddleware.h" />
+    <ClInclude Include="ConcreteMiddleware.h" />
+    <ClInclude Include="DynamicQuery.h" />
+    <ClInclude Include="Exception.h" />
+    <ClInclude Include="FrameEventQuery.h" />
+    <ClInclude Include="LogSetup.h" />
+    <ClInclude Include="Middleware.h" />
+    <ClInclude Include="MockCommon.h" />
+    <ClInclude Include="MockMiddleware.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\ConcreteMiddleware.cpp" />
-    <ClCompile Include="source\Exception.cpp" />
-    <ClCompile Include="source\FrameEventQuery.cpp" />
-    <ClCompile Include="source\MockMiddleware.cpp" />
+    <ClCompile Include="ConcreteMiddleware.cpp" />
+    <ClCompile Include="Exception.cpp" />
+    <ClCompile Include="FrameEventQuery.cpp" />
+    <ClCompile Include="LogSetup.cpp" />
+    <ClCompile Include="MockMiddleware.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">

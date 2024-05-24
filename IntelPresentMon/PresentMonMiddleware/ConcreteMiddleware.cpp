@@ -10,24 +10,23 @@
 #include <cstdlib>
 #include <Shlwapi.h>
 #include <numeric>
-#include "../../PresentMonUtils/NamedPipeHelper.h"
-#include "../../PresentMonUtils/QPCUtils.h"
-#include "../../PresentMonAPI2/Internal.h"
-#include "../../PresentMonAPIWrapperCommon/Introspection.h"
+#include "../PresentMonUtils/NamedPipeHelper.h"
+#include "../PresentMonUtils/QPCUtils.h"
+#include "../PresentMonAPI2/Internal.h"
+#include "../PresentMonAPIWrapperCommon/Introspection.h"
 // TODO: don't need transfer if we can somehow get the PM_ struct generation working without inheritance
 // needed right now because even if we forward declare, we don't have the inheritance info
-#include "../../Interprocess/source/IntrospectionTransfer.h"
-#include "../../Interprocess/source/IntrospectionHelpers.h"
-#include "../../Interprocess/source/IntrospectionCloneAllocators.h"
+#include "../Interprocess/source/IntrospectionTransfer.h"
+#include "../Interprocess/source/IntrospectionHelpers.h"
+#include "../Interprocess/source/IntrospectionCloneAllocators.h"
 //#include "MockCommon.h"
 #include "DynamicQuery.h"
-#include "../../ControlLib/PresentMonPowerTelemetry.h"
-#include "../../ControlLib/CpuTelemetryInfo.h"
-#include "../../PresentMonService/GlobalIdentifiers.h"
+#include "../ControlLib/PresentMonPowerTelemetry.h"
+#include "../ControlLib/CpuTelemetryInfo.h"
+#include "../PresentMonService/GlobalIdentifiers.h"
 #include "FrameEventQuery.h"
-#include "../../CommonUtilities/log/Log.h"
 #include "Exception.h"
-#include "../../CommonUtilities/mt/Thread.h"
+#include "../CommonUtilities/mt/Thread.h"
 
 #define GLOG_NO_ABBREVIATED_SEVERITIES
 #include <glog/logging.h>
@@ -231,6 +230,8 @@ namespace pmon::mid
             }
         }
 
+        pmlog_info(std::format(L"Streaming started for pid [{}]", processId)).diag();
+
         return PM_STATUS_SUCCESS;
     }
     
@@ -330,7 +331,7 @@ namespace pmon::mid
     const pmapi::intro::Root& mid::ConcreteMiddleware::GetIntrospectionRoot()
     {
         if (!pIntroRoot) {
-            pmlog_info(L"Creating cached introspection root object");
+            pmlog_info(L"Creating and cacheing introspection root object").diag();
             pIntroRoot = std::make_unique<pmapi::intro::Root>(GetIntrospectionData(), [this](auto p){FreeIntrospectionData(p);});
         }
         return *pIntroRoot;

@@ -4,6 +4,7 @@
 #include "NanoCefProcessHandler.h"
 #include "../resource.h"
 #include <Core/source/infra/Logging.h>
+#include <Core/source/infra/LogSetup.h>
 #include <Core/source/infra/util/FolderResolver.h>
 #include <Core/source/cli/CliOptions.h>
 #include <CommonUtilities/log/IdentificationTable.h>

@@ -1,7 +1,7 @@
 #pragma once
 #include <Memory>
 #include "../CommonUtilities/log/IChannel.h"
-#include "PresentMonDiagnostics.h"
+#include "../PresentMonAPI2/PresentMonDiagnostics.h"
 
 namespace pmon::util::log
 {

@@ -18,9 +18,11 @@
 #include "../CommonUtilities/win/Utilities.h"
 // #define VVV_LOGDEMO
 #include "Verbose.h"
-#include "Log.h"
+#include "LogSetup.h"
 #include "../PresentMonAPI2/Internal.h"
+#include "../PresentMonAPI2/PresentMonDiagnostics.h"
 
+using namespace std::chrono_literals;
 using namespace pmon::util;
 
 PM_DEFINE_EX(LogDemoException);
@@ -43,6 +45,7 @@ void RunLogDemo(int mode)
 {
 	p2sam::LogChannelManager zLogMan_;
 	p2sam::ConfigureLogging();
+	pmDiagnosticSetup(PM_DIAGNOSTIC_OUTPUT_FLAGS::PM_DIAGNOSTIC_OUTPUT_FLAGS_QUEUE);
 
 	pmapi::Session sesh;
 
@@ -218,5 +221,16 @@ void RunLogDemo(int mode)
 	}
 	else {
 		std::cout << "unknown mode for log demo" << std::endl;
+	}
+	std::thread{ [&] {
+		std::this_thread::sleep_for(2000ms);
+		std::cout << "set me free" << std::endl;
+		pmDiagnosticUnblockWaitingThread();
+	} }.detach();
+	while (pmDiagnosticWaitForMessage(0) == PM_DIAGNOSTIC_WAKE_REASON_MESSAGE_AVAILABLE) {
+		PM_DIAGNOSTIC_MESSAGE* pMsg = nullptr;
+		pmDiagnosticDequeueMessage(&pMsg);
+		std::cout << pMsg->pText << std::endl;
+		pmDiagnosticFreeMessage(pMsg);
 	}
 }

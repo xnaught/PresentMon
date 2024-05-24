@@ -1,12 +1,12 @@
 #include <memory>
 #include <crtdbg.h>
 #include <unordered_map>
-#include "../PresentMonMiddleware/source/MockMiddleware.h"
-#include "../PresentMonMiddleware/source/ConcreteMiddleware.h"
-#include "../PresentMonMiddleware/source/Exception.h"
+#include "../PresentMonMiddleware/MockMiddleware.h"
+#include "../PresentMonMiddleware/ConcreteMiddleware.h"
+#include "../PresentMonMiddleware/Exception.h"
 #include "Internal.h"
 #include "PresentMonAPI.h"
-#include "Log.h"
+#include "../PresentMonMiddleware/LogSetup.h"
 
 
 using namespace pmon;

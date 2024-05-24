@@ -1,7 +1,7 @@
 #include "CppUnitTest.h"
 #include "../PresentMonUtils/PresentMonNamedPipe.h"
-#include "../PresentMonMiddleware/source/FrameEventQuery.h"
-#include "../PresentMonMiddleware/source/MockMiddleware.h"
+#include "../PresentMonMiddleware/FrameEventQuery.h"
+#include "../PresentMonMiddleware/MockMiddleware.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
