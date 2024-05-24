@@ -223,13 +223,8 @@ struct PresentEvent {
     // MMIOFlipMultiPlaneOverlay3_Info event signals a higher present id).
     bool WaitingForFlipFrameType;
 
-    // Track the path the present took through the PresentMon analysis.
-    #ifdef TRACK_PRESENT_PATHS
-    uint64_t AnalysisPath;
-    #endif
 
     PresentEvent();
-
 private:
     PresentEvent(PresentEvent const& copy); // dne
 };
