@@ -15,39 +15,45 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\Middleware.h">
+    <ClInclude Include="Middleware.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\MockMiddleware.h">
+    <ClInclude Include="MockMiddleware.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\ConcreteMiddleware.h">
+    <ClInclude Include="ConcreteMiddleware.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\MockCommon.h">
+    <ClInclude Include="MockCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\DynamicQuery.h">
+    <ClInclude Include="DynamicQuery.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\FrameEventQuery.h">
+    <ClInclude Include="FrameEventQuery.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\Exception.h">
+    <ClInclude Include="Exception.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LogSetup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="source\MockMiddleware.cpp">
+    <ClCompile Include="MockMiddleware.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\ConcreteMiddleware.cpp">
+    <ClCompile Include="ConcreteMiddleware.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\FrameEventQuery.cpp">
+    <ClCompile Include="FrameEventQuery.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\Exception.cpp">
+    <ClCompile Include="Exception.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LogSetup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,10 +1,8 @@
 #pragma once
 #include <CommonUtilities/log/Log.h>
 
-namespace p2c
+namespace p2c::v
 {
-	namespace v // verbose logging module controls
-	{
 #ifndef VVV_WINDOW // system that tracks overlay target process ancestry and windows spawning therein
 		inline constexpr bool window = false;
 #else
@@ -25,15 +23,4 @@ namespace p2c
 #else
 		inline constexpr bool overlay = true;
 #endif
-	}
-
-	// LogChannelManager should be instantiated as early as possible in the entry point of the process/module
-	// It acts as a guard to prevent stack trace resolution in the channel worker thread after exiting main
-	struct LogChannelManager
-	{
-		LogChannelManager() noexcept;
-		~LogChannelManager();
-	};
-	// call after command line arguments have been parsed
-	void ConfigureLogging() noexcept;
 }

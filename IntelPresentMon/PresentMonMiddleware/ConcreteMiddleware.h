@@ -1,11 +1,11 @@
 #pragma once
 #include "Middleware.h"
-#include "../../Interprocess/source/Interprocess.h"
-#include "../../PresentMonUtils/MemBuffer.h"
-#include "../../Streamer/StreamClient.h"
+#include "../Interprocess/source/Interprocess.h"
+#include "../PresentMonUtils/MemBuffer.h"
+#include "../Streamer/StreamClient.h"
 #include <optional>
 #include <string>
-#include "../../CommonUtilities/Hash.h"
+#include "../CommonUtilities/Hash.h"
 
 namespace pmapi::intro
 {

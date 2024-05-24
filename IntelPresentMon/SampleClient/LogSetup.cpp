@@ -12,7 +12,7 @@
 #include "../PresentMonAPIWrapperCommon/PmErrorCodeProvider.h"
 #include "../PresentMonAPI2/Internal.h"
 #include "CliOptions.h"
-#include "Log.h"
+#include "LogSetup.h"
 #include <memory>
 
 

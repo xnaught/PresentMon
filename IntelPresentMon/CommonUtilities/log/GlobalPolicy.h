@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include "Level.h"
+#include "Subsystem.h"
 
 namespace pmon::util::log
 {
@@ -18,6 +19,8 @@ namespace pmon::util::log
 		void SetExceptionTrace(bool policy) noexcept;
 		bool GetSehTracing() const noexcept;
 		void SetSehTracing(bool on) noexcept;
+		Subsystem GetSubsystem() const noexcept;
+		void SetSubsystem(Subsystem) noexcept;
 		static GlobalPolicy& Get() noexcept;
 	private:
 		// functions
@@ -28,5 +31,6 @@ namespace pmon::util::log
 		std::atomic<Level> traceLevel_ = Level::Error;
 		std::atomic<bool> exceptionTracePolicy_ = false;
 		std::atomic<bool> sehTraceOn_ = false;
+		std::atomic<Subsystem> subsystem_ = Subsystem::None;
 	};
 }

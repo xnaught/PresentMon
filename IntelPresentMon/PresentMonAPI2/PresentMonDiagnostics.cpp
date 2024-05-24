@@ -2,7 +2,7 @@
 #include "../CommonUtilities/log/DiagnosticDriver.h"
 #include "../CommonUtilities/log/Log.h"
 #include "../CommonUtilities/Exception.h"
-#include "Log.h"
+#include "../PresentMonMiddleware/LogSetup.h"
 
 using namespace pmon;
 using namespace pmon::util;

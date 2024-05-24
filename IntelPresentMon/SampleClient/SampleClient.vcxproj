@@ -199,7 +199,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Console.cpp" />
-    <ClCompile Include="Log.cpp" />
+    <ClCompile Include="LogSetup.cpp" />
     <ClCompile Include="LogDemo.cpp" />
     <ClCompile Include="SampleClient.cpp" />
   </ItemGroup>
@@ -210,7 +210,7 @@
     <ClInclude Include="DynamicQuerySample.h" />
     <ClInclude Include="FrameQuerySample.h" />
     <ClInclude Include="IntrospectionSample.h" />
-    <ClInclude Include="Log.h" />
+    <ClInclude Include="LogSetup.h" />
     <ClInclude Include="LogDemo.h" />
     <ClInclude Include="MetricListSample.h" />
     <ClInclude Include="Utils.h" />

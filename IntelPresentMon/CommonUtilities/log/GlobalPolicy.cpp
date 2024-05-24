@@ -65,4 +65,12 @@ namespace pmon::util::log
 	{
 		sehTraceOn_ = on;
 	}
+	Subsystem GlobalPolicy::GetSubsystem() const noexcept
+	{
+		return subsystem_;
+	}
+	void GlobalPolicy::SetSubsystem(Subsystem sys) noexcept
+	{
+		subsystem_ = sys;
+	}
 }

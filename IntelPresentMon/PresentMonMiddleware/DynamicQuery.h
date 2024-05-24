@@ -2,9 +2,9 @@
 #include <vector>
 #include <bitset>
 #include <map>
-#include "../../PresentMonAPI2/PresentMonAPI.h"
-#include "../../ControlLib/CpuTelemetryInfo.h"
-#include "../../ControlLib/PresentMonPowerTelemetry.h"
+#include "../PresentMonAPI2/PresentMonAPI.h"
+#include "../ControlLib/CpuTelemetryInfo.h"
+#include "../ControlLib/PresentMonPowerTelemetry.h"
 
 struct PM_DYNAMIC_QUERY
 {

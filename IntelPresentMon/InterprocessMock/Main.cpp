@@ -3,7 +3,7 @@
 #include "../Interprocess/source/Interprocess.h"
 #include "Options.h"
 #include <thread>
-#include "../PresentMonMiddleware/source/MockCommon.h"
+#include "../PresentMonMiddleware/MockCommon.h"
 
 int main(int argc, char** argv)
 {

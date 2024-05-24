@@ -130,6 +130,7 @@ namespace pmon::util::cli
 		{
 			// create the option
 			pOption_ = pParent->app_.add_option(std::move(names), data_, std::move(description));
+			// if customizer is a Validator object, add it to the option
 			if constexpr (std::is_base_of_v<CLI::Validator, std::decay_t<U>> ) {
 				if (customizer.get_modifying()) {
 					pOption_->transform(std::forward<U>(customizer));
@@ -138,7 +139,7 @@ namespace pmon::util::cli
 					pOption_->check(std::forward<U>(customizer));
 				}
 			}
-			else {
+			else { // if customizer not a Validator, assume it's a function that works on the Option and call it
 				customizer(pOption_);
 			}
 			OptionCommonPostCreate_(pParent);
@@ -184,7 +185,9 @@ namespace pmon::util::cli
 		void OptionCommonPostCreate_(OptionsContainer* pParent)
 		{
 			// add to active group
-			pOption_->group(pParent->activeGroup_);
+			if (!pParent->activeGroup_.empty()) {
+				pOption_->group(pParent->activeGroup_);
+			}
 			// capture main name for the option (used when forwarding)
 			SetName_(pOption_->get_name());
 			// capture the raw input string

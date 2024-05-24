@@ -3,7 +3,7 @@
   <ItemGroup>
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="SampleClient.cpp" />
-    <ClCompile Include="Log.cpp" />
+    <ClCompile Include="LogSetup.cpp" />
     <ClCompile Include="LogDemo.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -18,6 +18,6 @@
     <ClInclude Include="MetricListSample.h" />
     <ClInclude Include="LogDemo.h" />
     <ClInclude Include="Verbose.h" />
-    <ClInclude Include="Log.h" />
+    <ClInclude Include="LogSetup.h" />
   </ItemGroup>
 </Project>

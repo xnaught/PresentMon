@@ -97,6 +97,7 @@
     <ClInclude Include="source\pmon\RawFrameDataMetricList.h" />
     <ClInclude Include="source\cli\CliOptions.h" />
     <ClInclude Include="source\gfx\Exception.h" />
+    <ClInclude Include="source\infra\LogSetup.h" />
     <ClInclude Include="source\infra\Logging.h" />
   </ItemGroup>
   <ItemGroup>
@@ -160,7 +161,7 @@
     <ClCompile Include="source\win\GpuUtilization.cpp" />
     <ClCompile Include="source\pmon\DynamicQuery.cpp" />
     <ClCompile Include="source\pmon\metric\DynamicPollingFetcher.cpp" />
-    <ClCompile Include="source\infra\Logging.cpp" />
+    <ClCompile Include="source\infra\LogSetup.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />

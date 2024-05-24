@@ -1,6 +1,5 @@
 #include <Windows.h>
-#include "../CommonUtilities/log/Log.h"
-#include "Log.h"
+#include "../CommonUtilities/log/GlobalPolicy.h"
 
 using namespace pmon::util;
 
@@ -12,6 +11,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     switch (ul_reason_for_call)
     {
     case DLL_PROCESS_ATTACH:
+        log::GlobalPolicy::Get().SetSubsystem(log::Subsystem::Middleware);
 #ifdef NDEBUG
         // start with logging disabled initially in release builds
         // opt in with internal C++ calls or via C-Api diagnostic layer
