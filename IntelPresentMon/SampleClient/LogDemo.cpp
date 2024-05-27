@@ -20,12 +20,26 @@
 #include "Verbose.h"
 #include "LogSetup.h"
 #include "../PresentMonAPI2/Internal.h"
-#include "../PresentMonAPI2/PresentMonDiagnostics.h"
+#include "../PresentMonAPIWrapper/DiagnosticHandler.h"
 
 using namespace std::chrono_literals;
 using namespace pmon::util;
 
 PM_DEFINE_EX(LogDemoException);
+
+const char* GetLevelName(PM_DIAGNOSTIC_LEVEL lvl) {
+	switch (lvl) {
+	case PM_DIAGNOSTIC_LEVEL_NONE: return "None";
+	case PM_DIAGNOSTIC_LEVEL_FATAL: return "Fatal";
+	case PM_DIAGNOSTIC_LEVEL_ERROR: return "Error";
+	case PM_DIAGNOSTIC_LEVEL_WARNING: return "Warning";
+	case PM_DIAGNOSTIC_LEVEL_INFO: return "Info";
+	case PM_DIAGNOSTIC_LEVEL_PERFORMANCE: return "Performance";
+	case PM_DIAGNOSTIC_LEVEL_DEBUG: return "Debug";
+	case PM_DIAGNOSTIC_LEVEL_VERBOSE: return "Verbose";
+	default: return "Unknown";
+	}
+}
 
 void f2() {
 	pmlog_error();
@@ -45,12 +59,16 @@ void RunLogDemo(int mode)
 {
 	p2sam::LogChannelManager zLogMan_;
 	p2sam::ConfigureLogging();
-	{
-		PM_DIAGNOSTIC_CONFIGURATION cfg{};
-		cfg.filterLevel = PM_DIAGNOSTIC_LEVEL_INFO;
-		cfg.outputFlags = PM_DIAGNOSTIC_OUTPUT_FLAGS_DEBUGGER;
-		pmDiagnosticSetup(&cfg);
-	}
+
+	// example of setting up diagnostic layer and custom diagnostic message handling
+	pmapi::DiagnosticHandler dh{
+		PM_DIAGNOSTIC_LEVEL_INFO,
+		PM_DIAGNOSTIC_OUTPUT_FLAGS_DEBUGGER | PM_DIAGNOSTIC_OUTPUT_FLAGS_QUEUE,
+		[](const PM_DIAGNOSTIC_MESSAGE& msg) { std::cout <<
+			std::format("[PMON {}] <{}> {}\n", GetLevelName(msg.level),
+				msg.pTimestamp ? msg.pTimestamp : "", msg.pText);
+		}
+	};
 
 	pmapi::Session sesh;
 
@@ -232,16 +250,5 @@ void RunLogDemo(int mode)
 	}
 	else {
 		std::cout << "unknown mode for log demo" << std::endl;
-	}
-	std::thread{ [&] {
-		std::this_thread::sleep_for(2000ms);
-		std::cout << "set me free" << std::endl;
-		pmDiagnosticUnblockWaitingThread();
-	} }.detach();
-	while (pmDiagnosticWaitForMessage(0) == PM_DIAGNOSTIC_WAKE_REASON_MESSAGE_AVAILABLE) {
-		PM_DIAGNOSTIC_MESSAGE* pMsg = nullptr;
-		pmDiagnosticDequeueMessage(&pMsg);
-		std::cout << pMsg->pText << std::endl;
-		pmDiagnosticFreeMessage(pMsg);
 	}
 }
