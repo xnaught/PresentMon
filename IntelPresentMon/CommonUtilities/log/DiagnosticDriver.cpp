@@ -3,8 +3,10 @@
 #include "../win/WinAPI.h"
 #include <iostream>
 #include <span>
+#include <algorithm>
 
 using namespace std::chrono_literals;
+namespace rn = std::ranges;
 
 namespace pmon::util::log
 {
@@ -22,8 +24,12 @@ namespace pmon::util::log
 	void DiagnosticDriver::Submit(const Entry& e)
 	{
 		// ignore non-diagnostic entries and low-priority levels
-		// TODO: implement filtering by subsystem
 		if (!e.diagnosticLayer_ || int(e.level_) > int(config_.filterLevel)) {
+			return;
+		}
+		// filtering by subsystem
+		if (!config_.subsystems.empty() && !rn::contains(config_.subsystems,
+			(PM_DIAGNOSTIC_SUBSYSTEM)e.subsystem_)) {
 			return;
 		}
 		// prepare string payloads
