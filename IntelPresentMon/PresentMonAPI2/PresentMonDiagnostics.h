@@ -60,13 +60,13 @@ extern "C" {
 
 	struct PM_DIAGNOSTIC_CONFIGURATION
 	{
-		// ignores all messages greater than filterLevel
+		// ignore all messages greater than filterLevel
 		PM_DIAGNOSTIC_LEVEL filterLevel;
 		// bitmask of destinations to transmit diagnostics to
 		PM_DIAGNOSTIC_OUTPUT_FLAGS outputFlags;
-		// array of subsystems, ignore all not in this array (nullptr to accept all)
+		// array of subsystems, ignore all not in this array (set as nullptr to accept all)
 		PM_DIAGNOSTIC_SUBSYSTEM* pSubsystems;
-		// number of elements in above array subsystems
+		// number of elements in above array of subsystems
 		uint32_t nSubsystems;
 		// capture timestamps as a string and add to all non-queue outputs
 		bool enableTimestamp;
