@@ -16,5 +16,4 @@ namespace pmon::util::log
 	};
 
 	std::wstring GetSubsystemName(Subsystem) noexcept;
-	std::map<std::string, Subsystem> GetSubsystemMapNarrow() noexcept;
 }
