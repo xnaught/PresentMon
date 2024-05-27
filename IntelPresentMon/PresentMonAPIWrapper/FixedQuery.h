@@ -12,7 +12,7 @@
 #include <cassert>
 
 
-// The FrameQueryContainer gives a simple way to define/register/poll queries and access the results in the specific
+// The FixedQueryContainer gives a simple way to define/register/poll queries and access the results in the specific
 // use case where you have a fixed set of metrics you want to poll that is known at compile-time
 // Example usage for dynamic query:
 

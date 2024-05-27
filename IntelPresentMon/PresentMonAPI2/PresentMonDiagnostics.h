@@ -6,6 +6,14 @@
 extern "C" {
 #endif
 
+	// Debug Diagnostic Layer (EXPERIMENTAL)
+	// this sub-library interface enables users of the PresentMon API
+	// to get detail feedback about issues such as errors in API usage
+	// or suboptimal usage patterns
+	// It gives more information than can be communicated in error codes
+	// and it gives feedback in situations where there are errors in API
+	// usage but they are handled permissively rather than hard-failing
+
 	enum PM_DIAGNOSTIC_LEVEL
 	{
 		PM_DIAGNOSTIC_LEVEL_NONE = 0,
@@ -62,8 +70,8 @@ extern "C" {
 	{
 		// ignore all messages greater than filterLevel
 		PM_DIAGNOSTIC_LEVEL filterLevel;
-		// bitmask of destinations to transmit diagnostics to
-		PM_DIAGNOSTIC_OUTPUT_FLAGS outputFlags;
+		// bitmask of PM_DIAGNOSTIC_OUTPUT_FLAGS destinations to transmit diagnostics to
+		int outputFlags;
 		// array of subsystems, ignore all not in this array (set as nullptr to accept all)
 		PM_DIAGNOSTIC_SUBSYSTEM* pSubsystems;
 		// number of elements in above array of subsystems
@@ -77,9 +85,9 @@ extern "C" {
 	};
 
 	// all pmDiagnostic functions must NOT be invoked concurrently
-	// the only exception is pmDiagnosticSignalWaiter which can be called concurrently with the other functions
-	// from any number of threads
-	// ideally, after setup is completed only one thread shfould be calling the get/dequeue/wait functions
+	// the only exceptions are pmDiagnosticSignalWaiter which can be called concurrently with the other functions
+	// from any number of threads, and pmDiagnosticEnqueueMessage similarly
+	// ideally, after setup is completed only one thread should be calling the get/dequeue/wait functions
 
 	// initialize and configure the diagnostic system; passing in nullptr yield default config
 	PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticSetup(const PM_DIAGNOSTIC_CONFIGURATION* pConfig);
