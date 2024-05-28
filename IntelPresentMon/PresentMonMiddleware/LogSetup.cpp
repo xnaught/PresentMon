@@ -19,6 +19,10 @@ namespace pmon::util::log
 {
 	namespace
 	{
+		// cache reference to diagnostics system here for C-Api interaction and attachment to new channels
+		std::shared_ptr<DiagnosticDriver> pDiagnostics_;
+		std::mutex diagnosticsMtx_;
+
 		// creates an independent logging channel or a copy channel, resets log level to default
 		std::shared_ptr<IChannel> MakeChannel_(std::shared_ptr<IChannel> pCopyTargetChannel = {})
 		{
@@ -46,6 +50,13 @@ namespace pmon::util::log
 				pChannel->AttachComponent(std::make_shared<MsvcDebugDriver>(pFormatter), "drv:dbg");
 				pChannel->AttachComponent(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy), "drv:file");
 			}
+			// connect diagnostic driver if present to new channel
+			{
+				std::lock_guard lk{ diagnosticsMtx_ };
+				if (pDiagnostics_) {
+					pChannel->AttachComponent(pDiagnostics_, "drv:diag");
+				}
+			}
 			return pChannel;
 		}
 		// creates a channel for debug diagnostic purposes
@@ -54,14 +65,6 @@ namespace pmon::util::log
 			GlobalPolicy::Get().SetLogLevelDefault();
 			// channel
 			auto pChannel = std::make_shared<Channel>();
-			// error resolver
-			auto pErrorResolver = std::make_shared<ErrorCodeResolver>();
-			pErrorResolver->AddProvider(std::make_unique<win::HrErrorCodeProvider>());
-			pErrorResolver->AddProvider(std::make_unique<pmapi::PmErrorCodeProvider>());
-			// error resolving policy
-			auto pErrPolicy = std::make_shared<ErrorCodeResolvePolicy>();
-			pErrPolicy->SetResolver(std::move(pErrorResolver));
-			pChannel->AttachComponent(std::move(pErrPolicy));
 			// make and add the line-tracking policy
 			pChannel->AttachComponent(std::make_shared<LinePolicy>());
 			// configure drivers
@@ -74,8 +77,6 @@ namespace pmon::util::log
 			GlobalPolicy::Get().SetLogLevel(Level::None);
 			return {};
 		}
-		// cache reference to diagnostics system here for C-Api interaction
-		std::shared_ptr<DiagnosticDriver> pDiagnostics_;
 	}
 
 	std::shared_ptr<IChannel> GetDefaultChannel() noexcept
@@ -95,19 +96,23 @@ namespace pmon::util::log
 
 	void SetupDiagnosticLayer(const PM_DIAGNOSTIC_CONFIGURATION* pConfig)
 	{
-		if (!pDiagnostics_) {
+		// create / replace diagnostic driver
+		{
+			std::lock_guard lk{ diagnosticsMtx_ };
 			pDiagnostics_ = std::make_shared<log::DiagnosticDriver>(pConfig);
 		}
+		// attach to existing channel if present
 		if (auto pChan = GetDefaultChannel()) {
 			pChan->AttachComponent(pDiagnostics_, "drv:diag");
 		}
-		else {
+		else { // otherwise make a minimal channel for diagnostic handling
 			InjectDefaultChannel(MakeDiagnosticChannel_(pDiagnostics_));
 		}
 	}
 
 	std::shared_ptr<class DiagnosticDriver> GetDiagnostics()
 	{
+		std::lock_guard lk{ diagnosticsMtx_ };
 		return pDiagnostics_;
 	}
 }

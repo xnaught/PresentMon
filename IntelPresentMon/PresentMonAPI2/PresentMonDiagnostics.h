@@ -84,10 +84,8 @@ extern "C" {
 		bool enableLocation;
 	};
 
-	// all pmDiagnostic functions must NOT be invoked concurrently
-	// the only exceptions are pmDiagnosticSignalWaiter which can be called concurrently with the other functions
-	// from any number of threads, and pmDiagnosticEnqueueMessage similarly
-	// ideally, after setup is completed only one thread should be calling the get/dequeue/wait functions
+	// NOTE: pmDiagnosticDequeueMessage and pmDiagnosticWaitForMessage must both be accessed
+	// from the same single thread, never concurrently from multiple threads
 
 	// initialize and configure the diagnostic system; passing in nullptr yield default config
 	PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticSetup(const PM_DIAGNOSTIC_CONFIGURATION* pConfig);
