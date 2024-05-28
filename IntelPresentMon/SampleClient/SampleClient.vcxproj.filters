@@ -5,6 +5,7 @@
     <ClCompile Include="SampleClient.cpp" />
     <ClCompile Include="LogSetup.cpp" />
     <ClCompile Include="LogDemo.cpp" />
+    <ClCompile Include="DiagnosticDemo.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Console.h" />
@@ -19,5 +20,6 @@
     <ClInclude Include="LogDemo.h" />
     <ClInclude Include="Verbose.h" />
     <ClInclude Include="LogSetup.h" />
+    <ClInclude Include="DiagnosticDemo.h" />
   </ItemGroup>
 </Project>

@@ -2,6 +2,7 @@
 #include <format>
 #include <cassert>
 #include "Exception.h"
+#include "../CommonUtilities/log/Log.h"
 
 
 namespace pmapi::intro
@@ -523,6 +524,7 @@ namespace pmapi::intro
     MetricView Root::FindMetric(PM_METRIC metricId) const
     {
         if (auto i = metricMap.find(metricId); i == metricMap.end()) {
+            pmlog_error(std::format(L"Cannot find metric id={} in introspection data", (int)metricId)).diag();
             throw LookupException{ std::format("unable to find metric ID={}", (int)metricId) };
         }
         else {

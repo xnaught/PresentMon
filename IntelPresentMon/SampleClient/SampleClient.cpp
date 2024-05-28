@@ -29,6 +29,7 @@
 #include "WrapperStaticQuery.h"
 #include "MetricListSample.h"
 #include "LogDemo.h"
+#include "DiagnosticDemo.h"
 
 
 int main(int argc, char* argv[])
@@ -41,6 +42,10 @@ int main(int argc, char* argv[])
 
         if (opt.logDemo) {
             RunLogDemo(*opt.logDemo);
+            return 0;
+        }
+        if (opt.diagDemo) {
+            RunDiagnosticDemo(*opt.diagDemo);
             return 0;
         }
 

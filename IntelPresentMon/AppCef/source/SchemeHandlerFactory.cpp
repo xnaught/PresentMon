@@ -70,7 +70,7 @@ namespace p2c::client::cef
                 return nullptr;
             }
             else {
-                pmlog_info(std::format(L"Processing request URL: {}", request->GetURL().ToWString()));
+                pmlog_dbg(std::format(L"Processing request URL: {}", request->GetURL().ToWString()));
             }
             return new SchemeFileHandler(baseDir_);
         }

@@ -52,7 +52,7 @@ namespace pmapi
         // begin tracking a process, necessary to consume frame data or query metrics involving that process
         ProcessTracker TrackProcess(uint32_t pid);
         // register (build/compile) a dynamic query used to poll metrics
-        DynamicQuery RegisterDyanamicQuery(std::span<PM_QUERY_ELEMENT> elements, double winSizeMs, double metricOffsetMs);
+        DynamicQuery RegisterDyanamicQuery(std::span<PM_QUERY_ELEMENT> elements, double winSizeMs = 1000, double metricOffsetMs = 1020);
         // register (build/compile) a frame query used to consume frame events
         FrameQuery RegisterFrameQuery(std::span<PM_QUERY_ELEMENT> elements);
         // set the rate at which the service polls device telemetry data

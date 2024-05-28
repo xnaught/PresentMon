@@ -41,6 +41,10 @@ namespace pmon::util::log
 	{
 		traceLevel_ = level;
 	}
+	void GlobalPolicy::SetTraceLevelDefault() noexcept
+	{
+		SetTraceLevel(Level::Error);
+	}
 	bool GlobalPolicy::GetResolveTraceInClientThread() const noexcept
 	{
 		return resolveTraceInClientThread_;

@@ -12,34 +12,16 @@
 #include "../CommonUtilities/log/NamedPipeMarshallSender.h"
 #include "../CommonUtilities/log/MarshallDriver.h"
 #include "../CommonUtilities/log/EntryMarshallInjector.h"
-#include "../CommonUtilities/log/IdentificationTable.h"
 #include "../CommonUtilities/log/LineTable.h"
 #include "../CommonUtilities/Exception.h"
-#include "../CommonUtilities/win/Utilities.h"
 // #define VVV_LOGDEMO
 #include "Verbose.h"
 #include "LogSetup.h"
-#include "../PresentMonAPI2/Internal.h"
-#include "../PresentMonAPIWrapper/DiagnosticHandler.h"
 
 using namespace std::chrono_literals;
 using namespace pmon::util;
 
 PM_DEFINE_EX(LogDemoException);
-
-const char* GetLevelName(PM_DIAGNOSTIC_LEVEL lvl) {
-	switch (lvl) {
-	case PM_DIAGNOSTIC_LEVEL_NONE: return "None";
-	case PM_DIAGNOSTIC_LEVEL_FATAL: return "Fatal";
-	case PM_DIAGNOSTIC_LEVEL_ERROR: return "Error";
-	case PM_DIAGNOSTIC_LEVEL_WARNING: return "Warning";
-	case PM_DIAGNOSTIC_LEVEL_INFO: return "Info";
-	case PM_DIAGNOSTIC_LEVEL_PERFORMANCE: return "Performance";
-	case PM_DIAGNOSTIC_LEVEL_DEBUG: return "Debug";
-	case PM_DIAGNOSTIC_LEVEL_VERBOSE: return "Verbose";
-	default: return "Unknown";
-	}
-}
 
 void f2() {
 	pmlog_error();
@@ -60,16 +42,6 @@ void RunLogDemo(int mode)
 	p2sam::LogChannelManager zLogMan_;
 	p2sam::ConfigureLogging();
 
-	// example of setting up diagnostic layer and custom diagnostic message handling
-	pmapi::DiagnosticHandler dh{
-		PM_DIAGNOSTIC_LEVEL_INFO,
-		PM_DIAGNOSTIC_OUTPUT_FLAGS_DEBUGGER | PM_DIAGNOSTIC_OUTPUT_FLAGS_QUEUE,
-		[](const PM_DIAGNOSTIC_MESSAGE& msg) { std::cout <<
-			std::format("[PMON {}] <{}> {}\n", GetLevelName(msg.level),
-				msg.pTimestamp ? msg.pTimestamp : "", msg.pText);
-		}
-	};
-
 	pmapi::Session sesh;
 
 	for (auto&& o : clio::Options::Get().GetForwardedOptions()) {
@@ -79,12 +51,6 @@ void RunLogDemo(int mode)
 	// basic log info w/ message
 	if (mode == 0) {
 		pmlog_info(L"information goes here");
-		PM_DIAGNOSTIC_MESSAGE dm{
-			.level = PM_DIAGNOSTIC_LEVEL_WARNING,
-			.system = PM_DIAGNOSTIC_SUBSYSTEM(PM_DIAGNOSTIC_SUBSYSTEM_USER + 2),
-			.pText = "@#$ test test test",
-		};
-		pmDiagnosticEnqueueMessage(&dm);
 	}
 	// basic warn w/ format message
 	else if (mode == 1) {

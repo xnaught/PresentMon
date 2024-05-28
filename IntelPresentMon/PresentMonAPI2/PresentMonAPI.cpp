@@ -297,8 +297,12 @@ PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_SESSION_HANDLE sessio
 	PM_QUERY_ELEMENT* pElements, uint64_t numElements, double windowSizeMs, double metricOffsetMs)
 {
 	try {
-		if (!pElements || !numElements) {
-			// TODO: error code for bad args
+		if (!pElements) {
+			pmlog_error(L"null pointer to query element array argument").diag();
+			return PM_STATUS_FAILURE;
+		}
+		if (!numElements) {
+			pmlog_error(L"zero length query element array").diag();
 			return PM_STATUS_FAILURE;
 		}
 		const auto queryHandle = LookupMiddleware_(sessionHandle).RegisterDynamicQuery(
