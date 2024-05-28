@@ -51,11 +51,11 @@ namespace pmapi
 		PM_DIAGNOSTIC_LEVEL filterLevel,
 		int outputFlags,
 		std::function<void(const PM_DIAGNOSTIC_MESSAGE&)> callback,
+		int gracePeriodMs,
 		std::span<PM_DIAGNOSTIC_SUBSYSTEM> allowList,
 		bool enableTimestamp,
 		bool enableTrace,
-		bool enableLocation,
-		int gracePeriodMs
+		bool enableLocation
 	) : gracePeriodMs_{ gracePeriodMs } {
 		const PM_DIAGNOSTIC_CONFIGURATION config{
 			.filterLevel = filterLevel,

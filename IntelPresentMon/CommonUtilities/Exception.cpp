@@ -78,7 +78,7 @@ namespace pmon::util
 				std::rethrow_exception(pEx);
 			}
 			catch (const std::exception& e) {
-				return std::format("[{}]\n{}", typeid(e).name(), e.what());
+				return std::format("[{}] {}", typeid(e).name(), e.what());
 			}
 			catch (...) {
 				return "Unrecognized exception";

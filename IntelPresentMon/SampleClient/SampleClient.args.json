@@ -31,8 +31,16 @@
       "Command": "--log-deny-list aaa"
     },
     {
-      "Id": "edf9d064-e8f2-4c3c-8ab3-a70ae989a245",
+      "Id": "04b29279-a10b-4fba-b127-1816b6a05c21",
       "Command": "--log-demo 0"
+    },
+    {
+      "Id": "78f46a64-b667-4d83-91f5-48b1332ca0c0",
+      "Command": "--diag-demo 14436"
+    },
+    {
+      "Id": "edf9d064-e8f2-4c3c-8ab3-a70ae989a245",
+      "Command": "--log-demo 29916"
     },
     {
       "Id": "de172ca4-f013-4f7c-99e2-5b93c03c4ec5",

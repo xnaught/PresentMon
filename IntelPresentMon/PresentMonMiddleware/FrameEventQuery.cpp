@@ -4,13 +4,16 @@
 #include "../PresentMonUtils/PresentMonNamedPipe.h"
 #include "FrameEventQuery.h"
 #include "../PresentMonAPIWrapperCommon/Introspection.h"
-#include "../CommonUtilities//Memory.h"
-#include "../CommonUtilities//Meta.h"
+#include "../CommonUtilities/Memory.h"
+#include "../CommonUtilities/Meta.h"
+#include "../CommonUtilities/log/Log.h"
+#include "../CommonUtilities/Exception.h"
 #include <algorithm>
 #include <cstddef>
 #include <limits>
 
 using namespace pmon;
+using namespace pmon::util;
 using Context = PM_FRAME_QUERY::Context;
 
 namespace pmon::mid
@@ -485,14 +488,18 @@ PM_FRAME_QUERY::PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
 				referencedDevice_ = q.deviceId;
 			}
 			else if (*referencedDevice_ != q.deviceId) {
-				throw std::runtime_error{ "Cannot specify 2 different non-universal devices in the same query" };
+				pmlog_error(L"Cannot specify 2 different non-universal devices in the same query")
+					.pmwatch(*referencedDevice_).pmwatch(q.deviceId).diag();
+				throw Except<Exception>("2 different non-universal devices in same query");
 			}
 		}
-		gatherCommands_.push_back(MapQueryElementToGatherCommand_(q, blobSize_));
-		const auto& cmd = gatherCommands_.back();
-		q.dataSize = cmd->GetDataSize();
-		q.dataOffset = cmd->GetOutputOffset();
-		blobSize_ += cmd->GetTotalSize();
+		if (auto pElement = MapQueryElementToGatherCommand_(q, blobSize_)) {
+			gatherCommands_.push_back(std::move(pElement));
+			const auto& cmd = gatherCommands_.back();
+			q.dataSize = cmd->GetDataSize();
+			q.dataOffset = cmd->GetOutputOffset();
+			blobSize_ += cmd->GetTotalSize();
+		}
 	}
 	// make sure blobs are a multiple of 16 so that blobs in array always start 16-aligned
 	blobSize_ += util::GetPadding(blobSize_, 16);
@@ -640,7 +647,9 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
 		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::InputTime, &Pre::ScreenTime, 1, 1, 0>>(pos);
 
-	default: return {};
+	default:
+		pmlog_error(L"unknown metric id").pmwatch((int)q.metric).diag();
+		return {};
 	}
 }
 
@@ -657,6 +666,7 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 	}
 	else {
 		// TODO: log issue or invalidate related columns or drop frame (or some combination)
+		pmlog_info(L"null pFrameDataOfLastPresented");
 		cpuFrameQpc = 0;
 	}
 	if (pFrameDataOfNextDisplayed) {
@@ -664,6 +674,7 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 	}
 	else {
 		// TODO: log issue or invalidate related columns or drop frame (or some combination)
+		pmlog_info(L"null pFrameDataOfNextDisplayed");
 		nextDisplayedQpc = 0;
 	}
 	if (pFrameDataOfLastDisplayed) {
@@ -671,6 +682,7 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 	}
 	else {
 		// TODO: log issue or invalidate related columns or drop frame (or some combination)
+		pmlog_info(L"null pFrameDataOfLastDisplayed");
 		previousDisplayedQpc = 0;
 	}
 	if (pPreviousFrameDataOfLastDisplayed) {

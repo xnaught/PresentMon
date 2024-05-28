@@ -27,6 +27,7 @@
 #include "FrameEventQuery.h"
 #include "Exception.h"
 #include "../CommonUtilities/mt/Thread.h"
+#include "../CommonUtilities/log/Log.h"
 
 #define GLOG_NO_ABBREVIATED_SEVERITIES
 #include <glog/logging.h>
@@ -34,6 +35,7 @@
 namespace pmon::mid
 {
     using namespace ipc::intro;
+    using namespace util;
 
     static const uint32_t kMaxRespBufferSize = 4096;
 	static const uint64_t kClientFrameDeltaQPCThreshold = 50000000;
@@ -541,6 +543,8 @@ namespace pmon::mid
                 //pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_power));
                 break;
             default:
+                pmlog_warn(std::format(L"ignoring invalid metric [{}] while building dynamic query", 
+                    str::ToWide(metricView.Introspect().GetSymbol()))).diag();
                 break;
             }
 
@@ -983,7 +987,9 @@ void ReportMetrics(
         auto& ispec = GetIntrospectionRoot();
         auto metricView = ispec.FindMetric(element.metric);
         if (metricView.GetType() != int(PM_METRIC_TYPE_STATIC)) {
-            throw std::runtime_error{ "dynamic metric in static query poll" };
+            pmlog_error(std::format(L"dynamic metric [{}] in static query poll",
+                str::ToWide(metricView.Introspect().GetSymbol()))).diag();
+            throw Except<util::Exception>("dynamic metric in static query poll");
         }
 
         auto elementSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetPolledType());
@@ -1026,14 +1032,16 @@ void ReportMetrics(
                 << "Stream client for process " << processId
                 << " doesn't exist. Please call pmStartStream to initialize the "
                 "client.";
-            throw std::runtime_error{ "Failed to find stream for pid in ConsumeFrameEvents" };
+            pmlog_error(L"Stream client for process {} doesn't exist. Please call pmStartStream to initialize the client.").diag();
+            throw Except<util::Exception>(std::format("Failed to find stream for pid {} in ConsumeFrameEvents", processId));
         }
 
         const auto nsm_view = pShmClient->GetNamedSharedMemView();
         const auto nsm_hdr = nsm_view->GetHeader();
         if (!nsm_hdr->process_active) {
             StopStreaming(processId);
-            throw std::runtime_error{ "Process died cannot consume frame events" };
+            pmlog_info(L"Process death detected while consuming frame events").diag();
+            throw Except<util::Exception>("Process died cannot consume frame events");
         }
 
         const auto last_frame_idx = pShmClient->GetLatestFrameIndex();
@@ -1059,7 +1067,8 @@ void ReportMetrics(
             const auto status = pShmClient->ConsumePtrToNextNsmFrameData(&pCurrentFrameData, 
                 &pFrameDataOfNextDisplayed, &pFrameDataOfLastPresented, &pFrameDataOfLastDisplayed, &pPreviousFrameDataOfLastDisplayed);
             if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-                throw std::runtime_error{ "Error while trying to get frame data from shared memory" };
+                pmlog_error(L"Error while trying to get frame data from shared memory").diag();
+                throw Except<util::Exception>("Error while trying to get frame data from shared memory");
             }
             if (!pCurrentFrameData) {
                 break;
