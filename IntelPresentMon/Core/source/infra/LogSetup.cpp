@@ -75,7 +75,7 @@ namespace p2c
 			auto pChan = GetDefaultChannel();
 			// shortcut for command line
 			const auto& opt = cli::Options::Get();
-			const auto render = !opt.cefType;
+			const auto render = opt.cefType && *opt.cefType == "renderer";
 			// connect dll channel and id table to exe, get access to global settings in dll
 			LoggingSingletons getters;
 			if (render) {
