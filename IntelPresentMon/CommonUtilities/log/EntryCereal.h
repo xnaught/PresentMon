@@ -12,7 +12,7 @@ namespace pmon::util::log
 	template<class Archive>
 	void serialize(Archive& ar, IErrorCodeResolver::Strings& s)
 	{
-		ar(s.description, s.name, s.symbol);
+		ar(s.type, s.description, s.name, s.symbol);
 	}
 	template<class Archive>
 	void serialize(Archive& ar, ErrorCode& c)
@@ -27,8 +27,9 @@ namespace pmon::util::log
 	template<class Archive>
 	void serialize(Archive& ar, Entry& e)
 	{
-		ar(e.level_, e.note_, e.sourceLine_, e.timestamp_,
-			e.pTrace_, e.errorCode_, e.pid_, e.tid_);
+		// TODO: consider rate control / hit count serialization
+		ar(e.level_, e.subsystem_, e.note_, e.sourceLine_, e.timestamp_,
+			e.pTrace_, e.errorCode_, e.pid_, e.tid_, e.diagnosticLayer_);
 
 		// special handling for source strings as they might contain raw pointer alternatives
 		// we always serialize as wstring container regardless of source
