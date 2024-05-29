@@ -51,7 +51,6 @@ namespace p2c::pmon
 				pid_, processTracker.GetPid()));
 		}
 		processTracker = pSession->TrackProcess(pid_);
-		pmlog_info(std::format(L"started pmon stream for pid {}", pid_));
 	}
 	void PresentMon::StopTracking()
 	{
