@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <Shlwapi.h>
 #include <numeric>
+#include <algorithm>
 #include "../PresentMonUtils/NamedPipeHelper.h"
 #include "../PresentMonUtils/QPCUtils.h"
 #include "../PresentMonAPI2/Internal.h"
@@ -36,6 +37,8 @@ namespace pmon::mid
 {
     using namespace ipc::intro;
     using namespace util;
+    namespace rn = std::ranges;
+    namespace vi = std::views;
 
     static const uint32_t kMaxRespBufferSize = 4096;
 	static const uint64_t kClientFrameDeltaQPCThreshold = 50000000;
@@ -205,6 +208,7 @@ namespace pmon::mid
 
         PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
         if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            pmlog_error(L"Failed to call PmService");
             return status;
         }
 
@@ -213,6 +217,13 @@ namespace pmon::mid
         status = NamedPipeHelper::DecodeStartStreamingResponse(
             &responseBuffer, &startStreamResponse);
         if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            if (status == PM_STATUS_INVALID_PID) {
+                pmlog_error(std::format(L"failed to begin tracking process: pid [{}] does not exist",
+                    processId)).diag();
+            }
+            else {
+                pmlog_error(std::format(L"failed to begin tracking pid [{}]", processId)).diag();
+            }
             return status;
         }
 
@@ -232,7 +243,7 @@ namespace pmon::mid
             }
         }
 
-        pmlog_info(std::format(L"Streaming started for pid [{}]", processId)).diag();
+        pmlog_info(std::format(L"Started tracking pid [{}]", processId)).diag();
 
         return PM_STATUS_SUCCESS;
     }
@@ -386,11 +397,13 @@ namespace pmon::mid
                 else {
                     // Go through the cached Gpus and see which device the client
                     // wants
-                    for (int i = 0; i < cachedGpuInfo.size(); i++) {
-                        if (qe.deviceId == cachedGpuInfo[i].deviceId) {
-                            cachedGpuInfoIndex = i;
-                            break;
-                        }
+                    if (auto i = rn::find(cachedGpuInfo, qe.deviceId, &DeviceInfo::deviceId);
+                        i != cachedGpuInfo.end()) {
+                        cachedGpuInfoIndex = uint32_t(i - cachedGpuInfo.begin());
+                    }
+                    else {
+                        pmlog_error(std::format(L"unable to find device id [{}] while building dynamic query", qe.deviceId)).diag();
+                        // TODO: shouldn't we throw here?
                     }
                 }
             }
