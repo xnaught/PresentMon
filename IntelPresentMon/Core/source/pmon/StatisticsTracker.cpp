@@ -64,6 +64,14 @@ namespace p2c::pmon
 		const double meanMs = std::accumulate(values.begin(), values.end(), 0.) / GetCount();
 		return meanMs / 1000.;
 	}
+	double StatisticsTracker::GetSum() const
+	{
+		if (values.empty()) {
+			return -1.;
+		}
+		const double sumMs = std::accumulate(values.begin(), values.end(), 0.);
+		return sumMs;
+	}
 	size_t StatisticsTracker::GetCount() const
 	{
 		return values.size();
