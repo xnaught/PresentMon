@@ -25,6 +25,7 @@ namespace p2c::cli
 		Flag debugWaitClient{ this, "--p2c-debug-wait-client", "Force main client process to wait for debugger connection" };
 		Flag filesWorking{ this, "--p2c-files-working", "Use the working directory for file storage" };
 		Flag traceExceptions{ this, "--p2c-trace-exceptions", "Add stack trace to all thrown exceptions (including SEH exceptions)" };
+		Flag enableDiagnostic{ this, "--p2c-enable-diagnostic", "Enable debug diagnostic layer forwarding (duplicates exiisting log entries)" };
 
 	private: Group gl_{ this, "Logging", "Customize logging for this tool"}; public:
 		Option<log::Level> logLevel{ this, "--p2c-log-level", log::Level::Error, "Severity to log at", logLevelTf_ };

@@ -27,17 +27,17 @@ namespace pmon::util::log
 #endif
 #endif
 
-#define xinternal_pmlog_(lvl) ((PMLOG_BUILD_LEVEL < lvl) || (::pmon::util::log::GlobalPolicy::Get().GetLogLevel() < lvl)) \
+#define pmlog_(lvl) ((PMLOG_BUILD_LEVEL < lvl) || (::pmon::util::log::GlobalPolicy::Get().GetLogLevel() < lvl)) \
 	? (void)0 : (void)::pmon::util::log::EntryBuilder{ lvl, __FILEW__, __FUNCTIONW__, __LINE__ } \
 	.subsys(::pmon::util::log::GlobalPolicy::Get().GetSubsystem()) \
 	.to(::pmon::util::log::GetDefaultChannel())
-#define pmlog_fatal	xinternal_pmlog_(::pmon::util::log::Level::Fatal).note
-#define pmlog_error	xinternal_pmlog_(::pmon::util::log::Level::Error).note
-#define pmlog_warn	xinternal_pmlog_(::pmon::util::log::Level::Warning).note
-#define pmlog_info	xinternal_pmlog_(::pmon::util::log::Level::Info).note
-#define pmlog_dbg	xinternal_pmlog_(::pmon::util::log::Level::Debug).note
-#define pmlog_verb(vtag) !vtag ? (void)0 : xinternal_pmlog_(::pmon::util::log::Level::Verbose).note
-#define pmlog_perf(ptag) !ptag ? (void)0 : xinternal_pmlog_(::pmon::util::log::Level::Performance).note
+#define pmlog_fatal	pmlog_(::pmon::util::log::Level::Fatal).note
+#define pmlog_error	pmlog_(::pmon::util::log::Level::Error).note
+#define pmlog_warn	pmlog_(::pmon::util::log::Level::Warning).note
+#define pmlog_info	pmlog_(::pmon::util::log::Level::Info).note
+#define pmlog_dbg	pmlog_(::pmon::util::log::Level::Debug).note
+#define pmlog_verb(vtag) !vtag ? (void)0 : pmlog_(::pmon::util::log::Level::Verbose).note
+#define pmlog_perf(ptag) !ptag ? (void)0 : pmlog_(::pmon::util::log::Level::Performance).note
 
 #define pmwatch(expr) watch(L###expr, (expr))
 
