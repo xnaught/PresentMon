@@ -368,30 +368,26 @@ namespace pmon::mid
         std::optional<uint32_t> cachedGpuInfoIndex;
 
         uint64_t offset = 0u;
-        for (auto& qe : queryElements)
-        {
+        for (auto& qe : queryElements) {
             // A device of zero is NOT a graphics adapter.
-            if (qe.deviceId != 0)
-            {
+            if (qe.deviceId != 0) {
                 // If we have already set a device id in this query, check to
                 // see if it's the same device id as previously set. Currently
                 // we don't support querying multiple gpu devices in the one
                 // query
-                if (cachedGpuInfoIndex.has_value())
-                {
-                    if (cachedGpuInfo[cachedGpuInfoIndex.value()].deviceId != qe.deviceId)
-                    {
-                        throw std::runtime_error{ "Multiple GPU devices not allowed in single query" };
+                if (cachedGpuInfoIndex.has_value()) {
+                    const auto cachedDeviceId = cachedGpuInfo[cachedGpuInfoIndex.value()].deviceId;
+                    if (cachedDeviceId != qe.deviceId) {
+                        pmlog_error(std::format(L"Multiple GPU devices not allowed in single query ({} and {})",
+                            cachedDeviceId, qe.deviceId)).diag();
+                        throw Except<util::Exception>("Multiple GPU devices not allowed in single query");
                     }
                 }
-                else
-                {
+                else {
                     // Go through the cached Gpus and see which device the client
                     // wants
-                    for (int i = 0; i < cachedGpuInfo.size(); i++)
-                    {
-                        if (qe.deviceId == cachedGpuInfo[i].deviceId)
-                        {
+                    for (int i = 0; i < cachedGpuInfo.size(); i++) {
+                        if (qe.deviceId == cachedGpuInfo[i].deviceId) {
                             cachedGpuInfoIndex = i;
                             break;
                         }
@@ -543,8 +539,10 @@ namespace pmon::mid
                 //pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_power));
                 break;
             default:
-                pmlog_warn(std::format(L"ignoring invalid metric [{}] while building dynamic query", 
-                    str::ToWide(metricView.Introspect().GetSymbol()))).diag();
+                if (metricView.GetType() == PM_METRIC_TYPE_FRAME_EVENT) {
+                    pmlog_warn(std::format(L"ignoring frame event metric [{}] while building dynamic query",
+                        str::ToWide(metricView.Introspect().GetSymbol()))).diag();
+                }
                 break;
             }
 
