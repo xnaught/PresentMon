@@ -7,14 +7,14 @@
 #include <memory>
 #include <cassert>
 #include <cstdlib>
-#include "../../PresentMonAPI2/Internal.h"
-#include "../../PresentMonAPIWrapperCommon/Introspection.h"
+#include "../PresentMonAPI2/Internal.h"
+#include "../PresentMonAPIWrapperCommon/Introspection.h"
 // TODO: don't need transfer if we can somehow get the PM_ struct generation working without inheritance
 // needed right now because even if we forward declare, we don't have the inheritance info
-#include "../../Interprocess/source/IntrospectionTransfer.h"
-#include "../../Interprocess/source/IntrospectionHelpers.h"
-#include "../../Interprocess/source/IntrospectionCloneAllocators.h"
-#include "../../PresentMonUtils/PresentMonNamedPipe.h"
+#include "../Interprocess/source/IntrospectionTransfer.h"
+#include "../Interprocess/source/IntrospectionHelpers.h"
+#include "../Interprocess/source/IntrospectionCloneAllocators.h"
+#include "../PresentMonUtils/PresentMonNamedPipe.h"
 #include "MockCommon.h"
 #include "DynamicQuery.h"
 #include "FrameEventQuery.h"

@@ -54,6 +54,7 @@
     <ClInclude Include="source\gfx\prim\TextPrimitive.h" />
     <ClInclude Include="source\gfx\prim\TextStylePrimitive.h" />
     <ClInclude Include="source\infra\Logging.h" />
+    <ClInclude Include="source\infra\LogSetup.h" />
     <ClInclude Include="source\infra\util\ChiliTimer.h" />
     <ClInclude Include="source\infra\util\CooldownTimer.h" />
     <ClInclude Include="source\infra\util\FolderResolver.h" />
@@ -134,7 +135,7 @@
     <ClCompile Include="source\gfx\prim\RetainedPrimitive.cpp" />
     <ClCompile Include="source\gfx\prim\TextPrimitive.cpp" />
     <ClCompile Include="source\gfx\prim\TextStylePrimitive.cpp" />
-    <ClCompile Include="source\infra\Logging.cpp" />
+    <ClCompile Include="source\infra\LogSetup.cpp" />
     <ClCompile Include="source\infra\util\ChiliTimer.cpp" />
     <ClCompile Include="source\infra\util\CooldownTimer.cpp" />
     <ClCompile Include="source\infra\util\FolderResolver.cpp" />

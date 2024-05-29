@@ -58,7 +58,7 @@ namespace p2c::client::cef
             return false;
         }
 
-        pmlog_info(std::format(L"Opening file: {}", file_path_.wstring()));
+        pmlog_dbg(std::format(L"Opening file: {}", file_path_.wstring()));
         return true;
     }
 

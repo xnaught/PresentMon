@@ -17,7 +17,7 @@
 #include <PresentMonAPI2/Internal.h>
 #include <Core/source/infra/util/FolderResolver.h>
 #include "../cli/CliOptions.h"
-#include "Logging.h"
+#include "LogSetup.h"
 #include <memory>
 #include <format>
 #include <chrono>
@@ -32,6 +32,7 @@ namespace pmon::util::log
 	{
 		std::shared_ptr<IChannel> MakeChannel()
 		{
+			GlobalPolicy::Get().SetSubsystem(Subsystem::IntelPresentmon);
 			// channel (use custom deleter to ensure deletion in this module's heap)
 			auto pChannel = std::shared_ptr<IChannel>{ new Channel{}, [](Channel* p) { delete p; } };
 			// error resolver
@@ -74,7 +75,7 @@ namespace p2c
 			auto pChan = GetDefaultChannel();
 			// shortcut for command line
 			const auto& opt = cli::Options::Get();
-			const auto render = !opt.cefType;
+			const auto render = opt.cefType && *opt.cefType == "renderer";
 			// connect dll channel and id table to exe, get access to global settings in dll
 			LoggingSingletons getters;
 			if (render) {

@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BlobContainer.cpp" />
+    <ClCompile Include="DiagnosticHandler.cpp" />
     <ClCompile Include="DynamicQuery.cpp" />
     <ClCompile Include="FixedQuery.cpp" />
     <ClCompile Include="FrameQuery.cpp" />
@@ -21,6 +22,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BlobContainer.h" />
+    <ClInclude Include="DiagnosticHandler.h" />
     <ClInclude Include="DynamicQuery.h" />
     <ClInclude Include="FrameQuery.h" />
     <ClInclude Include="PresentMonAPIWrapper.h" />

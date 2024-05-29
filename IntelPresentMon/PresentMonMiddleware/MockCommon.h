@@ -1,5 +1,5 @@
 #pragma once
-#include "../../Interprocess/source/Interprocess.h"
+#include "../Interprocess/source/Interprocess.h"
 
 namespace pmon::ipc::intro
 {

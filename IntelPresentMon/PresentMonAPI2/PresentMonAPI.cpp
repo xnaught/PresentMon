@@ -1,12 +1,12 @@
 #include <memory>
 #include <crtdbg.h>
 #include <unordered_map>
-#include "../PresentMonMiddleware/source/MockMiddleware.h"
-#include "../PresentMonMiddleware/source/ConcreteMiddleware.h"
-#include "../PresentMonMiddleware/source/Exception.h"
+#include "../PresentMonMiddleware/MockMiddleware.h"
+#include "../PresentMonMiddleware/ConcreteMiddleware.h"
+#include "../PresentMonMiddleware/Exception.h"
 #include "Internal.h"
 #include "PresentMonAPI.h"
-#include "Log.h"
+#include "../PresentMonMiddleware/LogSetup.h"
 
 
 using namespace pmon;
@@ -126,7 +126,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, cons
 			if (introNsmOverride) {
 				introNsm = std::string(introNsmOverride);
 			}
-			pMiddleware = std::make_shared<ConcreteMiddleware>(std::move(pipeName), std::move(introNsm));
+ 			pMiddleware = std::make_shared<ConcreteMiddleware>(std::move(pipeName), std::move(introNsm));
 		}
 		*pHandle = pMiddleware.get();
 		handleMap_[*pHandle] = std::move(pMiddleware);
@@ -297,8 +297,12 @@ PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_SESSION_HANDLE sessio
 	PM_QUERY_ELEMENT* pElements, uint64_t numElements, double windowSizeMs, double metricOffsetMs)
 {
 	try {
-		if (!pElements || !numElements) {
-			// TODO: error code for bad args
+		if (!pElements) {
+			pmlog_error(L"null pointer to query element array argument").diag();
+			return PM_STATUS_FAILURE;
+		}
+		if (!numElements) {
+			pmlog_error(L"zero length query element array").diag();
 			return PM_STATUS_FAILURE;
 		}
 		const auto queryHandle = LookupMiddleware_(sessionHandle).RegisterDynamicQuery(

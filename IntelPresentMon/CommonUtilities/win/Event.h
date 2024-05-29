@@ -16,8 +16,11 @@ namespace pmon::util::win
         // functions
         Event(ConstructEmptyTag);
         Event(bool manualReset = true, bool initialState = false);
+        // set the event flag value to signalled
         void Set();
+        // quickly sets and resets the event flag
         void Pulse();
+        // resets the event flag value to unsignalled
         void Reset();
     };
 

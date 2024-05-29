@@ -12,15 +12,13 @@
 #include "../CommonUtilities/log/NamedPipeMarshallSender.h"
 #include "../CommonUtilities/log/MarshallDriver.h"
 #include "../CommonUtilities/log/EntryMarshallInjector.h"
-#include "../CommonUtilities/log/IdentificationTable.h"
 #include "../CommonUtilities/log/LineTable.h"
 #include "../CommonUtilities/Exception.h"
-#include "../CommonUtilities/win/Utilities.h"
 // #define VVV_LOGDEMO
 #include "Verbose.h"
-#include "Log.h"
-#include "../PresentMonAPI2/Internal.h"
+#include "LogSetup.h"
 
+using namespace std::chrono_literals;
 using namespace pmon::util;
 
 PM_DEFINE_EX(LogDemoException);

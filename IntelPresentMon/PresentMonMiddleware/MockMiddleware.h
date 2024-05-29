@@ -1,6 +1,6 @@
 #pragma once
 #include "Middleware.h"
-#include "../../Interprocess/source/Interprocess.h"
+#include "../Interprocess/source/Interprocess.h"
 #include <any>
 
 namespace pmon::mid

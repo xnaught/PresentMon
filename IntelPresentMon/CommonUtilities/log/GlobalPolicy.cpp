@@ -1,9 +1,11 @@
 #include "GlobalPolicy.h"
 
+#ifndef PMLOG_GPOL_DEFAULT_LEVEL
 #ifndef NDEBUG
 #define PMLOG_GPOL_DEFAULT_LEVEL Level::Info
 #else
 #define PMLOG_GPOL_DEFAULT_LEVEL Level::Error
+#endif
 #endif
 
 namespace pmon::util::log
@@ -27,6 +29,10 @@ namespace pmon::util::log
 	{
 		logLevel_ = level;
 	}
+	void GlobalPolicy::SetLogLevelDefault() noexcept
+	{
+		SetLogLevel(PMLOG_GPOL_DEFAULT_LEVEL);
+	}
 	Level GlobalPolicy::GetTraceLevel() const noexcept
 	{
 		return traceLevel_;
@@ -34,6 +40,10 @@ namespace pmon::util::log
 	void GlobalPolicy::SetTraceLevel(Level level) noexcept
 	{
 		traceLevel_ = level;
+	}
+	void GlobalPolicy::SetTraceLevelDefault() noexcept
+	{
+		SetTraceLevel(Level::Error);
 	}
 	bool GlobalPolicy::GetResolveTraceInClientThread() const noexcept
 	{
@@ -58,5 +68,13 @@ namespace pmon::util::log
 	void GlobalPolicy::SetSehTracing(bool on) noexcept
 	{
 		sehTraceOn_ = on;
+	}
+	Subsystem GlobalPolicy::GetSubsystem() const noexcept
+	{
+		return subsystem_;
+	}
+	void GlobalPolicy::SetSubsystem(Subsystem sys) noexcept
+	{
+		subsystem_ = sys;
 	}
 }

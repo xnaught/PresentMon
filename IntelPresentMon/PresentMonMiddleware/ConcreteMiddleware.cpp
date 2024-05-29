@@ -10,24 +10,25 @@
 #include <cstdlib>
 #include <Shlwapi.h>
 #include <numeric>
-#include "../../PresentMonUtils/NamedPipeHelper.h"
-#include "../../PresentMonUtils/QPCUtils.h"
-#include "../../PresentMonAPI2/Internal.h"
-#include "../../PresentMonAPIWrapperCommon/Introspection.h"
+#include <algorithm>
+#include "../PresentMonUtils/NamedPipeHelper.h"
+#include "../PresentMonUtils/QPCUtils.h"
+#include "../PresentMonAPI2/Internal.h"
+#include "../PresentMonAPIWrapperCommon/Introspection.h"
 // TODO: don't need transfer if we can somehow get the PM_ struct generation working without inheritance
 // needed right now because even if we forward declare, we don't have the inheritance info
-#include "../../Interprocess/source/IntrospectionTransfer.h"
-#include "../../Interprocess/source/IntrospectionHelpers.h"
-#include "../../Interprocess/source/IntrospectionCloneAllocators.h"
+#include "../Interprocess/source/IntrospectionTransfer.h"
+#include "../Interprocess/source/IntrospectionHelpers.h"
+#include "../Interprocess/source/IntrospectionCloneAllocators.h"
 //#include "MockCommon.h"
 #include "DynamicQuery.h"
-#include "../../ControlLib/PresentMonPowerTelemetry.h"
-#include "../../ControlLib/CpuTelemetryInfo.h"
-#include "../../PresentMonService/GlobalIdentifiers.h"
+#include "../ControlLib/PresentMonPowerTelemetry.h"
+#include "../ControlLib/CpuTelemetryInfo.h"
+#include "../PresentMonService/GlobalIdentifiers.h"
 #include "FrameEventQuery.h"
-#include "../../CommonUtilities/log/Log.h"
 #include "Exception.h"
-#include "../../CommonUtilities/mt/Thread.h"
+#include "../CommonUtilities/mt/Thread.h"
+#include "../CommonUtilities/log/Log.h"
 
 #define GLOG_NO_ABBREVIATED_SEVERITIES
 #include <glog/logging.h>
@@ -35,6 +36,9 @@
 namespace pmon::mid
 {
     using namespace ipc::intro;
+    using namespace util;
+    namespace rn = std::ranges;
+    namespace vi = std::views;
 
     static const uint32_t kMaxRespBufferSize = 4096;
 	static const uint64_t kClientFrameDeltaQPCThreshold = 50000000;
@@ -204,6 +208,7 @@ namespace pmon::mid
 
         PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
         if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            pmlog_error(L"Failed to call PmService");
             return status;
         }
 
@@ -212,6 +217,13 @@ namespace pmon::mid
         status = NamedPipeHelper::DecodeStartStreamingResponse(
             &responseBuffer, &startStreamResponse);
         if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+            if (status == PM_STATUS_INVALID_PID) {
+                pmlog_error(std::format(L"failed to begin tracking process: pid [{}] does not exist",
+                    processId)).diag();
+            }
+            else {
+                pmlog_error(std::format(L"failed to begin tracking pid [{}]", processId)).diag();
+            }
             return status;
         }
 
@@ -230,6 +242,8 @@ namespace pmon::mid
                 return PM_STATUS::PM_STATUS_FAILURE;
             }
         }
+
+        pmlog_info(std::format(L"Started tracking pid [{}]", processId)).diag();
 
         return PM_STATUS_SUCCESS;
     }
@@ -330,7 +344,7 @@ namespace pmon::mid
     const pmapi::intro::Root& mid::ConcreteMiddleware::GetIntrospectionRoot()
     {
         if (!pIntroRoot) {
-            pmlog_info(L"Creating cached introspection root object");
+            pmlog_info(L"Creating and cacheing introspection root object").diag();
             pIntroRoot = std::make_unique<pmapi::intro::Root>(GetIntrospectionData(), [this](auto p){FreeIntrospectionData(p);});
         }
         return *pIntroRoot;
@@ -365,33 +379,31 @@ namespace pmon::mid
         std::optional<uint32_t> cachedGpuInfoIndex;
 
         uint64_t offset = 0u;
-        for (auto& qe : queryElements)
-        {
+        for (auto& qe : queryElements) {
             // A device of zero is NOT a graphics adapter.
-            if (qe.deviceId != 0)
-            {
+            if (qe.deviceId != 0) {
                 // If we have already set a device id in this query, check to
                 // see if it's the same device id as previously set. Currently
                 // we don't support querying multiple gpu devices in the one
                 // query
-                if (cachedGpuInfoIndex.has_value())
-                {
-                    if (cachedGpuInfo[cachedGpuInfoIndex.value()].deviceId != qe.deviceId)
-                    {
-                        throw std::runtime_error{ "Multiple GPU devices not allowed in single query" };
+                if (cachedGpuInfoIndex.has_value()) {
+                    const auto cachedDeviceId = cachedGpuInfo[cachedGpuInfoIndex.value()].deviceId;
+                    if (cachedDeviceId != qe.deviceId) {
+                        pmlog_error(std::format(L"Multiple GPU devices not allowed in single query ({} and {})",
+                            cachedDeviceId, qe.deviceId)).diag();
+                        throw Except<util::Exception>("Multiple GPU devices not allowed in single query");
                     }
                 }
-                else
-                {
+                else {
                     // Go through the cached Gpus and see which device the client
                     // wants
-                    for (int i = 0; i < cachedGpuInfo.size(); i++)
-                    {
-                        if (qe.deviceId == cachedGpuInfo[i].deviceId)
-                        {
-                            cachedGpuInfoIndex = i;
-                            break;
-                        }
+                    if (auto i = rn::find(cachedGpuInfo, qe.deviceId, &DeviceInfo::deviceId);
+                        i != cachedGpuInfo.end()) {
+                        cachedGpuInfoIndex = uint32_t(i - cachedGpuInfo.begin());
+                    }
+                    else {
+                        pmlog_error(std::format(L"unable to find device id [{}] while building dynamic query", qe.deviceId)).diag();
+                        // TODO: shouldn't we throw here?
                     }
                 }
             }
@@ -540,6 +552,10 @@ namespace pmon::mid
                 //pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_power));
                 break;
             default:
+                if (metricView.GetType() == PM_METRIC_TYPE_FRAME_EVENT) {
+                    pmlog_warn(std::format(L"ignoring frame event metric [{}] while building dynamic query",
+                        str::ToWide(metricView.Introspect().GetSymbol()))).diag();
+                }
                 break;
             }
 
@@ -982,7 +998,9 @@ void ReportMetrics(
         auto& ispec = GetIntrospectionRoot();
         auto metricView = ispec.FindMetric(element.metric);
         if (metricView.GetType() != int(PM_METRIC_TYPE_STATIC)) {
-            throw std::runtime_error{ "dynamic metric in static query poll" };
+            pmlog_error(std::format(L"dynamic metric [{}] in static query poll",
+                str::ToWide(metricView.Introspect().GetSymbol()))).diag();
+            throw Except<util::Exception>("dynamic metric in static query poll");
         }
 
         auto elementSize = GetDataTypeSize(metricView.GetDataTypeInfo().GetPolledType());
@@ -1025,14 +1043,16 @@ void ReportMetrics(
                 << "Stream client for process " << processId
                 << " doesn't exist. Please call pmStartStream to initialize the "
                 "client.";
-            throw std::runtime_error{ "Failed to find stream for pid in ConsumeFrameEvents" };
+            pmlog_error(L"Stream client for process {} doesn't exist. Please call pmStartStream to initialize the client.").diag();
+            throw Except<util::Exception>(std::format("Failed to find stream for pid {} in ConsumeFrameEvents", processId));
         }
 
         const auto nsm_view = pShmClient->GetNamedSharedMemView();
         const auto nsm_hdr = nsm_view->GetHeader();
         if (!nsm_hdr->process_active) {
             StopStreaming(processId);
-            throw std::runtime_error{ "Process died cannot consume frame events" };
+            pmlog_info(L"Process death detected while consuming frame events").diag();
+            throw Except<util::Exception>("Process died cannot consume frame events");
         }
 
         const auto last_frame_idx = pShmClient->GetLatestFrameIndex();
@@ -1058,7 +1078,8 @@ void ReportMetrics(
             const auto status = pShmClient->ConsumePtrToNextNsmFrameData(&pCurrentFrameData, 
                 &pFrameDataOfNextDisplayed, &pFrameDataOfLastPresented, &pFrameDataOfLastDisplayed, &pPreviousFrameDataOfLastDisplayed);
             if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-                throw std::runtime_error{ "Error while trying to get frame data from shared memory" };
+                pmlog_error(L"Error while trying to get frame data from shared memory").diag();
+                throw Except<util::Exception>("Error while trying to get frame data from shared memory");
             }
             if (!pCurrentFrameData) {
                 break;
