@@ -252,6 +252,23 @@ void MockPresentMonSession::AddPresents(
             chain->mLastDisplayedPresentQPC = 0;
         }
 
+        // Remove Repeated flips if they are in Application->Repeated or Repeated->Application sequences.
+        for (size_t i = 0, n = presentEvent->Displayed.size(); i + 1 < n; ) {
+            if (presentEvent->Displayed[i].first == FrameType::Application &&
+                presentEvent->Displayed[i + 1].first == FrameType::Repeated) {
+                presentEvent->Displayed.erase(presentEvent->Displayed.begin() + i + 1);
+                n -= 1;
+            }
+            else if (presentEvent->Displayed[i].first == FrameType::Repeated &&
+                     presentEvent->Displayed[i + 1].first == FrameType::Application) {
+                presentEvent->Displayed.erase(presentEvent->Displayed.begin() + i);
+                n -= 1;
+            }
+            else {
+                i += 1;
+            }
+        }
+
         // Last producer and last consumer are internal fields
         // Remove for public build
         // Send data to streamer if we have more than single present event

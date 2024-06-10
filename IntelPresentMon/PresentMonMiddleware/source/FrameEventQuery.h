@@ -42,6 +42,9 @@ public:
 		uint64_t previousDisplayedQpc = 0;
 		// Screen time qpc of the first display in the next displayed PmNsmFrameData
 		uint64_t nextDisplayedQpc = 0;
+		// Display index to attribute cpu work, gpu work, animation error and
+		// input latency
+		size_t appIndex = 0;
 	};
 	// functions
 	PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements);

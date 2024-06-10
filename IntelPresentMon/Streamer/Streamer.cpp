@@ -191,6 +191,10 @@ void Streamer::ProcessPresentEvent(
     }
 
     PmNsmFrameData data = {};
+    if (present_event->PresentStartTime == 2694939860393)
+    {
+        auto i = 20;
+    }
     // Copy the passed in PresentEvent data into the PmNsmFrameData
     // structure.
     CopyFromPresentMonPresentEvent(present_event, &data.present_event);

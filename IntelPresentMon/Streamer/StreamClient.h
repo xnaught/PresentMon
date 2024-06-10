@@ -23,7 +23,8 @@ class StreamClient {
   // Dequeue a frame of data from shared mem and update the last_read_idx
   PM_STATUS RecordFrame(PM_FRAME_DATA** out_frame_data);
   // Dequeue a frame of data from shared mem and update the last_read_idx (just get pointer to NsmData)
-  PM_STATUS ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData, 
+  PM_STATUS ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData,
+                                         const PmNsmFrameData** pNextFrame,
                                          const PmNsmFrameData** pFrameDataOfNextDisplayed,
                                          const PmNsmFrameData** pFrameDataOfLastPresented,
                                          const PmNsmFrameData** pFrameDataOfLastDisplayed,
@@ -49,7 +50,8 @@ class StreamClient {
 
  private:
   uint64_t CheckPendingReadFrames();
-  const PmNsmFrameData* PeekNextDisplayedFrame();
+  void PeekNextFrames(const PmNsmFrameData** pNextFrame,
+                      const PmNsmFrameData** pNextDisplayedFrame);
   void PeekPreviousFrames(const PmNsmFrameData** pFrameDataOfLastPresented,
                           const PmNsmFrameData** pFrameDataOfLastDisplayed,
                           const PmNsmFrameData** pPreviousFrameDataOfLastDisplayed);

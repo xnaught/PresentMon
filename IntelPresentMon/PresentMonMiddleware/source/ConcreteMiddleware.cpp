@@ -781,21 +781,6 @@ static void ReportMetrics(
     fpsSwapChainData* chain,
     PmNsmPresentEvent* p)
 {
-    // Remove Repeated flips if they are in Application->Repeated or Repeated->Application sequences.
-    for (size_t i = 0, j = 0, n = p->DisplayedCount; i < n; ) {
-        if (p->Displayed_FrameType[i] == FrameType::Repeated && (
-            (i > 0 && p->Displayed_FrameType[i - 1] == FrameType::Application) ||
-            (i + 1 < n && p->Displayed_FrameType[i + 1] == FrameType::Application))) {
-            i += 1;
-            p->DisplayedCount -= 1;
-        } else {
-            p->Displayed_FrameType[j] = p->Displayed_FrameType[i];
-            p->Displayed_ScreenTime[j] = p->Displayed_ScreenTime[i];
-            i += 1;
-            j += 1;
-        }
-    }
-
     // For the chain's first present, we just initialize mLastPresent to give a baseline for the
     // first frame.
     if (!chain->mLastPresentIsValid) {
@@ -1124,13 +1109,14 @@ static void ReportMetrics(
         // context transmits various data that applies to each gather command in the query
         PM_FRAME_QUERY::Context ctx{ nsm_hdr->start_qpc, pShmClient->GetQpcFrequency().QuadPart };
 
-        for (uint32_t i = 0; i < frames_to_copy; i++) {
+        while (frames_copied < frames_to_copy) {
             const PmNsmFrameData* pCurrentFrameData = nullptr;
+            const PmNsmFrameData* pNextFrameData = nullptr;
             const PmNsmFrameData* pFrameDataOfLastPresented = nullptr;
             const PmNsmFrameData* pFrameDataOfNextDisplayed = nullptr;
             const PmNsmFrameData* pFrameDataOfLastDisplayed = nullptr;
             const PmNsmFrameData* pPreviousFrameDataOfLastDisplayed = nullptr;
-            const auto status = pShmClient->ConsumePtrToNextNsmFrameData(&pCurrentFrameData, 
+            const auto status = pShmClient->ConsumePtrToNextNsmFrameData(&pCurrentFrameData, &pNextFrameData,
                 &pFrameDataOfNextDisplayed, &pFrameDataOfLastPresented, &pFrameDataOfLastDisplayed, &pPreviousFrameDataOfLastDisplayed);
             if (status != PM_STATUS::PM_STATUS_SUCCESS) {
                 throw std::runtime_error{ "Error while trying to get frame data from shared memory" };
@@ -1145,6 +1131,10 @@ static void ReportMetrics(
                     pFrameDataOfLastDisplayed,
                     pPreviousFrameDataOfLastDisplayed);
 
+                if (ctx.cpuFrameQpc == 2694944190350) {
+                    int a = 3;
+                }
+
                 if (ctx.dropped) {
                     pQuery->GatherToBlob(ctx, pBlob);
                     pBlob += pQuery->GetBlobSize();
@@ -1157,6 +1147,11 @@ static void ReportMetrics(
                         ctx.sourceFrameDisplayIndex++;
                     }
                 }
+            }
+            // Check to see if the next frame produces more frames than we can store in the
+            // the blob.
+            if (frames_copied + pNextFrameData->present_event.DisplayedCount >= frames_to_copy) {
+                break;
             }
         }
         // Set to the actual number of frames copied

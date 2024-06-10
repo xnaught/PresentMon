@@ -138,7 +138,7 @@ namespace EtlTests
 		const uint32_t& processId, const std::string& processName, CsvParser& goldCsvFile) {
 		using namespace std::chrono_literals;
 		pmapi::ProcessTracker processTracker;
-		static constexpr uint32_t numberOfBlobs = 150u;
+		static constexpr uint32_t numberOfBlobs = 4000u;
 
 		PM_QUERY_ELEMENT queryElements[]{
 			//{ PM_METRIC_APPLICATION, PM_STAT_NONE, 0, 0 },
