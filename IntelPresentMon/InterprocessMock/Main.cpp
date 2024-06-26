@@ -301,8 +301,10 @@ int main(int argc, char** argv)
 		std::cout << "Invalid Dynamic Cast Exception: " << e.what();
 		return -1;
 	}
-
-
+	catch (const CLI::BadNameString& e)
+	{
+		return e.get_exit_code();
+	}
 
 	return 0;
 }
