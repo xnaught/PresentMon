@@ -8,6 +8,9 @@ namespace p2sam
 	{
 		LogChannelManager() noexcept;
 		~LogChannelManager();
+		LogChannelManager(const LogChannelManager& other) = delete;
+		LogChannelManager(LogChannelManager&& other) = delete;
+		LogChannelManager& operator=(const LogChannelManager& other) = delete;
 	};
 	// call after command line arguments have been parsed
 	void ConfigureLogging() noexcept;
