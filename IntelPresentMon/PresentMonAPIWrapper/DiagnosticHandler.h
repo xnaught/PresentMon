@@ -32,6 +32,9 @@ namespace pmapi
 			// capture source file and line number as a string
 			bool enableLocation = false
 		);
+		DiagnosticHandler(const DiagnosticHandler& other) = delete;
+		DiagnosticHandler(DiagnosticHandler&& other) = delete;
+		DiagnosticHandler& operator=(const DiagnosticHandler& other) = delete;
 		~DiagnosticHandler();
 	private:
 		std::shared_ptr<void> pImpl;
