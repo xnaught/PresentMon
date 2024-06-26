@@ -182,7 +182,7 @@ namespace RealtimeMetricTests
 
 			std::wstring appName = L"PresentBench.exe";
 			std::optional<unsigned int> appPid;
-			GetProcessInformation(appName, appPid);
+			GetProcessInformation(std::move(appName), appPid);
 			if (!appPid.has_value())
 			{
 				Assert::AreEqual(false, true, L"*** Unable to detect PresentBench.exe.");
@@ -241,7 +241,7 @@ namespace RealtimeMetricTests
 
 			std::wstring appName = L"PresentBench.exe";
 			std::optional<unsigned int> appPid;
-			GetProcessInformation(appName, appPid);
+			GetProcessInformation(std::move(appName), appPid);
 			if (!appPid.has_value())
 			{
 				Assert::AreEqual(false, true, L"*** Unable to detect PresentBench.exe.");
