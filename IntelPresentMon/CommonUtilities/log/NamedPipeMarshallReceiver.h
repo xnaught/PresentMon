@@ -16,6 +16,10 @@ namespace pmon::util::log
 	{
     public:
         NamedPipeMarshallReceiver(const std::wstring& pipeName, class IdentificationTable* pTable = nullptr);
+
+        NamedPipeMarshallReceiver(const NamedPipeMarshallReceiver&) = delete;
+        NamedPipeMarshallReceiver & operator=(const NamedPipeMarshallReceiver&) = delete;
+
         ~NamedPipeMarshallReceiver();
         std::optional<Entry> Pop() override;
         void SignalExit() override;
