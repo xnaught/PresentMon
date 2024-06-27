@@ -17,16 +17,13 @@ namespace pmon::util::win
     }
     Handle::Handle(Handle&& other) noexcept
         :
-        handle_(other.handle_)
-    {
-        other.handle_ = nullptr;
-    }
+        handle_(std::exchange(other.handle_, nullptr))
+    {}
     Handle& Handle::operator=(Handle&& other) noexcept
     {
         if (this != &other) {
             Clear();
-            handle_ = other.handle_;
-            other.handle_ = nullptr;
+            handle_ = std::exchange(other.handle_, nullptr);
         }
         return *this;
     }
@@ -50,9 +47,7 @@ namespace pmon::util::win
     }
     Handle::HandleType Handle::Release()
     {
-        const auto temp = handle_;
-        Clear();
-        return temp;
+        return std::exchange(handle_, nullptr);
     }
     Handle::operator bool() const noexcept
     {
