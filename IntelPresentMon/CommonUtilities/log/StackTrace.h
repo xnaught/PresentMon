@@ -25,8 +25,8 @@ namespace pmon::util::log
 		StackTrace(const StackTrace& other);
 
 		StackTrace & operator=(const StackTrace&) = delete;
-		StackTrace(StackTrace&&) = delete;
-		StackTrace & operator=(StackTrace&&) = delete;
+		StackTrace(StackTrace&&) = default;
+		StackTrace & operator=(StackTrace&&) = default;
 		~StackTrace() = default;
 
 		void Resolve();
