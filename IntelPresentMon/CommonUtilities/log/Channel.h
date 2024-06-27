@@ -21,6 +21,10 @@ namespace pmon::util::log
 			friend struct QueueAccessor_;
 		public:
 			~ChannelInternal_();
+
+			ChannelInternal_(const ChannelInternal_&) = delete;
+			ChannelInternal_& operator=(const ChannelInternal_&) = delete;
+
 			void Flush();
 			void SignalExit();
 			void DisableTraceResolution();
@@ -57,6 +61,8 @@ namespace pmon::util::log
 	{
 	public:
 		Channel(std::vector<std::pair<std::string, std::shared_ptr<IChannelComponent>>> componentPtrs = {});
+		Channel(const Channel&) = delete;
+		Channel& operator=(const Channel&) = delete;
 		~Channel();
 		void Submit(Entry&&) noexcept override;
 		void Submit(const Entry&) noexcept override;
