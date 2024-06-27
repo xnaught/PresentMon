@@ -33,7 +33,7 @@ namespace pmon::util::log
 	}
 	void BasicFileDriver::SetFileStrategy(std::shared_ptr<IFileStrategy> pFileStrategy)
 	{
-		pFileStrategy_ = pFileStrategy;
+		pFileStrategy_ = std::move(pFileStrategy);
 	}
 	void BasicFileDriver::Flush()
 	{
