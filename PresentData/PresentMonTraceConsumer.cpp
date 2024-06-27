@@ -1995,30 +1995,26 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
         mCompletedPresents[index] = present;
     }
 
-    // Update the ready count
-    UpdateReadyCount();
+    UpdateReadyCount(present);
+    
+    {
+        std::lock_guard<std::mutex> lock(mPresentEventMutex);
 
-    // It's possible for a deferred condition to never be cleared.  e.g., a process' last present
-    // doesn't get a Present_Stop event.  When this happens the deferred present will prevent all
-    // subsequent presents from other processes from being dequeued until the ring buffer wraps and
-    // forces it out, which is likely longer than we want to wait.  So we check here if there is
-    // a stuck deferred present and clear the deferral if it gets too old.
-    if (mReadyCount == 0) {
-        auto const& deferredPresent = mCompletedPresents[mCompletedIndex];
-        if (presentStartTime >= deferredPresent->PresentStartTime &&
-            presentStartTime - deferredPresent->PresentStartTime > mDeferralTimeLimit) {
-
-            VerboseTraceBeforeModifyingPresent(deferredPresent.get());
-
-            if (deferredPresent->WaitingForPresentStop) {
-                deferredPresent->WaitingForPresentStop = false;
+        // It's possible for a deferred condition to never be cleared.  e.g., a process' last present
+        // doesn't get a Present_Stop event.  When this happens the deferred present will prevent all
+        // subsequent presents from other processes from being dequeued until the ring buffer wraps and
+        // forces it out, which is likely longer than we want to wait.  So we check here if there is 
+        // a stuck deferred present and clear the deferral if it gets too old.
+        if (mReadyCount == 0) {
+            auto const& deferredPresent = mCompletedPresents[mCompletedIndex];
+            if (present->PresentStartTime >= deferredPresent->PresentStartTime &&
+                present->PresentStartTime - deferredPresent->PresentStartTime > mDeferralTimeLimit) {
+                VerboseTraceBeforeModifyingPresent(deferredPresent.get());
                 deferredPresent->IsLost = true;
+                deferredPresent->WaitingForPresentStop = false;
+                deferredPresent->WaitingForFlipFrameType = false;
+                UpdateReadyCount(deferredPresent);
             }
-
-            deferredPresent->WaitingForFlipFrameType = false;
-
-            StopTrackingPresent(deferredPresent);
-            UpdateReadyCount();
         }
     }
 }
@@ -2455,9 +2451,10 @@ void PMTraceConsumer::DequeueProcessEvents(std::vector<ProcessEvent>& outProcess
 void PMTraceConsumer::DequeuePresentEvents(std::vector<std::shared_ptr<PresentEvent>>& outPresentEvents)
 {
     outPresentEvents.clear();
-    if (mReadyCount > 0) {
-        std::lock_guard<std::mutex> lock(mPresentEventMutex);
 
+    std::lock_guard<std::mutex> lock(mPresentEventMutex);
+
+    if (mReadyCount > 0) {
         outPresentEvents.resize(mReadyCount, nullptr);
         for (uint32_t i = 0; i < mReadyCount; ++i) {
             std::swap(outPresentEvents[i], mCompletedPresents[mCompletedIndex]);
