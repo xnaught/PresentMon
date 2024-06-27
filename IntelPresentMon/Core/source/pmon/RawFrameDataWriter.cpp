@@ -17,6 +17,20 @@ namespace p2c::pmon
 
     namespace
     {
+        class StreamFlagPreserver_
+        {
+        public:
+            StreamFlagPreserver_(std::ostream& os) : os_{ os }, flags_{ os.flags() } {}
+            ~StreamFlagPreserver_() { os_.flags(flags_); }
+            StreamFlagPreserver_(const StreamFlagPreserver_&) = delete;
+            StreamFlagPreserver_& operator=(const StreamFlagPreserver_&) = delete;
+            StreamFlagPreserver_(StreamFlagPreserver_&&) = delete;
+            StreamFlagPreserver_& operator=(StreamFlagPreserver_&&) = delete;
+        private:
+            std::ostream& os_;
+            std::ios_base::fmtflags flags_;
+        };
+
         // type to activate special templatate specialization for time
         struct TimeAnnotationType_{};
 
@@ -54,14 +68,14 @@ namespace p2c::pmon
                         out << ((flags_ & FLAG_NAN_MEANS_NOT_AVAILABLE) ? "NA" : "0.0000");
                     }
                     else {
+                        StreamFlagPreserver_{ out };
                         out << std::fixed << std::setprecision(4) << val;
                     }
                 }
                 else if constexpr (std::is_integral<T>::value) {
                     if (flags_ & FLAG_WRITE_HEX_VALUE) {
-                        auto f(out.flags());
+                        StreamFlagPreserver_{ out };
                         out << "0x" << std::hex << std::uppercase << *reinterpret_cast<const T*>(pBytes);
-                        out.flags(f);
                     }
                     else {
                         out << *reinterpret_cast<const T*>(pBytes);
