@@ -1,6 +1,7 @@
 #include "DiagnosticDriver.h"
 #include "../Exception.h"
 #include "../win/WinAPI.h"
+#include "PanicLogger.h"
 #include <iostream>
 #include <span>
 #include <algorithm>
@@ -19,7 +20,8 @@ namespace pmon::util::log
 	DiagnosticDriver::~DiagnosticDriver()
 	{
 		dying_ = true;
-		manualUnblockEvent_.Set();
+		try { manualUnblockEvent_.Set(); }
+		catch (...) { pmlog_panic_(L"Failed to set the manual unblock event"); }
 	}
 	void DiagnosticDriver::Submit(const Entry& e)
 	{

@@ -3,6 +3,7 @@
 #include <format>
 #include <memory>
 #include "TimePoint.h"
+#include "PanicLogger.h"
 
 namespace pmon::util::log
 {
@@ -21,12 +22,15 @@ namespace pmon::util::log
 		template<typename T>
 		EntryBuilder& watch(const wchar_t* symbol, const T& value) noexcept
 		{
-			if (note_.empty()) {
-				note_ += std::format(L"   {} => {}", symbol, value);
+			try {
+				if (note_.empty()) {
+					note_ += std::format(L"   {} => {}", symbol, value);
+				}
+				else {
+					note_ += std::format(L"\n     {} => {}", symbol, value);
+				}
 			}
-			else {
-				note_ += std::format(L"\n     {} => {}", symbol, value);
-			}
+			catch (...) { pmlog_panic_(L"Failed to format watch in EntryBuilder"); }
 			return *this;
 		}
 		EntryBuilder& mark(const TimePoint& tp) noexcept;
