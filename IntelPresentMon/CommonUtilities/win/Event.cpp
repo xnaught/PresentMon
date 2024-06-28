@@ -1,6 +1,7 @@
 #include "Event.h"
 #include "WinAPI.h"
 #include <stdexcept>
+#include <cassert>
 
 namespace pmon::util::win
 {
@@ -39,10 +40,12 @@ namespace pmon::util::win
 	std::optional<uint32_t> WaitOnMultipleEvents(std::span<Event::HandleType> events, bool waitAll, uint32_t milli)
 	{
 		const auto nEvents = (DWORD)events.size();
+		assert(nEvents <= MAXIMUM_WAIT_OBJECTS);
 		const auto status = WaitForMultipleObjects(nEvents, events.data(), (BOOL)waitAll, (DWORD)milli);
-		const DWORD eventIndex = status - WAIT_OBJECT_0;
-		if (eventIndex >= 0 && eventIndex < nEvents) {
-			return eventIndex;
+		if (status >= WAIT_OBJECT_0) {
+			if (const DWORD eventIndex = status - WAIT_OBJECT_0; eventIndex < nEvents) {
+				return eventIndex;
+			}
 		}
 		else if (status == WAIT_TIMEOUT) {
 			return {};
