@@ -1920,8 +1920,7 @@ void PMTraceConsumer::AddPresentToCompletedList(std::shared_ptr<PresentEvent> co
     UpdateReadyCount(present);
     
     {
-        std::lock_guard<std::mutex> lock(mPresentEventMutex);
-
+        std::unique_lock<std::mutex> lock(mPresentEventMutex);
         // It's possible for a deferred condition to never be cleared.  e.g., a process' last present
         // doesn't get a Present_Stop event.  When this happens the deferred present will prevent all
         // subsequent presents from other processes from being dequeued until the ring buffer wraps and
@@ -1935,6 +1934,8 @@ void PMTraceConsumer::AddPresentToCompletedList(std::shared_ptr<PresentEvent> co
                 deferredPresent->IsLost = true;
                 deferredPresent->WaitingForPresentStop = false;
                 deferredPresent->WaitingForFlipFrameType = false;
+                // UpdateReadyCount also locks the mPresentEventMutex so unlock here
+                lock.unlock();
                 UpdateReadyCount(deferredPresent);
             }
         }
