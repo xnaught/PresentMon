@@ -31,7 +31,7 @@ namespace pmon::util::log
 
     NamedPipeMarshallReceiver::~NamedPipeMarshallReceiver()
     {
-        SignalExit();
+        pmquell(SignalExit());
     }
 
     std::optional<Entry> NamedPipeMarshallReceiver::Pop()

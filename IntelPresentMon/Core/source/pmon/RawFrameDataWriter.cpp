@@ -68,13 +68,13 @@ namespace p2c::pmon
                         out << ((flags_ & FLAG_NAN_MEANS_NOT_AVAILABLE) ? "NA" : "0.0000");
                     }
                     else {
-                        StreamFlagPreserver_{ out };
+                        StreamFlagPreserver_ fp{ out };
                         out << std::fixed << std::setprecision(4) << val;
                     }
                 }
                 else if constexpr (std::is_integral<T>::value) {
                     if (flags_ & FLAG_WRITE_HEX_VALUE) {
-                        StreamFlagPreserver_{ out };
+                        StreamFlagPreserver_ fp{ out };
                         out << "0x" << std::hex << std::uppercase << *reinterpret_cast<const T*>(pBytes);
                     }
                     else {

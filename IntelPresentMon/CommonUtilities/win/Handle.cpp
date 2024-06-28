@@ -19,7 +19,7 @@ namespace pmon::util::win
         :
         handle_(std::exchange(other.handle_, nullptr))
     {}
-    Handle& Handle::operator=(Handle&& other) noexcept
+    Handle& Handle::operator=(Handle&& other)
     {
         if (this != &other) {
             Clear();

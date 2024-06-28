@@ -54,7 +54,7 @@ namespace pmon::util::log
 		void AddProcess_(uint32_t pid, const std::wstring& name);
 		std::optional<Thread> LookupThread_(uint32_t tid) const;
 		std::optional<Process> LookupProcess_(uint32_t pid) const;
-		Bulk GetBulk_() const noexcept;
+		Bulk GetBulk_() const;
 		void RegisterSink_(std::shared_ptr<IIdentificationSink> pSink);
 	private:
 		// functions

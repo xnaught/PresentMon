@@ -206,19 +206,22 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     // name this process / thread
     log::IdentificationTable::AddThisProcess(str::ToWide(opt.cefType.AsOptional().value_or("main-client")));
     log::IdentificationTable::AddThisThread(L"main");
-    // connect to the diagnostic layer
+    // connect to the diagnostic layer (not generally used by appcef since we connect to logging directly)
     std::optional<pmapi::DiagnosticHandler> diag;
-    if (opt.enableDiagnostic && opt.cefType && *opt.cefType == "renderer") {
-        diag.emplace(
-            (PM_DIAGNOSTIC_LEVEL)opt.logLevel.AsOptional().value_or(log::GlobalPolicy::Get().GetLogLevel()),
-            PM_DIAGNOSTIC_OUTPUT_FLAGS_DEBUGGER | PM_DIAGNOSTIC_OUTPUT_FLAGS_QUEUE,
-            [](const PM_DIAGNOSTIC_MESSAGE& msg) {
+    try {
+        if (opt.enableDiagnostic && opt.cefType && *opt.cefType == "renderer") {
+            diag.emplace(
+                (PM_DIAGNOSTIC_LEVEL)opt.logLevel.AsOptional().value_or(log::GlobalPolicy::Get().GetLogLevel()),
+                PM_DIAGNOSTIC_OUTPUT_FLAGS_DEBUGGER | PM_DIAGNOSTIC_OUTPUT_FLAGS_QUEUE,
+                [](const PM_DIAGNOSTIC_MESSAGE& msg) {
                 auto ts = msg.pTimestamp ? str::ToWide(msg.pTimestamp) : std::wstring{};
                 pmlog_(log::Level(msg.level)).note(
                     std::format(L"@@ D I A G @@ => <{}> {}", ts, str::ToWide(msg.pText)));
             }
-        );
-    }
+            );
+        }
+    } pmcatch_report;
+    
     // configure the logging system (partially based on command line options)
     ConfigureLogging();
 

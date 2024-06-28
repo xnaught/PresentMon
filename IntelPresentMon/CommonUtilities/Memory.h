@@ -36,6 +36,7 @@ namespace pmon::util
 		CloningUptr& operator=(CloningUptr&& rhs) noexcept
 		{
 			std::unique_ptr<T>::reset(rhs.release());
+			return *this;
 		}
 		~CloningUptr() = default;
 	};

@@ -47,12 +47,10 @@ namespace pmon::util::win
 				return eventIndex;
 			}
 		}
-		else if (status == WAIT_TIMEOUT) {
+		if (status == WAIT_TIMEOUT) {
 			return {};
 		}
-		else {
-			// failed, bailed
-			throw std::runtime_error{ "Failed waiting on multiple objects" };
-		}
+		// failed, bailed
+		throw std::runtime_error{ "Failed waiting on multiple objects" };
 	}
 }
