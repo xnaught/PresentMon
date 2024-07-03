@@ -1231,7 +1231,8 @@ static void ReportMetrics(
         {
             std::vector<double> presented_fps(swapChain.mCPUBusy.size());
             for (size_t i = 0; i < swapChain.mCPUBusy.size(); ++i) {
-                presented_fps[i] = 1000.0 / (swapChain.mCPUBusy[i] + swapChain.mCPUWait[i]);
+                presented_fps[i] = (swapChain.mCPUBusy[i] + swapChain.mCPUWait[i]) == 0. ? 0. : 
+                    1000.0 / (swapChain.mCPUBusy[i] + swapChain.mCPUWait[i]);
             }
             output = CalculateStatistic(presented_fps, element.stat);
             break;
@@ -1240,7 +1241,8 @@ static void ReportMetrics(
         {
             std::vector<double> application_fps(swapChain.mAppDisplayedTime.size());
             for (size_t i = 0; i < swapChain.mAppDisplayedTime.size(); ++i) {
-                application_fps[i] = 1000.0 / swapChain.mAppDisplayedTime[i];
+                application_fps[i] = swapChain.mAppDisplayedTime[i] == 0. ? 0. : 
+                    1000.0 / swapChain.mAppDisplayedTime[i];
             }
             output = CalculateStatistic(application_fps, element.stat);
             break;
@@ -1249,7 +1251,8 @@ static void ReportMetrics(
         {
             std::vector<double> displayed_fps(swapChain.mDisplayedTime.size());
             for (size_t i = 0; i < swapChain.mDisplayedTime.size(); ++i) {
-                displayed_fps[i] = 1000.0 / swapChain.mDisplayedTime[i];
+                displayed_fps[i] = swapChain.mDisplayedTime[i] == 0. ? 0. : 
+                    1000.0 / swapChain.mDisplayedTime[i];
             }
             output = CalculateStatistic(displayed_fps, element.stat);
             break;
