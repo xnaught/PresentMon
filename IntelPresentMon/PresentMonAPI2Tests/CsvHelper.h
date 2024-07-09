@@ -239,7 +239,7 @@ void CharConvert<T>::Convert(const std::string data, T& convertedData, Header co
         else if (data == "Composed: Copy with CPU GDI") {
             convertedData = PM_PRESENT_MODE_COMPOSED_COPY_WITH_CPU_GDI;
         }
-        else if (data == "Hardware: Composed Independent Flip") {
+        else if (data == "Hardware Composed: Independent Flip") {
             convertedData = PM_PRESENT_MODE_HARDWARE_COMPOSED_INDEPENDENT_FLIP;
         }
         else {

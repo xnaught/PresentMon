@@ -34,8 +34,8 @@ public:
 		const double performanceCounterPeriodMs{};
 		const uint64_t qpcStart{};
 		bool dropped{};
-		// qpc of the frame's cpu start time, displayed or not
-		uint64_t cpuFrameQpc = 0;
+		// Start qpc of the previous frame, displayed or not
+		uint64_t cpuStart = 0;
 		// Start qpc of the previously DISPLAYED frame.
 		uint64_t previousDisplayedCpuStartQpc = 0;
 		// Screen time qpc of the previously displayed frame.
