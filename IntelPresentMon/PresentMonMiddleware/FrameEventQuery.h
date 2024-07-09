@@ -34,7 +34,7 @@ public:
 		const uint64_t qpcStart{};
 		bool dropped{};
 		// Start qpc of the previous frame, displayed or not
-		uint64_t cpuFrameQpc = 0;
+		uint64_t cpuStart = 0;
 		// Start qpc of the previously DISPLAYED frame.
 		uint64_t previousDisplayedCpuStartQpc = 0;
 		// Screen time qpc of the previously displayed frame.
