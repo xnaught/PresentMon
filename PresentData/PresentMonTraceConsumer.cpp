@@ -1970,23 +1970,36 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
         }
     }
 
-    // Add the present to the completed list
-    if (present != nullptr) {
-        std::lock_guard<std::mutex> lock(mPresentEventMutex);
+void PMTraceConsumer::AddPresentToCompletedList(std::shared_ptr<PresentEvent> const& present)
+{
+    {
+        std::unique_lock<std::mutex> lock(mPresentEventMutex);
 
-        // If the completed list is full, throw away the oldest completed present, if it IsLost; or this
-        // present, if it IsLost; or the oldest completed present.
         uint32_t index;
+        // if completed buffer is full
         if (mCompletedCount == PRESENTEVENT_CIRCULAR_BUFFER_SIZE) {
-            if (!mCompletedPresents[mCompletedIndex]->IsLost && present->IsLost) {
-                return;
+            // if we are in offline ETL processing mode, block instead of overwriting events
+            // unless either A) the buffer is full of non-ready events or B) backpressure disabled via CLI option
+            if (!mIsRealtimeSession && mReadyCount != 0 && !mDisableOfflineBackpressure) {
+                mCompletedRingCondition.wait(lock, [this] { return mCompletedCount < PRESENTEVENT_CIRCULAR_BUFFER_SIZE; });
+                index = GetRingIndex(mCompletedIndex + mCompletedCount);
+                mCompletedCount++;
             }
+            // Completed present overflow routine (when not blocking):
+            // If the completed list is full, throw away the oldest completed present, if it IsLost; or this
+            // present, if it IsLost; or the oldest completed present.
+            else {
+                if (!mCompletedPresents[mCompletedIndex]->IsLost && present->IsLost) {
+                    return;
+                }
 
-            index = mCompletedIndex;
-            mCompletedIndex = GetRingIndex(mCompletedIndex + 1);
-            if (mReadyCount > 0) {
-                mReadyCount--;
+                index = mCompletedIndex;
+                mCompletedIndex = GetRingIndex(mCompletedIndex + 1);
+                if (mReadyCount > 0) {
+                    mReadyCount--;
+                }
             }
+        // otherwise, completed buffer still has available space
         } else {
             index = GetRingIndex(mCompletedIndex + mCompletedCount);
             mCompletedCount++;
@@ -2452,17 +2465,18 @@ void PMTraceConsumer::DequeueProcessEvents(std::vector<ProcessEvent>& outProcess
 void PMTraceConsumer::DequeuePresentEvents(std::vector<std::shared_ptr<PresentEvent>>& outPresentEvents)
 {
     outPresentEvents.clear();
+    {
+        std::lock_guard<std::mutex> lock(mPresentEventMutex);
+        if (mReadyCount > 0) {
+            outPresentEvents.resize(mReadyCount, nullptr);
+            for (uint32_t i = 0; i < mReadyCount; ++i) {
+                std::swap(outPresentEvents[i], mCompletedPresents[mCompletedIndex]);
+                mCompletedIndex = GetRingIndex(mCompletedIndex + 1);
+            }
 
-    std::lock_guard<std::mutex> lock(mPresentEventMutex);
-
-    if (mReadyCount > 0) {
-        outPresentEvents.resize(mReadyCount, nullptr);
-        for (uint32_t i = 0; i < mReadyCount; ++i) {
-            std::swap(outPresentEvents[i], mCompletedPresents[mCompletedIndex]);
-            mCompletedIndex = GetRingIndex(mCompletedIndex + 1);
+            mCompletedCount -= mReadyCount;
+            mReadyCount = 0;
         }
-
-        mCompletedCount -= mReadyCount;
-        mReadyCount = 0;
     }
+    mCompletedRingCondition.notify_one();
 }
