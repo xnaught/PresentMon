@@ -83,6 +83,9 @@ struct CommandLineArgs {
     bool mMultiCsv;
     bool mUseV1Metrics;
     bool mStopExistingSession;
+    bool mWriteFrameId;
+    bool mWriteDisplayTime;
+    bool mDisableOfflineBackpressure;
 };
 
 // Metrics computed per-frame.  Duration and Latency metrics are in milliseconds.
