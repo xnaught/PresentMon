@@ -38,11 +38,12 @@ void RunDiagnosticDemo(int mode)
 
 	// basic log info w/ message
 	if (mode == 0) {
+		std::string timeStamp = std::format("{}", std::chrono::zoned_time{ std::chrono::current_zone(), std::chrono::system_clock::now() });
 		PM_DIAGNOSTIC_MESSAGE dm{
 			.level = PM_DIAGNOSTIC_LEVEL_WARNING,
 			.system = PM_DIAGNOSTIC_SUBSYSTEM(PM_DIAGNOSTIC_SUBSYSTEM_USER + 2),
 			.pText = "@#$ test test test",
-			.pTimestamp = std::format("{}", std::chrono::zoned_time{ std::chrono::current_zone(), std::chrono::system_clock::now() }).c_str(),
+			.pTimestamp = timeStamp.c_str(),
 		};
 		pmDiagnosticEnqueueMessage(&dm);
 	}

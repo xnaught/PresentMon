@@ -137,7 +137,6 @@ constexpr char const* GetHeaderString(Header h)
     case Header_DwmNotified:            return "DwmNotified";
     default:                            return "<unknown>";
     }
-    return "<unknown>";
 }
 
 std::wstring CreateErrorString(Header columnId, size_t line)
@@ -316,7 +315,7 @@ private:
     size_t line_ = 0;
     std::vector<char const*> cols_;
     v2Metrics v2MetricRow_;
-    uint32_t processId_;
+    uint32_t processId_ = 0;
     std::map<size_t, Header> activeColHeadersMap_;
 };
 
@@ -502,11 +501,11 @@ bool CsvParser::FindFirstRowWithPid(const unsigned int& searchProcessId)
             char const* processIdString = nullptr;
             if (processColIdx < cols_.size()) {
                 processIdString = cols_[Header_ProcessID];
-            }
-            unsigned int currentProcessId = 0;
-            int succeededCount = sscanf_s(processIdString, "%ud", &currentProcessId);
-            if (searchProcessId == currentProcessId) {
-                return true;
+                unsigned int currentProcessId = 0;
+                int succeededCount = sscanf_s(processIdString, "%ud", &currentProcessId);
+                if (searchProcessId == currentProcessId) {
+                    return true;
+                }
             }
         }
     }
@@ -552,15 +551,21 @@ bool CsvParser::Open(std::wstring const& path, uint32_t processId) {
         case UnknownHeader:
             Assert::Fail(CreateErrorString(h, line_).c_str());
         default:
-            if (headerColumnIndex_[(size_t)h] != SIZE_MAX) {
-                std::wstring errorMessage = L"Duplicate column: ";
-                errorMessage += pmon::util::str::ToWide(cols_[i]);
-                Assert::Fail(errorMessage.c_str());
+            if ((size_t)h < KnownHeaderCount) {
+                if (headerColumnIndex_[(size_t)h] != SIZE_MAX) {
+                    std::wstring errorMessage = L"Duplicate column: ";
+                    errorMessage += pmon::util::str::ToWide(cols_[i]);
+                    Assert::Fail(errorMessage.c_str());
+                }
+                else {
+                    headerColumnIndex_[(size_t)h] = i;
+                }
+                break;
             }
             else {
-                headerColumnIndex_[(size_t)h] = i;
+                std::wstring errorMessage = L"Index outside of known headers.";
+                Assert::Fail(errorMessage.c_str());
             }
-            break;
         }
     }
 
