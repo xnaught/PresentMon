@@ -164,6 +164,12 @@ void WriteCsvHeader<FrameMetrics1>(FILE* fp)
     if (args.mTimeUnit == TimeUnit::QPC || args.mTimeUnit == TimeUnit::QPCMilliSeconds) {
         fwprintf(fp, L",QPCTime");
     }
+    if (args.mWriteDisplayTime) {
+        fwprintf(fp, L",msDisplayTime");
+    }
+    if (args.mWriteFrameId) {
+        fwprintf(fp, L",FrameId");
+    }
     fwprintf(fp, L"\n");
 
     if (args.mCSVOutput == CSVOutput::Stdout) {
@@ -232,6 +238,17 @@ void WriteCsvRow<FrameMetrics1>(
         fwprintf(fp, L",%.*lf", DBL_DIG - 1, 0.001 * pmSession.TimestampDeltaToMilliSeconds(p.PresentStartTime));
         break;
     }
+    if (args.mWriteDisplayTime) {
+        if (p.ScreenTime == 0.f) {
+            fwprintf(fp, L",%.*lf", DBL_DIG - 1, 0.001 * pmSession.TimestampToMilliSeconds(p.ScreenTime));
+        }
+        else {
+            fwprintf(fp, L",NA");
+        }
+    }
+    if (args.mWriteFrameId) {
+        fwprintf(fp, L",%u", p.FrameId);
+    }
     fwprintf(fp, L"\n");
 
     if (args.mCSVOutput == CSVOutput::Stdout) {
@@ -282,6 +299,12 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     }
     if (args.mTrackInput) {
         fwprintf(fp, L",ClickToPhotonLatency");
+    }
+    if (args.mWriteDisplayTime) {
+        fwprintf(fp, L",DisplayTimeAbs");
+    }
+    if (args.mWriteFrameId) {
+        fwprintf(fp, L",FrameId");
     }
     fwprintf(fp, L"\n");
 }
@@ -363,6 +386,17 @@ void WriteCsvRow<FrameMetrics>(
         } else {
             fwprintf(fp, L",%.4lf", metrics.mClickToPhotonLatency);
         }
+    }
+    if (args.mWriteDisplayTime) {
+        if (p.ScreenTime == 0) {
+            fwprintf(fp, L",NA");
+        }
+        else {
+            fwprintf(fp, L",%.4lf", pmSession.TimestampToMilliSeconds(p.ScreenTime));
+        }
+    }
+    if (args.mWriteFrameId) {
+        fwprintf(fp, L",%u", p.FrameId);
     }
     fwprintf(fp, L"\n");
 }
