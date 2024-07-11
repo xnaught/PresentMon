@@ -3,6 +3,7 @@
 #include <format>
 #include <memory>
 #include "TimePoint.h"
+#include "PanicLogger.h"
 
 namespace pmon::util::log
 {
@@ -13,15 +14,23 @@ namespace pmon::util::log
 	public:
 		EntryBuilder(Level lvl, const wchar_t* sourceFile, const wchar_t* sourceFunctionName, int sourceLine) noexcept;
 		EntryBuilder(Level lvl, std::wstring sourceFile, std::wstring, int sourceLine) noexcept;
+
+		EntryBuilder(const EntryBuilder&) = delete;
+		EntryBuilder & operator=(const EntryBuilder&) = delete;
+
+		~EntryBuilder();
 		template<typename T>
 		EntryBuilder& watch(const wchar_t* symbol, const T& value) noexcept
 		{
-			if (note_.empty()) {
-				note_ += std::format(L"   {} => {}", symbol, value);
+			try {
+				if (note_.empty()) {
+					note_ += std::format(L"   {} => {}", symbol, value);
+				}
+				else {
+					note_ += std::format(L"\n     {} => {}", symbol, value);
+				}
 			}
-			else {
-				note_ += std::format(L"\n     {} => {}", symbol, value);
-			}
+			catch (...) { pmlog_panic_(L"Failed to format watch in EntryBuilder"); }
 			return *this;
 		}
 		EntryBuilder& mark(const TimePoint& tp) noexcept;
@@ -45,7 +54,6 @@ namespace pmon::util::log
 			errorCode_ = { code };
 			return *this;
 		} 
-		~EntryBuilder();
 	private:
 		std::shared_ptr<IEntrySink> pDest_;
 		int traceSkipDepth_;

@@ -63,6 +63,10 @@ namespace pmon::util::log
 		ErrorCode(const ErrorCode&);
 		ErrorCode(ErrorCode&&);
 		ErrorCode& operator=(ErrorCode&&);
+
+		ErrorCode & operator=(const ErrorCode&) = delete;
+		~ErrorCode() = default;
+
 		bool HasUnsigned() const;
 		bool HasSigned() const;
 		bool HasIntegral() const;

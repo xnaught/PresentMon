@@ -25,13 +25,10 @@ namespace p2c::client::util::async
                 file << Traverse(pArgObj)["payload"].AsWString();
                 return Result{ true, CefValueNull() };
             }
-            else {
-                auto s = std::format("Unable to open (for writing) file path: {}", filePath.string());
-                pmlog_error(s);
-                throw std::runtime_error{ s };
-            }
-
-            return Result{ false, CefValueNull() };
+            // if opening failed, that's an error
+            auto s = std::format("Unable to open (for writing) file path: {}", filePath.string());
+            pmlog_error(s);
+            throw std::runtime_error{ s };
         }
     };
 }

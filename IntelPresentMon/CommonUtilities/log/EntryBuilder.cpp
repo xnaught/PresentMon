@@ -55,15 +55,18 @@ namespace pmon::util::log
 	}
 	EntryBuilder& EntryBuilder::mark(const TimePoint& tp) noexcept
 	{
-		const auto now = std::chrono::high_resolution_clock::now();
-		const auto duration = std::chrono::duration<double, std::milli>(now - tp.value).count();
+		try {
+			const auto now = std::chrono::high_resolution_clock::now();
+			const auto duration = std::chrono::duration<double, std::milli>(now - tp.value).count();
 
-		if (note_.empty()) {
-			note_ += std::format(L"    Marked: {:.3f}ms", duration);
+			if (note_.empty()) {
+				note_ += std::format(L"    Marked: {:.3f}ms", duration);
+			}
+			else {
+				note_ += std::format(L"\n    Marked: {:.3f}ms", duration);
+			}
 		}
-		else {
-			note_ += std::format(L"\n    Marked: {:.3f}ms", duration);
-		}
+		catch (...) { pmlog_panic_(L"Failed to mark time in EntryBuilder"); }
 		return *this;
 	}
 
@@ -153,32 +156,37 @@ namespace pmon::util::log
 	}
 	EntryBuilder::~EntryBuilder()
 	{
-		if (pDest_) {
-			auto tracing = captureTrace_.value_or((int)level_ <= (int)GlobalPolicy::Get().GetTraceLevel());
-			// do line override check
-			if (LineTable::GetTraceOverride()) {
-				if (auto pEntry = LineTable::TryLookup(GetSourceFileName(), sourceLine_)) {
-					switch (pEntry->traceOverride_) {
-					case LineTable::TraceOverride::ForceOn: tracing = true; break;
-					case LineTable::TraceOverride::ForceOff: tracing = false; break;
+		try {
+			if (pDest_) {
+				auto tracing = captureTrace_.value_or((int)level_ <= (int)GlobalPolicy::Get().GetTraceLevel());
+				// do line override check
+				if (LineTable::GetTraceOverride()) {
+					if (auto pEntry = LineTable::TryLookup(GetSourceFileName(), sourceLine_)) {
+						switch (pEntry->traceOverride_) {
+						case LineTable::TraceOverride::ForceOn: tracing = true; break;
+						case LineTable::TraceOverride::ForceOff: tracing = false; break;
+						}
 					}
 				}
-			}
-			if (tracing) {
-				try {
-					pTrace_ = StackTrace::Here(traceSkipDepth_);
-					if (GlobalPolicy::Get().GetResolveTraceInClientThread()) {
-						pTrace_->Resolve();
+				if (tracing) {
+					try {
+						pTrace_ = StackTrace::Here(traceSkipDepth_);
+						if (GlobalPolicy::Get().GetResolveTraceInClientThread()) {
+							pTrace_->Resolve();
+						}
+					}
+					catch (...) {
+						pmlog_panic_(L"Failed to get current stacktrace");
 					}
 				}
-				catch (...) {
-					pmlog_panic_(L"Failed to get current stacktrace");
-				}
+				pDest_->Submit(std::move(*this));
 			}
-			pDest_->Submit(std::move(*this));
+			else {
+				pmlog_panic_(L"Log entry completed with no destination channel set");
+			}
 		}
-		else {
-			pmlog_panic_(L"Log entry completed with no destination channel set");
+		catch (...) {
+			pmlog_panic_(L"Error when completing log entry");
 		}
 	}
 }

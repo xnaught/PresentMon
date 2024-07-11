@@ -15,7 +15,7 @@ namespace pmon::util::win
         Handle(const Handle&) = delete;
         Handle& operator=(const Handle&) = delete;
         Handle(Handle&& other) noexcept;
-        Handle& operator=(Handle&& other) noexcept;
+        Handle& operator=(Handle&& other);
         operator HandleType() const;
         HandleType Get() const;
         // empties this container (closes owned handle if any)

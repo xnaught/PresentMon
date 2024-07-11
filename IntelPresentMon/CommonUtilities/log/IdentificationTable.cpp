@@ -122,7 +122,7 @@ namespace pmon::util::log
 		}
 		return {};
 	}
-	IdentificationTable::Bulk IdentificationTable::GetBulk_() const noexcept
+	IdentificationTable::Bulk IdentificationTable::GetBulk_() const
 	{
 		std::shared_lock lk{ mtx_ };
 		return Bulk{
