@@ -78,7 +78,7 @@ namespace pmon::ipc
 				Permissions_()
 				{
 					if (!ConvertStringSecurityDescriptorToSecurityDescriptorA(
-						"D:PNO_ACCESS_CONTROLS:(ML;;NW;;;LW)",
+						"D:(A;OICI;GA;;;WD)",
 						SDDL_REVISION_1, &secAttr_.lpSecurityDescriptor, NULL)) {
 						throw std::runtime_error{ "Failed to create security descriptor for shared memory" };
 					}
