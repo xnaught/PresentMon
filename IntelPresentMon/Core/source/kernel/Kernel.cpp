@@ -159,8 +159,17 @@ namespace p2c::kern
             // connect to wbem
             win::com::WbemConnection wbemConn;
 
+            // connection names control from cli override / svc-as-child
+            auto controlPipe = opt.controlPipe.AsOptional();
+            auto shmName = opt.shmName.AsOptional();
+            // force optionals filled with default values if not specified when launching service as child
+            if (opt.svcAsChild) {
+                controlPipe = *opt.controlPipe;
+                shmName = *opt.shmName;
+            }
+
             // create the PresentMon object
-            try { pm.emplace(opt.controlPipe.AsOptional(), opt.shmName.AsOptional()); }
+            try { pm.emplace(controlPipe, shmName); }
             catch (...) {
                 pHandler->OnPresentmonInitFailed();
                 pmlog_error(L"Failed to init presentmon api").no_trace();

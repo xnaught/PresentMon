@@ -18,14 +18,17 @@ namespace p2c::cli
 
 	private: Group gd_{ this, "Debugging", "Aids in debugging this tool" }; public:
 		Option<std::string> url{ this, "--p2c-url", "", "URL to load instead of app files" };
-		Option<std::string> controlPipe{ this, "--p2c-control-pipe", "", "Named pipe to connect to the service with" };
-		Option<std::string> shmName{ this, "--p2c-shm-name", "", "Shared memory to connect to the service with" };
+		Option<std::string> controlPipe{ this, "--p2c-control-pipe", R"(\\.\pipe\pm-ctrl)", "Named pipe to connect to the service with" };
+		Option<std::string> shmName{ this, "--p2c-shm-name", "pm-intro-shm", "Shared memory to connect to the service with" };
+		Option<std::string> etwSessionName{ this, "--p2c-etw-session-name", "pm-child-etw-session", "ETW session name when lauching service as child" };
+		Flag svcAsChild{ this, "--p2c-svc-as-child", "Launch service as child console app" };
 		Flag noNetFail{ this, "--p2c-no-net-fail", "Disable error modal for bad url accesses" };
 		Flag debugWaitRender{ this, "--p2c-debug-wait-render", "Force all render child processes to wait for debugger connection" };
 		Flag debugWaitClient{ this, "--p2c-debug-wait-client", "Force main client process to wait for debugger connection" };
 		Flag filesWorking{ this, "--p2c-files-working", "Use the working directory for file storage" };
 		Flag traceExceptions{ this, "--p2c-trace-exceptions", "Add stack trace to all thrown exceptions (including SEH exceptions)" };
 		Flag enableDiagnostic{ this, "--p2c-enable-diagnostic", "Enable debug diagnostic layer forwarding (duplicates exiisting log entries)" };
+
 
 	private: Group gl_{ this, "Logging", "Customize logging for this tool"}; public:
 		Option<log::Level> logLevel{ this, "--p2c-log-level", log::Level::Error, "Severity to log at", logLevelTf_ };
@@ -43,6 +46,7 @@ namespace p2c::cli
 
 	private:
 		MutualExclusion excl_{ logDenyList, logAllowList };
+		Dependency incl_{ etwSessionName, svcAsChild };
 		NoForward noForward_{ cefType, logPipeName };
 		AllowExtras ext_{ this };
 	};

@@ -45,6 +45,7 @@ namespace pwr::nv
 #undef X_
 
 	private:
+		// data
 		DllModule dll{ { "nvml.dll" } };
 		// endpoint pointers
 #define X_(name, ...) nvmlReturn_t (*p##name)(NVW_ARGS(__VA_ARGS__)) = nullptr;

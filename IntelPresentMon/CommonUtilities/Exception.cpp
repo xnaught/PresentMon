@@ -2,6 +2,7 @@
 #include "../CommonUtilities/win/Utilities.h"
 #include <sstream>
 #include "log/GlobalPolicy.h"
+#include "log/StackTrace.h"
 #include <format>
 
 
