@@ -231,26 +231,27 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     // configure the logging system (partially based on command line options)
     ConfigureLogging();
 
-    // service-as-child handling
-    std::optional<boost::process::child> childSvc;
-    if (!opt.cefType && opt.svcAsChild) {
-        using namespace std::literals;
-        namespace bp = boost::process;
-
-        childSvc.emplace("PresentMonService.exe"s,
-            "--control-pipe"s, *opt.controlPipe,
-            "--nsm-prefix"s, "pm-frame-nsm"s,
-            "--intro-nsm"s, *opt.shmName,
-            "--etw-session-name"s, *opt.etwSessionName);
-
-        if (!pmon::util::win::WaitForNamedPipe(*opt.controlPipe, 1500)) {
-            pmlog_error(L"timeout waiting for child service control pipe to go online");
-            return -1;
-        }
-    }
-
-    using namespace client;
     try {
+        // service-as-child handling
+        std::optional<boost::process::child> childSvc;
+        if (!opt.cefType && opt.svcAsChild) {
+            using namespace std::literals;
+            namespace bp = boost::process;
+
+            childSvc.emplace("PresentMonService.exe"s,
+                "--control-pipe"s, *opt.controlPipe,
+                "--nsm-prefix"s, "pm-frame-nsm"s,
+                "--intro-nsm"s, *opt.shmName,
+                "--etw-session-name"s, *opt.etwSessionName);
+
+            if (!pmon::util::win::WaitForNamedPipe(*opt.controlPipe, 1500)) {
+                pmlog_error(L"timeout waiting for child service control pipe to go online");
+                return -1;
+            }
+        }
+
+        using namespace client;
+        // cef process constellation fork control
         CefMainArgs main_args{ hInstance };
         CefRefPtr<ccef::NanoCefProcessHandler> app = new ccef::NanoCefProcessHandler{};
 
