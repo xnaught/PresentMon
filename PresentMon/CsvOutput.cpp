@@ -239,11 +239,11 @@ void WriteCsvRow<FrameMetrics1>(
         break;
     }
     if (args.mWriteDisplayTime) {
-        if (p.ScreenTime == 0.f) {
-            fwprintf(fp, L",%.*lf", DBL_DIG - 1, 0.001 * pmSession.TimestampToMilliSeconds(p.ScreenTime));
+        if (p.ScreenTime == 0) {
+            fwprintf(fp, L",NA");
         }
         else {
-            fwprintf(fp, L",NA");
+            fwprintf(fp, L",%.*lf", DBL_DIG - 1, 0.001 * pmSession.TimestampToMilliSeconds(p.ScreenTime));
         }
     }
     if (args.mWriteFrameId) {
