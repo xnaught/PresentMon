@@ -68,30 +68,27 @@
      lpOdFanControl)
 
 namespace pwr::amd {
-
-class Adl2Wrapper {
- public:
-  Adl2Wrapper();
-  Adl2Wrapper(const Adl2Wrapper& t) = delete;
-  Adl2Wrapper& operator=(const Adl2Wrapper& t) = delete;
-  ~Adl2Wrapper();
-
-  static bool Ok(int sta) noexcept { return sta == ADL_OK; }
-  // endpoint wrapper functions
+	class Adl2Wrapper {
+	public:
+		Adl2Wrapper();
+		Adl2Wrapper(const Adl2Wrapper& t) = delete;
+		Adl2Wrapper& operator=(const Adl2Wrapper& t) = delete;
+		~Adl2Wrapper();
+		static bool Ok(int sta) noexcept { return sta == ADL_OK; }
+		// endpoint wrapper functions
 #define X_(name, ...) int name(NVW_ARGS(__VA_ARGS__)) const noexcept;
-  AMD_ADL2_ENDPOINT_LIST
+		AMD_ADL2_ENDPOINT_LIST
 #undef X_
- private:
-
-  DllModule dll{{"atiadlxx.dll", "atiadlxy.dll"}};
+	private:
+        // data
+		DllModule dll{ {"atiadlxx.dll", "atiadlxy.dll"} };
+		ADL_CONTEXT_HANDLE adl_context_ = nullptr;
+        // endpoint pointers
 #define X_(name, ...) \
   int (*p##name)(ADL_CONTEXT_HANDLE context, NVW_ARGS(__VA_ARGS__)) = nullptr;
-  AMD_ADL2_ENDPOINT_LIST
+		AMD_ADL2_ENDPOINT_LIST
 #undef X_
-  // Private endpoint pointer to shutdown ADL2
-  int (*ADL2_Main_Control_Destroy_ptr_)(ADL_CONTEXT_HANDLE) = nullptr;
-  ADL_CONTEXT_HANDLE adl_context_ = nullptr;
-  // Test function
-};
-
+		// Private endpoint pointer to shutdown ADL2
+		int (*ADL2_Main_Control_Destroy_ptr_)(ADL_CONTEXT_HANDLE) = nullptr;
+	};
 }  // namespace pwr::amd
