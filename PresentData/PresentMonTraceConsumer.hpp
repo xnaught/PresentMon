@@ -251,6 +251,8 @@ struct PMTraceConsumer
     // deferred, potentially leading to dequeued events that are missing data.
     uint64_t mDeferralTimeLimit = 0; // QPC duration
 
+    bool mIsRealtimeSession = true; // allow consumer to have different behavior for realtime vs. offline analysis
+    bool mDisableOfflineBackpressure = false;
 
     // -------------------------------------------------------------------------------------------
     // These functions can be used to filter PresentEvents by process from within the consumer.
@@ -289,6 +291,7 @@ struct PMTraceConsumer
     // Mutexs to protect consumer/dequeue access from different threads:
     std::mutex mProcessEventMutex;
     std::mutex mPresentEventMutex;
+    std::condition_variable mCompletedRingCondition;
 
 
     // EventMetadata stores the structure of ETW events to optimize subsequent property retrieval.

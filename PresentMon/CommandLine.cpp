@@ -397,6 +397,9 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     args->mMultiCsv = false;
     args->mUseV1Metrics = false;
     args->mStopExistingSession = false;
+    args->mWriteFrameId = false;
+    args->mWriteDisplayTime = false;
+    args->mDisableOfflineBackpressure = false;
 
     bool sessionNameSet  = false;
     bool csvOutputStdout = false;
@@ -456,6 +459,9 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         #if PRESENTMON_ENABLE_DEBUG_TRACE
         else if (ParseArg(argv[i], L"debug_verbose_trace")) { verboseTrace = true; continue; }
         #endif
+        else if (ParseArg(argv[i], L"write_frame_id")) { args->mWriteFrameId = true; continue; }
+        else if (ParseArg(argv[i], L"write_display_time")) { args->mWriteDisplayTime = true; continue; }
+        else if (ParseArg(argv[i], L"disable_offline_backpressure")) { args->mDisableOfflineBackpressure = true; continue; }
 
         // Provided argument wasn't recognized
         else if (!(ParseArg(argv[i], L"?") || ParseArg(argv[i], L"h") || ParseArg(argv[i], L"help"))) {

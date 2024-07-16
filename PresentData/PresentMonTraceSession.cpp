@@ -514,6 +514,7 @@ ULONG PMTraceSession::Start(
     mStartTimestamp.QuadPart = 0;
     mContinueProcessingBuffers = TRUE;
     mIsRealtimeSession = etlPath == nullptr;
+    mPMConsumer->mIsRealtimeSession = mIsRealtimeSession;
 
     // If we're not reading an ETL, start a realtime trace session with the
     // required providers enabled.
