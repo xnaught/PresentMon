@@ -263,7 +263,7 @@ namespace
 		CpuFrameQpcGatherCommand_(size_t nextAvailableByteOffset) : outputOffset_{ (uint32_t)nextAvailableByteOffset } {}
 		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
 		{
-			reinterpret_cast<uint64_t&>(pDestBlob[outputOffset_]) = ctx.cpuFrameQpc;
+			reinterpret_cast<uint64_t&>(pDestBlob[outputOffset_]) = ctx.cpuStart;
 		}
 		uint32_t GetBeginOffset() const override
 		{
@@ -298,7 +298,7 @@ namespace
 					return;
 				}
 			}
-			const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuFrameQpc, 
+			const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuStart,
 				ctx.pSourceFrameData->present_event.*pEnd, ctx.performanceCounterPeriodMs);
 			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 		}
@@ -394,7 +394,7 @@ namespace
 				}
 			}
 			const auto val = TimestampDeltaToMilliSeconds(ctx.pSourceFrameData->present_event.*pStart - ctx.previousDisplayedQpc,
-				ctx.cpuFrameQpc - ctx.previousDisplayedCpuStartQpc, ctx.performanceCounterPeriodMs);
+				ctx.cpuStart - ctx.previousDisplayedCpuStartQpc, ctx.performanceCounterPeriodMs);
 			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 		}
 		uint32_t GetBeginOffset() const override
@@ -419,10 +419,12 @@ namespace
 		CpuFrameQpcFrameTimeCommand_(size_t nextAvailableByteOffset) : outputOffset_{ (uint32_t)nextAvailableByteOffset } {}
 		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
 		{
-			const auto qpcDuration = (ctx.pSourceFrameData->present_event.PresentStartTime - ctx.cpuFrameQpc) + 
-				ctx.pSourceFrameData->present_event.TimeInPresent;
-			const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
-			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			const auto cpuBusy = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuStart, ctx.pSourceFrameData->present_event.PresentStartTime,
+				ctx.performanceCounterPeriodMs);
+			const auto cpuWait = TimestampDeltaToMilliSeconds(ctx.pSourceFrameData->present_event.TimeInPresent,
+				ctx.performanceCounterPeriodMs);
+
+			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = cpuBusy + cpuWait;
 		}
 		uint32_t GetBeginOffset() const override
 		{
@@ -662,12 +664,12 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 	pSourceFrameData = pSourceFrameData_in;
 	dropped = pSourceFrameData->present_event.FinalState != PresentResult::Presented;
 	if (pFrameDataOfLastPresented) {
-		cpuFrameQpc = pFrameDataOfLastPresented->present_event.PresentStartTime + pFrameDataOfLastPresented->present_event.TimeInPresent;
+		cpuStart = pFrameDataOfLastPresented->present_event.PresentStartTime + pFrameDataOfLastPresented->present_event.TimeInPresent;
 	}
 	else {
 		// TODO: log issue or invalidate related columns or drop frame (or some combination)
 		pmlog_info(L"null pFrameDataOfLastPresented");
-		cpuFrameQpc = 0;
+		cpuStart = 0;
 	}
 	if (pFrameDataOfNextDisplayed) {
 		nextDisplayedQpc = pFrameDataOfNextDisplayed->present_event.ScreenTime;
