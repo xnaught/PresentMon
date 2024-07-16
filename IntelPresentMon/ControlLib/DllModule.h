@@ -7,6 +7,9 @@
 #include <vector>
 #include <stdexcept>
 #include <format>
+#include <cassert>
+#include "Exceptions.h"
+
 
 class DllModule
 {
@@ -15,20 +18,17 @@ public:
     DllModule& operator=(const DllModule& t) = delete;
 	DllModule(const std::vector<std::string>& dllFiles)
 	{
-		if (dllFiles.empty())
-		{
-			throw std::runtime_error{ "No dll files specified for dll module" };
-		}
+		assert(!dllFiles.empty());
+
 		// try list of dll candidates in order
-		for (const auto& file : dllFiles)
-		{
-			if (hModule = LoadLibraryExA(file.c_str(), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32))
-			{
+		for (const auto& file : dllFiles) {
+			if (hModule = LoadLibraryExA(file.c_str(), NULL, LOAD_LIBRARY_SEARCH_SYSTEM32)) {
 				return;
 			}
 		}
 		// if all failed to load, throw exception
-		throw std::runtime_error{ std::format("Failed to load library, last DLL tried: {}", dllFiles.back().c_str()) };
+		auto msg = std::format("Unable to locate telemetry library, last DLL tried: {}", dllFiles.back().c_str());
+		throw Except<TelemetrySubsystemAbsent>(std::move(msg));
 	}
 	~DllModule()
 	{

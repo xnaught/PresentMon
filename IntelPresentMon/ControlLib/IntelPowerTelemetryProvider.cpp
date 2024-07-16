@@ -3,6 +3,7 @@
 #include "IntelPowerTelemetryProvider.h"
 #include "IntelPowerTelemetryAdapter.h"
 #include "Logging.h"
+#include "Exceptions.h"
 
 namespace pwr::intel
 {
@@ -20,7 +21,7 @@ namespace pwr::intel
         // initialize the igcl api
         if (const auto result = ctlInit(&ctl_init_args, &apiHandle); result != CTL_RESULT_SUCCESS) {
             IGCL_ERR(result);
-            throw std::runtime_error{"failed igcl api init"};
+            throw Except<TelemetrySubsystemAbsent>("Unable to initialize Intel Graphics Control Library");
         }
 
         // enumerate devices available via igcl (get a list of device handles)

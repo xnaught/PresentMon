@@ -47,7 +47,7 @@ namespace p2c::cli
 	private:
 		MutualExclusion excl_{ logDenyList, logAllowList };
 		Dependency incl_{ etwSessionName, svcAsChild };
-		NoForward noForward_{ cefType, logPipeName, svcAsChild };
+		NoForward noForward_{ cefType, logPipeName };
 		AllowExtras ext_{ this };
 	};
 }

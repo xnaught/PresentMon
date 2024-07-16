@@ -75,6 +75,7 @@
     <ClInclude Include="PowerTelemetryProviderFactory.h" />
     <ClInclude Include="PresentMonPowerTelemetry.h" />
     <ClInclude Include="TelemetryHistory.h" />
+    <ClInclude Include="Exceptions.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NvapiWrapper.cpp">
