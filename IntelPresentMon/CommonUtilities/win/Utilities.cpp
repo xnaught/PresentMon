@@ -1,6 +1,8 @@
 #pragma once 
 #include "Utilities.h"
 #include "../log/Log.h"
+#include <chrono>
+#include <thread>
 
 namespace pmon::util::win
 {
@@ -105,5 +107,18 @@ namespace pmon::util::win
 		}
 		return L"unknown_seh_code";
 #undef FOR_EACH_STA
+	}
+
+	bool WaitForNamedPipe(const std::string& fullname, int timeoutMs)
+	{
+		using namespace std::literals; using clock = std::chrono::high_resolution_clock;
+		const auto start = clock::now();
+		while (!::WaitNamedPipeA(fullname.c_str(), 10)) {
+			if (clock::now() - start >= timeoutMs * 1ms) {
+				return false;
+			}
+			std::this_thread::sleep_for(10ms);
+		}
+		return true;
 	}
 }

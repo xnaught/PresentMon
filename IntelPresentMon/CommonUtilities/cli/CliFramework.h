@@ -247,22 +247,19 @@ namespace pmon::util::cli
 		}
 	};
 
-	class MutualInclusion : RuleBase_
+	class Dependency : RuleBase_
 	{
 	public:
 		template<class...T>
-		MutualInclusion(T&...elements)
+		Dependency(T&...elements)
 		{
-			Include(elements...);
+			Depend_(elements...);
 		}
 	private:
 		template<class T, class...Rest>
-		void Include(T& pivot, const Rest&...rest) const
+		void Depend_(T& pivot, const Rest&...rest) const
 		{
-			if constexpr (sizeof...(rest) > 0) {
-				GetOption_(pivot)->needs(GetOption_(rest)...);
-				Include(rest...);
-			}
+			GetOption_(pivot)->needs(GetOption_(rest)...);
 		}
 	};
 
