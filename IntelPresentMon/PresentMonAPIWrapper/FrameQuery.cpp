@@ -46,6 +46,20 @@ namespace pmapi
         Consume(tracker, blobs.GetFirst(), blobs.AcquireNumBlobsInRef_());
     }
 
+    size_t FrameQuery::ForEachConsume(ProcessTracker& tracker, BlobContainer& blobs, std::function<void(const uint8_t*)> frameHandler)
+    {
+        size_t nFramesProcessed = 0;
+        do {
+            Consume(tracker, blobs);
+            const auto nPopulated = blobs.GetNumBlobsPopulated();
+            for (uint32_t i = 0; i < nPopulated; i++) {
+                frameHandler(blobs[i]);
+            }
+            nFramesProcessed += nPopulated;
+        } while (blobs.AllBlobsPopulated());
+        return nFramesProcessed;
+    }
+
     BlobContainer FrameQuery::MakeBlobContainer(uint32_t nBlobs) const
     {
         assert(!Empty());

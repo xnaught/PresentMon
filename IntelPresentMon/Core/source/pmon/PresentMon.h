@@ -19,6 +19,7 @@ namespace pmapi
 namespace p2c::pmon
 {
 	class RawFrameDataWriter;
+	class FrameEventFlusher;
 
 	class PresentMon
 	{
@@ -49,6 +50,7 @@ namespace p2c::pmon
 		double offset = -1.;
 		uint32_t telemetrySamplePeriod = 0;
 		std::unique_ptr<pmapi::Session> pSession;
+		std::unique_ptr<FrameEventFlusher> pFlusher;
 		std::shared_ptr<pmapi::intro::Root> pIntrospectionRoot;
 		pmapi::ProcessTracker processTracker;
 		std::optional<uint32_t> selectedAdapter;

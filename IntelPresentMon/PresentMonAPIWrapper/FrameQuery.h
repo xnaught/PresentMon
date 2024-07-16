@@ -3,6 +3,7 @@
 #include "BlobContainer.h"
 #include "ProcessTracker.h"
 #include <span>
+#include <functional>
 
 namespace pmapi
 {
@@ -31,6 +32,9 @@ namespace pmapi
         // pBlobs: pointer to memory where frame query data is to be stored for consumed frames
         // NOTE: it is preferred to use above version of this function that takes in BlobContainer&
         void Consume(const ProcessTracker& tracker, uint8_t* pBlobs, uint32_t& numBlobsInOut);
+        // consume frame events and invoke frameHandler for each frame consumed, setting active blob each time
+        // will continue to call consume until all frames have been consumed from the queue
+        size_t ForEachConsume(ProcessTracker& tracker, BlobContainer& blobs, std::function<void(const uint8_t*)> frameHandler);
         // create a blob container whose size is suited to fit this query
         // nBlobs: number of frames worth of data that the container can contain
         BlobContainer MakeBlobContainer(uint32_t nBlobs) const;
