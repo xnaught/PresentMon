@@ -425,7 +425,7 @@ DWORD NamedPipeServer::Pipe::CreatePipeInstance(LPCTSTR pipe_name, int max_pipes
                 util::str::ToNarrow(pipe_name) <<
                 "] Error: " <<
                 error << std::endl;
-             return error;
+            return error;
         }
         mPipeInstance.reset(tempPipeInstance);
         return ERROR_SUCCESS;
