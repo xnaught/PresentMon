@@ -388,8 +388,22 @@ DWORD NamedPipeServer::Pipe::CreatePipeInstance(LPCTSTR pipe_name, int max_pipes
     LOG(INFO) << "Creating control pipe with name: [" << util::str::ToNarrow(pipe_name) << "]" << std::endl;
 
     auto& opt = clio::Options::Get();
-    if (opt.etwSessionName.AsOptional().has_value()) {
-        LOG(INFO) << "Using Default Security" << std::endl;
+    if (opt.controlPipe.AsOptional().has_value()) {
+        
+        PSECURITY_DESCRIPTOR pSD = NULL;
+        if (!ConvertStringSecurityDescriptorToSecurityDescriptorW(
+            L"D:(A;OICI;GA;;;WD)", SDDL_REVISION_1,
+            &pSD, NULL)) {
+            auto error = GetLastError();
+            LOG(INFO) << "Failed to create security descriptor: [" <<
+                util::str::ToNarrow(pipe_name) <<
+                "] Error: " <<
+                error << std::endl;
+            return error;
+        }
+        SECURITY_ATTRIBUTES sa = { .nLength = sizeof(sa),
+                                   .lpSecurityDescriptor = pSD,
+                                   .bInheritHandle = FALSE};
         HANDLE tempPipeInstance =
             CreateNamedPipe(pipe_name,  // pipe name
                 PIPE_ACCESS_DUPLEX |    // read/write access
@@ -401,7 +415,10 @@ DWORD NamedPipeServer::Pipe::CreatePipeInstance(LPCTSTR pipe_name, int max_pipes
                 MaxBufferSize,          // output buffer size
                 MaxBufferSize,          // input buffer size
                 pipe_timeout,           // client time-out
-                NULL);                  // default security attributes
+                &sa);                   // security attributes
+        // Free the allocated security descriptor regardless if the
+        // named pipe was successfully created
+        LocalFree(sa.lpSecurityDescriptor);
         if (tempPipeInstance == INVALID_HANDLE_VALUE) {
             auto error = GetLastError();
             LOG(INFO) << "Failed to create pipe: [" <<
@@ -414,36 +431,44 @@ DWORD NamedPipeServer::Pipe::CreatePipeInstance(LPCTSTR pipe_name, int max_pipes
         return ERROR_SUCCESS;
     }
     else {
-        SECURITY_ATTRIBUTES sa = { sizeof(sa) };
-        if (ConvertStringSecurityDescriptorToSecurityDescriptorW(
+        PSECURITY_DESCRIPTOR pSD = NULL;
+        if (!ConvertStringSecurityDescriptorToSecurityDescriptorW(
             L"D:PNO_ACCESS_CONTROLS:(ML;;NW;;;LW)", SDDL_REVISION_1,
-            &sa.lpSecurityDescriptor, NULL)) {
-            HANDLE tempPipeInstance =
-                CreateNamedPipe(pipe_name,   // pipe name
-                    PIPE_ACCESS_DUPLEX |     // read/write access
-                    FILE_FLAG_OVERLAPPED,    // overlapped mode
-                    PIPE_TYPE_MESSAGE |      // message-type pipe
-                    PIPE_READMODE_MESSAGE |  // message-read mode
-                    PIPE_WAIT,               // blocking mode
-                    max_pipes,               // number of instances
-                    MaxBufferSize,           // output buffer size
-                    MaxBufferSize,           // input buffer size
-                    pipe_timeout,            // client time-out
-                    &sa);                    // use specified security attributes
-            if (tempPipeInstance == INVALID_HANDLE_VALUE) {
-                auto error = GetLastError();
-                LOG(INFO) << "Failed to create pipe: [" <<
-                    util::str::ToNarrow(pipe_name) <<
-                    "] Error: " <<
-                    error << std::endl;
-                return error;
-            }
-            mPipeInstance.reset(tempPipeInstance);
-            LocalFree(sa.lpSecurityDescriptor);
-            return ERROR_SUCCESS;
+            &pSD, NULL)) {
+            auto error = GetLastError();
+            LOG(INFO) << "Failed to create security descriptor: [" <<
+                util::str::ToNarrow(pipe_name) <<
+                "] Error: " <<
+                error << std::endl;
+            return error;
         }
-        else {
-            return GetLastError();
+        SECURITY_ATTRIBUTES sa = { .nLength = sizeof(sa),
+                                   .lpSecurityDescriptor = pSD,
+                                   .bInheritHandle = FALSE };
+        HANDLE tempPipeInstance =
+            CreateNamedPipe(pipe_name,   // pipe name
+                PIPE_ACCESS_DUPLEX |     // read/write access
+                FILE_FLAG_OVERLAPPED,    // overlapped mode
+                PIPE_TYPE_MESSAGE |      // message-type pipe
+                PIPE_READMODE_MESSAGE |  // message-read mode
+                PIPE_WAIT,               // blocking mode
+                max_pipes,               // number of instances
+                MaxBufferSize,           // output buffer size
+                MaxBufferSize,           // input buffer size
+                pipe_timeout,            // client time-out
+                &sa);                    // use specified security attributes
+        // Free the allocated security descriptor regardless if the
+        // named pipe was successfully created
+        LocalFree(sa.lpSecurityDescriptor);
+        if (tempPipeInstance == INVALID_HANDLE_VALUE) {
+            auto error = GetLastError();
+            LOG(INFO) << "Failed to create pipe: [" <<
+                util::str::ToNarrow(pipe_name) <<
+                "] Error: " <<
+                error << std::endl;
+            return error;
         }
+        mPipeInstance.reset(tempPipeInstance);
+        return ERROR_SUCCESS;
     }
 }

@@ -84,7 +84,15 @@
     },
     {
       "Id": "4d012d46-c606-4e44-91a4-8bfa0865cfbc",
-      "Command": "--process-name Balatro.exe"
+      "Command": "--process-name Valley.exe"
+    },
+    {
+      "Id": "90f7b819-b9e5-4f19-a315-186c1affaa5d",
+      "Command": "--control-pipe \\\\.\\pipe\\igs"
+    },
+    {
+      "Id": "b37ef2ea-3c9c-4929-8f5b-29ba539674e2",
+      "Command": "--intro-nsm Global\\pm2_bip_shm_igs"
     },
     {
       "Id": "7f6ffa38-2a9a-480c-a811-a10c76820b74",
