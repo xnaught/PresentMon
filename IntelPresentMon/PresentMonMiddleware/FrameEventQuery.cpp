@@ -369,8 +369,48 @@ namespace
 					return;
 				}
 			}
+			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
+				const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuStart,
+					ctx.pSourceFrameData->present_event.*pEnd, ctx.performanceCounterPeriodMs);
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			}
+			else{
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+			}
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + alignof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
+	class DisplayLatencyGatherCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		DisplayLatencyGatherCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		{
+            if (ctx.dropped) {
+                reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+                    std::numeric_limits<double>::quiet_NaN();
+                return;
+            }
 			const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuStart,
-				ctx.pSourceFrameData->present_event.*pEnd, ctx.performanceCounterPeriodMs);
+				ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex], ctx.performanceCounterPeriodMs);
 			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 		}
 		uint32_t GetBeginOffset() const override
@@ -443,22 +483,27 @@ namespace
 		}
 		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
 		{
-			if constexpr (doDroppedCheck) {
-				if (ctx.dropped) {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
-						std::numeric_limits<double>::quiet_NaN();
-					return;
-				}
+			if (ctx.dropped) {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
+				return;
 			}
-			if constexpr (doZeroCheck) {
-				if (ctx.previousDisplayedCpuStartQpc == 0) {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.0;
-					return;
-				}
+			if (ctx.previousDisplayedCpuStartQpc == 0) {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
+				return;
 			}
-			const auto val = TimestampDeltaToMilliSeconds(ctx.pSourceFrameData->present_event.*pStart - ctx.previousDisplayedQpc,
-				ctx.cpuStart - ctx.previousDisplayedCpuStartQpc, ctx.performanceCounterPeriodMs);
-			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			if (ctx.sourceFrameDisplayIndex == ctx.appIndex && ctx.previousDisplayedCpuStartQpc != 0) {
+				auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
+				auto PrevScreenTime = ctx.previousDisplayedQpc; // Always use application display time for animation error
+				const auto val = TimestampDeltaToMilliSeconds(ScreenTime - PrevScreenTime,
+					ctx.cpuStart - ctx.previousDisplayedCpuStartQpc, ctx.performanceCounterPeriodMs);
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			}
+			else {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
+			}
 		}
 		uint32_t GetBeginOffset() const override
 		{
@@ -730,25 +775,12 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 										       const PmNsmFrameData* pPreviousFrameDataOfLastDisplayed)
 {
 	pSourceFrameData = pSourceFrameData_in;
-	dropped = pSourceFrameData->present_event.FinalState != PresentResult::Presented;
-	if (pFrameDataOfLastPresented) {
-		cpuStart = pFrameDataOfLastPresented->present_event.PresentStartTime + pFrameDataOfLastPresented->present_event.TimeInPresent;
-	}
-	else {
-		// TODO: log issue or invalidate related columns or drop frame (or some combination)
-		pmlog_info(L"null pFrameDataOfLastPresented");
-		cpuStart = 0;
-	}
-	if (pFrameDataOfNextDisplayed) {
-		nextDisplayedQpc = pFrameDataOfNextDisplayed->present_event.ScreenTime;
-	}
-	else {
-		// TODO: log issue or invalidate related columns or drop frame (or some combination)
-		pmlog_info(L"null pFrameDataOfNextDisplayed");
-		nextDisplayedQpc = 0;
-	}
-	if (pFrameDataOfLastDisplayed) {
-		previousDisplayedQpc = pFrameDataOfLastDisplayed->present_event.ScreenTime;
+	sourceFrameDisplayIndex = 0;
+	dropped = pSourceFrameData->present_event.FinalState != PresentResult::Presented && pSourceFrameData->present_event.DisplayedCount == 0;
+	cpuStart = pFrameDataOfLastPresented->present_event.PresentStartTime + pFrameDataOfLastPresented->present_event.TimeInPresent;
+	nextDisplayedQpc = pFrameDataOfNextDisplayed->present_event.Displayed_ScreenTime[0];
+	if (pFrameDataOfLastDisplayed && pFrameDataOfLastDisplayed->present_event.DisplayedCount > 0) {
+		previousDisplayedQpc = pFrameDataOfLastDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastDisplayed->present_event.DisplayedCount - 1];
 	}
 	else {
 		// TODO: log issue or invalidate related columns or drop frame (or some combination)

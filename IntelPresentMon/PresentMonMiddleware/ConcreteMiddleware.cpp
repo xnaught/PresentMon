@@ -1152,10 +1152,6 @@ static void ReportMetrics(
                     pFrameDataOfLastDisplayed,
                     pPreviousFrameDataOfLastDisplayed);
 
-                if (ctx.cpuFrameQpc == 2694944190350) {
-                    int a = 3;
-                }
-
                 if (ctx.dropped) {
                     pQuery->GatherToBlob(ctx, pBlob);
                     pBlob += pQuery->GetBlobSize();
