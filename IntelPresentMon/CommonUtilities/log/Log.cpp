@@ -44,7 +44,7 @@ namespace pmon::util::log
 			// make sure singleton dependencies are booted
 			if (!dependenciesBooted_) {
 				GlobalPolicy::Get().GetLogLevel();
-				LineTable::TryLookup(L"", 0);
+				LineTable::TryLookup("", 0);
 				IdentificationTable::LookupThread(0);
 			}
 			// @SINGLETON
@@ -58,7 +58,7 @@ namespace pmon::util::log
 			return GetDefaultChannelContainer_(std::move(factory)).Lock();
 		}
 		catch (...) {
-			pmlog_panic_(ReportExceptionWide());
+			pmlog_panic_(ReportException());
 		}
 		return {};
 	}
@@ -69,7 +69,7 @@ namespace pmon::util::log
 				.Inject(std::move(pChannel));
 		}
 		catch (...) {
-			pmlog_panic_(ReportExceptionWide());
+			pmlog_panic_(ReportException());
 		}
 	}
 	void BootDefaultChannelEager() noexcept
@@ -80,7 +80,7 @@ namespace pmon::util::log
 			} }.detach();
 		}
 		catch (...) {
-			pmlog_panic_(ReportExceptionWide());
+			pmlog_panic_(ReportException());
 		}
 	}
 	void FlushEntryPoint() noexcept

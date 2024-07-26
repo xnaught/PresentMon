@@ -15,7 +15,7 @@ namespace pmon::util::log
 	class NamedPipeMarshallReceiver : public IEntryMarshallReceiver
 	{
     public:
-        NamedPipeMarshallReceiver(const std::wstring& pipeName, class IdentificationTable* pTable = nullptr);
+        NamedPipeMarshallReceiver(const std::string& pipeName, class IdentificationTable* pTable = nullptr);
 
         NamedPipeMarshallReceiver(const NamedPipeMarshallReceiver&) = delete;
         NamedPipeMarshallReceiver & operator=(const NamedPipeMarshallReceiver&) = delete;
@@ -27,7 +27,7 @@ namespace pmon::util::log
         bool connected_ = false;
         bool sealed_ = false;
         win::Handle hPipe_;
-        std::wstring pipeName_;
+        std::string pipeName_;
         std::string inputBuffer_;
         win::Overlapped overlapped_{};
         win::Event exitEvent_;

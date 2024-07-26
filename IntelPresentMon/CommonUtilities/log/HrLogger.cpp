@@ -4,7 +4,7 @@
 
 namespace pmon::util::log
 {
-	HrLogger::HrLogger(const wchar_t* file, const wchar_t* func, int line) noexcept
+	HrLogger::HrLogger(const char* file, const char* func, int line) noexcept
 		:
 		sourceFile_{ file },
 		sourceFunctionName_{ func },

@@ -15,5 +15,5 @@ namespace pmon::util::log
 		User = 0x8000,
 	};
 
-	std::wstring GetSubsystemName(Subsystem) noexcept;
+	std::string GetSubsystemName(Subsystem) noexcept;
 }

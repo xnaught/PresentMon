@@ -89,11 +89,6 @@ namespace pmon::util
 		return "No exception in flight";
 	}
 
-	std::wstring ReportExceptionWide(std::exception_ptr pEx) noexcept
-	{
-		return str::ToWide(ReportException(std::move(pEx)));
-	}
-
 	namespace {
 		void seh_trans_func(unsigned int u, EXCEPTION_POINTERS*)
 		{

@@ -44,10 +44,10 @@ namespace pmon::util::str
 				wide.resize(actual);
 				return wide;
 			}
-			pmlog_error(L"failed conversion to wide").hr();
+			pmlog_error("failed conversion to wide").hr();
 		}
 		catch (...) {
-			pmlog_error(ReportExceptionWide());
+			pmlog_error(ReportException());
 		}
 		return {};
 	}
@@ -65,18 +65,26 @@ namespace pmon::util::str
 				return narrow;
 			}
 			// TODO: (maybe) check for insufficient buffer error and do redo with two-pass (or just double buffer again)
-			pmlog_error(L"failed conversion to narrow").hr();
+			pmlog_error("failed conversion to narrow").hr();
 		}
 		catch (...) {
-			pmlog_error(ReportExceptionWide());
+			pmlog_error(ReportException());
 		}
 		return {};
 	}
 
-	std::wstring TrimWhitespace(const std::wstring& input)
+	template<class S>
+	S TrimWhitespace(const S& input)
 	{
 		// Lambda to check if a character is not whitespace
-		auto not_space = [](wchar_t c) { return !iswspace(static_cast<wint_t>(c)); };
+		auto not_space = [](auto c) {
+			if constexpr (std::same_as<S, std::wstring>) {
+				return !iswspace(wint_t(c));
+			}
+			else {
+				return !isspace(int(c));
+			}
+		};
 
 		// Create a view that drops leading whitespace
 		auto start = std::ranges::find_if(input, not_space);
@@ -89,12 +97,14 @@ namespace pmon::util::str
 
 		// If start is after end in the original string, return an empty string
 		if (start >= end) {
-			return L"";
+			return S{};
 		}
 
 		// Create a substring from the start to the end
-		return std::wstring(start, end);
+		return S(start, end);
 	}
+	template std::string TrimWhitespace<std::string>(const std::string& input);
+	template std::wstring TrimWhitespace<std::wstring>(const std::wstring& input);
 
 	std::string ToLower(const std::string& input)
 	{
