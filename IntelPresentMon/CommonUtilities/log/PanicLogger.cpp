@@ -70,7 +70,7 @@ namespace pmon::util::log
 		}
 		static std::array<char, 250> GetTimestamp_() noexcept;
 		// data
-		std::wofstream file_;
+		std::ofstream file_;
 	};
 
 	void PMLogPanic_(const std::string& msg) noexcept

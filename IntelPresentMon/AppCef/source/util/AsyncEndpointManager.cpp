@@ -74,7 +74,7 @@ namespace p2c::client::util
 			}
 		}
 		else {
-			pmlog_error(std::format(L"Key [{}] does not have an async endpoint registered", infra::util::ToWide(key))).no_trace();
+			pmlog_error(std::format("Key [{}] does not have an async endpoint registered", key)).no_trace();
 		}
 	}
 
@@ -107,7 +107,7 @@ namespace p2c::client::util
 		else
 		{
 			lck.unlock();
-			pmlog_error(L"Failed to resolve async invocation (not registered).").no_trace();
+			pmlog_error("Failed to resolve async invocation (not registered).").no_trace();
 		}
 	}
 }

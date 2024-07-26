@@ -25,7 +25,7 @@ namespace p2c::win::com
 			IID_PPV_ARGS(&pLocator)
 		); FAILED(hr))
 		{
-			pmlog_error(L"Failed to create wbem locator").hr(hr);
+			pmlog_error("Failed to create wbem locator").hr(hr);
 			throw Except<Exception>();
 		}
 
@@ -43,7 +43,7 @@ namespace p2c::win::com
 			&pConnection
 		); FAILED(hr))
 		{
-			pmlog_error(L"Failed to connect to wbem connection").hr(hr);
+			pmlog_error("Failed to connect to wbem connection").hr(hr);
 			throw Except<Exception>();
 		}
 
@@ -59,7 +59,7 @@ namespace p2c::win::com
 			EOAC_NONE                    // proxy capabilities 
 		); FAILED(hr))
 		{
-			pmlog_error(L"Failed to set proxy security blanket on wbem connection").hr(hr);
+			pmlog_error("Failed to set proxy security blanket on wbem connection").hr(hr);
 			throw Except<Exception>();
 		}
 	}

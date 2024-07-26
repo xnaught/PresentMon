@@ -54,7 +54,7 @@ namespace p2c::client::util
 		}
 		else
 		{
-			pmlog_warn(L"Unknown V8 type cannot convert");
+			pmlog_warn("Unknown V8 type cannot convert");
 		}
 		return v;
 	}
@@ -103,7 +103,7 @@ namespace p2c::client::util
 		}
 		break;
 		default:
-			pmlog_warn(L"Unknown CEF type cannot convert");
+			pmlog_warn("Unknown CEF type cannot convert");
 		}
 		return v8;
 	}
@@ -121,7 +121,7 @@ namespace p2c::client::util
 		case CefValueType::VTYPE_LIST: return "List"s;
 		case CefValueType::VTYPE_NULL: return "Null"s;
 		case CefValueType::VTYPE_STRING: return "String"s;
-		default: pmlog_warn(L"encountered unknown CefValue type"); return "Unknown"s;
+		default: pmlog_warn("encountered unknown CefValue type"); return "Unknown"s;
 		}
 	}
 
@@ -137,9 +137,7 @@ namespace p2c::client::util
 		{
 			return pCefValue->GetString().ToWString();
 		}
-		pmlog_error(std::format(L"Cannot extract std::wstring from CEF {}",
-			ToWide(CefValueTypeToString(pCefValue->GetType()))
-		));
+		pmlog_error(std::format("Cannot extract std::wstring from CEF {}", CefValueTypeToString(pCefValue->GetType())));
 		throw Except<BadCefValueTraversal>();
 	}
 
@@ -150,8 +148,8 @@ namespace p2c::client::util
 		{
 			return pCefValue->GetString();
 		}
-		pmlog_error(std::format(L"Cannot extract std::string from CEF {}",
-			ToWide(CefValueTypeToString(pCefValue->GetType()))
+		pmlog_error(std::format("Cannot extract std::string from CEF {}",
+			CefValueTypeToString(pCefValue->GetType())
 		));
 		throw Except<BadCefValueTraversal>();
 	}
@@ -161,9 +159,8 @@ namespace p2c::client::util
 		using str::ToWide;
 		if (pCefValue->GetType() != CefValueType::VTYPE_DICTIONARY)
 		{
-			pmlog_error(std::format(L"Cannot access property [{}] of CefValue type {}",
-				ToWide(key),
-				ToWide(CefValueTypeToString(pCefValue->GetType()))
+			pmlog_error(std::format("Cannot access property [{}] of CefValue type {}",
+				key, CefValueTypeToString(pCefValue->GetType())
 			));
 			throw Except<BadCefValueTraversal>();
 		}
@@ -172,18 +169,16 @@ namespace p2c::client::util
 		{
 			return { dict->GetValue(cefKey) };
 		}
-		pmlog_error(std::format(L"CefDictionary does not contain key [{}]", cefKey.ToWString()));
+		pmlog_error(std::format("CefDictionary does not contain key [{}]", cefKey.ToString()));
 		throw Except<BadCefValueTraversal>();
 	}
 
 	CefValueTraverser CefValueTraverser::operator[](size_t index)
 	{
-		using str::ToWide;
 		if (pCefValue->GetType() != CefValueType::VTYPE_LIST)
 		{
-			pmlog_error(std::format(L"Cannot access index [{}] of CefValue type {}",
-				index,
-				ToWide(CefValueTypeToString(pCefValue->GetType()))
+			pmlog_error(std::format("Cannot access index [{}] of CefValue type {}",
+				index, CefValueTypeToString(pCefValue->GetType())
 			));
 			throw Except<BadCefValueTraversal>();
 		}
@@ -193,7 +188,7 @@ namespace p2c::client::util
 		}
 		else
 		{
-			pmlog_error(std::format(L"Index [{}] is out of bounds of CefList size [{}]", index, list->GetSize()));
+			pmlog_error(std::format("Index [{}] is out of bounds of CefList size [{}]", index, list->GetSize()));
 			throw Except<BadCefValueTraversal>();
 		}
 	}
@@ -210,12 +205,11 @@ namespace p2c::client::util
 
 	size_t CefValueTraverser::GetArrayLength()
 	{
-		using str::ToWide;
 		if (pCefValue->GetType() == CefValueType::VTYPE_LIST)
 		{
 			return pCefValue->GetList()->GetSize();
 		}
-		pmlog_error(std::format(L"Failed getting array length of CefValue type {}", ToWide(CefValueTypeToString(pCefValue->GetType()))));
+		pmlog_error(std::format("Failed getting array length of CefValue type {}", CefValueTypeToString(pCefValue->GetType())));
 		throw Except<BadCefValueTraversal>();
 	}
 

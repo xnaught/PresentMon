@@ -31,7 +31,7 @@ namespace p2c::pmon
 			query.Poll(tracker, blobs);
 		}
 		else {
-			pmlog_warn(L"Polling empty dynamic query");
+			pmlog_warn("Polling empty dynamic query");
 		}
 	}
 

@@ -40,7 +40,7 @@ namespace pmon::util::log
 	std::string TextFormatter::Format(const Entry& e) const
 	{
 		try {
-			std::wostringstream oss;
+			std::ostringstream oss;
 			oss << std::format("[@{}] <{}:{}> {{{}}}",
 				GetLevelName(e.level_),
 				MakeProc_(e),

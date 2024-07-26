@@ -15,7 +15,7 @@ namespace pmon::util::log
         pIdTable_{ pTable }
     {
         // Open the named pipe with overlapped option enabled
-        hPipe_ = (win::Handle)CreateFileW(
+        hPipe_ = (win::Handle)CreateFileA(
             pipeName_.c_str(),            // Pipe name 
             GENERIC_READ,                 // Desired access: Read access 
             0,                            // No sharing 

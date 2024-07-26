@@ -38,21 +38,21 @@ namespace p2c::client::cef
         if (mode_ == SchemeMode::Web) {
             // anything goes if web mode
             // but don't worry about loading app files (only use default schema managers)
-            pmlog_info(std::format(L"Processing request URL: {}", request->GetURL().ToWString()));
+            pmlog_info(std::format("Processing request URL: {}", request->GetURL().ToString()));
             return nullptr;
         }
         else if (mode_ == SchemeMode::Local) {
             CefURLParts url_parts;
             if (!CefParseURL(request->GetURL(), url_parts)) {
-                pmlog_error(std::format(L"Failed parsing URL: {}", request->GetURL().ToWString())).no_trace();
+                pmlog_error(std::format("Failed parsing URL: {}", request->GetURL().ToString())).no_trace();
                 DoErrorMessage("URL Error", "Failed parsing URL, see log.");
             }
             else if (CefString(&url_parts.host) != localHost_ && CefString(&url_parts.port) != localPort_) {
-                pmlog_error(std::format(L"URL does not match dev endpoint: {}", request->GetURL().ToWString())).no_trace();
+                pmlog_error(std::format("URL does not match dev endpoint: {}", request->GetURL().ToString())).no_trace();
                 DoErrorMessage("URL Error", "URL does not match dev endpoint, see log.");
             }
             else {
-                pmlog_info(std::format(L"Processing request URL: {}", request->GetURL().ToWString()));
+                pmlog_info(std::format("Processing request URL: {}", request->GetURL().ToString()));
             }
             return nullptr;
         }
@@ -60,23 +60,23 @@ namespace p2c::client::cef
         if (scheme_name == "https") {
             CefURLParts url_parts;
             if (!CefParseURL(request->GetURL(), url_parts)) {
-                pmlog_error(std::format(L"Failed parsing URL: {}", request->GetURL().ToWString())).no_trace();
+                pmlog_error(std::format("Failed parsing URL: {}", request->GetURL().ToString())).no_trace();
                 DoErrorMessage("URL Error", "Failed parsing URL, see log.");
                 return nullptr;
             }
             else if (const auto host = CefString(&url_parts.host); host != "app") {
-                pmlog_error(std::format(L"Non-app domain in File mode: {}", request->GetURL().ToWString())).no_trace();
+                pmlog_error(std::format("Non-app domain in File mode: {}", request->GetURL().ToString())).no_trace();
                 DoErrorMessage("URL Error", "Non-app domain for File mode, see log.");
                 return nullptr;
             }
             else {
-                pmlog_dbg(std::format(L"Processing request URL: {}", request->GetURL().ToWString()));
+                pmlog_dbg(std::format("Processing request URL: {}", request->GetURL().ToString()));
             }
             return new SchemeFileHandler(baseDir_);
         }
         // any other scheme in File mode is an error
         else {
-            pmlog_error(std::format(L"Wrong scheme for File mode: {}", request->GetURL().ToWString())).no_trace();
+            pmlog_error(std::format("Wrong scheme for File mode: {}", request->GetURL().ToString())).no_trace();
             DoErrorMessage("URL Error", "Wrong scheme for File mode, see log.");
             return new SchemeFileHandler(baseDir_);
         }

@@ -142,8 +142,8 @@ namespace pmon::util::log
 		// handle direct output
 		std::string formattedMsg;
 		auto format = [&] { if (formattedMsg.empty()) {
-			auto level = str::ToNarrow(GetLevelName((Level)pMsg->level));
-			auto sys = str::ToNarrow(GetSubsystemName((Subsystem)pMsg->system));
+			auto level = GetLevelName((Level)pMsg->level);
+			auto sys = GetSubsystemName((Subsystem)pMsg->system);
 			if (pMsg->pTimestamp) {
 				formattedMsg = std::format("[PMON:{} {}] {{{}}} {}\n", sys, level, pMsg->pTimestamp, pMsg->pText);
 			}

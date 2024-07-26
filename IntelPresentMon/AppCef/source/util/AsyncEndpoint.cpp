@@ -9,17 +9,17 @@ namespace p2c::client::util
 
 	void AsyncEndpoint::ExecuteOnBrowser(uint64_t uid, CefRefPtr<CefValue> pArgObj, CefRefPtr<CefBrowser> pBrowser) const
 	{
-		pmlog_warn(L"virtual not implemented");
+		pmlog_warn("virtual not implemented");
 	}
 
 	void AsyncEndpoint::ExecuteOnRenderAccessor(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor& accessor) const
 	{
-		pmlog_warn(L"virtual not implemented");
+		pmlog_warn("virtual not implemented");
 	}
 
 	AsyncEndpoint::Result AsyncEndpoint::ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const
 	{
-		pmlog_warn(L"virtual not implemented");
+		pmlog_warn("virtual not implemented");
 		return {};
 	}
 

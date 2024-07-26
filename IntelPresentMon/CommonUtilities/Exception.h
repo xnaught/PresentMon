@@ -60,5 +60,5 @@ namespace pmon::util
 // prevent any exceptions from leaking from this statement
 #define pmquell(stat) try { stat; } catch (...) {}
 
-#define pmcatch_report catch (...) { pmlog_error(::pmon::util::ReportExceptionWide()); }
+#define pmcatch_report catch (...) { pmlog_error(::pmon::util::ReportException()); }
 }

@@ -115,7 +115,7 @@ namespace p2c::win
         HANDLE processes_snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
         if (processes_snapshot == INVALID_HANDLE_VALUE)
         {
-            pmlog_error(L"Failed to get process snapshot").hr();
+            pmlog_error("Failed to get process snapshot").hr();
             throw Except<Exception>();
         }
 

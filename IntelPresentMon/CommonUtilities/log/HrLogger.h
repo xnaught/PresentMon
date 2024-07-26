@@ -16,4 +16,4 @@ namespace pmon::util::log
 	};
 }
 
-#define pmlog_hr ::pmon::util::log::HrLogger{ __FILEW__, __FUNCTIONW__, __LINE__ }
+#define pmlog_hr ::pmon::util::log::HrLogger{ __FILE__, __FUNCTION__, __LINE__ }

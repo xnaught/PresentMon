@@ -13,7 +13,7 @@ namespace pmon::util::win
     {
         if (const auto s = c.AsSigned()) {
             return {
-                .type = L"HRESULT",
+                .type = "HRESULT",
                 .description = GetErrorDescription((HRESULT)*s),
             };
         }

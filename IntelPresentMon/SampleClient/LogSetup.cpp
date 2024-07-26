@@ -80,12 +80,12 @@ namespace p2sam
 				getters.getGlobalPolicy().SetSehTracing(*opt.logTraceExceptions);
 			}
 			if (opt.logDenyList) {
-				pmquell(LineTable::IngestList(str::ToWide(*opt.logDenyList), true))
-				pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logDenyList), true))
+				pmquell(LineTable::IngestList(*opt.logDenyList, true))
+				pmquell(getters.getLineTable().IngestList_(*opt.logDenyList, true))
 			}
 			else if (opt.logAllowList) {
-				pmquell(LineTable::IngestList(str::ToWide(*opt.logAllowList), false))
-				pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logAllowList), false))
+				pmquell(LineTable::IngestList(*opt.logAllowList, false))
+				pmquell(getters.getLineTable().IngestList_(*opt.logAllowList, false))
 			}
 		}
 		catch (...) {}

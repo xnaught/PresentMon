@@ -11,9 +11,9 @@ namespace pmapi
 	{
 #define REG_KEY(enum_name_frag, key_name_frag, namex, short_name, descx) \
 		fallbackCodeMap_[(int)PM_STATUS_ ## key_name_frag] = { \
-			.symbol = LONGIFY_MACRO_CALL(STRINGIFY_MACRO_CALL(MAKE_KEY_SYMBOL(enum_name_frag, key_name_frag))), \
-			.name = L##namex, \
-			.description = L##descx, };
+			.symbol = STRINGIFY_MACRO_CALL(MAKE_KEY_SYMBOL(enum_name_frag, key_name_frag)), \
+			.name = namex, \
+			.description = descx, };
 		ENUM_KEY_LIST_STATUS(REG_KEY)
 #undef REG_KEY
 	}
@@ -23,13 +23,13 @@ namespace pmapi
 	}
 	pmon::util::log::IErrorCodeResolver::Strings PmErrorCodeProvider::Resolve(const pmon::util::log::ErrorCode& ec) const
 	{
-		pmon::util::log::IErrorCodeResolver::Strings strings{ .type = L"PM_STATUS" };
+		pmon::util::log::IErrorCodeResolver::Strings strings{ .type = "PM_STATUS" };
 		if (EnumMap::Initialized()) {
 			auto pMap = EnumMap::GetKeyMap(PM_ENUM_STATUS);
 			if (auto i = pMap->find((PM_STATUS)*ec.AsSigned()); i != pMap->end()) {
-				strings.symbol = i->second.wideSymbol;
-				strings.name = i->second.wideName;
-				strings.description = i->second.wideDescription;
+				strings.symbol = i->second.narrowSymbol;
+				strings.name = i->second.narrowName;
+				strings.description = i->second.narrowDescription;
 			}
 		}
 		else if (auto i = fallbackCodeMap_.find((PM_STATUS)*ec.AsSigned()); i != fallbackCodeMap_.end()) {

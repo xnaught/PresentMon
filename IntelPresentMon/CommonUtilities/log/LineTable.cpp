@@ -61,7 +61,7 @@ namespace pmon::util::log
 	bool LineTable::IngestList_(const std::string& path, bool isBlacklist)
 	{
 		TraceOverride tover = TraceOverride::None;
-		if (std::wifstream listFile{ path }) {
+		if (std::ifstream listFile{ path }) {
 			std::string line;
 			bool hasNontraceLine = false;
 			while (std::getline(listFile, line)) {
@@ -80,8 +80,8 @@ namespace pmon::util::log
 					line.pop_back();
 				}
 				// check if pattern matches line identifier
-				std::wregex patternLogged(LR"((.+)\((\d+)\)$)");
-				std::wsmatch matches;
+				std::regex patternLogged(R"((.+)\((\d+)\)$)");
+				std::smatch matches;
 				// try to match a line in the log line format (42)
 				if (std::regex_search(line, matches, patternLogged)) {
 					if (matches.size() == 3) {  // matches[0] is the whole string, [1] is the path, [2] is the number

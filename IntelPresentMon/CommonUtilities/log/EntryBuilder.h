@@ -35,7 +35,6 @@ namespace pmon::util::log
 		}
 		EntryBuilder& mark(const TimePoint& tp) noexcept;
 		EntryBuilder& note(std::string note = "") noexcept;
-		EntryBuilder& note(const std::string& note) noexcept;
 		EntryBuilder& to(std::shared_ptr<IEntrySink>) noexcept;
 		EntryBuilder& trace_skip(int depth) noexcept;
 		EntryBuilder& no_trace() noexcept;
