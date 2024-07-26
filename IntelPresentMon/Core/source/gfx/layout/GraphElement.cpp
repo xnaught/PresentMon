@@ -108,10 +108,10 @@ namespace p2c::gfx::lay
 			switch (type_)
 			{
 			case GraphType::Histogram:
-				if (packs.size() > 1) pmlog_warn(L"Histogram with multiple data packs");
+				if (packs.size() > 1) pmlog_warn("Histogram with multiple data packs");
 				return std::make_shared<HistogramPlotElement>(packs.front(), std::vector<std::string>{"$body-plot"});
 			case GraphType::Line: return std::make_shared<LinePlotElement>(packs, std::vector<std::string>{"$body-plot"});
-			default: pmlog_error(L"Bad graph type"); throw Except<Exception>();
+			default: pmlog_error("Bad graph type"); throw Except<Exception>();
 			}
 		};
 		AddChild( FlexElement::Make(

@@ -82,7 +82,7 @@ namespace p2c::kern
                     }
                 }
                 catch (...) {
-                    pmlog_warn(L"Failed building a widget into document");
+                    pmlog_warn("Failed building a widget into document");
                 }
             }
 
@@ -188,11 +188,11 @@ namespace p2c::kern
                         pos_ = Vec2I{ controlRect.left + 25, controlRect.top + 25 };
                     }
                     else {
-                        pmlog_warn(L"failed to get rect of control window").hr();
+                        pmlog_warn("failed to get rect of control window").hr();
                     }
                 }
                 else {
-                    pmlog_warn(L"failed to find control window");
+                    pmlog_warn("failed to find control window");
                 }
             }
             // make the metrics window
@@ -316,7 +316,7 @@ namespace p2c::kern
     {
         if (position == OverlaySpec::OverlayPosition::Center)
         {
-            pmlog_error(L"center overlay position unimplimented");
+            pmlog_error("center overlay position unimplimented");
             throw Except<Exception>();
         }
 
@@ -379,7 +379,7 @@ namespace p2c::kern
         if (scheduler_.AtPoll() && !IsHidden_()) {
             pmlog_mark mkPoll;
             UpdateGraphData_(pmon::Timekeeper::GetLockedNow());
-            pmlog_perf(v::overlay)(L"Data update time").mark(mkPoll);
+            pmlog_perf(v::overlay)("Data update time").mark(mkPoll);
         }
         if (scheduler_.AtRender()) {
             // handle hide during move logic (show if time elapsed and now otherwise hidden)
@@ -395,7 +395,7 @@ namespace p2c::kern
             if (!IsHidden_()) {
                 pmlog_mark mkRender;
                 Render_();
-                pmlog_perf(v::overlay)(L"Overlay draw time").mark(mkRender);
+                pmlog_perf(v::overlay)("Overlay draw time").mark(mkRender);
             }
         }
         if (scheduler_.AtTrace() && pWriter) {
@@ -405,7 +405,7 @@ namespace p2c::kern
 
     void Overlay::SetCaptureState(bool active, std::wstring path, std::wstring name)
     {
-        pmlog_info(std::format(L"Capture set to {}", active));
+        pmlog_info(std::format("Capture set to {}", active));
 
         if (active && !pWriter)
         {
@@ -472,11 +472,11 @@ namespace p2c::kern
                 targetFullscreen = targetRect == monRect;
             }
             else {
-                pmlog_warn(L"didn't get monitor info");
+                pmlog_warn("didn't get monitor info");
             }
         }
         else {
-            pmlog_warn(L"didn't get monitor from window");
+            pmlog_warn("didn't get monitor from window");
         }
     }
 
@@ -492,7 +492,7 @@ namespace p2c::kern
 
     std::unique_ptr<Overlay> Overlay::SacrificeClone(std::optional<HWND> hWnd_, std::shared_ptr<OverlaySpec> pSpec_)
     {
-        pmlog_info(L"doing SacrificeClone");
+        pmlog_info("doing SacrificeClone");
 
         std::optional<Vec2I> pos;
         if (pWindow->Standard()) {
@@ -520,7 +520,7 @@ namespace p2c::kern
     }
     std::unique_ptr<Overlay> Overlay::RetargetPidClone(win::Process proc_)
     {
-        pmlog_info(L"doing RetargetPidClone");
+        pmlog_info("doing RetargetPidClone");
 
         std::optional<Vec2I> pos;
         if (pWindow->Standard()) {

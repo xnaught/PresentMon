@@ -23,8 +23,8 @@ namespace pmon::util::log
 		frames_.reserve(trace_.size());
 		for (auto&& [i, f] : std::views::zip(std::views::iota(0), trace_)) {
 			frames_.push_back(FrameInfo{
-				.description = str::ToWide(f.description()),
-				.file = str::ToWide(f.source_file()),
+				.description = f.description(),
+				.file = f.source_file(),
 				.line = (int)f.source_line(),
 				.index = i,
 			});
@@ -56,12 +56,12 @@ namespace pmon::util::log
 	}
 	std::string StackTrace::ToString() const
 	{
-		std::wostringstream oss;
+		std::ostringstream oss;
 		if (Resolved()) {
 			for (auto& f : GetFrames()) {
 				oss << "  [" << f.index << "] " << f.description << "\n";
 				if (f.line != 0 || !f.file.empty()) {
-					oss << "    > " << f.file << L'(' << f.line << ")\n";
+					oss << "    > " << f.file << '(' << f.line << ")\n";
 				}
 			}
 		}

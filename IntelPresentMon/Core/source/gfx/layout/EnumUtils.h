@@ -30,7 +30,7 @@ template<> struct EnumRegistry<name> \
 	{ \
 		using enum name; \
 		list(XEN_PARSE_TEM) \
-		pmlog_error(L"cannot convert to enum type: " L ## #name); \
+		pmlog_error("cannot convert to enum type: " #name); \
 		throw ::pmon::util::Except<::pmon::util::Exception>(); \
 	} \
 	static std::wstring FromEnum(name e) \
@@ -40,7 +40,7 @@ template<> struct EnumRegistry<name> \
 		{ \
 		list(XEN_STRING_TEM) \
 		} \
-		pmlog_error(L"cannot convert from enum type: " L ## #name); \
+		pmlog_error("cannot convert from enum type: " #name); \
 		throw ::pmon::util::Except<::pmon::util::Exception>(); \
 	} \
 };

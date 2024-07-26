@@ -79,9 +79,9 @@ namespace p2c::win
                     throw Except<Exception>();
                 }
 
-                pmlog_verb(v::window)(std::format(L"OVR-Z-CREATE: x:{} y:{} dim:[{},{}] area:[{},{}] name:{}",
+                pmlog_verb(v::window)(std::format("OVR-Z-CREATE: x:{} y:{} dim:[{},{}] area:[{},{}] name:{}",
                     x, y, clientDimensions.width, clientDimensions.height,
-                    windowArea.width, windowArea.height, GetTitle()));
+                    windowArea.width, windowArea.height, str::ToNarrow(GetTitle())));
                 if (!pCreateWindowInBand(
                     exStyles,
                     GetDefaultClass(),
@@ -101,9 +101,9 @@ namespace p2c::win
 
         // fallback in any case to normal window creation
         if (GetHandle() == nullptr) {
-            pmlog_verb(v::window)(std::format(L"OVR-N-CREATE: x:{} y:{} dim:[{},{}] area:[{},{}] name:{}",
+            pmlog_verb(v::window)(std::format("OVR-N-CREATE: x:{} y:{} dim:[{},{}] area:[{},{}] name:{}",
                 x, y, clientDimensions.width, clientDimensions.height,
-                windowArea.width, windowArea.height, GetTitle()));
+                windowArea.width, windowArea.height, str::ToNarrow(GetTitle())));
             CreateWindowExW(
                 exStyles,
                 MAKEINTATOM(GetDefaultClass()),

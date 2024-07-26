@@ -206,9 +206,9 @@ namespace p2c::client::util
 			{
 				return AsCefValue();
 			}
-			pmlog_error(std::format(L"Cannot extract {} from CEF {}",
-				ToWide(typeid(T).name()),
-				ToWide(CefValueTypeToString(pCefValue->GetType()))
+			pmlog_error(std::format("Cannot extract {} from CEF {}",
+				typeid(T).name(),
+				CefValueTypeToString(pCefValue->GetType())
 			));
 			throw Except<BadCefValueTraversal>();
 		}

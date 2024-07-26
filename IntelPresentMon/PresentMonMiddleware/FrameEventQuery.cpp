@@ -603,7 +603,7 @@ PM_FRAME_QUERY::PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
 				referencedDevice_ = q.deviceId;
 			}
 			else if (*referencedDevice_ != q.deviceId) {
-				pmlog_error(L"Cannot specify 2 different non-universal devices in the same query")
+				pmlog_error("Cannot specify 2 different non-universal devices in the same query")
 					.pmwatch(*referencedDevice_).pmwatch(q.deviceId).diag();
 				throw Except<Exception>("2 different non-universal devices in same query");
 			}
@@ -763,7 +763,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 		return std::make_unique<ClickToPhotonGatherCommand_>(pos);
 
 	default:
-		pmlog_error(L"unknown metric id").pmwatch((int)q.metric).diag();
+		pmlog_error("unknown metric id").pmwatch((int)q.metric).diag();
 		return {};
 	}
 }
@@ -784,7 +784,7 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 	}
 	else {
 		// TODO: log issue or invalidate related columns or drop frame (or some combination)
-		pmlog_info(L"null pFrameDataOfLastDisplayed");
+		pmlog_info("null pFrameDataOfLastDisplayed");
 		previousDisplayedQpc = 0;
 	}
 	if (pPreviousFrameDataOfLastDisplayed) {

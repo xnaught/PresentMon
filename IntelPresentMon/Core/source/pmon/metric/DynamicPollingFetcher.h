@@ -43,10 +43,10 @@ namespace p2c::pmon::met
                 return {};
             }
             if constexpr (std::same_as<T, const char*>) {
-                pmlog_warn(L"Reading float value from string-typed metric");
+                pmlog_warn("Reading float value from string-typed metric");
             }
             else {
-                pmlog_warn(L"Unknown type");
+                pmlog_warn("Unknown type");
             }
             return {};
         }
@@ -61,7 +61,7 @@ namespace p2c::pmon::met
                 }
             }
             else {
-                pmlog_warn(L"Unknown type");
+                pmlog_warn("Unknown type");
             }
             return {};
         }

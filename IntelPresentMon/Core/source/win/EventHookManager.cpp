@@ -20,7 +20,7 @@ namespace p2c::win
         );
         if (!hHook)
         {
-            pmlog_error(std::format(L"Failure hooking process {}", filter.pid)).hr();
+            pmlog_error(std::format("Failure hooking process {}", filter.pid)).hr();
             throw Except<Exception>();
         }
         handlerMap.emplace(hHook, pHandler);
@@ -35,7 +35,7 @@ namespace p2c::win
         }
         else
         {
-            pmlog_warn(L"Received unhandled win hook callback invocation");
+            pmlog_warn("Received unhandled win hook callback invocation");
         }
     }
 
@@ -55,7 +55,7 @@ namespace p2c::win
                 return;
             }
         }
-        pmlog_warn(L"Failure unhooking windows event listener");
+        pmlog_warn("Failure unhooking windows event listener");
     }
 
     EventHookManager::~EventHookManager()

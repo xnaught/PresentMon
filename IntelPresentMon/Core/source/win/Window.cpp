@@ -4,8 +4,11 @@
 #include <format>
 #include <Core/source/infra/Logging.h>
 #include <Core/source/infra/util/Util.h>
+#include <CommonUtilities/str/String.h>
 #include "MessageMap.h"
 #include "WndClass.h"
+
+using namespace pmon::util;
 
 namespace p2c::win
 {
@@ -17,7 +20,8 @@ namespace p2c::win
 
     Window::~Window()
     {
-        pmlog_verb(v::window)(std::format(L"window dying hwn:[{:8x}] tit:[{}]", (uint64_t)hWnd, GetTitle()));
+        pmlog_verb(v::window)(std::format("window dying hwn:[{:8x}] tit:[{}]", (uint64_t)hWnd,
+            str::ToNarrow(GetTitle())));
         if (DestroyWindow(hWnd) == FALSE)
         {
             pmlog_error().hr();
@@ -39,34 +43,34 @@ namespace p2c::win
         RECT rect{}; 
         if (GetWindowRect(hWnd, &rect) == FALSE)
         {
-            pmlog_warn(std::format(L"failed to get window rect {}", GetTitle())).hr();
+            pmlog_warn(std::format("failed to get window rect {}", str::ToNarrow(GetTitle()))).hr();
         }
         return { rect.left, rect.top };
     }
 
     void Window::Move(gfx::Vec2I pos)
     {
-        pmlog_verb(v::window)(std::format(L"pos:[{},{}]", pos.x, pos.y));
+        pmlog_verb(v::window)(std::format("pos:[{},{}]", pos.x, pos.y));
         if (SetWindowPos(hWnd, nullptr, pos.x, pos.y, 0, 0, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOSIZE) == FALSE)
         {
-            pmlog_warn(std::format(L"failed to move window {}", GetTitle())).hr();
+            pmlog_warn(std::format("failed to move window {}", str::ToNarrow(GetTitle()))).hr();
         }
     }
 
     void Window::Reorder(HWND base)
     {
-        pmlog_verb(v::window)(std::format(L"hwnd:{:8x}", (uint64_t)base));
+        pmlog_verb(v::window)(std::format("hwnd:{:8x}", (uint64_t)base));
         if (SetWindowPos(hWnd, GetNextWindow(base, GW_HWNDPREV), 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE)
         {
-            pmlog_warn(std::format(L"failed to reorder window {}", GetTitle())).hr();
+            pmlog_warn(std::format("failed to reorder window {}", str::ToNarrow(GetTitle()))).hr();
         }
     }
 
     void Window::ReorderBehind(HWND base)
     {
-        pmlog_verb(v::window)(std::format(L"hwnd:{:8x}", (uint64_t)base));
+        pmlog_verb(v::window)(std::format("hwnd:{:8x}", (uint64_t)base));
         if (SetWindowPos(hWnd, base, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE) {
-            pmlog_warn(std::format(L"failed to reorder window {} behind", GetTitle())).hr();
+            pmlog_warn(std::format("failed to reorder window {} behind", str::ToNarrow(GetTitle()))).hr();
         }
     }
 
@@ -75,7 +79,7 @@ namespace p2c::win
         pmlog_verb(v::window)();
         if (SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE)
         {
-            pmlog_warn(std::format(L"failed to make window topmost {}", GetTitle())).hr();
+            pmlog_warn(std::format("failed to make window topmost {}", str::ToNarrow(GetTitle()))).hr();
         }
     }
 
@@ -84,7 +88,7 @@ namespace p2c::win
         pmlog_verb(v::window)();
         if (SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOACTIVATE | SWP_NOSIZE | SWP_NOMOVE) == FALSE)
         {
-            pmlog_warn(std::format(L"failed to make window non-topmost {}", GetTitle())).hr();
+            pmlog_warn(std::format("failed to make window non-topmost {}", str::ToNarrow(GetTitle()))).hr();
         }
     }
 
@@ -93,7 +97,7 @@ namespace p2c::win
         pmlog_verb(v::window)();
         if (PostMessage(hWnd, WM_CLOSE, 0, 0) == FALSE)
         {
-            pmlog_warn(std::format(L"failed to close window {}", GetTitle())).hr();
+            pmlog_warn(std::format("failed to close window {}", str::ToNarrow(GetTitle()))).hr();
         }
     }
 
@@ -138,7 +142,7 @@ namespace p2c::win
         const auto size = ComputeWindowDimensions(clientSize);
         if (SetWindowPos(hWnd, nullptr, 0, 0, size.width, size.height, SWP_NOACTIVATE | SWP_NOZORDER | SWP_NOMOVE) == FALSE)
         {
-            pmlog_warn(std::format(L"failed to resize window {}", GetTitle())).hr();
+            pmlog_warn(std::format("failed to resize window {}", str::ToNarrow(GetTitle()))).hr();
         }
     }
 
@@ -152,7 +156,7 @@ namespace p2c::win
         };
         if (AdjustWindowRect(&wr, styles, FALSE) == FALSE)
         {
-            pmlog_warn(L"Failed to adjust window rect").hr();
+            pmlog_warn("Failed to adjust window rect").hr();
         }
         return RectToDims(wr);
     }
@@ -170,10 +174,10 @@ namespace p2c::win
 
     void Window::SetHandle(HWND hWnd_)
     {
-        pmlog_verb(v::window)(std::format(L"hwnd:{:8x}", (uint64_t)hWnd_));
+        pmlog_verb(v::window)(std::format("hwnd:{:8x}", (uint64_t)hWnd_));
         if (hWnd != nullptr)
         {
-            pmlog_warn(L"handle already set for window");
+            pmlog_warn("handle already set for window");
         }
         hWnd = hWnd_;
     }
@@ -182,7 +186,8 @@ namespace p2c::win
     {
         if (loggingMessages)
         {
-            pmlog_info(std::format(L"WinMsg@[{}] : {}", GetTitle(), LookupMessageName(msg)));
+            pmlog_info(std::format("WinMsg@[{}] : {}",
+                str::ToNarrow(GetTitle()), str::ToNarrow(LookupMessageName(msg))));
         }
     }
 

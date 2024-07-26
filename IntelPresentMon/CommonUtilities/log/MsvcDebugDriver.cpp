@@ -12,7 +12,7 @@ namespace pmon::util::log
 	void MsvcDebugDriver::Submit(const Entry& e)
 	{
 		if (pFormatter_) {
-			OutputDebugStringW(pFormatter_->Format(e).c_str());
+			OutputDebugStringA(pFormatter_->Format(e).c_str());
 		}
 		else {
 			pmlog_panic_("BasicFileDriver submitted to without a formatter set");

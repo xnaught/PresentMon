@@ -31,7 +31,7 @@ namespace p2c::client::util
 	{
 		if (auto&& [i, inserted] = endpoints.insert({ T::GetKey(), std::make_unique<T>() }); !inserted)
 		{
-			pmlog_warn(std::format(L"Duplicate key for async {}", infra::util::ToWide(T::GetKey())));
+			pmlog_warn(std::format("Duplicate key for async {}", T::GetKey()));
 		}
 	}
 

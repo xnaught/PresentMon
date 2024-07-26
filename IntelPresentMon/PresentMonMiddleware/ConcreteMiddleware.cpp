@@ -208,7 +208,7 @@ namespace pmon::mid
 
         PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
         if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-            pmlog_error(L"Failed to call PmService");
+            pmlog_error("Failed to call PmService");
             return status;
         }
 
@@ -218,11 +218,11 @@ namespace pmon::mid
             &responseBuffer, &startStreamResponse);
         if (status != PM_STATUS::PM_STATUS_SUCCESS) {
             if (status == PM_STATUS_INVALID_PID) {
-                pmlog_error(std::format(L"failed to begin tracking process: pid [{}] does not exist",
+                pmlog_error(std::format("failed to begin tracking process: pid [{}] does not exist",
                     processId)).diag();
             }
             else {
-                pmlog_error(std::format(L"failed to begin tracking pid [{}]", processId)).diag();
+                pmlog_error(std::format("failed to begin tracking pid [{}]", processId)).diag();
             }
             return status;
         }
@@ -243,7 +243,7 @@ namespace pmon::mid
             }
         }
 
-        pmlog_info(std::format(L"Started tracking pid [{}]", processId)).diag();
+        pmlog_info(std::format("Started tracking pid [{}]", processId)).diag();
 
         return PM_STATUS_SUCCESS;
     }
@@ -344,7 +344,7 @@ namespace pmon::mid
     const pmapi::intro::Root& mid::ConcreteMiddleware::GetIntrospectionRoot()
     {
         if (!pIntroRoot) {
-            pmlog_info(L"Creating and cacheing introspection root object").diag();
+            pmlog_info("Creating and cacheing introspection root object").diag();
             pIntroRoot = std::make_unique<pmapi::intro::Root>(GetIntrospectionData(), [this](auto p){FreeIntrospectionData(p);});
         }
         return *pIntroRoot;
@@ -389,7 +389,7 @@ namespace pmon::mid
                 if (cachedGpuInfoIndex.has_value()) {
                     const auto cachedDeviceId = cachedGpuInfo[cachedGpuInfoIndex.value()].deviceId;
                     if (cachedDeviceId != qe.deviceId) {
-                        pmlog_error(std::format(L"Multiple GPU devices not allowed in single query ({} and {})",
+                        pmlog_error(std::format("Multiple GPU devices not allowed in single query ({} and {})",
                             cachedDeviceId, qe.deviceId)).diag();
                         throw Except<util::Exception>("Multiple GPU devices not allowed in single query");
                     }
@@ -402,7 +402,7 @@ namespace pmon::mid
                         cachedGpuInfoIndex = uint32_t(i - cachedGpuInfo.begin());
                     }
                     else {
-                        pmlog_error(std::format(L"unable to find device id [{}] while building dynamic query", qe.deviceId)).diag();
+                        pmlog_error(std::format("unable to find device id [{}] while building dynamic query", qe.deviceId)).diag();
                         // TODO: shouldn't we throw here?
                     }
                 }
@@ -553,8 +553,8 @@ namespace pmon::mid
                 break;
             default:
                 if (metricView.GetType() == PM_METRIC_TYPE_FRAME_EVENT) {
-                    pmlog_warn(std::format(L"ignoring frame event metric [{}] while building dynamic query",
-                        str::ToWide(metricView.Introspect().GetSymbol()))).diag();
+                    pmlog_warn(std::format("ignoring frame event metric [{}] while building dynamic query",
+                        metricView.Introspect().GetSymbol())).diag();
                 }
                 break;
             }
@@ -1058,8 +1058,7 @@ static void ReportMetrics(
         auto& ispec = GetIntrospectionRoot();
         auto metricView = ispec.FindMetric(element.metric);
         if (metricView.GetType() != int(PM_METRIC_TYPE_STATIC)) {
-            pmlog_error(std::format(L"dynamic metric [{}] in static query poll",
-                str::ToWide(metricView.Introspect().GetSymbol()))).diag();
+            pmlog_error(std::format("dynamic metric [{}] in static query poll", metricView.Introspect().GetSymbol())).diag();
             throw Except<util::Exception>("dynamic metric in static query poll");
         }
 
@@ -1103,7 +1102,7 @@ static void ReportMetrics(
                 << "Stream client for process " << processId
                 << " doesn't exist. Please call pmStartStream to initialize the "
                 "client.";
-            pmlog_error(L"Stream client for process {} doesn't exist. Please call pmStartStream to initialize the client.").diag();
+            pmlog_error("Stream client for process {} doesn't exist. Please call pmStartStream to initialize the client.").diag();
             throw Except<util::Exception>(std::format("Failed to find stream for pid {} in ConsumeFrameEvents", processId));
         }
 
@@ -1111,7 +1110,7 @@ static void ReportMetrics(
         const auto nsm_hdr = nsm_view->GetHeader();
         if (!nsm_hdr->process_active) {
             StopStreaming(processId);
-            pmlog_info(L"Process death detected while consuming frame events").diag();
+            pmlog_info("Process death detected while consuming frame events").diag();
             throw Except<util::Exception>("Process died cannot consume frame events");
         }
 
@@ -1139,7 +1138,7 @@ static void ReportMetrics(
             const auto status = pShmClient->ConsumePtrToNextNsmFrameData(&pCurrentFrameData, &pNextFrameData,
                 &pFrameDataOfNextDisplayed, &pFrameDataOfLastPresented, &pFrameDataOfLastDisplayed, &pPreviousFrameDataOfLastDisplayed);
             if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-                pmlog_error(L"Error while trying to get frame data from shared memory").diag();
+                pmlog_error("Error while trying to get frame data from shared memory").diag();
                 throw Except<util::Exception>("Error while trying to get frame data from shared memory");
             }
             if (!pCurrentFrameData) {

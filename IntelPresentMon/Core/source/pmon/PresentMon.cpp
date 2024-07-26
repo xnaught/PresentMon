@@ -42,14 +42,11 @@ namespace p2c::pmon
 		if (namedPipeName && sharedMemoryName) {
 			auto pipeName = RemoveDoubleQuotes(*namedPipeName);
 			auto shmName = RemoveDoubleQuotes(*sharedMemoryName);
-			pmlog_info(std::format(L"Connecting to service with custom pipe [{}] and nsm [{}]",
-				infra::util::ToWide(pipeName),
-				infra::util::ToWide(shmName)
-			));
+			pmlog_info(std::format("Connecting to service with custom pipe [{}] and nsm [{}]", pipeName, shmName));
 			pSession = std::make_unique<pmapi::Session>(std::move(pipeName), std::move(shmName));
 		}
 		else {
-			pmlog_info(L"Connecting to service with default pipe name");
+			pmlog_info("Connecting to service with default pipe name");
 			pSession = std::make_unique<pmapi::Session>();
 		}
 
@@ -71,7 +68,7 @@ namespace p2c::pmon
 			if (processTracker.GetPid() == pid_) {
 				return;
 			}
-			pmlog_warn(std::format(L"Starting stream [{}] while previous stream [{}] still active",
+			pmlog_warn(std::format("Starting stream [{}] while previous stream [{}] still active",
 				pid_, processTracker.GetPid()));
 		}
 		processTracker = pSession->TrackProcess(pid_);
@@ -79,13 +76,13 @@ namespace p2c::pmon
 	void PresentMon::StopTracking()
 	{
 		if (!processTracker) {
-			pmlog_warn(L"Cannot stop stream: no stream active");
+			pmlog_warn("Cannot stop stream: no stream active");
 			return;
 		}
 		const auto pid = processTracker.GetPid();
 		processTracker.Reset();
 		// TODO: caches cleared here maybe
-		pmlog_info(std::format(L"stopped pmon stream for pid {}", pid));
+		pmlog_info(std::format("stopped pmon stream for pid {}", pid));
 	}
 	double PresentMon::GetWindow() const { return window; }
 	void PresentMon::SetWindow(double window_) { window = window_; }
@@ -131,9 +128,9 @@ namespace p2c::pmon
 	}
 	void PresentMon::SetAdapter(uint32_t id)
 	{
-		pmlog_info(std::format(L"Set active adapter to [{}]", id));
+		pmlog_info(std::format("Set active adapter to [{}]", id));
 		if (id == 0) {
-			pmlog_warn(L"Adapter was set to id 0; resetting");
+			pmlog_warn("Adapter was set to id 0; resetting");
 			selectedAdapter.reset();
 		}
 		else {

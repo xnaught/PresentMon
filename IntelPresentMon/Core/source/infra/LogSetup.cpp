@@ -120,27 +120,27 @@ namespace p2c
 				}
 			}
 			if (opt.logDenyList) {
-				pmquell(LineTable::IngestList(str::ToWide(*opt.logDenyList), true));
+				pmquell(LineTable::IngestList(*opt.logDenyList, true));
 				if (render) {
-					pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logDenyList), true));
+					pmquell(getters.getLineTable().IngestList_(*opt.logDenyList, true));
 				}
 			}
 			else if (opt.logAllowList) {
-				pmquell(LineTable::IngestList(str::ToWide(*opt.logAllowList), false));
+				pmquell(LineTable::IngestList(*opt.logAllowList, false));
 				if (render) {
-					pmquell(getters.getLineTable().IngestList_(str::ToWide(*opt.logAllowList), false));
+					pmquell(getters.getLineTable().IngestList_(*opt.logAllowList, false));
 				}
 			}
 			// setup server to ipc logging connection for child processes (renderer)
 			if (opt.logPipeName) {
 				try {
-					auto pSender = std::make_shared<log::NamedPipeMarshallSender>(str::ToWide(*opt.logPipeName), 1);
+					auto pSender = std::make_shared<log::NamedPipeMarshallSender>(*opt.logPipeName, 1);
 					log::IdentificationTable::RegisterSink(pSender);
 					auto pDriver = std::make_shared<log::MarshallDriver>(pSender);
 					pChan->AttachComponent(std::move(pDriver));
 					// block here waiting for the browser process to connect
 					if (!pSender->WaitForConnection(1500ms)) {
-						pmlog_warn(L"browser process did not connect to ipc logging pipe before timeout (it might have connected later)");
+						pmlog_warn("browser process did not connect to ipc logging pipe before timeout (it might have connected later)");
 					}
 					else {
 						// remove independent output drivers (only copy to main process via IPC)
@@ -149,12 +149,12 @@ namespace p2c
 					}
 				}
 				catch (...) {
-					pmlog_panic_(ReportExceptionWide());
+					pmlog_panic_(ReportException());
 				}
 			}
 		}
 		catch (...) {
-			pmlog_panic_(ReportExceptionWide());
+			pmlog_panic_(ReportException());
 		}
 	}
 	LogChannelManager::LogChannelManager() noexcept

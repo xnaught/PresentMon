@@ -6,40 +6,40 @@
 
 namespace pmon::util::win
 {
-	std::wstring GetErrorDescription(HRESULT hr) noexcept
+	std::string GetErrorDescription(HRESULT hr) noexcept
 	{
 		try {
-			wchar_t* descriptionWinalloc = nullptr;
-			const auto result = FormatMessageW(
+			char* descriptionWinalloc = nullptr;
+			const auto result = FormatMessageA(
 				FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 				nullptr, hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-				reinterpret_cast<LPWSTR>(&descriptionWinalloc), 0, nullptr
+				reinterpret_cast<LPSTR>(&descriptionWinalloc), 0, nullptr
 			);
 
-			std::wstring description;
+			std::string description;
 			if (!result) {
-				pmlog_warn(L"Failed formatting windows error");
+				pmlog_warn("Failed formatting windows error");
 			}
 			else {
 				description = descriptionWinalloc;
 				if (LocalFree(descriptionWinalloc)) {
-					pmlog_warn(L"Failed freeing memory for windows error formatting");
+					pmlog_warn("Failed freeing memory for windows error formatting");
 				}
-				if (description.ends_with(L"\r\n")) {
+				if (description.ends_with("\r\n")) {
 					description.resize(description.size() - 2);
 				}
 			}
 			return description;
 		}
 		catch (...) {
-			pmlog_warn(L"Exception thrown in windows error GetErrorDescription");
+			pmlog_warn("Exception thrown in windows error GetErrorDescription");
 			return {};
 		}
 	}
 
-	std::wstring GetSEHSymbol(DWORD sehCode) noexcept
+	std::string GetSEHSymbol(DWORD sehCode) noexcept
 	{
-#define FOR_EACH_STA(sta) case sta: return L###sta
+#define FOR_EACH_STA(sta) case sta: return #sta
 		switch (sehCode) {
 			FOR_EACH_STA(STATUS_ABANDONED_WAIT_0);
 			FOR_EACH_STA(STATUS_USER_APC);
@@ -105,7 +105,7 @@ namespace pmon::util::win
 			FOR_EACH_STA(STATUS_SXS_EARLY_DEACTIVATION);
 			FOR_EACH_STA(STATUS_SXS_INVALID_DEACTIVATION);
 		}
-		return L"unknown_seh_code";
+		return "unknown_seh_code";
 #undef FOR_EACH_STA
 	}
 

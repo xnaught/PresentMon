@@ -157,11 +157,11 @@ PRESENTMON_API2_EXPORT LoggingSingletons pmLinkLogging_(
 				:
 				getIdTable_{ std::move(getIdTable) }
 			{}
-			void AddThread(uint32_t tid, uint32_t pid, std::wstring name) override
+			void AddThread(uint32_t tid, uint32_t pid, std::string name) override
 			{
 				getIdTable_().AddThread_(tid, pid, name);
 			}
-			void AddProcess(uint32_t pid, std::wstring name) override
+			void AddProcess(uint32_t pid, std::string name) override
 			{
 				getIdTable_().AddProcess_(pid, name);
 			}
@@ -298,11 +298,11 @@ PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_SESSION_HANDLE sessio
 {
 	try {
 		if (!pElements) {
-			pmlog_error(L"null pointer to query element array argument").diag();
+			pmlog_error("null pointer to query element array argument").diag();
 			return PM_STATUS_FAILURE;
 		}
 		if (!numElements) {
-			pmlog_error(L"zero length query element array").diag();
+			pmlog_error("zero length query element array").diag();
 			return PM_STATUS_FAILURE;
 		}
 		const auto queryHandle = LookupMiddleware_(sessionHandle).RegisterDynamicQuery(

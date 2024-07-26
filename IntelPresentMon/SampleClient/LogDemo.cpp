@@ -50,12 +50,12 @@ void RunLogDemo(int mode)
 	
 	// basic log info w/ message
 	if (mode == 0) {
-		pmlog_info(L"information goes here");
+		pmlog_info("information goes here");
 	}
 	// basic warn w/ format message
 	else if (mode == 1) {
 		const int x = 4224;
-		pmlog_warn(std::format(L"warning with variable x = {}", x));
+		pmlog_warn(std::format("warning with variable x = {}", x));
 	}
 	// error log has trace (no message)
 	else if (mode == 2) {
@@ -64,18 +64,18 @@ void RunLogDemo(int mode)
 	// disable info at runtime
 	else if (mode == 3) {
 		log::GlobalPolicy::Get().SetLogLevel(log::Level::Warning);
-		pmlog_info(L"info hidden");
-		pmlog_warn(L"warn gets through");
+		pmlog_info("info hidden");
+		pmlog_warn("warn gets through");
 	}
 	// show build release disable (info/warn)
 	else if (mode == 4) {
-		pmlog_info(L"info hidden in release, shows in debug");
-		pmlog_error(L"error always shows");
+		pmlog_info("info hidden in release, shows in debug");
+		pmlog_error("error always shows");
 	}
 	// set trace level
 	else if (mode == 5) {
 		log::GlobalPolicy::Get().SetTraceLevel(log::Level::Warning);
-		pmlog_warn(L"enable stack trace for warning");
+		pmlog_warn("enable stack trace for warning");
 	}
 	// error code logging hr
 	else if (mode == 6) {
@@ -94,19 +94,19 @@ void RunLogDemo(int mode)
 	// loop frequency control 3 variants
 	else if (mode == 9) {
 		for (int i = 0; i < 9; i++) {
-			pmlog_warn(L"every 3").every(3);
-			pmlog_warn(L"first 2").first(2);
-			pmlog_warn(L"after 6").after(6);
+			pmlog_warn("every 3").every(3);
+			pmlog_warn("first 2").first(2);
+			pmlog_warn("after 6").after(6);
 		}
 	}
 	// verbose logging in a loop
 	else if (mode == 10) {
 		log::GlobalPolicy::Get().SetLogLevel(log::Level::Verbose);
-		pmlog_info(L"starting loop");
+		pmlog_info("starting loop");
 		for (int i = 0; i < 20; i++) {
-			pmlog_verb(v::logdemo)(L"in loop").pmwatch(i);
+			pmlog_verb(v::logdemo)("in loop").pmwatch(i);
 		}
-		pmlog_info(L"loop complete");
+		pmlog_info("loop complete");
 	}
 	// define, throw, catch custom exception
 	else if (mode == 11) {
@@ -159,23 +159,23 @@ void RunLogDemo(int mode)
 	}
 	// named process / thread
 	else if (mode == 16) {
-		log::IdentificationTable::AddThisProcess(L"myprocy");
-		log::IdentificationTable::AddThisThread(L"threadx");
-		pmlog_info(L"rich point-of-origin context");
+		log::IdentificationTable::AddThisProcess("myprocy");
+		log::IdentificationTable::AddThisThread("threadx");
+		pmlog_info("rich point-of-origin context");
 	}
 	// ipc server setup (server always setup), set thread name special command
 	else if (mode == 17) {
-		auto pSender = std::make_shared<log::NamedPipeMarshallSender>(L"pml_demopipe");
+		auto pSender = std::make_shared<log::NamedPipeMarshallSender>("pml_demopipe");
 		{
 			log::IdentificationTable::RegisterSink(pSender);
 			auto pDriver = std::make_shared<log::MarshallDriver>(pSender);
 			log::GetDefaultChannel()->AttachComponent(std::move(pDriver));
 		}
-		std::wstring note;
+		std::string note;
 		while (true) {
 			int x = 3;
 			std::cout << "SAY> ";
-			std::getline(std::wcin, note);
+			std::getline(std::cin, note);
 			if (note.empty()) break;
 			if (note.front() == L'%') {
 				log::IdentificationTable::AddThisThread(note);
@@ -196,13 +196,13 @@ void RunLogDemo(int mode)
 	// ipc client
 	else if (mode == 18) {
 		log::GetDefaultChannel()->AttachComponent(std::make_shared<log::EntryMarshallInjector>(log::GetDefaultChannel(),
-			std::make_shared<log::NamedPipeMarshallReceiver>(L"pml_demopipe", log::IdentificationTable::GetPtr())));
+			std::make_shared<log::NamedPipeMarshallReceiver>("pml_demopipe", log::IdentificationTable::GetPtr())));
 		while (!_kbhit());
 	}
 	// blacklist to disable and force trace
 	else if (mode == 19) {
 		try {
-			pmon::util::log::LineTable::IngestList(L"black.txt", true);
+			pmon::util::log::LineTable::IngestList("black.txt", true);
 			pmon::util::log::LineTable::SetListMode(pmon::util::log::LineTable::ListMode::Black);
 			pmon::util::log::LineTable::SetTraceOverride(true);
 		}
@@ -210,9 +210,9 @@ void RunLogDemo(int mode)
 			std::cout << "Couldn't process black.txt\n";
 			return;
 		}
-		pmlog_info(L"b1");
-		pmlog_info(L"b2");
-		pmlog_info(L"b3");
+		pmlog_info("b1");
+		pmlog_info("b2");
+		pmlog_info("b3");
 	}
 	else {
 		std::cout << "unknown mode for log demo" << std::endl;

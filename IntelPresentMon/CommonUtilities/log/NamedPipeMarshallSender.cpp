@@ -178,7 +178,7 @@ namespace pmon::util::log
 			:
 			decomissionEvent_{ decomissionEvent }
 		{
-			pipeHandle_ = (win::Handle)CreateNamedPipeW(
+			pipeHandle_ = (win::Handle)CreateNamedPipeA(
 				address.c_str(),
 				PIPE_ACCESS_OUTBOUND | FILE_FLAG_OVERLAPPED, // open mode
 				PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE, // pipe mode
@@ -376,7 +376,7 @@ namespace pmon::util::log
 	public:
 		NamedPipe(const std::string& pipeSuffix, size_t nInstances)
 			:
-			pipeAddress_{ LR"(\\.\pipe\)" + pipeSuffix }
+			pipeAddress_{ R"(\\.\pipe\)" + pipeSuffix }
 		{
 			instances_.reserve(nInstances);
 			for (size_t i = 0; i < nInstances; i++) {

@@ -51,7 +51,7 @@ namespace p2c::gfx::lay
 		void Pop(float value)
 		{
 			if (Empty()) {
-				pmlog_warn(L"Trying to pop from empty extremeq");
+				pmlog_warn("Trying to pop from empty extremeq");
 				return;
 			}
 			if (candidates.front() == value) {

@@ -31,7 +31,7 @@ namespace p2c::kern
             if (auto j = std::ranges::find_if(ancestorMap, filter); j != ancestorMap.end())
             {
                 curPid = j->second.pid;
-                pmlog_verb(v::procwatch)(std::format(L"overlay container found candidate child process|pid:{} hwn:{:6x}",
+                pmlog_verb(v::procwatch)(std::format("overlay container found candidate child process|pid:{} hwn:{:6x}",
                     curPid, (uintptr_t)j->second.hWnd));
                 pOverlay = std::make_unique<Overlay>(j->second, std::move(pSpec_), pm_, std::make_unique<MetricPackMapper>());
             }
@@ -39,7 +39,7 @@ namespace p2c::kern
             else
             {
                 curPid = rootPid;
-                pmlog_verb(v::procwatch)(std::format(L"overlay container using root process|pid:{} hwn:{:6x}",
+                pmlog_verb(v::procwatch)(std::format("overlay container using root process|pid:{} hwn:{:6x}",
                     curPid, (uintptr_t)i->second.hWnd));
                 pOverlay = std::make_unique<Overlay>(i->second, std::move(pSpec_), pm_, std::make_unique<MetricPackMapper>());
             }
@@ -53,7 +53,7 @@ namespace p2c::kern
         }
         else
         {
-            pmlog_warn(L"spec-specified pid not in process map");
+            pmlog_warn("spec-specified pid not in process map");
             throw Except<TargetLostException>();
         }
     }
@@ -108,13 +108,13 @@ namespace p2c::kern
     }
     void OverlayContainer::RegisterWindowSpawn(DWORD pid, HWND hWnd, const RECT& r)
     {
-        pmlog_verb(v::procwatch)(std::format(L"register-win-spawn-entry | hwn:{:8x}", (uintptr_t)hWnd));
+        pmlog_verb(v::procwatch)(std::format("register-win-spawn-entry | hwn:{:8x}", (uintptr_t)hWnd));
         // no need for mtx here since the window event listener runs on kernel thread (msg pump)
         if (auto i = ancestorMap.find(pid); i != ancestorMap.end()) {
             const auto prevHwnd = i->second.hWnd;
             // select update hwnd if current is none or invalid
             if (!prevHwnd || !IsWindow(prevHwnd)) {
-                pmlog_verb(v::procwatch)(std::format(L"register-win-spawn-sel-nul | hwn: {:8x} => {:8x}", (uintptr_t)i->second.hWnd, (uintptr_t)hWnd));
+                pmlog_verb(v::procwatch)(std::format("register-win-spawn-sel-nul | hwn: {:8x} => {:8x}", (uintptr_t)i->second.hWnd, (uintptr_t)hWnd));
                 i->second.hWnd = hWnd;
             }
             // select update hwnd if current smaller
@@ -124,7 +124,7 @@ namespace p2c::kern
                     prevRect = { 0, 0, 0, 0 };
                 }
                 if (win::RectToDims(prevRect) < win::RectToDims(r)) {
-                    pmlog_verb(v::procwatch)(std::format(L"register-win-spawn-sel-size | hwn: {:8x}@{} sq px => {:8x}@{} sq px",
+                    pmlog_verb(v::procwatch)(std::format("register-win-spawn-sel-size | hwn: {:8x}@{} sq px => {:8x}@{} sq px",
                         (uintptr_t)i->second.hWnd, win::RectToDims(prevRect).GetArea(),
                         (uintptr_t)hWnd, win::RectToDims(r).GetArea()));
                     i->second.hWnd = hWnd;
@@ -135,13 +135,13 @@ namespace p2c::kern
             if (i->second.hWnd == hWnd) {
                 // case when we are in root and hit a child spawn window of interest
                 if (pid != rootPid && curPid == rootPid && win::RectToDims(r).GetArea() >= (640 * 480)) {
-                    pmlog_verb(v::procwatch)(std::format(L"register-win-spawn-upg-root-to-child | hwn: {:5} => {:5}", rootPid, pid));
+                    pmlog_verb(v::procwatch)(std::format("register-win-spawn-upg-root-to-child | hwn: {:5} => {:5}", rootPid, pid));
                     curPid = pid;
                     pOverlay = pOverlay->RetargetPidClone(i->second);
                 }
                 // case when we are in child and window upgrade occurs
                 else if (pid != rootPid && pid == curPid) {
-                    pmlog_verb(v::procwatch)(std::format(L"register-win-spawn-upg-child | hwn: {:8x} => {:8x}", (uintptr_t)prevHwnd, (uintptr_t)hWnd));
+                    pmlog_verb(v::procwatch)(std::format("register-win-spawn-upg-child | hwn: {:8x} => {:8x}", (uintptr_t)prevHwnd, (uintptr_t)hWnd));
                     // standard overlay doesn't really care what window is being targetted
                     if (!pOverlay->IsStandardWindow()) {
                         pOverlay = pOverlay->SacrificeClone(hWnd);
@@ -149,7 +149,7 @@ namespace p2c::kern
                 }
                 // case of window upgrade in root
                 else if (pid == rootPid && curPid == rootPid) {
-					pmlog_verb(v::procwatch)(std::format(L"register-win-spawn-upg-root | hwn: {:8x} => {:8x}", (uintptr_t)prevHwnd, (uintptr_t)hWnd));
+					pmlog_verb(v::procwatch)(std::format("register-win-spawn-upg-root | hwn: {:8x} => {:8x}", (uintptr_t)prevHwnd, (uintptr_t)hWnd));
                     // standard overlay doesn't really care what window is being targetted
                     if (!pOverlay->IsStandardWindow()) {
                         pOverlay = pOverlay->SacrificeClone(hWnd);
@@ -158,7 +158,7 @@ namespace p2c::kern
             }
         }
         else {
-            pmlog_verb(v::procwatch)(std::format(L"register-win-spawn-reject | hwn: {:8x}", (uintptr_t)hWnd));
+            pmlog_verb(v::procwatch)(std::format("register-win-spawn-reject | hwn: {:8x}", (uintptr_t)hWnd));
         }
     }
     void OverlayContainer::RebootOverlay(std::shared_ptr<OverlaySpec> pSpec_)
@@ -170,11 +170,11 @@ namespace p2c::kern
         std::optional<DWORD> nextPid;
         while (auto spawnOpt = spawnQueue.Pop()) {
             auto spawnProc = std::move(*spawnOpt);
-            pmlog_verb(v::procwatch)(std::format(L"handle-proc-spawn | pid: {:5}", spawnProc.pid));
+            pmlog_verb(v::procwatch)(std::format("handle-proc-spawn | pid: {:5}", spawnProc.pid));
             // check if event process is part of ancestry, discard if not
             const auto parentId = spawnProc.parentId;
             if (!ancestorMap.contains(parentId)) {
-                pmlog_verb(v::procwatch)(L"handle-proc-spawn-not-ancestor");
+                pmlog_verb(v::procwatch)("handle-proc-spawn-not-ancestor");
                 continue;
             }
             // pull event off queue and insert into ancestor map
@@ -200,13 +200,13 @@ namespace p2c::kern
                         if constexpr (v::procwatch) {
                             RECT r;
                             GetWindowRect(hWnd, &r);
-                            pmlog_verb(true)(std::format(L"handle-proc-spawn-enum-win | pid:{:5} hwd:{:8x} own:{:8x} vis:{} siz:{} nam:{}",
+                            pmlog_verb(true)(std::format("handle-proc-spawn-enum-win | pid:{:5} hwd:{:8x} own:{:8x} vis:{} siz:{} nam:{}",
                                 pid,
                                 reinterpret_cast<uintptr_t>(hWnd),
                                 reinterpret_cast<uintptr_t>(GetWindow(hWnd, GW_OWNER)),
                                 IsWindowVisible(hWnd),
                                 win::RectToDims(r).GetArea(),
-                                win::GetWindowTitle(hWnd)
+                                str::ToNarrow(win::GetWindowTitle(hWnd))
                             ));
                         }
 
@@ -237,13 +237,13 @@ namespace p2c::kern
             EnumWindows(&WindowEnum::Callback, reinterpret_cast<LPARAM>(&itProc->second));
             // check if promotion required
             if (itProc->second.hWnd && curPid == rootPid) {
-                pmlog_verb(v::procwatch)(std::format(L"handle-proc-spawn-sel | pid: {:5}", itProc->second.pid));
+                pmlog_verb(v::procwatch)(std::format("handle-proc-spawn-sel | pid: {:5}", itProc->second.pid));
                 nextPid = itProc->second.pid;
             }
         }
         // retarget for promotion if required
         if (nextPid) {
-            pmlog_verb(v::procwatch)(std::format(L"handle-proc-spawn-sel-upg | pid: {:5} => {:5}", curPid, *nextPid));
+            pmlog_verb(v::procwatch)(std::format("handle-proc-spawn-sel-upg | pid: {:5} => {:5}", curPid, *nextPid));
             curPid = *nextPid;
             pOverlay = pOverlay->RetargetPidClone(ancestorMap[curPid]);
         }

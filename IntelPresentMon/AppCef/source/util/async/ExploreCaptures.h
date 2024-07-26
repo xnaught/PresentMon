@@ -25,7 +25,7 @@ namespace p2c::client::util::async
                 .Resolve(infra::util::FolderResolver::Folder::Documents, L"Captures");
 
             if ((INT_PTR)ShellExecuteW(nullptr, L"open", path.c_str(), nullptr, nullptr, SW_SHOWDEFAULT) <= 32) {
-                pmlog_error(L"Failed to explore Captures folder");
+                pmlog_error("Failed to explore Captures folder");
                 throw ::pmon::util::Except<::pmon::util::Exception>();
             }
 

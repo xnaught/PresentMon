@@ -524,7 +524,7 @@ namespace pmapi::intro
     MetricView Root::FindMetric(PM_METRIC metricId) const
     {
         if (auto i = metricMap.find(metricId); i == metricMap.end()) {
-            pmlog_error(std::format(L"Cannot find metric id={} in introspection database", (int)metricId)).diag();
+            pmlog_error(std::format("Cannot find metric id={} in introspection database", (int)metricId)).diag();
             throw LookupException{ std::format("unable to find metric ID={}", (int)metricId) };
         }
         else {

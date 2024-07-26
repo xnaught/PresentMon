@@ -75,7 +75,7 @@ namespace p2c::client::cef
                     pKernelWrapper->signals.RegisterCallback(arguments[0]->GetStringValue(), { arguments[1], CefV8Context::GetCurrentContext() });
                 }
                 else {
-                    pmlog_error(L"registerSignalHandler called with incorrect parameter signature");
+                    pmlog_error("registerSignalHandler called with incorrect parameter signature");
                     exception = "registerSignalHandler called with incorrect parameter signature";
                 }
                 return true;
@@ -84,7 +84,7 @@ namespace p2c::client::cef
             // only allow launchKernel async endpoint if we have not yet launched the kernel
             if (!pKernelWrapper->pKernel && arguments[0]->GetStringValue() != "launchKernel")
             {
-                pmlog_error(std::format(L"js endpoint called without kernel: {}", std::wstring(name)));
+                pmlog_error(std::format("js endpoint called without kernel: {}", std::string(name)));
                 exception = "core kernel not launched";
                 return true;
             }
@@ -105,7 +105,7 @@ namespace p2c::client::cef
                 }
                 else
                 {
-                    pmlog_error(L"invokeEndpoint called with incorrect parameter signature");
+                    pmlog_error("invokeEndpoint called with incorrect parameter signature");
                     exception = "invokeEndpoint called with incorrect parameter signature";
                 }
                 return true;
@@ -170,7 +170,7 @@ namespace p2c::client::cef
         if (pKernelWrapper) {
             if (pKernelWrapper->pKernel)
             {
-                pmlog_warn(L"launchKernel called but kernel already exists");
+                pmlog_warn("launchKernel called but kernel already exists");
                 return;
             }
 

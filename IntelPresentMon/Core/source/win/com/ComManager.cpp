@@ -14,7 +14,7 @@ namespace p2c::win::com
 	{
         if (auto hr = CoInitializeEx(0, COINIT_MULTITHREADED); FAILED(hr))
         {
-			pmlog_error(L"Failed to init COM").hr(hr);
+			pmlog_error("Failed to init COM").hr(hr);
 			throw Except<Exception>();
 		}
 
@@ -31,7 +31,7 @@ namespace p2c::win::com
         ); FAILED(hr) && hr != RPC_E_TOO_LATE)
 		{
             CoUninitialize();
-			pmlog_error(L"Failed to init COM security").hr(hr);
+			pmlog_error("Failed to init COM security").hr(hr);
 			throw Except<Exception>();
 		}
 	}
