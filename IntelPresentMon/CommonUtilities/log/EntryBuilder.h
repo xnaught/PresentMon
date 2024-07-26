@@ -12,29 +12,29 @@ namespace pmon::util::log
 	class EntryBuilder : private Entry
 	{
 	public:
-		EntryBuilder(Level lvl, const wchar_t* sourceFile, const wchar_t* sourceFunctionName, int sourceLine) noexcept;
-		EntryBuilder(Level lvl, std::wstring sourceFile, std::wstring, int sourceLine) noexcept;
+		EntryBuilder(Level lvl, const char* sourceFile, const char* sourceFunctionName, int sourceLine) noexcept;
+		EntryBuilder(Level lvl, std::string sourceFile, std::string, int sourceLine) noexcept;
 
 		EntryBuilder(const EntryBuilder&) = delete;
 		EntryBuilder & operator=(const EntryBuilder&) = delete;
 
 		~EntryBuilder();
 		template<typename T>
-		EntryBuilder& watch(const wchar_t* symbol, const T& value) noexcept
+		EntryBuilder& watch(const char* symbol, const T& value) noexcept
 		{
 			try {
 				if (note_.empty()) {
-					note_ += std::format(L"   {} => {}", symbol, value);
+					note_ += std::format("   {} => {}", symbol, value);
 				}
 				else {
-					note_ += std::format(L"\n     {} => {}", symbol, value);
+					note_ += std::format("\n     {} => {}", symbol, value);
 				}
 			}
-			catch (...) { pmlog_panic_(L"Failed to format watch in EntryBuilder"); }
+			catch (...) { pmlog_panic_("Failed to format watch in EntryBuilder"); }
 			return *this;
 		}
 		EntryBuilder& mark(const TimePoint& tp) noexcept;
-		EntryBuilder& note(std::wstring note = L"") noexcept;
+		EntryBuilder& note(std::string note = "") noexcept;
 		EntryBuilder& note(const std::string& note) noexcept;
 		EntryBuilder& to(std::shared_ptr<IEntrySink>) noexcept;
 		EntryBuilder& trace_skip(int depth) noexcept;

@@ -62,28 +62,28 @@ namespace pmon::util::log
 	{
 		return IsResolved() && !pStrings_->type.empty();
 	}
-	std::wstring ErrorCode::AsHex() const
+	std::string ErrorCode::AsHex() const
 	{
 		if (Empty()) {
-			return L"---";
+			return "---";
 		}
 		if (auto o = AsSigned()) {
 			if (Fits32()) {
-				return std::format(L"0x{:08X}", (uint32_t)*o);
+				return std::format("0x{:08X}", (uint32_t)*o);
 			}
 			else {
-				return std::format(L"0x{:016X}", (uint64_t)*o);
+				return std::format("0x{:016X}", (uint64_t)*o);
 			}
 		}
 		if (auto o = AsUnsigned()) {
 			if (Fits32()) {
-				return std::format(L"0x{:08X}", (uint32_t)*o);
+				return std::format("0x{:08X}", (uint32_t)*o);
 			}
 			else {
-				return std::format(L"0x{:016X}", (uint64_t)*o);
+				return std::format("0x{:016X}", (uint64_t)*o);
 			}
 		}
-		return L"";
+		return "";
 	}
 	const IErrorCodeResolver::Strings* ErrorCode::GetStrings() const
 	{

@@ -32,27 +32,27 @@ namespace pmon::util::log
 			e.pTrace_, e.errorCode_, e.pid_, e.tid_, e.diagnosticLayer_);
 
 		// special handling for source strings as they might contain raw pointer alternatives
-		// we always serialize as wstring container regardless of source
+		// we always serialize as string container regardless of source
 		if constexpr (Archive::is_saving::value) {
-			// raw pointer sources should convert to wstring
+			// raw pointer sources should convert to string
 			if (auto pStrings = std::get_if<Entry::StaticSourceStrings>(&e.sourceStrings_)) {
 				// Convert to HeapedSourceStrings for serialization
-				auto file = pStrings->file_ ? std::wstring(pStrings->file_) : std::wstring{};
-				auto functionName = pStrings->functionName_ ? std::wstring(pStrings->functionName_) : std::wstring{};
+				auto file = pStrings->file_ ? std::string(pStrings->file_) : std::string{};
+				auto functionName = pStrings->functionName_ ? std::string(pStrings->functionName_) : std::string{};
 				Entry::HeapedSourceStrings tempHeapedStrings{ std::move(file), std::move(functionName) };
 				ar(tempHeapedStrings);
 			}
-			// wstring source needs no extra work
+			// string source needs no extra work
 			else if (auto pStrings = std::get_if<Entry::HeapedSourceStrings>(&e.sourceStrings_)) {
 				ar(*pStrings);
 			}
-			// we should never get here, but if we do just serialize empty wstring source
+			// we should never get here, but if we do just serialize empty string source
 			else {
 				Entry::HeapedSourceStrings tempHeapedStrings{};
 				ar(tempHeapedStrings);
 			}
 		}
-		// we always deserialize as wstring container
+		// we always deserialize as string container
 		else {
 			Entry::HeapedSourceStrings strings;
 			ar(strings);

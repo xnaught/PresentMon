@@ -9,9 +9,9 @@
 
 namespace pmon::util::log
 {
-    NamedPipeMarshallReceiver::NamedPipeMarshallReceiver(const std::wstring& pipeName, class IdentificationTable* pTable)
+    NamedPipeMarshallReceiver::NamedPipeMarshallReceiver(const std::string& pipeName, class IdentificationTable* pTable)
         :
-        pipeName_(L"\\\\.\\pipe\\" + pipeName),
+        pipeName_("\\\\.\\pipe\\" + pipeName),
         pIdTable_{ pTable }
     {
         // Open the named pipe with overlapped option enabled
@@ -37,7 +37,7 @@ namespace pmon::util::log
     std::optional<Entry> NamedPipeMarshallReceiver::Pop()
     {
         if (sealed_) {
-            throw std::runtime_error{ "Pop called after pipe sealed due to disconnection/error/exit signal" };
+            throw std::runtime_error{ "Pop called after pipe sealed due to disconnection/error/exit signa" };
         }
 
         while (true) {

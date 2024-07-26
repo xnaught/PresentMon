@@ -5,19 +5,19 @@
 
 namespace pmon::util::log
 {
-	void IdentificationTable::AddThread(uint32_t tid, uint32_t pid, std::wstring name) noexcept
+	void IdentificationTable::AddThread(uint32_t tid, uint32_t pid, std::string name) noexcept
 	{
 		pmquell(Get_().AddThread_(tid, pid, std::move(name)))
 	}
-	void IdentificationTable::AddProcess(uint32_t pid, std::wstring name) noexcept
+	void IdentificationTable::AddProcess(uint32_t pid, std::string name) noexcept
 	{
 		pmquell(Get_().AddProcess_(pid, std::move(name)))
 	}
-	void IdentificationTable::AddThisThread(std::wstring name) noexcept
+	void IdentificationTable::AddThisThread(std::string name) noexcept
 	{
 		AddThread(GetCurrentThreadId(), GetCurrentProcessId(), std::move(name));
 	}
-	void IdentificationTable::AddThisProcess(std::wstring name) noexcept
+	void IdentificationTable::AddThisProcess(std::string name) noexcept
 	{
 		AddProcess(GetCurrentProcessId(), std::move(name));
 	}
@@ -75,10 +75,10 @@ namespace pmon::util::log
 		static IdentificationTable table;
 		return table;
 	}
-	void IdentificationTable::AddThread_(uint32_t tid, uint32_t pid, std::wstring&& name)
+	void IdentificationTable::AddThread_(uint32_t tid, uint32_t pid, std::string&& name)
 	{
 		if (pid == GetCurrentProcessId()) {
-			SetThreadDescription(GetCurrentThread(), name.c_str());
+			SetThreadDescription(GetCurrentThread(), str::ToWide(name).c_str());
 		}
 		std::lock_guard lk{ mtx_ };
 		for (auto& p : sinks_) {
@@ -88,11 +88,11 @@ namespace pmon::util::log
 			Thread{ tid, pid, std::move(name) }
 		);
 	}
-	void IdentificationTable::AddThread_(uint32_t tid, uint32_t pid, const std::wstring& name)
+	void IdentificationTable::AddThread_(uint32_t tid, uint32_t pid, const std::string& name)
 	{
-		AddThread_(tid, pid, std::wstring{ name });
+		AddThread_(tid, pid, std::string{ name });
 	}
-	void IdentificationTable::AddProcess_(uint32_t pid, std::wstring&& name)
+	void IdentificationTable::AddProcess_(uint32_t pid, std::string&& name)
 	{
 		std::lock_guard lk{ mtx_ };
 		for (auto& p : sinks_) {
@@ -102,9 +102,9 @@ namespace pmon::util::log
 			Process{ pid, std::move(name) }
 		);
 	}
-	void IdentificationTable::AddProcess_(uint32_t pid, const std::wstring& name)
+	void IdentificationTable::AddProcess_(uint32_t pid, const std::string& name)
 	{
-		AddProcess_(pid, std::wstring{ name });
+		AddProcess_(pid, std::string{ name });
 	}
 	std::optional<IdentificationTable::Thread> IdentificationTable::LookupThread_(uint32_t tid) const
 	{

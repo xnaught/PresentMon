@@ -78,7 +78,7 @@ namespace pmon::util::log
 		bool HasTypeInfo() const;
 		bool IsResolved() const;
 		bool IsResolvedNontrivial() const;
-		std::wstring AsHex() const;
+		std::string AsHex() const;
 		const IErrorCodeResolver::Strings* GetStrings() const;
 		operator bool() const;
 	private:

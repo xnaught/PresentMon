@@ -29,18 +29,18 @@ namespace pmon::util::log
 		};
 		struct StaticSourceStrings
 		{
-			const wchar_t* file_ = nullptr;
-			const wchar_t* functionName_ = nullptr;
+			const char* file_ = nullptr;
+			const char* functionName_ = nullptr;
 		};
 		struct HeapedSourceStrings
 		{
-			std::wstring file_;
-			std::wstring functionName_;
+			std::string file_;
+			std::string functionName_;
 		};
 		// data fields 
 		Level level_ = Level::Error;
 		Subsystem subsystem_ = Subsystem::None;
-		std::wstring note_;
+		std::string note_;
 		std::variant<StaticSourceStrings, HeapedSourceStrings> sourceStrings_;
 		int sourceLine_ = -1;
 		std::chrono::system_clock::time_point timestamp_;
@@ -52,7 +52,7 @@ namespace pmon::util::log
 		int hitCount_ = -1;
 		bool diagnosticLayer_ = false;
 		// accessors
-		std::wstring GetSourceFileName() const
+		std::string GetSourceFileName() const
 		{
 			if (auto p = std::get_if<StaticSourceStrings>(&sourceStrings_)) {
 				if (p->file_) {

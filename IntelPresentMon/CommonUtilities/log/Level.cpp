@@ -3,19 +3,19 @@
 
 namespace pmon::util::log
 {
-	std::wstring GetLevelName(Level lv) noexcept
+	std::string GetLevelName(Level lv) noexcept
 	{
 		try {
 			switch (lv) {
-			case Level::None: return L"None";
-			case Level::Fatal: return L"Fatal";
-			case Level::Error: return L"Error";
-			case Level::Warning: return L"Warning";
-			case Level::Info: return L"Info";
-			case Level::Performance: return L"Performance";
-			case Level::Debug: return L"Debug";
-			case Level::Verbose: return L"Verbose";
-			default: return L"Unknown";
+			case Level::None: return "None";
+			case Level::Fatal: return "Fata";
+			case Level::Error: return "Error";
+			case Level::Warning: return "Warning";
+			case Level::Info: return "Info";
+			case Level::Performance: return "Performance";
+			case Level::Debug: return "Debug";
+			case Level::Verbose: return "Verbose";
+			default: return "Unknown";
 			}
 		} catch (...) {}
 		return {};

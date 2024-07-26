@@ -174,7 +174,7 @@ namespace pmon::util::log
 		using Step = std::variant<TransmitHeaderStep, TransmitPayloadStep, ConnectStep, IdTableBulkStep, ActivateStep>;
 	public:
 		// functions
-		NamedPipeInstance(const std::wstring& address, size_t nInstances, win::Event& decomissionEvent)
+		NamedPipeInstance(const std::string& address, size_t nInstances, win::Event& decomissionEvent)
 			:
 			decomissionEvent_{ decomissionEvent }
 		{
@@ -374,7 +374,7 @@ namespace pmon::util::log
 	class NamedPipe
 	{
 	public:
-		NamedPipe(const std::wstring& pipeSuffix, size_t nInstances)
+		NamedPipe(const std::string& pipeSuffix, size_t nInstances)
 			:
 			pipeAddress_{ LR"(\\.\pipe\)" + pipeSuffix }
 		{
@@ -382,8 +382,8 @@ namespace pmon::util::log
 			for (size_t i = 0; i < nInstances; i++) {
 				instances_.push_back(std::make_unique<NamedPipeInstance>(pipeAddress_, nInstances, decommissionEvent_));
 			}
-			transmissionThread_ = mt::Thread{ L"log-psnd-tx", &NamedPipe::TransmissionThreadProcedure_, this };
-			connectionThread_ = mt::Thread{ L"log-psnd-con", &NamedPipe::ConnectionThreadProcedure_, this };
+			transmissionThread_ = mt::Thread{ "log-psnd-tx", &NamedPipe::TransmissionThreadProcedure_, this };
+			connectionThread_ = mt::Thread{ "log-psnd-con", &NamedPipe::ConnectionThreadProcedure_, this };
 		}
 		~NamedPipe()
 		{
@@ -441,7 +441,7 @@ namespace pmon::util::log
 			}
 			catch (...) {
 				deactivated_ = true;
-				pmlog_panic_(ReportExceptionWide());
+				pmlog_panic_(ReportException());
 			}
 		}
 		void TransmissionThreadProcedure_()
@@ -486,13 +486,13 @@ namespace pmon::util::log
 			}
 			catch (...) {
 				deactivated_ = true;
-				pmlog_panic_(ReportExceptionWide());
+				pmlog_panic_(ReportException());
 			}
 		}
 		// data
 		std::binary_semaphore connectionSema_{ 0 };
 		std::atomic<bool> deactivated_ = false;
-		std::wstring pipeAddress_;
+		std::string pipeAddress_;
 		win::Event exitEvent_;
 		win::Event decommissionEvent_;
 		win::Event entryEvent_;
@@ -503,7 +503,7 @@ namespace pmon::util::log
 		mt::Thread transmissionThread_;
 	};
 
-    NamedPipeMarshallSender::NamedPipeMarshallSender(const std::wstring& pipeName, size_t nInstances)
+    NamedPipeMarshallSender::NamedPipeMarshallSender(const std::string& pipeName, size_t nInstances)
 		:
 		pNamedPipe_{ std::make_shared<NamedPipe>(pipeName, nInstances) }
 	{}
@@ -514,13 +514,13 @@ namespace pmon::util::log
     {
 		std::static_pointer_cast<NamedPipe>(pNamedPipe_)->Send(entry);
     }
-	void NamedPipeMarshallSender::AddThread(uint32_t tid, uint32_t pid, std::wstring name)
+	void NamedPipeMarshallSender::AddThread(uint32_t tid, uint32_t pid, std::string name)
 	{
 		std::static_pointer_cast<NamedPipe>(pNamedPipe_)->Send(
 			IdentificationTable::Bulk{ .threads = { { tid, pid, std::move(name) } } }
 		);
 	}
-	void NamedPipeMarshallSender::AddProcess(uint32_t pid, std::wstring name)
+	void NamedPipeMarshallSender::AddProcess(uint32_t pid, std::string name)
 	{
 		std::static_pointer_cast<NamedPipe>(pNamedPipe_)->Send(
 			IdentificationTable::Bulk{ .processes = { { pid, std::move(name) } } }
@@ -532,7 +532,7 @@ namespace pmon::util::log
 			return std::static_pointer_cast<NamedPipe>(pNamedPipe_)->WaitForConnection(timeout);
 		}
 		catch (...) {
-			pmlog_panic_(L"failed to wait for connection");
+			pmlog_panic_("failed to wait for connection");
 			return false;
 		}
 	}

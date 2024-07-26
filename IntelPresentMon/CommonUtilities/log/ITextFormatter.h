@@ -9,6 +9,6 @@ namespace pmon::util::log
 	{
 	public:
 		virtual ~ITextFormatter() = default;
-		virtual std::wstring Format(const Entry&) const = 0;
+		virtual std::string Format(const Entry&) const = 0;
 	};
 }

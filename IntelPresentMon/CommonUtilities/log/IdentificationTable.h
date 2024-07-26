@@ -10,8 +10,8 @@ namespace pmon::util::log
 	class IIdentificationSink
 	{
 	public:
-		virtual void AddThread(uint32_t tid, uint32_t pid, std::wstring name) = 0;
-		virtual void AddProcess(uint32_t pid, std::wstring name) = 0;
+		virtual void AddThread(uint32_t tid, uint32_t pid, std::string name) = 0;
+		virtual void AddProcess(uint32_t pid, std::string name) = 0;
 	};
 
 	class IdentificationTable
@@ -22,12 +22,12 @@ namespace pmon::util::log
 		{
 			uint32_t tid;
 			uint32_t pid;
-			std::wstring name;
+			std::string name;
 		};
 		struct Process
 		{
 			uint32_t pid;
-			std::wstring name;
+			std::string name;
 		};
 		struct Bulk
 		{
@@ -35,10 +35,10 @@ namespace pmon::util::log
 			std::vector<Process> processes;
 		};
 		// interface global functions
-		static void AddThread(uint32_t tid, uint32_t pid, std::wstring name) noexcept;
-		static void AddProcess(uint32_t pid, std::wstring name) noexcept;
-		static void AddThisThread(std::wstring name) noexcept;
-		static void AddThisProcess(std::wstring name) noexcept;
+		static void AddThread(uint32_t tid, uint32_t pid, std::string name) noexcept;
+		static void AddProcess(uint32_t pid, std::string name) noexcept;
+		static void AddThisThread(std::string name) noexcept;
+		static void AddThisProcess(std::string name) noexcept;
 		static std::optional<Thread> LookupThread(uint32_t tid) noexcept;
 		static std::optional<Process> LookupProcess(uint32_t pid) noexcept;
 		static Bulk GetBulk() noexcept;
@@ -48,10 +48,10 @@ namespace pmon::util::log
 		// implementation functions, made public for purposes of cross-module access
 		static IdentificationTable& Get_();
 		// l/r-value ref semantics instead of value semantics used to enable cross-module string copying
-		void AddThread_(uint32_t tid, uint32_t pid, std::wstring&& name);
-		void AddThread_(uint32_t tid, uint32_t pid, const std::wstring& name);
-		void AddProcess_(uint32_t pid, std::wstring&& name);
-		void AddProcess_(uint32_t pid, const std::wstring& name);
+		void AddThread_(uint32_t tid, uint32_t pid, std::string&& name);
+		void AddThread_(uint32_t tid, uint32_t pid, const std::string& name);
+		void AddProcess_(uint32_t pid, std::string&& name);
+		void AddProcess_(uint32_t pid, const std::string& name);
 		std::optional<Thread> LookupThread_(uint32_t tid) const;
 		std::optional<Process> LookupProcess_(uint32_t pid) const;
 		Bulk GetBulk_() const;

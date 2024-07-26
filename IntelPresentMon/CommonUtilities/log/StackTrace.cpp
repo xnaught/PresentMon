@@ -13,11 +13,11 @@ namespace pmon::util::log
 	void StackTrace::Resolve()
 	{
 		if (trace_.empty()) {
-			pmlog_panic_(L"Resolving empty trace");
+			pmlog_panic_("Resolving empty trace");
 			return;
 		}
 		else if (!frames_.empty()) {
-			pmlog_panic_(L"Resolving when already resolved");
+			pmlog_panic_("Resolving when already resolved");
 			return;
 		}
 		frames_.reserve(trace_.size());
@@ -42,7 +42,7 @@ namespace pmon::util::log
 	std::span<const StackTrace::FrameInfo> StackTrace::GetFrames() const
 	{
 		if (frames_.empty()) {
-			pmlog_panic_(L"Getting frames from and unresolved/empty stack trace.");
+			pmlog_panic_("Getting frames from and unresolved/empty stack trace.");
 		}
 		return frames_;
 	}
@@ -54,19 +54,19 @@ namespace pmon::util::log
 	{
 		return !frames_.empty();
 	}
-	std::wstring StackTrace::ToString() const
+	std::string StackTrace::ToString() const
 	{
 		std::wostringstream oss;
 		if (Resolved()) {
 			for (auto& f : GetFrames()) {
-				oss << L"  [" << f.index << L"] " << f.description << L"\n";
+				oss << "  [" << f.index << "] " << f.description << "\n";
 				if (f.line != 0 || !f.file.empty()) {
-					oss << L"    > " << f.file << L'(' << f.line << L")\n";
+					oss << "    > " << f.file << L'(' << f.line << ")\n";
 				}
 			}
 		}
 		else {
-			oss << L"\n   !! UNRESOLVED STACK TRACE !!\n\n";
+			oss << "\n   !! UNRESOLVED STACK TRACE !!\n\n";
 		}
 		return oss.str();
 	}
