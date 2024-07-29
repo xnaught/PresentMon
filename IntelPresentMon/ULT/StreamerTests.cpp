@@ -1,7 +1,3 @@
-#define GOOGLE_GLOG_DLL_DECL
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include <glog/logging.h>
-
 #include "gtest/gtest.h"
 #include "..\Streamer\Streamer.h"
 #include "..\Streamer\StreamClient.h"
@@ -16,6 +12,8 @@
 #include <codecvt>
 #include <functional>
 #include <tlhelp32.h>
+
+#include "../CommonUtilities/log/GlogShim.h"
 
 static const string kClientEXE = "SampleStreamerClient.exe";
 static const string kMapFileName = "Global\\MyFileMappingObject";

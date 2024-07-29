@@ -2,6 +2,7 @@
 #include "Entry.h"
 #include <format>
 #include <memory>
+#include <sstream>
 #include "TimePoint.h"
 #include "PanicLogger.h"
 
@@ -9,6 +10,22 @@ namespace pmon::util::log
 {
 	class IEntrySink;
 
+	// provide a stream-like interface for the log entry builder (useful for shimming glog etc.)
+	class EntryStream : public std::ostringstream
+	{
+	public:
+		EntryStream(class EntryBuilder& builder);
+		~EntryStream();
+
+		EntryStream(const EntryStream&) = delete;
+		EntryStream & operator=(const EntryStream&) = delete;
+		EntryStream(EntryStream&&) = delete;
+		EntryStream & operator=(EntryStream&&) = delete;
+	private:
+		class EntryBuilder& builder_;
+	};
+
+	// fluent wrapper interface for creating log Entries
 	class EntryBuilder : private Entry
 	{
 	public:
@@ -47,6 +64,7 @@ namespace pmon::util::log
 		EntryBuilder& hitcount() noexcept;
 		EntryBuilder& diag() noexcept;
 		EntryBuilder& subsys(Subsystem sys) noexcept;
+		EntryStream stream() noexcept;
 		template<typename T>
 		EntryBuilder& code(const T& code) noexcept
 		{

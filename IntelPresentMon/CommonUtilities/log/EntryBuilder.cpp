@@ -23,6 +23,15 @@
 
 namespace pmon::util::log
 {
+	EntryStream::EntryStream(EntryBuilder& builder)
+		: builder_{ builder }
+	{}
+	EntryStream::~EntryStream()
+	{
+		builder_.note(str());
+	}
+
+
 	EntryBuilder::EntryBuilder(Level lvl, const char* sourceFile, const char* sourceFunctionName, int sourceLine) noexcept
 		:
 		Entry{
@@ -149,6 +158,10 @@ namespace pmon::util::log
 	{
 		subsystem_ = sys;
 		return *this;
+	}
+	EntryStream EntryBuilder::stream() noexcept
+	{
+		return EntryStream{ *this };
 	}
 	EntryBuilder::~EntryBuilder()
 	{

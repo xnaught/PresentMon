@@ -30,8 +30,7 @@
 #include "../CommonUtilities/mt/Thread.h"
 #include "../CommonUtilities/log/Log.h"
 
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include <glog/logging.h>
+#include "../CommonUtilities/log/GlogShim.h"
 
 namespace pmon::mid
 {

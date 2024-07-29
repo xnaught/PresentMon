@@ -180,6 +180,9 @@
     <ClInclude Include="log\DiagnosticDriver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="log\GlogShim.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">

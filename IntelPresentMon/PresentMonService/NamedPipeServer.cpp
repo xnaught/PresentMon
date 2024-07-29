@@ -13,8 +13,7 @@
 #include "CliOptions.h"
 #include "..\CommonUtilities\str\String.h"
 
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include <glog/logging.h>
+#include "../CommonUtilities/log/GlogShim.h"
 
 using namespace pmon;
 
