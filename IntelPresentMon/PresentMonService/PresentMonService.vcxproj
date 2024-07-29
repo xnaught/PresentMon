@@ -190,7 +190,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Logging.cpp" />
+    <ClCompile Include="LogSetup.cpp" />
     <ClCompile Include="MockPresentMonSession.cpp" />
     <ClCompile Include="NamedPipeServer.cpp" />
     <ClCompile Include="PMMainThread.cpp" />
@@ -205,6 +205,7 @@
   <ItemGroup>
     <ClInclude Include="CliOptions.h" />
     <ClInclude Include="GlobalIdentifiers.h" />
+    <ClInclude Include="LogSetup.h" />
     <ClInclude Include="MockPresentMonSession.h" />
     <ClInclude Include="NamedPipeCmdProcess.h" />
     <ClInclude Include="LateStageReprojectionData.hpp" />

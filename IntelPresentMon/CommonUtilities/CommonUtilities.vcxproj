@@ -55,6 +55,7 @@
     <ClInclude Include="log\NamedPipeMarshallReceiver.h" />
     <ClInclude Include="log\StackTrace.h" />
     <ClInclude Include="log\StackTraceCereal.h" />
+    <ClInclude Include="log\StdioDriver.h" />
     <ClInclude Include="log\Subsystem.h" />
     <ClInclude Include="log\TextFormatter.h" />
     <ClInclude Include="log\MarshallDriver.h" />
@@ -99,6 +100,7 @@
     <ClCompile Include="log\BasicFileDriver.cpp" />
     <ClCompile Include="log\NamedPipeMarshallReceiver.cpp" />
     <ClCompile Include="log\StackTrace.cpp" />
+    <ClCompile Include="log\StdioDriver.cpp" />
     <ClCompile Include="log\Subsystem.cpp" />
     <ClCompile Include="log\TextFormatter.cpp" />
     <ClCompile Include="log\SimpleFileStrategy.cpp" />
