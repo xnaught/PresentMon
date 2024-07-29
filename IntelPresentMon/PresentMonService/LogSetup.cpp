@@ -10,6 +10,7 @@
 #include "../CommonUtilities/log/LinePolicy.h"
 #include "../CommonUtilities/log/ErrorCodeResolvePolicy.h"
 #include "../CommonUtilities/log/ErrorCodeResolver.h"
+#include "../CommonUtilities/log/ChannelFlusher.h"
 #include "../CommonUtilities/win/HrErrorCodeProvider.h"
 #include "../CommonUtilities/str/String.h"
 #include "../CommonUtilities/Exception.h"
@@ -36,9 +37,10 @@ namespace pmon::util::log
 			// make the formatter
 			const auto pFormatter = std::make_shared<TextFormatter>();
 			// attach drivers
-			// TODO: test if cwd is writeable, if not write to some other location (temp?)
 			pChannel->AttachComponent(std::make_shared<MsvcDebugDriver>(pFormatter), "drv:dbg");
 			pChannel->AttachComponent(std::make_shared<StdioDriver>(pFormatter), "drv:std");
+			// flusher
+			pChannel->AttachComponent(std::make_shared<ChannelFlusher>(pChannel), "obj:fsh");
 
 			return pChannel;
 		}
@@ -75,7 +77,7 @@ namespace logsetup
 			}
 			if (opt.logDir) {
 				const std::chrono::zoned_time now{ std::chrono::current_zone(), std::chrono::system_clock::now() };
-				auto fullPath = std::format("{0}\\pmsvc-log-{1:%y}{1:%m}{1:%d}-{1:%H}{1:%M}{1:%OS}.csv", *opt.logDir, now);
+				auto fullPath = std::format("{0}\\pmsvc-log-{1:%y}{1:%m}{1:%d}-{1:%H}{1:%M}{1:%OS}.txt", *opt.logDir, now);
 				const auto pFileStrategy = std::make_shared<SimpleFileStrategy>(fullPath);
 				pChannel->AttachComponent(std::make_shared<BasicFileDriver>(
 					std::make_shared<TextFormatter>(), pFileStrategy), "drv:file");
