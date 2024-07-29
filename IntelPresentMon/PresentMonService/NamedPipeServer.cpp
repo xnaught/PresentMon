@@ -384,7 +384,7 @@ DWORD NamedPipeServer::GetNumActiveConnections() {
 }
 
 DWORD NamedPipeServer::Pipe::CreatePipeInstance(LPCTSTR pipe_name, int max_pipes, uint32_t pipe_timeout) {
-    LOG(INFO) << "Creating control pipe with name: [" << util::str::ToNarrow(pipe_name) << "]" << std::endl;
+    LOG(INFO) << "Creating control pipe with name: [" << util::str::ToNarrow(pipe_name) << "]";
 
     auto& opt = clio::Options::Get();
     if (opt.controlPipe.AsOptional().has_value()) {

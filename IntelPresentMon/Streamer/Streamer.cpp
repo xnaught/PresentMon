@@ -281,7 +281,7 @@ void Streamer::ProcessPresentEvent(
     }
 
     client_map_.insert(std::make_pair(client_process_id, target_process_id));
-    LOG(INFO) << "\nStarted streaming for process id:" << target_process_id;    
+    LOG(INFO) << "Started streaming for process id:" << target_process_id;    
     mapfile_name = GetMapFileName(target_process_id);
 
     return PM_STATUS::PM_STATUS_SUCCESS;

@@ -57,7 +57,7 @@ HRESULT NamedSharedMem::CreateSharedMem(std::string mapfile_name, uint64_t buf_s
 {
     HRESULT hr = S_OK;
 
-    LOG(INFO) << "Creating NSM: " << mapfile_name << std::endl;
+    LOG(INFO) << "Creating NSM: " << mapfile_name;
 
     if (buf_size == 0) {
         LOG(ERROR) << " CreateSharedMem failed with zero buf_size.";
@@ -142,10 +142,9 @@ HRESULT NamedSharedMem::CreateSharedMem(std::string mapfile_name, uint64_t buf_s
     }
 
     try {
-      LOG(INFO) << std::format("Shared mem initialized with size {} bytes.\n",
-                               buf_size);
+      LOG(INFO) << std::format("Shared mem initialized with size {} bytes.", buf_size);
     } catch (...) {
-      LOG(INFO) << "Shared mem initialized\n";
+      LOG(INFO) << "Shared mem initialized";
     }
 
     refcount_++;
