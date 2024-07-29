@@ -7,10 +7,6 @@
 #include <tchar.h>
 #include <algorithm>
 
-#define GOOGLE_GLOG_DLL_DECL
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include <glog/logging.h>
-
 #include "Streamer.h"
 #include <functional>
 #include <iostream>
@@ -20,7 +16,8 @@
 #include <ctime>
 #include <cstdlib>
 #include "../PresentMonService/CliOptions.h"
-#include "../CommonUtilities//str/String.h"
+#include "../CommonUtilities/str/String.h"
+#include "../CommonUtilities/log/GlogShim.h"
 
 static const std::chrono::milliseconds kTimeoutLimitMs =
     std::chrono::milliseconds(500);

@@ -4,8 +4,6 @@
   "version": "0.6.0",
   "dependencies": [
     "gtest",
-    "gflags",
-    "glog",
     "cli11",
     "boost-interprocess",
     "boost-process",

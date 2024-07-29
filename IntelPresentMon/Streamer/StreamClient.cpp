@@ -4,9 +4,7 @@
 #include "../PresentMonUtils/QPCUtils.h"
 #include "../PresentMonUtils/PresentDataUtils.h"
 
-#define GOOGLE_GLOG_DLL_DECL
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include <glog/logging.h>
+#include "../CommonUtilities/log/GlogShim.h"
 
 StreamClient::StreamClient()
     : initialized_(false),
@@ -32,12 +30,8 @@ void StreamClient::Initialize(std::string mapfile_name) {
 	mapfile_name_ = std::move(mapfile_name);
 
 	// Query qpc frequency
-    try {
-        LOG_IF(ERROR, !QueryPerformanceFrequency(&qpcFrequency_))
-            << "QueryPerformanceFrequency failed with error: "
-            << GetLastError();
-    } catch (...) {
-        LOG(ERROR) << "QueryPerformanceFrequency failed.";
+    if (!QueryPerformanceFrequency(&qpcFrequency_)) {
+        pmlog_error("QueryPerformanceFrequency failed").hr();
     }
 
 	initialized_ = true;

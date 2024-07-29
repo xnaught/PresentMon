@@ -191,7 +191,6 @@ struct PmNsmFrameData {
 
 struct IPMSMStartStreamResponse
 {
-	bool        enable_file_logging;
 	char        fileName[MAX_PATH];
 	size_t      fileNameLength;
 };

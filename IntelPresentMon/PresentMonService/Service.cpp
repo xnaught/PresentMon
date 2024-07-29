@@ -7,8 +7,6 @@
 #include <dbt.h>
 #include <format>
 #include "PMMainThread.h"
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include <glog\logging.h>
 #include <iostream>
 
 const GUID GUID_DEVINTERFACE_DISPLAY_ADAPTER = {
@@ -209,7 +207,6 @@ ConsoleDebugMockService::~ConsoleDebugMockService()
 BOOL WINAPI ConsoleDebugMockService::ConsoleHandler(DWORD signal)
 {
 	if (signal == CTRL_C_EVENT || signal == CTRL_CLOSE_EVENT) {
-		google::FlushLogFiles(0);
 		Get().SignalServiceStop();
 		return TRUE;
 	}
