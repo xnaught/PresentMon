@@ -241,7 +241,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
                 "--control-pipe"s, *opt.controlPipe,
                 "--nsm-prefix"s, "pm-frame-nsm"s,
                 "--intro-nsm"s, *opt.shmName,
-                "--etw-session-name"s, *opt.etwSessionName);
+                "--etw-session-name"s, *opt.etwSessionName,
+                "--log-level"s, std::to_string((int)log::GlobalPolicy::Get().GetLogLevel()));
 
             if (!pmon::util::win::WaitForNamedPipe(*opt.controlPipe, 1500)) {
                 pmlog_error("timeout waiting for child service control pipe to go online");
