@@ -8,7 +8,7 @@
     <ClCompile Include="PresentMon.cpp" />
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="ServiceMain.cpp" />
-    <ClCompile Include="Logging.cpp" />
+    <ClCompile Include="LogSetup.cpp" />
     <ClCompile Include="PresentMonSession.cpp" />
     <ClCompile Include="RealtimePresentMonSession.cpp" />
     <ClCompile Include="MockPresentMonSession.cpp" />
@@ -27,6 +27,7 @@
     <ClInclude Include="RealtimePresentMonSession.h" />
     <ClInclude Include="MockPresentMonSession.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="LogSetup.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PresentMonService.rc" />

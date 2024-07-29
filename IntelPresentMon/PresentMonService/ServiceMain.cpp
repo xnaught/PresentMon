@@ -6,15 +6,20 @@
 
 #include "Service.h"
 #include "CliOptions.h"
+#include "LogSetup.h"
 
 TCHAR serviceName[MaxBufferLength] = TEXT("Intel PresentMon Service");
 
 // common entry point whether invoked as service or as app
 int CommonEntry(DWORD argc, LPTSTR* argv, bool asApp = false)
 {
+	logsetup::LogChannelManager logMan_;
+	// parse command line, return with error code from CLI11 if running as app
 	if (auto e = clio::Options::Init(argc, argv); e && asApp) {
 		return *e;
 	}
+	// configure logging based on CLI arguments
+	logsetup::ConfigureLogging();
 	if (asApp) {
 		auto& svc = ConsoleDebugMockService::Get();
 		svc.Run();
