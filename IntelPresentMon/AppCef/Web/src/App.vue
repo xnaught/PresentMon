@@ -225,18 +225,20 @@ export default Vue.extend({
         widget.metrics = widget.metrics.filter(widgetMetric => {
           const metric = Introspection.metrics.find(m => m.id === widgetMetric.metric.metricId);
           if (metric === undefined || metric.availableDeviceIds.length === 0) {
-            // If the metric is undefined, this widgetMetric will be removed, so return false
+            // If the metric is undefined, this widgetMetric will be dropped
             return false;
           }
           // If the metric is found, set up the deviceId and desiredUnitId as needed
           widgetMetric.metric.deviceId = 0; // establish universal device id
           // Check whether metric is a gpu metric, then we need non-universal device id
           if (!metric.availableDeviceIds.includes(0)) {
-            // Set device to selected adapter, falling back to first available device if necessary
-            if (this.pref.adapterId !== null && metric.availableDeviceIds.includes(this.pref.adapterId)) {
-              widgetMetric.metric.deviceId = this.pref.adapterId;
-            } else {
-              widgetMetric.metric.deviceId = metric.availableDeviceIds[0];
+            // if no specific adapter id set, assume adapter id = 1 is active
+            const adapterId = this.pref.adapterId !== null ? this.pref.adapterId : 1;
+            // Set adapter id for this query element to the active one if available
+            if (metric.availableDeviceIds.includes(adapterId)) {
+              widgetMetric.metric.deviceId = adapterId;
+            } else { // if active adapter id is not available drop this widgetMetric
+              return false;
             }
           }
           // Fill out the unit
