@@ -122,7 +122,7 @@ namespace p2c::client::cef
         return pContextMenuHandler;
     }
 
-#define xjs_pmlog_(lvl) ((PMLOG_BUILD_LEVEL < lvl) || (::pmon::util::log::GlobalPolicy::Get().GetLogLevel() < lvl)) \
+#define xjs_pmlog_(lvl) ((PMLOG_BUILD_LEVEL_ < lvl) || (::pmon::util::log::GlobalPolicy::Get().GetLogLevel() < lvl)) \
 	? (void)0 : (void)::pmon::util::log::EntryBuilder{ lvl, source.ToString(), {}, line } \
 	.to(::pmon::util::log::GetDefaultChannel()).no_trace().note(message.ToString())
 

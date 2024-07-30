@@ -1,5 +1,9 @@
 #pragma once
+
+// #define PMLOG_BUILD_LEVEL Verbose
+// #define VVV_METRIC
 #include <CommonUtilities/log/Log.h>
+
 
 namespace p2c::v
 {
@@ -22,5 +26,15 @@ namespace p2c::v
 		inline constexpr bool overlay = false;
 #else
 		inline constexpr bool overlay = true;
+#endif
+#ifndef VVV_METRIC // system for parsing QualifiedMetric lists and building queries, fetchers, and data packs
+		inline constexpr bool metric = false;
+#else
+		inline constexpr bool metric = true;
+#endif
+#ifndef VVV_V8ASYNC // system for async calls and signals between V8 and C++
+		inline constexpr bool v8async = false;
+#else
+		inline constexpr bool v8async = true;
 #endif
 }
