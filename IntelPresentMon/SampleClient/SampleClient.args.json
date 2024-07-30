@@ -3,6 +3,14 @@
   "Id": "79fe382a-c29c-4c32-a028-b8d1abdf51b0",
   "Items": [
     {
+      "Id": "04b29279-a10b-4fba-b127-1816b6a05c21",
+      "Command": "--log-demo 0"
+    },
+    {
+      "Id": "178328e1-cee6-4ec9-898d-470073f9bc88",
+      "Command": "--log-demo 1"
+    },
+    {
       "Id": "3c5a7c74-4cc0-4251-8cef-a3c5dc135a1d",
       "Command": "--log-demo 17"
     },
@@ -29,10 +37,6 @@
     {
       "Id": "b8b13731-0ee5-48c0-bee5-216f8ef884d5",
       "Command": "--log-deny-list aaa"
-    },
-    {
-      "Id": "04b29279-a10b-4fba-b127-1816b6a05c21",
-      "Command": "--log-demo 0"
     },
     {
       "Id": "78f46a64-b667-4d83-91f5-48b1332ca0c0",

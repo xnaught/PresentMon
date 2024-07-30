@@ -70,6 +70,8 @@
     <ClInclude Include="log\PanicLogger.h" />
     <ClInclude Include="log\NamedPipeMarshallSender.h" />
     <ClInclude Include="mt\Thread.h" />
+    <ClInclude Include="pipe\CoroMutex.h" />
+    <ClInclude Include="pipe\Pipe.h" />
     <ClInclude Include="str\String.h" />
     <ClInclude Include="win\Event.h" />
     <ClInclude Include="win\Handle.h" />
@@ -111,6 +113,8 @@
     <ClCompile Include="log\NamedPipeMarshallSender.cpp" />
     <ClCompile Include="log\TimePoint.cpp" />
     <ClCompile Include="mt\Thread.cpp" />
+    <ClCompile Include="pipe\CoroMutex.cpp" />
+    <ClCompile Include="pipe\Pipe.cpp" />
     <ClCompile Include="str\String.cpp" />
     <ClCompile Include="win\Event.cpp" />
     <ClCompile Include="win\Handle.cpp" />

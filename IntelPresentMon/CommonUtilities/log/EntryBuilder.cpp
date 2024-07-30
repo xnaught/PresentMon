@@ -163,7 +163,7 @@ namespace pmon::util::log
 	{
 		return EntryStream{ *this };
 	}
-	EntryBuilder::~EntryBuilder()
+	void EntryBuilder::commit_() noexcept
 	{
 		try {
 			if (pDest_) {
@@ -196,6 +196,12 @@ namespace pmon::util::log
 		}
 		catch (...) {
 			pmlog_panic_("Error when completing log entry");
+		}
+	}
+	EntryBuilder::~EntryBuilder()
+	{
+		if (!committed_) {
+			commit_();
 		}
 	}
 }
