@@ -203,17 +203,25 @@ namespace p2c::client::util
 		return std::move(pCefValue);
 	}
 
-	size_t CefValueTraverser::GetArrayLength()
+	bool CefValueTraverser::IsAggregate() const
 	{
-		if (pCefValue->GetType() == CefValueType::VTYPE_LIST)
-		{
+		const auto type = pCefValue->GetType();
+		return type == CefValueType::VTYPE_LIST || type == CefValueType::VTYPE_DICTIONARY;
+	}
+
+	size_t CefValueTraverser::GetLength() const
+	{
+		if (pCefValue->GetType() == CefValueType::VTYPE_LIST) {
 			return pCefValue->GetList()->GetSize();
 		}
-		pmlog_error(std::format("Failed getting array length of CefValue type {}", CefValueTypeToString(pCefValue->GetType())));
+		else if (pCefValue->GetType() == CefValueType::VTYPE_DICTIONARY) {
+			return pCefValue->GetDictionary()->GetSize();
+		}
+		pmlog_error(std::format("Failed getting length of non-Array non-Dict CefValue type {}", CefValueTypeToString(pCefValue->GetType())));
 		throw Except<BadCefValueTraversal>();
 	}
 
-	bool CefValueTraverser::IsNull()
+	bool CefValueTraverser::IsNull() const
 	{
 		return pCefValue->GetType() == CefValueType::VTYPE_NULL;
 	}

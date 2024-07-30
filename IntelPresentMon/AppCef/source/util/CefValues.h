@@ -215,7 +215,7 @@ namespace p2c::client::util
 		template<typename T>
 		std::vector<T> ToVector()
 		{
-			const auto size = GetArrayLength();
+			const auto size = GetLength();
 			std::vector<T> container;
 			container.reserve(size);
 			for (size_t i = 0; i < size; i++) {
@@ -234,7 +234,7 @@ namespace p2c::client::util
 		template<typename T>
 		std::vector<T> PluckAs(const char* key)
 		{
-			const auto size = GetArrayLength();
+			const auto size = GetLength();
 			std::vector<T> container;
 			container.reserve(size);
 			for (size_t i = 0; i < size; i++) {
@@ -246,8 +246,9 @@ namespace p2c::client::util
 		CefValueTraverser operator[](size_t index);
 		CefRefPtr<CefValue> AsCefValue() const &;
 		CefRefPtr<CefValue> AsCefValue() &&;
-		size_t GetArrayLength();
-		bool IsNull();
+		size_t GetLength() const;
+		bool IsNull() const;
+		bool IsAggregate() const;
 	private:
 		CefRefPtr<CefValue> pCefValue;
 	};
