@@ -17,6 +17,20 @@ namespace pmon::util::pipe
 	using namespace std::literals;
 
 	PM_DEFINE_EX(PipeError);
+	PM_DEFINE_EX_FROM(PipeError, PipeBroken);
+
+	namespace {
+		template<class T>
+		void Check_(T&& t)
+		{
+			if (auto ec = std::get<0>(t)) {
+				if (ec == as::error::broken_pipe) {
+					throw Except<PipeBroken>();
+				}
+				throw boost::system::system_error{ ec };
+			}
+		}
+	}
 
 	class DuplexPipe
 	{
@@ -94,9 +108,9 @@ namespace pmon::util::pipe
 
 			// write the transfer header containing number of bytes in payload
 			std::array header{ uint32_t(writeBuf_.size()) };
-			co_await as::async_write(stream_, as::buffer(header), as::use_awaitable);
+			Check_(co_await as::async_write(stream_, as::buffer(header), as::as_tuple(as::use_awaitable)));
 			// write the serialized object payload
-			co_await as::async_write(stream_, writeBuf_, as::use_awaitable);
+			Check_(co_await as::async_write(stream_, writeBuf_, as::as_tuple(as::use_awaitable)));
 		}
 		template<class S>
 		as::awaitable<S> ReadSerialized()
@@ -106,9 +120,11 @@ namespace pmon::util::pipe
 
 			// read the transfer header containing number of bytes in payload
 			std::array header{ uint32_t(-1) };
-			co_await as::async_read(stream_, as::buffer(header), as::transfer_exactly(SizeInBytes(header)), as::use_awaitable);
+			Check_(co_await as::async_read(stream_, as::buffer(header),
+				as::transfer_exactly(SizeInBytes(header)), as::as_tuple(as::use_awaitable)));
 			// read the serialized object payload
-			co_await as::async_read(stream_, readBuf_, as::transfer_exactly(header[0]), as::use_awaitable);
+			Check_(co_await as::async_read(stream_, readBuf_, as::transfer_exactly(header[0]),
+				as::as_tuple(as::use_awaitable)));
 
 			// deserialize object from the transfer buffer
 			std::istream bufStream{ &readBuf_ };

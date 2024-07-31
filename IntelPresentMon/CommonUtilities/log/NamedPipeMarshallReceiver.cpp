@@ -67,13 +67,8 @@ namespace pmon::util::log
                 return fut.get();
             }
         }
-        catch (const boost::system::system_error& e) {
-            if (e.code() == pipe::as::error::broken_pipe) {
-                pmlog_dbg("Server disconnected pipe");
-            }
-            else {
-                pmlog_error(ReportException()); throw;
-            }
+        catch (const pipe::PipeBroken& e) {
+            pmlog_dbg("Server disconnected pipe");
         }
         catch (...) {
             pmlog_error(ReportException()); throw;
