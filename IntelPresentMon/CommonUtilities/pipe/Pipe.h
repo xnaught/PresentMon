@@ -54,7 +54,7 @@ namespace pmon::util::pipe
 		{
 			win::Handle handle(CreateFileA(
 				name.c_str(),					// Pipe name 
-				GENERIC_READ | GENERIC_WRITE,	// Desired access: Read/Write 
+				GENERIC_READ,	// Desired access: Read/Write 
 				0,								// No sharing 
 				NULL,							// Default security attributes
 				OPEN_EXISTING,					// Opens existing pipe 
