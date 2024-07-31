@@ -37,8 +37,8 @@ namespace pmon::util::pipe
 	public:
 		DuplexPipe(const DuplexPipe&) = delete;
 		DuplexPipe & operator=(const DuplexPipe&) = delete;
-		DuplexPipe(DuplexPipe&&) = default;
-		DuplexPipe & operator=(DuplexPipe&&) = default;
+		DuplexPipe(DuplexPipe&& other) = delete;
+		DuplexPipe & operator=(DuplexPipe&&) = delete;
 		~DuplexPipe() = default;
 		as::awaitable<void> Accept()
 		{
@@ -64,36 +64,21 @@ namespace pmon::util::pipe
 				pmlog_error("Failure accepting pipe connection").hr().raise<PipeError>();
 			}
 		}
-		static DuplexPipe ConnectPipe(const std::string& name, as::io_context& ioctx)
+		static DuplexPipe Connect(const std::string& name, as::io_context& ioctx)
 		{
-			win::Handle handle(CreateFileA(
-				name.c_str(),					// Pipe name 
-				GENERIC_READ,	// Desired access: Read/Write 
-				0,								// No sharing 
-				NULL,							// Default security attributes
-				OPEN_EXISTING,					// Opens existing pipe 
-				FILE_FLAG_OVERLAPPED,			// Use overlapped (asynchronous) mode
-				NULL));							// No template file 
-			if (!handle) {
-				pmlog_error("Client failed to connect to named pipe instance").hr().raise<PipeError>();
-			}
-			return DuplexPipe{ ioctx, handle.Release() };
+			return DuplexPipe{ ioctx, Connect_(name) };
 		}
-		static DuplexPipe MakePipe(const std::string& name, as::io_context& ioctx)
+		static DuplexPipe Make(const std::string& name, as::io_context& ioctx)
 		{
-			win::Handle handle(CreateNamedPipeA(
-				name.c_str(),
-				PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,	// open mode
-				PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE,	// pipe mode
-				PIPE_UNLIMITED_INSTANCES,					// max instances
-				4096,		// out buffer
-				4096,		// in buffer
-				0,			// timeout
-				NULL));		// security
-			if (!handle) {
-				pmlog_error("Server failed to create named pipe instance").raise<PipeError>();
-			}
-			return DuplexPipe{ ioctx, handle.Release() };
+			return DuplexPipe{ ioctx, Make_(name) };
+		}
+		static std::unique_ptr<DuplexPipe> ConnectAsPtr(const std::string& name, as::io_context& ioctx)
+		{
+			return std::unique_ptr<DuplexPipe>(new DuplexPipe{ ioctx, Connect_(name) });
+		}
+		static std::unique_ptr<DuplexPipe> MakeAsPtr(const std::string& name, as::io_context& ioctx)
+		{
+			return std::unique_ptr<DuplexPipe>(new DuplexPipe{ ioctx, Make_(name) });
 		}
 		template<class S>
 		as::awaitable<void> WriteSerialized(const S& obj)
@@ -141,6 +126,37 @@ namespace pmon::util::pipe
 			readMtx_{ ioctx },
 			writeMtx_{ ioctx }
 		{}
+		static HANDLE Connect_(const std::string& name)
+		{
+			win::Handle handle(CreateFileA(
+				name.c_str(),					// Pipe name 
+				GENERIC_READ | GENERIC_WRITE,	// Desired access: Read/Write 
+				0,								// No sharing 
+				NULL,							// Default security attributes
+				OPEN_EXISTING,					// Opens existing pipe 
+				FILE_FLAG_OVERLAPPED,			// Use overlapped (asynchronous) mode
+				NULL));							// No template file 
+			if (!handle) {
+				pmlog_error("Client failed to connect to named pipe instance").hr().raise<PipeError>();
+			}
+			return handle.Release();
+		}
+		static HANDLE Make_(const std::string& name)
+		{
+			win::Handle handle(CreateNamedPipeA(
+				name.c_str(),
+				PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,	// open mode
+				PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE,	// pipe mode
+				PIPE_UNLIMITED_INSTANCES,					// max instances
+				4096,		// out buffer
+				4096,		// in buffer
+				0,			// timeout
+				NULL));		// security
+			if (!handle) {
+				pmlog_error("Server failed to create named pipe instance").raise<PipeError>();
+			}
+			return handle.Release();
+		}
 		// data
 		as::windows::stream_handle stream_;
 		CoroMutex readMtx_;

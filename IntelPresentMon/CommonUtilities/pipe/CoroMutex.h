@@ -14,8 +14,8 @@ namespace pmon::util::pipe
 		CoroMutex(as::io_context& ctx) : ctx_{ ctx } {}
 		CoroMutex(const CoroMutex&) = delete;
 		CoroMutex& operator=(const CoroMutex&) = delete;
-		CoroMutex(CoroMutex&&) = delete;
-		CoroMutex& operator=(CoroMutex&&) = delete;
+		CoroMutex(CoroMutex&&) = default;
+		CoroMutex& operator=(CoroMutex&&) = default;
 		~CoroMutex() = default;
 
 		as::awaitable<void> Lock();

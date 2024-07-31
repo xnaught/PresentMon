@@ -13,7 +13,7 @@ namespace pmon::util::log
     NamedPipeMarshallReceiver::NamedPipeMarshallReceiver(const std::string& pipeName, class IdentificationTable* pTable)
         :
         pipeName_{ R"(\\.\pipe\)" + pipeName },
-        pipe_{ pipe::DuplexPipe::ConnectPipe(pipeName_, ioctx_)},
+        pipe_{ pipe::DuplexPipe::Connect(pipeName_, ioctx_)},
         pIdTable_{ pTable },
         exitEvent_{ ioctx_, win::Event{}.Release() }
     {}
@@ -67,7 +67,7 @@ namespace pmon::util::log
                 return fut.get();
             }
         }
-        catch (const pipe::PipeBroken& e) {
+        catch (const pipe::PipeBroken&) {
             pmlog_dbg("Server disconnected pipe");
         }
         catch (...) {
