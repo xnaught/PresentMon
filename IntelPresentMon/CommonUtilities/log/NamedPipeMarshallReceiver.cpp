@@ -37,7 +37,7 @@ namespace pmon::util::log
     std::optional<Entry> NamedPipeMarshallReceiver::Pop()
     {
         if (sealed_) {
-            throw std::runtime_error{ "Pop called after pipe sealed due to disconnection/error/exit signa" };
+            throw std::runtime_error{ "Pop called after pipe sealed due to disconnection/error/exit signal" };
         }
 
         while (true) {

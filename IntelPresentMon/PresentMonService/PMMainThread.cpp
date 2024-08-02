@@ -37,15 +37,6 @@ bool NanoSleep(int32_t ms, bool alertable) {
   return true;
 }
 
-void SetupFileLogging()
-{
-    auto& opt = clio::Options::Get();
-    auto& logDir = *opt.logDir;
-    if (std::filesystem::is_directory(logDir)) {
-        // InitializeLogging(opt.GetName().c_str(), logDir.c_str(), "pm-srv", ".log", 0, opt.logStderr);
-    }
-}
-
 // Attempt to use a high resolution sleep but if not
 // supported use regular Sleep().
 void PmSleep(int32_t ms, bool alertable = false) {
@@ -217,10 +208,6 @@ void PresentMonMainThread(Service* const pSvc)
             else {
                 return;
             }
-        }
-
-        if (opt.logDir) {
-            SetupFileLogging();
         }
 
         if (opt.timedStop) {

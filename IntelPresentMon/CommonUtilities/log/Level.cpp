@@ -8,7 +8,7 @@ namespace pmon::util::log
 		try {
 			switch (lv) {
 			case Level::None: return "None";
-			case Level::Fatal: return "Fata";
+			case Level::Fatal: return "Fatal";
 			case Level::Error: return "Error";
 			case Level::Warning: return "Warning";
 			case Level::Info: return "Info";
