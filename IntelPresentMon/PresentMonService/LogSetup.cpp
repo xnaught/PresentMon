@@ -78,12 +78,13 @@ namespace logsetup
 			if (opt.logDir) {
 				const std::chrono::zoned_time now{ std::chrono::current_zone(), std::chrono::system_clock::now() };
 				auto fullPath = std::format("{0}\\pmsvc-log-{1:%y}{1:%m}{1:%d}-{1:%H}{1:%M}{1:%OS}.txt", *opt.logDir, now);
-				const auto pFileStrategy = std::make_shared<SimpleFileStrategy>(fullPath);
-				pChannel->AttachComponent(std::make_shared<BasicFileDriver>(
-					std::make_shared<TextFormatter>(), pFileStrategy), "drv:file");
+				pChannel->AttachComponent(std::make_shared<BasicFileDriver>( std::make_shared<TextFormatter>(),
+					std::make_shared<SimpleFileStrategy>(fullPath)), "drv:file");
 			}
 		}
-		catch (...) {}
+		catch (...) {
+			pmlog_panic_("Failed configuring log in server");
+		}
 	}
 
 	LogChannelManager::LogChannelManager() noexcept
