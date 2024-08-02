@@ -2,9 +2,13 @@
   <PropertyGroup>
     <VcpkgUseStatic>true</VcpkgUseStatic>
     <VcpkgHostTriplet>x64-windows-static</VcpkgHostTriplet>
-
     <!-- Manifest files -->
     <VcpkgEnableManifest>true</VcpkgEnableManifest>
     <VcpkgManifestInstall>true</VcpkgManifestInstall>
   </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>BOOST_ALLOW_DEPRECATED_HEADERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
 </Project>

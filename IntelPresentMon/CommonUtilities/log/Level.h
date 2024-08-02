@@ -16,6 +16,6 @@ namespace pmon::util::log
 		Verbose = 70,
 	};
 
-	std::wstring GetLevelName(Level) noexcept;
+	std::string GetLevelName(Level) noexcept;
 	std::map<std::string, Level> GetLevelMapNarrow() noexcept;
 }

@@ -17,10 +17,10 @@ namespace pmon::util::log
 		// types
 		struct Strings
 		{
-			std::wstring type;
-			std::wstring symbol;
-			std::wstring name;
-			std::wstring description;
+			std::string type;
+			std::string symbol;
+			std::string name;
+			std::string description;
 		};
 		// functions
 		virtual ~IErrorCodeResolver() = default;

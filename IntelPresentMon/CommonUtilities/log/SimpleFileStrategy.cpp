@@ -6,12 +6,12 @@ namespace pmon::util::log
 		:
 		path_{ std::move(path) }
 	{}
-	std::shared_ptr<std::wostream> SimpleFileStrategy::AddLine()
+	std::shared_ptr<std::ostream> SimpleFileStrategy::AddLine()
 	{
 		CreateFile_();
 		return pFileStream_;
 	}
-	std::shared_ptr<std::wostream> SimpleFileStrategy::GetFileStream() const
+	std::shared_ptr<std::ostream> SimpleFileStrategy::GetFileStream() const
 	{
 		return pFileStream_;
 	}
@@ -24,6 +24,6 @@ namespace pmon::util::log
 			std::filesystem::create_directories(dirs);
 		}
 		// open file, append if already exists
-		pFileStream_ = std::make_shared<std::wofstream>(path_, std::ios::out | std::ios::app);
+		pFileStream_ = std::make_shared<std::ofstream>(path_, std::ios::out | std::ios::app);
 	}
 }

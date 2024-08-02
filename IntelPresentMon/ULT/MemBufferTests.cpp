@@ -1,7 +1,4 @@
-#define GOOGLE_GLOG_DLL_DECL
-#define GLOG_NO_ABBREVIATED_SEVERITIES
 #include <gtest/gtest.h>
-#include <glog/logging.h>
 #include <Windows.h>
 #include <bcrypt.h>
 

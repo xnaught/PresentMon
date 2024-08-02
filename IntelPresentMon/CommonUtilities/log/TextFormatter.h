@@ -11,6 +11,6 @@ namespace pmon::util::log
 	class TextFormatter : public ITextFormatter
 	{
 	public:
-		std::wstring Format(const Entry&) const override;
+		std::string Format(const Entry&) const override;
 	};
 }

@@ -14,8 +14,8 @@ namespace pmon::util::log
 		// types
 		struct FrameInfo
 		{
-			std::wstring description;
-			std::wstring file;
+			std::string description;
+			std::string file;
 			int line;
 			int index;
 		};
@@ -31,7 +31,7 @@ namespace pmon::util::log
 		std::span<const FrameInfo> GetFrames() const;
 		bool Empty() const;
 		bool Resolved() const;
-		std::wstring ToString() const;
+		std::string ToString() const;
 		static std::unique_ptr<StackTrace> Here(size_t skip = 0);
 	private:
 		std::stacktrace trace_;

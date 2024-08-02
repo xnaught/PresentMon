@@ -78,7 +78,7 @@ namespace p2c::gfx::lay::sty::at
 			return ResolveVariantFromRaw<V, I + 1>(raw);
 		}
 		else {
-			pmlog_error(L"failed to resolve raw style attribute");
+			pmlog_error("failed to resolve raw style attribute");
 			throw Except<Exception>();
 		}
 	}

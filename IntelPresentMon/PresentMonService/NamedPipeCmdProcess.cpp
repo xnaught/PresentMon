@@ -3,9 +3,7 @@
 #include "NamedPipeCmdProcess.h"
 #include "..\PresentMonUtils\NamedPipeHelper.h"
 
-#define GOOGLE_GLOG_DLL_DECL
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include <glog/logging.h>
+#include "../CommonUtilities/log/GlogShim.h"
 
 bool EncodeStartStream(PresentMon* pm, MemBuffer* rqstBuf, MemBuffer* rspBuf) {
   const IPMSMGeneralRequestInfo* genRqstInfo =
@@ -23,12 +21,6 @@ bool EncodeStartStream(PresentMon* pm, MemBuffer* rqstBuf, MemBuffer* rspBuf) {
 
   IPMSMResponseHeader response{};
   IPMSMStartStreamResponse start_stream_response{};
-
-  if (google::IsGoogleLoggingInitialized()) {
-    start_stream_response.enable_file_logging = true;
-  } else {
-    start_stream_response.enable_file_logging = false;
-  }
 
   if (rspStatus != PM_STATUS::PM_STATUS_SUCCESS) {
     NamedPipeHelper::PopulateResponseHeader(response, PM_ACTION::START_STREAM,

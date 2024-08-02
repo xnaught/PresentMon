@@ -9,7 +9,7 @@ namespace pmon::util::win
 
 	Event::Event(bool manualReset, bool initialState)
 		:
-		Handle{ CreateEventW(nullptr, (BOOL)manualReset, (BOOL)initialState, nullptr) }
+		Handle{ CreateEventA(nullptr, (BOOL)manualReset, (BOOL)initialState, nullptr) }
 	{
 		if (!*this) {
 			throw std::runtime_error("Failed to create event");

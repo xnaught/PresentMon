@@ -32,7 +32,7 @@ namespace p2c::win::com
 			&pUnsecApp
 		); FAILED(hr))
 		{
-			pmlog_error(L"Failed to create unsecured apartment").hr(hr);
+			pmlog_error("Failed to create unsecured apartment").hr(hr);
 			throw Except<Exception>();
 		}
 
@@ -40,12 +40,12 @@ namespace p2c::win::com
 		ComPtr<IUnknown> pStubUnk;
 		if (auto hr = pUnsecApp->CreateObjectStub(pSink_, &pStubUnk); FAILED(hr))
 		{
-			pmlog_error(L"Failed to create stub for this sink").hr(hr);
+			pmlog_error("Failed to create stub for this sink").hr(hr);
 			throw Except<Exception>();
 		}
 		if (auto hr = pStubUnk->QueryInterface<IWbemObjectSink>(&pStub); FAILED(hr))
 		{
-			pmlog_error(L"Failed to query sink interface from stub").hr(hr);
+			pmlog_error("Failed to query sink interface from stub").hr(hr);
 			throw Except<Exception>();
 		}
 
@@ -58,9 +58,7 @@ namespace p2c::win::com
 			pStub.Get()
 		); FAILED(hr))
 		{
-			pmlog_error(std::format(L"Failed to execute notification query: ",
-				infra::util::ToWide(pSink->GetQueryString())))
-				.hr(hr);
+			pmlog_error(std::format("Failed to execute notification query: ", pSink->GetQueryString())).hr(hr);
 			throw Except<Exception>();
 		}
 	}
@@ -70,9 +68,7 @@ namespace p2c::win::com
 		if (auto hr = pConnection->CancelAsyncCall(pStub.Get()); FAILED(hr))
 		{
 			try {
-				pmlog_error(std::format(L"Failed to cancel notification query: ",
-					infra::util::ToWide(pSink->GetQueryString())))
-					.hr(hr);
+				pmlog_error(std::format("Failed to cancel notification query: ", pSink->GetQueryString())).hr(hr);
 				throw Except<Exception>();
 			}
 			catch (...) {}

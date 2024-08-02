@@ -9,13 +9,13 @@
 
 namespace pmon::util::log
 {
-    NamedPipeMarshallReceiver::NamedPipeMarshallReceiver(const std::wstring& pipeName, class IdentificationTable* pTable)
+    NamedPipeMarshallReceiver::NamedPipeMarshallReceiver(const std::string& pipeName, class IdentificationTable* pTable)
         :
-        pipeName_(L"\\\\.\\pipe\\" + pipeName),
+        pipeName_("\\\\.\\pipe\\" + pipeName),
         pIdTable_{ pTable }
     {
         // Open the named pipe with overlapped option enabled
-        hPipe_ = (win::Handle)CreateFileW(
+        hPipe_ = (win::Handle)CreateFileA(
             pipeName_.c_str(),            // Pipe name 
             GENERIC_READ,                 // Desired access: Read access 
             0,                            // No sharing 

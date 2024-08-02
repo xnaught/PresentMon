@@ -3,6 +3,7 @@
 #include "StandardWindow.h"
 #include <Core/source/infra/Logging.h>
 #include <Core/source/gfx/Graphics.h>
+#include <CommonUtilities/str/String.h>
 
  
 namespace p2c::win 
@@ -15,7 +16,8 @@ namespace p2c::win
     {
         const DWORD exStyles = WS_EX_NOREDIRECTIONBITMAP;
 
-        pmlog_verb(v::window)(std::format(L"x:{} y:{} dim:[{},{}] name:{}", x, y, clientDimensions.width, clientDimensions.height, GetTitle()));
+        pmlog_verb(v::window)(std::format("x:{} y:{} dim:[{},{}] name:{}", x, y, clientDimensions.width, clientDimensions.height,
+            ::pmon::util::str::ToNarrow(GetTitle())));
 
         const auto windowArea = ComputeWindowDimensions(clientDimensions);
         CreateWindowExW(

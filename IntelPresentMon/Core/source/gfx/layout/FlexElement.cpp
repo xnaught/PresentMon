@@ -171,7 +171,7 @@ namespace p2c::gfx::lay
 			case Center:
 				return CalculateCenteredLeadingEdge(start, end, size);
 			default:
-				pmlog_error(L"bad flex alignment");
+				pmlog_error("bad flex alignment");
 				throw Except<Exception>();
 			}
 		};
@@ -329,7 +329,7 @@ namespace p2c::gfx::lay
 		case Around: return std::make_unique<SpaceDistributorAround>(space, count);
 		case Even: return std::make_unique<SpaceDistributorEven>(space, count);
 		default:
-			pmlog_error(L"unimplemented space distro for justification");
+			pmlog_error("unimplemented space distro for justification");
 			throw Except<Exception>();
 		}
 	}

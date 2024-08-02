@@ -8,14 +8,14 @@ namespace pmon::util::log
 {
 	LineTable::Entry LineTable::dummyEntry_ = {};
 
-	LineTable::Entry* LineTable::TryLookup(const std::wstring& file, int line) noexcept
+	LineTable::Entry* LineTable::TryLookup(const std::string& file, int line) noexcept
 	{
 		try {
 			return Get_().TryLookup_(file, line);
 		}
 		catch (...) { return nullptr; }
 	}
-	LineTable::Entry& LineTable::Lookup(const std::wstring& file, int line) noexcept
+	LineTable::Entry& LineTable::Lookup(const std::string& file, int line) noexcept
 	{
 		try {
 			return Get_().Lookup_(file, line);
@@ -50,7 +50,7 @@ namespace pmon::util::log
 		}
 		catch (...) {}
 	}
-	void LineTable::RegisterListItem(const std::wstring& file, int line, TraceOverride traceOverride) noexcept
+	void LineTable::RegisterListItem(const std::string& file, int line, TraceOverride traceOverride) noexcept
 	{
 		try {
 			Get_().RegisterListItem_(file, line, traceOverride);
@@ -58,11 +58,11 @@ namespace pmon::util::log
 		catch (...) {}
 	}
 
-	bool LineTable::IngestList_(const std::wstring& path, bool isBlacklist)
+	bool LineTable::IngestList_(const std::string& path, bool isBlacklist)
 	{
 		TraceOverride tover = TraceOverride::None;
-		if (std::wifstream listFile{ path }) {
-			std::wstring line;
+		if (std::ifstream listFile{ path }) {
+			std::string line;
 			bool hasNontraceLine = false;
 			while (std::getline(listFile, line)) {
 				line = str::TrimWhitespace(line);
@@ -80,8 +80,8 @@ namespace pmon::util::log
 					line.pop_back();
 				}
 				// check if pattern matches line identifier
-				std::wregex patternLogged(LR"((.+)\((\d+)\)$)");
-				std::wsmatch matches;
+				std::regex patternLogged(R"((.+)\((\d+)\)$)");
+				std::smatch matches;
 				// try to match a line in the log line format (42)
 				if (std::regex_search(line, matches, patternLogged)) {
 					if (matches.size() == 3) {  // matches[0] is the whole string, [1] is the path, [2] is the number
@@ -104,7 +104,7 @@ namespace pmon::util::log
 		}
 	}
 		
-	bool LineTable::IngestList(const std::wstring& path, bool isBlacklist)
+	bool LineTable::IngestList(const std::string& path, bool isBlacklist)
 	{
 		return Get_().IngestList_(path, isBlacklist);
 	}
@@ -115,7 +115,7 @@ namespace pmon::util::log
 		static LineTable table;
 		return table;
 	}
-	LineTable::Entry* LineTable::TryLookup_(const std::wstring& file, int line)
+	LineTable::Entry* LineTable::TryLookup_(const std::string& file, int line)
 	{
 		std::shared_lock lk{ mtx_ };
 		if (auto i = lines_.find(MakeKey_(file, line)); i != lines_.end()) {
@@ -123,12 +123,12 @@ namespace pmon::util::log
 		}
 		return nullptr;
 	}
-	LineTable::Entry& LineTable::Lookup_(const std::wstring& file, int line)
+	LineTable::Entry& LineTable::Lookup_(const std::string& file, int line)
 	{
 		std::shared_lock lk{ mtx_ };
 		return lines_[MakeKey_(file, line)];
 	}
-	void LineTable::RegisterListItem_(const std::wstring& file, int line, TraceOverride traceOverride)
+	void LineTable::RegisterListItem_(const std::string& file, int line, TraceOverride traceOverride)
 	{
 		RegisterListItem_(MakeKey_(file, line), traceOverride);
 	}
@@ -148,7 +148,7 @@ namespace pmon::util::log
 	{
 		listMode_ = mode;
 	}
-	void LineTable::RegisterListItem_(const std::wstring& key, TraceOverride traceOverride)
+	void LineTable::RegisterListItem_(const std::string& key, TraceOverride traceOverride)
 	{
 		std::lock_guard lk{ mtx_ };
 		auto& e = lines_[key];
@@ -160,8 +160,8 @@ namespace pmon::util::log
 			e.isListed_ = true;
 		}
 	}
-	std::wstring LineTable::MakeKey_(const std::wstring& file, int line)
+	std::string LineTable::MakeKey_(const std::string& file, int line)
 	{
-		return file + L"?" + std::to_wstring(line);
+		return file + "?" + std::to_string(line);
 	}
 }

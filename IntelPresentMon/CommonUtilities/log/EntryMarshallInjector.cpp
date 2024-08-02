@@ -14,14 +14,14 @@ namespace pmon::util::log
 		pFrom_{ std::move(pSink) },
 		pTo_{ std::move(pTo) }
 	{
-		worker_ = mt::Thread{ L"log-prcv-inj", [this] {
+		worker_ = mt::Thread{ "log-prcv-inj", [this] {
 			try {
 				while (auto entry = pFrom_->Pop()) {
 					pTo_->Submit(std::move(*entry));
 				}
 			}
 			catch (...) {
-				pmlog_panic_(ReportExceptionWide());
+				pmlog_panic_(ReportException());
 			}
 		}};
 	}

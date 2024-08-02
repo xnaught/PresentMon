@@ -106,7 +106,7 @@ namespace pmon::util::log
 			for (auto&&[t, p] : componentPtrs) {
 				AttachComponent_(std::move(p), std::move(t));
 			}
-			worker_ = mt::Thread(L"log-chan", [this] {
+			worker_ = mt::Thread("log-chan", [this] {
 				try {
 					auto visitor = [this](auto& el) {
 						// log entry is handled differently than command packets
@@ -122,7 +122,7 @@ namespace pmon::util::log
 									}
 								}
 								catch (...) {
-									pmlog_panic_(ReportExceptionWide());
+									pmlog_panic_(ReportException());
 								}
 							}
 							// resolve trace if one is present
@@ -133,18 +133,18 @@ namespace pmon::util::log
 									}
 								}
 								catch (...) {
-									pmlog_panic_(ReportExceptionWide());
+									pmlog_panic_(ReportException());
 								}
 							}
 							// submit entry to all drivers (by copy)
 							for (auto&& [tag,pDriver] : driverPtrs_) {
 								try { pDriver->Submit(entry); }
 								catch (...) {
-									pmlog_panic_(ReportExceptionWide());
+									pmlog_panic_(ReportException());
 								}
 							}
 							if (driverPtrs_.empty()) {
-								pmlog_panic_(L"No drivers in logging channel while processing entry");
+								pmlog_panic_("No drivers in logging channel while processing entry");
 							}
 						}
 						// if not log entry object, then shared_ptr to a command packet w/ Process member
@@ -160,7 +160,7 @@ namespace pmon::util::log
 					}
 				}
 				catch (...) {
-					pmlog_panic_(ReportExceptionWide());
+					pmlog_panic_(ReportException());
 				}
 			});
 		}
@@ -241,7 +241,7 @@ namespace pmon::util::log
 			EnqueuePacketAsync<KillPacket_>();
 		}
 		catch (...) {
-			pmlog_panic_(L"Failure enqueing kill packet in Channel dtor");
+			pmlog_panic_("Failure enqueing kill packet in Channel dtor");
 		}
 	}
 	void Channel::Submit(Entry&& e) noexcept
@@ -250,7 +250,7 @@ namespace pmon::util::log
 			EnqueueEntry(std::move(e));
 		}
 		catch (...) {
-			pmlog_panic_(L"Exception thrown in Channel::Submit (move)");
+			pmlog_panic_("Exception thrown in Channel::Submit (move)");
 		}
 	}
 	void Channel::Submit(const Entry& e) noexcept
@@ -259,7 +259,7 @@ namespace pmon::util::log
 			EnqueueEntry(e);
 		}
 		catch (...) {
-			pmlog_panic_(L"Exception thrown in Channel::Submit (copy)");
+			pmlog_panic_("Exception thrown in Channel::Submit (copy)");
 		}
 	}
 	void Channel::Flush()

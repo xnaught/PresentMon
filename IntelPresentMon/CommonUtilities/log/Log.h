@@ -17,6 +17,8 @@ namespace pmon::util::log
 	std::shared_ptr<IChannel> GetDefaultChannelWithFactory(std::function<std::shared_ptr<IChannel>()> factory) noexcept;
 	// flush channel worker queue and exit thread in preparation for entry point return
 	void FlushEntryPoint() noexcept;
+		
+	struct Voidifier_ { template<class T> void operator&(T&&) const {} };
 }
 
 #ifndef PMLOG_BUILD_LEVEL
@@ -28,7 +30,7 @@ namespace pmon::util::log
 #endif
 
 #define pmlog_(lvl) ((PMLOG_BUILD_LEVEL < lvl) || (::pmon::util::log::GlobalPolicy::Get().GetLogLevel() < lvl)) \
-	? (void)0 : (void)::pmon::util::log::EntryBuilder{ lvl, __FILEW__, __FUNCTIONW__, __LINE__ } \
+	? (void)0 : ::pmon::util::log::Voidifier_{} & ::pmon::util::log::EntryBuilder{ lvl, __FILE__, __FUNCTION__, __LINE__ } \
 	.subsys(::pmon::util::log::GlobalPolicy::Get().GetSubsystem()) \
 	.to(::pmon::util::log::GetDefaultChannel())
 #define pmlog_fatal	pmlog_(::pmon::util::log::Level::Fatal).note
@@ -39,6 +41,6 @@ namespace pmon::util::log
 #define pmlog_verb(vtag) !vtag ? (void)0 : pmlog_(::pmon::util::log::Level::Verbose).note
 #define pmlog_perf(ptag) !ptag ? (void)0 : pmlog_(::pmon::util::log::Level::Performance).note
 
-#define pmwatch(expr) watch(L###expr, (expr))
+#define pmwatch(expr) watch(#expr, (expr))
 
 #define pmlog_mark ::pmon::util::log::TimePoint

@@ -8,15 +8,15 @@ namespace pmon::util::log
 	{
 	public:
 		SimpleFileStrategy(std::filesystem::path path);
-		std::shared_ptr<std::wostream> AddLine() override;
-		std::shared_ptr<std::wostream> GetFileStream() const override;
+		std::shared_ptr<std::ostream> AddLine() override;
+		std::shared_ptr<std::ostream> GetFileStream() const override;
 		void Cleanup() override;
 	private:
 		// functions
 		void CreateFile_();
 		// data
 		std::filesystem::path path_;
-		std::shared_ptr<std::wofstream> pFileStream_;
+		std::shared_ptr<std::ofstream> pFileStream_;
 	};
 }
 

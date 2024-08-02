@@ -3,12 +3,13 @@
 #include "WindowSpawnHandler.h"
 #include "Overlay.h"
 #include "OverlayContainer.h"
+#include <CommonUtilities/str/String.h>
 
 namespace p2c::kern
 {
     WindowSpawnHandler::WindowSpawnHandler(DWORD pid, OverlayContainer* pOverlay) : pid{ pid }, pOverlay{ pOverlay }
     {
-        pmlog_verb(v::procwatch)(std::format(L"win spawn handler ctor | pid:{:5x}", pid));
+        pmlog_verb(v::procwatch)(std::format("win spawn handler ctor | pid:{:5x}", pid));
     }
 
     win::EventHookHandler::Filter WindowSpawnHandler::GetFilter() const
@@ -28,13 +29,13 @@ namespace p2c::kern
         if constexpr (v::procwatch) {
             RECT r{};
             GetWindowRect(hWnd, &r);
-            pmlog_verb(true)(std::format(L"win-spawn-event | pid:{:5} hwd:{:8x} own:{:8x} vis:{} siz:{} nam:{}",
+            pmlog_verb(true)(std::format("win-spawn-event | pid:{:5} hwd:{:8x} own:{:8x} vis:{} siz:{} nam:{}",
                 pid,
                 reinterpret_cast<uintptr_t>(hWnd),
                 reinterpret_cast<uintptr_t>(GetWindow(hWnd, GW_OWNER)),
                 IsWindowVisible(hWnd),
                 win::RectToDims(r).GetArea(),
-                win::GetWindowTitle(hWnd)
+                ::pmon::util::str::ToNarrow(win::GetWindowTitle(hWnd))
             ));
         }
 

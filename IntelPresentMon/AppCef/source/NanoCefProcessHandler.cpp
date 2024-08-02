@@ -42,7 +42,7 @@ namespace p2c::client::cef
                 port = CefString(&url_parts.port);
             }
             else {
-                pmlog_warn(L"Bad cli-passed url");
+                pmlog_warn("Bad cli-passed url");
             }
         }
         // use url parts to determine the scheme mode
@@ -94,7 +94,7 @@ namespace p2c::client::cef
             std::string pipePrefix = std::format("p2c-logpipe-{}-{}", GetCurrentProcessId(), ++count);
             pChildCommandLine->AppendSwitchWithValue(opt.logPipeName.GetName(), pipePrefix);
             // launch connector thread
-            mt::Thread{ L"logconn", count, [pipePrefix = str::ToWide(pipePrefix)] {
+            mt::Thread{ "logconn", count, [pipePrefix] {
                 try {
                     // initially wait for 50ms to give child time to spawn
                     std::this_thread::sleep_for(50ms);
@@ -112,10 +112,10 @@ namespace p2c::client::cef
                             std::this_thread::sleep_for(15ms);
                         }
                     }
-                    pmlog_warn(std::format(L"Failed to connect to logging source server {} after {} attempts", pipePrefix, nAttempts));
+                    pmlog_warn(std::format("Failed to connect to logging source server {} after {} attempts", pipePrefix, nAttempts));
                 }
                 catch (...) {
-                    pmlog_error(ReportExceptionWide());
+                    pmlog_error(ReportException());
                 }
             } }.detach();
         }
@@ -138,7 +138,7 @@ namespace p2c::client::cef
 
     void NanoCefProcessHandler::OnBrowserCreated(CefRefPtr<CefBrowser> browser_, CefRefPtr<CefDictionaryValue> extra_info)
     {
-        log::IdentificationTable::AddThisThread(L"cef-proc");
+        log::IdentificationTable::AddThisThread("cef-proc");
 
         pBrowser = browser_;
 

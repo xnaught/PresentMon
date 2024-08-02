@@ -23,7 +23,16 @@
 
 namespace pmon::util::log
 {
-	EntryBuilder::EntryBuilder(Level lvl, const wchar_t* sourceFile, const wchar_t* sourceFunctionName, int sourceLine) noexcept
+	EntryStream::EntryStream(EntryBuilder& builder)
+		: builder_{ builder }
+	{}
+	EntryStream::~EntryStream()
+	{
+		builder_.note(str());
+	}
+
+
+	EntryBuilder::EntryBuilder(Level lvl, const char* sourceFile, const char* sourceFunctionName, int sourceLine) noexcept
 		:
 		Entry{
 			.level_ = lvl,
@@ -38,7 +47,7 @@ namespace pmon::util::log
 		},
 		traceSkipDepth_{ PM_LOG_DEFAULT_TRACE_SKIP }
 	{}
-	EntryBuilder::EntryBuilder(Level lvl, std::wstring sourceFile, std::wstring, int sourceLine) noexcept
+	EntryBuilder::EntryBuilder(Level lvl, std::string sourceFile, std::string, int sourceLine) noexcept
 		:
 		Entry{
 			.level_ = lvl,
@@ -60,24 +69,20 @@ namespace pmon::util::log
 			const auto duration = std::chrono::duration<double, std::milli>(now - tp.value).count();
 
 			if (note_.empty()) {
-				note_ += std::format(L"    Marked: {:.3f}ms", duration);
+				note_ += std::format("    Marked: {:.3f}ms", duration);
 			}
 			else {
-				note_ += std::format(L"\n    Marked: {:.3f}ms", duration);
+				note_ += std::format("\n    Marked: {:.3f}ms", duration);
 			}
 		}
-		catch (...) { pmlog_panic_(L"Failed to mark time in EntryBuilder"); }
+		catch (...) { pmlog_panic_("Failed to mark time in EntryBuilder"); }
 		return *this;
 	}
 
-	EntryBuilder& EntryBuilder::note(std::wstring note) noexcept
+	EntryBuilder& EntryBuilder::note(std::string note) noexcept
 	{
 		note_ = std::move(note);
 		return *this;
-	}
-	EntryBuilder& EntryBuilder::note(const std::string& note) noexcept
-	{
-		return this->note(str::ToWide(note));
 	}
 	EntryBuilder& EntryBuilder::to(std::shared_ptr<IEntrySink> pSink) noexcept
 	{
@@ -154,6 +159,10 @@ namespace pmon::util::log
 		subsystem_ = sys;
 		return *this;
 	}
+	EntryStream EntryBuilder::stream() noexcept
+	{
+		return EntryStream{ *this };
+	}
 	EntryBuilder::~EntryBuilder()
 	{
 		try {
@@ -176,17 +185,17 @@ namespace pmon::util::log
 						}
 					}
 					catch (...) {
-						pmlog_panic_(L"Failed to get current stacktrace");
+						pmlog_panic_("Failed to get current stacktrace");
 					}
 				}
 				pDest_->Submit(std::move(*this));
 			}
 			else {
-				pmlog_panic_(L"Log entry completed with no destination channel set");
+				pmlog_panic_("Log entry completed with no destination channel set");
 			}
 		}
 		catch (...) {
-			pmlog_panic_(L"Error when completing log entry");
+			pmlog_panic_("Error when completing log entry");
 		}
 	}
 }

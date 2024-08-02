@@ -23,7 +23,7 @@ namespace p2c::infra::util
 				CoTaskMemFree(pPath);
 				pPath = nullptr;
 				// TODO: logging: we can't use logging service here during resolve creation
-				pmlog_error(L"Failed getting local app data path");
+				pmlog_error("Failed getting local app data path");
 				throw Except<Exception>();
 							}
 			const auto dir = std::format(L"{}\\{}", pPath, appPathSubdir);
@@ -35,7 +35,7 @@ namespace p2c::infra::util
 				CoTaskMemFree(pPath);
 				pPath = nullptr;
 				// TODO: logging: we can't use logging service here during resolve creation
-				pmlog_error(L"Failed creating directory: " + dir);
+				pmlog_error("Failed creating directory: " + str::ToNarrow(dir));
 				throw Except<Exception>();
 			}
 			if (pPath)
@@ -56,7 +56,7 @@ namespace p2c::infra::util
 				CoTaskMemFree(pPath);
 				pPath = nullptr;
 				// TODO: logging: we can't use logging service here during resolve creation
-				pmlog_error(L"Failed getting user documents path");
+				pmlog_error("Failed getting user documents path");
 				throw Except<Exception>();
 							}
 			const auto dir = std::format(L"{}\\{}", pPath, docPathSubdir);
@@ -68,7 +68,7 @@ namespace p2c::infra::util
 				CoTaskMemFree(pPath);
 				pPath = nullptr;
 				// TODO: logging: we can't use logging service here during resolve creation
-				pmlog_error(L"Failed creating directory: " + dir);
+				pmlog_error("Failed creating directory: " + str::ToNarrow(dir));
 				throw Except<Exception>();
 			}
 			if (pPath)
@@ -89,7 +89,7 @@ namespace p2c::infra::util
 			}
 			catch (const std::exception&) {
 				// TODO: logging: we can't use logging service here during resolve creation
-				pmlog_error(L"Failed creating directory: " + std::format(L"{}\\{}", docPath, capturesSubdirectory));
+				pmlog_error("Failed creating directory: " + std::format("{}\\{}", str::ToNarrow(docPath), str::ToNarrow(capturesSubdirectory)));
 				throw Except<Exception>();
 			}
 			// custom loadouts folder
@@ -98,7 +98,8 @@ namespace p2c::infra::util
 			}
 			catch (const std::exception&) {
 				// TODO: logging: we can't use logging service here during resolve creation
-				pmlog_error(L"Failed creating directory: " + std::format(L"{}\\{}", docPath, loadoutsSubdirectory));
+				pmlog_error("Failed creating directory: " + std::format("{}\\{}",
+					str::ToNarrow(docPath), str::ToNarrow(loadoutsSubdirectory)));
 				throw Except<Exception>();
 			}
 		}
@@ -111,7 +112,7 @@ namespace p2c::infra::util
 		case Folder::App:
 			if (appPath.empty())
 			{
-				pmlog_error(L"Failed to resolve app path: not initialized");
+				pmlog_error("Failed to resolve app path: not initialized");
 				throw Except<Exception>();
 			}
 			if (path.empty())
@@ -126,7 +127,7 @@ namespace p2c::infra::util
 		{
 			if (docPath.empty())
 			{
-				pmlog_error(L"Failed to resolve documents path: not initialized");
+				pmlog_error("Failed to resolve documents path: not initialized");
 				throw Except<Exception>();
 			}
 			if (path.empty())
@@ -143,7 +144,7 @@ namespace p2c::infra::util
 			wchar_t tempPath[MAX_PATH + 1];
 			if (!GetTempPathW(MAX_PATH, tempPath))
 			{
-				pmlog_error(L"failed resolving temp dir").hr();
+				pmlog_error("failed resolving temp dir").hr();
 				throw Except<Exception>();
 			}
 			return std::format(L"{}{}", tempPath, path);

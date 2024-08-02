@@ -13,60 +13,60 @@
 
 namespace pmon::util::log
 {
-	std::wstring MakeProc_(const Entry& e)
+	std::string MakeProc_(const Entry& e)
 	{
-		std::wstring text;
+		std::string text;
 		if (auto proc = IdentificationTable::LookupProcess(e.pid_)) {
-			text = std::format(L"{}({})", proc->name, proc->pid);
+			text = std::format("{}({})", proc->name, proc->pid);
 		}
 		else {
-			text = std::to_wstring(e.pid_);
+			text = std::to_string(e.pid_);
 		}
 		return text;
 	}
-	std::wstring MakeThread_(const Entry& e)
+	std::string MakeThread_(const Entry& e)
 	{
-		std::wstring text;
+		std::string text;
 		if (auto thread = IdentificationTable::LookupThread(e.tid_)) {
-			text = std::format(L"{}({})", thread->name, thread->tid);
+			text = std::format("{}({})", thread->name, thread->tid);
 		}
 		else {
-			text = std::to_wstring(e.tid_);
+			text = std::to_string(e.tid_);
 		}
 		return text;
 	}
 
 
-	std::wstring TextFormatter::Format(const Entry& e) const
+	std::string TextFormatter::Format(const Entry& e) const
 	{
 		try {
-			std::wostringstream oss;
-			oss << std::format(L"[@{}] <{}:{}> {{{}}}",
+			std::ostringstream oss;
+			oss << std::format("[@{}] <{}:{}> {{{}}}",
 				GetLevelName(e.level_),
 				MakeProc_(e),
 				MakeThread_(e),
 				std::chrono::zoned_time{ std::chrono::current_zone(), e.timestamp_ }
 			);
 			if (!e.note_.empty()) {
-				oss << L"\n  " << e.note_;
+				oss << "\n  " << e.note_;
 			}
 			if (e.errorCode_) {
 				auto& ec = e.errorCode_;
 				if (ec.IsResolvedNontrivial()) {
 					auto pStrings = ec.GetStrings();
-					oss << std::format(L"\n  !{} [{}]:{} => {}", pStrings->type, ec.AsHex(), pStrings->name, pStrings->description);
+					oss << std::format("\n  !{} [{}]:{} => {}", pStrings->type, ec.AsHex(), pStrings->name, pStrings->description);
 				}
 				else {
-					oss << std::format(L"\n  !UNKNOWN [{}]", ec.AsHex());
+					oss << std::format("\n  !UNKNOWN [{}]", ec.AsHex());
 				}
 			}
 			// display of source line info could be controlled here
 			// if so, hitcount would need to be separately handled
 			if (true) {
 				std::visit([&](auto& strings) {
-					oss << std::format(L"\n  >> at {} {}\n     {}({})\n",
+					oss << std::format("\n  >> at {} {}\n     {}({})\n",
 						strings.functionName_,
-						[&] { return e.hitCount_ == -1 ? std::wstring{} : std::format(L"[Hits: {}]", e.hitCount_); }(),
+						[&] { return e.hitCount_ == -1 ? std::string{} : std::format("[Hits: {}]", e.hitCount_); }(),
 						strings.file_,
 						e.sourceLine_
 					);
@@ -74,18 +74,18 @@ namespace pmon::util::log
 			}
 			if (e.pTrace_) {
 				try {
-					oss << L" ====== STACK TRACE (newest on top) ======\n";
+					oss << " ====== STACK TRACE (newest on top) ======\n";
 					oss << e.pTrace_->ToString();
-					oss << L" =========================================\n";
+					oss << " =========================================\n";
 				}
 				catch (...) {
-					pmlog_panic_(L"Failed printing stack trace in TextFormatter::Format");
+					pmlog_panic_("Failed printing stack trace in TextFormatter::Format");
 				}
 			}
 			return oss.str();
 		}
 		catch (...) {
-			pmlog_panic_(L"Exception in TextFormatter::Format");
+			pmlog_panic_("Exception in TextFormatter::Format");
 			return {};
 		}
 	}

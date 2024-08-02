@@ -210,8 +210,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         DebugBreak();
     }
     // name this process / thread
-    log::IdentificationTable::AddThisProcess(str::ToWide(opt.cefType.AsOptional().value_or("main-client")));
-    log::IdentificationTable::AddThisThread(L"main");
+    log::IdentificationTable::AddThisProcess(opt.cefType.AsOptional().value_or("main-client"));
+    log::IdentificationTable::AddThisThread("main");
     // connect to the diagnostic layer (not generally used by appcef since we connect to logging directly)
     std::optional<pmapi::DiagnosticHandler> diag;
     try {
@@ -220,9 +220,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
                 (PM_DIAGNOSTIC_LEVEL)opt.logLevel.AsOptional().value_or(log::GlobalPolicy::Get().GetLogLevel()),
                 PM_DIAGNOSTIC_OUTPUT_FLAGS_DEBUGGER | PM_DIAGNOSTIC_OUTPUT_FLAGS_QUEUE,
                 [](const PM_DIAGNOSTIC_MESSAGE& msg) {
-                auto ts = msg.pTimestamp ? str::ToWide(msg.pTimestamp) : std::wstring{};
-                pmlog_(log::Level(msg.level)).note(
-                    std::format(L"@@ D I A G @@ => <{}> {}", ts, str::ToWide(msg.pText)));
+                auto ts = msg.pTimestamp ? msg.pTimestamp : std::string{};
+                pmlog_(log::Level(msg.level)).note(std::format("@@ D I A G @@ => <{}> {}", ts, msg.pText));
             }
             );
         }
@@ -242,10 +241,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
                 "--control-pipe"s, *opt.controlPipe,
                 "--nsm-prefix"s, "pm-frame-nsm"s,
                 "--intro-nsm"s, *opt.shmName,
-                "--etw-session-name"s, *opt.etwSessionName);
+                "--etw-session-name"s, *opt.etwSessionName,
+                "--log-level"s, std::to_string((int)log::GlobalPolicy::Get().GetLogLevel()));
 
             if (!pmon::util::win::WaitForNamedPipe(*opt.controlPipe, 1500)) {
-                pmlog_error(L"timeout waiting for child service control pipe to go online");
+                pmlog_error("timeout waiting for child service control pipe to go online");
                 return -1;
             }
         }
@@ -261,7 +261,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
         // code from here on is only executed by the root process (browser window process)
 
-        pmlog_info(std::format(L"== client section starting build#{} clean:{} ==", PM_BID_GIT_HASH_SHORT, !PM_BID_DIRTY));
+        pmlog_info(std::format("== client section starting build#{} clean:{} ==", str::ToNarrow(PM_BID_GIT_HASH_SHORT), !PM_BID_DIRTY));
 
         {
             auto& folderResolver = infra::util::FolderResolver::Get();
@@ -296,7 +296,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         UnregisterClass(BrowserWindowClassName, hInstance);
         UnregisterClass(MessageWindowClassName, hInstance);
 
-        pmlog_info(L"== client process exiting ==");
+        pmlog_info("== client process exiting ==");
 
         return (int)msg.wParam;
     }

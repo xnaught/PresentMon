@@ -75,7 +75,7 @@ namespace p2c::client::cef
             }
             else
             {
-                pmlog_warn(std::format(L"Endpoint async not found: {}", message->GetArgumentList()->GetString(0).ToWString()));
+                pmlog_warn(std::format("Endpoint async not found: {}", message->GetArgumentList()->GetString(0).ToString()));
             }
             return true;
         }
@@ -111,7 +111,7 @@ namespace p2c::client::cef
                 std::this_thread::sleep_for(1000ms);
                 shutdownAcknowledgementFlag = true;
                 pBrowser->GetHost()->CloseBrowser(true);
-                pmlog_warn(L"Shutdown ack timed out");
+                pmlog_warn("Shutdown ack timed out");
             } }.detach();
             return 0;
         }
@@ -123,8 +123,8 @@ namespace p2c::client::cef
     }
 
 #define xjs_pmlog_(lvl) ((PMLOG_BUILD_LEVEL < lvl) || (::pmon::util::log::GlobalPolicy::Get().GetLogLevel() < lvl)) \
-	? (void)0 : (void)::pmon::util::log::EntryBuilder{ lvl, source.ToWString(), {}, line } \
-	.to(::pmon::util::log::GetDefaultChannel()).no_trace().note(message.ToWString())
+	? (void)0 : (void)::pmon::util::log::EntryBuilder{ lvl, source.ToString(), {}, line } \
+	.to(::pmon::util::log::GetDefaultChannel()).no_trace().note(message.ToString())
 
     bool NanoCefBrowserClient::OnConsoleMessage(
         CefRefPtr<CefBrowser> browser,

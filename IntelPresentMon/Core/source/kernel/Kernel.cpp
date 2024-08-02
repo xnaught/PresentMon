@@ -27,7 +27,7 @@ namespace p2c::kern
         :
         pHandler{ pHandler },
         constructionSemaphore{ 0 },
-        thread{ L"kernel", &Kernel::ThreadProcedure_, this}
+        thread{ "kernel", &Kernel::ThreadProcedure_, this}
     {
         constructionSemaphore.acquire();
         HandleMarshalledException_();
@@ -91,7 +91,7 @@ namespace p2c::kern
         HandleMarshalledException_();
         std::lock_guard lk{ mtx };
         if (!pm) {
-            pmlog_warn(L"presentmon not initialized");
+            pmlog_warn("presentmon not initialized");
             return;
         }
         pm->SetAdapter(id);
@@ -109,12 +109,12 @@ namespace p2c::kern
         HandleMarshalledException_();
         std::lock_guard lk{ mtx };
         if (!pm) {
-            pmlog_warn(L"presentmon not initialized");
+            pmlog_warn("presentmon not initialized");
             return {};
         }
         try { return pm->EnumerateAdapters(); }
         catch (...) { 
-            pmlog_warn(L"failed to enumerate adapters, returning empty set");
+            pmlog_warn("failed to enumerate adapters, returning empty set");
             return {};
         }
     }
@@ -151,7 +151,7 @@ namespace p2c::kern
             std::unique_lock startLck{ mtx };
 
             // name this thread
-            pmlog_info(L"== kernel thread starting ==");
+            pmlog_info("== kernel thread starting ==");
 
             // command line options
             auto& opt = cli::Options::Get();
@@ -172,7 +172,7 @@ namespace p2c::kern
             try { pm.emplace(controlPipe, shmName); }
             catch (...) {
                 pHandler->OnPresentmonInitFailed();
-                pmlog_error(L"Failed to init presentmon api").no_trace();
+                pmlog_error("Failed to init presentmon api").no_trace();
                 throw;
             }
 
@@ -214,7 +214,7 @@ namespace p2c::kern
                 }
                 catch (...) {
                     pHandler->OnOverlayDied();
-                    pmlog_error(L"Overlay died w/ except. => " + ReportExceptionWide()).no_trace();
+                    pmlog_error("Overlay died w/ except. => " + ReportException()).no_trace();
                     pOverlayContainer.reset();
                     pPushedSpec.reset();
                 }
@@ -222,12 +222,12 @@ namespace p2c::kern
 
             pm.reset();
 
-            pmlog_info(L"== kernel thread exiting ==");
+            pmlog_info("== kernel thread exiting ==");
         }
         // this catch section handles failures to initialize kernel, or rare error that escape the main loop catch
         // possibility to marshall exceptions to js whenever an interface function is called (async rejection path)
         catch (...) {
-            pmlog_error(ReportExceptionWide()).no_trace();
+            pmlog_error(ReportException()).no_trace();
             marshalledException = std::current_exception();
             hasMarshalledException.store(true);
         }

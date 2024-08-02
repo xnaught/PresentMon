@@ -18,7 +18,7 @@ namespace p2c::infra::util
 			CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
 			TIMER_ALL_ACCESS);
 		if (!waitableTimerHandle_) {
-			pmlog_error(L"Failed creating high resolution timer").hr();
+			pmlog_error("Failed creating high resolution timer").hr();
 			throw Except<Exception>();
 		}
 	}
@@ -63,11 +63,11 @@ namespace p2c::infra::util
 			nullptr,
 			0
 		)) {
-			pmlog_error(L"Failed setting high resolution timer").hr();
+			pmlog_error("Failed setting high resolution timer").hr();
 			throw Except<Exception>();
 		}
 		if (auto code = WaitForSingleObject(waitableTimerHandle_, INFINITE)) {
-			pmlog_error(std::format(L"Failed waiting on high resolution timer CODE:{:8x}", code)).hr();
+			pmlog_error(std::format("Failed waiting on high resolution timer CODE:{:8x}", code)).hr();
 			throw Except<Exception>();
 		}
 		// spin wait remaining time to obtain more accurate wait
@@ -79,7 +79,7 @@ namespace p2c::infra::util
 	IntervalWaiter::~IntervalWaiter()
 	{
 		if (!CloseHandle(waitableTimerHandle_)) {
-			pmlog_warn(L"Failed closing high resolution timer").hr();
+			pmlog_warn("Failed closing high resolution timer").hr();
 		}
 	}
 }

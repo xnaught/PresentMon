@@ -4,12 +4,10 @@
   "version": "0.6.0",
   "dependencies": [
     "gtest",
-    "gflags",
-    "glog",
     "cli11",
     "boost-interprocess",
     "boost-process",
     "concurrentqueue"
   ],
-  "builtin-baseline": "bb588985e37484d543fc849d0d79434e0d45bb3c"
+  "builtin-baseline": "6062c8fe02d38b10d5291411bc235ae4d02cfe6c"
 }

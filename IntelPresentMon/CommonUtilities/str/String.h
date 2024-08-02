@@ -10,7 +10,7 @@ namespace pmon::util::str
 	std::vector<std::string> TokenizeQuoted(const std::string& input);
 	std::wstring ToWide(const std::string& narrow) noexcept;
 	std::string ToNarrow(const std::wstring& wide) noexcept;
-	std::wstring TrimWhitespace(const std::wstring& input);
+	template<class S> S TrimWhitespace(const S& input);
 	std::string ToLower(const std::string& input);
 	std::wstring ToLower(const std::wstring& input);
 	std::string ToUpper(const std::string& input);

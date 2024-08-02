@@ -4,9 +4,7 @@
 #include <ranges>
 #include <functional>
 
-#define GOOGLE_GLOG_DLL_DECL
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include <glog/logging.h>
+#include "../CommonUtilities/log/GlogShim.h"
 
 bool PowerTelemetryContainer::Repopulate() {
 	try {
@@ -22,10 +20,10 @@ bool PowerTelemetryContainer::Repopulate() {
 				}
 			}
 			catch (const TelemetrySubsystemAbsent& e) {
-				LOG(INFO) << "Skipping Telemetry Provider: " << e.what() << std::endl;
+				LOG(INFO) << "Skipping Telemetry Provider: " << e.what();
 			}
 			catch (const std::runtime_error& e) {
-				LOG(INFO) << "Power Telemetry Failure: " << e.what() << std::endl;
+				LOG(INFO) << "Power Telemetry Failure: " << e.what();
 			}
 			catch (...) {
 				LOG(INFO) << "Unknown Telemetry Failure.";

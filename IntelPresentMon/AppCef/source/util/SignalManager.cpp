@@ -14,7 +14,7 @@ namespace p2c::client::util
 	{
 		if (auto i = std::find(std::begin(keyList), std::end(keyList), key); i == std::end(keyList))
 		{
-			pmlog_warn(std::format(L"Key [{}] not a valid signal key", str::ToWide(key)));
+			pmlog_warn(std::format("Key [{}] not a valid signal key", key));
 		}
 		callbacks[key] = std::move(ctx);
 	}
@@ -31,7 +31,7 @@ namespace p2c::client::util
 		}
 		else
 		{
-			pmlog_warn(std::format(L"Signal fired for [{}] with no handler set", str::ToWide(key)));
+			pmlog_warn(std::format("Signal fired for [{}] with no handler set", key));
 		}
 	}
 

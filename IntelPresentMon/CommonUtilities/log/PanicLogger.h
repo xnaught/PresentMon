@@ -9,6 +9,6 @@
 
 namespace pmon::util::log
 {
-	void PMLogPanic_(const std::wstring& msg) noexcept;
+	void PMLogPanic_(const std::string& msg) noexcept;
 }
 

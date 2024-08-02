@@ -12,42 +12,9 @@
 #include "GlobalIdentifiers.h"
 #include <ranges>
 
-#define GOOGLE_GLOG_DLL_DECL
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include <glog/logging.h>
+#include "../CommonUtilities/log/GlogShim.h"
 
 using namespace pmon;
-
-void InitializeLogging(const char* servicename, const char* location, const char* basename,
-                       const char* extension, int level, bool logstderr) {
-  // initialize glog
-  if (!google::IsGoogleLoggingInitialized()) {
-    google::InitGoogleLogging(servicename);
-    if (!basename) {
-      basename = "pmon-srv";
-    }
-    if (location) {
-      google::SetLogDestination(
-          google::GLOG_INFO,
-          std::format("{}\\{}-info-", location, basename).c_str());
-      google::SetLogDestination(
-          google::GLOG_WARNING,
-          std::format("{}\\{}-warn-", location, basename).c_str());
-      google::SetLogDestination(
-          google::GLOG_ERROR,
-          std::format("{}\\{}-err-", location, basename).c_str());
-      google::SetLogDestination(
-          google::GLOG_FATAL,
-          std::format("{}\\{}-fatal-", location, basename).c_str());
-    }
-    if (extension) {
-      google::SetLogFilenameExtension(extension);
-    }
-    FLAGS_minloglevel = std::clamp(level, 0, 3);
-    // TODO: allow setting stderr log without setting log dir, also allow setting stderr exclusive logging
-    FLAGS_alsologtostderr = logstderr;
-  }
-}
 
 bool NanoSleep(int32_t ms, bool alertable) {
   HANDLE timer;
@@ -68,15 +35,6 @@ bool NanoSleep(int32_t ms, bool alertable) {
   WaitForSingleObjectEx(timer, INFINITE, BOOL(alertable));
   CloseHandle(timer);
   return true;
-}
-
-void SetupFileLogging()
-{
-    auto& opt = clio::Options::Get();
-    auto& logDir = *opt.logDir;
-    if (std::filesystem::is_directory(logDir)) {
-        InitializeLogging(opt.GetName().c_str(), logDir.c_str(), "pm-srv", ".log", 0, opt.logStderr);
-    }
 }
 
 // Attempt to use a high resolution sleep but if not
@@ -252,10 +210,6 @@ void PresentMonMainThread(Service* const pSvc)
             }
         }
 
-        if (opt.logDir) {
-            SetupFileLogging();
-        }
-
         if (opt.timedStop) {
             const auto hTimer = CreateWaitableTimerA(NULL, FALSE, NULL);
             const LARGE_INTEGER liDueTime{
@@ -286,7 +240,6 @@ void PresentMonMainThread(Service* const pSvc)
         }
         catch (const std::exception& e) {
             LOG(ERROR) << "Failed making service comms> " << e.what() << std::endl;
-            google::FlushLogFiles(0);
             pSvc->SignalServiceStop(-1);
             return;
         }

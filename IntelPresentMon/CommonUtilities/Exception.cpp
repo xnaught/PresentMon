@@ -49,11 +49,11 @@ namespace pmon::util
 	{
 		if (HasTrace()) {
 			pTrace_->Resolve();
-			std::wostringstream oss;
-			oss << L" ====== STACK TRACE (newest on top) ======\n";
+			std::ostringstream oss;
+			oss << " ====== STACK TRACE (newest on top) ======\n";
 			oss << pTrace_->ToString();
-			oss << L" =========================================\n";
-			return str::ToNarrow(oss.str());
+			oss << " =========================================\n";
+			return oss.str();
 		}
 		return {};
 	}
@@ -89,11 +89,6 @@ namespace pmon::util
 		return "No exception in flight";
 	}
 
-	std::wstring ReportExceptionWide(std::exception_ptr pEx) noexcept
-	{
-		return str::ToWide(ReportException(std::move(pEx)));
-	}
-
 	namespace {
 		void seh_trans_func(unsigned int u, EXCEPTION_POINTERS*)
 		{
@@ -118,8 +113,7 @@ namespace pmon::util
 	{
 		try {
 			std::ostringstream oss;
-			oss << std::format("Error Code [0x{:08X}]: {}\n", GetSehCode(),
-				str::ToNarrow(win::GetSEHSymbol(GetSehCode())));
+			oss << std::format("Error Code [0x{:08X}]: {}\n", GetSehCode(), win::GetSEHSymbol(GetSehCode()));
 			if (HasTrace()) {
 				oss << "\n" << GetTraceString();
 			}

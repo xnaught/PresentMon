@@ -34,7 +34,7 @@ namespace p2c::gfx::lay
 
 		if (dir == FlexDirection::Column && !boxDimensions.width)
 		{
-			pmlog_warn(L"querying element height constraints before width set");
+			pmlog_warn("querying element height constraints before width set");
 		}
 
 		if (attrCache->display == Display::None)
@@ -71,7 +71,7 @@ namespace p2c::gfx::lay
 
 		if (!boxDimensions)
 		{
-			pmlog_error(L"Attempt to set element position without dimensions");
+			pmlog_error("Attempt to set element position without dimensions");
 			throw Except<Exception>();
 		}
 
@@ -164,7 +164,7 @@ namespace p2c::gfx::lay
 	{
 		if (!IsLaidOut())
 		{
-			pmlog_error(L"Trying to access element rect before laid out");
+			pmlog_error("Trying to access element rect before laid out");
 			throw Except<Exception>();
 		}
 		return { *boxPosition, { *boxDimensions.width, *boxDimensions.height } };
@@ -189,7 +189,7 @@ namespace p2c::gfx::lay
 	{
 		if (!boxDimensions)
 		{
-			pmlog_error(L"Trying to access box dims before set");
+			pmlog_error("Trying to access box dims before set");
 			throw Except<Exception>();
 		}
 		const auto marginDims = attrCache->margin.ToDimensions();

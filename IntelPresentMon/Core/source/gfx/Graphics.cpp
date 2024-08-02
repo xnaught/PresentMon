@@ -66,14 +66,14 @@ namespace p2c::gfx
                 }
                 tearingActive = tearing != 0;
                 if (tearingActive) {
-                    pmlog_info(L"Tearing graphics support enabled");
+                    pmlog_info("Tearing graphics support enabled");
                 }
                 else {
-                    pmlog_warn(L"Tearing requested but not supported, disabling");
+                    pmlog_warn("Tearing requested but not supported, disabling");
                 }
             }
             catch (...) {
-                pmlog_warn(L"Failed checking tearing support, disabling tearing");
+                pmlog_warn("Failed checking tearing support, disabling tearing");
             }
         }
 
@@ -244,7 +244,7 @@ namespace p2c::gfx
         FreeBackbufferDependentResources_();
         const UINT flags = tearingActive ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
         if (auto hr = pSwapChain->ResizeBuffers(2, dims.width, dims.height, DXGI_FORMAT_UNKNOWN, flags); FAILED(hr)) {
-            pmlog_warn(L"Failed to resize buffers").hr(hr);
+            pmlog_warn("Failed to resize buffers").hr(hr);
         }
         CreateBackbufferDependentResources_();
         fastRenderer->Resize(dims);
@@ -257,7 +257,7 @@ namespace p2c::gfx
 #ifdef _DEBUG
         if (!Rect{ {}, dims }.Contains(clip))
         {
-            pmlog_warn(L"scissor rect outside window");
+            pmlog_warn("scissor rect outside window");
         }
 #endif
         fastRenderer->StartLineBatch(clip, aa);
@@ -268,7 +268,7 @@ namespace p2c::gfx
 #ifdef _DEBUG
         if (!Rect{ {}, dims }.Contains(clip))
         {
-            pmlog_warn(L"scissor rect outside window");
+            pmlog_warn("scissor rect outside window");
         }
 #endif
         fastRenderer->StartTriangleBatch(clip);

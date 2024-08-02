@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="cli\CliFramework.h" />
     <ClInclude Include="Exception.h" />
+    <ClInclude Include="log\ChannelFlusher.h" />
     <ClInclude Include="log\CopyDriver.h" />
     <ClInclude Include="log\DiagnosticDriver.h" />
     <ClInclude Include="log\ErrorCode.h" />
@@ -29,6 +30,7 @@
     <ClInclude Include="log\ErrorCodeResolvePolicy.h" />
     <ClInclude Include="log\ErrorCodeResolver.h" />
     <ClInclude Include="log\GlobalPolicy.h" />
+    <ClInclude Include="log\GlogShim.h" />
     <ClInclude Include="log\HrLogger.h" />
     <ClInclude Include="log\IChannelComponent.h" />
     <ClInclude Include="log\IChannelObject.h" />
@@ -54,6 +56,7 @@
     <ClInclude Include="log\NamedPipeMarshallReceiver.h" />
     <ClInclude Include="log\StackTrace.h" />
     <ClInclude Include="log\StackTraceCereal.h" />
+    <ClInclude Include="log\StdioDriver.h" />
     <ClInclude Include="log\Subsystem.h" />
     <ClInclude Include="log\TextFormatter.h" />
     <ClInclude Include="log\MarshallDriver.h" />
@@ -78,6 +81,7 @@
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp" />
     <ClCompile Include="Exception.cpp" />
+    <ClCompile Include="log\ChannelFlusher.cpp" />
     <ClCompile Include="log\CopyDriver.cpp" />
     <ClCompile Include="log\DiagnosticDriver.cpp" />
     <ClCompile Include="log\EntryMarshallInjector.cpp" />
@@ -98,6 +102,7 @@
     <ClCompile Include="log\BasicFileDriver.cpp" />
     <ClCompile Include="log\NamedPipeMarshallReceiver.cpp" />
     <ClCompile Include="log\StackTrace.cpp" />
+    <ClCompile Include="log\StdioDriver.cpp" />
     <ClCompile Include="log\Subsystem.cpp" />
     <ClCompile Include="log\TextFormatter.cpp" />
     <ClCompile Include="log\SimpleFileStrategy.cpp" />

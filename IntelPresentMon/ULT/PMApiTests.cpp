@@ -1,7 +1,3 @@
-#define GOOGLE_GLOG_DLL_DECL
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include <glog/logging.h>
-
 #include "../PresentMonUtils/MemBuffer.h"
 #include "../PresentMonUtils/PresentMonNamedPipe.h"
 #include "../Streamer/StreamClient.h"
@@ -9,6 +5,8 @@
 #include "PmFrameGenerator.h"
 #include "gtest/gtest.h"
 #include "utils.h"
+
+#include "../CommonUtilities/log/GlogShim.h"
 
 const uint32_t kPid = 10;
 const double kRunWindowSize = 1000.0f;

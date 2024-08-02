@@ -9,9 +9,7 @@
 
 #include "..\Streamer\StreamClient.h"
 
-#define GOOGLE_GLOG_DLL_DECL
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include <glog/logging.h>
+#include "../CommonUtilities/log/GlogShim.h"
 
 uint32_t kClientLoopCount = 50;
 

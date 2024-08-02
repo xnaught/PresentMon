@@ -180,6 +180,15 @@
     <ClInclude Include="log\DiagnosticDriver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="log\GlogShim.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="log\StdioDriver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="log\ChannelFlusher.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">
@@ -285,6 +294,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="log\DiagnosticDriver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="log\StdioDriver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="log\ChannelFlusher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

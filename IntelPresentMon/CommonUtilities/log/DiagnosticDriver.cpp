@@ -21,7 +21,7 @@ namespace pmon::util::log
 	{
 		dying_ = true;
 		try { manualUnblockEvent_.Set(); }
-		catch (...) { pmlog_panic_(L"Failed to set the manual unblock event"); }
+		catch (...) { pmlog_panic_("Failed to set the manual unblock event"); }
 	}
 	void DiagnosticDriver::Submit(const Entry& e)
 	{
@@ -35,7 +35,6 @@ namespace pmon::util::log
 			return;
 		}
 		// prepare string payloads
-		auto msg = str::ToNarrow(e.note_);
 		std::string timestamp;
 		if (config_.enableTimestamp) {
 			const auto zt = std::chrono::zoned_time{ std::chrono::current_zone(), e.timestamp_ };
@@ -44,12 +43,12 @@ namespace pmon::util::log
 		std::string trace;
 		if (config_.enableTrace) {
 			if (e.pTrace_ && e.pTrace_->Resolved()) {
-				trace = str::ToNarrow(e.pTrace_->ToString());
+				trace = e.pTrace_->ToString();
 			}
 		}
 		std::string location;
 		if (config_.enableLocation) {
-			location = std::format("{}({})", str::ToNarrow(e.GetSourceFileName()), e.sourceLine_);
+			location = std::format("{}({})", e.GetSourceFileName(), e.sourceLine_);
 		}
 		// create diagnostic message based on logging entry
 		auto pMessage = std::make_unique<DiagnosticMessage>();
@@ -59,7 +58,7 @@ namespace pmon::util::log
 		pMessage->pid = e.pid_;
 		pMessage->tid = e.tid_;
 		// handle buffers
-		pMessage->messageBuffer_ = std::move(msg);
+		pMessage->messageBuffer_ = e.note_;
 		pMessage->locationBuffer_ = std::move(location);
 		pMessage->timestampBuffer_ = std::move(timestamp);
 		pMessage->traceBuffer_ = std::move(trace);
@@ -143,8 +142,8 @@ namespace pmon::util::log
 		// handle direct output
 		std::string formattedMsg;
 		auto format = [&] { if (formattedMsg.empty()) {
-			auto level = str::ToNarrow(GetLevelName((Level)pMsg->level));
-			auto sys = str::ToNarrow(GetSubsystemName((Subsystem)pMsg->system));
+			auto level = GetLevelName((Level)pMsg->level);
+			auto sys = GetSubsystemName((Subsystem)pMsg->system);
 			if (pMsg->pTimestamp) {
 				formattedMsg = std::format("[PMON:{} {}] {{{}}} {}\n", sys, level, pMsg->pTimestamp, pMsg->pText);
 			}
