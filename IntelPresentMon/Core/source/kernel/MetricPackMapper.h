@@ -2,6 +2,7 @@
 #include "DataFetchPack.h"
 #include "../pmon/MetricFetcherFactory.h"
 #include "../pmon/DynamicQuery.h"
+#include "../infra/Logging.h"
 #include "OverlaySpec.h"
 #include <CommonUtilities\Hash.h>
 #include <unordered_map>
@@ -61,6 +62,9 @@ namespace p2c::kern
 			usageMap_.clear();
 			// build vector of qmet
 			const auto qualifiedMetrics = metricPackMap_ | vi::keys | rn::to<std::vector>();
+			pmlog_verb(v::metric)("Metrics for query build:\n" + [&] { return qualifiedMetrics |
+				vi::transform([](auto& q) {return "    " + q.Dump(); }) |
+				vi::join_with('\n') | rn::to<std::basic_string>(); }());
 			// build fetchers / query
 			auto buildResult = factory.Build(pid, winSizeMs, metricOffsetMs, qualifiedMetrics);
 			// fill fetchers into map
@@ -78,9 +82,11 @@ namespace p2c::kern
 			auto& pPack = metricPackMap_[qmet];
 			if (!pPack.graphData) {
 				pPack.graphData = std::make_shared<gfx::lay::GraphData>(timeWindow);
+				pmlog_verb(v::metric)(std::format("AddGraph[new]> {}", qmet.Dump()));
 			}
 			else if (pPack.graphData->GetWindowSize() != timeWindow) {
 				pPack.graphData->Resize(timeWindow);
+				pmlog_verb(v::metric)(std::format("AddGraph[resize]> {}", qmet.Dump()));
 			}
 			usageMap_[qmet].graph = true;
 		}
@@ -89,6 +95,7 @@ namespace p2c::kern
 			auto& pPack = metricPackMap_[qmet];
 			if (!pPack.textData) {
 				pPack.textData = std::make_shared<std::wstring>();
+				pmlog_verb(v::metric)(std::format("AddReadout[new]> {}", qmet.Dump()));
 			}
 			usageMap_[qmet].text = true;
 		}

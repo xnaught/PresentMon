@@ -21,15 +21,19 @@ namespace pmon::util::log
 	struct Voidifier_ { template<class T> void operator&(T&&) const {} };
 }
 
-#ifndef PMLOG_BUILD_LEVEL
+#ifdef PMLOG_BUILD_LEVEL
+#define PMLOG_BUILD_LEVEL_ ::pmon::util::log::Level::##PMLOG_BUILD_LEVEL
+#endif
+
+#ifndef PMLOG_BUILD_LEVEL_
 #ifndef NDEBUG
-#define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Debug
+#define PMLOG_BUILD_LEVEL_ ::pmon::util::log::Level::Debug
 #else
-#define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Info
+#define PMLOG_BUILD_LEVEL_ ::pmon::util::log::Level::Info
 #endif
 #endif
 
-#define pmlog_(lvl) ((PMLOG_BUILD_LEVEL < lvl) || (::pmon::util::log::GlobalPolicy::Get().GetLogLevel() < lvl)) \
+#define pmlog_(lvl) ((PMLOG_BUILD_LEVEL_ < lvl) || (::pmon::util::log::GlobalPolicy::Get().GetLogLevel() < lvl)) \
 	? (void)0 : ::pmon::util::log::Voidifier_{} & ::pmon::util::log::EntryBuilder{ lvl, __FILE__, __FUNCTION__, __LINE__ } \
 	.subsys(::pmon::util::log::GlobalPolicy::Get().GetSubsystem()) \
 	.to(::pmon::util::log::GetDefaultChannel())

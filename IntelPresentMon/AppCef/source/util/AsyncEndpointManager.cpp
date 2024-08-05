@@ -31,6 +31,14 @@ namespace p2c::client::util
 			);
 			lck.unlock();
 
+			if constexpr (v::v8async) {
+				pmlog_verb(v::v8async)(std::format("Async call {{{}}} from V8 to endpoint [{}] with payload:\n{}",
+					uid, key, Traverse(V8ToCefValue(*pObj)).Dump()));
+			}
+			else {
+				pmlog_dbg(std::format("Async call {{{}}} from V8 to endpoint [{}]", uid, key));
+			}
+
 			switch (pEndpoint->GetEnvironment())
 			{
 			case AsyncEndpoint::Environment::BrowserProcess:
@@ -86,6 +94,15 @@ namespace p2c::client::util
 		if (auto i = invocations.find(uid); i != std::end(invocations))
 		{
 			auto invocation = std::move(i->second);
+
+			if constexpr (v::v8async) {
+				pmlog_verb(v::v8async)(std::format("Async call {{{}}} resolved with payload:\n{}",
+					uid, Traverse(pArgs).Dump()));
+			}
+			else {
+				pmlog_verb(v::v8async)(std::format("Async call {{{}}} resolved", uid));
+			}
+
 			invocations.erase(i);
 			lck.unlock();
 
