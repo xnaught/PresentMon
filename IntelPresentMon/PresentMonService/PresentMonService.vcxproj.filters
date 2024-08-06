@@ -32,6 +32,7 @@
     <ClInclude Include="acts\OpenSession.h" />
     <ClInclude Include="ActionHelper.h" />
     <ClInclude Include="acts\StartStream.h" />
+    <ClInclude Include="acts\GetStaticCpuMetrics.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PresentMonService.rc" />

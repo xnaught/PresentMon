@@ -205,6 +205,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ActionHelper.h" />
+    <ClInclude Include="acts\GetStaticCpuMetrics.h" />
     <ClInclude Include="acts\OpenSession.h" />
     <ClInclude Include="acts\StartStream.h" />
     <ClInclude Include="CliOptions.h" />

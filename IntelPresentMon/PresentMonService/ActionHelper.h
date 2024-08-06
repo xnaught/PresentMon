@@ -9,5 +9,5 @@
 
 #ifdef PM_SERVICE_ASYNC_ACTION_REGISTRATION_
 #include "../Interprocess/source/act/AsyncActionCollection.h"
-#define ACTION_REG(name) ::pmon::ipc::act::AsyncActionRegistrator<::pmon::svc::acts::name, ServiceExecutionContext> regSvcAct_##name##_;
+#define ACTION_REG(name) ::pmon::ipc::act::AsyncActionRegistrator<::pmon::svc::acts::name, ServiceExecutionContext> CONCATENATE(regSvcAct_, name)##_;
 #endif
