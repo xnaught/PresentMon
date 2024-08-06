@@ -101,7 +101,7 @@ namespace p2c::client::cef
                         pmlog_warn(std::format("Failed to connect to logging source server {} after waiting 1.5s", pipePrefix));
                         return;
                     }
-                    // retry connection maximum 3 times, every 50ms
+                    // retry connection maximum 3 times, every 16ms
                     const int nAttempts = 3;
                     for (int i = 0; i < nAttempts; i++) {
                         try {
@@ -112,7 +112,7 @@ namespace p2c::client::cef
                             return;
                         }
                         catch (const pipe::PipeError&) {
-                            std::this_thread::sleep_for(50ms);
+                            std::this_thread::sleep_for(16ms);
                         }
                     }
                     pmlog_warn(std::format("Failed to connect to logging source server {} after {} attempts", pipePrefix, nAttempts));

@@ -118,9 +118,17 @@ namespace pmon::util::pipe
 			archive(obj);
 			co_return obj;
 		}
-		static bool WaitForAvailability(const std::string& name, uint32_t timeoutMs)
+		static bool WaitForAvailability(const std::string& name, uint32_t timeoutMs, uint32_t pollPeriodMs = 10)
 		{
-			return (bool)WaitNamedPipeA(name.c_str(), (DWORD)timeoutMs);
+			const auto start = std::chrono::high_resolution_clock::now();
+			while (std::chrono::high_resolution_clock::now() - start < 1ms * timeoutMs) {
+				if (WaitNamedPipeA(name.c_str(), 0)) {
+					return true;
+				} else {
+					std::this_thread::sleep_for(1ms * pollPeriodMs);
+				}
+			}
+			return false;
 		}
 	private:
 		// functions
