@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "Service.h"
-#include "NamedPipeServer.h"
+#include "ActionServer.h"
 #include "PresentMon.h"
 #include "PowerTelemetryContainer.h"
 #include "..\ControlLib\WmiCpu.h"
@@ -211,7 +211,7 @@ void PresentMonMainThread(Service* const pSvc)
         pm.SetPowerTelemetryContainer(&ptc);
 
         // Start named pipe action RPC server (active threaded)
-        auto pActionServer = std::make_unique<NamedPipeServer>(pSvc, &pm, *opt.controlPipe);
+        auto pActionServer = std::make_unique<ActionServer>(pSvc, &pm, *opt.controlPipe);
 
         try {
             gpuTelemetryThread = std::jthread{ PowerTelemetry, pSvc, &pm, &ptc, pComms.get() };

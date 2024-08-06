@@ -1,12 +1,11 @@
 #pragma once
 #include "../Interprocess/source/act/AsyncAction.h"
-#include "NamedPipeServer.h"
+#include "ActionServer.h"
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/utility.hpp>
 #include <unordered_map>
 #include <format>
-#include "NamedPipeServer.h"
 
 namespace pmon::svc::acts
 {

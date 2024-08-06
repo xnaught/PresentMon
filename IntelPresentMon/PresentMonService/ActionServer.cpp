@@ -3,7 +3,7 @@
 #include "../CommonUtilities/win/WinAPI.h"
 #include "../Interprocess/source/act/AsyncActionManager.h"
 #include "../CommonUtilities/pipe/Pipe.h"
-#include "NamedPipeServer.h"
+#include "ActionServer.h"
 #include <strsafe.h>
 #include <tchar.h>
 #include <thread>
@@ -22,10 +22,10 @@ using namespace util;
 using namespace ipc;
 namespace as = boost::asio;
 
-class NamedPipeServerImpl_
+class ActionServerImpl_
 {
 public:
-    NamedPipeServerImpl_(Service* pSvc, PresentMon* pPmon, std::optional<std::string> pipeName)
+    ActionServerImpl_(Service* pSvc, PresentMon* pPmon, std::optional<std::string> pipeName)
         :
         pipeName_{ pipeName.value_or(gid::defaultControlPipeName) },
         elevatedSecurity_{ !pipeName }
@@ -35,31 +35,31 @@ public:
         thread_ = std::jthread{ [this] {
             // maintain 3 available pipe instances at all times
             for (int i = 0; i < 3; i++) {
-                as::co_spawn(ioctx_, AcceptConnection(), as::detached);
+                as::co_spawn(ioctx_, AcceptConnection_(), as::detached);
             }
             // run the io context event handler until signalled to exit
             ioctx_.run();
         } };
     }
-
-    NamedPipeServerImpl_(const NamedPipeServerImpl_&) = delete;
-    NamedPipeServerImpl_& operator=(const NamedPipeServerImpl_&) = delete;
-    NamedPipeServerImpl_(NamedPipeServerImpl_&&) = delete;
-    NamedPipeServerImpl_& operator=(NamedPipeServerImpl_&&) = delete;
-    ~NamedPipeServerImpl_() = default;
-
-    as::awaitable<void> AcceptConnection()
+    ActionServerImpl_(const ActionServerImpl_&) = delete;
+    ActionServerImpl_& operator=(const ActionServerImpl_&) = delete;
+    ActionServerImpl_(ActionServerImpl_&&) = delete;
+    ActionServerImpl_& operator=(ActionServerImpl_&&) = delete;
+    ~ActionServerImpl_() = default;
+private:
+    // functions
+    as::awaitable<void> AcceptConnection_()
     {
         auto pipe = pipe::DuplexPipe::Make(pipeName_, ioctx_);
         co_await pipe.Accept();
         // fork acceptor coroutine
-        as::co_spawn(ioctx_, AcceptConnection(), as::detached);
+        as::co_spawn(ioctx_, AcceptConnection_(), as::detached);
         // run the action handler until client session is terminated
         while (true) {
             co_await actionManager_.SyncHandleRequest(pipe, pipe.readBuf_, pipe.writeBuf_);
         }
     }
-private:
+    // data
     std::string pipeName_;
     bool elevatedSecurity_; // for now, assume that security is elevated only when using default pipe name
     as::io_context ioctx_;
@@ -67,9 +67,9 @@ private:
     std::jthread thread_;
 };
 
-NamedPipeServer::NamedPipeServer(Service* pSvc, PresentMon* pPmon, std::optional<std::string> pipeName)
+ActionServer::ActionServer(Service* pSvc, PresentMon* pPmon, std::optional<std::string> pipeName)
     :
-    pImpl_{ std::make_shared<NamedPipeServerImpl_>(pSvc, pPmon, std::move(pipeName)) }
+    pImpl_{ std::make_shared<ActionServerImpl_>(pSvc, pPmon, std::move(pipeName)) }
 {}
 
 

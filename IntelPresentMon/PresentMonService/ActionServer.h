@@ -18,17 +18,17 @@ struct ServiceExecutionContext
     PresentMon* pPmon;
 };
 
-class NamedPipeServer
+class ActionServer
 {
 public:
-    NamedPipeServer(Service* pSvc, PresentMon* pPmon, std::optional<std::string> pipeName);
-    ~NamedPipeServer() = default;
-    NamedPipeServer(const NamedPipeServer&) = delete;
-    NamedPipeServer& operator=(const NamedPipeServer&) = delete;
-    NamedPipeServer(NamedPipeServer&&) = delete;
-    NamedPipeServer& operator=(NamedPipeServer&&) = delete;
+    ActionServer(Service* pSvc, PresentMon* pPmon, std::optional<std::string> pipeName);
+    ~ActionServer() = default;
+    ActionServer(const ActionServer&) = delete;
+    ActionServer& operator=(const ActionServer&) = delete;
+    ActionServer(ActionServer&&) = delete;
+    ActionServer& operator=(ActionServer&&) = delete;
 private:
-    std::shared_ptr<class NamedPipeServerImpl_> pImpl_;
+    std::shared_ptr<class ActionServerImpl_> pImpl_;
 };
 
 const size_t MaxBufferSize = 4096;

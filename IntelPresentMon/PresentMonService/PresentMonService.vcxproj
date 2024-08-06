@@ -193,7 +193,7 @@
     <ClCompile Include="AsyncActions.cpp" />
     <ClCompile Include="LogSetup.cpp" />
     <ClCompile Include="MockPresentMonSession.cpp" />
-    <ClCompile Include="NamedPipeServer.cpp" />
+    <ClCompile Include="ActionServer.cpp" />
     <ClCompile Include="PMMainThread.cpp" />
     <ClCompile Include="PowerTelemetryContainer.cpp" />
     <ClCompile Include="RealtimePresentMonSession.cpp" />
@@ -211,7 +211,7 @@
     <ClInclude Include="MockPresentMonSession.h" />
     <ClInclude Include="NamedPipeCmdProcess.h" />
     <ClInclude Include="LateStageReprojectionData.hpp" />
-    <ClInclude Include="NamedPipeServer.h" />
+    <ClInclude Include="ActionServer.h" />
     <ClInclude Include="PowerTelemetryContainer.h" />
     <ClInclude Include="PresentMon.h" />
     <ClInclude Include="PMMainThread.h" />
