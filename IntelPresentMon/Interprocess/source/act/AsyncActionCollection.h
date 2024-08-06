@@ -43,4 +43,12 @@ namespace pmon::ipc::act
 	private:
 		std::unordered_map<std::string, std::unique_ptr<AsyncAction<ExecutionContext>>> actions_;
 	};
+
+	template<class A, class E>
+	struct AsyncActionRegistrator
+	{
+		AsyncActionRegistrator() {
+			AsyncActionCollection<E>::Get().AddAction<A>();
+		}
+	};
 }

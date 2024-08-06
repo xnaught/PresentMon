@@ -61,6 +61,7 @@
     <ClInclude Include="log\TextFormatter.h" />
     <ClInclude Include="log\MarshallDriver.h" />
     <ClInclude Include="log\TimePoint.h" />
+    <ClInclude Include="Macro.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="Memory.h" />
     <ClInclude Include="Hash.h" />

@@ -190,7 +190,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AsyncActions.cpp" />
+    <ClCompile Include="ActionRegistration.cpp" />
     <ClCompile Include="LogSetup.cpp" />
     <ClCompile Include="MockPresentMonSession.cpp" />
     <ClCompile Include="ActionServer.cpp" />
@@ -204,7 +204,8 @@
     <ClCompile Include="PresentMonSession.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AsyncActions.h" />
+    <ClInclude Include="ActionHelper.h" />
+    <ClInclude Include="acts\OpenSession.h" />
     <ClInclude Include="CliOptions.h" />
     <ClInclude Include="GlobalIdentifiers.h" />
     <ClInclude Include="LogSetup.h" />

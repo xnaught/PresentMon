@@ -2,7 +2,7 @@
 #include "../CommonUtilities/win/WinAPI.h"
 #include "../Interprocess/source/act/AsyncActionManager.h"
 #include "../CommonUtilities/pipe/Pipe.h"
-#include "../PresentMonService/AsyncActions.h"
+#include "../PresentMonService/acts/OpenSession.h"
 
 namespace pmon::mid
 {
@@ -29,7 +29,7 @@ namespace pmon::mid
 
         pipe::as::awaitable<std::string> OpenSession()
         {
-            using Action = pmon::svc::acts::OpenSessionAction;
+            using Action = pmon::svc::acts::OpenSession;
             const Action::Params p{ .clientPid = 442200 };
             auto res = co_await ipc::act::SyncRequest<Action>(p, 9669, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
             co_return res.str;
