@@ -126,7 +126,7 @@ namespace pmon::mid
 
 		const pmapi::intro::Root& GetIntrospectionRoot();
 
-		std::shared_ptr<class ActionHub> pActionHub;
+		std::shared_ptr<class ActionClient> pActionClient;
 		uint32_t clientProcessId = 0;
 		// Stream clients mapping to process id
 		std::map<uint32_t, std::unique_ptr<StreamClient>> presentMonStreamClients;

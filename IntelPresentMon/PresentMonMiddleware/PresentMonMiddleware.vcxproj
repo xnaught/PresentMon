@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ActionHub.h" />
+    <ClInclude Include="ActionClient.h" />
     <ClInclude Include="ConcreteMiddleware.h" />
     <ClInclude Include="DynamicQuery.h" />
     <ClInclude Include="Exception.h" />

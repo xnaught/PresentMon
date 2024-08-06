@@ -30,7 +30,7 @@
 
 #include "../CommonUtilities/log/GlogShim.h"
 
-#include "ActionHub.h"
+#include "ActionClient.h"
 
 namespace pmon::mid
 {
@@ -49,7 +49,7 @@ namespace pmon::mid
         // Try to open a named pipe; wait for it, if necessary.
         // TODO:act consider re-adding pipe waiting code
         // TODO:act handle exception
-        pActionHub = std::make_shared<ActionHub>(pipeName);
+        pActionClient = std::make_shared<ActionClient>(pipeName);
 
         clientProcessId = GetCurrentProcessId();
         // connect to the introspection nsm

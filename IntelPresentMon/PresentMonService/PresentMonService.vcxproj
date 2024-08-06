@@ -206,6 +206,7 @@
   <ItemGroup>
     <ClInclude Include="ActionHelper.h" />
     <ClInclude Include="acts\OpenSession.h" />
+    <ClInclude Include="acts\StartStream.h" />
     <ClInclude Include="CliOptions.h" />
     <ClInclude Include="GlobalIdentifiers.h" />
     <ClInclude Include="LogSetup.h" />

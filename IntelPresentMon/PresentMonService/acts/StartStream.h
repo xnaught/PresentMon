@@ -2,7 +2,7 @@
 #include "../ActionHelper.h"
 #include <format>
 
-#define ACTNAME OpenSession
+#define ACTNAME StartStream
 
 namespace pmon::svc::acts
 {
@@ -15,27 +15,30 @@ namespace pmon::svc::acts
 		struct Params
 		{
 			uint32_t clientPid;
+			uint32_t targetPid;
 
 			template<class A> void serialize(A& ar) {
-				ar(clientPid);
+				ar(clientPid, targetPid);
 			}
 		};
 		struct Response
 		{
-			std::string str;
+			std::string nsmFileName;
 
 			template<class A> void serialize(A& ar) {
-				ar(str);
+				ar(nsmFileName);
 			}
 		};
 	private:
 		friend class AsyncActionBase_<ACTNAME, ServiceExecutionContext>;
 		static Response Execute_(const ServiceExecutionContext& ctx, Params&& in)
 		{
-			ctx.pSvc->SignalClientSessionOpened();
-			Response out;
-			out.str = std::format("session-opened:{}", in.clientPid);
-			std::cout << "Received open session action from: " << in.clientPid << std::endl;
+			std::string nsmFileName;
+			// TODO:act check return and throw exception containing the code
+			ctx.pPmon->StartStreaming(in.clientPid, in.targetPid, nsmFileName);
+			const Response out{ .nsmFileName = std::move(nsmFileName) };
+			pmlog_dbg(std::format("StartStreaming action from [{}] targetting [{}] assigned nsm [{}]",
+				in.clientPid, in.targetPid, out.nsmFileName));
 			return out;
 		}
 	};

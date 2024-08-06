@@ -31,6 +31,7 @@
     <ClInclude Include="LogSetup.h" />
     <ClInclude Include="acts\OpenSession.h" />
     <ClInclude Include="ActionHelper.h" />
+    <ClInclude Include="acts\StartStream.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PresentMonService.rc" />

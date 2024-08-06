@@ -39,7 +39,7 @@
     <ClInclude Include="LogSetup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ActionHub.h">
+    <ClInclude Include="ActionClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
