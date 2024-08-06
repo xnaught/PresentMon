@@ -179,6 +179,7 @@ namespace pmon::mid
 
     void ConcreteMiddleware::GetStaticCpuMetrics()
     {
+        // TODO:act checking status and throwing exceptions / catching exceptions / logging
         auto metrics = pActionClient->GetStaticCpuMetrics();
 
         const auto cpuNameLower = str::ToLower(metrics.cpuName);
@@ -1712,47 +1713,24 @@ void ReportMetrics(
         return PM_STATUS_SUCCESS;
     }
 
-    // TODO:act implement
     void ConcreteMiddleware::GetStaticGpuMetrics()
     {
-        pmlog_error("unimplemented!");
-        //MemBuffer requestBuf;
-        //MemBuffer responseBuf;
+        // TODO:act checking status and throwing exceptions / catching exceptions / logging
+        const auto res = pActionClient->EnumerateAdapters();
 
-        //NamedPipeHelper::EncodeRequestHeader(&requestBuf, PM_ACTION::ENUMERATE_ADAPTERS);
+        // TODO:act check that adapter count matches introspection
 
-        //PM_STATUS status = CallPmService(&requestBuf, &responseBuf);
-        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-        //    return;
-        //}
-
-        //IPMAdapterInfoNext adapterInfo{};
-        //status =
-        //    NamedPipeHelper::DecodeEnumerateAdaptersResponse(&responseBuf, (IPMAdapterInfo*)&adapterInfo);
-        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-        //    return;
-        //}
-
-        //if (adapterInfo.num_adapters != cachedGpuInfo.size())
-        //{
-        //    LOG(INFO) << "Number of adapters returned from Control Pipe does not match Introspective data";
-        //    return;
-        //}
-
-        //// For each cached gpu search through the returned adapter information and set the returned
-        //// static gpu metrics
-        //for (auto& gpuInfo : cachedGpuInfo)
-        //{
-        //    for (uint32_t i = 0; i < adapterInfo.num_adapters; i++)
-        //    {
-        //        if (gpuInfo.adapterId == adapterInfo.adapters[i].id)
-        //        {
-        //            gpuInfo.gpuSustainedPowerLimit = adapterInfo.adapters[i].gpuSustainedPowerLimit;
-        //            gpuInfo.gpuMemorySize = adapterInfo.adapters[i].gpuMemorySize;
-        //            gpuInfo.gpuMemoryMaxBandwidth = adapterInfo.adapters[i].gpuMemoryMaxBandwidth;
-        //            break;
-        //        }
-        //    }
-        //}
+        // For each cached gpu search through the returned adapter information and set the returned
+        // static gpu metrics
+        for (auto& gpuInfo : cachedGpuInfo) {
+            for (auto& adapter : res.adapters) {
+                if (gpuInfo.adapterId == adapter.id) {
+                    gpuInfo.gpuSustainedPowerLimit = adapter.gpuSustainedPowerLimit;
+                    gpuInfo.gpuMemorySize = adapter.gpuMemorySize;
+                    gpuInfo.gpuMemoryMaxBandwidth = adapter.gpuMemoryMaxBandwidth;
+                    break;
+                }
+            }
+        }
     }
 }

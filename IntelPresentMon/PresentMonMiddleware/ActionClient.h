@@ -5,6 +5,7 @@
 #include "../PresentMonService/acts/OpenSession.h"
 #include "../PresentMonService/acts/StartStream.h"
 #include "../PresentMonService/acts/GetStaticCpuMetrics.h"
+#include "../PresentMonService/acts/EnumerateAdapters.h"
 
 namespace pmon::mid
 {
@@ -30,22 +31,30 @@ namespace pmon::mid
         ActionClient& operator=(ActionClient&&) = delete;
         ~ActionClient() = default;
 
-        StartStream::Response StartStream(uint32_t targetPid)
+        auto StartStream(uint32_t targetPid)
         {
             return ExecuteSynchronous_([=, this]() -> pipe::as::awaitable<StartStream::Response> {
                 const StartStream::Params p{ .clientPid = thisPid_, .targetPid = targetPid };
                 co_return co_await ipc::act::SyncRequest<acts::StartStream>(p, token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
             }());
         }
-        GetStaticCpuMetrics::Response GetStaticCpuMetrics()
+        auto GetStaticCpuMetrics()
         {
             return ExecuteSynchronous_([=, this]() -> pipe::as::awaitable<GetStaticCpuMetrics::Response> {
                 co_return co_await ipc::act::SyncRequest<acts::GetStaticCpuMetrics>(
                     {}, token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
             }());
         }
+        auto EnumerateAdapters()
+        {
+            return ExecuteSynchronous_([=, this]() -> pipe::as::awaitable<EnumerateAdapters::Response> {
+                co_return co_await ipc::act::SyncRequest<acts::EnumerateAdapters>(
+                    {}, token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
+            }());
+        }
 
     private:
+        // functions
         template<class C>
         auto ExecuteSynchronous_(C&& coro)
         {
@@ -60,6 +69,7 @@ namespace pmon::mid
             auto res = co_await ipc::act::SyncRequest<OpenSession>(p, token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
             co_return res.str;
         }
+        // data
         uint32_t token_ = 0;
         uint32_t thisPid_;
         std::string pipeName_;

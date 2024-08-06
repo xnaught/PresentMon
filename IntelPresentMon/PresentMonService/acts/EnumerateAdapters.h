@@ -1,0 +1,64 @@
+#pragma once
+#include "../ActionHelper.h"
+#include <format>
+#include <ranges>
+
+#define ACTNAME EnumerateAdapters
+
+namespace pmon::svc::acts
+{
+	using namespace ipc::act;
+	namespace rn = std::ranges;
+	namespace vi = rn::views;
+
+	class ACTNAME : public AsyncActionBase_<ACTNAME, ServiceExecutionContext>
+	{
+	public:
+		static constexpr const char* Identifier = STRINGIFY(ACTNAME);
+		struct Params { template<class A> void serialize(A& ar) {} };
+		struct Response
+		{
+			struct Adapter
+			{
+				uint32_t id;
+				PM_DEVICE_VENDOR vendor;
+				std::string name;
+				double gpuSustainedPowerLimit;
+				uint64_t gpuMemorySize;
+				uint64_t gpuMemoryMaxBandwidth;
+
+				template<class A> void serialize(A& ar) {
+					ar(id, vendor, name, gpuSustainedPowerLimit, gpuMemorySize, gpuMemoryMaxBandwidth);
+				}
+			};
+			std::vector<Adapter> adapters;
+
+			template<class A> void serialize(A& ar) {
+				ar(adapters);
+			}
+		};
+	private:
+		friend class AsyncActionBase_<ACTNAME, ServiceExecutionContext>;
+		static Response Execute_(const ServiceExecutionContext& ctx, Params&& in)
+		{
+			Response out;
+			for (auto&&[i, adapter] : ctx.pPmon->EnumerateAdapters() | vi::enumerate) {
+				out.adapters.push_back(Response::Adapter{
+					.id = (uint32_t)i,
+					.vendor = adapter->GetVendor(),
+					.name = adapter->GetName(),
+					.gpuSustainedPowerLimit = adapter->GetSustainedPowerLimit(),
+					.gpuMemorySize = adapter->GetDedicatedVideoMemory(),
+					.gpuMemoryMaxBandwidth = adapter->GetVideoMemoryMaxBandwidth(),
+				});
+			}
+			return out;
+		}
+	};
+}
+
+#ifdef PM_SERVICE_ASYNC_ACTION_REGISTRATION_
+ACTION_REG(ACTNAME);
+#endif
+
+#undef ACTNAME

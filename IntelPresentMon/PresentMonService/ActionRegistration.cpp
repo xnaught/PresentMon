@@ -2,3 +2,4 @@
 #include "acts/OpenSession.h"
 #include "acts/GetStaticCpuMetrics.h"
 #include "acts/StartStream.h"
+#include "acts/EnumerateAdapters.h"
