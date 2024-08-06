@@ -39,6 +39,9 @@
     <ClInclude Include="LogSetup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ActionHub.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MockMiddleware.cpp">

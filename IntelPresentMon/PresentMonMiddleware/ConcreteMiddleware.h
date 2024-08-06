@@ -1,7 +1,7 @@
 #pragma once
+#include "../CommonUtilities/win/WinAPI.h"
 #include "Middleware.h"
 #include "../Interprocess/source/Interprocess.h"
-#include "../PresentMonUtils/MemBuffer.h"
 #include "../Streamer/StreamClient.h"
 #include <optional>
 #include <string>
@@ -102,9 +102,6 @@ namespace pmon::mid
 				CloseHandle(handle);
 			}
 		};
-		PM_STATUS SendRequest(MemBuffer* requestBuffer);
-		PM_STATUS ReadResponse(MemBuffer* responseBuffer);
-		PM_STATUS CallPmService(MemBuffer* requestBuffer, MemBuffer* responseBuffer);
 		PmNsmFrameData* GetFrameDataStart(StreamClient* client, uint64_t& index, uint64_t dataOffset, uint64_t& queryFrameDataDelta, double& windowSampleSizeMs);
 		uint64_t GetAdjustedQpc(uint64_t current_qpc, uint64_t frame_data_qpc, uint64_t queryMetricsOffset, LARGE_INTEGER frequency, uint64_t& queryFrameDataDelta);
 		bool DecrementIndex(NamedSharedMem* nsm_view, uint64_t& index);
@@ -129,7 +126,7 @@ namespace pmon::mid
 
 		const pmapi::intro::Root& GetIntrospectionRoot();
 
-		std::unique_ptr<void, HandleDeleter> pNamedPipeHandle;
+		std::shared_ptr<class ActionHub> pActionHub;
 		uint32_t clientProcessId = 0;
 		// Stream clients mapping to process id
 		std::map<uint32_t, std::unique_ptr<StreamClient>> presentMonStreamClients;

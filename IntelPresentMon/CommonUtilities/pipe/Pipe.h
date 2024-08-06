@@ -146,7 +146,7 @@ namespace pmon::util::pipe
 			win::Handle handle(CreateNamedPipeA(
 				name.c_str(),
 				PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,	// open mode
-				PIPE_TYPE_MESSAGE | PIPE_READMODE_MESSAGE,	// pipe mode
+				PIPE_TYPE_BYTE | PIPE_READMODE_BYTE,		// pipe mode
 				PIPE_UNLIMITED_INSTANCES,					// max instances
 				4096,		// out buffer
 				4096,		// in buffer

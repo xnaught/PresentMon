@@ -1,6 +1,5 @@
 // Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
-#define NOMINMAX
 #include "ConcreteMiddleware.h"
 #include <cstring>
 #include <string>
@@ -11,7 +10,6 @@
 #include <Shlwapi.h>
 #include <numeric>
 #include <algorithm>
-#include "../PresentMonUtils/NamedPipeHelper.h"
 #include "../PresentMonUtils/QPCUtils.h"
 #include "../PresentMonAPI2/Internal.h"
 #include "../PresentMonAPIWrapperCommon/Introspection.h"
@@ -32,6 +30,8 @@
 
 #include "../CommonUtilities/log/GlogShim.h"
 
+#include "ActionHub.h"
+
 namespace pmon::mid
 {
     using namespace ipc::intro;
@@ -46,43 +46,11 @@ namespace pmon::mid
         const auto pipeName = pipeNameOverride.transform(&std::string::c_str)
             .value_or(pmon::gid::defaultControlPipeName);
 
-        HANDLE namedPipeHandle;
         // Try to open a named pipe; wait for it, if necessary.
-        while (1) {
-            namedPipeHandle = CreateFileA(
-                pipeName,
-                GENERIC_READ | GENERIC_WRITE,
-                0,              
-                NULL,           
-                OPEN_EXISTING,  
-                0,              
-                NULL);          
+        // TODO:act consider re-adding pipe waiting code
+        // TODO:act handle exception
+        pActionHub = std::make_shared<ActionHub>(pipeName);
 
-            // Break if the pipe handle is valid.
-            if (namedPipeHandle != INVALID_HANDLE_VALUE) {
-                break;
-            }
-
-            // Exit if an error other than ERROR_PIPE_BUSY occurs.
-            if (const auto hr = GetLastError(); hr != ERROR_PIPE_BUSY) {
-                throw pmon::mid::Exception{ (PM_STATUS)22 };
-            }
-
-            // All pipe instances are busy, so wait for 20 seconds.
-            if (!WaitNamedPipeA(pipeName, 20000)) {
-                throw pmon::mid::Exception{ (PM_STATUS)23 };
-            }
-        }
-        // The pipe connected; change to message-read mode.
-        DWORD mode = PIPE_READMODE_MESSAGE;
-        BOOL success = SetNamedPipeHandleState(namedPipeHandle,
-            &mode,
-            NULL,
-            NULL);
-        if (!success) {
-            throw pmon::mid::Exception{ (PM_STATUS)24 };
-        }
-        pNamedPipeHandle.reset(namedPipeHandle);
         clientProcessId = GetCurrentProcessId();
         // connect to the introspection nsm
         pComms = ipc::MakeMiddlewareComms(std::move(introNsmOverride));
@@ -129,199 +97,137 @@ namespace pmon::mid
 		strcpy_s(buffer, 256, "concrete-middle");
 	}
 
-    PM_STATUS ConcreteMiddleware::SendRequest(MemBuffer* requestBuffer) {
-        DWORD bytesWritten;
-        BOOL success = WriteFile(
-            pNamedPipeHandle.get(),
-            requestBuffer->AccessMem(),
-            static_cast<DWORD>(requestBuffer->GetCurrentSize()),
-            &bytesWritten,
-            NULL);
-
-        if (success && requestBuffer->GetCurrentSize() == bytesWritten) {
-            return PM_STATUS::PM_STATUS_SUCCESS;
-        }
-        else {
-            return PM_STATUS::PM_STATUS_FAILURE;
-        }
-    }
-
-    PM_STATUS ConcreteMiddleware::ReadResponse(MemBuffer* responseBuffer) {
-        BOOL success;
-        DWORD bytesRead;
-        BYTE inBuffer[kMaxRespBufferSize];
-        ZeroMemory(&inBuffer, sizeof(inBuffer));
-
-        do {
-            // Read from the pipe using a nonoverlapped read
-            success = ReadFile(pNamedPipeHandle.get(),
-                inBuffer,
-                sizeof(inBuffer),
-                &bytesRead,
-                NULL);
-
-            // If the call was not successful AND there was
-            // no more data to read bail out
-            if (!success && GetLastError() != ERROR_MORE_DATA) {
-                break;
-            }
-
-            // Either the call was successful or there was more
-            // data in the pipe. In both cases add the response data
-            // to the memory buffer
-            responseBuffer->AddItem(inBuffer, bytesRead);
-        } while (!success);  // repeat loop if ERROR_MORE_DATA
-
-        if (success) {
-            return PM_STATUS::PM_STATUS_SUCCESS;
-        }
-        else {
-            return PM_STATUS::PM_STATUS_FAILURE;
-        }
-    }
-
-    PM_STATUS ConcreteMiddleware::CallPmService(MemBuffer* requestBuffer, MemBuffer* responseBuffer)
-    {
-        PM_STATUS status;
-
-        status = SendRequest(requestBuffer);
-        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-            return status;
-        }
-
-        status = ReadResponse(responseBuffer);
-        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-            return status;
-        }
-
-        return status;
-    }
-
+    // TODO:act implement
     PM_STATUS ConcreteMiddleware::StartStreaming(uint32_t processId)
     {
-        MemBuffer requestBuffer;
-        MemBuffer responseBuffer;
+        pmlog_error("unimplemented!");
+        //MemBuffer requestBuffer;
+        //MemBuffer responseBuffer;
 
-        NamedPipeHelper::EncodeStartStreamingRequest(&requestBuffer, clientProcessId,
-            processId, nullptr);
+        //NamedPipeHelper::EncodeStartStreamingRequest(&requestBuffer, clientProcessId,
+        //    processId, nullptr);
 
-        PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
-        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-            pmlog_error("Failed to call PmService");
-            return status;
-        }
+        //PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
+        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+        //    pmlog_error("Failed to call PmService");
+        //    return status;
+        //}
 
-        IPMSMStartStreamResponse startStreamResponse{};
+        //IPMSMStartStreamResponse startStreamResponse{};
 
-        status = NamedPipeHelper::DecodeStartStreamingResponse(
-            &responseBuffer, &startStreamResponse);
-        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-            if (status == PM_STATUS_INVALID_PID) {
-                pmlog_error(std::format("failed to begin tracking process: pid [{}] does not exist",
-                    processId)).diag();
-            }
-            else {
-                pmlog_error(std::format("failed to begin tracking pid [{}]", processId)).diag();
-            }
-            return status;
-        }
+        //status = NamedPipeHelper::DecodeStartStreamingResponse(
+        //    &responseBuffer, &startStreamResponse);
+        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+        //    if (status == PM_STATUS_INVALID_PID) {
+        //        pmlog_error(std::format("failed to begin tracking process: pid [{}] does not exist",
+        //            processId)).diag();
+        //    }
+        //    else {
+        //        pmlog_error(std::format("failed to begin tracking pid [{}]", processId)).diag();
+        //    }
+        //    return status;
+        //}
 
-        // Get the NSM file name from 
-        std::string mapFileName(startStreamResponse.fileName);
+        //// Get the NSM file name from 
+        //std::string mapFileName(startStreamResponse.fileName);
 
-        // Initialize client with returned mapfile name
-        auto iter = presentMonStreamClients.find(processId);
-        if (iter == presentMonStreamClients.end()) {
-            try {
-                std::unique_ptr<StreamClient> client =
-                    std::make_unique<StreamClient>(std::move(mapFileName), false);
-                presentMonStreamClients.emplace(processId, std::move(client));
-            }
-            catch (...) {
-                return PM_STATUS::PM_STATUS_FAILURE;
-            }
-        }
+        //// Initialize client with returned mapfile name
+        //auto iter = presentMonStreamClients.find(processId);
+        //if (iter == presentMonStreamClients.end()) {
+        //    try {
+        //        std::unique_ptr<StreamClient> client =
+        //            std::make_unique<StreamClient>(std::move(mapFileName), false);
+        //        presentMonStreamClients.emplace(processId, std::move(client));
+        //    }
+        //    catch (...) {
+        //        return PM_STATUS::PM_STATUS_FAILURE;
+        //    }
+        //}
 
-        pmlog_info(std::format("Started tracking pid [{}]", processId)).diag();
-
+        //pmlog_info(std::format("Started tracking pid [{}]", processId)).diag();
+        //return status;
         return PM_STATUS_SUCCESS;
     }
-    
+
+    // TODO:act implement
     PM_STATUS ConcreteMiddleware::StopStreaming(uint32_t processId)
     {
-        MemBuffer requestBuffer;
-        MemBuffer responseBuffer;
+        pmlog_error("unimplemented!");
+        //MemBuffer requestBuffer;
+        //MemBuffer responseBuffer;
 
-        NamedPipeHelper::EncodeStopStreamingRequest(&requestBuffer,
-            clientProcessId,
-            processId);
+        //NamedPipeHelper::EncodeStopStreamingRequest(&requestBuffer,
+        //    clientProcessId,
+        //    processId);
 
-        PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
-        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-            return status;
-        }
+        //PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
+        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+        //    return status;
+        //}
 
-        status = NamedPipeHelper::DecodeStopStreamingResponse(&responseBuffer);
-        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-            return status;
-        }
+        //status = NamedPipeHelper::DecodeStopStreamingResponse(&responseBuffer);
+        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+        //    return status;
+        //}
 
-        // Remove client
-        auto iter = presentMonStreamClients.find(processId);
-        if (iter != presentMonStreamClients.end()) {
-            presentMonStreamClients.erase(std::move(iter));
-        }
-
-        return status;
+        //// Remove client
+        //auto iter = presentMonStreamClients.find(processId);
+        //if (iter != presentMonStreamClients.end()) {
+        //    presentMonStreamClients.erase(std::move(iter));
+        //}
+        //return status;
+        return PM_STATUS_SUCCESS;
     }
 
+    // TODO:act implement
     void ConcreteMiddleware::GetStaticCpuMetrics()
     {
-        MemBuffer requestBuffer;
-        MemBuffer responseBuffer;
+        pmlog_error("unimplemented!");
+        //MemBuffer requestBuffer;
+        //MemBuffer responseBuffer;
 
-        NamedPipeHelper::EncodeRequestHeader(&requestBuffer, PM_ACTION::GET_STATIC_CPU_METRICS);
+        //NamedPipeHelper::EncodeRequestHeader(&requestBuffer, PM_ACTION::GET_STATIC_CPU_METRICS);
 
-        PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
-        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-            return;
-        }
+        //PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
+        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+        //    return;
+        //}
 
-        IPMStaticCpuMetrics staticCpuMetrics{};
-        status = NamedPipeHelper::DecodeStaticCpuMetricsResponse(&responseBuffer, &staticCpuMetrics);
-        if (status != PM_STATUS::PM_STATUS_SUCCESS ||
-            staticCpuMetrics.cpuNameLength > MAX_PM_CPU_NAME) {
-            return;
-        }
+        //IPMStaticCpuMetrics staticCpuMetrics{};
+        //status = NamedPipeHelper::DecodeStaticCpuMetricsResponse(&responseBuffer, &staticCpuMetrics);
+        //if (status != PM_STATUS::PM_STATUS_SUCCESS ||
+        //    staticCpuMetrics.cpuNameLength > MAX_PM_CPU_NAME) {
+        //    return;
+        //}
 
-        auto ContainsString = [](std::string str, std::string subStr)
-            {
-                return std::search(str.begin(), str.end(), subStr.begin(), subStr.end(),
-                    [](char c1, char c2) { return std::tolower(c1) == std::tolower(c2); }) != str.end();
-            };
+        //auto ContainsString = [](std::string str, std::string subStr)
+        //    {
+        //        return std::search(str.begin(), str.end(), subStr.begin(), subStr.end(),
+        //            [](char c1, char c2) { return std::tolower(c1) == std::tolower(c2); }) != str.end();
+        //    };
 
-        std::string cpuName = staticCpuMetrics.cpuName;
-        PM_DEVICE_VENDOR deviceVendor;
-        if (ContainsString(cpuName, "intel"))
-        {
-            deviceVendor = PM_DEVICE_VENDOR_INTEL;
-        }
-        else if (ContainsString(cpuName, "amd"))
-        {
-            deviceVendor = PM_DEVICE_VENDOR_AMD;
-        }
-        else
-        {
-            deviceVendor = PM_DEVICE_VENDOR_UNKNOWN;
-        }
+        //std::string cpuName = staticCpuMetrics.cpuName;
+        //PM_DEVICE_VENDOR deviceVendor;
+        //if (ContainsString(cpuName, "intel"))
+        //{
+        //    deviceVendor = PM_DEVICE_VENDOR_INTEL;
+        //}
+        //else if (ContainsString(cpuName, "amd"))
+        //{
+        //    deviceVendor = PM_DEVICE_VENDOR_AMD;
+        //}
+        //else
+        //{
+        //    deviceVendor = PM_DEVICE_VENDOR_UNKNOWN;
+        //}
 
-        cachedCpuInfo.push_back(
-            { 
-                .deviceVendor = deviceVendor,
-                .deviceName = cpuName,
-                .cpuPowerLimit = staticCpuMetrics.cpuPowerLimit
-            }
-        );
+        //cachedCpuInfo.push_back(
+        //    { 
+        //        .deviceVendor = deviceVendor,
+        //        .deviceName = cpuName,
+        //        .cpuPowerLimit = staticCpuMetrics.cpuPowerLimit
+        //    }
+        //);
     }
 
     std::string ConcreteMiddleware::GetProcessName(uint32_t processId)
@@ -349,22 +255,25 @@ namespace pmon::mid
         return *pIntroRoot;
     }
 
+    // TODO:act implement
     PM_STATUS ConcreteMiddleware::SetTelemetryPollingPeriod(uint32_t deviceId, uint32_t timeMs)
     {
-        MemBuffer requestBuffer;
-        MemBuffer responseBuffer;
+        pmlog_error("unimplemented!");
+        //MemBuffer requestBuffer;
+        //MemBuffer responseBuffer;
 
-        NamedPipeHelper::EncodeGeneralSetActionRequest(
-            PM_ACTION::SET_GPU_TELEMETRY_PERIOD, &requestBuffer, timeMs);
+        //NamedPipeHelper::EncodeGeneralSetActionRequest(
+        //    PM_ACTION::SET_GPU_TELEMETRY_PERIOD, &requestBuffer, timeMs);
 
-        PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
-        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-            return status;
-        }
+        //PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
+        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+        //    return status;
+        //}
 
-        status = NamedPipeHelper::DecodeGeneralSetActionResponse(
-            PM_ACTION::SET_GPU_TELEMETRY_PERIOD, &responseBuffer);
-        return status;
+        //status = NamedPipeHelper::DecodeGeneralSetActionResponse(
+        //    PM_ACTION::SET_GPU_TELEMETRY_PERIOD, &responseBuffer);
+        //return status;
+        return PM_STATUS_SUCCESS;
     }
 
     PM_DYNAMIC_QUERY* ConcreteMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, double windowSizeMs, double metricOffsetMs)
@@ -1300,7 +1209,7 @@ void ReportMetrics(
     // Calculate percentile using linear interpolation between the closet ranks
     double ConcreteMiddleware::CalculatePercentile(std::vector<double>& inData, double percentile) const
     {
-        percentile = min(max(percentile, 0.), 1.);
+        percentile = std::min(std::max(percentile, 0.), 1.);
 
         double integral_part_as_double;
         double fractpart =
@@ -1798,77 +1707,82 @@ void ReportMetrics(
         SaveMetricCache(pQuery, processId, pBlob);
     }
 
+    // TODO:act implement
     PM_STATUS ConcreteMiddleware::SetActiveGraphicsAdapter(uint32_t deviceId)
     {
-        if (activeDevice && *activeDevice == deviceId) {
-            return PM_STATUS_SUCCESS;
-        }
+        pmlog_error("unimplemented!");
+        //if (activeDevice && *activeDevice == deviceId) {
+        //    return PM_STATUS_SUCCESS;
+        //}
 
-        MemBuffer requestBuf;
-        MemBuffer responseBuf;
+        //MemBuffer requestBuf;
+        //MemBuffer responseBuf;
 
-        const auto adapterIndex = GetCachedGpuInfoIndex(deviceId);
-        if (!adapterIndex.has_value()) {
-            return PM_STATUS_INVALID_ADAPTER_ID;
-        }
+        //const auto adapterIndex = GetCachedGpuInfoIndex(deviceId);
+        //if (!adapterIndex.has_value()) {
+        //    return PM_STATUS_INVALID_ADAPTER_ID;
+        //}
 
-        NamedPipeHelper::EncodeGeneralSetActionRequest(PM_ACTION::SELECT_ADAPTER,
-            &requestBuf, static_cast<uint32_t>(adapterIndex.value()));
+        //NamedPipeHelper::EncodeGeneralSetActionRequest(PM_ACTION::SELECT_ADAPTER,
+        //    &requestBuf, static_cast<uint32_t>(adapterIndex.value()));
 
-        PM_STATUS status = CallPmService(&requestBuf, &responseBuf);
-        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-            return status;
-        }
+        //PM_STATUS status = CallPmService(&requestBuf, &responseBuf);
+        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+        //    return status;
+        //}
 
-        status = NamedPipeHelper::DecodeGeneralSetActionResponse(
-            PM_ACTION::SELECT_ADAPTER, &responseBuf);
+        //status = NamedPipeHelper::DecodeGeneralSetActionResponse(
+        //    PM_ACTION::SELECT_ADAPTER, &responseBuf);
 
-        if (status == PM_STATUS_SUCCESS) {
-            activeDevice = deviceId;
-        }
+        //if (status == PM_STATUS_SUCCESS) {
+        //    activeDevice = deviceId;
+        //}
 
-        return status;
+        //return status;
+        return PM_STATUS_SUCCESS;
     }
 
+    // TODO:act implement
     void ConcreteMiddleware::GetStaticGpuMetrics()
     {
-        MemBuffer requestBuf;
-        MemBuffer responseBuf;
+        pmlog_error("unimplemented!");
+        //MemBuffer requestBuf;
+        //MemBuffer responseBuf;
 
-        NamedPipeHelper::EncodeRequestHeader(&requestBuf, PM_ACTION::ENUMERATE_ADAPTERS);
+        //NamedPipeHelper::EncodeRequestHeader(&requestBuf, PM_ACTION::ENUMERATE_ADAPTERS);
 
-        PM_STATUS status = CallPmService(&requestBuf, &responseBuf);
-        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-            return;
-        }
+        //PM_STATUS status = CallPmService(&requestBuf, &responseBuf);
+        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+        //    return;
+        //}
 
-        IPMAdapterInfoNext adapterInfo{};
-        status =
-            NamedPipeHelper::DecodeEnumerateAdaptersResponse(&responseBuf, (IPMAdapterInfo*)&adapterInfo);
-        if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-            return;
-        }
+        //IPMAdapterInfoNext adapterInfo{};
+        //status =
+        //    NamedPipeHelper::DecodeEnumerateAdaptersResponse(&responseBuf, (IPMAdapterInfo*)&adapterInfo);
+        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
+        //    return;
+        //}
 
-        if (adapterInfo.num_adapters != cachedGpuInfo.size())
-        {
-            LOG(INFO) << "Number of adapters returned from Control Pipe does not match Introspective data";
-            return;
-        }
+        //if (adapterInfo.num_adapters != cachedGpuInfo.size())
+        //{
+        //    LOG(INFO) << "Number of adapters returned from Control Pipe does not match Introspective data";
+        //    return;
+        //}
 
-        // For each cached gpu search through the returned adapter information and set the returned
-        // static gpu metrics
-        for (auto& gpuInfo : cachedGpuInfo)
-        {
-            for (uint32_t i = 0; i < adapterInfo.num_adapters; i++)
-            {
-                if (gpuInfo.adapterId == adapterInfo.adapters[i].id)
-                {
-                    gpuInfo.gpuSustainedPowerLimit = adapterInfo.adapters[i].gpuSustainedPowerLimit;
-                    gpuInfo.gpuMemorySize = adapterInfo.adapters[i].gpuMemorySize;
-                    gpuInfo.gpuMemoryMaxBandwidth = adapterInfo.adapters[i].gpuMemoryMaxBandwidth;
-                    break;
-                }
-            }
-        }
+        //// For each cached gpu search through the returned adapter information and set the returned
+        //// static gpu metrics
+        //for (auto& gpuInfo : cachedGpuInfo)
+        //{
+        //    for (uint32_t i = 0; i < adapterInfo.num_adapters; i++)
+        //    {
+        //        if (gpuInfo.adapterId == adapterInfo.adapters[i].id)
+        //        {
+        //            gpuInfo.gpuSustainedPowerLimit = adapterInfo.adapters[i].gpuSustainedPowerLimit;
+        //            gpuInfo.gpuMemorySize = adapterInfo.adapters[i].gpuMemorySize;
+        //            gpuInfo.gpuMemoryMaxBandwidth = adapterInfo.adapters[i].gpuMemoryMaxBandwidth;
+        //            break;
+        //        }
+        //    }
+        //}
     }
 }
