@@ -96,10 +96,13 @@ namespace p2c::client::cef
             // launch connector thread
             mt::Thread{ "logconn", count, [pipePrefix] {
                 try {
-                    // initially wait for 50ms to give child time to spawn
-                    std::this_thread::sleep_for(50ms);
-                    // retry connection maximum 100 times, every 15ms
-                    const int nAttempts = 100;
+                    // wait maximum 1.5sec for pipe to be created
+                    if (!pipe::DuplexPipe::WaitForAvailability(R"(\\.\pipe\)" + pipePrefix, 1500)) {
+                        pmlog_warn(std::format("Failed to connect to logging source server {} after waiting 1.5s", pipePrefix));
+                        return;
+                    }
+                    // retry connection maximum 3 times, every 50ms
+                    const int nAttempts = 3;
                     for (int i = 0; i < nAttempts; i++) {
                         try {
                             auto pChan = log::GetDefaultChannel();
@@ -108,8 +111,8 @@ namespace p2c::client::cef
                             pChan->AttachComponent(std::move(pInjector));
                             return;
                         }
-                        catch (const log::PipeConnectionError&) {
-                            std::this_thread::sleep_for(15ms);
+                        catch (const pipe::PipeError&) {
+                            std::this_thread::sleep_for(50ms);
                         }
                     }
                     pmlog_warn(std::format("Failed to connect to logging source server {} after {} attempts", pipePrefix, nAttempts));

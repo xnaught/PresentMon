@@ -8,8 +8,6 @@
 
 namespace pmon::util::log
 {
-    PM_DEFINE_EX(PipeConnectionError);
-
 	class NamedPipeMarshallReceiver : public IEntryMarshallReceiver
 	{
     public:

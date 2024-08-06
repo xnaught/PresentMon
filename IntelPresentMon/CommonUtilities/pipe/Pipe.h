@@ -118,6 +118,10 @@ namespace pmon::util::pipe
 			archive(obj);
 			co_return obj;
 		}
+		static bool WaitForAvailability(const std::string& name, uint32_t timeoutMs)
+		{
+			return (bool)WaitNamedPipeA(name.c_str(), (DWORD)timeoutMs);
+		}
 	private:
 		// functions
 		DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle)
