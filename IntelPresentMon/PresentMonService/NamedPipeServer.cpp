@@ -244,7 +244,7 @@ void NamedPipeServerX::GetPendingOperationResult(DWORD pipeIndex) {
         // was successful. Now transition to a reading state to read
         // the incoming data.
         mPipe[pipeIndex].mCurrentState = PipeStates::READING;
-        SetEvent(mPm->GetFirstConnectionHandle());
+        // SetEvent(mPm->GetFirstConnectionHandle());
         break;
       case PipeStates::READING:
         // Pending read operation

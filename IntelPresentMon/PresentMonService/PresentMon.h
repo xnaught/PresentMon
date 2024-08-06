@@ -6,9 +6,6 @@
 
 class PresentMon {
  public:
-  PresentMon() {
-      firstConnectionEvent_.reset(CreateEventA(NULL, TRUE, FALSE, NULL));
-  }
   ~PresentMon();
 
   // Check the status of both ETW logfile and real time trace sessions.
@@ -64,11 +61,7 @@ class PresentMon {
     return real_time_session_.SetPowerTelemetryContainer(ptc);
   }
 
-  HANDLE GetFirstConnectionHandle() { return firstConnectionEvent_.get(); }
-
  private:
-  std::unique_ptr<std::remove_pointer_t<HANDLE>, HandleDeleter>
-    firstConnectionEvent_;
   RealtimePresentMonSession real_time_session_;
   MockPresentMonSession mock_session_;
 };

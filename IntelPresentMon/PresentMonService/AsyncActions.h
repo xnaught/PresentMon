@@ -36,6 +36,7 @@ namespace pmon::svc::acts
 		friend class AsyncActionBase_<OpenSessionAction, ServiceExecutionContext>;
 		static Response Execute_(const ServiceExecutionContext& ctx, Params&& in)
 		{
+			ctx.pSvc->SignalClientSessionOpened();
 			Response out;
 			out.str = std::format("session-opened:{}", in.clientPid);
 			std::cout << "Received open session action from: " << in.clientPid << std::endl;

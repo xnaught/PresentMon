@@ -60,7 +60,7 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
     // telemetry metric availability is accurately assessed
     {
         const HANDLE events[]{
-              pm->GetFirstConnectionHandle(),
+              srv->GetClientSessionHandle(),
               srv->GetServiceStopHandle(),
         };
         const auto waitResult = WaitForMultipleObjects((DWORD)std::size(events), events, FALSE, INFINITE);
@@ -155,7 +155,6 @@ void PresentMonMainThread(Service* const pSvc)
     // these thread containers need to be created outside of the try scope
     // so that if an exception happens, it won't block during unwinding,
     // trying to join threads that are waiting for a stop signal
-    std::jthread controlPipeThread;
     std::jthread gpuTelemetryThread;
     std::jthread cpuTelemetryThread;
 
