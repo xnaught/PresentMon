@@ -190,6 +190,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AsyncActions.cpp" />
     <ClCompile Include="LogSetup.cpp" />
     <ClCompile Include="MockPresentMonSession.cpp" />
     <ClCompile Include="NamedPipeServer.cpp" />
@@ -203,6 +204,7 @@
     <ClCompile Include="PresentMonSession.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AsyncActions.h" />
     <ClInclude Include="CliOptions.h" />
     <ClInclude Include="GlobalIdentifiers.h" />
     <ClInclude Include="LogSetup.h" />

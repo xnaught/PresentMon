@@ -1,7 +1,9 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
+#include "../CommonUtilities/win/WinAPI.h"
+#include "../Interprocess/source/act/AsyncActionManager.h"
+#include "../CommonUtilities/pipe/Pipe.h"
 #include "NamedPipeServer.h"
-#include <Windows.h>
 #include <strsafe.h>
 #include <tchar.h>
 #include <thread>
@@ -16,8 +18,65 @@
 #include "../CommonUtilities/log/GlogShim.h"
 
 using namespace pmon;
+using namespace util;
+using namespace ipc;
+namespace as = boost::asio;
 
-NamedPipeServer::NamedPipeServer(Service* srv, PresentMon* pm, std::optional<std::string> pipeName)
+class NamedPipeServerImpl_
+{
+public:
+    NamedPipeServerImpl_(Service* pSvc, PresentMon* pPmon, std::optional<std::string> pipeName)
+        :
+        pipeName_{ pipeName.value_or(gid::defaultControlPipeName) },
+        elevatedSecurity_{ !pipeName }
+    {
+        actionManager_.ctx_.pSvc = pSvc;
+        actionManager_.ctx_.pPmon = pPmon;
+        thread_ = std::jthread{ [this] {
+            // maintain 3 available pipe instances at all times
+            for (int i = 0; i < 3; i++) {
+                as::co_spawn(ioctx_, AcceptConnection(), as::detached);
+            }
+            // run the io context event handler until signalled to exit
+            ioctx_.run();
+        } };
+    }
+
+    NamedPipeServerImpl_(const NamedPipeServerImpl_&) = delete;
+    NamedPipeServerImpl_& operator=(const NamedPipeServerImpl_&) = delete;
+    NamedPipeServerImpl_(NamedPipeServerImpl_&&) = delete;
+    NamedPipeServerImpl_& operator=(NamedPipeServerImpl_&&) = delete;
+    ~NamedPipeServerImpl_() = default;
+
+    as::awaitable<void> AcceptConnection()
+    {
+        auto pipe = pipe::DuplexPipe::Make(pipeName_, ioctx_);
+        co_await pipe.Accept();
+        // fork acceptor coroutine
+        as::co_spawn(ioctx_, AcceptConnection(), as::detached);
+        // run the action handler until client session is terminated
+        while (true) {
+            co_await actionManager_.SyncHandleRequest(pipe, pipe.readBuf_, pipe.writeBuf_);
+        }
+    }
+private:
+    std::string pipeName_;
+    bool elevatedSecurity_; // for now, assume that security is elevated only when using default pipe name
+    as::io_context ioctx_;
+    act::AsyncActionManager<ServiceExecutionContext> actionManager_;
+    std::jthread thread_;
+};
+
+NamedPipeServer::NamedPipeServer(Service* pSvc, PresentMon* pPmon, std::optional<std::string> pipeName)
+    :
+    pImpl_{ std::make_shared<NamedPipeServerImpl_>(pSvc, pPmon, std::move(pipeName)) }
+{}
+
+
+
+
+
+NamedPipeServerX::NamedPipeServerX(Service* srv, PresentMon* pm, std::optional<std::string> pipeName)
     : mService(srv), mPm(pm),
     mPipeName{pipeName.value_or(gid::defaultControlPipeName)} {
   // Initialize all events associated with a pipe
@@ -30,7 +89,7 @@ NamedPipeServer::NamedPipeServer(Service* srv, PresentMon* pm, std::optional<std
   mEvents[mMaxPipes] = srv->GetServiceStopHandle();
 }
 
-NamedPipeServer::~NamedPipeServer() {
+NamedPipeServerX::~NamedPipeServerX() {
   // Flush all pipes to allow the client to read the pipes contents
   // before disconnecting. Then disconnect the pipes, and close the
   // handle to the pipe instances.
@@ -41,7 +100,7 @@ NamedPipeServer::~NamedPipeServer() {
   }
 }
 
-DWORD NamedPipeServer::CreateNamedPipesAndEvents() {
+DWORD NamedPipeServerX::CreateNamedPipesAndEvents() {
   for (DWORD i = 0; i < mMaxPipes; i++) {
     // Create an event object for this instance.
 
@@ -85,7 +144,7 @@ DWORD NamedPipeServer::CreateNamedPipesAndEvents() {
 }
 
 // This function is called to start an overlapped connect operation.
-DWORD NamedPipeServer::ConnectToNewClient(HANDLE pipe, LPOVERLAPPED overlapped,
+DWORD NamedPipeServerX::ConnectToNewClient(HANDLE pipe, LPOVERLAPPED overlapped,
                                           BOOL& pendingIO) {
   // Start an overlapped connection for this pipe instance.
   BOOL connected = ConnectNamedPipe(pipe, overlapped);
@@ -122,7 +181,7 @@ DWORD NamedPipeServer::ConnectToNewClient(HANDLE pipe, LPOVERLAPPED overlapped,
   return ERROR_SUCCESS;
 }
 
-DWORD NamedPipeServer::RunServer() {
+DWORD NamedPipeServerX::RunServer() {
   DWORD i;
 
   DWORD lastError = CreateNamedPipesAndEvents();
@@ -159,7 +218,7 @@ DWORD NamedPipeServer::RunServer() {
 // This function completes any pending operation by calling
 // GetOverlappedResult and transitioning the specified pipe
 // to the next state.
-void NamedPipeServer::GetPendingOperationResult(DWORD pipeIndex) {
+void NamedPipeServerX::GetPendingOperationResult(DWORD pipeIndex) {
   // If an operation was pending get the result and
   // then set the current state.
   if (mPipe[pipeIndex].mPendingIO) {
@@ -238,7 +297,7 @@ void NamedPipeServer::GetPendingOperationResult(DWORD pipeIndex) {
 // This function is called when an error occurs or when the client
 // closes its handle to the pipe. Disconnect from this client, then
 // call ConnectNamedPipe to wait for another client to connect.
-void NamedPipeServer::DisconnectAndReconnect(DWORD pipeIndex) {
+void NamedPipeServerX::DisconnectAndReconnect(DWORD pipeIndex) {
   // Disconnect the pipe instance.
   if (!DisconnectNamedPipe(mPipe[pipeIndex].mPipeInstance.get())) {
     return;
@@ -261,7 +320,7 @@ void NamedPipeServer::DisconnectAndReconnect(DWORD pipeIndex) {
   return;
 }
 
-void NamedPipeServer::ExecuteCurrentState(DWORD pipeIndex) {
+void NamedPipeServerX::ExecuteCurrentState(DWORD pipeIndex) {
   // Use the current state to determine the next
   // operation.
   switch (mPipe[pipeIndex].mCurrentState) {
@@ -288,7 +347,7 @@ void NamedPipeServer::ExecuteCurrentState(DWORD pipeIndex) {
   return;
 }
 
-void NamedPipeServer::ReadRequestMessage(DWORD pipeIndex) {
+void NamedPipeServerX::ReadRequestMessage(DWORD pipeIndex) {
   BOOL success = ReadFile(
       mPipe[pipeIndex].mPipeInstance.get(), mPipe[pipeIndex].mPipeReadBuffer,
       MaxBufferSize, &mPipe[pipeIndex].mBytesRead, &mPipe[pipeIndex].mOverlap);
@@ -323,7 +382,7 @@ void NamedPipeServer::ReadRequestMessage(DWORD pipeIndex) {
   return;
 }
 
-void NamedPipeServer::WriteReplyMessage(DWORD pipeIndex) {
+void NamedPipeServerX::WriteReplyMessage(DWORD pipeIndex) {
   DWORD bytesWritten;
   DWORD expectedBytesWritten;
   BOOL success;
@@ -362,13 +421,13 @@ void NamedPipeServer::WriteReplyMessage(DWORD pipeIndex) {
   return;
 }
 
-void NamedPipeServer::EvaluateAndRespondToRequestMessage(DWORD pipeIndex) {
+void NamedPipeServerX::EvaluateAndRespondToRequestMessage(DWORD pipeIndex) {
   ProcessRequests(mPm, mPipe[pipeIndex].mRequestBuffer.get(),
                   mPipe[pipeIndex].mResponseBuffer.get());
   return;
 }
 
-DWORD NamedPipeServer::GetNumActiveConnections() {
+DWORD NamedPipeServerX::GetNumActiveConnections() {
   DWORD numActiveClients = 0;
 
   for (DWORD i = 0; i < mMaxPipes; i++) {
@@ -383,7 +442,7 @@ DWORD NamedPipeServer::GetNumActiveConnections() {
   return numActiveClients;
 }
 
-DWORD NamedPipeServer::Pipe::CreatePipeInstance(LPCTSTR pipe_name, int max_pipes, uint32_t pipe_timeout) {
+DWORD NamedPipeServerX::Pipe::CreatePipeInstance(LPCTSTR pipe_name, int max_pipes, uint32_t pipe_timeout) {
     LOG(INFO) << "Creating control pipe with name: [" << util::str::ToNarrow(pipe_name) << "]";
 
     auto& opt = clio::Options::Get();

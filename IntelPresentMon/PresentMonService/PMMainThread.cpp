@@ -46,42 +46,6 @@ void PmSleep(int32_t ms, bool alertable = false) {
   return;
 }
 
-void IPCCommunication(Service* srv, PresentMon* pm)
-{
-    // alias for options
-    auto& opt = clio::Options::Get();
-
-    bool createNamedPipeServer = true;
-
-    if (srv == nullptr) {
-        // TODO: log
-        return;
-    }
-
-    try
-    {
-        auto nps = std::make_unique<NamedPipeServer>(srv, pm, opt.controlPipe.AsOptional());
-        while (createNamedPipeServer) {
-            DWORD result = nps->RunServer();
-            if (result == ERROR_SUCCESS) {
-                createNamedPipeServer = false;
-            }
-            else {
-                // We were unable to start our named pipe server. Sleep for
-                // a bit and then try again.
-                PmSleep(3000);
-            }
-        }
-    }
-    catch (const std::bad_alloc& e)
-    {
-        LOG(INFO) << "Unable to create Name Pipe Server. Result: " << e.what();
-        return;
-    }
-
-    return;
-}
-
 void PowerTelemetry(Service* const srv, PresentMon* const pm,
 	PowerTelemetryContainer* const ptc, ipc::ServiceComms* const pComms)
 {
@@ -247,8 +211,8 @@ void PresentMonMainThread(Service* const pSvc)
         // Set the created power telemetry container 
         pm.SetPowerTelemetryContainer(&ptc);
 
-        // Start IPC communication thread
-        controlPipeThread = std::jthread{ IPCCommunication, pSvc, &pm };
+        // Start named pipe action RPC server (active threaded)
+        auto pActionServer = std::make_unique<NamedPipeServer>(pSvc, &pm, *opt.controlPipe);
 
         try {
             gpuTelemetryThread = std::jthread{ PowerTelemetry, pSvc, &pm, &ptc, pComms.get() };

@@ -157,6 +157,7 @@ namespace pmon::util::pipe
 			}
 			return handle.Release();
 		}
+	public:
 		// data
 		as::windows::stream_handle stream_;
 		CoroMutex readMtx_;

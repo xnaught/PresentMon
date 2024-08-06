@@ -12,14 +12,33 @@
 #include "Service.h"
 #include "sddl.h"
 
+struct ServiceExecutionContext
+{
+    Service* pSvc;
+    PresentMon* pPmon;
+};
+
+class NamedPipeServer
+{
+public:
+    NamedPipeServer(Service* pSvc, PresentMon* pPmon, std::optional<std::string> pipeName);
+    ~NamedPipeServer() = default;
+    NamedPipeServer(const NamedPipeServer&) = delete;
+    NamedPipeServer& operator=(const NamedPipeServer&) = delete;
+    NamedPipeServer(NamedPipeServer&&) = delete;
+    NamedPipeServer& operator=(NamedPipeServer&&) = delete;
+private:
+    std::shared_ptr<class NamedPipeServerImpl_> pImpl_;
+};
+
 const size_t MaxBufferSize = 4096;
 
-class NamedPipeServer {
+class NamedPipeServerX {
  public:
-  NamedPipeServer(Service* srv, PresentMon* pm, std::optional<std::string> pipeName);
-  ~NamedPipeServer();
-  NamedPipeServer(const NamedPipeServer& t) = delete;
-  NamedPipeServer& operator=(const NamedPipeServer& t) = delete;
+     NamedPipeServerX(Service* srv, PresentMon* pm, std::optional<std::string> pipeName);
+  ~NamedPipeServerX();
+  NamedPipeServerX(const NamedPipeServerX& t) = delete;
+  NamedPipeServerX& operator=(const NamedPipeServerX& t) = delete;
 
   DWORD RunServer();
 

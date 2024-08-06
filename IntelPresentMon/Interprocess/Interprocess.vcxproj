@@ -26,6 +26,12 @@
     <ClCompile Include="source\metadata\MetadataValidators.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="source\act\Packet.h" />
+    <ClInclude Include="source\act\AsyncAction.h" />
+    <ClInclude Include="source\act\AsyncActionCollection.h" />
+    <ClInclude Include="source\act\AsyncActionManager.h" />
+    <ClInclude Include="source\act\Encoding.h" />
+    <ClInclude Include="source\act\Transfer.h" />
     <ClInclude Include="source\IntrospectionCapsLookup.h" />
     <ClInclude Include="source\IntrospectionDataTypeMapping.h" />
     <ClInclude Include="source\IntrospectionHelpers.h" />
@@ -54,6 +60,11 @@
     <ClInclude Include="source\metadata\StatsShortcuts.h" />
     <ClInclude Include="source\metadata\UnitList.h" />
     <ClInclude Include="source\SharedMemoryTypes.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">
+      <Project>{08a704d8-ca1c-45e9-8ede-542a1a43b53e}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

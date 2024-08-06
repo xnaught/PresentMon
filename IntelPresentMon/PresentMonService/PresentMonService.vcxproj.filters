@@ -12,6 +12,7 @@
     <ClCompile Include="PresentMonSession.cpp" />
     <ClCompile Include="RealtimePresentMonSession.cpp" />
     <ClCompile Include="MockPresentMonSession.cpp" />
+    <ClCompile Include="AsyncActions.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LateStageReprojectionData.hpp" />
@@ -28,6 +29,7 @@
     <ClInclude Include="MockPresentMonSession.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="LogSetup.h" />
+    <ClInclude Include="AsyncActions.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PresentMonService.rc" />

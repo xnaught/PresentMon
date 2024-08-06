@@ -116,5 +116,23 @@
     <ClInclude Include="source\metadata\EnumFrameType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\act\AsyncAction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\act\AsyncActionCollection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\act\AsyncActionManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\act\Encoding.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\act\Packet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\act\Transfer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
