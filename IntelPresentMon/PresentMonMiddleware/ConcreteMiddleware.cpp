@@ -61,8 +61,7 @@ namespace pmon::mid
 
             uint32_t gpuAdapterId = 0;
             auto deviceView = ispec.GetDevices();
-            for (auto dev : deviceView)
-            {
+            for (auto dev : deviceView) {
                 if (dev.GetType() == PM_DEVICE_TYPE_GRAPHICS_ADAPTER)
                 {
                     cachedGpuInfo.push_back({ dev.GetVendor(), dev.GetName(), dev.GetId(), gpuAdapterId, 0., 0, 0 });
@@ -70,8 +69,7 @@ namespace pmon::mid
                 }
             }
         }
-        catch (...)
-        {
+        catch (...) {
             throw pmon::mid::Exception{ (PM_STATUS)25 };
         }
 
@@ -179,55 +177,27 @@ namespace pmon::mid
         return PM_STATUS_SUCCESS;
     }
 
-    // TODO:act implement
     void ConcreteMiddleware::GetStaticCpuMetrics()
     {
-        pmlog_error("unimplemented!");
-        //MemBuffer requestBuffer;
-        //MemBuffer responseBuffer;
+        auto metrics = pActionClient->GetStaticCpuMetrics();
 
-        //NamedPipeHelper::EncodeRequestHeader(&requestBuffer, PM_ACTION::GET_STATIC_CPU_METRICS);
+        const auto cpuNameLower = str::ToLower(metrics.cpuName);
+        PM_DEVICE_VENDOR deviceVendor;
+        if (cpuNameLower.contains("intel")) {
+            deviceVendor = PM_DEVICE_VENDOR_INTEL;
+        }
+        else if (cpuNameLower.contains("amd")) {
+            deviceVendor = PM_DEVICE_VENDOR_AMD;
+        }
+        else {
+            deviceVendor = PM_DEVICE_VENDOR_UNKNOWN;
+        }
 
-        //PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
-        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-        //    return;
-        //}
-
-        //IPMStaticCpuMetrics staticCpuMetrics{};
-        //status = NamedPipeHelper::DecodeStaticCpuMetricsResponse(&responseBuffer, &staticCpuMetrics);
-        //if (status != PM_STATUS::PM_STATUS_SUCCESS ||
-        //    staticCpuMetrics.cpuNameLength > MAX_PM_CPU_NAME) {
-        //    return;
-        //}
-
-        //auto ContainsString = [](std::string str, std::string subStr)
-        //    {
-        //        return std::search(str.begin(), str.end(), subStr.begin(), subStr.end(),
-        //            [](char c1, char c2) { return std::tolower(c1) == std::tolower(c2); }) != str.end();
-        //    };
-
-        //std::string cpuName = staticCpuMetrics.cpuName;
-        //PM_DEVICE_VENDOR deviceVendor;
-        //if (ContainsString(cpuName, "intel"))
-        //{
-        //    deviceVendor = PM_DEVICE_VENDOR_INTEL;
-        //}
-        //else if (ContainsString(cpuName, "amd"))
-        //{
-        //    deviceVendor = PM_DEVICE_VENDOR_AMD;
-        //}
-        //else
-        //{
-        //    deviceVendor = PM_DEVICE_VENDOR_UNKNOWN;
-        //}
-
-        //cachedCpuInfo.push_back(
-        //    { 
-        //        .deviceVendor = deviceVendor,
-        //        .deviceName = cpuName,
-        //        .cpuPowerLimit = staticCpuMetrics.cpuPowerLimit
-        //    }
-        //);
+        cachedCpuInfo.push_back({ 
+            .deviceVendor = deviceVendor,
+            .deviceName = std::move(metrics.cpuName),
+            .cpuPowerLimit = metrics.cpuPowerLimit
+        });
     }
 
     std::string ConcreteMiddleware::GetProcessName(uint32_t processId)

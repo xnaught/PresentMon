@@ -4,6 +4,7 @@
 #include "../CommonUtilities/pipe/Pipe.h"
 #include "../PresentMonService/acts/OpenSession.h"
 #include "../PresentMonService/acts/StartStream.h"
+#include "../PresentMonService/acts/GetStaticCpuMetrics.h"
 
 namespace pmon::mid
 {
@@ -36,6 +37,13 @@ namespace pmon::mid
                 co_return co_await ipc::act::SyncRequest<acts::StartStream>(p, token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
             }());
         }
+        GetStaticCpuMetrics::Response GetStaticCpuMetrics()
+        {
+            return ExecuteSynchronous_([=, this]() -> pipe::as::awaitable<GetStaticCpuMetrics::Response> {
+                co_return co_await ipc::act::SyncRequest<acts::GetStaticCpuMetrics>(
+                    {}, token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
+            }());
+        }
 
     private:
         template<class C>
@@ -43,6 +51,7 @@ namespace pmon::mid
         {
             auto fut = pipe::as::co_spawn(ioctx_, std::forward<C>(coro), pipe::as::use_future);
             ioctx_.run();
+            ioctx_.restart();
             return fut.get();
         }
         pipe::as::awaitable<std::string> OpenSession_()
