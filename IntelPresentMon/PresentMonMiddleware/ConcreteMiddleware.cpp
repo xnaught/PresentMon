@@ -226,24 +226,13 @@ namespace pmon::mid
         return *pIntroRoot;
     }
 
-    // TODO:act implement
     PM_STATUS ConcreteMiddleware::SetTelemetryPollingPeriod(uint32_t deviceId, uint32_t timeMs)
     {
-        pmlog_error("unimplemented!");
-        //MemBuffer requestBuffer;
-        //MemBuffer responseBuffer;
+        // TODO:act checking status and throwing exceptions / catching exceptions / logging
 
-        //NamedPipeHelper::EncodeGeneralSetActionRequest(
-        //    PM_ACTION::SET_GPU_TELEMETRY_PERIOD, &requestBuffer, timeMs);
+        // note: deviceId is being ignored for the time being, but might be used in the future
+        pActionClient->SetTelemetryPeriod(timeMs);
 
-        //PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
-        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-        //    return status;
-        //}
-
-        //status = NamedPipeHelper::DecodeGeneralSetActionResponse(
-        //    PM_ACTION::SET_GPU_TELEMETRY_PERIOD, &responseBuffer);
-        //return status;
         return PM_STATUS_SUCCESS;
     }
 

@@ -6,6 +6,7 @@
 #include "../PresentMonService/acts/StartStream.h"
 #include "../PresentMonService/acts/GetStaticCpuMetrics.h"
 #include "../PresentMonService/acts/EnumerateAdapters.h"
+#include "../PresentMonService/acts/SetTelemetryPeriod.h"
 
 namespace pmon::mid
 {
@@ -50,6 +51,13 @@ namespace pmon::mid
             return ExecuteSynchronous_([=, this]() -> pipe::as::awaitable<EnumerateAdapters::Response> {
                 co_return co_await ipc::act::SyncRequest<acts::EnumerateAdapters>(
                     {}, token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
+            }());
+        }
+        auto SetTelemetryPeriod(uint32_t telemetryPeriodMs)
+        {
+            return ExecuteSynchronous_([=, this]() -> pipe::as::awaitable<SetTelemetryPeriod::Response> {
+                co_return co_await ipc::act::SyncRequest<acts::SetTelemetryPeriod>(
+                    { telemetryPeriodMs }, token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
             }());
         }
 

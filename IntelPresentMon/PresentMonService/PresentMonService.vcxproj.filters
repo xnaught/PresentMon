@@ -34,6 +34,7 @@
     <ClInclude Include="acts\StartStream.h" />
     <ClInclude Include="acts\GetStaticCpuMetrics.h" />
     <ClInclude Include="acts\EnumerateAdapters.h" />
+    <ClInclude Include="acts\SetTelemetryPeriod.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PresentMonService.rc" />
