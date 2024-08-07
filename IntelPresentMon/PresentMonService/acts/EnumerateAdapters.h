@@ -52,6 +52,7 @@ namespace pmon::svc::acts
 					.gpuMemoryMaxBandwidth = adapter->GetVideoMemoryMaxBandwidth(),
 				});
 			}
+			pmlog_dbg(std::format("{} adapters enumerated", out.adapters.size()));
 			return out;
 		}
 	};

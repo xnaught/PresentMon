@@ -29,6 +29,7 @@ namespace pmon::svc::acts
 		static Response Execute_(const ServiceExecutionContext& ctx, Params&& in)
 		{
 			ctx.pPmon->SelectAdapter(in.adapterId);
+			pmlog_dbg(std::format("selecting adapter id [{}]", in.adapterId));
 			return {};
 		}
 	};

@@ -30,7 +30,7 @@ namespace pmon::svc::acts
 		{
 			// TODO:act check return and throw exception containing the code
 			ctx.pPmon->StopStreaming(in.clientPid, in.targetPid);
-			pmlog_dbg(std::format("StopStreaming action from [{}] targetting [{}]", in.clientPid, in.targetPid));
+			pmlog_dbg(std::format("StopStreaming action from [{}] un-targeting [{}]", in.clientPid, in.targetPid));
 			return {};
 		}
 	};

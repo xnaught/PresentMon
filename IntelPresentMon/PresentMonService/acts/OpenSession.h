@@ -35,7 +35,7 @@ namespace pmon::svc::acts
 			ctx.pSvc->SignalClientSessionOpened();
 			Response out;
 			out.str = std::format("session-opened:{}", in.clientPid);
-			std::cout << "Received open session action from: " << in.clientPid << std::endl;
+			pmlog_dbg(std::format("Received open session action from: {}", in.clientPid));
 			return out;
 		}
 	};

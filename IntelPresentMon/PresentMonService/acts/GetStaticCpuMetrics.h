@@ -33,8 +33,7 @@ namespace pmon::svc::acts
 				.cpuName = ctx.pPmon->GetCpuName(),
 				.cpuPowerLimit = ctx.pPmon->GetCpuPowerLimit()
 			};
-			std::cout << std::format("GetStaticCpuMetrics action from [???] {} @ {}",
-				out.cpuName, out.cpuPowerLimit) << std::endl;
+			pmlog_dbg(std::format("static CPU metrics gotten for {} @ {}W", out.cpuName, out.cpuPowerLimit));
 			return out;
 		}
 	};

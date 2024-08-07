@@ -29,6 +29,7 @@ namespace pmon::svc::acts
 		static Response Execute_(const ServiceExecutionContext& ctx, Params&& in)
 		{
 			ctx.pPmon->SetGpuTelemetryPeriod(in.telemetrySamplePeriodMs);
+			pmlog_dbg(std::format("Setting telemetry sample period to {}ms", in.telemetrySamplePeriodMs));
 			return {};
 		}
 	};
