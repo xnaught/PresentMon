@@ -44,4 +44,6 @@ namespace pmon::svc::acts
 ACTION_REG(ACTNAME);
 #endif
 
+ACTION_TRAITS_DEF(ACTNAME);
+
 #undef ACTNAME

@@ -39,4 +39,7 @@ namespace pmon::ipc::act
 			return T::Identifier;
 		}
 	};
+
+	template<class P>
+	struct ActionParamsTraits;
 }

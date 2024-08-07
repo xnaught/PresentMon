@@ -33,41 +33,15 @@ namespace pmon::mid
         ActionClient& operator=(ActionClient&&) = delete;
         ~ActionClient() = default;
 
-        auto StartStream(uint32_t targetPid)
+        template<class Params>
+        auto DispatchSync(Params&& params)
         {
-            return ExecuteSynchronous_([=, this]() -> pipe::as::awaitable<StartStream::Response> {
-                const StartStream::Params p{ .clientPid = thisPid_, .targetPid = targetPid };
-                co_return co_await ipc::act::SyncRequest<acts::StartStream>(p, token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
-            }());
-        }
-        auto GetStaticCpuMetrics()
-        {
-            return ExecuteSynchronous_([=, this]() -> pipe::as::awaitable<GetStaticCpuMetrics::Response> {
-                co_return co_await ipc::act::SyncRequest<acts::GetStaticCpuMetrics>(
-                    {}, token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
-            }());
-        }
-        auto EnumerateAdapters()
-        {
-            return ExecuteSynchronous_([=, this]() -> pipe::as::awaitable<EnumerateAdapters::Response> {
-                co_return co_await ipc::act::SyncRequest<acts::EnumerateAdapters>(
-                    {}, token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
-            }());
-        }
-        auto SetTelemetryPeriod(uint32_t telemetryPeriodMs)
-        {
-            return ExecuteSynchronous_([=, this]() -> pipe::as::awaitable<SetTelemetryPeriod::Response> {
-                co_return co_await ipc::act::SyncRequest<acts::SetTelemetryPeriod>(
-                    { telemetryPeriodMs }, token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
-            }());
-        }
-        auto StartStream(uint32_t clientPid, uint32_t targetPid)
-        {
-            return ExecuteSynchronous_([=, this]() -> pipe::as::awaitable<StartStream::Response> {
-                co_return co_await ipc::act::SyncRequest<acts::StartStream>(
-                    StartStream::Params{ .clientPid = clientPid, .targetPid = targetPid },
+            using Action = typename ipc::act::ActionParamsTraits<std::decay_t<Params>>::Action;
+            using Response = Action::Response;
+            return ExecuteSynchronous_([this](Params&& params) -> pipe::as::awaitable<Response> {
+                co_return co_await ipc::act::SyncRequest<Action>(std::forward<Params>(params),
                     token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
-                }());
+            }(std::forward<Params>(params)));
         }
 
     private:
@@ -80,6 +54,7 @@ namespace pmon::mid
             ioctx_.restart();
             return fut.get();
         }
+        // TODO: roll this up with Dispatch (when we remove the placeholder logging)
         pipe::as::awaitable<std::string> OpenSession_()
         {
             const OpenSession::Params p{ .clientPid = thisPid_ };

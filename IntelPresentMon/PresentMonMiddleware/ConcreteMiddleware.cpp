@@ -99,7 +99,7 @@ namespace pmon::mid
     {
         // TODO:act checking status and throwing exceptions / catching exceptions / logging
         
-        auto res = pActionClient->StartStream(clientProcessId, targetPid);
+        auto res = pActionClient->DispatchSync(StartStream::Params{ clientProcessId, targetPid });
 
         // Initialize client with returned nsm name
         auto iter = presentMonStreamClients.find(targetPid);
@@ -150,7 +150,7 @@ namespace pmon::mid
     void ConcreteMiddleware::GetStaticCpuMetrics()
     {
         // TODO:act checking status and throwing exceptions / catching exceptions / logging
-        auto metrics = pActionClient->GetStaticCpuMetrics();
+        auto metrics = pActionClient->DispatchSync(GetStaticCpuMetrics::Params{});
 
         const auto cpuNameLower = str::ToLower(metrics.cpuName);
         PM_DEVICE_VENDOR deviceVendor;
@@ -201,7 +201,7 @@ namespace pmon::mid
         // TODO:act checking status and throwing exceptions / catching exceptions / logging
 
         // note: deviceId is being ignored for the time being, but might be used in the future
-        pActionClient->SetTelemetryPeriod(timeMs);
+        pActionClient->DispatchSync(SetTelemetryPeriod::Params{ timeMs });
 
         return PM_STATUS_SUCCESS;
     }
@@ -1675,7 +1675,7 @@ void ReportMetrics(
     void ConcreteMiddleware::GetStaticGpuMetrics()
     {
         // TODO:act checking status and throwing exceptions / catching exceptions / logging
-        const auto res = pActionClient->EnumerateAdapters();
+        const auto res = pActionClient->DispatchSync(EnumerateAdapters::Params{});
 
         // TODO:act check that adapter count matches introspection
 
