@@ -7,6 +7,7 @@
 #include "../PresentMonService/acts/GetStaticCpuMetrics.h"
 #include "../PresentMonService/acts/EnumerateAdapters.h"
 #include "../PresentMonService/acts/SetTelemetryPeriod.h"
+#include "../PresentMonService/acts/StartStream.h"
 
 namespace pmon::mid
 {
@@ -59,6 +60,14 @@ namespace pmon::mid
                 co_return co_await ipc::act::SyncRequest<acts::SetTelemetryPeriod>(
                     { telemetryPeriodMs }, token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
             }());
+        }
+        auto StartStream(uint32_t clientPid, uint32_t targetPid)
+        {
+            return ExecuteSynchronous_([=, this]() -> pipe::as::awaitable<StartStream::Response> {
+                co_return co_await ipc::act::SyncRequest<acts::StartStream>(
+                    StartStream::Params{ .clientPid = clientPid, .targetPid = targetPid },
+                    token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
+                }());
         }
 
     private:

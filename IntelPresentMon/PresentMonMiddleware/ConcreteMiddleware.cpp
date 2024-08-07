@@ -95,55 +95,25 @@ namespace pmon::mid
 		strcpy_s(buffer, 256, "concrete-middle");
 	}
 
-    // TODO:act implement
-    PM_STATUS ConcreteMiddleware::StartStreaming(uint32_t processId)
+    PM_STATUS ConcreteMiddleware::StartStreaming(uint32_t targetPid)
     {
-        pmlog_error("unimplemented!");
-        //MemBuffer requestBuffer;
-        //MemBuffer responseBuffer;
+        // TODO:act checking status and throwing exceptions / catching exceptions / logging
+        
+        auto res = pActionClient->StartStream(clientProcessId, targetPid);
 
-        //NamedPipeHelper::EncodeStartStreamingRequest(&requestBuffer, clientProcessId,
-        //    processId, nullptr);
+        // Initialize client with returned nsm name
+        auto iter = presentMonStreamClients.find(targetPid);
+        if (iter == presentMonStreamClients.end()) {
+            try {
+                presentMonStreamClients.emplace(targetPid,
+                    std::make_unique<StreamClient>(std::move(res.nsmFileName), false));
+            }
+            catch (...) {
+                return PM_STATUS::PM_STATUS_FAILURE;
+            }
+        }
 
-        //PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
-        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-        //    pmlog_error("Failed to call PmService");
-        //    return status;
-        //}
-
-        //IPMSMStartStreamResponse startStreamResponse{};
-
-        //status = NamedPipeHelper::DecodeStartStreamingResponse(
-        //    &responseBuffer, &startStreamResponse);
-        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-        //    if (status == PM_STATUS_INVALID_PID) {
-        //        pmlog_error(std::format("failed to begin tracking process: pid [{}] does not exist",
-        //            processId)).diag();
-        //    }
-        //    else {
-        //        pmlog_error(std::format("failed to begin tracking pid [{}]", processId)).diag();
-        //    }
-        //    return status;
-        //}
-
-        //// Get the NSM file name from 
-        //std::string mapFileName(startStreamResponse.fileName);
-
-        //// Initialize client with returned mapfile name
-        //auto iter = presentMonStreamClients.find(processId);
-        //if (iter == presentMonStreamClients.end()) {
-        //    try {
-        //        std::unique_ptr<StreamClient> client =
-        //            std::make_unique<StreamClient>(std::move(mapFileName), false);
-        //        presentMonStreamClients.emplace(processId, std::move(client));
-        //    }
-        //    catch (...) {
-        //        return PM_STATUS::PM_STATUS_FAILURE;
-        //    }
-        //}
-
-        //pmlog_info(std::format("Started tracking pid [{}]", processId)).diag();
-        //return status;
+        pmlog_info(std::format("Started tracking pid [{}]", targetPid)).diag();
         return PM_STATUS_SUCCESS;
     }
 
