@@ -2,13 +2,7 @@
 #include "../CommonUtilities/win/WinAPI.h"
 #include "../Interprocess/source/act/AsyncActionManager.h"
 #include "../CommonUtilities/pipe/Pipe.h"
-#include "../PresentMonService/acts/OpenSession.h"
-#include "../PresentMonService/acts/StartStream.h"
-#include "../PresentMonService/acts/GetStaticCpuMetrics.h"
-#include "../PresentMonService/acts/EnumerateAdapters.h"
-#include "../PresentMonService/acts/SetTelemetryPeriod.h"
-#include "../PresentMonService/acts/StartStream.h"
-#include "../PresentMonService/acts/SelectAdapter.h"
+#include "../PresentMonService/AllActions.h"
 
 namespace pmon::mid
 {

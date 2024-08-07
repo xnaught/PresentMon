@@ -36,6 +36,8 @@
     <ClInclude Include="acts\EnumerateAdapters.h" />
     <ClInclude Include="acts\SetTelemetryPeriod.h" />
     <ClInclude Include="acts\SelectAdapter.h" />
+    <ClInclude Include="acts\StopStream.h" />
+    <ClInclude Include="AllActions.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PresentMonService.rc" />

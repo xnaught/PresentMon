@@ -101,7 +101,7 @@ namespace pmon::mid
         
         auto res = pActionClient->DispatchSync(StartStream::Params{ clientProcessId, targetPid });
 
-        // Initialize client with returned nsm name
+        // Initialize client in client map using returned nsm name
         auto iter = presentMonStreamClients.find(targetPid);
         if (iter == presentMonStreamClients.end()) {
             try {
@@ -117,33 +117,18 @@ namespace pmon::mid
         return PM_STATUS_SUCCESS;
     }
 
-    // TODO:act implement
-    PM_STATUS ConcreteMiddleware::StopStreaming(uint32_t processId)
+    PM_STATUS ConcreteMiddleware::StopStreaming(uint32_t targetPid)
     {
-        pmlog_error("unimplemented!");
-        //MemBuffer requestBuffer;
-        //MemBuffer responseBuffer;
+        // TODO:act checking status and throwing exceptions / catching exceptions / logging        
+        pActionClient->DispatchSync(StopStream::Params{ clientProcessId, targetPid });
 
-        //NamedPipeHelper::EncodeStopStreamingRequest(&requestBuffer,
-        //    clientProcessId,
-        //    processId);
+        // Remove client from map of clients
+        auto iter = presentMonStreamClients.find(targetPid);
+        if (iter != presentMonStreamClients.end()) {
+            presentMonStreamClients.erase(std::move(iter));
+        }
 
-        //PM_STATUS status = CallPmService(&requestBuffer, &responseBuffer);
-        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-        //    return status;
-        //}
-
-        //status = NamedPipeHelper::DecodeStopStreamingResponse(&responseBuffer);
-        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-        //    return status;
-        //}
-
-        //// Remove client
-        //auto iter = presentMonStreamClients.find(processId);
-        //if (iter != presentMonStreamClients.end()) {
-        //    presentMonStreamClients.erase(std::move(iter));
-        //}
-        //return status;
+        pmlog_info(std::format("Stop tracking pid [{}]", targetPid)).diag();
         return PM_STATUS_SUCCESS;
     }
 
@@ -1643,7 +1628,7 @@ void ReportMetrics(
         // TODO:act checking status and throwing exceptions / catching exceptions / logging
 
         // we should probably send to service even if it looks like device hasn't changed
-        // because of multi-client scenarios
+        // because of multi-client scenarios. Disabling code but keeping it around
         //if (activeDevice && *activeDevice == deviceId) {
         //    return PM_STATUS_SUCCESS;
         //}

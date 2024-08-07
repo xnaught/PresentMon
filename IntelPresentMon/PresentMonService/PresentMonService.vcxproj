@@ -211,6 +211,8 @@
     <ClInclude Include="acts\SelectAdapter.h" />
     <ClInclude Include="acts\SetTelemetryPeriod.h" />
     <ClInclude Include="acts\StartStream.h" />
+    <ClInclude Include="acts\StopStream.h" />
+    <ClInclude Include="AllActions.h" />
     <ClInclude Include="CliOptions.h" />
     <ClInclude Include="GlobalIdentifiers.h" />
     <ClInclude Include="LogSetup.h" />
