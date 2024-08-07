@@ -200,7 +200,6 @@
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="ServiceMain.cpp" />
     <ClCompile Include="PresentMon.cpp" />
-    <ClCompile Include="NamedPipeCmdProcess.cpp" />
     <ClCompile Include="PresentMonSession.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -217,7 +216,6 @@
     <ClInclude Include="GlobalIdentifiers.h" />
     <ClInclude Include="LogSetup.h" />
     <ClInclude Include="MockPresentMonSession.h" />
-    <ClInclude Include="NamedPipeCmdProcess.h" />
     <ClInclude Include="LateStageReprojectionData.hpp" />
     <ClInclude Include="ActionServer.h" />
     <ClInclude Include="PowerTelemetryContainer.h" />

@@ -14,7 +14,7 @@
 #include "../Interprocess/source/IntrospectionTransfer.h"
 #include "../Interprocess/source/IntrospectionHelpers.h"
 #include "../Interprocess/source/IntrospectionCloneAllocators.h"
-#include "../PresentMonUtils/PresentMonNamedPipe.h"
+#include "../PresentMonUtils/StreamFormat.h"
 #include "MockCommon.h"
 #include "DynamicQuery.h"
 #include "FrameEventQuery.h"

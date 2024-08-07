@@ -1,5 +1,6 @@
 #pragma once
 #include "../PresentMonAPI2/PresentMonAPI.h"
+#include "../PresentMonUtils/StreamFormat.h"
 #include <vector>
 #include <span>
 #include <memory>
