@@ -134,5 +134,8 @@
     <ClInclude Include="source\act\Transfer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\act\ActionResponseError.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

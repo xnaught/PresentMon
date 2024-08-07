@@ -28,7 +28,6 @@ namespace pmon::svc::acts
 		friend class AsyncActionBase_<ACTNAME, ServiceExecutionContext>;
 		static Response Execute_(const ServiceExecutionContext& ctx, Params&& in)
 		{
-			// TODO:act check return and throw exception containing the code
 			ctx.pPmon->StopStreaming(in.clientPid, in.targetPid);
 			pmlog_dbg(std::format("StopStreaming action from [{}] un-targeting [{}]", in.clientPid, in.targetPid));
 			return {};

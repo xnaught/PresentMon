@@ -26,6 +26,7 @@
     <ClCompile Include="source\metadata\MetadataValidators.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="source\act\ActionResponseError.h" />
     <ClInclude Include="source\act\Packet.h" />
     <ClInclude Include="source\act\AsyncAction.h" />
     <ClInclude Include="source\act\AsyncActionCollection.h" />

@@ -34,8 +34,10 @@ namespace pmon::svc::acts
 		static Response Execute_(const ServiceExecutionContext& ctx, Params&& in)
 		{
 			std::string nsmFileName;
-			// TODO:act check return and throw exception containing the code
-			ctx.pPmon->StartStreaming(in.clientPid, in.targetPid, nsmFileName);
+			if (auto sta = ctx.pPmon->StartStreaming(in.clientPid, in.targetPid, nsmFileName); sta != PM_STATUS_SUCCESS) {
+				pmlog_error("Start stream failed").code(sta);
+				throw util::Except<ActionResponseError>(sta);
+			}
 			const Response out{ .nsmFileName = std::move(nsmFileName) };
 			pmlog_dbg(std::format("StartStreaming action from [{}] targetting [{}] assigned nsm [{}]",
 				in.clientPid, in.targetPid, out.nsmFileName));

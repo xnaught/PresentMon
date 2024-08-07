@@ -28,7 +28,10 @@ namespace pmon::svc::acts
 		friend class AsyncActionBase_<ACTNAME, ServiceExecutionContext>;
 		static Response Execute_(const ServiceExecutionContext& ctx, Params&& in)
 		{
-			ctx.pPmon->SetGpuTelemetryPeriod(in.telemetrySamplePeriodMs);
+			if (auto sta = ctx.pPmon->SetGpuTelemetryPeriod(in.telemetrySamplePeriodMs); sta != PM_STATUS_SUCCESS) {
+				pmlog_error("Set telemetry period failed").code(sta);
+				throw util::Except<ActionResponseError>(sta);
+			}
 			pmlog_dbg(std::format("Setting telemetry sample period to {}ms", in.telemetrySamplePeriodMs));
 			return {};
 		}

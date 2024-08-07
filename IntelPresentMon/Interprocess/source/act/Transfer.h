@@ -5,6 +5,7 @@
 #include "../../../CommonUtilities/pipe/Pipe.h"
 #include "Packet.h"
 #include "Encoding.h"
+#include "ActionResponseError.h"
 
 namespace pmon::ipc::act
 {
@@ -36,12 +37,14 @@ namespace pmon::ipc::act
 		EncodeTransmissionPacket(RequestHeader{ C::Identifier, commandToken }, params, outBuf);
 		co_await as::async_write(pipe.stream_, outBuf, as::use_awaitable);
 		auto header = co_await ReadPacketWithHeader<ResponseHeader>(pipe, inBuf);
-		if (header.status) {
-			// TODO: throw exception with error code
-			throw std::runtime_error{ "error response from control command request" };
-		}
 		std::istream is{ &inBuf };
 		cereal::BinaryInputArchive iar{ is };
+		if (header.status) {
+			// consume the empty payload to leave the pipe stream in a clean state
+			EmptyPayload ep;
+			iar(ep);
+			throw Except<ActionResponseError>(header.status);
+		}
 		typename C::Response response;
 		iar(response);
 		co_return response;

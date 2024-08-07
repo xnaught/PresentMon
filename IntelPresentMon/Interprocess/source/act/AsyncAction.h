@@ -4,6 +4,7 @@
 #include <cereal/archives/binary.hpp>
 #include "Encoding.h"
 #include "Packet.h"
+#include "ActionResponseError.h"
 
 namespace pmon::ipc::act
 {
@@ -23,15 +24,20 @@ namespace pmon::ipc::act
 		void Execute(const ExecutionContext& ctx, uint32_t commandToken,
 			boost::asio::streambuf& inputBuffer, boost::asio::streambuf& outputBuffer) const final
 		{
-			typename T::Params input;
-			std::istream is{ &inputBuffer };
-			cereal::BinaryInputArchive{ is }(input);
 			try {
+				typename T::Params input;
+				std::istream is{ &inputBuffer };
+				cereal::BinaryInputArchive{ is }(input);
 				const auto output = T::Execute_(ctx, std::move(input));
 				EncodeTransmissionPacket(ResponseHeader{ .commandToken = commandToken, .status = 0 }, output, outputBuffer);
 			}
+			catch (const ActionResponseError& e) {
+				pmlog_error(std::format("Error in action [{}] execution: {}", GetIdentifier(), e.what()));
+				EncodeTransmissionPacket(ResponseHeader{ .commandToken = commandToken, .status = e.GetCode() }, EmptyPayload{}, outputBuffer);
+			}
 			catch (...) {
-				EncodeTransmissionPacket(ResponseHeader{ .commandToken = commandToken, .status = -1 }, EmptyPayload{}, outputBuffer);
+				pmlog_error(util::ReportException());
+				EncodeTransmissionPacket(ResponseHeader{ .commandToken = commandToken, .status = PM_STATUS_FAILURE }, EmptyPayload{}, outputBuffer);
 			}
 		}
 		const char* GetIdentifier() const final
