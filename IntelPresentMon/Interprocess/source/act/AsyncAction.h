@@ -1,5 +1,6 @@
 #pragma once
 #include "../../../CommonUtilities/win/WinAPI.h"
+#include "../../../CommonUtilities/log/Log.h"
 #include <boost/asio.hpp>
 #include <cereal/archives/binary.hpp>
 #include "Encoding.h"
@@ -32,7 +33,7 @@ namespace pmon::ipc::act
 				EncodeTransmissionPacket(ResponseHeader{ .commandToken = commandToken, .status = 0 }, output, outputBuffer);
 			}
 			catch (const ActionResponseError& e) {
-				pmlog_error(std::format("Error in action [{}] execution: {}", GetIdentifier(), e.what()));
+				pmlog_error(std::format("Error in action [{}] execution", GetIdentifier())).code(e.GetCode());
 				EncodeTransmissionPacket(ResponseHeader{ .commandToken = commandToken, .status = e.GetCode() }, EmptyPayload{}, outputBuffer);
 			}
 			catch (...) {

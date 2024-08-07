@@ -43,7 +43,7 @@ namespace pmon::ipc::act
 			// consume the empty payload to leave the pipe stream in a clean state
 			EmptyPayload ep;
 			iar(ep);
-			throw Except<ActionResponseError>(header.status);
+			throw util::Except<ActionResponseError>((PM_STATUS)header.status);
 		}
 		typename C::Response response;
 		iar(response);
