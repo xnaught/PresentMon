@@ -4,6 +4,7 @@
 #include "..\CommonUtilities\str\String.h"
 #include "../CommonUtilities/pipe/Pipe.h"
 #include "../Interprocess/source/act/AsyncActionManager.h"
+#include <boost/asio/windows/object_handle.hpp>
 #include "CliOptions.h"
 #include "ActionServer.h"
 #include "GlobalIdentifiers.h"
@@ -21,17 +22,25 @@ public:
     ActionServerImpl_(Service* pSvc, PresentMon* pPmon, std::optional<std::string> pipeName)
         :
         pipeName_{ pipeName.value_or(gid::defaultControlPipeName) },
-        elevatedSecurity_{ !pipeName }
+        elevatedSecurity_{ !pipeName },
+        stopEvent_{ ioctx_, win::Handle::CreateCloned(pSvc->GetServiceStopHandle()).Release() }
     {
         actionManager_.ctx_.pSvc = pSvc;
         actionManager_.ctx_.pPmon = pPmon;
         thread_ = std::jthread{ [this] {
+            // coroutine to exit thread on stop signal
+            as::co_spawn(ioctx_, [this]() -> as::awaitable<void> {
+                co_await stopEvent_.async_wait(as::use_awaitable);
+                pmlog_dbg("ActionServer received stop signal");
+                ioctx_.stop();
+            }, as::detached);
             // maintain 3 available pipe instances at all times
             for (int i = 0; i < 3; i++) {
                 as::co_spawn(ioctx_, AcceptConnection_(), as::detached);
             }
             // run the io context event handler until signalled to exit
             ioctx_.run();
+            pmlog_info("ActionServer exiting");
         } };
     }
     ActionServerImpl_(const ActionServerImpl_&) = delete;
@@ -57,6 +66,7 @@ private:
     bool elevatedSecurity_; // for now, assume that security is elevated only when using default pipe name
     as::io_context ioctx_;
     act::AsyncActionManager<ServiceExecutionContext> actionManager_;
+    as::windows::object_handle stopEvent_;
     std::jthread thread_;
 };
 
