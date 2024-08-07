@@ -8,6 +8,7 @@
 #include "../PresentMonService/acts/EnumerateAdapters.h"
 #include "../PresentMonService/acts/SetTelemetryPeriod.h"
 #include "../PresentMonService/acts/StartStream.h"
+#include "../PresentMonService/acts/SelectAdapter.h"
 
 namespace pmon::mid
 {

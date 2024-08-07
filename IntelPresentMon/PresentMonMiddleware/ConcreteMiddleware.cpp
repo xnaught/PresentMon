@@ -1640,33 +1640,23 @@ void ReportMetrics(
     // TODO:act implement
     PM_STATUS ConcreteMiddleware::SetActiveGraphicsAdapter(uint32_t deviceId)
     {
-        pmlog_error("unimplemented!");
+        // TODO:act checking status and throwing exceptions / catching exceptions / logging
+
+        // we should probably send to service even if it looks like device hasn't changed
+        // because of multi-client scenarios
         //if (activeDevice && *activeDevice == deviceId) {
         //    return PM_STATUS_SUCCESS;
         //}
 
-        //MemBuffer requestBuf;
-        //MemBuffer responseBuf;
+        // if the requested deviceId does not exist in the cache of gpu devices return error
+        const auto adapterIndex = GetCachedGpuInfoIndex(deviceId);
+        if (!adapterIndex.has_value()) {
+            return PM_STATUS_INVALID_ADAPTER_ID;
+        }
 
-        //const auto adapterIndex = GetCachedGpuInfoIndex(deviceId);
-        //if (!adapterIndex.has_value()) {
-        //    return PM_STATUS_INVALID_ADAPTER_ID;
-        //}
+        pActionClient->DispatchSync(SelectAdapter::Params{ (uint32_t)*adapterIndex });
 
-        //NamedPipeHelper::EncodeGeneralSetActionRequest(PM_ACTION::SELECT_ADAPTER,
-        //    &requestBuf, static_cast<uint32_t>(adapterIndex.value()));
-
-        //PM_STATUS status = CallPmService(&requestBuf, &responseBuf);
-        //if (status != PM_STATUS::PM_STATUS_SUCCESS) {
-        //    return status;
-        //}
-
-        //status = NamedPipeHelper::DecodeGeneralSetActionResponse(
-        //    PM_ACTION::SELECT_ADAPTER, &responseBuf);
-
-        //if (status == PM_STATUS_SUCCESS) {
-        //    activeDevice = deviceId;
-        //}
+        pmlog_info(std::format("Active adapter change request completed, changed to [{}] (svc id) [{}] (API id)", *adapterIndex, deviceId));
 
         //return status;
         return PM_STATUS_SUCCESS;
