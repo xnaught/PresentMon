@@ -156,11 +156,13 @@ namespace pmon::util::pipe
 		}
 		static HANDLE Make_(const std::string& name, const std::string& security = {})
 		{
+			// structure required for creating named pipe, create with placeholder pointer for descriptor
 			SECURITY_ATTRIBUTES securityAttributes{
 				.nLength = sizeof(securityAttributes),
 				.lpSecurityDescriptor = nullptr,
 				.bInheritHandle = FALSE,
 			};
+			// if we have a security string, create the descriptor and have it owned by above structure
 			if (!security.empty()) {
 				if (!ConvertStringSecurityDescriptorToSecurityDescriptorA(
 					security.c_str(), SDDL_REVISION_1,
@@ -170,7 +172,9 @@ namespace pmon::util::pipe
 						name, security)).hr().raise<PipeError>();
 				}
 			}
+			// if we have a security string, call create pipe with above structure, else call with nullptr
 			SECURITY_ATTRIBUTES* pSecurityAttributes = security.empty() ? nullptr : &securityAttributes;
+			// create the named pipe and retain the handle in a wrapper object
 			win::Handle handle(CreateNamedPipeA(
 				name.c_str(),
 				PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,	// open mode
@@ -180,14 +184,16 @@ namespace pmon::util::pipe
 				4096,					// in buffer
 				0,						// timeout
 				pSecurityAttributes));	// security
-			if (pSecurityAttributes) {
+			// regardless of result, if we are using security, free the descriptor owned by above structure
+			if (!security.empty()) {
 				if (LocalFree(securityAttributes.lpSecurityDescriptor) != NULL) {
 					pmlog_warn("Failed freeing memory for security descriptor");
 				}
 			}
 			if (!handle) {
-				pmlog_error("Server failed to create named pipe instance").raise<PipeError>();
+				pmlog_error("Server failed to create named pipe instance").hr().raise<PipeError>();
 			}
+			// release the owned handle to be captured by some other owner
 			return handle.Release();
 		}
 	public:
