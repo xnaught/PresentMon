@@ -30,6 +30,9 @@
     <ClCompile Include="source\IntrospectionHelpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\PmStatusError.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\ExperimentalInterprocess.h">
@@ -135,6 +138,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\act\ActionResponseError.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\PmStatusError.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -18,13 +18,13 @@
 #include "../Interprocess/source/IntrospectionTransfer.h"
 #include "../Interprocess/source/IntrospectionHelpers.h"
 #include "../Interprocess/source/IntrospectionCloneAllocators.h"
+#include "../Interprocess/source/PmStatusError.h"
 //#include "MockCommon.h"
 #include "DynamicQuery.h"
 #include "../ControlLib/PresentMonPowerTelemetry.h"
 #include "../ControlLib/CpuTelemetryInfo.h"
 #include "../PresentMonService/GlobalIdentifiers.h"
 #include "FrameEventQuery.h"
-#include "Exception.h"
 #include "../CommonUtilities/mt/Thread.h"
 #include "../CommonUtilities/log/Log.h"
 
@@ -46,10 +46,17 @@ namespace pmon::mid
         const auto pipeName = pipeNameOverride.transform(&std::string::c_str)
             .value_or(pmon::gid::defaultControlPipeName);
 
-        // Try to open a named pipe; wait for it, if necessary.
-        // TODO:act consider re-adding pipe waiting code
-        // TODO:act handle exception
-        pActionClient = std::make_shared<ActionClient>(pipeName);
+        // Try to open a named pipe; wait for it, if necessary
+        try {
+            if (!pipe::DuplexPipe::WaitForAvailability(pipeName, 500)) {
+                throw std::runtime_error{ "Timeout waiting for service action pipe to become available" };
+            }
+            pActionClient = std::make_shared<ActionClient>(pipeName);
+        }
+        catch (...) {
+            pmlog_error(util::ReportException()).diag();
+            throw util::Except<ipc::PmStatusError>(PM_STATUS_PIPE_ERROR);
+        }
 
         clientProcessId = GetCurrentProcessId();
         // connect to the introspection nsm
@@ -70,7 +77,7 @@ namespace pmon::mid
             }
         }
         catch (...) {
-            throw pmon::mid::Exception{ (PM_STATUS)25 };
+            throw util::Except<ipc::PmStatusError>((PM_STATUS)25);
         }
 
         // Update the static GPU metric data from the service
@@ -97,20 +104,19 @@ namespace pmon::mid
 
     PM_STATUS ConcreteMiddleware::StartStreaming(uint32_t targetPid)
     {
-        // TODO:act checking status and throwing exceptions / catching exceptions / logging
-        
-        auto res = pActionClient->DispatchSync(StartStream::Params{ clientProcessId, targetPid });
-
-        // Initialize client in client map using returned nsm name
-        auto iter = presentMonStreamClients.find(targetPid);
-        if (iter == presentMonStreamClients.end()) {
-            try {
+        try {
+            auto res = pActionClient->DispatchSync(StartStream::Params{ clientProcessId, targetPid });
+            // Initialize client in client map using returned nsm name
+            auto iter = presentMonStreamClients.find(targetPid);
+            if (iter == presentMonStreamClients.end()) {
                 presentMonStreamClients.emplace(targetPid,
                     std::make_unique<StreamClient>(std::move(res.nsmFileName), false));
             }
-            catch (...) {
-                return PM_STATUS::PM_STATUS_FAILURE;
-            }
+        }
+        catch (...) {
+            const auto code = util::GeneratePmStatus();
+            pmlog_error(util::ReportException()).code(code).diag();
+            return code;
         }
 
         pmlog_info(std::format("Started tracking pid [{}]", targetPid)).diag();
@@ -119,13 +125,18 @@ namespace pmon::mid
 
     PM_STATUS ConcreteMiddleware::StopStreaming(uint32_t targetPid)
     {
-        // TODO:act checking status and throwing exceptions / catching exceptions / logging        
-        pActionClient->DispatchSync(StopStream::Params{ clientProcessId, targetPid });
-
-        // Remove client from map of clients
-        auto iter = presentMonStreamClients.find(targetPid);
-        if (iter != presentMonStreamClients.end()) {
-            presentMonStreamClients.erase(std::move(iter));
+        try {
+            pActionClient->DispatchSync(StopStream::Params{ clientProcessId, targetPid });
+            // Remove client from map of clients
+            auto iter = presentMonStreamClients.find(targetPid);
+            if (iter != presentMonStreamClients.end()) {
+                presentMonStreamClients.erase(std::move(iter));
+            }
+        }
+        catch (...) {
+            const auto code = util::GeneratePmStatus();
+            pmlog_error(util::ReportException()).code(code).diag();
+            return code;
         }
 
         pmlog_info(std::format("Stop tracking pid [{}]", targetPid)).diag();
@@ -134,26 +145,31 @@ namespace pmon::mid
 
     void ConcreteMiddleware::GetStaticCpuMetrics()
     {
-        // TODO:act checking status and throwing exceptions / catching exceptions / logging
-        auto metrics = pActionClient->DispatchSync(GetStaticCpuMetrics::Params{});
+        try {
+            auto metrics = pActionClient->DispatchSync(GetStaticCpuMetrics::Params{});
 
-        const auto cpuNameLower = str::ToLower(metrics.cpuName);
-        PM_DEVICE_VENDOR deviceVendor;
-        if (cpuNameLower.contains("intel")) {
-            deviceVendor = PM_DEVICE_VENDOR_INTEL;
-        }
-        else if (cpuNameLower.contains("amd")) {
-            deviceVendor = PM_DEVICE_VENDOR_AMD;
-        }
-        else {
-            deviceVendor = PM_DEVICE_VENDOR_UNKNOWN;
-        }
+            const auto cpuNameLower = str::ToLower(metrics.cpuName);
+            PM_DEVICE_VENDOR deviceVendor;
+            if (cpuNameLower.contains("intel")) {
+                deviceVendor = PM_DEVICE_VENDOR_INTEL;
+            }
+            else if (cpuNameLower.contains("amd")) {
+                deviceVendor = PM_DEVICE_VENDOR_AMD;
+            }
+            else {
+                deviceVendor = PM_DEVICE_VENDOR_UNKNOWN;
+            }
 
-        cachedCpuInfo.push_back({ 
-            .deviceVendor = deviceVendor,
-            .deviceName = std::move(metrics.cpuName),
-            .cpuPowerLimit = metrics.cpuPowerLimit
-        });
+            cachedCpuInfo.push_back({
+                .deviceVendor = deviceVendor,
+                .deviceName = std::move(metrics.cpuName),
+                .cpuPowerLimit = metrics.cpuPowerLimit
+            });
+        }
+        catch (...) {
+            const auto code = util::GeneratePmStatus();
+            pmlog_error(util::ReportException()).code(code).diag();
+        }
     }
 
     std::string ConcreteMiddleware::GetProcessName(uint32_t processId)
@@ -183,11 +199,15 @@ namespace pmon::mid
 
     PM_STATUS ConcreteMiddleware::SetTelemetryPollingPeriod(uint32_t deviceId, uint32_t timeMs)
     {
-        // TODO:act checking status and throwing exceptions / catching exceptions / logging
-
-        // note: deviceId is being ignored for the time being, but might be used in the future
-        pActionClient->DispatchSync(SetTelemetryPeriod::Params{ timeMs });
-
+        try {
+            // note: deviceId is being ignored for the time being, but might be used in the future
+            pActionClient->DispatchSync(SetTelemetryPeriod::Params{ timeMs });
+        }
+        catch (...) {
+            const auto code = util::GeneratePmStatus();
+            pmlog_error(util::ReportException()).code(code).diag();
+            return code;
+        }
         return PM_STATUS_SUCCESS;
     }
 
@@ -1622,49 +1642,56 @@ void ReportMetrics(
         SaveMetricCache(pQuery, processId, pBlob);
     }
 
-    // TODO:act implement
     PM_STATUS ConcreteMiddleware::SetActiveGraphicsAdapter(uint32_t deviceId)
     {
-        // TODO:act checking status and throwing exceptions / catching exceptions / logging
+        std::optional<uint64_t> adapterIndex;
+        try {
+            // if the requested deviceId does not exist in the cache of gpu devices return error
+            adapterIndex = GetCachedGpuInfoIndex(deviceId);
+            if (!adapterIndex.has_value()) {
+                pmlog_error(std::format("Client specified invalid deviceId for adapter [{}]", deviceId));
+                return PM_STATUS_INVALID_ADAPTER_ID;
+            }
 
-        // we should probably send to service even if it looks like device hasn't changed
-        // because of multi-client scenarios. Disabling code but keeping it around
-        //if (activeDevice && *activeDevice == deviceId) {
-        //    return PM_STATUS_SUCCESS;
-        //}
-
-        // if the requested deviceId does not exist in the cache of gpu devices return error
-        const auto adapterIndex = GetCachedGpuInfoIndex(deviceId);
-        if (!adapterIndex.has_value()) {
-            return PM_STATUS_INVALID_ADAPTER_ID;
+            pActionClient->DispatchSync(SelectAdapter::Params{ (uint32_t)*adapterIndex });
+        }
+        catch (...) {
+            const auto code = util::GeneratePmStatus();
+            pmlog_error(util::ReportException()).code(code).diag();
+            return code;
         }
 
-        pActionClient->DispatchSync(SelectAdapter::Params{ (uint32_t)*adapterIndex });
-
         pmlog_info(std::format("Active adapter change request completed, changed to [{}] (svc id) [{}] (API id)", *adapterIndex, deviceId));
-
-        //return status;
         return PM_STATUS_SUCCESS;
     }
 
     void ConcreteMiddleware::GetStaticGpuMetrics()
     {
-        // TODO:act checking status and throwing exceptions / catching exceptions / logging
-        const auto res = pActionClient->DispatchSync(EnumerateAdapters::Params{});
+        try {
+            const auto res = pActionClient->DispatchSync(EnumerateAdapters::Params{});
 
-        // TODO:act check that adapter count matches introspection
+            // check that adapter count matches introspection
+            if (res.adapters.size() != cachedGpuInfo.size()) {
+                pmlog_warn(std::format("Queried adapter count {} did not match count from introspection {}",
+                    res.adapters.size(), cachedGpuInfo.size())).diag();
+            }
 
-        // For each cached gpu search through the returned adapter information and set the returned
-        // static gpu metrics
-        for (auto& gpuInfo : cachedGpuInfo) {
-            for (auto& adapter : res.adapters) {
-                if (gpuInfo.adapterId == adapter.id) {
-                    gpuInfo.gpuSustainedPowerLimit = adapter.gpuSustainedPowerLimit;
-                    gpuInfo.gpuMemorySize = adapter.gpuMemorySize;
-                    gpuInfo.gpuMemoryMaxBandwidth = adapter.gpuMemoryMaxBandwidth;
-                    break;
+            // For each cached gpu search through the returned adapter information and set the returned
+            // static gpu metrics where a match is found
+            for (auto& gpuInfo : cachedGpuInfo) {
+                for (auto& adapter : res.adapters) {
+                    if (gpuInfo.adapterId == adapter.id) {
+                        gpuInfo.gpuSustainedPowerLimit = adapter.gpuSustainedPowerLimit;
+                        gpuInfo.gpuMemorySize = adapter.gpuMemorySize;
+                        gpuInfo.gpuMemoryMaxBandwidth = adapter.gpuMemoryMaxBandwidth;
+                        break;
+                    }
                 }
             }
+        }
+        catch (...) {
+            const auto code = util::GeneratePmStatus();
+            pmlog_error(util::ReportException()).code(code).diag();
         }
     }
 }

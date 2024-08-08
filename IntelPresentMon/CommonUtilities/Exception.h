@@ -2,6 +2,7 @@
 #include "str/String.h"
 #include <exception>
 #include <memory>
+#include "../PresentMonAPI2/PresentMonAPI.h"
 
 namespace pmon::util
 {
@@ -20,6 +21,7 @@ namespace pmon::util
 		const std::string& GetNote() const;
 		std::string GetTraceString() const;
 		bool HasTrace() const noexcept;
+		virtual PM_STATUS GeneratePmStatus() const noexcept;
 	protected:
 		virtual std::string ComposeWhatString_() const noexcept;
 	private:
@@ -39,6 +41,8 @@ namespace pmon::util
 	}
 
 	std::string ReportException(std::exception_ptr pEx = {}) noexcept;
+
+	PM_STATUS GeneratePmStatus(std::exception_ptr pEx = {}) noexcept;
 
 	class SehException : public Exception
 	{

@@ -14,7 +14,6 @@
     <ClInclude Include="ActionClient.h" />
     <ClInclude Include="ConcreteMiddleware.h" />
     <ClInclude Include="DynamicQuery.h" />
-    <ClInclude Include="Exception.h" />
     <ClInclude Include="FrameEventQuery.h" />
     <ClInclude Include="LogSetup.h" />
     <ClInclude Include="Middleware.h" />
@@ -23,7 +22,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConcreteMiddleware.cpp" />
-    <ClCompile Include="Exception.cpp" />
     <ClCompile Include="FrameEventQuery.cpp" />
     <ClCompile Include="LogSetup.cpp" />
     <ClCompile Include="MockMiddleware.cpp" />

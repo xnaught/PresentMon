@@ -24,6 +24,7 @@
     <ClCompile Include="source\IntrospectionHelpers.cpp" />
     <ClCompile Include="source\IntrospectionPopulators.cpp" />
     <ClCompile Include="source\metadata\MetadataValidators.cpp" />
+    <ClCompile Include="source\PmStatusError.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\act\ActionResponseError.h" />
@@ -33,6 +34,7 @@
     <ClInclude Include="source\act\AsyncActionManager.h" />
     <ClInclude Include="source\act\Encoding.h" />
     <ClInclude Include="source\act\Transfer.h" />
+    <ClInclude Include="source\PmStatusError.h" />
     <ClInclude Include="source\IntrospectionCapsLookup.h" />
     <ClInclude Include="source\IntrospectionDataTypeMapping.h" />
     <ClInclude Include="source\IntrospectionHelpers.h" />
