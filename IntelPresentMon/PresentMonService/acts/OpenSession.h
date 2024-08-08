@@ -39,11 +39,11 @@ namespace pmon::svc::acts
 			return out;
 		}
 	};
-}
 
 #ifdef PM_SERVICE_ASYNC_ACTION_REGISTRATION_
-ACTION_REG(ACTNAME);
+	ACTION_REG(ACTNAME);
 #endif
+}
 
 ACTION_TRAITS_DEF(ACTNAME);
 

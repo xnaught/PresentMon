@@ -6,21 +6,24 @@
 #include "PresentMon.h"
 #include "Service.h"
 
-struct ServiceExecutionContext
+namespace pmon::svc
 {
-    Service* pSvc;
-    PresentMon* pPmon;
-};
+    struct ServiceExecutionContext
+    {
+        Service* pSvc;
+        PresentMon* pPmon;
+    };
 
-class ActionServer
-{
-public:
-    ActionServer(Service* pSvc, PresentMon* pPmon, std::optional<std::string> pipeName);
-    ~ActionServer() = default;
-    ActionServer(const ActionServer&) = delete;
-    ActionServer& operator=(const ActionServer&) = delete;
-    ActionServer(ActionServer&&) = delete;
-    ActionServer& operator=(ActionServer&&) = delete;
-private:
-    std::shared_ptr<class ActionServerImpl_> pImpl_;
-};
+    class ActionServer
+    {
+    public:
+        ActionServer(Service* pSvc, PresentMon* pPmon, std::optional<std::string> pipeName);
+        ~ActionServer() = default;
+        ActionServer(const ActionServer&) = delete;
+        ActionServer& operator=(const ActionServer&) = delete;
+        ActionServer(ActionServer&&) = delete;
+        ActionServer& operator=(ActionServer&&) = delete;
+    private:
+        std::shared_ptr<class ActionServerImpl_> pImpl_;
+    };
+}

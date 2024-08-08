@@ -15,6 +15,7 @@
 #include "../CommonUtilities/log/GlogShim.h"
 
 using namespace pmon;
+using namespace svc;
 
 bool NanoSleep(int32_t ms, bool alertable) {
   HANDLE timer;
