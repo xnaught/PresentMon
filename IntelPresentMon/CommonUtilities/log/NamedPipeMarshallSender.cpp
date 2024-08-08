@@ -26,7 +26,7 @@ namespace pmon::util::log
 		NamedPipe(const std::string& pipeSuffix, size_t nInstances)
 			:
 			pipeAddress_{ R"(\\.\pipe\)" + pipeSuffix },
-			entryEvent_{ ioctx_, win::Event{}.Release() }
+			entryEvent_{ ioctx_, win::Event{ false }.Release() }
 		{
 			ioThread_ = mt::Thread{ "log-snd", &NamedPipe::IoThreadProcedure_, this };
 		}
