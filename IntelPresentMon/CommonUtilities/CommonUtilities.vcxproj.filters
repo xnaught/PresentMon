@@ -198,6 +198,12 @@
     <ClInclude Include="Macro.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="log\StructDump.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="third\reflect.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">

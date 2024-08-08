@@ -57,6 +57,7 @@
     <ClInclude Include="log\StackTrace.h" />
     <ClInclude Include="log\StackTraceCereal.h" />
     <ClInclude Include="log\StdioDriver.h" />
+    <ClInclude Include="log\StructDump.h" />
     <ClInclude Include="log\Subsystem.h" />
     <ClInclude Include="log\TextFormatter.h" />
     <ClInclude Include="log\MarshallDriver.h" />
@@ -74,6 +75,7 @@
     <ClInclude Include="pipe\CoroMutex.h" />
     <ClInclude Include="pipe\Pipe.h" />
     <ClInclude Include="str\String.h" />
+    <ClInclude Include="third\reflect.hpp" />
     <ClInclude Include="win\Event.h" />
     <ClInclude Include="win\Handle.h" />
     <ClInclude Include="win\HrErrorCodeProvider.h" />
