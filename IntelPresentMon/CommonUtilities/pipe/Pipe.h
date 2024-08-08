@@ -10,6 +10,7 @@
 #include "../win/Event.h"
 #include "../Exception.h"
 #include "../log/Log.h"
+#include <sddl.h>
 
 namespace pmon::util::pipe
 {
@@ -68,7 +69,7 @@ namespace pmon::util::pipe
 		{
 			return DuplexPipe{ ioctx, Connect_(name) };
 		}
-		static DuplexPipe Make(const std::string& name, as::io_context& ioctx)
+		static DuplexPipe Make(const std::string& name, as::io_context& ioctx, const std::string& security = {})
 		{
 			return DuplexPipe{ ioctx, Make_(name) };
 		}
@@ -153,17 +154,37 @@ namespace pmon::util::pipe
 			}
 			return handle.Release();
 		}
-		static HANDLE Make_(const std::string& name)
+		static HANDLE Make_(const std::string& name, const std::string& security = {})
 		{
+			SECURITY_ATTRIBUTES securityAttributes{
+				.nLength = sizeof(securityAttributes),
+				.lpSecurityDescriptor = nullptr,
+				.bInheritHandle = FALSE,
+			};
+			if (!security.empty()) {
+				if (!ConvertStringSecurityDescriptorToSecurityDescriptorA(
+					security.c_str(), SDDL_REVISION_1,
+					&securityAttributes.lpSecurityDescriptor, NULL)) {
+					pmlog_error(std::format(
+						"Failed creating security descriptor for pipe [{}], descriptor string was '{}'",
+						name, security)).hr().raise<PipeError>();
+				}
+			}
+			SECURITY_ATTRIBUTES* pSecurityAttributes = security.empty() ? nullptr : &securityAttributes;
 			win::Handle handle(CreateNamedPipeA(
 				name.c_str(),
 				PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,	// open mode
 				PIPE_TYPE_BYTE | PIPE_READMODE_BYTE,		// pipe mode
 				PIPE_UNLIMITED_INSTANCES,					// max instances
-				4096,		// out buffer
-				4096,		// in buffer
-				0,			// timeout
-				NULL));		// security
+				4096,					// out buffer
+				4096,					// in buffer
+				0,						// timeout
+				pSecurityAttributes));	// security
+			if (pSecurityAttributes) {
+				if (LocalFree(securityAttributes.lpSecurityDescriptor) != NULL) {
+					pmlog_warn("Failed freeing memory for security descriptor");
+				}
+			}
 			if (!handle) {
 				pmlog_error("Server failed to create named pipe instance").raise<PipeError>();
 			}
