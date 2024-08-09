@@ -2,7 +2,7 @@
 #include "../ActionHelper.h"
 #include <format>
 
-#define ACTNAME StopStream
+#define ACTNAME StopTracking
 
 namespace pmon::svc::acts
 {
@@ -14,22 +14,19 @@ namespace pmon::svc::acts
 		static constexpr const char* Identifier = STRINGIFY(ACTNAME);
 		struct Params
 		{
-			uint32_t clientPid;
 			uint32_t targetPid;
 
 			template<class A> void serialize(A& ar) {
-				ar(clientPid, targetPid);
+				ar(targetPid);
 			}
 		};
-		struct Response {
-			template<class A> void serialize(A& ar) {}
-		};
+		struct Response {};
 	private:
 		friend class AsyncActionBase_<ACTNAME, ServiceExecutionContext>;
 		static Response Execute_(const ServiceExecutionContext& ctx, SessionContext& stx, Params&& in)
 		{
-			ctx.pPmon->StopStreaming(in.clientPid, in.targetPid);
-			pmlog_dbg(std::format("StopStreaming action from [{}] un-targeting [{}]", in.clientPid, in.targetPid));
+			ctx.pPmon->StopStreaming(stx.clientPid, in.targetPid);
+			pmlog_dbg(std::format("StopStreaming action from [{}] un-targeting [{}]", stx.clientPid, in.targetPid));
 			return {};
 		}
 	};

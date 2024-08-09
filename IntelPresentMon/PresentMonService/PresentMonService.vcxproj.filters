@@ -29,12 +29,12 @@
     <ClInclude Include="LogSetup.h" />
     <ClInclude Include="acts\OpenSession.h" />
     <ClInclude Include="ActionHelper.h" />
-    <ClInclude Include="acts\StartStream.h" />
+    <ClInclude Include="acts\StartTracking.h" />
     <ClInclude Include="acts\GetStaticCpuMetrics.h" />
     <ClInclude Include="acts\EnumerateAdapters.h" />
     <ClInclude Include="acts\SetTelemetryPeriod.h" />
     <ClInclude Include="acts\SelectAdapter.h" />
-    <ClInclude Include="acts\StopStream.h" />
+    <ClInclude Include="acts\StopTracking.h" />
     <ClInclude Include="AllActions.h" />
     <ClInclude Include="ServiceExecutionContext.h" />
   </ItemGroup>

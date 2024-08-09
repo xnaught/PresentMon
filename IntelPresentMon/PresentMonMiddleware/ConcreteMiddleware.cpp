@@ -105,7 +105,7 @@ namespace pmon::mid
     PM_STATUS ConcreteMiddleware::StartStreaming(uint32_t targetPid)
     {
         try {
-            auto res = pActionClient->DispatchSync(StartStream::Params{ clientProcessId, targetPid });
+            auto res = pActionClient->DispatchSync(StartTracking::Params{ targetPid });
             // Initialize client in client map using returned nsm name
             auto iter = presentMonStreamClients.find(targetPid);
             if (iter == presentMonStreamClients.end()) {
@@ -126,7 +126,7 @@ namespace pmon::mid
     PM_STATUS ConcreteMiddleware::StopStreaming(uint32_t targetPid)
     {
         try {
-            pActionClient->DispatchSync(StopStream::Params{ clientProcessId, targetPid });
+            pActionClient->DispatchSync(StopTracking::Params{ targetPid });
             // Remove client from map of clients
             auto iter = presentMonStreamClients.find(targetPid);
             if (iter != presentMonStreamClients.end()) {

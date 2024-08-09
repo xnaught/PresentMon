@@ -2,7 +2,7 @@
 #include "../ActionHelper.h"
 #include <format>
 
-#define ACTNAME StartStream
+#define ACTNAME StartTracking
 
 namespace pmon::svc::acts
 {
@@ -14,11 +14,10 @@ namespace pmon::svc::acts
 		static constexpr const char* Identifier = STRINGIFY(ACTNAME);
 		struct Params
 		{
-			uint32_t clientPid;
 			uint32_t targetPid;
 
 			template<class A> void serialize(A& ar) {
-				ar(clientPid, targetPid);
+				ar(targetPid);
 			}
 		};
 		struct Response
@@ -34,13 +33,13 @@ namespace pmon::svc::acts
 		static Response Execute_(const ServiceExecutionContext& ctx, SessionContext& stx, Params&& in)
 		{
 			std::string nsmFileName;
-			if (auto sta = ctx.pPmon->StartStreaming(in.clientPid, in.targetPid, nsmFileName); sta != PM_STATUS_SUCCESS) {
+			if (auto sta = ctx.pPmon->StartStreaming(stx.clientPid, in.targetPid, nsmFileName); sta != PM_STATUS_SUCCESS) {
 				pmlog_error("Start stream failed").code(sta);
 				throw util::Except<ActionResponseError>(sta);
 			}
 			const Response out{ .nsmFileName = std::move(nsmFileName) };
 			pmlog_dbg(std::format("StartStreaming action from [{}] targetting [{}] assigned nsm [{}]",
-				in.clientPid, in.targetPid, out.nsmFileName));
+				stx.clientPid, in.targetPid, out.nsmFileName));
 			return out;
 		}
 	};
