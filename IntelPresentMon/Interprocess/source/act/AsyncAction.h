@@ -31,8 +31,8 @@ namespace pmon::ipc::act
 		{
 			PacketHeader resHeader;
 			typename T::Response output;
+			auto& stx = ctx.sessions.at(pipe.GetId());
 			try {
-				auto& stx = ctx.sessions.at(pipe.GetId());
 				// session should be initialized except in the special case of the OpenSession action
 				// TODO: find a way of pushing this check down to the app-specific layer rather than hardcode identifier here
 				if (header.identifier != "OpenSession") {
@@ -41,6 +41,9 @@ namespace pmon::ipc::act
 						pmlog_warn("Received action without a valid session opened");
 					}
 				}
+				stx.lastTokenSeen = header.commandToken;
+				stx.lastReceived = std::chrono::high_resolution_clock::now();
+				stx.receiveCount++;
 				output = T::Execute_(ctx, stx, pipe.ConsumePacketPayload<typename T::Params>());
 				resHeader = MakeResponseHeader_(header, TransportStatus::Success, PM_STATUS_SUCCESS);
 			}
@@ -61,6 +64,7 @@ namespace pmon::ipc::act
 				co_await pipe.WritePacket(resHeader, output);
 			}
 			else {
+				stx.errorCount++;
 				// if there was an error, transmit header (configured with error status) and empty payload
 				co_await pipe.WritePacket(resHeader, EmptyPayload{});
 			}

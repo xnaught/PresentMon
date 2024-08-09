@@ -32,6 +32,7 @@ namespace pmon::svc::acts
 				pmlog_error("Select adapter failed").code(sta);
 				throw util::Except<ActionResponseError>(sta);
 			}
+			stx.requestedAdapterId = in.adapterId;
 			pmlog_dbg(std::format("selecting adapter id [{}]", in.adapterId));
 			return {};
 		}

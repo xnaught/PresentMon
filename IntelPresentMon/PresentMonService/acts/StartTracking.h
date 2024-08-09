@@ -37,6 +37,7 @@ namespace pmon::svc::acts
 				pmlog_error("Start stream failed").code(sta);
 				throw util::Except<ActionResponseError>(sta);
 			}
+			stx.trackedPids.insert(in.targetPid);
 			const Response out{ .nsmFileName = std::move(nsmFileName) };
 			pmlog_dbg(std::format("StartStreaming action from [{}] targetting [{}] assigned nsm [{}]",
 				stx.clientPid, in.targetPid, out.nsmFileName));

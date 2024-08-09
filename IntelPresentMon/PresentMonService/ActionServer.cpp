@@ -56,13 +56,15 @@ namespace pmon::svc
         // functions
         as::awaitable<void> AcceptConnection_()
         {
+            std::optional<uint32_t> sessionId;
             try {
                 // create pipe instance object
                 std::shared_ptr pPipe = pipe::DuplexPipe::MakeAsPtr(pipeName_, ioctx_, GetSecurityString_());
                 // wait for a client to connect
                 co_await pPipe->Accept();
                 // insert a session context object for this connection, will be initialized properly upon OpenSession action
-                actionManager_.ctx_.sessions[pPipe->GetId()].pPipe = pPipe;
+                sessionId = pPipe->GetId();
+                actionManager_.ctx_.sessions[*sessionId].pPipe = pPipe;
                 // fork this acceptor coroutine
                 as::co_spawn(ioctx_, AcceptConnection_(), as::detached);
                 // run the action handler until client session is terminated
@@ -71,6 +73,9 @@ namespace pmon::svc
                 }
             }
             catch (...) {
+                if (sessionId) {
+                    actionManager_.ctx_.sessions.erase(*sessionId);
+                }
                 pmlog_dbg(util::ReportException());
                 pmlog_dbg("Action pipe disconnected");
             }

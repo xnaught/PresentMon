@@ -26,6 +26,7 @@ namespace pmon::svc::acts
 		static Response Execute_(const ServiceExecutionContext& ctx, SessionContext& stx, Params&& in)
 		{
 			ctx.pPmon->StopStreaming(stx.clientPid, in.targetPid);
+			stx.trackedPids.erase(in.targetPid);
 			pmlog_dbg(std::format("StopStreaming action from [{}] un-targeting [{}]", stx.clientPid, in.targetPid));
 			return {};
 		}

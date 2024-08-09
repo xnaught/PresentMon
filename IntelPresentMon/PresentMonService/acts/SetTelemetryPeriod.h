@@ -32,6 +32,7 @@ namespace pmon::svc::acts
 				pmlog_error("Set telemetry period failed").code(sta);
 				throw util::Except<ActionResponseError>(sta);
 			}
+			stx.requestedTelemetryPeriodMs = in.telemetrySamplePeriodMs;
 			pmlog_dbg(std::format("Setting telemetry sample period to {}ms", in.telemetrySamplePeriodMs));
 			return {};
 		}

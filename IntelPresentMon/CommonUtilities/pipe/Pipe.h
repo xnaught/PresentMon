@@ -70,6 +70,7 @@ namespace pmon::util::pipe
 		template<class H>
 		as::awaitable<H> ReadPacketConsumeHeader()
 		{
+			assert(readBuf_.size() == 0);
 			// read in request
 			// first read the number of bytes in the request payload (always 4-byte read)
 			uint32_t payloadSize;

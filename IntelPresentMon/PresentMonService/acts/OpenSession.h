@@ -36,7 +36,8 @@ namespace pmon::svc::acts
 			stx.clientPid = in.clientPid;
 			stx.clientBuildId = in.clientBuildId;
 			ctx.pSvc->SignalClientSessionOpened();
-			pmlog_dbg(std::format("Received open session action from {} BID={}", in.clientPid, in.clientBuildId));
+			pmlog_dbg(std::format("Received open session action from {} BID={} vs {} (svc)",
+				in.clientPid, in.clientBuildId, PM_BID_GIT_HASH_SHORT_NARROW));
 			return Response{ .serviceBuildId = PM_BID_GIT_HASH_SHORT_NARROW };
 		}
 	};
