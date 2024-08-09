@@ -36,8 +36,7 @@ namespace pmon::mid
             using Response = Action::Response;
             pmlog_dbg(std::format("dispatching action [{}] w/ params: {}", Action::Identifier, log::DumpStruct(params)));
             return ExecuteSynchronous_([this](Params&& params) -> pipe::as::awaitable<Response> {
-                co_return co_await ipc::act::SyncRequest<Action>(std::forward<Params>(params),
-                    token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
+                co_return co_await ipc::act::SyncRequest<Action>(std::forward<Params>(params), token_++, pipe_);
             }(std::forward<Params>(params)));
         }
 
@@ -55,7 +54,7 @@ namespace pmon::mid
         pipe::as::awaitable<std::string> OpenSession_()
         {
             const OpenSession::Params p{ .clientPid = thisPid_ };
-            auto res = co_await ipc::act::SyncRequest<OpenSession>(p, token_++, pipe_, pipe_.writeBuf_, pipe_.readBuf_);
+            auto res = co_await ipc::act::SyncRequest<OpenSession>(p, token_++, pipe_);
             co_return res.str;
         }
         // data

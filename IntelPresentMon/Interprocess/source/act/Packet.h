@@ -4,21 +4,33 @@
 
 namespace pmon::ipc::act
 {
-	struct RequestHeader
+	enum class TransportStatus
+	{
+		Success,
+		ExecutionFailure,
+		TransportFailure,
+	};
+
+	enum class PacketType
+	{
+		ActionRequest,
+		ActionResponse,
+		ActionEvent,
+	};
+
+	struct PacketHeader
 	{
 		std::string identifier;
 		uint32_t commandToken;
-		template<class A> void serialize(A& ar) {
-			ar(identifier, commandToken);
-		}
-	};
+		TransportStatus transportStatus;
+		int executionStatus;
+		PacketType packetType;
+		uint16_t headerVersion;
+		uint16_t actionVersion;
 
-	struct ResponseHeader
-	{
-		uint32_t commandToken;
-		int32_t status;
 		template<class A> void serialize(A& ar) {
-			ar(commandToken, status);
+			ar(identifier, commandToken, transportStatus, executionStatus,
+				packetType, headerVersion, actionVersion);
 		}
 	};
 

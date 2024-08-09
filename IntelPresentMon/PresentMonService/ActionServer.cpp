@@ -65,7 +65,7 @@ namespace pmon::svc
                 as::co_spawn(ioctx_, AcceptConnection_(), as::detached);
                 // run the action handler until client session is terminated
                 while (true) {
-                    co_await actionManager_.SyncHandleRequest(pipe, pipe.readBuf_, pipe.writeBuf_);
+                    co_await actionManager_.SyncHandleRequest(pipe);
                 }
             }
             catch (...) {

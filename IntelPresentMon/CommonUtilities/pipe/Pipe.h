@@ -11,6 +11,8 @@
 #include "../Exception.h"
 #include "../log/Log.h"
 #include <sddl.h>
+#include <string_view>
+#include <ranges>
 
 namespace pmon::util::pipe
 {
@@ -37,9 +39,9 @@ namespace pmon::util::pipe
 	{
 	public:
 		DuplexPipe(const DuplexPipe&) = delete;
-		DuplexPipe & operator=(const DuplexPipe&) = delete;
+		DuplexPipe& operator=(const DuplexPipe&) = delete;
 		DuplexPipe(DuplexPipe&& other) = delete;
-		DuplexPipe & operator=(DuplexPipe&&) = delete;
+		DuplexPipe& operator=(DuplexPipe&&) = delete;
 		~DuplexPipe() = default;
 		as::awaitable<void> Accept()
 		{
@@ -88,9 +90,7 @@ namespace pmon::util::pipe
 			auto lk = co_await CoroLock(writeMtx_);
 
 			// serialize object to the transfer buffer
-			std::ostream bufStream{ &writeBuf_ };
-			cereal::BinaryOutputArchive archive(bufStream);
-			archive(obj);
+			writeArchive_(obj);
 
 			// write the transfer header containing number of bytes in payload
 			std::array header{ uint32_t(writeBuf_.size()) };
@@ -113,12 +113,68 @@ namespace pmon::util::pipe
 				as::as_tuple(as::use_awaitable)));
 
 			// deserialize object from the transfer buffer
-			std::istream bufStream{ &readBuf_ };
-			cereal::BinaryInputArchive archive(bufStream);
 			S obj;
-			archive(obj);
+			readArchive_(obj);
 			co_return obj;
 		}
+		// send a packet to the remote end
+		template<class H, class P>
+		as::awaitable<void> WritePacket(const H& header, const P& payload)
+		{
+			assert(writeBuf_.size() == 0);
+			// first we directly write bytes for the size of the body as a placeholder until we know how many are serialized
+			const uint32_t placeholderSize = 'TEMP';
+			writeStream_.write(reinterpret_cast<const char*>(&placeholderSize), sizeof(placeholderSize));
+			// record how many bytes used for the serialization of the size
+			const auto sizeSize = writeBuf_.size();
+			// serialize the packet body
+			writeArchive_(header, payload);
+			// calculate size of body
+			const auto payloadSize = uint32_t(writeBuf_.size() - sizeSize);
+			// replace the placeholder with the actual body size
+			auto bufSeq = writeBuf_.data();
+			const auto iSize = const_cast<char*>(as::buffer_cast<const char*>(bufSeq));
+			auto replacement = std::string_view{ reinterpret_cast<const char*>(&payloadSize), sizeof(payloadSize) };
+			std::ranges::copy(replacement, iSize);
+			// transmit the packet
+			co_await as::async_write(stream_, writeBuf_, as::use_awaitable);
+		}
+		template<class H>
+		as::awaitable<H> ReadPacketConsumeHeader()
+		{
+			// read in request
+			// first read the number of bytes in the request payload (always 4-byte read)
+			uint32_t payloadSize;
+			co_await as::async_read(stream_, readBuf_, as::transfer_exactly(sizeof(payloadSize)), as::use_awaitable);
+			readStream_.read(reinterpret_cast<char*>(&payloadSize), sizeof(payloadSize));
+			// read the payload
+			co_await as::async_read(stream_, readBuf_, as::transfer_exactly(payloadSize), as::use_awaitable);
+			// deserialize header portion of request payload
+			H header;
+			readArchive_(header);
+			co_return header;
+		}
+		template<class P>
+		P ConsumePacketPayload()
+		{
+			P payload;
+			readArchive_(payload);
+			if (const auto sz = readBuf_.size()) {
+				assert("unexpected data when reading packet payload from buffer!!" && false);
+				pmlog_warn(std::format("Buffer contained unexpected data of size", sz));
+				readBuf_.consume(sz);
+			}
+			return payload;
+		}
+		size_t GetWriteBufferPending() const
+		{
+			return writeBuf_.size();
+		}
+		void ClearWriteBuffer()
+		{
+			return writeBuf_.consume(GetWriteBufferPending());
+		}
+
 		static bool WaitForAvailability(const std::string& name, uint32_t timeoutMs, uint32_t pollPeriodMs = 10)
 		{
 			const auto start = std::chrono::high_resolution_clock::now();
@@ -137,7 +193,11 @@ namespace pmon::util::pipe
 			:
 			stream_{ ioctx, pipeHandle },
 			readMtx_{ ioctx },
-			writeMtx_{ ioctx }
+			readStream_{ &readBuf_ },
+			readArchive_{ readStream_ },
+			writeMtx_{ ioctx },
+			writeStream_{ &writeBuf_ },
+			writeArchive_{ writeStream_ }
 		{}
 		static HANDLE Connect_(const std::string& name)
 		{
@@ -196,12 +256,15 @@ namespace pmon::util::pipe
 			// release the owned handle to be captured by some other owner
 			return handle.Release();
 		}
-	public:
 		// data
 		as::windows::stream_handle stream_;
 		CoroMutex readMtx_;
 		as::streambuf readBuf_;
+		std::istream readStream_;
+		cereal::BinaryInputArchive readArchive_;
 		CoroMutex writeMtx_;
 		as::streambuf writeBuf_;
+		std::ostream writeStream_;
+		cereal::BinaryOutputArchive writeArchive_;
 	};
 }
