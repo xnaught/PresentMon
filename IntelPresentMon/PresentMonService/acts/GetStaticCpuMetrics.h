@@ -27,7 +27,7 @@ namespace pmon::svc::acts
 		};
 	private:
 		friend class AsyncActionBase_<ACTNAME, ServiceExecutionContext>;
-		static Response Execute_(const ServiceExecutionContext& ctx, Params&& in)
+		static Response Execute_(const ServiceExecutionContext& ctx, SessionContext& stx, Params&& in)
 		{
 			const Response out{
 				.cpuName = ctx.pPmon->GetCpuName(),

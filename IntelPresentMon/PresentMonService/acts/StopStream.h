@@ -26,7 +26,7 @@ namespace pmon::svc::acts
 		};
 	private:
 		friend class AsyncActionBase_<ACTNAME, ServiceExecutionContext>;
-		static Response Execute_(const ServiceExecutionContext& ctx, Params&& in)
+		static Response Execute_(const ServiceExecutionContext& ctx, SessionContext& stx, Params&& in)
 		{
 			ctx.pPmon->StopStreaming(in.clientPid, in.targetPid);
 			pmlog_dbg(std::format("StopStreaming action from [{}] un-targeting [{}]", in.clientPid, in.targetPid));

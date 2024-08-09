@@ -45,7 +45,7 @@ namespace pmon::util::pipe
 		static DuplexPipe Connect(const std::string& name, as::io_context& ioctx);
 		static DuplexPipe Make(const std::string& name, as::io_context& ioctx, const std::string& security = {});
 		static std::unique_ptr<DuplexPipe> ConnectAsPtr(const std::string& name, as::io_context& ioctx);
-		static std::unique_ptr<DuplexPipe> MakeAsPtr(const std::string& name, as::io_context& ioctx);
+		static std::unique_ptr<DuplexPipe> MakeAsPtr(const std::string& name, as::io_context& ioctx, const std::string& security = {});
 		template<class H, class P>
 		as::awaitable<void> WritePacket(const H& header, const P& payload)
 		{
@@ -97,12 +97,15 @@ namespace pmon::util::pipe
 		size_t GetWriteBufferPending() const;
 		void ClearWriteBuffer();
 		static bool WaitForAvailability(const std::string& name, uint32_t timeoutMs, uint32_t pollPeriodMs = 10);
+		uint32_t GetId() const;
 	private:
 		// functions
 		DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle);
 		static HANDLE Connect_(const std::string& name);
 		static HANDLE Make_(const std::string& name, const std::string& security = {});
 		// data
+		static std::atomic<uint32_t> nextUid_;
+		uint32_t uid = nextUid_++;
 		as::windows::stream_handle stream_;
 		CoroMutex readMtx_;
 		as::streambuf readBuf_;

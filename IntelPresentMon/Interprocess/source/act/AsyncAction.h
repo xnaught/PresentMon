@@ -16,21 +16,32 @@ namespace pmon::ipc::act
 	{
 	public:
 		virtual const char* GetIdentifier() const = 0;
-		virtual pipe::as::awaitable<void> Execute(const ExecutionContext& ctx,
+		virtual pipe::as::awaitable<void> Execute(ExecutionContext& ctx,
 			const PacketHeader& header, pipe::DuplexPipe& pipe) const = 0;
 	};
 
 	template<class T, class ExecutionContext>
 	class AsyncActionBase_ : public AsyncAction<ExecutionContext>
 	{
+	protected:
+		using SessionContext = typename ExecutionContext::SessionContextType;
 	public:
-		pipe::as::awaitable<void> Execute(const ExecutionContext& ctx,
+		pipe::as::awaitable<void> Execute(ExecutionContext& ctx,
 			const PacketHeader& header, pipe::DuplexPipe& pipe) const final
 		{
 			PacketHeader resHeader;
 			typename T::Response output;
 			try {
-				output = T::Execute_(ctx, pipe.ConsumePacketPayload<typename T::Params>());
+				auto& stx = ctx.sessions.at(pipe.GetId());
+				// session should be initialized except in the special case of the OpenSession action
+				// TODO: find a way of pushing this check down to the app-specific layer rather than hardcode identifier here
+				if (header.identifier != "OpenSession") {
+					assert(bool(stx.clientPid));
+					if (!stx.clientPid) {
+						pmlog_warn("Received action without a valid session opened");
+					}
+				}
+				output = T::Execute_(ctx, stx, pipe.ConsumePacketPayload<typename T::Params>());
 				resHeader = MakeResponseHeader_(header, TransportStatus::Success, PM_STATUS_SUCCESS);
 			}
 			catch (const ActionResponseError& e) {

@@ -1,5 +1,6 @@
 #pragma once
 #include "../ActionHelper.h"
+#include "../../CommonUtilities/generated/build_id.h"
 #include <format>
 
 #define ACTNAME OpenSession
@@ -15,28 +16,28 @@ namespace pmon::svc::acts
 		struct Params
 		{
 			uint32_t clientPid;
+			std::string clientBuildId;
 
 			template<class A> void serialize(A& ar) {
-				ar(clientPid);
+				ar(clientPid, clientBuildId);
 			}
 		};
-		struct Response
-		{
-			std::string str;
+		struct Response {
+			std::string serviceBuildId;
 
 			template<class A> void serialize(A& ar) {
-				ar(str);
+				ar(serviceBuildId);
 			}
 		};
 	private:
 		friend class AsyncActionBase_<ACTNAME, ServiceExecutionContext>;
-		static Response Execute_(const ServiceExecutionContext& ctx, Params&& in)
+		static Response Execute_(const ServiceExecutionContext& ctx, SessionContext& stx, Params&& in)
 		{
+			stx.clientPid = in.clientPid;
+			stx.clientBuildId = in.clientBuildId;
 			ctx.pSvc->SignalClientSessionOpened();
-			Response out;
-			out.str = std::format("session-opened:{}", in.clientPid);
-			pmlog_dbg(std::format("Received open session action from: {}", in.clientPid));
-			return out;
+			pmlog_dbg(std::format("Received open session action from {} BID={}", in.clientPid, in.clientBuildId));
+			return Response{ .serviceBuildId = PM_BID_GIT_HASH_SHORT_NARROW };
 		}
 	};
 

@@ -31,7 +31,7 @@ namespace pmon::svc::acts
 		};
 	private:
 		friend class AsyncActionBase_<ACTNAME, ServiceExecutionContext>;
-		static Response Execute_(const ServiceExecutionContext& ctx, Params&& in)
+		static Response Execute_(const ServiceExecutionContext& ctx, SessionContext& stx, Params&& in)
 		{
 			std::string nsmFileName;
 			if (auto sta = ctx.pPmon->StartStreaming(in.clientPid, in.targetPid, nsmFileName); sta != PM_STATUS_SUCCESS) {

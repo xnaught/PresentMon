@@ -36,6 +36,7 @@
     <ClInclude Include="acts\SelectAdapter.h" />
     <ClInclude Include="acts\StopStream.h" />
     <ClInclude Include="AllActions.h" />
+    <ClInclude Include="ServiceExecutionContext.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PresentMonService.rc" />

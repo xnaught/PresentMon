@@ -4,6 +4,8 @@
 
 namespace pmon::util::pipe
 {
+	std::atomic<uint32_t> DuplexPipe::nextUid_ = 0;
+
 	as::awaitable<void> DuplexPipe::Accept()
 	{
 		as::windows::object_handle connEvt{ co_await as::this_coro::executor, win::Event{}.Release() };
@@ -40,9 +42,9 @@ namespace pmon::util::pipe
 	{
 		return std::unique_ptr<DuplexPipe>(new DuplexPipe{ ioctx, Connect_(name) });
 	}
-	std::unique_ptr<DuplexPipe> DuplexPipe::MakeAsPtr(const std::string& name, as::io_context& ioctx)
+	std::unique_ptr<DuplexPipe> DuplexPipe::MakeAsPtr(const std::string& name, as::io_context& ioctx, const std::string& security)
 	{
-		return std::unique_ptr<DuplexPipe>(new DuplexPipe{ ioctx, Make_(name) });
+		return std::unique_ptr<DuplexPipe>(new DuplexPipe{ ioctx, Make_(name, security) });
 	}
 	size_t DuplexPipe::GetWriteBufferPending() const
 	{
@@ -64,6 +66,10 @@ namespace pmon::util::pipe
 			}
 		}
 		return false;
+	}
+	uint32_t DuplexPipe::GetId() const
+	{
+		return uid;
 	}
 	DuplexPipe::DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle)
 		:

@@ -26,7 +26,7 @@ namespace pmon::svc::acts
 		struct Response { template<class A> void serialize(A& ar) {} };
 	private:
 		friend class AsyncActionBase_<ACTNAME, ServiceExecutionContext>;
-		static Response Execute_(const ServiceExecutionContext& ctx, Params&& in)
+		static Response Execute_(const ServiceExecutionContext& ctx, SessionContext& stx, Params&& in)
 		{
 			if (auto sta = ctx.pPmon->SetGpuTelemetryPeriod(in.telemetrySamplePeriodMs); sta != PM_STATUS_SUCCESS) {
 				pmlog_error("Set telemetry period failed").code(sta);

@@ -1,13 +1,13 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-#include "../CommonUtilities/win/WinAPI.h"
-#include "..\CommonUtilities\str\String.h"
 #include "../CommonUtilities/pipe/Pipe.h"
+#include "..\CommonUtilities\str\String.h"
 #include "../Interprocess/source/act/AsyncActionManager.h"
 #include <boost/asio/windows/object_handle.hpp>
 #include "CliOptions.h"
 #include "ActionServer.h"
 #include "GlobalIdentifiers.h"
+#include "ServiceExecutionContext.h"
 #include <thread>
 #include <sddl.h>
 
@@ -58,17 +58,20 @@ namespace pmon::svc
         {
             try {
                 // create pipe instance object
-                auto pipe = pipe::DuplexPipe::Make(pipeName_, ioctx_, GetSecurityString_());
+                std::shared_ptr pPipe = pipe::DuplexPipe::MakeAsPtr(pipeName_, ioctx_, GetSecurityString_());
                 // wait for a client to connect
-                co_await pipe.Accept();
+                co_await pPipe->Accept();
+                // insert a session context object for this connection, will be initialized properly upon OpenSession action
+                actionManager_.ctx_.sessions[pPipe->GetId()].pPipe = pPipe;
                 // fork this acceptor coroutine
                 as::co_spawn(ioctx_, AcceptConnection_(), as::detached);
                 // run the action handler until client session is terminated
                 while (true) {
-                    co_await actionManager_.SyncHandleRequest(pipe);
+                    co_await actionManager_.SyncHandleRequest(*pPipe);
                 }
             }
             catch (...) {
+                pmlog_dbg(util::ReportException());
                 pmlog_dbg("Action pipe disconnected");
             }
         }

@@ -4,6 +4,7 @@
 #include "../Interprocess/source/act/AsyncActionManager.h"
 #include "../CommonUtilities/pipe/Pipe.h"
 #include "../PresentMonService/AllActions.h"
+#include "../CommonUtilities/generated/build_id.h"
 
 namespace pmon::mid
 {
@@ -20,7 +21,10 @@ namespace pmon::mid
             pipeName_{ std::move(pipeName) },
             pipe_{ pipe::DuplexPipe::Connect(pipeName_, ioctx_) }
         {
-            pmlog_info(ExecuteSynchronous_(OpenSession_()));
+            auto res = DispatchSync(OpenSession::Params{
+                .clientPid = thisPid_, .clientBuildId = PM_BID_GIT_HASH_SHORT_NARROW
+            });
+            pmlog_info(std::format("Opened session with server, build id = [{}]", res.serviceBuildId));
         }
 
         ActionClient(const ActionClient&) = delete;
@@ -49,13 +53,6 @@ namespace pmon::mid
             ioctx_.run();
             ioctx_.restart();
             return fut.get();
-        }
-        // TODO: roll this up with Dispatch (when we remove the placeholder logging)
-        pipe::as::awaitable<std::string> OpenSession_()
-        {
-            const OpenSession::Params p{ .clientPid = thisPid_ };
-            auto res = co_await ipc::act::SyncRequest<OpenSession>(p, token_++, pipe_);
-            co_return res.str;
         }
         // data
         uint32_t token_ = 0;

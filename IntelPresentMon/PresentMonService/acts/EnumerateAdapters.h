@@ -39,7 +39,7 @@ namespace pmon::svc::acts
 		};
 	private:
 		friend class AsyncActionBase_<ACTNAME, ServiceExecutionContext>;
-		static Response Execute_(const ServiceExecutionContext& ctx, Params&& in)
+		static Response Execute_(const ServiceExecutionContext& ctx, SessionContext& stx, Params&& in)
 		{
 			Response out;
 			for (auto&&[i, adapter] : ctx.pPmon->EnumerateAdapters() | vi::enumerate) {
