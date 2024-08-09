@@ -40,7 +40,8 @@ namespace pmon::util::log
                 // loop here until we get an Entry packet or throw an error
                 // other control packets are processed without returning
                 while (true) {
-                    const auto packet = co_await pipe_.ReadSerialized<MarshallPacket>();
+                    co_await pipe_.ReadPacketConsumeHeader<NamedPipeMarshallSender::EmptyHeader>();
+                    const auto packet = pipe_.ConsumePacketPayload<MarshallPacket>();
                     if (auto pBulk = std::get_if<IdentificationTable::Bulk>(&packet)) {
                         if (pIdTable_) {
                             for (auto& p : pBulk->processes) {

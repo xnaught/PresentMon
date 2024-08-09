@@ -58,6 +58,7 @@ namespace pmon::ipc::act
 		{
 			return T::Identifier;
 		}
+		// default version for all actions
 		static constexpr uint16_t Version = 1;
 	private:
 		static PacketHeader MakeResponseHeader_(const PacketHeader& reqHeader, TransportStatus txs, int exs)

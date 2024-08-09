@@ -44,42 +44,6 @@ void RunLogDemo(int mode)
 	p2sam::LogChannelManager zLogMan_;
 	p2sam::ConfigureLogging();
 
-	namespace as = pipe::as;
-	as::io_context ioctx;
-
-	if (mode == 0) {
-		std::cout << "Starting server" << std::endl;
-		std::function<as::awaitable<void>()> accept = [&]() -> as::awaitable<void> {
-			auto pipe = pipe::DuplexPipe::Make(R"(\\.\pipe\pm-asio-test)", ioctx);
-			co_await pipe.Accept();
-			as::co_spawn(co_await as::this_coro::executor, accept(), as::detached);
-			auto strings = co_await pipe.ReadSerialized<std::vector<std::string>>();
-			for (auto& s : strings) {
-				std::cout << s << std::endl;
-			}
-			co_await pipe.WriteSerialized("thanks fam"s);
-		};
-		for (auto i = 0; i < 3; i++) {
-			as::co_spawn(ioctx, accept(), as::detached);
-		}
-		ioctx.run();
-		return;
-	}
-	else {
-		std::cout << "Starting client" << std::endl;
-		as::co_spawn(ioctx, [&]() -> as::awaitable<void> {
-			auto pipe = pipe::DuplexPipe::Connect(R"(\\.\pipe\pm-asio-test)", ioctx);
-			const std::vector strings{ "meenie"s, "mighney"s, "moeh"s };
-			co_await pipe.WriteSerialized(strings);
-			std::cout << "Done transmitting" << std::endl;
-			std::cout << "From server: " << co_await pipe.ReadSerialized<std::string>() << std::endl;
-		}, as::detached);
-		ioctx.run();
-		std::cout << "io_context finished running all tasks, press any key...";
-		while (!_kbhit());
-		return;
-	}
-
 	pmapi::Session sesh;
 
 	for (auto&& o : clio::Options::Get().GetForwardedOptions()) {

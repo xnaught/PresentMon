@@ -46,40 +46,6 @@ namespace pmon::util::pipe
 		static DuplexPipe Make(const std::string& name, as::io_context& ioctx, const std::string& security = {});
 		static std::unique_ptr<DuplexPipe> ConnectAsPtr(const std::string& name, as::io_context& ioctx);
 		static std::unique_ptr<DuplexPipe> MakeAsPtr(const std::string& name, as::io_context& ioctx);
-		template<class S>
-		as::awaitable<void> WriteSerialized(const S& obj)
-		{
-			// prevent other coros from writing to pipe while we're working here
-			auto lk = co_await CoroLock(writeMtx_);
-
-			// serialize object to the transfer buffer
-			writeArchive_(obj);
-
-			// write the transfer header containing number of bytes in payload
-			std::array header{ uint32_t(writeBuf_.size()) };
-			Check_(co_await as::async_write(stream_, as::buffer(header), as::as_tuple(as::use_awaitable)));
-			// write the serialized object payload
-			Check_(co_await as::async_write(stream_, writeBuf_, as::as_tuple(as::use_awaitable)));
-		}
-		template<class S>
-		as::awaitable<S> ReadSerialized()
-		{
-			// prevent other coros from reading from pipe while we're working here
-			auto lk = co_await CoroLock(readMtx_);
-
-			// read the transfer header containing number of bytes in payload
-			std::array header{ uint32_t(-1) };
-			Check_(co_await as::async_read(stream_, as::buffer(header),
-				as::transfer_exactly(SizeInBytes(header)), as::as_tuple(as::use_awaitable)));
-			// read the serialized object payload
-			Check_(co_await as::async_read(stream_, readBuf_, as::transfer_exactly(header[0]),
-				as::as_tuple(as::use_awaitable)));
-
-			// deserialize object from the transfer buffer
-			S obj;
-			readArchive_(obj);
-			co_return obj;
-		}
 		template<class H, class P>
 		as::awaitable<void> WritePacket(const H& header, const P& payload)
 		{

@@ -80,7 +80,7 @@ namespace pmon::util::log
 						// for all active pipe connections, set transmission sequence and add to action list
 						for (auto pPipe : pipePtrs_) {
 							try {
-								co_await pPipe->WriteSerialized(packet);
+								co_await pPipe->WritePacket(NamedPipeMarshallSender::EmptyHeader{}, packet);
 							}
 							catch (const pipe::PipeBroken&) {
 								pmlog_dbg("Pipe disconnected by client");
@@ -115,7 +115,7 @@ namespace pmon::util::log
 				pipe::as::co_spawn(ioctx_, ConnectionAcceptor_(), pipe::as::detached);
 				// transmit bulk context data
 				MarshallPacket packet = IdentificationTable::GetBulk();
-				co_await pPipe->WriteSerialized(packet);
+				co_await pPipe->WritePacket(NamedPipeMarshallSender::EmptyHeader{}, packet);
 				// add pipe to the set of pipes available to broadcast to
 				pipePtrs_.insert(pPipe);
 			}
