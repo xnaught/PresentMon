@@ -37,5 +37,22 @@ namespace pmon::svc
         PresentMon* pPmon;
         // maps session uid => session (uid is same as session pipe id)
         std::unordered_map<uint32_t, SessionContextType> sessions;
+
+        void DisposeSession(uint32_t sessionId)
+        {
+            pmlog_dbg(std::format("Disposing session id:{}", sessionId));
+            if (auto i = sessions.find(sessionId); i != sessions.end()) {
+                auto& session = i->second;
+                if (session.clientPid) {
+                    for (auto& tracked : session.trackedPids) {
+                        pPmon->StopStreaming(session.clientPid, tracked);
+                    }
+                }
+                sessions.erase(i);
+            }
+            else {
+                pmlog_warn("Session to be removed not found");
+            }
+        }
     };
 }

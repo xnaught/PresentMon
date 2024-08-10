@@ -56,6 +56,7 @@ namespace pmon::svc
         // functions
         as::awaitable<void> AcceptConnection_()
         {
+            auto& sessions = actionManager_.ctx_.sessions;
             std::optional<uint32_t> sessionId;
             try {
                 // create pipe instance object
@@ -64,7 +65,7 @@ namespace pmon::svc
                 co_await pPipe->Accept();
                 // insert a session context object for this connection, will be initialized properly upon OpenSession action
                 sessionId = pPipe->GetId();
-                actionManager_.ctx_.sessions[*sessionId].pPipe = pPipe;
+                sessions[*sessionId].pPipe = pPipe;
                 // fork this acceptor coroutine
                 as::co_spawn(ioctx_, AcceptConnection_(), as::detached);
                 // run the action handler until client session is terminated
@@ -73,11 +74,17 @@ namespace pmon::svc
                 }
             }
             catch (...) {
-                if (sessionId) {
-                    actionManager_.ctx_.sessions.erase(*sessionId);
-                }
                 pmlog_dbg(util::ReportException());
-                pmlog_dbg("Action pipe disconnected");
+                if (sessionId) {
+                    uint32_t clientPid = 0;
+                    if (auto i = sessions.find(*sessionId); i != sessions.end()) {
+                        clientPid = i->second.clientPid;
+                    }
+                    actionManager_.ctx_.DisposeSession(*sessionId);
+                    pmlog_info(std::format("Action pipe disconnected id:{} pid:{}", *sessionId, clientPid));
+                    co_return;
+                }
+                pmlog_info("Sessionless pipe disconnected");
             }
         }
         std::string GetSecurityString_() const
