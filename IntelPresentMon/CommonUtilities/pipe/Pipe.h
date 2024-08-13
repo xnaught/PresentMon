@@ -65,7 +65,7 @@ namespace pmon::util::pipe
 			auto replacement = std::string_view{ reinterpret_cast<const char*>(&payloadSize), sizeof(payloadSize) };
 			std::ranges::copy(replacement, iSize);
 			// transmit the packet
-			co_await as::async_write(stream_, writeBuf_, as::use_awaitable);
+			co_await Write_();
 		}
 		template<class H>
 		as::awaitable<H> ReadPacketConsumeHeader()
@@ -74,10 +74,10 @@ namespace pmon::util::pipe
 			// read in request
 			// first read the number of bytes in the request payload (always 4-byte read)
 			uint32_t payloadSize;
-			co_await as::async_read(stream_, readBuf_, as::transfer_exactly(sizeof(payloadSize)), as::use_awaitable);
+			co_await Read_(sizeof(payloadSize));
 			readStream_.read(reinterpret_cast<char*>(&payloadSize), sizeof(payloadSize));
 			// read the payload
-			co_await as::async_read(stream_, readBuf_, as::transfer_exactly(payloadSize), as::use_awaitable);
+			co_await Read_(payloadSize);
 			// deserialize header portion of request payload
 			H header;
 			readArchive_(header);
@@ -104,6 +104,10 @@ namespace pmon::util::pipe
 		DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle);
 		static HANDLE Connect_(const std::string& name);
 		static HANDLE Make_(const std::string& name, const std::string& security = {});
+		// wrapper to convert EOF system_error to PipeBroken error
+		as::awaitable<void> Read_(size_t byteCount);
+		// wrapper to convert EOF system_error to PipeBroken error
+		as::awaitable<void> Write_();
 		// data
 		static std::atomic<uint32_t> nextUid_;
 		uint32_t uid = nextUid_++;

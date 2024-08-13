@@ -138,4 +138,15 @@ namespace pmon::util::pipe
 		// release the owned handle to be captured by some other owner
 		return handle.Release();
 	}
+	as::awaitable<void> DuplexPipe::Read_(size_t byteCount)
+	{
+		auto [ec, n] = co_await as::async_read(stream_, readBuf_, as::transfer_exactly(byteCount),
+			as::as_tuple(as::use_awaitable));
+		if (ec && ec != boost::asio::error::eof) throw boost::system::system_error{ ec };
+	}
+	as::awaitable<void> DuplexPipe::Write_()
+	{
+		auto [ec, n] = co_await as::async_write(stream_, writeBuf_, as::as_tuple(as::use_awaitable));
+		if (ec && ec != boost::asio::error::eof) throw boost::system::system_error{ ec };
+	}
 }
