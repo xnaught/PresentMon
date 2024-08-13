@@ -204,6 +204,9 @@
     <ClInclude Include="third\reflect.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BuildId.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">
@@ -321,6 +324,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="pipe\CoroMutex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BuildId.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

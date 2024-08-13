@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BuildId.h" />
     <ClInclude Include="cli\CliFramework.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="log\ChannelFlusher.h" />
@@ -84,6 +85,7 @@
     <ClInclude Include="win\WinAPI.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BuildId.cpp" />
     <ClCompile Include="cli\CliFramework.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="log\ChannelFlusher.cpp" />

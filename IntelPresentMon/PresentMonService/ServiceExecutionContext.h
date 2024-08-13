@@ -32,12 +32,16 @@ namespace pmon::svc
 
     struct ServiceExecutionContext
     {
+        // types
         using SessionContextType = ActionSession;
+
+        // data
         Service* pSvc;
         PresentMon* pPmon;
         // maps session uid => session (uid is same as session pipe id)
         std::unordered_map<uint32_t, SessionContextType> sessions;
 
+        // functions
         void DisposeSession(uint32_t sessionId)
         {
             pmlog_dbg(std::format("Disposing session id:{}", sessionId));

@@ -4,7 +4,7 @@
 #include "../Interprocess/source/act/AsyncActionManager.h"
 #include "../CommonUtilities/pipe/Pipe.h"
 #include "../PresentMonService/AllActions.h"
-#include "../CommonUtilities/generated/build_id.h"
+#include "../CommonUtilities/BuildId.h"
 
 namespace pmon::mid
 {
@@ -22,7 +22,7 @@ namespace pmon::mid
             pipe_{ pipe::DuplexPipe::Connect(pipeName_, ioctx_) }
         {
             auto res = DispatchSync(OpenSession::Params{
-                .clientPid = thisPid_, .clientBuildId = PM_BID_GIT_HASH_SHORT_NARROW
+                .clientPid = thisPid_, .clientBuildId = BuildIdShortHash()
             });
             pmlog_info(std::format("Opened session with server, build id = [{}]", res.serviceBuildId));
         }

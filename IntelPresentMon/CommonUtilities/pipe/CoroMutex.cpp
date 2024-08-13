@@ -26,6 +26,7 @@ namespace pmon::util::pipe
 	}
 	void CoroMutex::Unlock()
 	{
+		// guard against unlocking twice from same coro or unlocked when there are no waiters
 		if (counter_ == 0 || holdoff_) {
 			return;
 		}
@@ -37,8 +38,7 @@ namespace pmon::util::pipe
 		}
 
 		holdoff_ = true;
-		auto* next = waiters_.front();
-		next->cancel();
+		waiters_.front()->cancel();
 		waiters_.pop_front();
 	}
 

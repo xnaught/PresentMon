@@ -1,4 +1,5 @@
 #pragma once
+#include "../win/WinAPI.h"
 #include <boost/asio.hpp>
 #include <deque>
 
@@ -25,6 +26,7 @@ namespace pmon::util::pipe
 		as::io_context& ctx_;
 		std::deque<Timer*> waiters_;
 		int counter_ = 0;
+		// used to check for the the same coro unlocking 2+ times
 		bool holdoff_ = false;
 	};
 

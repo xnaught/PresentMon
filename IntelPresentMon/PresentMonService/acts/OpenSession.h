@@ -1,6 +1,6 @@
 #pragma once
 #include "../ActionHelper.h"
-#include "../../CommonUtilities/generated/build_id.h"
+#include "../../CommonUtilities/BuildId.h"
 #include <format>
 
 #define ACTNAME OpenSession
@@ -37,8 +37,8 @@ namespace pmon::svc::acts
 			stx.clientBuildId = in.clientBuildId;
 			ctx.pSvc->SignalClientSessionOpened();
 			pmlog_dbg(std::format("Received open session action from {} BID={} vs {} (svc)",
-				in.clientPid, in.clientBuildId, PM_BID_GIT_HASH_SHORT_NARROW));
-			return Response{ .serviceBuildId = PM_BID_GIT_HASH_SHORT_NARROW };
+				in.clientPid, in.clientBuildId, BuildIdShortHash()));
+			return Response{ .serviceBuildId = BuildIdShortHash() };
 		}
 	};
 
