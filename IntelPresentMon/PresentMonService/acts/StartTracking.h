@@ -35,7 +35,7 @@ namespace pmon::svc::acts
 			std::string nsmFileName;
 			if (auto sta = ctx.pPmon->StartStreaming(stx.clientPid, in.targetPid, nsmFileName); sta != PM_STATUS_SUCCESS) {
 				pmlog_error("Start stream failed").code(sta);
-				throw util::Except<ActionResponseError>(sta);
+				throw util::Except<ActionExecutionError>(sta);
 			}
 			stx.trackedPids.insert(in.targetPid);
 			const Response out{ .nsmFileName = std::move(nsmFileName) };

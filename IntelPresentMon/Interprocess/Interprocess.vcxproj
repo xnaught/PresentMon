@@ -27,7 +27,7 @@
     <ClCompile Include="source\PmStatusError.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="source\act\ActionResponseError.h" />
+    <ClInclude Include="source\act\ActionExecutionError.h" />
     <ClInclude Include="source\act\Packet.h" />
     <ClInclude Include="source\act\AsyncAction.h" />
     <ClInclude Include="source\act\AsyncActionCollection.h" />

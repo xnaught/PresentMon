@@ -5,7 +5,7 @@
 #include <boost/asio.hpp>
 #include <cereal/archives/binary.hpp>
 #include "Packet.h"
-#include "ActionResponseError.h"
+#include "ActionExecutionError.h"
 
 namespace pmon::ipc::act
 {
@@ -47,7 +47,7 @@ namespace pmon::ipc::act
 				output = T::Execute_(ctx, stx, pipe.ConsumePacketPayload<typename T::Params>());
 				resHeader = MakeResponseHeader_(header, TransportStatus::Success, PM_STATUS_SUCCESS);
 			}
-			catch (const ActionResponseError& e) {
+			catch (const ActionExecutionError& e) {
 				pmlog_error(std::format("Error in action [{}] execution", GetIdentifier())).code(e.GetCode());
 				resHeader = MakeResponseHeader_(header, TransportStatus::ExecutionFailure, e.GetCode());
 			}

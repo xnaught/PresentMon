@@ -134,10 +134,10 @@
     <ClInclude Include="source\act\Transfer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\act\ActionResponseError.h">
+    <ClInclude Include="source\PmStatusError.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\PmStatusError.h">
+    <ClInclude Include="source\act\ActionExecutionError.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

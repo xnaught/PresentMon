@@ -3,7 +3,7 @@
 #include <boost/asio.hpp>
 #include "../../../CommonUtilities/pipe/Pipe.h"
 #include "Packet.h"
-#include "ActionResponseError.h"
+#include "ActionExecutionError.h"
 
 namespace pmon::ipc::act
 {
@@ -29,7 +29,7 @@ namespace pmon::ipc::act
 			if (resHeader.executionStatus) {
 				const auto code = (PM_STATUS)resHeader.executionStatus;
 				pmlog_error("Execution error response to SyncRequest").code(code);
-				throw util::Except<ActionResponseError>((PM_STATUS)resHeader.executionStatus);
+				throw util::Except<ActionExecutionError>((PM_STATUS)resHeader.executionStatus);
 			}
 			else {
 				pmlog_error("Execution error response to SyncRequest").raise<util::Exception>();

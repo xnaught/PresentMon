@@ -30,7 +30,7 @@ namespace pmon::svc::acts
 		{
 			if (auto sta = ctx.pPmon->SelectAdapter(in.adapterId); sta != PM_STATUS_SUCCESS) {
 				pmlog_error("Select adapter failed").code(sta);
-				throw util::Except<ActionResponseError>(sta);
+				throw util::Except<ActionExecutionError>(sta);
 			}
 			stx.requestedAdapterId = in.adapterId;
 			pmlog_dbg(std::format("selecting adapter id [{}]", in.adapterId));

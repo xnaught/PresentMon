@@ -30,7 +30,7 @@ namespace pmon::svc::acts
 		{
 			if (auto sta = ctx.pPmon->SetGpuTelemetryPeriod(in.telemetrySamplePeriodMs); sta != PM_STATUS_SUCCESS) {
 				pmlog_error("Set telemetry period failed").code(sta);
-				throw util::Except<ActionResponseError>(sta);
+				throw util::Except<ActionExecutionError>(sta);
 			}
 			stx.requestedTelemetryPeriodMs = in.telemetrySamplePeriodMs;
 			pmlog_dbg(std::format("Setting telemetry sample period to {}ms", in.telemetrySamplePeriodMs));
