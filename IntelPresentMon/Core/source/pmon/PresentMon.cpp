@@ -55,7 +55,6 @@ namespace p2c::pmon
 
 		// establish initial sampling / window / processing setting values
 		SetWindow(window_in);
-		SetOffset(offset_in);
 		SetGpuTelemetryPeriod(telemetrySamplePeriodMs_in);
 
 		// create flusher used to clear out piled-up old frame events before capture
@@ -86,8 +85,6 @@ namespace p2c::pmon
 	}
 	double PresentMon::GetWindow() const { return window; }
 	void PresentMon::SetWindow(double window_) { window = window_; }
-	double PresentMon::GetOffset() const { return offset; }
-	void PresentMon::SetOffset(double offset_) { offset = offset_; }
 	void PresentMon::SetGpuTelemetryPeriod(uint32_t period)
 	{
 		pSession->SetTelemetryPollingPeriod(1, period);

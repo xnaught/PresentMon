@@ -31,8 +31,6 @@ namespace p2c::pmon
 		void StopTracking();
 		double GetWindow() const;
 		void SetWindow(double window_);
-		double GetOffset() const;
-		void SetOffset(double offset_);
 		void SetGpuTelemetryPeriod(uint32_t period);
 		uint32_t GetGpuTelemetryPeriod();
 		// std::wstring GetCpuName() const;
@@ -47,7 +45,6 @@ namespace p2c::pmon
 		pmapi::Session& GetSession();
 	private:
 		double window = -1.;
-		double offset = -1.;
 		uint32_t telemetrySamplePeriod = 0;
 		std::unique_ptr<pmapi::Session> pSession;
 		std::unique_ptr<FrameEventFlusher> pFlusher;

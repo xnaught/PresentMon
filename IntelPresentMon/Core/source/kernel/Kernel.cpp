@@ -309,10 +309,6 @@ namespace p2c::kern
 
     void Kernel::ConfigurePresentMon_(const OverlaySpec& newSpec)
     {
-        if (newSpec.metricsOffset != pm->GetOffset())
-        {
-            pm->SetOffset(newSpec.metricsOffset);
-        }
         if (newSpec.averagingWindowSize != pm->GetWindow())
         {
             pm->SetWindow(newSpec.averagingWindowSize);
