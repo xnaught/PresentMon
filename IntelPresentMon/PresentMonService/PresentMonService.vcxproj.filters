@@ -41,4 +41,7 @@
   <ItemGroup>
     <ResourceCompile Include="PresentMonService.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="build-scripts\pre-build.bat" />
+  </ItemGroup>
 </Project>
