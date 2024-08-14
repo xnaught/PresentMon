@@ -20,19 +20,6 @@ namespace pmon::util::pipe
 	PM_DEFINE_EX(PipeError);
 	PM_DEFINE_EX_FROM(PipeError, PipeBroken);
 
-	namespace {
-		template<class T>
-		void Check_(T&& t)
-		{
-			if (auto ec = std::get<0>(t)) {
-				if (ec == as::error::broken_pipe) {
-					throw Except<PipeBroken>();
-				}
-				throw boost::system::system_error{ ec };
-			}
-		}
-	}
-
 	class DuplexPipe
 	{
 	public:
@@ -47,7 +34,7 @@ namespace pmon::util::pipe
 		static std::unique_ptr<DuplexPipe> ConnectAsPtr(const std::string& name, as::io_context& ioctx);
 		static std::unique_ptr<DuplexPipe> MakeAsPtr(const std::string& name, as::io_context& ioctx, const std::string& security = {});
 		template<class H, class P>
-		as::awaitable<void> WritePacket(const H& header, const P& payload)
+		as::awaitable<void> WritePacket(const H& header, const P& payload, std::optional<uint32_t> timeoutMs = {})
 		{
 			assert(writeBuf_.size() == 0);
 			// first we directly write bytes for the size of the body as a placeholder until we know how many are serialized
@@ -65,19 +52,19 @@ namespace pmon::util::pipe
 			auto replacement = std::string_view{ reinterpret_cast<const char*>(&payloadSize), sizeof(payloadSize) };
 			std::ranges::copy(replacement, iSize);
 			// transmit the packet
-			co_await Write_();
+			co_await Write_(timeoutMs);
 		}
 		template<class H>
-		as::awaitable<H> ReadPacketConsumeHeader()
+		as::awaitable<H> ReadPacketConsumeHeader(std::optional<uint32_t> timeoutMs = {})
 		{
 			assert(readBuf_.size() == 0);
 			// read in request
 			// first read the number of bytes in the request payload (always 4-byte read)
 			uint32_t payloadSize;
-			co_await Read_(sizeof(payloadSize));
+			co_await Read_(sizeof(payloadSize), timeoutMs);
 			readStream_.read(reinterpret_cast<char*>(&payloadSize), sizeof(payloadSize));
 			// read the payload
-			co_await Read_(payloadSize);
+			co_await Read_(payloadSize, timeoutMs);
 			// deserialize header portion of request payload
 			H header;
 			readArchive_(header);
@@ -104,13 +91,15 @@ namespace pmon::util::pipe
 		DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle);
 		static HANDLE Connect_(const std::string& name);
 		static HANDLE Make_(const std::string& name, const std::string& security = {});
-		// wrapper to convert EOF system_error to PipeBroken error
-		as::awaitable<void> Read_(size_t byteCount);
-		// wrapper to convert EOF system_error to PipeBroken error
-		as::awaitable<void> Write_();
+		// wrapper to convert EOF system_error to PipeBroken error, with optional timeout
+		as::awaitable<void> Read_(size_t byteCount, std::optional<uint32_t> timeoutMs = {});
+		// wrapper to convert EOF system_error to PipeBroken error, with optional timeout
+		as::awaitable<void> Write_(std::optional<uint32_t> timeoutMs = {});
+		as::awaitable<void> Timeout_(uint32_t ms);
+		void TransformError_(const boost::system::error_code& ec);
 		// data
 		static std::atomic<uint32_t> nextUid_;
-		uint32_t uid = nextUid_++;
+		uint32_t uid_ = nextUid_++;
 		as::windows::stream_handle stream_;
 		CoroMutex readMtx_;
 		as::streambuf readBuf_;

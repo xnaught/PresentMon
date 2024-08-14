@@ -61,12 +61,12 @@ namespace pmon::ipc::act
 			}
 			if (resHeader.transportStatus == TransportStatus::Success) {
 				// if no errors occured transmit standard packet with header and action response payload
-				co_await pipe.WritePacket(resHeader, output);
+				co_await pipe.WritePacket(resHeader, output, ctx.responseWriteTimeoutMs);
 			}
 			else {
 				stx.errorCount++;
 				// if there was an error, transmit header (configured with error status) and empty payload
-				co_await pipe.WritePacket(resHeader, EmptyPayload{});
+				co_await pipe.WritePacket(resHeader, EmptyPayload{}, ctx.responseWriteTimeoutMs);
 			}
 		}
 		const char* GetIdentifier() const final

@@ -1,9 +1,12 @@
 #include "Pipe.h"
+#include <boost/asio/experimental/awaitable_operators.hpp>
 #include <sddl.h>
 #include <string_view>
 
 namespace pmon::util::pipe
 {
+	using namespace as::experimental::awaitable_operators;
+
 	std::atomic<uint32_t> DuplexPipe::nextUid_ = 0;
 
 	as::awaitable<void> DuplexPipe::Accept()
@@ -69,7 +72,7 @@ namespace pmon::util::pipe
 	}
 	uint32_t DuplexPipe::GetId() const
 	{
-		return uid;
+		return uid_;
 	}
 	DuplexPipe::DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle)
 		:
@@ -138,15 +141,50 @@ namespace pmon::util::pipe
 		// release the owned handle to be captured by some other owner
 		return handle.Release();
 	}
-	as::awaitable<void> DuplexPipe::Read_(size_t byteCount)
+	as::awaitable<void> DuplexPipe::Read_(size_t byteCount, std::optional<uint32_t> timeoutMs)
 	{
-		auto [ec, n] = co_await as::async_read(stream_, readBuf_, as::transfer_exactly(byteCount),
-			as::as_tuple(as::use_awaitable));
-		if (ec && ec != boost::asio::error::eof) throw boost::system::system_error{ ec };
+		if (timeoutMs) {
+			const auto result = co_await(as::async_read(stream_, readBuf_, as::transfer_exactly(byteCount),
+				as::as_tuple(as::use_awaitable)) || Timeout_(*timeoutMs));
+			// 2nd index active means timed out
+			if (result.index() == 1) {
+				throw Except<PipeError>("Timeout during read");
+			}
+			// otherwise 1st index active => extract error code and transform
+			auto&& [ec, n] = std::get<0>(result);
+			TransformError_(ec);
+		}
+		else {
+			const auto [ec, n] = co_await as::async_read(stream_, readBuf_, as::transfer_exactly(byteCount),
+				as::as_tuple(as::use_awaitable));
+			TransformError_(ec);
+		}
 	}
-	as::awaitable<void> DuplexPipe::Write_()
+	as::awaitable<void> DuplexPipe::Write_(std::optional<uint32_t> timeoutMs)
 	{
-		auto [ec, n] = co_await as::async_write(stream_, writeBuf_, as::as_tuple(as::use_awaitable));
-		if (ec && ec != boost::asio::error::eof) throw boost::system::system_error{ ec };
+		if (timeoutMs) {
+			const auto result = co_await(as::async_write(stream_, writeBuf_, as::as_tuple(as::use_awaitable))
+				|| Timeout_(*timeoutMs));
+			// 2nd index active means timed out
+			if (result.index() == 1) {
+				throw Except<PipeError>("Timeout during write");
+			}
+			// otherwise 1st index active => extract error code and transform
+			auto&& [ec, n] = std::get<0>(result);
+			TransformError_(ec);
+		}
+		else {
+			const auto [ec, n] = co_await as::async_write(stream_, writeBuf_, as::as_tuple(as::use_awaitable));
+			TransformError_(ec);
+		}
+	}
+	as::awaitable<void> DuplexPipe::Timeout_(uint32_t ms)
+	{
+		as::deadline_timer timer{ co_await as::this_coro::executor };
+		timer.expires_from_now(boost::posix_time::millisec{ ms });
+		co_await timer.async_wait(as::use_awaitable);
+	}
+	void DuplexPipe::TransformError_(const boost::system::error_code& ec)
+	{
 	}
 }

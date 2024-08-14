@@ -40,7 +40,7 @@ namespace pmon::mid
             using Response = Action::Response;
             pmlog_dbg(std::format("dispatching action [{}] w/ params: {}", Action::Identifier, log::DumpStruct(params)));
             return ExecuteSynchronous_([this](Params&& params) -> pipe::as::awaitable<Response> {
-                co_return co_await ipc::act::SyncRequest<Action>(std::forward<Params>(params), token_++, pipe_);
+                co_return co_await ipc::act::SyncRequest<Action>(std::forward<Params>(params), token_++, pipe_, timeoutMs_);
             }(std::forward<Params>(params)));
         }
 
@@ -55,6 +55,7 @@ namespace pmon::mid
             return fut.get();
         }
         // data
+        uint32_t timeoutMs_ = 500;
         uint32_t token_ = 0;
         uint32_t thisPid_;
         std::string pipeName_;
