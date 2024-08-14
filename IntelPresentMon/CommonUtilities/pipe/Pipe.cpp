@@ -103,6 +103,7 @@ namespace pmon::util::pipe
 	}
 	HANDLE DuplexPipe::Make_(const std::string& name, const std::string& security)
 	{
+		pmlog_dbg(std::format("Creating instance of [{}] with security [{}]", name, security));
 		// structure required for creating named pipe, create with placeholder pointer for descriptor
 		SECURITY_ATTRIBUTES securityAttributes{
 			.nLength = sizeof(securityAttributes),

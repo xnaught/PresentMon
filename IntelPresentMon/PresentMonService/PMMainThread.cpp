@@ -212,7 +212,7 @@ void PresentMonMainThread(Service* const pSvc)
         pm.SetPowerTelemetryContainer(&ptc);
 
         // Start named pipe action RPC server (active threaded)
-        auto pActionServer = std::make_unique<ActionServer>(pSvc, &pm, *opt.controlPipe);
+        auto pActionServer = std::make_unique<ActionServer>(pSvc, &pm, opt.controlPipe.AsOptional());
 
         try {
             gpuTelemetryThread = std::jthread{ PowerTelemetry, pSvc, &pm, &ptc, pComms.get() };

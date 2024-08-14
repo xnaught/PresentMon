@@ -197,6 +197,7 @@ namespace pmon::util::log
 		catch (...) {
 			pmlog_panic_("Error when completing log entry");
 		}
+		committed_ = true;
 	}
 	EntryBuilder::~EntryBuilder()
 	{
