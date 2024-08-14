@@ -11,6 +11,7 @@ namespace pmon::util::pipe
 
 	as::awaitable<void> DuplexPipe::Accept()
 	{
+		pmlog_dbg(std::format("{}:{} awaiting to accept connection", name_, uid_));
 		as::windows::object_handle connEvt{ co_await as::this_coro::executor, win::Event{}.Release() };
 		OVERLAPPED over{ .hEvent = connEvt.native_handle() };
 		const auto result = ConnectNamedPipe(stream_.native_handle(), &over);
@@ -26,28 +27,28 @@ namespace pmon::util::pipe
 		}
 		else if (error == ERROR_PIPE_CONNECTED) {
 			// connected even before we could await event
-			co_return;
 		}
 		else {
 			// some error has occurred during connection
 			pmlog_error("Failure accepting pipe connection").hr().raise<PipeError>();
 		}
+		pmlog_dbg(std::format("{}:{} has received a connection", name_, uid_));
 	}
 	DuplexPipe DuplexPipe::Connect(const std::string& name, as::io_context& ioctx)
 	{
-		return DuplexPipe{ ioctx, Connect_(name) };
+		return DuplexPipe{ ioctx, Connect_(name), name };
 	}
 	DuplexPipe DuplexPipe::Make(const std::string& name, as::io_context& ioctx, const std::string& security)
 	{
-		return DuplexPipe{ ioctx, Make_(name) };
+		return DuplexPipe{ ioctx, Make_(name), name };
 	}
 	std::unique_ptr<DuplexPipe> DuplexPipe::ConnectAsPtr(const std::string& name, as::io_context& ioctx)
 	{
-		return std::unique_ptr<DuplexPipe>(new DuplexPipe{ ioctx, Connect_(name) });
+		return std::unique_ptr<DuplexPipe>(new DuplexPipe{ ioctx, Connect_(name), name });
 	}
 	std::unique_ptr<DuplexPipe> DuplexPipe::MakeAsPtr(const std::string& name, as::io_context& ioctx, const std::string& security)
 	{
-		return std::unique_ptr<DuplexPipe>(new DuplexPipe{ ioctx, Make_(name, security) });
+		return std::unique_ptr<DuplexPipe>(new DuplexPipe{ ioctx, Make_(name, security), name });
 	}
 	size_t DuplexPipe::GetWriteBufferPending() const
 	{
@@ -74,8 +75,9 @@ namespace pmon::util::pipe
 	{
 		return uid_;
 	}
-	DuplexPipe::DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle)
+	DuplexPipe::DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle, std::string name)
 		:
+		name_{ std::move(name) },
 		stream_{ ioctx, pipeHandle },
 		readMtx_{ ioctx },
 		readStream_{ &readBuf_ },
@@ -184,7 +186,16 @@ namespace pmon::util::pipe
 		timer.expires_from_now(boost::posix_time::millisec{ ms });
 		co_await timer.async_wait(as::use_awaitable);
 	}
+	
 	void DuplexPipe::TransformError_(const boost::system::error_code& ec)
 	{
+		if (ec) {
+			if (ec == as::error::broken_pipe) {
+				throw Except<PipeBroken>();
+			}
+			else {
+				throw Except<PipeError>(ec.what());
+			}
+		}
 	}
 }

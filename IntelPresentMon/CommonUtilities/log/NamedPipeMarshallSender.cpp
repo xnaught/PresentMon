@@ -63,9 +63,7 @@ namespace pmon::util::log
 		// function
 		void IoThreadProcedure_()
 		{
-			for (int i = 0; i < 3; i++) {
-				pipe::as::co_spawn(ioctx_, ConnectionAcceptor_(), pipe::as::detached);
-			}
+			pipe::as::co_spawn(ioctx_, ConnectionAcceptor_(), pipe::as::detached);
 			pipe::as::co_spawn(ioctx_, EventHandler_(), pipe::as::detached);
 			ioctx_.run();
 		}
@@ -106,11 +104,9 @@ namespace pmon::util::log
 			try {
 				// create pipe instance
 				std::shared_ptr pPipe = pipe::DuplexPipe::MakeAsPtr(pipeAddress_, ioctx_);
-				pmlog_dbg("Log sender pipe ready for connections");
 				// wait for a client to connect
 				co_await pPipe->Accept();
 				connectionSema_.release(16);
-				pmlog_dbg("Client connected to log sender pipe");
 				// fork to replace this instance with a new  acceptor to take its place
 				pipe::as::co_spawn(ioctx_, ConnectionAcceptor_(), pipe::as::detached);
 				// transmit bulk context data

@@ -88,7 +88,7 @@ namespace pmon::util::pipe
 		uint32_t GetId() const;
 	private:
 		// functions
-		DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle);
+		DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle, std::string name);
 		static HANDLE Connect_(const std::string& name);
 		static HANDLE Make_(const std::string& name, const std::string& security = {});
 		// wrapper to convert EOF system_error to PipeBroken error, with optional timeout
@@ -99,6 +99,7 @@ namespace pmon::util::pipe
 		void TransformError_(const boost::system::error_code& ec);
 		// data
 		static std::atomic<uint32_t> nextUid_;
+		std::string name_;
 		uint32_t uid_ = nextUid_++;
 		as::windows::stream_handle stream_;
 		CoroMutex readMtx_;
