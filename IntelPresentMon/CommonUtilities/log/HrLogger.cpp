@@ -13,7 +13,7 @@ namespace pmon::util::log
 	void HrLogger::operator<<(uint32_t hr) const
 	{
 		if (FAILED(hr)) {
-			if ((PMLOG_BUILD_LEVEL >= Level::Error) || (GlobalPolicy::Get().GetLogLevel() >= Level::Error)) {
+			if ((PMLOG_BUILD_LEVEL_ >= Level::Error) || (GlobalPolicy::Get().GetLogLevel() >= Level::Error)) {
 				EntryBuilder{ Level::Error, sourceFile_, sourceFunctionName_, sourceLine_ }.hr(hr);
 			}
 			throw Except<Exception>("failed hr check");

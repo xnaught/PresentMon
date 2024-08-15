@@ -171,10 +171,10 @@ namespace p2c::client::util
 	{
 	public:
 		CefValueTraverser(CefRefPtr<CefValue> pCefValue) : pCefValue{ std::move(pCefValue) } {}
-		std::wstring AsWString();
-		std::string AsString();
+		std::wstring AsWString() const;
+		std::string AsString() const;
 		template<typename T>
-		operator T()
+		operator T() const
 		{
 			using str::ToWide;
 			if constexpr (std::is_same_v<T, bool>)
@@ -215,7 +215,7 @@ namespace p2c::client::util
 		template<typename T>
 		std::vector<T> ToVector()
 		{
-			const auto size = GetArrayLength();
+			const auto size = GetLength();
 			std::vector<T> container;
 			container.reserve(size);
 			for (size_t i = 0; i < size; i++) {
@@ -232,9 +232,9 @@ namespace p2c::client::util
 			return container;
 		}
 		template<typename T>
-		std::vector<T> PluckAs(const char* key)
+		std::vector<T> PluckAs(const char* key) const
 		{
-			const auto size = GetArrayLength();
+			const auto size = GetLength();
 			std::vector<T> container;
 			container.reserve(size);
 			for (size_t i = 0; i < size; i++) {
@@ -246,9 +246,14 @@ namespace p2c::client::util
 		CefValueTraverser operator[](size_t index);
 		CefRefPtr<CefValue> AsCefValue() const &;
 		CefRefPtr<CefValue> AsCefValue() &&;
-		size_t GetArrayLength();
-		bool IsNull();
+		size_t GetLength() const;
+		bool IsNull() const;
+		bool IsAggregate() const;
+		std::string Dump(int initial = 1, int increment = 3) const;
 	private:
+		// functions
+		std::string Dump_(int depth, int increment, bool labeled) const;
+		// data
 		CefRefPtr<CefValue> pCefValue;
 	};
 

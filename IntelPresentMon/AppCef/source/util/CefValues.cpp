@@ -5,6 +5,8 @@
 
 namespace p2c::client::util
 {
+	using namespace std::literals;
+
 	CefRefPtr<CefValue> V8ToCefValue(CefV8Value& v8)
 	{
 		auto v = CefValue::Create();
@@ -130,7 +132,7 @@ namespace p2c::client::util
 		return { std::move(pVal) };
 	}
 
-	std::wstring CefValueTraverser::AsWString()
+	std::wstring CefValueTraverser::AsWString() const
 	{
 		using str::ToWide;
 		if (pCefValue->GetType() == CefValueType::VTYPE_STRING)
@@ -141,7 +143,7 @@ namespace p2c::client::util
 		throw Except<BadCefValueTraversal>();
 	}
 
-	std::string CefValueTraverser::AsString()
+	std::string CefValueTraverser::AsString() const
 	{
 		using str::ToWide;
 		if (pCefValue->GetType() == CefValueType::VTYPE_STRING)
@@ -203,17 +205,102 @@ namespace p2c::client::util
 		return std::move(pCefValue);
 	}
 
-	size_t CefValueTraverser::GetArrayLength()
+	bool CefValueTraverser::IsAggregate() const
 	{
-		if (pCefValue->GetType() == CefValueType::VTYPE_LIST)
+		const auto type = pCefValue->GetType();
+		return type == CefValueType::VTYPE_LIST || type == CefValueType::VTYPE_DICTIONARY;
+	}
+
+	std::string CefValueTraverser::Dump(int initial, int increment) const
+	{
+		return Dump_(initial, increment, false);
+	}
+
+	std::string CefValueTraverser::Dump_(int depth, int increment, bool labeled) const
+	{
+		std::ostringstream oss;
+		if (!labeled) {
+			oss << std::string(depth * increment, ' ');
+		}
+		switch (pCefValue->GetType()) {
+		case CefValueType::VTYPE_BOOL:
+			oss << (bool(*this) ? "true"s : "false"s) + " <bool>";
+			break;
+		case CefValueType::VTYPE_INT:
+			oss << std::to_string(int(*this)) + " <int>";
+			break;
+		case CefValueType::VTYPE_DOUBLE:
+			oss << std::to_string(double(*this)) + " <double>";
+			break;
+		case CefValueType::VTYPE_STRING:
+			oss << AsString() + " <string>";
+			break;
+		case CefValueType::VTYPE_BINARY:
+			oss << "# "s + std::to_string(pCefValue->GetBinary()->GetSize()) + " bytes # <binary>";
+			break;
+		case CefValueType::VTYPE_DICTIONARY:
 		{
+			depth++;
+			const std::string istr(increment * depth, ' ');
+			const auto pDict = pCefValue->GetDictionary();
+			CefDictionaryValue::KeyList keys;
+			pDict->GetKeys(keys);
+			if (keys.size() == 0) {
+				oss << "{}";
+			}
+			else {
+				oss << "{\n";
+				for (auto& key : keys) {
+					oss << istr << "\"" << key << "\": " << Traverse(pDict->GetValue(key))
+						.Dump_(depth, increment, true) << "\n";
+				}
+				oss << std::string(increment * (depth - 1), ' ') << "}";
+			}
+			break;
+		}
+		case CefValueType::VTYPE_LIST:
+		{
+			depth++;
+			const std::string istr(increment * depth, ' ');
+			const auto pList = pCefValue->GetList();
+			const auto size = pList->GetSize();
+			if (size == 0) {
+				oss << "[]";
+			}
+			else {
+				oss << "[\n";
+				for (int i = 0; i < pList->GetSize(); i++) {
+					oss << istr << i << ": " << Traverse(pList->GetValue(i))
+						.Dump_(depth, increment, true) << "\n";
+				}
+				oss << std::string(increment * (depth - 1), ' ') << "]";
+			}
+			break;
+		}
+		case CefValueType::VTYPE_NULL:
+			oss << "<NULL>"s;
+			break;
+		default:
+			oss << "<@UNKNOWN@>";
+			break;
+		}
+		return oss.str();
+	}
+
+
+	size_t CefValueTraverser::GetLength() const
+	{
+		if (pCefValue->GetType() == CefValueType::VTYPE_LIST) {
 			return pCefValue->GetList()->GetSize();
 		}
-		pmlog_error(std::format("Failed getting array length of CefValue type {}", CefValueTypeToString(pCefValue->GetType())));
+		else if (pCefValue->GetType() == CefValueType::VTYPE_DICTIONARY) {
+			return pCefValue->GetDictionary()->GetSize();
+		}
+		pmlog_error(std::format("Failed getting length of non-Array non-Dict CefValue type {}", CefValueTypeToString(pCefValue->GetType())));
 		throw Except<BadCefValueTraversal>();
 	}
 
-	bool CefValueTraverser::IsNull()
+	bool CefValueTraverser::IsNull() const
 	{
 		return pCefValue->GetType() == CefValueType::VTYPE_NULL;
 	}

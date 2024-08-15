@@ -32,6 +32,11 @@ namespace p2c::kern
                 deviceId == rhs.deviceId;
             // TODO: cosider what to do about unitId here
         }
+        std::string Dump() const
+        {
+            return std::format("QMet> metId:{} staId:{} arrIdx:{} devId:{} untId:{}",
+                metricId, statId, arrayIndex, deviceId, unitId);
+        }
     };
 
     struct GraphMetricSpec
