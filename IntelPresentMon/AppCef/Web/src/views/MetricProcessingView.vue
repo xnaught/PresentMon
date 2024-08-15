@@ -27,6 +27,37 @@
       </v-col>
     </v-row>
 
+    <v-row class="mt-8">
+      <v-col cols="3">
+        Manual ETW Flush
+        <p class="text--secondary text-sm-caption mb-0">Enable manual flushing of ETW event buffer to reduce overlay lag.</p>
+      </v-col>
+      <v-col cols="9">
+        <v-row>
+            <v-col cols="6">
+                <v-switch v-model="manualEtwFlush" label="Manual"></v-switch>
+            </v-col>
+        </v-row>
+      </v-col>
+    </v-row>
+
+    <v-row class="mt-5">
+      <v-col cols="3">
+        ETW Flush Period
+        <p class="text--secondary text-sm-caption mb-0">Time between service-side flushing of the ETW event buffer. A lower value means less lag on graphs and readouts.</p>
+      </v-col>
+      <v-col cols="9">
+        <v-slider
+          v-model="etwFlushPeriod"
+          :max="1000"
+          :min="1"
+          :disabled="!manualEtwFlush"
+          thumb-label="always"
+          hide-details
+        ></v-slider>
+      </v-col>
+    </v-row>
+
     <v-row class="mt-5">
       <v-col cols="3">
         Telemetry Period
@@ -54,6 +85,22 @@
           :max="5000"
           :min="10"
           :step="10"
+          thumb-label="always"
+          hide-details
+        ></v-slider>
+      </v-col>
+    </v-row>
+
+    <v-row class="mt-8">
+      <v-col cols="3">
+        Window Offset
+        <p class="text--secondary text-sm-caption mb-0">Offset in ms that should be used when sampling. Required to compensate for lag when running a high ETW Flush Period, preventing the averaging window from sliding beyond the range of received events.</p>
+      </v-col>
+      <v-col cols="9">
+        <v-slider
+          v-model="offset"
+          :max="1200"
+          :min="1"
           thumb-label="always"
           hide-details
         ></v-slider>
@@ -126,6 +173,18 @@ export default Vue.extend({
       get(): number { return Preferences.preferences.metricsWindow; },
       set(metricsWindow: number) {
         Preferences.writeAttribute({ attr: 'metricsWindow', val: metricsWindow });
+      },
+    },
+    etwFlushPeriod: {
+      get(): number { return Preferences.preferences.etwFlushPeriod; },
+      set(etwFlushPeriod: number) {
+        Preferences.writeAttribute({ attr: 'etwFlushPeriod', val: etwFlushPeriod });
+      },
+    },
+    manualEtwFlush: {
+      get(): boolean { return Preferences.preferences.manualEtwFlush; },
+      set(manualEtwFlush: boolean) {
+        Preferences.writeAttribute({ attr: 'manualEtwFlush', val: manualEtwFlush });
       },
     },
     adapters(): Adapter[] {

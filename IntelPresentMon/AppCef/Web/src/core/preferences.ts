@@ -27,6 +27,8 @@ export interface Preferences {
     metricPollRate: number;
     overlayDrawRate: number;
     telemetrySamplingPeriodMs: number;
+    etwFlushPeriod: number;
+    manualEtwFlush: boolean;
     metricsOffset: number;
     metricsWindow: number;
     overlayPosition: OverlayPosition;
@@ -65,7 +67,9 @@ export function makeDefaultPreferences(): Preferences {
         independentWindow: false,
         metricPollRate: 40,
         overlayDrawRate: 10,
-        telemetrySamplingPeriodMs: 100, 
+        telemetrySamplingPeriodMs: 100,
+        etwFlushPeriod: 32,
+        manualEtwFlush: false,
         metricsOffset: 1020, 
         metricsWindow: 1000, 
         overlayPosition: 0, 
