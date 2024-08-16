@@ -3,7 +3,9 @@
 #include <shlwapi.h>
 #include "RealtimePresentMonSession.h"
 #include "CliOptions.h"
-#include "..\CommonUtilities\str\String.h"
+#include "../CommonUtilities/str/String.h"
+using namespace pmon;
+using namespace std::literals;
 
 static const std::wstring kRealTimeSessionName = L"PMService";
 
@@ -114,7 +116,7 @@ PM_STATUS RealtimePresentMonSession::StartTraceSession() {
     auto& opt = clio::Options::Get();
     if (opt.etwSessionName.AsOptional().has_value()) {
         pm_session_name_ =
-            pmon::util::str::ToWide(opt.etwSessionName.AsOptional().value());
+            util::str::ToWide(opt.etwSessionName.AsOptional().value());
     }
     else {
         pm_session_name_ = kRealTimeSessionName;

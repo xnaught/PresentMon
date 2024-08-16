@@ -291,8 +291,10 @@ struct PMTraceConsumer
     // Mutexs to protect consumer/dequeue access from different threads:
     std::mutex mProcessEventMutex;
     std::mutex mPresentEventMutex;
+    // condition variable to signal when output ring space becomes available, used for backpressure in offline mode
     std::condition_variable mCompletedRingCondition;
-
+    // event used to signal when new events are available for dequeing
+    HANDLE hEventsReadyEvent;
 
     // EventMetadata stores the structure of ETW events to optimize subsequent property retrieval.
     EventMetadata mMetadata;
@@ -465,4 +467,6 @@ struct PMTraceConsumer
     void DeferFlipFrameType(uint64_t vidPnLayerId, uint64_t presentId, uint64_t timestamp, FrameType frameType);
     void ApplyFlipFrameType(std::shared_ptr<PresentEvent> const& present, uint64_t timestamp, FrameType frameType);
     void ApplyPresentFrameType(std::shared_ptr<PresentEvent> const& present);
+
+    void SignalEventsReady();
 };

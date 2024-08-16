@@ -108,6 +108,7 @@ PMTraceConsumer::PMTraceConsumer()
     , mCompletedPresents(PRESENTEVENT_CIRCULAR_BUFFER_SIZE)
     , mGpuTrace(this)
 {
+    hEventsReadyEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
 }
 
 void PMTraceConsumer::HandleD3D9Event(EVENT_RECORD* pEventRecord)
@@ -1961,6 +1962,7 @@ void PMTraceConsumer::UpdateReadyCount(std::shared_ptr<PresentEvent> const& pres
 
         StopTrackingPresent(present);
 
+        bool newPresentsReady = false;
         {
             std::lock_guard<std::mutex> lock(mPresentEventMutex);
 
@@ -1969,10 +1971,14 @@ void PMTraceConsumer::UpdateReadyCount(std::shared_ptr<PresentEvent> const& pres
                 DebugAssert(mReadyCount < mCompletedCount);
                 do {
                     mReadyCount += 1;
+                    newPresentsReady = true;
                     i = GetRingIndex(i + 1);
                 } while (mReadyCount < mCompletedCount && !mCompletedPresents[i]->WaitingForPresentStop
                                                        && !mCompletedPresents[i]->WaitingForFlipFrameType);
             }
+        }
+        if (newPresentsReady) {
+            SignalEventsReady();
         }
     }
 }
@@ -2250,8 +2256,11 @@ void PMTraceConsumer::HandleProcessEvent(EVENT_RECORD* pEventRecord)
         }
     }
 
-    std::lock_guard<std::mutex> lock(mProcessEventMutex);
-    mProcessEvents.emplace_back(event);
+    {
+        std::lock_guard<std::mutex> lock(mProcessEventMutex);
+        mProcessEvents.emplace_back(event);
+    }
+    SignalEventsReady();
 }
 
 void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
@@ -2353,6 +2362,12 @@ void PMTraceConsumer::ApplyPresentFrameType(
     }
 }
 
+// TODO: consider separating process and present events, would reduce unneccessary mutex locking
+void PMTraceConsumer::SignalEventsReady()
+{
+    SetEvent(hEventsReadyEvent);
+}
+
 void PMTraceConsumer::HandleMetadataEvent(EVENT_RECORD* pEventRecord)
 {
     mMetadata.AddMetadata(pEventRecord);
@@ -2409,7 +2424,9 @@ void PMTraceConsumer::DequeuePresentEvents(std::vector<std::shared_ptr<PresentEv
             mReadyCount = 0;
         }
     }
-    mCompletedRingCondition.notify_one();
+    if (!mIsRealtimeSession && !mDisableOfflineBackpressure) {
+        mCompletedRingCondition.notify_one();
+    }
 }
 
 #ifdef TRACK_PRESENT_PATHS
