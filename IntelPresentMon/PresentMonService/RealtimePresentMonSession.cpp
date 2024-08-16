@@ -91,6 +91,18 @@ HANDLE RealtimePresentMonSession::GetStreamingStartHandle() {
     return streaming_started_.get();
 }
 
+void RealtimePresentMonSession::FlushEvents()
+{
+    struct TraceProperties : public EVENT_TRACE_PROPERTIES {
+        wchar_t mSessionName[MAX_PATH];
+    } props{};
+    props.Wnode.BufferSize = (ULONG)sizeof(TraceProperties);
+    props.LoggerNameOffset = offsetof(TraceProperties, mSessionName);
+    if (ControlTraceW(trace_session_.mSessionHandle, nullptr, &props, EVENT_TRACE_CONTROL_FLUSH)) {
+        pmlog_warn("Failed manual flush of ETW event buffer").hr();
+    }
+}
+
 PM_STATUS RealtimePresentMonSession::StartTraceSession() {
     std::lock_guard<std::mutex> lock(session_mutex_);
 

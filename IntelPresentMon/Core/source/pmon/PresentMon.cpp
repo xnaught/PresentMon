@@ -5,7 +5,6 @@
 #include <PresentMonAPI2/PresentMonAPI.h>
 #include <PresentMonAPIWrapper/PresentMonAPIWrapper.h>
 #include <PresentMonAPIWrapperCommon/EnumMap.h>
-#include <Core/source/infra/util/Util.h>
 #include "RawFrameDataWriter.h"
 
 namespace p2c::pmon

@@ -216,7 +216,7 @@
     <ClInclude Include="IntervalWaiter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="rn\PairToRange.h">
+    <ClInclude Include="rng\PairToRange.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

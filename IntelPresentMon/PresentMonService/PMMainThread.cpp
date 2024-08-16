@@ -13,13 +13,46 @@
 #include <ranges>
 #include "../CommonUtilities/IntervalWaiter.h"
 #include "../CommonUtilities/PrecisionWaiter.h"
+#include "../CommonUtilities/win/Event.h"
 
 #include "../CommonUtilities/log/GlogShim.h"
 
+using namespace std::literals;
 using namespace pmon;
+using namespace util;
 using namespace svc;
 
-void PowerTelemetry(Service* const srv, PresentMon* const pm,
+void EventFlushThreadEntry_(Service* const srv, PresentMon* const pm)
+{
+    if (srv == nullptr || pm == nullptr) {
+        pmlog_error();
+        return;
+    }
+
+    IntervalWaiter waiter{ 0.016'666 };
+
+    // outer dormant loop waits for either start of process tracking or service exit
+    while (true) {
+        // if event index 0 is signalled that means we are stopping
+        if (*win::WaitAnyEvent(srv->GetServiceStopHandle(), pm->GetStreamingStartHandle()) == 0) {
+            return;
+        }
+        // otherwise we assume streaming has started and we begin the flushing loop, checking for stop signal
+        while (!win::WaitAnyEventFor(0s, srv->GetServiceStopHandle())) {
+            waiter.SetInterval(0.016'666);
+            waiter.Wait();
+            // go dormant if there are no active streams left
+            // TODO: GetActiveStreams is not technically thread-safe, reconsider
+            if (pm->GetActiveStreams() == 0) {
+                break;
+            }
+        }
+        // flush events manually to reduce latency
+        pm->FlushEvents();
+    }
+}
+
+void PowerTelemetryThreadEntry_(Service* const srv, PresentMon* const pm,
 	PowerTelemetryContainer* const ptc, ipc::ServiceComms* const pComms)
 {
 	if (srv == nullptr || pm == nullptr || ptc == nullptr) {
@@ -55,7 +88,7 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
 	// only start periodic polling when streaming starts
     // exit polling loop and this thread when service is stopping
     {
-        util::IntervalWaiter waiter{ 0.016 };
+        IntervalWaiter waiter{ 0.016 };
         const HANDLE events[]{
           pm->GetStreamingStartHandle(),
           srv->GetServiceStopHandle(),
@@ -89,10 +122,10 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
     }
 }
 
-void CpuTelemetry(Service* const srv, PresentMon* const pm,
+void CpuTelemetryThreadEntry_(Service* const srv, PresentMon* const pm,
 	pwr::cpu::CpuTelemetry* const cpu)
 {
-    util::IntervalWaiter waiter{ 0.016 };
+    IntervalWaiter waiter{ 0.016 };
 	if (srv == nullptr || pm == nullptr) {
 		// TODO: log error on this condition
 		return;
@@ -121,6 +154,8 @@ void CpuTelemetry(Service* const srv, PresentMon* const pm,
 		}
 	}
 }
+
+
 
 void PresentMonMainThread(Service* const pSvc)
 {
@@ -190,7 +225,7 @@ void PresentMonMainThread(Service* const pSvc)
         auto pActionServer = std::make_unique<ActionServer>(pSvc, &pm, opt.controlPipe.AsOptional());
 
         try {
-            gpuTelemetryThread = std::jthread{ PowerTelemetry, pSvc, &pm, &ptc, pComms.get() };
+            gpuTelemetryThread = std::jthread{ PowerTelemetryThreadEntry_, pSvc, &pm, &ptc, pComms.get() };
         }
         catch (...) {
             LOG(ERROR) << "failed creating gpu(power) telemetry thread" << std::endl;
@@ -210,7 +245,7 @@ void PresentMonMainThread(Service* const pSvc)
         }
 
         if (cpu) {
-            cpuTelemetryThread = std::jthread{ CpuTelemetry, pSvc, &pm, cpu.get() };
+            cpuTelemetryThread = std::jthread{ CpuTelemetryThreadEntry_, pSvc, &pm, cpu.get() };
             pm.SetCpu(cpu);
             // sample once to populate the cap bits
             cpu->Sample();
@@ -236,6 +271,9 @@ void PresentMonMainThread(Service* const pSvc)
                 cpuTelemetryCapBits_{};
             pComms->RegisterCpuDevice(PM_DEVICE_VENDOR_UNKNOWN, "UNKNOWN_CPU", cpuTelemetryCapBits_);
         }
+
+        // start thread for manual ETW event buffer flushing
+        std::jthread flushThread{ EventFlushThreadEntry_, pSvc, &pm };
 
         while (WaitForSingleObjectEx(pSvc->GetServiceStopHandle(), 0, FALSE) != WAIT_OBJECT_0) {
             pm.CheckTraceSessions();

@@ -61,6 +61,10 @@ class PresentMon {
     return real_time_session_.SetPowerTelemetryContainer(ptc);
   }
 
+  void FlushEvents() {
+      real_time_session_.FlushEvents();
+  }
+
  private:
   RealtimePresentMonSession real_time_session_;
   MockPresentMonSession mock_session_;

@@ -3,7 +3,6 @@
 #include "Window.h"
 #include <format>
 #include <Core/source/infra/Logging.h>
-#include <Core/source/infra/util/Util.h>
 #include <CommonUtilities/str/String.h>
 #include "MessageMap.h"
 #include "WndClass.h"

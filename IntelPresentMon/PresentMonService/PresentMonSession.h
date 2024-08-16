@@ -41,6 +41,7 @@ public:
     virtual void StopStreaming(uint32_t client_process_id, uint32_t target_process_id) = 0;
     virtual bool CheckTraceSessions(bool forceTerminate) = 0;
     virtual HANDLE GetStreamingStartHandle() = 0;
+    virtual void FlushEvents() {}
 
     void SetCpu(const std::shared_ptr<pwr::cpu::CpuTelemetry>& pCpu);
     std::vector<std::shared_ptr<pwr::PowerTelemetryAdapter>> EnumerateAdapters();

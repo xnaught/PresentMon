@@ -3,7 +3,7 @@
 #pragma once
 #include <ranges>
 
-namespace pmon::util::rn
+namespace pmon::util::rng
 {
     struct pair_to_range_t {
         template <typename I>

@@ -78,7 +78,7 @@
     <ClInclude Include="pipe\Pipe.h" />
     <ClInclude Include="PrecisionWaiter.h" />
     <ClInclude Include="Qpc.h" />
-    <ClInclude Include="rn\PairToRange.h" />
+    <ClInclude Include="rng\PairToRange.h" />
     <ClInclude Include="str\String.h" />
     <ClInclude Include="third\reflect.hpp" />
     <ClInclude Include="win\Event.h" />
