@@ -11,41 +11,13 @@
 #include "CliOptions.h"
 #include "GlobalIdentifiers.h"
 #include <ranges>
+#include "../CommonUtilities/IntervalWaiter.h"
+#include "../CommonUtilities/PrecisionWaiter.h"
 
 #include "../CommonUtilities/log/GlogShim.h"
 
 using namespace pmon;
 using namespace svc;
-
-bool NanoSleep(int32_t ms, bool alertable) {
-  HANDLE timer;
-  LARGE_INTEGER li;
-  // Convert from ms to 100ns units and negate
-  int64_t ns = -10000 * (int64_t)ms;
-  // Create a high resolution table
-  if (!(timer = CreateWaitableTimerEx(NULL, NULL,
-                                      CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
-                                      TIMER_ALL_ACCESS))) {
-    return false;
-  }
-  li.QuadPart = ns;
-  if (!SetWaitableTimer(timer, &li, 0, NULL, NULL, FALSE)) {
-    CloseHandle(timer);
-    return false;
-  }
-  WaitForSingleObjectEx(timer, INFINITE, BOOL(alertable));
-  CloseHandle(timer);
-  return true;
-}
-
-// Attempt to use a high resolution sleep but if not
-// supported use regular Sleep().
-void PmSleep(int32_t ms, bool alertable = false) {
-  if (!NanoSleep(ms, alertable)) {
-    Sleep(ms);
-  }
-  return;
-}
 
 void PowerTelemetry(Service* const srv, PresentMon* const pm,
 	PowerTelemetryContainer* const ptc, ipc::ServiceComms* const pComms)
@@ -83,6 +55,7 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
 	// only start periodic polling when streaming starts
     // exit polling loop and this thread when service is stopping
     {
+        util::IntervalWaiter waiter{ 0.016 };
         const HANDLE events[]{
           pm->GetStreamingStartHandle(),
           srv->GetServiceStopHandle(),
@@ -104,7 +77,8 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
                 for (auto& adapter : ptc->GetPowerTelemetryAdapters()) {
                     adapter->Sample();
                 }
-                PmSleep(pm->GetGpuTelemetryPeriod());
+                waiter.SetInterval(pm->GetGpuTelemetryPeriod());
+                waiter.Wait();
                 // go dormant if there are no active streams left
                 // TODO: consider race condition here if client stops and starts streams rapidly
                 if (pm->GetActiveStreams() == 0) {
@@ -118,6 +92,7 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
 void CpuTelemetry(Service* const srv, PresentMon* const pm,
 	pwr::cpu::CpuTelemetry* const cpu)
 {
+    util::IntervalWaiter waiter{ 0.016 };
 	if (srv == nullptr || pm == nullptr) {
 		// TODO: log error on this condition
 		return;
@@ -134,10 +109,10 @@ void CpuTelemetry(Service* const srv, PresentMon* const pm,
 		if (i == 1) {
 			return;
 		}
-		while (WaitForSingleObject(srv->GetServiceStopHandle(), 0) !=
-			WAIT_OBJECT_0) {
+		while (WaitForSingleObject(srv->GetServiceStopHandle(), 0) != WAIT_OBJECT_0) {
 			cpu->Sample();
-			PmSleep(pm->GetGpuTelemetryPeriod());
+            waiter.SetInterval(pm->GetGpuTelemetryPeriod());
+            waiter.Wait();
 			// Get the number of currently active streams
 			auto num_active_streams = pm->GetActiveStreams();
 			if (num_active_streams == 0) {
@@ -167,7 +142,7 @@ void PresentMonMainThread(Service* const pSvc)
         // debug_service to false in order to proceed
         for (auto debug_service = opt.debug; debug_service;) {
             if (WaitForSingleObject(pSvc->GetServiceStopHandle(), 0) != WAIT_OBJECT_0) {
-                PmSleep(500);
+                Sleep(100);
             }
             else {
                 return;
@@ -262,9 +237,9 @@ void PresentMonMainThread(Service* const pSvc)
             pComms->RegisterCpuDevice(PM_DEVICE_VENDOR_UNKNOWN, "UNKNOWN_CPU", cpuTelemetryCapBits_);
         }
 
-        while (WaitForSingleObjectEx(pSvc->GetServiceStopHandle(), 0, (bool)opt.timedStop) != WAIT_OBJECT_0) {
+        while (WaitForSingleObjectEx(pSvc->GetServiceStopHandle(), 0, FALSE) != WAIT_OBJECT_0) {
             pm.CheckTraceSessions();
-            PmSleep(1000, opt.timedStop);
+            SleepEx(1000, (bool)opt.timedStop);
         }
 
         // Stop the PresentMon sessions
