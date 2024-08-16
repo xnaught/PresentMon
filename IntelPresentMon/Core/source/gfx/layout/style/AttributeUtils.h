@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include "RawAttributeValue.h"
-#include <Core/source/infra/util/Util.h>
 #include <Core/source/infra/Logging.h>
 #include <CommonUtilities/Exception.h>
 #include <Core/source/gfx/base/Geometry.h>

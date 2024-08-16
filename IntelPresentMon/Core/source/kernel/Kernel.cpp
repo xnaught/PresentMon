@@ -3,7 +3,6 @@
 #include "Kernel.h"
 #include <Core/source/win/WinAPI.h>
 #include <Core/source/win/MessageBox.h>
-#include <Core/source/infra/util/Util.h>
 #include <Core/source/infra/Logging.h>
 #include <Core/source/infra/util/FolderResolver.h>
 #include <random>

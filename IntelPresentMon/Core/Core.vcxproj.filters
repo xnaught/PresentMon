@@ -6,7 +6,6 @@
     <ClInclude Include="source\win\MessageMap.h" />
     <ClInclude Include="source\win\OverlayWindow.h" />
     <ClInclude Include="source\win\StandardWindow.h" />
-    <ClInclude Include="source\infra\util\Util.h" />
     <ClInclude Include="source\win\WinAPI.h" />
     <ClInclude Include="source\win\Window.h" />
     <ClInclude Include="source\gfx\base\ComPtr.h" />
@@ -32,7 +31,6 @@
     <ClInclude Include="source\gfx\layout\GraphElement.h" />
     <ClInclude Include="source\gfx\layout\LinePlotElement.h" />
     <ClInclude Include="source\gfx\layout\GraphData.h" />
-    <ClInclude Include="source\infra\util\ChiliTimer.h" />
     <ClInclude Include="source\gfx\impl\FastRenderer.h" />
     <ClInclude Include="source\gfx\layout\HistogramPlotElement.h" />
     <ClInclude Include="source\gfx\layout\PlotElement.h" />
@@ -68,11 +66,9 @@
     <ClInclude Include="source\win\Key.h" />
     <ClInclude Include="source\win\ModSet.h" />
     <ClInclude Include="source\infra\util\FolderResolver.h" />
-    <ClInclude Include="source\infra\util\MacroHelpers.h" />
     <ClInclude Include="source\infra\util\CooldownTimer.h" />
     <ClInclude Include="source\gfx\layout\ReadoutElement.h" />
     <ClInclude Include="source\kernel\WindowActivateHandler.h" />
-    <ClInclude Include="source\infra\util\rn\ToVector.h" />
     <ClInclude Include="source\kernel\OverlayContainer.h" />
     <ClInclude Include="source\win\com\ComManager.h" />
     <ClInclude Include="source\win\com\WbemConnection.h" />
@@ -81,13 +77,10 @@
     <ClInclude Include="source\win\com\Comdef.h" />
     <ClInclude Include="source\kernel\WindowSpawnHandler.h" />
     <ClInclude Include="source\win\KernelWindow.h" />
-    <ClInclude Include="source\infra\util\IntervalWaiter.h" />
     <ClInclude Include="source\win\com\ProcessSpawnSink.h" />
     <ClInclude Include="source\pmon\StatisticsTracker.h" />
-    <ClInclude Include="source\infra\util\Hash.h" />
     <ClInclude Include="source\infra\util\Meta.h" />
     <ClInclude Include="source\win\GpuUtilization.h" />
-    <ClInclude Include="source\infra\util\rn\PairToRange.h" />
     <ClInclude Include="source\pmon\AdapterInfo.h" />
     <ClInclude Include="source\pmon\metric\DynamicPollingFetcher.h" />
     <ClInclude Include="source\pmon\DynamicQuery.h" />
@@ -104,7 +97,6 @@
     <ClCompile Include="source\win\MessageMap.cpp" />
     <ClCompile Include="source\win\OverlayWindow.cpp" />
     <ClCompile Include="source\win\StandardWindow.cpp" />
-    <ClCompile Include="source\infra\util\Util.cpp" />
     <ClCompile Include="source\win\Window.cpp" />
     <ClCompile Include="source\win\WndClass.cpp" />
     <ClCompile Include="source\gfx\Graphics.cpp" />
@@ -124,7 +116,6 @@
     <ClCompile Include="source\gfx\layout\GraphElement.cpp" />
     <ClCompile Include="source\gfx\layout\LinePlotElement.cpp" />
     <ClCompile Include="source\gfx\layout\GraphData.cpp" />
-    <ClCompile Include="source\infra\util\ChiliTimer.cpp" />
     <ClCompile Include="source\gfx\impl\FastRenderer.cpp" />
     <ClCompile Include="source\gfx\layout\HistogramPlotElement.cpp" />
     <ClCompile Include="source\gfx\layout\PlotElement.cpp" />
@@ -154,10 +145,8 @@
     <ClCompile Include="source\win\com\WbemListener.cpp" />
     <ClCompile Include="source\win\com\WbemSink.cpp" />
     <ClCompile Include="source\kernel\WindowSpawnHandler.cpp" />
-    <ClCompile Include="source\infra\util\IntervalWaiter.cpp" />
     <ClCompile Include="source\win\com\ProcessSpawnSink.cpp" />
     <ClCompile Include="source\pmon\StatisticsTracker.cpp" />
-    <ClCompile Include="source\infra\util\Hash.cpp" />
     <ClCompile Include="source\win\GpuUtilization.cpp" />
     <ClCompile Include="source\pmon\DynamicQuery.cpp" />
     <ClCompile Include="source\pmon\metric\DynamicPollingFetcher.cpp" />
