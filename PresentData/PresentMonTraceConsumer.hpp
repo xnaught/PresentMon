@@ -462,7 +462,7 @@ struct PMTraceConsumer
     void RemoveLostPresent(std::shared_ptr<PresentEvent> present);
 
     void AddPresentToCompletedList(std::shared_ptr<PresentEvent> const& present);
-    void UpdateReadyCount(std::shared_ptr<PresentEvent> const& present);
+    void UpdateReadyCount(std::shared_ptr<PresentEvent> const& present, bool useLock);
 
     void DeferFlipFrameType(uint64_t vidPnLayerId, uint64_t presentId, uint64_t timestamp, FrameType frameType);
     void ApplyFlipFrameType(std::shared_ptr<PresentEvent> const& present, uint64_t timestamp, FrameType frameType);

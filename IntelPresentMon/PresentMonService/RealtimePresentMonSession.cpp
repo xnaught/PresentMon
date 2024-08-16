@@ -4,6 +4,11 @@
 #include "RealtimePresentMonSession.h"
 #include "CliOptions.h"
 #include "../CommonUtilities/str/String.h"
+#include "../CommonUtilities/win/Event.h"
+#include "../CommonUtilities/Qpc.h"
+#include "../CommonUtilities/log/Log.h"
+#include "../CommonUtilities/Exception.h"
+
 using namespace pmon;
 using namespace std::literals;
 
@@ -381,47 +386,80 @@ void RealtimePresentMonSession::Consume(TRACEHANDLE traceHandle) {
 }
 
 void RealtimePresentMonSession::Output() {
-    // Structures to track processes and statistics from recorded events.
-    std::vector<ProcessEvent> processEvents;
-    std::vector<std::shared_ptr<PresentEvent>> presentEvents;
-    std::vector<std::pair<uint32_t, uint64_t>> terminatedProcesses;
-    processEvents.reserve(128);
-    presentEvents.reserve(4096);
-    terminatedProcesses.reserve(16);
+    try {
+        // Structures to track processes and statistics from recorded events.
+        std::vector<ProcessEvent> processEvents;
+        std::vector<std::shared_ptr<PresentEvent>> presentEvents;
+        std::vector<std::pair<uint32_t, uint64_t>> terminatedProcesses;
+        processEvents.reserve(128);
+        presentEvents.reserve(4096);
+        terminatedProcesses.reserve(16);
 
-    for (;;) {
-        // Read quit_output_thread_ here, but then check it after processing
-        // queued events. This ensures that we call DequeueAnalyzedInfo() at
-        // least once after events have stopped being collected so that all
-        // events are included.
-        const auto quit = quit_output_thread_.load();
-
-        // Copy and process all the collected events, and update the various
-        // tracking and statistics data structures.
-        ProcessEvents(&processEvents, &presentEvents, &terminatedProcesses);
-
-        // Everything is processed and output out at this point, so if we're
-        // quiting we don't need to update the rest.
-        if (quit) {
-            break;
+        // create a periodic timer used to check for terminated processes / quit while also waiting for events
+        auto hTimer = util::win::Handle(CreateWaitableTimerW(
+            nullptr, FALSE, nullptr
+        ));
+        if (!hTimer) {
+            pmlog_error("Failed creating timer").hr();
+        }
+        // set timer period to 100ms
+        {
+            const LARGE_INTEGER dueTime{ .QuadPart = 0 };
+            if (!SetWaitableTimer(hTimer, &dueTime, 100, nullptr, nullptr, FALSE)) {
+                pmlog_error("Failed setting timer").hr();
+            }
         }
 
-        // Update tracking information.
-        CheckForTerminatedRealtimeProcesses(&terminatedProcesses);
+        util::QpcTimer timer;
 
-        // Sleep to reduce overhead.
-        Sleep(100);
-    }
+        while (true) {
+            // Read quit_output_thread_ here, but then check it after processing
+            // queued events. This ensures that we call DequeueAnalyzedInfo() at
+            // least once after events have stopped being collected so that all
+            // events are included.
+            //        
+            // TODO: consider replacing this flag with a waitable event
+            const auto quit = quit_output_thread_.load();
 
-    // Process handles
-    std::lock_guard<std::mutex> lock(process_mutex_);
-    for (auto& pair : processes_) {
-        auto processInfo = &pair.second;
-        if (processInfo->mHandle != NULL) {
-            CloseHandle(processInfo->mHandle);
+            // Copy and process all the collected events, and update the various
+            // tracking and statistics data structures.
+            timer.Mark();
+            timer.SpinWaitUntil(0.01);
+            ProcessEvents(&processEvents, &presentEvents, &terminatedProcesses);
+
+            // Everything is processed and output out at this point, so if we're
+            // quiting we don't need to update the rest.
+            if (quit) {
+                break;
+            }
+
+            // wait for either events to process or periodic polling timer
+            while (auto idx = util::win::WaitAnyEvent(pm_consumer_->hEventsReadyEvent, hTimer)) {
+                // events are ready so we should process them
+                if (*idx == 0) break;
+                // Timer has elapsed so we should do periodic polling operations
+                // Update tracking information.
+                CheckForTerminatedRealtimeProcesses(&terminatedProcesses);
+                // check for quit signal
+                if (quit_output_thread_.load()) {
+                    break;
+                }
+            }
         }
+
+        // Process handles
+        std::lock_guard<std::mutex> lock(process_mutex_);
+        for (auto& pair : processes_) {
+            auto processInfo = &pair.second;
+            if (processInfo->mHandle != NULL) {
+                CloseHandle(processInfo->mHandle);
+            }
+        }
+        processes_.clear();
     }
-    processes_.clear();
+    catch (...) {
+        pmlog_error(util::ReportException());
+    }
 }
 
 void RealtimePresentMonSession::StartOutputThread() {
