@@ -1939,7 +1939,7 @@ void PMTraceConsumer::AddPresentToCompletedList(std::shared_ptr<PresentEvent> co
         // subsequent presents from other processes from being dequeued until the ring buffer wraps and
         // forces it out, which is likely longer than we want to wait.  So we check here if there is 
         // a stuck deferred present and clear the deferral if it gets too old.
-        if (mReadyCount == 0) {
+        if (mReadyCount == 0 && mCompletedCount > 0) {
             auto const& deferredPresent = mCompletedPresents[mCompletedIndex];
             if (present->PresentStartTime >= deferredPresent->PresentStartTime &&
                 present->PresentStartTime - deferredPresent->PresentStartTime > mDeferralTimeLimit) {
