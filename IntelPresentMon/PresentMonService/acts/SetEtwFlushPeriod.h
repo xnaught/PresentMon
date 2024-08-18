@@ -3,7 +3,7 @@
 #include <format>
 #include <ranges>
 
-#define ACTNAME SelectAdapter
+#define ACTNAME SetEtwFlushPeriod
 
 namespace pmon::svc::acts
 {
@@ -17,10 +17,10 @@ namespace pmon::svc::acts
 		static constexpr const char* Identifier = STRINGIFY(ACTNAME);
 		struct Params
 		{
-			uint32_t adapterId;
+			std::optional<uint32_t> etwFlushPeriodMs;
 
 			template<class A> void serialize(A& ar) {
-				ar(adapterId);
+				ar(etwFlushPeriodMs);
 			}
 		};
 		struct Response {};
@@ -28,12 +28,19 @@ namespace pmon::svc::acts
 		friend class AsyncActionBase_<ACTNAME, ServiceExecutionContext>;
 		static Response Execute_(const ServiceExecutionContext& ctx, SessionContext& stx, Params&& in)
 		{
-			if (auto sta = ctx.pPmon->SelectAdapter(in.adapterId); sta != PM_STATUS_SUCCESS) {
-				pmlog_error("Select adapter failed").code(sta);
+			if (auto sta = ctx.pPmon->SetEtwFlushPeriod(in.etwFlushPeriodMs); sta != PM_STATUS_SUCCESS) {
+				pmlog_error("Set ETW flush period failed").code(sta);
 				throw util::Except<ActionExecutionError>(sta);
 			}
-			stx.requestedAdapterId = in.adapterId;
-			pmlog_dbg(std::format("selecting adapter id [{}]", in.adapterId));
+			stx.requestedEtwFlushEnabled = bool(in.etwFlushPeriodMs);
+			if (in.etwFlushPeriodMs) {
+				pmlog_dbg(std::format("Setting ETW flush period to {}ms", *in.etwFlushPeriodMs));
+				stx.requestedEtwFlushPeriodMs = *in.etwFlushPeriodMs;
+			}
+			else {
+				pmlog_dbg("Disabling manual ETW flush");
+				stx.requestedEtwFlushPeriodMs.reset();
+			}
 			return {};
 		}
 	};

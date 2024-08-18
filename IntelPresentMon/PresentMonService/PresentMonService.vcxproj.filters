@@ -38,6 +38,7 @@
     <ClInclude Include="AllActions.h" />
     <ClInclude Include="ServiceExecutionContext.h" />
     <ClInclude Include="Logging.h" />
+    <ClInclude Include="acts\SetEtwFlushPeriod.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PresentMonService.rc" />

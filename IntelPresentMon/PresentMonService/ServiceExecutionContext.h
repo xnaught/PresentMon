@@ -20,6 +20,8 @@ namespace pmon::svc
         std::set<uint32_t> trackedPids;
         std::optional<uint32_t> requestedAdapterId;
         std::optional<uint32_t> requestedTelemetryPeriodMs;
+        std::optional<uint32_t> requestedEtwFlushPeriodMs;
+        std::optional<bool> requestedEtwFlushEnabled;
         std::optional<uint32_t> lastTokenSeen;
         // uint32_t nextCommandToken = 0;
         std::chrono::high_resolution_clock::time_point lastReceived;

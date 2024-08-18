@@ -211,6 +211,19 @@ namespace pmon::mid
         return PM_STATUS_SUCCESS;
     }
 
+    PM_STATUS ConcreteMiddleware::SetEtwFlushPeriod(std::optional<uint32_t> periodMs)
+    {
+        try {
+            pActionClient->DispatchSync(acts::SetEtwFlushPeriod::Params{ periodMs });
+        }
+        catch (...) {
+            const auto code = util::GeneratePmStatus();
+            pmlog_error(util::ReportException()).code(code).diag();
+            return code;
+        }
+        return PM_STATUS_SUCCESS;
+    }
+
     PM_DYNAMIC_QUERY* ConcreteMiddleware::RegisterDynamicQuery(std::span<PM_QUERY_ELEMENT> queryElements, double windowSizeMs, double metricOffsetMs)
     { 
         // get introspection data for reference

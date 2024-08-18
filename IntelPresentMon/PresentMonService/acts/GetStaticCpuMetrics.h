@@ -12,10 +12,7 @@ namespace pmon::svc::acts
 	{
 	public:
 		static constexpr const char* Identifier = STRINGIFY(ACTNAME);
-		struct Params
-		{
-			template<class A> void serialize(A&) {}
-		};
+		struct Params {};
 		struct Response
 		{
 			std::string cpuName;

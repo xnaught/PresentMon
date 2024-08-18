@@ -50,10 +50,13 @@ public:
 
     PM_STATUS SelectAdapter(uint32_t adapter_id);
     PM_STATUS SetGpuTelemetryPeriod(uint32_t period_ms);
+    PM_STATUS SetEtwFlushPeriod(std::optional<uint32_t> periodMs);
+    std::optional<uint32_t> GetEtwFlushPeriod();
     uint32_t GetGpuTelemetryPeriod();
     int GetActiveStreams();
     void SetPowerTelemetryContainer(PowerTelemetryContainer* ptc);
 
+    // TODO: review all of these members and consider fixing the unsound thread safety aspects
     // data
     std::wstring pm_session_name_;
 
@@ -64,6 +67,7 @@ public:
 
     // Set the initial telemetry period to 16ms
     uint32_t gpu_telemetry_period_ms_ = 16;
+    std::atomic<std::optional<uint32_t>> etw_flush_period_ms_;
 
     Streamer streamer_;
 };

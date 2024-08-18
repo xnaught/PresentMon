@@ -30,7 +30,11 @@ void EventFlushThreadEntry_(Service* const srv, PresentMon* const pm)
         return;
     }
 
-    IntervalWaiter waiter{ 0.016'666 };
+    // this is the interval to wait when manual flush is disabled
+    // we still want to run the inner loop to poll in case it gets enabled
+    const double disabledInterval = 0.25;
+    double currentInterval = pm->GetEtwFlushPeriod().value_or(disabledInterval);
+    IntervalWaiter waiter{ currentInterval };
 
     // outer dormant loop waits for either start of process tracking or service exit
     while (true) {
@@ -40,16 +44,24 @@ void EventFlushThreadEntry_(Service* const srv, PresentMon* const pm)
         }
         // otherwise we assume streaming has started and we begin the flushing loop, checking for stop signal
         while (!win::WaitAnyEventFor(0s, srv->GetServiceStopHandle())) {
-            waiter.SetInterval(0.016'666);
+            // use interval wait to time flushes as a fixed cadence
+            waiter.SetInterval(currentInterval);
             waiter.Wait();
             // go dormant if there are no active streams left
-            // TODO: GetActiveStreams is not technically thread-safe, reconsider
+            // TODO: GetActiveStreams is not technically thread-safe, reconsider fixing this stuff in Service
             if (pm->GetActiveStreams() == 0) {
                 break;
             }
-            // flush events manually to reduce latency
-            pmlog_verb(v::etwq)("Manual ETW flush");
-            pm->FlushEvents();
+            // check to see if manual flush is enabled
+            if (auto flushPeriod = pm->GetEtwFlushPeriod()) {
+                // flush events manually to reduce latency
+                pmlog_verb(v::etwq)("Manual ETW flush");
+                pm->FlushEvents();
+                currentInterval = *flushPeriod;
+            }
+            else {
+                currentInterval = disabledInterval;
+            }
         }
     }
 }

@@ -33,11 +33,21 @@ class PresentMon {
   PM_STATUS SetGpuTelemetryPeriod(uint32_t period_ms) {
     // Only the real time trace sets GPU telemetry period
     return real_time_session_.SetGpuTelemetryPeriod(period_ms);
-
   }
+
   uint32_t GetGpuTelemetryPeriod() {
     // Only the real time trace sets GPU telemetry period
     return real_time_session_.GetGpuTelemetryPeriod();
+  }
+
+  PM_STATUS SetEtwFlushPeriod(std::optional<uint32_t> periodMs) {
+      // Only the real time trace sets ETW flush period
+      return real_time_session_.SetEtwFlushPeriod(periodMs);
+  }
+
+  std::optional<uint32_t> GetEtwFlushPeriod() {
+      // Only the real time trace sets ETW flush period
+      return real_time_session_.GetEtwFlushPeriod();
   }
 
   void SetCpu(const std::shared_ptr<pwr::cpu::CpuTelemetry>& pCpu) {
