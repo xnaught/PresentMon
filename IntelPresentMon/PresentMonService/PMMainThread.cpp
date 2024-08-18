@@ -1,5 +1,6 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
+#include "Logging.h"
 #include "Service.h"
 #include "ActionServer.h"
 #include "PresentMon.h"
@@ -19,8 +20,8 @@
 
 using namespace std::literals;
 using namespace pmon;
-using namespace util;
 using namespace svc;
+using namespace util;
 
 void EventFlushThreadEntry_(Service* const srv, PresentMon* const pm)
 {
@@ -46,9 +47,10 @@ void EventFlushThreadEntry_(Service* const srv, PresentMon* const pm)
             if (pm->GetActiveStreams() == 0) {
                 break;
             }
+            // flush events manually to reduce latency
+            pmlog_verb(v::etwq)("Manual ETW flush");
+            pm->FlushEvents();
         }
-        // flush events manually to reduce latency
-        pm->FlushEvents();
     }
 }
 

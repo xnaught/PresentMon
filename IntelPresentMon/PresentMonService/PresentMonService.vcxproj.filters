@@ -37,6 +37,7 @@
     <ClInclude Include="acts\StopTracking.h" />
     <ClInclude Include="AllActions.h" />
     <ClInclude Include="ServiceExecutionContext.h" />
+    <ClInclude Include="Logging.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PresentMonService.rc" />
