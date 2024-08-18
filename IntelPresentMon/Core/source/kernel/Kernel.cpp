@@ -308,13 +308,14 @@ namespace p2c::kern
 
     void Kernel::ConfigurePresentMon_(const OverlaySpec& newSpec)
     {
-        if (newSpec.averagingWindowSize != pm->GetWindow())
-        {
-            pm->SetWindow(newSpec.averagingWindowSize);
-        }
-        if (newSpec.telemetrySamplingPeriodMs != pm->GetGpuTelemetryPeriod())
-        {
+        if (newSpec.telemetrySamplingPeriodMs != pm->GetGpuTelemetryPeriod()) {
             pm->SetGpuTelemetryPeriod(newSpec.telemetrySamplingPeriodMs);
+        }        
+        if (const auto currentEtwPeriod = pm->GetEtwFlushPeriod();
+            newSpec.manualEtwFlush != bool(currentEtwPeriod) ||
+            (currentEtwPeriod && *currentEtwPeriod != newSpec.etwFlushPeriod)) {
+            pm->SetEtwFlushPeriod(newSpec.manualEtwFlush ?
+                std::optional{ uint32_t(newSpec.etwFlushPeriod) } : std::nullopt);
         }
     }
 }
