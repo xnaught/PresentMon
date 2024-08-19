@@ -706,12 +706,16 @@ void ReportMetrics(
         metrics.mDisplayedTime        = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ScreenTime, nextDisplayedPresent->ScreenTime);
         metrics.mAnimationError       = chain->mLastDisplayedCPUStart == 0 ? 0 : pmSession.TimestampDeltaToMilliSeconds(p->ScreenTime - chain->display_n_screen_time,
                                                                                                                         metrics.mCPUStart - chain->mLastDisplayedCPUStart);
-        metrics.mClickToPhotonLatency = p->InputTime == 0 ? 0.0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, p->ScreenTime);
+        auto updatedInputTime = chain->mLastReceivedNotDisplayedInputTime == 0 ? 0 :
+            pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedInputTime, p->ScreenTime);
+        metrics.mClickToPhotonLatency = p->InputTime == 0 ? updatedInputTime : pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, p->ScreenTime);
+        chain->mLastReceivedNotDisplayedInputTime = 0;
     } else {
         metrics.mDisplayLatency       = 0.0;
         metrics.mDisplayedTime        = 0.0;
         metrics.mAnimationError       = 0.0;
         metrics.mClickToPhotonLatency = 0.0;
+        chain->mLastReceivedNotDisplayedInputTime = p->InputTime;
     }
 
     if (p->FrameId == nextPresent->FrameId) {

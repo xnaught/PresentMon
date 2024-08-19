@@ -108,6 +108,7 @@ void Streamer::CopyFromPresentMonPresentEvent(
     nsm_present_event->PresentMode = present_event->PresentMode;
     nsm_present_event->FinalState = present_event->FinalState;
     nsm_present_event->InputType = present_event->InputType;
+    nsm_present_event->IsMouseClick = present_event->IsMouseClick;
     nsm_present_event->FrameType = present_event->FrameType;
 
     nsm_present_event->SupportsTearing = present_event->SupportsTearing;

@@ -174,6 +174,9 @@ struct PmNsmPresentEvent {
   // PMTraceConsumer::mPresentsWaitingForDWM
   bool PresentInDwmWaitingStruct;
 
+  // True if the input type is mouse based and it is click
+  bool IsMouseClick;
+
   // QPC time of last presented frame
   uint64_t last_present_qpc;
   // QPC time of the last displayed frame

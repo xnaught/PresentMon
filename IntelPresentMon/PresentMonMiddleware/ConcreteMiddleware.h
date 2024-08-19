@@ -5,6 +5,7 @@
 #include "../Streamer/StreamClient.h"
 #include <optional>
 #include <string>
+#include <queue>
 #include "../CommonUtilities/Hash.h"
 
 namespace pmapi::intro
@@ -51,6 +52,10 @@ namespace pmon::mid
 		std::vector<double> mAnimationError;
         std::vector<double> mClickToPhotonLatency;
         std::vector<double> mDropped;
+
+		// QPC of last received input data that did not make it to the screen due 
+		// to the Present() being dropped
+		uint64_t mLastReceivedNotDisplayedInputTime;
 
         // begin/end screen times to optimize average calculation:
 		uint64_t display_n_screen_time = 0;       // The last presented frame's ScreenTime (qpc)

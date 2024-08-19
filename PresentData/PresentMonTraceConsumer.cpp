@@ -59,7 +59,8 @@ PresentEvent::PresentEvent()
     , GPUVideoDuration(0)
     , ScreenTime(0)
     , InputTime(0)
-
+    , MouseClickTime(0)
+    , XFormClickTime(0)
     , SwapChainAddress(0)
     , SyncInterval(-1)
     , PresentFlags(0)
@@ -1474,19 +1475,61 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
 
         case Microsoft_Windows_Win32k::RetrieveInputMessage_Info::Id:
         {
+            EventDataDesc desc[] = {
+                { L"hwnd" }
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto hWnd = desc[0].GetData<uint64_t>();
+
+            // Check to see if have received a OnInputXformUpdate_Info
+            // message using the passed in hwnd.
+            uint64_t xFormValue = 0;
+            auto it = mReceivedMouseClickByHwnd.find(hWnd);
+            if (it != mReceivedMouseClickByHwnd.end()) {
+                xFormValue = it->second;
+            }
+
             auto ii = mRetrievedInput.find(hdr.ProcessId);
             if (ii == mRetrievedInput.end()) {
-                mRetrievedInput.emplace(hdr.ProcessId, std::make_pair(
-                    mLastInputDeviceReadTime,
-                    mLastInputDeviceType));
+                uint64_t mouseInputTime = 0;
+                if (mLastInputDeviceType == InputDeviceType::Mouse) {
+                    mouseInputTime = mLastInputDeviceReadTime;
+                }
+                InputData data = { mLastInputDeviceReadTime, mouseInputTime, xFormValue, mLastInputDeviceType, hWnd };
+                mRetrievedInput.emplace(hdr.ProcessId, data);
             } else {
-                if (ii->second.first < mLastInputDeviceReadTime) {
-                    ii->second.first = mLastInputDeviceReadTime;
-                    ii->second.second = mLastInputDeviceType;
+                if (ii->second.Time < mLastInputDeviceReadTime) {
+                    ii->second.Time = mLastInputDeviceReadTime;
+                    ii->second.Type = mLastInputDeviceType;
+                    if (mLastInputDeviceType == InputDeviceType::Mouse) {
+                        if (ii->second.XFormTime == 0) {
+                            ii->second.XFormTime = xFormValue;
+                        }
+                        if (ii->second.MouseClickTime == 0) {
+                            ii->second.MouseClickTime = mLastInputDeviceReadTime;
+                        }
+                    }
                 }
             }
             return;
         }
+
+        case Microsoft_Windows_Win32k::OnInputXformUpdate_Info::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"Hwnd" },
+                { L"XformQPCTime"}
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto hWnd = desc[0].GetData<uint64_t>();
+            auto xFormQPCTime = desc[1].GetData<uint64_t>();
+
+            // Currently no retrieved inputs match this hwnd, store it for later
+            mReceivedMouseClickByHwnd[hWnd] = xFormQPCTime;
+
+            return;
+        }
+
         }
     }
 
@@ -2077,10 +2120,20 @@ void PMTraceConsumer::TrackPresent(
     // Assign any pending retrieved input to this frame
     if (mTrackInput) {
         auto ii = mRetrievedInput.find(present->ProcessId);
-        if (ii != mRetrievedInput.end() && ii->second.second != InputDeviceType::None) {
-            present->InputTime = ii->second.first;
-            present->InputType = ii->second.second;
-            ii->second.second = InputDeviceType::None;
+        if (ii != mRetrievedInput.end() && ii->second.Type != InputDeviceType::None) {
+            present->InputTime = ii->second.Time;
+            present->InputType = ii->second.Type;
+            if (ii->second.MouseClickTime != 0 && ii->second.XFormTime != 0) {
+                present->MouseClickTime = ii->second.MouseClickTime;
+                present->XFormClickTime = ii->second.XFormTime;
+            } else {
+                present->MouseClickTime = 0;
+                present->XFormClickTime = 0;
+            }
+            ii->second.Type = InputDeviceType::None;
+            ii->second.XFormTime = 0;
+            ii->second.MouseClickTime = 0;
+            mReceivedMouseClickByHwnd[ii->second.hWnd] = 0;
         }
     }
 }
