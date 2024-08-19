@@ -610,8 +610,9 @@ struct FrameMetrics {
     double mGPUWait;
     double mDisplayLatency;
     double mDisplayedTime;
-    double mClickToPhotonLatency;
     double mAnimationError;
+    double mClickToPhotonLatency;
+    double mAllInputPhotonLatency;
 };
 
 // Copied from: PresentMon/OutputThread.cpp
@@ -706,16 +707,34 @@ void ReportMetrics(
         metrics.mDisplayedTime        = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ScreenTime, nextDisplayedPresent->ScreenTime);
         metrics.mAnimationError       = chain->mLastDisplayedCPUStart == 0 ? 0 : pmSession.TimestampDeltaToMilliSeconds(p->ScreenTime - chain->display_n_screen_time,
                                                                                                                         metrics.mCPUStart - chain->mLastDisplayedCPUStart);
-        auto updatedInputTime = chain->mLastReceivedNotDisplayedInputTime == 0 ? 0 :
-            pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedInputTime, p->ScreenTime);
-        metrics.mClickToPhotonLatency = p->InputTime == 0 ? updatedInputTime : pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, p->ScreenTime);
-        chain->mLastReceivedNotDisplayedInputTime = 0;
+        // If we have an input time that was associated with a dropped frame calculate the latency
+        // based on this Presents screen time.
+        auto updatedInputTime = chain->mLastReceivedNotDisplayedAllInputTime == 0 ? 0 :
+            pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedAllInputTime, p->ScreenTime);
+        // If this present doesn't have an input associated with it use the time from the latest input time calculated
+        // above. If there is an input associated with the Present use it.
+        metrics.mAllInputPhotonLatency = p->InputTime == 0 ? updatedInputTime :
+            pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, p->ScreenTime);
+        // Do the same for the mouse input
+        updatedInputTime = chain->mLastReceivedNotDisplayedMouseClickTime == 0 ? 0 :
+            pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedMouseClickTime, p->ScreenTime);
+        metrics.mClickToPhotonLatency = p->MouseClickTime == 0 ? updatedInputTime :
+            pmSession.TimestampDeltaToUnsignedMilliSeconds(p->MouseClickTime, p->ScreenTime);
+
+        chain->mLastReceivedNotDisplayedAllInputTime = 0;
+        chain->mLastReceivedNotDisplayedMouseClickTime = 0;
     } else {
         metrics.mDisplayLatency       = 0.0;
         metrics.mDisplayedTime        = 0.0;
         metrics.mAnimationError       = 0.0;
         metrics.mClickToPhotonLatency = 0.0;
-        chain->mLastReceivedNotDisplayedInputTime = p->InputTime;
+        metrics.mAllInputPhotonLatency = 0.0;
+        if (p->InputTime != 0) {
+            chain->mLastReceivedNotDisplayedAllInputTime = p->InputTime;
+        }
+        if (p->MouseClickTime != 0) {
+            chain->mLastReceivedNotDisplayedMouseClickTime = p->MouseClickTime;
+        }
     }
 
     if (p->FrameId == nextPresent->FrameId) {

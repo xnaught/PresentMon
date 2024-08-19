@@ -80,6 +80,8 @@ void Streamer::CopyFromPresentMonPresentEvent(
     nsm_present_event->ReadyTime = present_event->ReadyTime;
     nsm_present_event->ScreenTime = present_event->ScreenTime;
     nsm_present_event->InputTime = present_event->InputTime;
+    nsm_present_event->MouseClickTime = present_event->MouseClickTime;
+
     nsm_present_event->SwapChainAddress = present_event->SwapChainAddress;
     nsm_present_event->SyncInterval = present_event->SyncInterval;
     nsm_present_event->PresentFlags = present_event->PresentFlags;
@@ -108,7 +110,6 @@ void Streamer::CopyFromPresentMonPresentEvent(
     nsm_present_event->PresentMode = present_event->PresentMode;
     nsm_present_event->FinalState = present_event->FinalState;
     nsm_present_event->InputType = present_event->InputType;
-    nsm_present_event->IsMouseClick = present_event->IsMouseClick;
     nsm_present_event->FrameType = present_event->FrameType;
 
     nsm_present_event->SupportsTearing = present_event->SupportsTearing;

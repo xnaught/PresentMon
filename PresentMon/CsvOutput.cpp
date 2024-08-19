@@ -384,11 +384,11 @@ void WriteCsvRow<FrameMetrics>(
         } else {
             fwprintf(fp, L",%.4lf", metrics.mClickToPhotonLatency);
         }
-        if (metrics.mAllDevicePhotonLatency == 0.0) {
+        if (metrics.mAllInputPhotonLatency == 0.0) {
             fwprintf(fp, L",NA");
         }
         else {
-            fwprintf(fp, L",%.4lf", metrics.mAllDevicePhotonLatency);
+            fwprintf(fp, L",%.4lf", metrics.mAllInputPhotonLatency);
         }
         if (metrics.mXformTransform == 0) {
             fwprintf(fp, L",NA");

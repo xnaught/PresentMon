@@ -55,7 +55,8 @@ namespace pmon::mid
 
 		// QPC of last received input data that did not make it to the screen due 
 		// to the Present() being dropped
-		uint64_t mLastReceivedNotDisplayedInputTime;
+		uint64_t mLastReceivedNotDisplayedAllInputTime;
+		uint64_t mLastReceivedNotDisplayedMouseClickTime;
 
         // begin/end screen times to optimize average calculation:
 		uint64_t display_n_screen_time = 0;       // The last presented frame's ScreenTime (qpc)

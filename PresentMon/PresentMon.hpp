@@ -102,7 +102,7 @@ struct FrameMetrics {
     double mDisplayedTime;
     double mAnimationError;
     double mClickToPhotonLatency;
-    double mAllDevicePhotonLatency;
+    double mAllInputPhotonLatency;
     uint64_t mXformTransform;
 };
 

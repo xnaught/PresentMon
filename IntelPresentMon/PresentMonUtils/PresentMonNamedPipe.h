@@ -124,8 +124,8 @@ struct PmNsmPresentEvent {
                          // running on a video node (if mTrackGPUVideo==true)
   uint64_t ScreenTime;   // QPC value when the present was displayed on screen
 
-  uint64_t InputTime;  // Earliest QPC value when the keyboard/mouse was clicked
-                       // and used by this frame
+  uint64_t InputTime;		// Earliest QPC value for all keyboard/mouse input used by this frame
+  uint64_t MouseClickTime;	// Earliest QPC value when the mouse was clicked and used by this frame
 
   // Extra present parameters obtained through DXGI or D3D9 present
   uint64_t SwapChainAddress;
@@ -173,9 +173,6 @@ struct PmNsmPresentEvent {
   // Whether this PresentEvent is currently stored in
   // PMTraceConsumer::mPresentsWaitingForDWM
   bool PresentInDwmWaitingStruct;
-
-  // True if the input type is mouse based and it is click
-  bool IsMouseClick;
 
   // QPC time of last presented frame
   uint64_t last_present_qpc;

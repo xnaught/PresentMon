@@ -359,7 +359,7 @@ static void ReportMetrics(
                                                                                                                         metrics.mCPUStart - chain->mLastDisplayedCPUStart);
         auto updatedInputTime = chain->mLastReceivedNotDisplayedAllInputTime == 0 ? 0 :
             pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedAllInputTime, p->ScreenTime);
-        metrics.mAllDevicePhotonLatency = p->InputTime == 0 ? updatedInputTime : pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, p->ScreenTime);
+        metrics.mAllInputPhotonLatency = p->InputTime == 0 ? updatedInputTime : pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, p->ScreenTime);
 
         updatedInputTime = chain->mLastReceivedNotDisplayedMouseClickTime == 0 ? 0 :
             pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedMouseClickTime, p->ScreenTime);
@@ -376,7 +376,7 @@ static void ReportMetrics(
         metrics.mDisplayedTime        = 0;
         metrics.mAnimationError       = 0;
         metrics.mClickToPhotonLatency = 0;
-        metrics.mAllDevicePhotonLatency = 0;
+        metrics.mAllInputPhotonLatency = 0;
         metrics.mXformTransform = 0;
         if (p->InputTime != 0) {
             chain->mLastReceivedNotDisplayedAllInputTime = p->InputTime;
