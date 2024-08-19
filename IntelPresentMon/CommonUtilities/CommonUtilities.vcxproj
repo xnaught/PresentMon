@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BuildId.h" />
     <ClInclude Include="cli\CliFramework.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="log\ChannelFlusher.h" />
@@ -57,10 +58,12 @@
     <ClInclude Include="log\StackTrace.h" />
     <ClInclude Include="log\StackTraceCereal.h" />
     <ClInclude Include="log\StdioDriver.h" />
+    <ClInclude Include="log\StructDump.h" />
     <ClInclude Include="log\Subsystem.h" />
     <ClInclude Include="log\TextFormatter.h" />
     <ClInclude Include="log\MarshallDriver.h" />
     <ClInclude Include="log\TimePoint.h" />
+    <ClInclude Include="Macro.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="Memory.h" />
     <ClInclude Include="Hash.h" />
@@ -70,7 +73,10 @@
     <ClInclude Include="log\PanicLogger.h" />
     <ClInclude Include="log\NamedPipeMarshallSender.h" />
     <ClInclude Include="mt\Thread.h" />
+    <ClInclude Include="pipe\CoroMutex.h" />
+    <ClInclude Include="pipe\Pipe.h" />
     <ClInclude Include="str\String.h" />
+    <ClInclude Include="third\reflect.hpp" />
     <ClInclude Include="win\Event.h" />
     <ClInclude Include="win\Handle.h" />
     <ClInclude Include="win\HrErrorCodeProvider.h" />
@@ -79,6 +85,7 @@
     <ClInclude Include="win\WinAPI.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BuildId.cpp" />
     <ClCompile Include="cli\CliFramework.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="log\ChannelFlusher.cpp" />
@@ -111,6 +118,8 @@
     <ClCompile Include="log\NamedPipeMarshallSender.cpp" />
     <ClCompile Include="log\TimePoint.cpp" />
     <ClCompile Include="mt\Thread.cpp" />
+    <ClCompile Include="pipe\CoroMutex.cpp" />
+    <ClCompile Include="pipe\Pipe.cpp" />
     <ClCompile Include="str\String.cpp" />
     <ClCompile Include="win\Event.cpp" />
     <ClCompile Include="win\Handle.cpp" />

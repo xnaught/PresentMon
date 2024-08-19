@@ -189,15 +189,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="LegacyAPIDefines.h" />
-    <ClInclude Include="MemBuffer.h" />
-    <ClInclude Include="NamedPipeHelper.h" />
     <ClInclude Include="PresentDataUtils.h" />
-    <ClInclude Include="PresentMonNamedPipe.h" />
+    <ClInclude Include="StreamFormat.h" />
     <ClInclude Include="QPCUtils.h" />
     <ClInclude Include="StringUtils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="NamedPipeHelper.cpp" />
     <ClCompile Include="QPCUtils.cpp" />
     <ClCompile Include="StringUtils.cpp" />
   </ItemGroup>

@@ -1,7 +1,6 @@
 #pragma once
 #include <CommonUtilities/cli/CliFramework.h>
 #include <CommonUtilities/log/Level.h>
-#include <CommonUtilities/generated/build_id.h>
 #include <format>
 
 namespace p2c::cli
@@ -41,7 +40,7 @@ namespace p2c::cli
 		Option<std::string> cefType{ this, "--type", "", "Type of the current chromium process" };
 		Option<std::string> logPipeName{ this, "--p2c-log-pipe-name", "", "The postfix used to create the named pipe for logging source server" };
 
-		static constexpr const char* description = "PresentMon performance overlay and trace capture application [Build:" PM_BID_GIT_HASH_SHORT_NARROW "]";
+		static constexpr const char* description = "PresentMon performance overlay and trace capture application";
 		static constexpr const char* name = "PresentMon.exe";
 
 	private:

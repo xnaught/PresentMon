@@ -2,16 +2,12 @@
 #include "IEntryMarshallReceiver.h"
 #include <string>
 #include "../win/WinAPI.h"
-#include "../win/Handle.h"
-#include "../win/Event.h"
-#include "../win/Overlapped.h"
+#include "../pipe/Pipe.h"
 #include "../Exception.h"
 
 
 namespace pmon::util::log
 {
-    PM_DEFINE_EX(PipeConnectionError);
-
 	class NamedPipeMarshallReceiver : public IEntryMarshallReceiver
 	{
     public:
@@ -24,13 +20,11 @@ namespace pmon::util::log
         std::optional<Entry> Pop() override;
         void SignalExit() override;
     private:
-        bool connected_ = false;
         bool sealed_ = false;
-        win::Handle hPipe_;
         std::string pipeName_;
-        std::string inputBuffer_;
-        win::Overlapped overlapped_{};
-        win::Event exitEvent_;
+        pipe::as::io_context ioctx_;
+        pipe::DuplexPipe pipe_;
+        boost::asio::windows::object_handle exitEvent_;
         class IdentificationTable* pIdTable_ = nullptr;
 	};
 }

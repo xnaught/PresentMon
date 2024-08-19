@@ -23,6 +23,7 @@ namespace pmon::util
 		CloningUptr() = default;
 		explicit CloningUptr(T* p) noexcept : std::unique_ptr<T>{ p } {}
 		CloningUptr(CloningUptr&& other) noexcept : std::unique_ptr<T>{ std::move(other) } {}
+		// TODO: consider slicing implications / metaprogramming detection of clone() member etc.
 		CloningUptr(const CloningUptr& other)
 			:
 			std::unique_ptr<T>{ bool(other) ? std::make_unique<T>(*other) : std::unique_ptr<T>{} }
@@ -40,4 +41,14 @@ namespace pmon::util
 		}
 		~CloningUptr() = default;
 	};
+
+	// get the size in bytes of a container's contents
+	template<class C>
+	size_t SizeInBytes(const C& container)
+	{
+		if (const auto size = std::size(container)) {
+			return size * sizeof(*std::begin(container));
+		}
+		return 0;
+	}
 }

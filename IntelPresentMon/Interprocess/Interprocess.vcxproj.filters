@@ -30,6 +30,9 @@
     <ClCompile Include="source\IntrospectionHelpers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="source\PmStatusError.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="source\ExperimentalInterprocess.h">
@@ -114,6 +117,27 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="source\metadata\EnumFrameType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\act\AsyncAction.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\act\AsyncActionCollection.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\act\AsyncActionManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\act\Packet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\act\Transfer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\PmStatusError.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="source\act\ActionExecutionError.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

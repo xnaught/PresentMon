@@ -20,9 +20,11 @@ namespace pmon::util::win
         HandleType Get() const;
         // empties this container (closes owned handle if any)
         void Clear();
+        Handle Clone() const;
         // empties this resource, returning owned handle value without closing
         HandleType Release();
         operator bool() const noexcept;
+        static Handle CreateCloned(HandleType handle);
     private:
         HandleType handle_ = nullptr;
     };

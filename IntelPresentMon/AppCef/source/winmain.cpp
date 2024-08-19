@@ -8,7 +8,7 @@
 #include <Core/source/infra/util/FolderResolver.h>
 #include <Core/source/cli/CliOptions.h>
 #include <CommonUtilities/log/IdentificationTable.h>
-#include <CommonUtilities/generated/build_id.h>
+#include <CommonUtilities/BuildId.h>
 #include <CommonUtilities/win/Utilities.h>
 #include <PresentMonAPIWrapper/DiagnosticHandler.h>
 #include <dwmapi.h>
@@ -261,7 +261,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
         // code from here on is only executed by the root process (browser window process)
 
-        pmlog_info(std::format("== client section starting build#{} clean:{} ==", str::ToNarrow(PM_BID_GIT_HASH_SHORT), !PM_BID_DIRTY));
+        pmlog_info(std::format("== client section starting build#{} clean:{} ==", BuildIdShortHash(), BuildIdDirtyFlag()));
 
         {
             auto& folderResolver = infra::util::FolderResolver::Get();

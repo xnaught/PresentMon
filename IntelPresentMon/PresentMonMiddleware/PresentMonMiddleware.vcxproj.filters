@@ -33,10 +33,10 @@
     <ClInclude Include="FrameEventQuery.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Exception.h">
+    <ClInclude Include="LogSetup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="LogSetup.h">
+    <ClInclude Include="ActionClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -48,9 +48,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FrameEventQuery.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Exception.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="LogSetup.cpp">

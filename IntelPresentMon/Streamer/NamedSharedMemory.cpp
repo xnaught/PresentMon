@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 #include <format>
 #include "NamedSharedMemory.h"
-#include "sddl.h"
+#include <sddl.h>
 
 #include "../CommonUtilities/log/GlogShim.h"
 
