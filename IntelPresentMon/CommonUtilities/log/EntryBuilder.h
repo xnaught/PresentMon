@@ -25,6 +25,9 @@ namespace pmon::util::log
 		class EntryBuilder& builder_;
 	};
 
+	struct ex_note_type{};
+	inline constexpr ex_note_type ex_note;
+
 	// fluent wrapper interface for creating log Entries
 	class EntryBuilder : private Entry
 	{
@@ -50,6 +53,12 @@ namespace pmon::util::log
 			catch (...) { pmlog_panic_("Failed to format watch in EntryBuilder"); }
 			return *this;
 		}
+		template<typename E>
+		EntryBuilder& raise()
+		{
+			commit_();
+			throw Except<E>(note_);
+		}
 		EntryBuilder& mark(const TimePoint& tp) noexcept;
 		EntryBuilder& note(std::string note = "") noexcept;
 		EntryBuilder& to(std::shared_ptr<IEntrySink>) noexcept;
@@ -72,6 +81,10 @@ namespace pmon::util::log
 			return *this;
 		} 
 	private:
+		// functions
+		void commit_() noexcept;
+		// data
+		bool committed_ = false;
 		std::shared_ptr<IEntrySink> pDest_;
 		int traceSkipDepth_;
 		std::optional<bool> captureTrace_;

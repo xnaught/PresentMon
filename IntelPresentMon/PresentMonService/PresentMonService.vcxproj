@@ -168,6 +168,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>pdh.lib;shlwapi.lib;tdh.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Command>build-scripts\pre-build.bat</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Running pre-build script</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -188,28 +194,42 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>pdh.lib;shlwapi.lib;tdh.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PreBuildEvent>
+      <Command>build-scripts\pre-build.bat</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Running pre-build script</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ActionRegistration.cpp" />
     <ClCompile Include="LogSetup.cpp" />
     <ClCompile Include="MockPresentMonSession.cpp" />
-    <ClCompile Include="NamedPipeServer.cpp" />
+    <ClCompile Include="ActionServer.cpp" />
     <ClCompile Include="PMMainThread.cpp" />
     <ClCompile Include="PowerTelemetryContainer.cpp" />
     <ClCompile Include="RealtimePresentMonSession.cpp" />
     <ClCompile Include="Service.cpp" />
     <ClCompile Include="ServiceMain.cpp" />
     <ClCompile Include="PresentMon.cpp" />
-    <ClCompile Include="NamedPipeCmdProcess.cpp" />
     <ClCompile Include="PresentMonSession.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ActionHelper.h" />
+    <ClInclude Include="acts\EnumerateAdapters.h" />
+    <ClInclude Include="acts\GetStaticCpuMetrics.h" />
+    <ClInclude Include="acts\OpenSession.h" />
+    <ClInclude Include="acts\SelectAdapter.h" />
+    <ClInclude Include="acts\SetTelemetryPeriod.h" />
+    <ClInclude Include="acts\StartTracking.h" />
+    <ClInclude Include="acts\StopTracking.h" />
+    <ClInclude Include="AllActions.h" />
     <ClInclude Include="CliOptions.h" />
     <ClInclude Include="GlobalIdentifiers.h" />
     <ClInclude Include="LogSetup.h" />
     <ClInclude Include="MockPresentMonSession.h" />
-    <ClInclude Include="NamedPipeCmdProcess.h" />
     <ClInclude Include="LateStageReprojectionData.hpp" />
-    <ClInclude Include="NamedPipeServer.h" />
+    <ClInclude Include="ActionServer.h" />
     <ClInclude Include="PowerTelemetryContainer.h" />
     <ClInclude Include="PresentMon.h" />
     <ClInclude Include="PMMainThread.h" />
@@ -217,6 +237,7 @@
     <ClInclude Include="RealtimePresentMonSession.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Service.h" />
+    <ClInclude Include="ServiceExecutionContext.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\PresentData\PresentData.vcxproj">
@@ -240,6 +261,9 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PresentMonService.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="build-scripts\pre-build.bat" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

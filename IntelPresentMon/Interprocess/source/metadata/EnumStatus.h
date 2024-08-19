@@ -15,4 +15,5 @@
 		X_(STATUS, UNABLE_TO_CREATE_NSM, "Unable to Create NSM", "", "Service failed to create shrared memory for data transfer") \
 		X_(STATUS, INVALID_ADAPTER_ID, "Invalid Adapter ID", "", "Graphics adapter ID provided does not match any ID in service") \
 		X_(STATUS, OUT_OF_RANGE, "Out of Range", "", "Value falls outside of the acceptable range") \
-		X_(STATUS, INSUFFICIENT_BUFFER, "Insufficient Buffer", "", "Buffer is not large enough to hold all output data")
+		X_(STATUS, INSUFFICIENT_BUFFER, "Insufficient Buffer", "", "Buffer is not large enough to hold all output data") \
+		X_(STATUS, PIPE_ERROR, "Pipe Error", "", "An error occurred in connecting to or communicating over named pipes")

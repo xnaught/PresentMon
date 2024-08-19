@@ -17,11 +17,10 @@ if errorlevel 1 (
 
 :: Write to header file in the generated directory
 if not exist generated mkdir generated
-echo #define PM_BID_GIT_HASH L"%GIT_HASH%" > generated\build_id.h
-echo #define PM_BID_GIT_HASH_SHORT L"%GIT_HASH_SHORT%" >> generated\build_id.h
-echo #define PM_BID_GIT_HASH_SHORT_NARROW "%GIT_HASH_SHORT%" >> generated\build_id.h
-echo #define PM_BID_TIME L"%DATETIME%" >> generated\build_id.h
-echo #define PM_BID_UID L"%GIT_HASH%-%DATETIME%" >> generated\build_id.h
+echo #define PM_BID_GIT_HASH "%GIT_HASH%" > generated\build_id.h
+echo #define PM_BID_GIT_HASH_SHORT "%GIT_HASH_SHORT%" >> generated\build_id.h
+echo #define PM_BID_TIME "%DATETIME%" >> generated\build_id.h
+echo #define PM_BID_UID "%GIT_HASH%-%DATETIME%" >> generated\build_id.h
 echo #define PM_BID_DIRTY %UNCOMMITTED_CHANGES% >> generated\build_id.h
 
 endlocal

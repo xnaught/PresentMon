@@ -3,6 +3,7 @@
 #include <sstream>
 #include "log/GlobalPolicy.h"
 #include "log/StackTrace.h"
+#include "../PresentMonAPI2/PresentMonAPI.h"
 #include <format>
 
 
@@ -62,6 +63,11 @@ namespace pmon::util
 		return bool(pTrace_);
 	}
 
+	PM_STATUS Exception::GeneratePmStatus() const noexcept
+	{
+		return PM_STATUS_FAILURE;
+	}
+
 	void DoCapture_(Exception& e)
 	{
 		if (log::GlobalPolicy::Get().GetExceptionTrace()) {
@@ -87,6 +93,25 @@ namespace pmon::util
 			}
 		}
 		return "No exception in flight";
+	}
+
+	PM_STATUS GeneratePmStatus(std::exception_ptr pEx) noexcept
+	{
+		if (!pEx) {
+			pEx = std::current_exception();
+		}
+		if (pEx) {
+			try {
+				std::rethrow_exception(pEx);
+			}
+			catch (const Exception& e) {
+				return e.GeneratePmStatus();
+			}
+			catch (...) {
+				return PM_STATUS_FAILURE;
+			}
+		}
+		return PM_STATUS_SUCCESS;
 	}
 
 	namespace {

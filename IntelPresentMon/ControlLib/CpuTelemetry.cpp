@@ -2,16 +2,19 @@
 // SPDX-License-Identifier: MIT
 #include <format>
 #include "CpuTelemetry.h"
+#include "../CommonUtilities/str/String.h"
 
 #include "../CommonUtilities/log/GlogShim.h"
 
+
 namespace pwr::cpu {
+    using namespace pmon::util;
 
 std::string CpuTelemetry::GetCpuName() {
   if (cpu_name_.size() == 0) {
     std::wstring local_cpu_name{};
     if (ExecuteWQLProcessorNameQuery(local_cpu_name)) {
-      cpu_name_ = ConvertFromWideString(std::move(local_cpu_name));
+      cpu_name_ = str::TrimWhitespace(str::ToNarrow(local_cpu_name));
     } else {
       cpu_name_ = "UNKNOWN_CPU";
     }

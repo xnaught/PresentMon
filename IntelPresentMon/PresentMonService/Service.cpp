@@ -39,6 +39,11 @@ DWORD ServiceCtrlHandlerEx(DWORD control, DWORD dwEventType, LPVOID lpEventData,
 	}
 }
 
+Service::Service()
+	:
+	clientSessionEvent_{ CreateEventA(nullptr, TRUE, FALSE, nullptr) }
+{}
+
 void Service::SignalServiceStop(std::optional<int> errCode)
 {
 	errCode_ = errCode;
@@ -48,6 +53,16 @@ void Service::SignalServiceStop(std::optional<int> errCode)
 std::optional<int> Service::GetErrorCode() const
 {
 	return errCode_;
+}
+
+HANDLE Service::GetClientSessionHandle()
+{
+	return clientSessionEvent_;
+}
+
+void Service::SignalClientSessionOpened()
+{
+	SetEvent(clientSessionEvent_);
 }
 
 ConcreteService::ConcreteService(const TCHAR* serviceName) : mServiceName(serviceName)

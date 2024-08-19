@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "Service.h"
-#include "NamedPipeServer.h"
+#include "ActionServer.h"
 #include "PresentMon.h"
 #include "PowerTelemetryContainer.h"
 #include "..\ControlLib\WmiCpu.h"
@@ -15,6 +15,7 @@
 #include "../CommonUtilities/log/GlogShim.h"
 
 using namespace pmon;
+using namespace svc;
 
 bool NanoSleep(int32_t ms, bool alertable) {
   HANDLE timer;
@@ -46,42 +47,6 @@ void PmSleep(int32_t ms, bool alertable = false) {
   return;
 }
 
-void IPCCommunication(Service* srv, PresentMon* pm)
-{
-    // alias for options
-    auto& opt = clio::Options::Get();
-
-    bool createNamedPipeServer = true;
-
-    if (srv == nullptr) {
-        // TODO: log
-        return;
-    }
-
-    try
-    {
-        auto nps = std::make_unique<NamedPipeServer>(srv, pm, opt.controlPipe.AsOptional());
-        while (createNamedPipeServer) {
-            DWORD result = nps->RunServer();
-            if (result == ERROR_SUCCESS) {
-                createNamedPipeServer = false;
-            }
-            else {
-                // We were unable to start our named pipe server. Sleep for
-                // a bit and then try again.
-                PmSleep(3000);
-            }
-        }
-    }
-    catch (const std::bad_alloc& e)
-    {
-        LOG(INFO) << "Unable to create Name Pipe Server. Result: " << e.what();
-        return;
-    }
-
-    return;
-}
-
 void PowerTelemetry(Service* const srv, PresentMon* const pm,
 	PowerTelemetryContainer* const ptc, ipc::ServiceComms* const pComms)
 {
@@ -96,7 +61,7 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
     // telemetry metric availability is accurately assessed
     {
         const HANDLE events[]{
-              pm->GetFirstConnectionHandle(),
+              srv->GetClientSessionHandle(),
               srv->GetServiceStopHandle(),
         };
         const auto waitResult = WaitForMultipleObjects((DWORD)std::size(events), events, FALSE, INFINITE);
@@ -191,7 +156,6 @@ void PresentMonMainThread(Service* const pSvc)
     // these thread containers need to be created outside of the try scope
     // so that if an exception happens, it won't block during unwinding,
     // trying to join threads that are waiting for a stop signal
-    std::jthread controlPipeThread;
     std::jthread gpuTelemetryThread;
     std::jthread cpuTelemetryThread;
 
@@ -247,8 +211,8 @@ void PresentMonMainThread(Service* const pSvc)
         // Set the created power telemetry container 
         pm.SetPowerTelemetryContainer(&ptc);
 
-        // Start IPC communication thread
-        controlPipeThread = std::jthread{ IPCCommunication, pSvc, &pm };
+        // Start named pipe action RPC server (active threaded)
+        auto pActionServer = std::make_unique<ActionServer>(pSvc, &pm, opt.controlPipe.AsOptional());
 
         try {
             gpuTelemetryThread = std::jthread{ PowerTelemetry, pSvc, &pm, &ptc, pComms.get() };

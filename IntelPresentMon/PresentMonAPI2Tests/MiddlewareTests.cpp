@@ -1,5 +1,4 @@
 #include "CppUnitTest.h"
-#include "../PresentMonUtils/PresentMonNamedPipe.h"
 #include "../PresentMonMiddleware/FrameEventQuery.h"
 #include "../PresentMonMiddleware/MockMiddleware.h"
 

@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ActionClient.h" />
     <ClInclude Include="ConcreteMiddleware.h" />
     <ClInclude Include="DynamicQuery.h" />
-    <ClInclude Include="Exception.h" />
     <ClInclude Include="FrameEventQuery.h" />
     <ClInclude Include="LogSetup.h" />
     <ClInclude Include="Middleware.h" />
@@ -22,7 +22,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConcreteMiddleware.cpp" />
-    <ClCompile Include="Exception.cpp" />
     <ClCompile Include="FrameEventQuery.cpp" />
     <ClCompile Include="LogSetup.cpp" />
     <ClCompile Include="MockMiddleware.cpp" />
@@ -36,6 +35,9 @@
     </ProjectReference>
     <ProjectReference Include="..\PresentMonAPIWrapperCommon\PresentMonAPIWrapperCommon.vcxproj">
       <Project>{2b343210-86ab-4153-9a6c-945e4af54c7c}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\PresentMonService\PresentMonService.vcxproj">
+      <Project>{3a848e5b-a376-4a22-bbac-e9b3c01bd385}</Project>
     </ProjectReference>
     <ProjectReference Include="..\PresentMonUtils\PresentMonUtils.vcxproj">
       <Project>{66e9f6c5-28db-4218-81b9-31e0e146ecc0}</Project>

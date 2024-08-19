@@ -11,6 +11,7 @@ namespace pmon::util::log
 	class NamedPipeMarshallSender : public IEntryMarshallSender, public IIdentificationSink
 	{
 	public:
+		struct EmptyHeader {};
 		NamedPipeMarshallSender(const std::string& pipeName, size_t nInstances = 12);
         ~NamedPipeMarshallSender();
         void Push(const Entry& entry) override;
