@@ -365,11 +365,8 @@ static void ReportMetrics(
             pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedMouseClickTime, p->ScreenTime);
         metrics.mClickToPhotonLatency = p->MouseClickTime == 0 ? updatedInputTime : pmSession.TimestampDeltaToUnsignedMilliSeconds(p->MouseClickTime, p->ScreenTime);
 
-        metrics.mXformTransform = p->XFormClickTime != 0 ? p->XFormClickTime : chain->mLastReceivedNotDisplayedXformTime;
-
         chain->mLastReceivedNotDisplayedAllInputTime = 0;
         chain->mLastReceivedNotDisplayedMouseClickTime = 0;
-        chain->mLastReceivedNotDisplayedXformTime = 0;
 
     } else {
         metrics.mDisplayLatency       = 0;
@@ -377,15 +374,11 @@ static void ReportMetrics(
         metrics.mAnimationError       = 0;
         metrics.mClickToPhotonLatency = 0;
         metrics.mAllInputPhotonLatency = 0;
-        metrics.mXformTransform = 0;
         if (p->InputTime != 0) {
             chain->mLastReceivedNotDisplayedAllInputTime = p->InputTime;
         }
         if (p->MouseClickTime != 0) {
             chain->mLastReceivedNotDisplayedMouseClickTime = p->MouseClickTime;
-        }
-        if (p->XFormClickTime != 0) {
-            chain->mLastReceivedNotDisplayedXformTime = p->XFormClickTime;
         }
     }
 

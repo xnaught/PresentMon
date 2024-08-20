@@ -60,7 +60,6 @@ PresentEvent::PresentEvent()
     , ScreenTime(0)
     , InputTime(0)
     , MouseClickTime(0)
-    , XFormClickTime(0)
     , SwapChainAddress(0)
     , SyncInterval(-1)
     , PresentFlags(0)
@@ -1482,7 +1481,7 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
             auto hWnd = desc[0].GetData<uint64_t>();
 
             // Check to see if have received a OnInputXformUpdate_Info
-            // message using the passed in hwnd.
+            // message using hwnd event data.
             uint64_t xFormValue = 0;
             auto it = mReceivedMouseClickByHwnd.find(hWnd);
             if (it != mReceivedMouseClickByHwnd.end()) {
@@ -1502,11 +1501,17 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
                     ii->second.Time = mLastInputDeviceReadTime;
                     ii->second.Type = mLastInputDeviceType;
                     if (mLastInputDeviceType == InputDeviceType::Mouse) {
-                        if (ii->second.XFormTime == 0) {
-                            ii->second.XFormTime = xFormValue;
-                        }
-                        if (ii->second.MouseClickTime == 0) {
-                            ii->second.MouseClickTime = mLastInputDeviceReadTime;
+                        if (mLastInputDeviceReadTime >= ii->second.MouseClickTime) {
+                            // If the time from the last mouse click time to this input
+                            // is greater than 1500000 ticks then we assume this is a mouse
+                            // click down and record the time. If the user happens to be
+                            // holding down the mouse button this could be incorrect. In addition
+                            // if we now have a xform time when we previously didn't then record
+                            // the time.
+                            if (mLastInputDeviceReadTime - ii->second.MouseClickTime > 1500000) {
+                                ii->second.MouseClickTime = mLastInputDeviceReadTime;
+                                ii->second.XFormTime = xFormValue;
+                            }
                         }
                     }
                 }
@@ -2125,14 +2130,11 @@ void PMTraceConsumer::TrackPresent(
             present->InputType = ii->second.Type;
             if (ii->second.MouseClickTime != 0 && ii->second.XFormTime != 0) {
                 present->MouseClickTime = ii->second.MouseClickTime;
-                present->XFormClickTime = ii->second.XFormTime;
             } else {
                 present->MouseClickTime = 0;
-                present->XFormClickTime = 0;
             }
             ii->second.Type = InputDeviceType::None;
             ii->second.XFormTime = 0;
-            ii->second.MouseClickTime = 0;
             mReceivedMouseClickByHwnd[ii->second.hWnd] = 0;
         }
     }

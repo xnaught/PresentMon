@@ -103,7 +103,6 @@ struct FrameMetrics {
     double mAnimationError;
     double mClickToPhotonLatency;
     double mAllInputPhotonLatency;
-    uint64_t mXformTransform;
 };
 
 struct FrameMetrics1 {
@@ -139,7 +138,6 @@ struct SwapChainData {
     // to the Present() being dropped
     uint64_t mLastReceivedNotDisplayedAllInputTime;
     uint64_t mLastReceivedNotDisplayedMouseClickTime;
-    uint64_t mLastReceivedNotDisplayedXformTime;
 
     // Whether to include frame data in the next PresentEvent's FrameMetrics.
     bool mIncludeFrameData = true;

@@ -166,7 +166,6 @@ struct PresentEvent {
     uint64_t ScreenTime;        // QPC value when the present was displayed on screen
     uint64_t InputTime;         // Earliest QPC value when the keyboard/mouse were tapped/moved and used by this frame
     uint64_t MouseClickTime;    // Earliest QPC value when the mouse was clicked and used by this frame
-    uint64_t XFormClickTime;    // TEST - to see what this timestamp does
 
     // Extra present parameters obtained through DXGI or D3D9 present
     uint64_t SwapChainAddress;

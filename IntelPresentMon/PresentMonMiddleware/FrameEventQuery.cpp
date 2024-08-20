@@ -647,7 +647,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_DISPLAY_LATENCY:
 		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::ScreenTime, 1>>(pos);
 	case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
-		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::InputTime, &Pre::ScreenTime, 1, 1, 0>>(pos);
+		return std::make_unique<QpcDifferenceGatherCommand_<&Pre::MouseClickTime, &Pre::ScreenTime, 1, 1, 0>>(pos);
 
 	default:
 		pmlog_error("unknown metric id").pmwatch((int)q.metric).diag();

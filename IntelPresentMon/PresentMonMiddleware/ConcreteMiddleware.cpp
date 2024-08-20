@@ -608,7 +608,7 @@ void ReportMetrics(
             chain->mAppDisplayedTime.back() += metrics.mDisplayedTime;
         }
 
-        if (p->InputTime) {
+        if (p->MouseClickTime) {
             chain->mClickToPhotonLatency.push_back(metrics.mClickToPhotonLatency);
         }
 
