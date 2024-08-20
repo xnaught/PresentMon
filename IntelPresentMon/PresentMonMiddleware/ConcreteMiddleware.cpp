@@ -27,6 +27,7 @@
 #include "FrameEventQuery.h"
 #include "../CommonUtilities/mt/Thread.h"
 #include "../CommonUtilities/log/Log.h"
+#include "../CommonUtilities/Qpc.h"
 
 #include "../CommonUtilities/log/GlogShim.h"
 
@@ -660,6 +661,7 @@ void ReportMetrics(
         
         PmNsmFrameData* frame_data = GetFrameDataStart(client, index, SecondsDeltaToQpc(pQuery->metricOffsetMs/1000., client->GetQpcFrequency()), *queryToFrameDataDelta, adjusted_window_size_in_ms);
         if (frame_data == nullptr) {
+            pmlog_warn("Filling cached data in dynamic metric poll due to nullptr from GetFrameDataStart").diag();
             CopyMetricCacheToBlob(pQuery, processId, pBlob);
             return;
         }
@@ -1216,6 +1218,7 @@ void ReportMetrics(
             if (window_sample_size_in_ms <= 0.0) {
                 return nullptr;
             }
+            pmlog_dbg("Adjusting dynamic stats window due to possible excursion").pmwatch(ms_adjustment);
         }
         else {
             // Find the frame with the appropriate time based on the adjusted
@@ -1509,6 +1512,8 @@ void ReportMetrics(
             auto numFrames = (uint32_t)swapChain.mCPUBusy.size();
             if ((swapChain.display_count <= 1) && (numFrames == 0)) {
                 useCache = true;
+                pmlog_warn("Filling cached data in dynamic metric poll")
+                    .pmwatch(numFrames).pmwatch(swapChain.display_count).diag();
                 break;
             }
 
