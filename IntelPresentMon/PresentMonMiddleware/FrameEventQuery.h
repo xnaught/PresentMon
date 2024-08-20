@@ -42,6 +42,8 @@ public:
 		uint64_t previousDisplayedQpc = 0;
 		// Screen time qpc of the next displayed frame
 		uint64_t nextDisplayedQpc = 0;
+		// Click time qpc of non displayed frame
+		uint64_t lastReceivedNotDisplayedClickQpc = 0;
 	};
 	// functions
 	PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements);
