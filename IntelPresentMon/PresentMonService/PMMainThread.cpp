@@ -38,10 +38,13 @@ void EventFlushThreadEntry_(Service* const srv, PresentMon* const pm)
 
     // outer dormant loop waits for either start of process tracking or service exit
     while (true) {
+        pmlog_verb(v::etwq)("Begin idle ETW flush wait");
         // if event index 0 is signalled that means we are stopping
         if (*win::WaitAnyEvent(srv->GetServiceStopHandle(), pm->GetStreamingStartHandle()) == 0) {
+            pmlog_dbg("exiting ETW flush thread due to stop handle");
             return;
         }
+        pmlog_verb(v::etwq)("Entering ETW flush inner active loop");
         // otherwise we assume streaming has started and we begin the flushing loop, checking for stop signal
         while (!win::WaitAnyEventFor(0s, srv->GetServiceStopHandle())) {
             // use interval wait to time flushes as a fixed cadence
@@ -50,16 +53,18 @@ void EventFlushThreadEntry_(Service* const srv, PresentMon* const pm)
             // go dormant if there are no active streams left
             // TODO: GetActiveStreams is not technically thread-safe, reconsider fixing this stuff in Service
             if (pm->GetActiveStreams() == 0) {
+                pmlog_dbg("ETW flush loop entering dormancy due to 0 active streams");
                 break;
             }
             // check to see if manual flush is enabled
-            if (auto flushPeriod = pm->GetEtwFlushPeriod()) {
+            if (auto flushPeriodMs = pm->GetEtwFlushPeriod()) {
                 // flush events manually to reduce latency
-                pmlog_verb(v::etwq)("Manual ETW flush");
+                pmlog_verb(v::etwq)("Manual ETW flush").pmwatch(*flushPeriodMs);
                 pm->FlushEvents();
-                currentInterval = *flushPeriod;
+                currentInterval = double(*flushPeriodMs) / 1000.;
             }
             else {
+                pmlog_verb(v::etwq)("Detected disabled ETW flush, using idle poll period");
                 currentInterval = disabledInterval;
             }
         }
