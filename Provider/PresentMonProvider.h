@@ -79,3 +79,45 @@ ULONG PresentMonProvider_FlipFrameType(PresentMonProvider* ctxt,
                                        uint32_t layerIndex,
                                        uint64_t presentId,
                                        PresentMonProvider_FrameType frameType);
+
+
+// MEASURED INPUT/PHOTON LATENCY
+//
+// These provide times associated with user input and monitor updates that were measured using some
+// external method which can be used to include hardware latency within the input and display
+// devices as part of PresentMon's latency calculations.
+//
+// Try to call PresentMonProvider_Measured*() as quickly as possible after the measurment is
+// available.  If PresentMon doesn't observe the measured data after waiting for some period, it may
+// flush out it's SW-measured values instead.
+//
+// Input/display times are provided as QueryPerformanceCounter (QPC) values.  Special care must be
+// taken to correlate the measurement device's measured time with the PC's QPC as closely as
+// possible.
+
+enum PresentMonProvider_InputType {
+    PresentMonProvider_Input_NotSpecified   = 0,
+    PresentMonProvider_Input_MouseClick     = 1 << 0,
+    PresentMonProvider_Input_KeyboardClick  = 1 << 1,
+};
+
+ULONG PresentMonProvider_MeasuredInput(PresentMonProvider* ctxt,
+                                       PresentMonProvider_InputType inputType,
+                                       uint64_t inputQPCTime);
+
+ULONG PresentMonProvider_MeasuredScreenChange(PresentMonProvider* ctxt,
+                                              uint64_t screenQPCTime);
+
+// GRAPHICS APPLICATION FRAME INFORMATION
+
+ULONG PresentMonProvider_Application_FrameStart(PresentMonProvider* ctxt);
+
+ULONG PresentMonProvider_Application_ReceivedInput(PresentMonProvider* ctxt,
+                                                   PresentMonProvider_InputType inputType);
+
+ULONG PresentMonProvider_Application_SimulationTime(PresentMonProvider* ctxt,
+                                                    uint64_t expectedScreenQPCTime);
+
+ULONG PresentMonProvider_Application_WaitableObjectBegin(PresentMonProvider* ctxt);
+
+ULONG PresentMonProvider_Application_WaitableObjectEnd(PresentMonProvider* ctxt);

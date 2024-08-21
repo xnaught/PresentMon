@@ -17,17 +17,33 @@ namespace {
 static GUID const ProviderGUID = { 0xecaa4712, 0x4644, 0x442f, { 0xb9, 0x4c, 0xa3, 0x2f, 0x6c, 0xf8, 0xa4, 0x99 }};
 
 enum {
-    ID_PresentFrameType = 1,
-    ID_FlipFrameType    = 2,
+    ID_PresentFrameType         = 1,
+    ID_FlipFrameType            = 2,
+    ID_MeasuredInput            = 10,
+    ID_MeasuredScreenChange     = 11,
+    ID_AppFrameStart            = 20,
+    ID_AppReceivedInput         = 21,
+    ID_AppSimulationTime        = 22,
+    ID_AppWaitableObjectBegin   = 23,
+    ID_AppWaitableObjectEnd     = 24,    
 };
 
 enum {
-    Keyword_FrameTypes = 1 << 0,
+    Keyword_FrameTypes      = 1 << 0,
+    Keyword_Measurements    = 1 << 1,
+    Keyword_Application     = 1 << 2,
 };
 
 enum Event {
     Event_PresentFrameType,
     Event_FlipFrameType,
+    Event_MeasuredInput,
+    Event_MeasuredScreenChange,
+    Event_AppFrameStart,
+    Event_AppReceivedInput,
+    Event_AppSimulationTime,
+    Event_AppWaitableObjectBegin,
+    Event_AppWaitableObjectEnd,    
     Event_Count
 };
 
@@ -35,8 +51,15 @@ enum Event {
 // and would need to be updated if you extend this to use other levels.
 static EVENT_DESCRIPTOR const EventDescriptor[] = {
     // ID, Version, Channel, Level, Opcode, Task, Keyword
-    { ID_PresentFrameType, 0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_PresentFrameType, Keyword_FrameTypes },
-    { ID_FlipFrameType,    0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_FlipFrameType,    Keyword_FrameTypes },
+    { ID_PresentFrameType,       0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_PresentFrameType,       Keyword_FrameTypes },
+    { ID_FlipFrameType,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_FlipFrameType,          Keyword_FrameTypes },
+    { ID_MeasuredInput,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_MeasuredInput,          Keyword_Measurements },
+    { ID_MeasuredScreenChange,   0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_MeasuredScreenChange,   Keyword_Measurements },
+    { ID_AppFrameStart,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppFrameStart,          Keyword_Application },
+    { ID_AppReceivedInput,       0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppReceivedInput,       Keyword_Application },
+    { ID_AppSimulationTime,      0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSimulationTime,      Keyword_Application },
+    { ID_AppWaitableObjectBegin, 0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppWaitableObjectBegin, Keyword_Application },
+    { ID_AppWaitableObjectEnd,   0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppWaitableObjectEnd,   Keyword_Application },    
 };
 
 static_assert(Event_Count == _countof(EventDescriptor), "Event enum and EventDescriptor size mismatch");
@@ -230,3 +253,65 @@ ULONG PresentMonProvider_FlipFrameType(
                                                  (uint8_t) frameType);
 }
 
+ULONG PresentMonProvider_MeasuredInput(
+    PresentMonProvider* ctxt,
+    PresentMonProvider_InputType inputType,
+    uint64_t inputQPCTime)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+    PRESENTMONPROVIDER_ASSERT(IsValid(inputType));
+
+    return WriteEvent(ctxt, Event_MeasuredInput, inputQPCTime,
+                                                 (uint8_t) inputType);
+}
+
+ULONG PresentMonProvider_MeasuredScreenChange(
+    PresentMonProvider* ctxt,
+    uint64_t screenQPCTime)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_MeasuredScreenChange, screenQPCTime);
+}
+
+ULONG PresentMonProvider_Application_FrameStart(PresentMonProvider* ctxt)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppFrameStart);
+}
+
+ULONG PresentMonProvider_Application_ReceivedInput(
+    PresentMonProvider* ctxt,
+    PresentMonProvider_InputType inputType)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+    PRESENTMONPROVIDER_ASSERT(IsValid(inputType));
+
+    return WriteEvent(ctxt, Event_AppReceivedInput, inputType);
+}
+
+ULONG PresentMonProvider_Application_SimulationTime(
+    PresentMonProvider* ctxt,
+    uint64_t expectedScreenQPCTime)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppSimulationTime, expectedScreenQPCTime);
+}
+
+ULONG PresentMonProvider_Application_WaitableObjectBegin(
+    PresentMonProvider* ctxt)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppWaitableObjectBegin);
+}
+
+ULONG PresentMonProvider_Application_WaitableObjectEnd(
+    PresentMonProvider* ctxt)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppWaitableObjectEnd);
+}
