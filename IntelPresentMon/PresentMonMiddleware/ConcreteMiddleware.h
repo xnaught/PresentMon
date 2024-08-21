@@ -51,6 +51,7 @@ namespace pmon::mid
         std::vector<double> mAppDisplayedTime;
 		std::vector<double> mAnimationError;
         std::vector<double> mClickToPhotonLatency;
+		std::vector<double> mAllInputToPhotonLatency;
         std::vector<double> mDropped;
 
 		// QPC of last received input data that did not make it to the screen due 

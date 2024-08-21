@@ -137,7 +137,8 @@ namespace p2c::pmon
                 if (metricId == PM_METRIC_DISPLAYED_TIME ||
                     metricId == PM_METRIC_DISPLAY_LATENCY ||
                     metricId == PM_METRIC_ANIMATION_ERROR ||
-                    metricId == PM_METRIC_CLICK_TO_PHOTON_LATENCY) {
+                    metricId == PM_METRIC_CLICK_TO_PHOTON_LATENCY ||
+                    metricId == PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY) {
                     flags |= Annotation_::FLAG_NAN_MEANS_NOT_AVAILABLE;
                 }
 
