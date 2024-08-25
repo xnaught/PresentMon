@@ -108,7 +108,7 @@ export function makeDefaultPreferences(): Preferences {
 
 export const signature: Signature = {
     code: "p2c-cap-pref",
-    version: "0.17.0",
+    version: "0.18.0",
 };
 
 export interface PreferenceFile {
@@ -140,6 +140,15 @@ const migrations: Migration[] = [
             console.info(`Migrating preferences to 0.17.0; samplingPeriodMs:${(prefs as any).samplingPeriodMs} => metricPollRate:${pollRate}, samplesPerFrame:${(prefs as any).samplesPerFrame} => overlayDrawRate:${drawRate}`);
             prefs.metricPollRate = pollRate;
             prefs.overlayDrawRate = drawRate;
+        }
+    },
+    {
+        version: '0.18.0',
+        migrate: (prefs: Preferences) => {
+            console.info('Migrating preferences to 0.18.0 (manualEtwFlush enable/rate)');
+            const def = makeDefaultPreferences();
+            prefs.manualEtwFlush = def.manualEtwFlush;
+            prefs.etwFlushPeriod = def.etwFlushPeriod;
         }
     },
 ];
