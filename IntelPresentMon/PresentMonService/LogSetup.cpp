@@ -11,6 +11,8 @@
 #include "../CommonUtilities/log/ErrorCodeResolvePolicy.h"
 #include "../CommonUtilities/log/ErrorCodeResolver.h"
 #include "../CommonUtilities/log/ChannelFlusher.h"
+#include "../CommonUtilities/log/NamedPipeMarshallSender.h"
+#include "../CommonUtilities/log/MarshallDriver.h"
 #include "../CommonUtilities/win/HrErrorCodeProvider.h"
 #include "../CommonUtilities/str/String.h"
 #include "../CommonUtilities/Exception.h"
@@ -80,6 +82,18 @@ namespace logsetup
 				auto fullPath = std::format("{0}\\pmsvc-log-{1:%y}{1:%m}{1:%d}-{1:%H}{1:%M}{1:%OS}.txt", *opt.logDir, now);
 				pChannel->AttachComponent(std::make_shared<BasicFileDriver>( std::make_shared<TextFormatter>(),
 					std::make_shared<SimpleFileStrategy>(fullPath)), "drv:file");
+			}
+			// setup ipc logging connection for clients
+			if (!opt.disableIpcLog) {
+				try {
+					auto pSender = std::make_shared<NamedPipeMarshallSender>(*opt.logPipeName, 1);
+					log::IdentificationTable::RegisterSink(pSender);
+					auto pDriver = std::make_shared<log::MarshallDriver>(pSender);
+					pChannel->AttachComponent(std::move(pDriver));
+				}
+				catch (...) {
+					pmlog_panic_(ReportException());
+				}
 			}
 		}
 		catch (...) {

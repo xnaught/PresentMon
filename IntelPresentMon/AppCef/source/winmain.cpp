@@ -5,6 +5,7 @@
 #include "../resource.h"
 #include <Core/source/infra/Logging.h>
 #include <Core/source/infra/LogSetup.h>
+#include <PresentMonService/GlobalIdentifiers.h>
 #include <Core/source/infra/util/FolderResolver.h>
 #include <Core/source/cli/CliOptions.h>
 #include <CommonUtilities/log/IdentificationTable.h>
@@ -248,6 +249,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
                 pmlog_error("timeout waiting for child service control pipe to go online");
                 return -1;
             }
+            // connect to service's log pipe
+            ConnectToLoggingSourcePipe(pmon::gid::defaultLogPipeBaseName, 0);
         }
 
         using namespace client;

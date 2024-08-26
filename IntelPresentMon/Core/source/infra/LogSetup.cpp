@@ -9,6 +9,9 @@
 #include <CommonUtilities/log/LinePolicy.h>
 #include <CommonUtilities/log/ErrorCodeResolvePolicy.h>
 #include <CommonUtilities/log/ErrorCodeResolver.h>
+#include <CommonUtilities/mt/Thread.h>
+#include <CommonUtilities/log/NamedPipeMarshallReceiver.h>
+#include <CommonUtilities/log/EntryMarshallInjector.h>
 #include <CommonUtilities/win/WinAPI.h>
 #include <CommonUtilities/win/HrErrorCodeProvider.h>
 #include <CommonUtilities/str/String.h>
@@ -157,6 +160,38 @@ namespace p2c
 			pmlog_panic_(ReportException());
 		}
 	}
+
+	void ConnectToLoggingSourcePipe(const std::string& pipePrefix, int count)
+	{
+		mt::Thread{ "logconn-" + pipePrefix, count, [pipePrefix] {
+			try {
+				// wait maximum 1.5sec for pipe to be created
+				if (!pipe::DuplexPipe::WaitForAvailability(R"(\\.\pipe\)" + pipePrefix, 1500)) {
+					pmlog_warn(std::format("Failed to connect to logging source server {} after waiting 1.5s", pipePrefix));
+					return;
+				}
+				// retry connection maximum 3 times, every 16ms
+				const int nAttempts = 3;
+				for (int i = 0; i < nAttempts; i++) {
+					try {
+						auto pChan = log::GetDefaultChannel();
+						auto pReceiver = std::make_shared<NamedPipeMarshallReceiver>(pipePrefix, log::IdentificationTable::GetPtr());
+						auto pInjector = std::make_shared<EntryMarshallInjector>(pChan, std::move(pReceiver));
+						pChan->AttachComponent(std::move(pInjector));
+						return;
+					}
+					catch (const pipe::PipeError&) {
+						std::this_thread::sleep_for(16ms);
+					}
+				}
+				pmlog_warn(std::format("Failed to connect to logging source server {} after {} attempts", pipePrefix, nAttempts));
+			}
+			catch (...) {
+				pmlog_error(ReportException());
+			}
+		} }.detach();
+	}
+
 	LogChannelManager::LogChannelManager() noexcept
 	{
 		InstallSehTranslator();
