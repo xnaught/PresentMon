@@ -101,6 +101,7 @@ struct FrameMetrics {
     double mDisplayedTime;
     double mAnimationError;
     double mClickToPhotonLatency;
+    uint64_t mScreenTime;
 
     FrameType mFrameType;
 
@@ -117,6 +118,7 @@ struct FrameMetrics1 {
     double msGPUDuration;
     double msVideoDuration;
     double msSinceInput;
+    uint64_t qpcScreenTime;
 };
 
 // We store SwapChainData per process and per swapchain, where we maintain:

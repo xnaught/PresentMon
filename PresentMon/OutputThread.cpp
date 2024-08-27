@@ -270,6 +270,7 @@ static void ReportMetrics1(
     metrics.msGPUDuration          = pmSession.TimestampDeltaToMilliSeconds(p->GPUDuration);
     metrics.msVideoDuration        = pmSession.TimestampDeltaToMilliSeconds(p->GPUVideoDuration);
     metrics.msSinceInput           = p->InputTime == 0 ? 0 : pmSession.TimestampDeltaToMilliSeconds(p->PresentStartTime - p->InputTime);
+    metrics.qpcScreenTime          = screenTime;
 
     if (isRecording) {
         UpdateCsv(pmSession, processInfo, *p, metrics);
@@ -374,9 +375,11 @@ static void ReportMetricsHelper(
         if (displayed) {
             metrics.mDisplayLatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, screenTime);
             metrics.mDisplayedTime  = pmSession.TimestampDeltaToUnsignedMilliSeconds(screenTime, nextScreenTime);
+            metrics.mScreenTime     = screenTime;
         } else {
             metrics.mDisplayLatency = 0;
             metrics.mDisplayedTime  = 0;
+            metrics.mScreenTime     = 0;
         }
 
         if (displayed && displayIndex == appIndex && p->InputTime != 0) {

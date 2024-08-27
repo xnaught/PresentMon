@@ -239,16 +239,12 @@ void WriteCsvRow<FrameMetrics1>(
         break;
     }
     if (args.mWriteDisplayTime) {
-        // NA
-        fwprintf(fp, L",NA");
-        /*
-        if (p.ScreenTime == 0) {
+        if (metrics.qpcScreenTime == 0) {
             fwprintf(fp, L",NA");
         }
         else {
-            fwprintf(fp, L",%.*lf", DBL_DIG - 1, 0.001 * pmSession.TimestampToMilliSeconds(p.ScreenTime));
+            fwprintf(fp, L",%.*lf", DBL_DIG - 1, 0.001 * pmSession.TimestampToMilliSeconds(metrics.qpcScreenTime));
         }
-        */
     }
     if (args.mWriteFrameId) {
         fwprintf(fp, L",%u", p.FrameId);
@@ -392,16 +388,12 @@ void WriteCsvRow<FrameMetrics>(
         }
     }
     if (args.mWriteDisplayTime) {
-        // NA
-        fwprintf(fp, L",NA");
-        /*
-        if (p.ScreenTime == 0) {
+        if (metrics.mScreenTime == 0) {
             fwprintf(fp, L",NA");
         }
         else {
-            fwprintf(fp, L",%.4lf", pmSession.TimestampToMilliSeconds(p.ScreenTime));
+            fwprintf(fp, L",%.4lf", pmSession.TimestampToMilliSeconds(metrics.mScreenTime));
         }
-        */
     }
     if (args.mWriteFrameId) {
         fwprintf(fp, L",%u", p.FrameId);
