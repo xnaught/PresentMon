@@ -3,6 +3,7 @@
 #include "IdentificationTable.h"
 #include <string>
 #include <memory>
+#include <semaphore>
 
 namespace pmon::util::log
 {
@@ -18,8 +19,8 @@ namespace pmon::util::log
 		void AddThread(uint32_t tid, uint32_t pid, std::string name) override;
 		void AddProcess(uint32_t pid, std::string name) override;
 		bool WaitForConnection(std::chrono::duration<float> timeout = std::chrono::duration<float>{ 0.f }) noexcept override;
-
 	private:
 		std::shared_ptr<void> pNamedPipe_;
+		std::binary_semaphore constructionSema_{ 0 };
 	};
 }

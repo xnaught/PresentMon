@@ -8,6 +8,7 @@
 #include "../mt/Thread.h"
 #include "../win/Event.h"
 #include <sstream>
+#include <ranges>
 #include "EntryCereal.h"
 #include <cereal/archives/binary.hpp>
 #include <concurrentqueue/concurrentqueue.h>
@@ -23,13 +24,11 @@ namespace pmon::util::log
 	class NamedPipe
 	{
 	public:
-		NamedPipe(const std::string& pipeSuffix, size_t nInstances)
+		NamedPipe(const std::string& pipeSuffix)
 			:
 			pipeAddress_{ R"(\\.\pipe\)" + pipeSuffix },
 			entryEvent_{ ioctx_, win::Event{ false }.Release() }
-		{
-			ioThread_ = mt::Thread{ "log-snd", &NamedPipe::IoThreadProcedure_, this };
-		}
+		{}
 		~NamedPipe()
 		{
 			using namespace std::chrono_literals;
@@ -59,14 +58,20 @@ namespace pmon::util::log
 				return true;
 			}
 		}
+		void Run()
+		{
+			try {
+				pipe::as::co_spawn(ioctx_, ConnectionAcceptor_(), pipe::as::detached);
+				pipe::as::co_spawn(ioctx_, EventHandler_(), pipe::as::detached);
+				ioctx_.run();
+			}
+			catch (...) {
+				deactivated_ = true;
+				pmlog_error(ReportException());
+			}
+		}
 	private:
 		// function
-		void IoThreadProcedure_()
-		{
-			pipe::as::co_spawn(ioctx_, ConnectionAcceptor_(), pipe::as::detached);
-			pipe::as::co_spawn(ioctx_, EventHandler_(), pipe::as::detached);
-			ioctx_.run();
-		}
 		pipe::as::awaitable<void> EventHandler_()
 		{
 			try {
@@ -95,7 +100,6 @@ namespace pmon::util::log
 			}
 			catch (...) {
 				deactivated_ = true;
-				ioctx_.stop();
 				pmlog_error(ReportException());
 			}
 		}
@@ -128,13 +132,21 @@ namespace pmon::util::log
 		std::unordered_set<std::shared_ptr<pipe::DuplexPipe>> pipePtrs_;
 		pipe::as::windows::object_handle entryEvent_;
 		win::Event emptyEvent_{ false };
-		mt::Thread ioThread_;
 	};
 
     NamedPipeMarshallSender::NamedPipeMarshallSender(const std::string& pipeName, size_t nInstances)
-		:
-		pNamedPipe_{ std::make_shared<NamedPipe>(pipeName, nInstances) }
-	{}
+	{
+		// there are issues with calling .stop() and subsequently destroying ioctx
+		// for now we will detach the thread and allow it to run independently until process exit,
+		// owning NamedPipe in the detached thread so that ioctx dtor is not called
+		// 
+		mt::Thread{ "log-snd", [&, this] {
+			pNamedPipe_ = std::make_shared<NamedPipe>(pipeName);
+			constructionSema_.release();
+			std::static_pointer_cast<NamedPipe>(pNamedPipe_)->Run();
+		} }.detach();
+		constructionSema_.acquire();
+	}
 
     NamedPipeMarshallSender::~NamedPipeMarshallSender() = default;
 
@@ -164,4 +176,5 @@ namespace pmon::util::log
 			return false;
 		}
 	}
+
 }
