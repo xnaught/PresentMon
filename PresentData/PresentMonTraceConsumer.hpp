@@ -134,6 +134,14 @@ struct InputData {
     uint64_t hWnd;
 };
 
+struct MouseClickData {
+    uint64_t CurrentMouseClickTime;
+    uint64_t CurrentXFormTime;
+    uint64_t LastMouseClickTime;
+    uint64_t LastXFormTime;
+    uint64_t hWnd;
+};
+
 struct PresentFrameTypeEvent {
     uint32_t FrameId;
     FrameType FrameType;
@@ -388,7 +396,7 @@ struct PMTraceConsumer
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByVidPnLayerId;                 // VidPnLayerId -> PresentEvent
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mLastPresentByWindow;                   // HWND -> PresentEvent
 
-    std::unordered_map<uint64_t, uint64_t> mReceivedMouseClickByHwnd;                                   // HWND -> xFormTime
+    std::unordered_map<uint64_t, MouseClickData> mReceivedMouseClickByHwnd;                             // HWND -> MouseClickData
 
     // mGpuTrace tracks work executed on the GPU.
     GpuTrace mGpuTrace;

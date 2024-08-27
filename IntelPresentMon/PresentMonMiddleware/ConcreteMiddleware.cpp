@@ -613,6 +613,10 @@ void ReportMetrics(
             chain->mClickToPhotonLatency.push_back(metrics.mClickToPhotonLatency);
         }
 
+        if (p->InputTime) {
+            chain->mAllInputToPhotonLatency.push_back(metrics.mAllInputPhotonLatency);
+        }
+
         chain->mDisplayLatency.push_back(metrics.mDisplayLatency);
         chain->mDisplayedTime .push_back(metrics.mDisplayedTime);
         chain->mDropped       .push_back(0.0);

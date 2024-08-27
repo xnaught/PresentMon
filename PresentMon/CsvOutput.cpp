@@ -298,9 +298,8 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
                      L",AnimationError");
     }
     if (args.mTrackInput) {
+        fwprintf(fp, L",AllInputToPhotonLatency");
         fwprintf(fp, L",ClickToPhotonLatency");
-        fwprintf(fp, L",AllDevicesPhotonLatency");
-        fwprintf(fp, L",xFormTime");
     }
     if (args.mWriteDisplayTime) {
         fwprintf(fp, L",DisplayTimeAbs");
@@ -383,16 +382,16 @@ void WriteCsvRow<FrameMetrics>(
         }
     }
     if (args.mTrackInput) {
-        if (metrics.mClickToPhotonLatency == 0.0) {
-            fwprintf(fp, L",NA");
-        } else {
-            fwprintf(fp, L",%.4lf", metrics.mClickToPhotonLatency);
-        }
         if (metrics.mAllInputPhotonLatency == 0.0) {
             fwprintf(fp, L",NA");
         }
         else {
             fwprintf(fp, L",%.4lf", metrics.mAllInputPhotonLatency);
+        }
+        if (metrics.mClickToPhotonLatency == 0.0) {
+            fwprintf(fp, L",NA");
+        } else {
+            fwprintf(fp, L",%.4lf", metrics.mClickToPhotonLatency);
         }
     }
     if (args.mWriteDisplayTime) {

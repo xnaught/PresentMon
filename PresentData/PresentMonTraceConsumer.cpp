@@ -1480,37 +1480,35 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
             mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
             auto hWnd = desc[0].GetData<uint64_t>();
 
-            // Check to see if have received a OnInputXformUpdate_Info
-            // message using hwnd event data.
-            uint64_t xFormValue = 0;
-            auto it = mReceivedMouseClickByHwnd.find(hWnd);
-            if (it != mReceivedMouseClickByHwnd.end()) {
-                xFormValue = it->second;
-            }
-
             auto ii = mRetrievedInput.find(hdr.ProcessId);
             if (ii == mRetrievedInput.end()) {
-                uint64_t mouseInputTime = 0;
-                if (mLastInputDeviceType == InputDeviceType::Mouse) {
-                    mouseInputTime = mLastInputDeviceReadTime;
+                InputData data = { mLastInputDeviceReadTime, 0, 0, mLastInputDeviceType, hWnd };
+                auto it = mReceivedMouseClickByHwnd.find(hWnd);
+                if (it != mReceivedMouseClickByHwnd.end()) {
+                    data.MouseClickTime = it->second.CurrentMouseClickTime;
+                    data.XFormTime = it->second.CurrentXFormTime;
+                    it->second.LastMouseClickTime = it->second.CurrentMouseClickTime;
+                    it->second.LastXFormTime = it->second.CurrentXFormTime;
                 }
-                InputData data = { mLastInputDeviceReadTime, mouseInputTime, xFormValue, mLastInputDeviceType, hWnd };
                 mRetrievedInput.emplace(hdr.ProcessId, data);
             } else {
                 if (ii->second.Time < mLastInputDeviceReadTime) {
                     ii->second.Time = mLastInputDeviceReadTime;
                     ii->second.Type = mLastInputDeviceType;
                     if (mLastInputDeviceType == InputDeviceType::Mouse) {
-                        if (mLastInputDeviceReadTime >= ii->second.MouseClickTime) {
+                        auto it = mReceivedMouseClickByHwnd.find(hWnd);
+                        if (it != mReceivedMouseClickByHwnd.end()) {
                             // If the time from the last mouse click time to this input
                             // is greater than 1500000 ticks then we assume this is a mouse
                             // click down and record the time. If the user happens to be
                             // holding down the mouse button this could be incorrect. In addition
                             // if we now have a xform time when we previously didn't then record
                             // the time.
-                            if (mLastInputDeviceReadTime - ii->second.MouseClickTime > 1500000) {
-                                ii->second.MouseClickTime = mLastInputDeviceReadTime;
-                                ii->second.XFormTime = xFormValue;
+                            if (it->second.CurrentMouseClickTime - it->second.LastMouseClickTime > 1500000) {
+                                ii->second.MouseClickTime = it->second.CurrentMouseClickTime;
+                                ii->second.XFormTime = it->second.CurrentXFormTime;
+                                it->second.LastMouseClickTime = it->second.CurrentMouseClickTime;
+                                it->second.LastXFormTime = it->second.CurrentXFormTime;
                             }
                         }
                     }
@@ -1529,8 +1527,21 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
             auto hWnd = desc[0].GetData<uint64_t>();
             auto xFormQPCTime = desc[1].GetData<uint64_t>();
 
-            // Currently no retrieved inputs match this hwnd, store it for later
-            mReceivedMouseClickByHwnd[hWnd] = xFormQPCTime;
+            auto it = mReceivedMouseClickByHwnd.find(hWnd);
+            if (it != mReceivedMouseClickByHwnd.end()) {
+                // Have seen where we get two pairs of InputDeviceRead_Stop
+                // OnInputXformUpdate_Info events back to back and then a
+                // RetrieveInputMessage_Info. As in retrieve check if there is
+                // 1500000 tick gap in an attempt to only capture the mouse down
+                if (mLastInputDeviceReadTime - it->second.LastMouseClickTime > 1500000) {
+                    it->second.CurrentMouseClickTime = mLastInputDeviceReadTime;
+                    it->second.CurrentXFormTime = xFormQPCTime;
+                }
+            }
+            else {
+                MouseClickData data = { mLastInputDeviceReadTime, xFormQPCTime , 0, 0 };
+                mReceivedMouseClickByHwnd.emplace(hWnd, data);
+            }
 
             return;
         }
@@ -2135,7 +2146,6 @@ void PMTraceConsumer::TrackPresent(
             }
             ii->second.Type = InputDeviceType::None;
             ii->second.XFormTime = 0;
-            mReceivedMouseClickByHwnd[ii->second.hWnd] = 0;
         }
     }
 }
