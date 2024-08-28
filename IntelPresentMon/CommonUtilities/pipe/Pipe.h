@@ -86,6 +86,7 @@ namespace pmon::util::pipe
 		void ClearWriteBuffer();
 		static bool WaitForAvailability(const std::string& name, uint32_t timeoutMs, uint32_t pollPeriodMs = 10);
 		uint32_t GetId() const;
+		std::string GetName() const;
 	private:
 		// functions
 		DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle, std::string name);

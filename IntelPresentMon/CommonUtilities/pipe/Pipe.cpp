@@ -75,6 +75,10 @@ namespace pmon::util::pipe
 	{
 		return uid_;
 	}
+	std::string DuplexPipe::GetName() const
+	{
+		return name_;
+	}
 	DuplexPipe::DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle, std::string name)
 		:
 		name_{ std::move(name) },
@@ -191,7 +195,7 @@ namespace pmon::util::pipe
 	void DuplexPipe::TransformError_(const boost::system::error_code& ec)
 	{
 		if (ec) {
-			if (ec == as::error::broken_pipe) {
+			if (ec == as::error::broken_pipe || ec.value() == 232/* Pipe is being closed */) {
 				throw Except<PipeBroken>();
 			}
 			else {
