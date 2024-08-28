@@ -165,8 +165,9 @@ namespace p2c
 	{
 		mt::Thread{ "logconn-" + pipePrefix, count, [pipePrefix] {
 			try {
+				const auto fullPipeName = R"(\\.\pipe\)" + pipePrefix;
 				// wait maximum 1.5sec for pipe to be created
-				if (!pipe::DuplexPipe::WaitForAvailability(R"(\\.\pipe\)" + pipePrefix, 1500)) {
+				if (!pipe::DuplexPipe::WaitForAvailability(fullPipeName, 1500)) {
 					pmlog_warn(std::format("Failed to connect to logging source server {} after waiting 1.5s", pipePrefix));
 					return;
 				}
@@ -178,6 +179,7 @@ namespace p2c
 						auto pReceiver = std::make_shared<NamedPipeMarshallReceiver>(pipePrefix, log::IdentificationTable::GetPtr());
 						auto pInjector = std::make_shared<EntryMarshallInjector>(pChan, std::move(pReceiver));
 						pChan->AttachComponent(std::move(pInjector));
+						pmlog_dbg(std::format("Connected to logpipe [{}]", fullPipeName));
 						return;
 					}
 					catch (const pipe::PipeError&) {
