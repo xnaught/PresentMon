@@ -1512,7 +1512,7 @@ void ReportMetrics(
             auto numFrames = (uint32_t)swapChain.mCPUBusy.size();
             if ((swapChain.display_count <= 1) && (numFrames == 0)) {
                 useCache = true;
-                pmlog_warn("Filling cached data in dynamic metric poll")
+                pmlog_dbg("Filling cached data in dynamic metric poll")
                     .pmwatch(numFrames).pmwatch(swapChain.display_count).diag();
                 break;
             }

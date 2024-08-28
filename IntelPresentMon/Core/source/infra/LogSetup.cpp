@@ -179,7 +179,7 @@ namespace p2c
 						auto pReceiver = std::make_shared<NamedPipeMarshallReceiver>(pipePrefix, log::IdentificationTable::GetPtr());
 						auto pInjector = std::make_shared<EntryMarshallInjector>(pChan, std::move(pReceiver));
 						pChan->AttachComponent(std::move(pInjector));
-						pmlog_dbg(std::format("Connected to logpipe [{}]", fullPipeName));
+						pmlog_info(std::format("Connected to logpipe [{}]", fullPipeName));
 						return;
 					}
 					catch (const pipe::PipeError&) {
