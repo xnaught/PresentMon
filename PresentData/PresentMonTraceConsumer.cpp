@@ -2007,7 +2007,8 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
         mCompletedPresents[index] = present;
     }
 
-    UpdateReadyCount(present);
+    // Update the ready count
+    UpdateReadyCount();
     
     {
         std::unique_lock<std::mutex> lock(mPresentEventMutex);
@@ -2021,8 +2022,10 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
             if (presentStartTime >= deferredPresent->PresentStartTime &&
                 presentStartTime - deferredPresent->PresentStartTime > mDeferralTimeLimit) {
                 VerboseTraceBeforeModifyingPresent(deferredPresent.get());
-                deferredPresent->IsLost = true;
-                deferredPresent->WaitingForPresentStop = false;
+                if (deferredPresent->WaitingForPresentStop) {
+                    deferredPresent->WaitingForPresentStop = false;
+                    deferredPresent->IsLost = true;
+                }
                 deferredPresent->WaitingForFlipFrameType = false;
                 // UpdateReadyCount also locks the mPresentEventMutex so unlock here
                 lock.unlock();

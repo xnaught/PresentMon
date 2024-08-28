@@ -34,10 +34,16 @@ const char* RuntimeToString(Runtime rt)
     }
 }
 
+// If frame type debug is necessary uncomment
+// the following line. If we want to have
+// this based on _DEBUG we will need to double
+// the number of ULT cases.
+// #define DEBUG_FRAME_TYPE
+
 const char* FrameTypeToString(FrameType ft)
 {
     switch (ft) {
-    #ifdef _DEBUG
+    #ifdef DEBUG_FRAME_TYPE
     case FrameType::NotSet:      return "NotSet";
     case FrameType::Repeated:    return "Repeated";
     #else

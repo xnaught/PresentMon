@@ -17,7 +17,6 @@ namespace EtlTests
 		switch (present_mode) {
 		case PM_PRESENT_MODE::PM_PRESENT_MODE_HARDWARE_LEGACY_FLIP:
 			return "Hardware: Legacy Flip";
-
 		case PM_PRESENT_MODE::PM_PRESENT_MODE_HARDWARE_LEGACY_COPY_TO_FRONT_BUFFER:
 			return "Hardware: Legacy Copy to front buffer";
 		case PM_PRESENT_MODE::PM_PRESENT_MODE_HARDWARE_INDEPENDENT_FLIP:
@@ -31,7 +30,7 @@ namespace EtlTests
 		case PM_PRESENT_MODE::PM_PRESENT_MODE_COMPOSED_COPY_WITH_CPU_GDI:
 			return "Composed: Copy with CPU GDI";
 		default:
-			return("Present Mode: Unknown");
+			return("Other");
 		}
 	}
 
@@ -148,6 +147,7 @@ namespace EtlTests
 			{ PM_METRIC_PRESENT_FLAGS, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_ALLOWS_TEARING, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_PRESENT_MODE, PM_STAT_NONE, 0, 0 },
+			{ PM_METRIC_FRAME_TYPE, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_CPU_START_QPC, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_CPU_FRAME_TIME, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_CPU_BUSY, PM_STAT_NONE, 0, 0 },

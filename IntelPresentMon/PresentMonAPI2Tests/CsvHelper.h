@@ -75,6 +75,7 @@ struct v2Metrics {
     uint32_t presentFlags = 0;
     uint32_t allowsTearing = 0;
     PM_PRESENT_MODE presentMode = PM_PRESENT_MODE_UNKNOWN;
+    PM_FRAME_TYPE frameType = PM_FRAME_TYPE_NOT_SET;
     uint64_t cpuFrameQpc = 0;
     double cpuFrameTime = 0.;
     double cpuBusy = 0.;
@@ -242,8 +243,31 @@ void CharConvert<T>::Convert(const std::string data, T& convertedData, Header co
         else if (data == "Hardware Composed: Independent Flip") {
             convertedData = PM_PRESENT_MODE_HARDWARE_COMPOSED_INDEPENDENT_FLIP;
         }
+        else if (data == "Other") {
+            convertedData = PM_PRESENT_MODE_UNKNOWN;
+        }
         else {
             Assert::Fail(CreateErrorString(Header_PresentMode, line).c_str());
+        }
+    }
+    else if constexpr (std::is_same<T, PM_FRAME_TYPE>::value) {
+        if (data == "NotSet") {
+            convertedData = PM_FRAME_TYPE_NOT_SET;
+        }
+        else if (data == "Unspecified") {
+            convertedData = PM_FRAME_TYPE_UNSPECIFIED;
+        }
+        else if (data == "Application") {
+            convertedData = PM_FRAME_TYPE_APPLICATION;
+        }
+        else if (data == "Repeated") {
+            convertedData = PM_FRAME_TYPE_REPEATED;
+        }
+        else if (data == "AMD_AFMF") {
+            convertedData = PM_FRAME_TYPE_AMD_AFMF;
+        }
+        else {
+            Assert::Fail(CreateErrorString(Header_FrameType, line).c_str());
         }
     }
     else
@@ -294,7 +318,7 @@ public:
     bool Open(std::wstring const& path, uint32_t processId);
     void Close();
     bool VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-        PM_QUERY_ELEMENT(&queryElements)[18], pmapi::BlobContainer& blobs);
+        PM_QUERY_ELEMENT(&queryElements)[19], pmapi::BlobContainer& blobs);
     bool ResetCsv();
 
 private:
@@ -323,7 +347,7 @@ CsvParser::CsvParser()
 {}
 
 bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-    PM_QUERY_ELEMENT(&queryElements)[18], pmapi::BlobContainer& blobs)
+    PM_QUERY_ELEMENT(&queryElements)[19], pmapi::BlobContainer& blobs)
 {
 
     for (auto pBlob : blobs) {
@@ -335,18 +359,19 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
         const auto presentFlags = *reinterpret_cast<const uint32_t*>(&pBlob[queryElements[3].dataOffset]);
         const auto allowsTearing = *reinterpret_cast<const bool*>(&pBlob[queryElements[4].dataOffset]);
         const auto presentMode = *reinterpret_cast<const PM_PRESENT_MODE*>(&pBlob[queryElements[5].dataOffset]);
-        const auto cpuFrameQpc = *reinterpret_cast<const uint64_t*>(&pBlob[queryElements[6].dataOffset]);
-        const auto cpuFrameTime = *reinterpret_cast<const double*>(&pBlob[queryElements[7].dataOffset]);
-        const auto cpuBusy = *reinterpret_cast<const double*>(&pBlob[queryElements[8].dataOffset]);
-        const auto cpuWait = *reinterpret_cast<const double*>(&pBlob[queryElements[9].dataOffset]);
-        const auto gpuLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[10].dataOffset]);
-        const auto gpuTime = *reinterpret_cast<const double*>(&pBlob[queryElements[11].dataOffset]);
-        const auto gpuBusy = *reinterpret_cast<const double*>(&pBlob[queryElements[12].dataOffset]);
-        const auto gpuWait = *reinterpret_cast<const double*>(&pBlob[queryElements[13].dataOffset]);
-        const auto displayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[14].dataOffset]);
-        const auto displayedTime = *reinterpret_cast<const double*>(&pBlob[queryElements[15].dataOffset]);
-        const auto animationError = *reinterpret_cast<const double*>(&pBlob[queryElements[16].dataOffset]);
-        const auto clickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[17].dataOffset]);
+        const auto frameType = *reinterpret_cast<const PM_FRAME_TYPE*>(&pBlob[queryElements[6].dataOffset]);
+        const auto cpuFrameQpc = *reinterpret_cast<const uint64_t*>(&pBlob[queryElements[7].dataOffset]);
+        const auto cpuFrameTime = *reinterpret_cast<const double*>(&pBlob[queryElements[8].dataOffset]);
+        const auto cpuBusy = *reinterpret_cast<const double*>(&pBlob[queryElements[9].dataOffset]);
+        const auto cpuWait = *reinterpret_cast<const double*>(&pBlob[queryElements[10].dataOffset]);
+        const auto gpuLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[11].dataOffset]);
+        const auto gpuTime = *reinterpret_cast<const double*>(&pBlob[queryElements[12].dataOffset]);
+        const auto gpuBusy = *reinterpret_cast<const double*>(&pBlob[queryElements[13].dataOffset]);
+        const auto gpuWait = *reinterpret_cast<const double*>(&pBlob[queryElements[14].dataOffset]);
+        const auto displayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[15].dataOffset]);
+        const auto displayedTime = *reinterpret_cast<const double*>(&pBlob[queryElements[16].dataOffset]);
+        const auto animationError = *reinterpret_cast<const double*>(&pBlob[queryElements[17].dataOffset]);
+        const auto clickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[18].dataOffset]);
         
         // Read rows until we find one with the process we are interested in
         // or we are out of data.
@@ -393,6 +418,9 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                 break;
             case Header_PresentMode:
                 columnsMatch = Validate(v2MetricRow_.presentMode, presentMode);
+                break;
+            case Header_FrameType:
+                columnsMatch = Validate(v2MetricRow_.frameType, frameType);
                 break;
             case Header_CPUStartQPC:
                 columnsMatch = Validate(v2MetricRow_.cpuFrameQpc, cpuFrameQpc);
@@ -578,6 +606,7 @@ bool CsvParser::Open(std::wstring const& path, uint32_t processId) {
                                                Header_PresentFlags,
                                                Header_AllowsTearing,
                                                Header_PresentMode,
+                                               Header_FrameType,
                                                Header_CPUStartQPC,
                                                Header_FrameTime,
                                                Header_CPUBusy,
@@ -675,6 +704,12 @@ void CsvParser::ConvertToMetricDataType(const char* data, Header columnId)
     {
         CharConvert<PM_PRESENT_MODE> converter;
         converter.Convert(data, v2MetricRow_.presentMode, columnId, line_);
+    }
+    break;
+    case Header_FrameType:
+    {
+        CharConvert<PM_FRAME_TYPE> converter;
+        converter.Convert(data, v2MetricRow_.frameType, columnId, line_);
     }
     break;
     case Header_CPUStartQPC:

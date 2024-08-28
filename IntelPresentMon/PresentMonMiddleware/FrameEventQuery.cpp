@@ -126,7 +126,11 @@ namespace
 		}
 		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
 		{
-            const auto val = ctx.pSourceFrameData->present_event.Displayed_FrameType[ctx.sourceFrameDisplayIndex];
+            auto val = ctx.pSourceFrameData->present_event.Displayed_FrameType[ctx.sourceFrameDisplayIndex];
+			// Currently not reporting out not set or repeated frames.
+			if (val == FrameType::NotSet || val == FrameType::Repeated) {
+				val = FrameType::Application;
+			}
             reinterpret_cast<std::remove_const_t<decltype(val)>&>(pDestBlob[outputOffset_]) = val;
 		}
 		uint32_t GetBeginOffset() const override
@@ -527,12 +531,17 @@ namespace
 		CpuFrameQpcFrameTimeCommand_(size_t nextAvailableByteOffset) : outputOffset_{ (uint32_t)nextAvailableByteOffset } {}
 		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
 		{
-			const auto cpuBusy = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuStart, ctx.pSourceFrameData->present_event.PresentStartTime,
-				ctx.performanceCounterPeriodMs);
-			const auto cpuWait = TimestampDeltaToMilliSeconds(ctx.pSourceFrameData->present_event.TimeInPresent,
-				ctx.performanceCounterPeriodMs);
+			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
+				const auto cpuBusy = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuStart, ctx.pSourceFrameData->present_event.PresentStartTime,
+					ctx.performanceCounterPeriodMs);
+				const auto cpuWait = TimestampDeltaToMilliSeconds(ctx.pSourceFrameData->present_event.TimeInPresent,
+					ctx.performanceCounterPeriodMs);
 
-			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = cpuBusy + cpuWait;
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = cpuBusy + cpuWait;
+			}
+			else {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+			}
 		}
 		uint32_t GetBeginOffset() const override
 		{
