@@ -137,7 +137,7 @@ namespace p2c
 			// setup server to ipc logging connection for child processes (renderer)
 			if (opt.logPipeName) {
 				try {
-					auto pSender = std::make_shared<log::NamedPipeMarshallSender>(*opt.logPipeName, 1);
+					auto pSender = std::make_shared<log::NamedPipeMarshallSender>(*opt.logPipeName);
 					log::IdentificationTable::RegisterSink(pSender);
 					auto pDriver = std::make_shared<log::MarshallDriver>(pSender);
 					pChan->AttachComponent(std::move(pDriver));

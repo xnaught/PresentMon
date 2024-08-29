@@ -26,8 +26,9 @@ namespace pmon::util::log
 	class NamedPipe
 	{
 	public:
-		NamedPipe(const std::string& pipeSuffix)
+		NamedPipe(const std::string& pipeSuffix, pipe::SecurityMode security)
 			:
+			securityMode_{ security },
 			pipeAddress_{ R"(\\.\pipe\)" + pipeSuffix },
 			entryEvent_{ ioctx_, win::Event{ false }.Release() }
 		{}
@@ -114,7 +115,8 @@ namespace pmon::util::log
 		{
 			try {
 				// create pipe instance
-				std::shared_ptr pPipe = pipe::DuplexPipe::MakeAsPtr(pipeAddress_, ioctx_);
+				std::shared_ptr pPipe = pipe::DuplexPipe::MakeAsPtr(pipeAddress_, ioctx_,
+					pipe::DuplexPipe::GetSecurityString(securityMode_));
 				// wait for a client to connect
 				co_await pPipe->Accept();
 				connectionSema_.release(16);
@@ -131,6 +133,7 @@ namespace pmon::util::log
 			}
 		}
 		// data
+		pipe::SecurityMode securityMode_;
 		std::string pipeAddress_;
 		pipe::as::io_context ioctx_;
 		std::counting_semaphore<> connectionSema_{ 0 };
@@ -141,7 +144,7 @@ namespace pmon::util::log
 		win::Event emptyEvent_{ false };
 	};
 
-    NamedPipeMarshallSender::NamedPipeMarshallSender(const std::string& pipeName, size_t nInstances)
+    NamedPipeMarshallSender::NamedPipeMarshallSender(const std::string& pipeName, pipe::SecurityMode security)
 	{
 		// there are issues with calling .stop() and subsequently destroying ioctx
 		// for now we will detach the thread and allow it to run independently until process exit,
@@ -149,7 +152,7 @@ namespace pmon::util::log
 		// 
 		mt::Thread{ "log-snd", [&, this] {
 			try {
-				pNamedPipe_ = std::make_shared<NamedPipe>(pipeName);
+				pNamedPipe_ = std::make_shared<NamedPipe>(pipeName, security);
 				constructionSema_.release();
 				std::static_pointer_cast<NamedPipe>(pNamedPipe_)->Run();
 			}

@@ -76,6 +76,7 @@
     <ClInclude Include="mt\Thread.h" />
     <ClInclude Include="pipe\CoroMutex.h" />
     <ClInclude Include="pipe\Pipe.h" />
+    <ClInclude Include="pipe\SecurityMode.h" />
     <ClInclude Include="PrecisionWaiter.h" />
     <ClInclude Include="Qpc.h" />
     <ClInclude Include="rng\PairToRange.h" />

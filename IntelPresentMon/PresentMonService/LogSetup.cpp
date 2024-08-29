@@ -60,7 +60,7 @@ namespace logsetup
 	using namespace ::pmon::util;
 	using namespace ::pmon::util::log;
 
-	void ConfigureLogging() noexcept
+	void ConfigureLogging(bool asApp) noexcept
 	{
 		try {
 			// shortcut for command line
@@ -86,7 +86,8 @@ namespace logsetup
 			// setup ipc logging connection for clients
 			if (!opt.disableIpcLog) {
 				try {
-					auto pSender = std::make_shared<NamedPipeMarshallSender>(*opt.logPipeName, 1);
+					auto pSender = std::make_shared<NamedPipeMarshallSender>(*opt.logPipeName,
+						asApp ? pipe::SecurityMode::Child : pipe::SecurityMode::Service);
 					log::IdentificationTable::RegisterSink(pSender);
 					auto pDriver = std::make_shared<log::MarshallDriver>(pSender);
 					pChannel->AttachComponent(std::move(pDriver));

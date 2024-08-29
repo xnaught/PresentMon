@@ -13,5 +13,5 @@ namespace logsetup
 		LogChannelManager& operator=(const LogChannelManager& other) = delete;
 	};
 	// call after command line arguments have been parsed
-	void ConfigureLogging() noexcept;
+	void ConfigureLogging(bool asApp) noexcept;
 }

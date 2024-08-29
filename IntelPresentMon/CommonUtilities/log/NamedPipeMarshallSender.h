@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <semaphore>
+#include "../pipe/SecurityMode.h"
 
 namespace pmon::util::log
 {
@@ -13,7 +14,7 @@ namespace pmon::util::log
 	{
 	public:
 		struct EmptyHeader {};
-		NamedPipeMarshallSender(const std::string& pipeName, size_t nInstances = 12);
+		NamedPipeMarshallSender(const std::string& pipeName, pipe::SecurityMode security = pipe::SecurityMode::None);
         ~NamedPipeMarshallSender();
         void Push(const Entry& entry) override;
 		void AddThread(uint32_t tid, uint32_t pid, std::string name) override;

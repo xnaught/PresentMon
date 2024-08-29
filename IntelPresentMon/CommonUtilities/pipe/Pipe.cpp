@@ -95,6 +95,14 @@ namespace pmon::util::pipe
 	{
 		return name_;
 	}
+	std::string DuplexPipe::GetSecurityString(SecurityMode mode)
+	{
+		switch (mode) {
+		default:case SecurityMode::None: return {};
+		case SecurityMode::Service: return "D:PNO_ACCESS_CONTROLS:(ML;;NW;;;LW)"s;
+		case SecurityMode::Child: return "D:(A;OICI;GA;;;WD)"s;
+		}
+	}
 	DuplexPipe::DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle, std::string name, bool asClient)
 		:
 		name_{ std::move(name) },

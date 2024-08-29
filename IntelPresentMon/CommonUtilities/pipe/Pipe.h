@@ -10,6 +10,7 @@
 #include "../win/Event.h"
 #include "../Exception.h"
 #include "../log/Log.h"
+#include "SecurityMode.h"
 #include <ranges>
 
 namespace pmon::util::pipe
@@ -89,6 +90,7 @@ namespace pmon::util::pipe
 		static bool WaitForAvailability(const std::string& name, uint32_t timeoutMs, uint32_t pollPeriodMs = 10);
 		uint32_t GetId() const;
 		std::string GetName() const;
+		static std::string GetSecurityString(SecurityMode mode);
 	private:
 		// functions
 		DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle, std::string name, bool asClient);

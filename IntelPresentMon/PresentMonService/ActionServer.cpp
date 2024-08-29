@@ -104,11 +104,8 @@ namespace pmon::svc
         }
         std::string GetSecurityString_() const
         {
-            return elevatedSecurity_ ?
-                // for when running as server
-                "D:PNO_ACCESS_CONTROLS:(ML;;NW;;;LW)"s :
-                // for when running as a child process
-                "D:(A;OICI;GA;;;WD)"s;
+            return pipe::DuplexPipe::GetSecurityString(elevatedSecurity_ ?
+                pipe::SecurityMode::Service : pipe::SecurityMode::Child);
         }
         // data
         std::string pipeName_;
