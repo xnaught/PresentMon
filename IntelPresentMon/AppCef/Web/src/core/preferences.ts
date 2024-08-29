@@ -145,10 +145,11 @@ const migrations: Migration[] = [
     {
         version: '0.18.0',
         migrate: (prefs: Preferences) => {
-            console.info('Migrating preferences to 0.18.0 (manualEtwFlush enable/rate)');
+            console.info('Migrating preferences to 0.18.0 (manualEtwFlush enable/rate, lower offset)');
             const def = makeDefaultPreferences();
             prefs.manualEtwFlush = def.manualEtwFlush;
             prefs.etwFlushPeriod = def.etwFlushPeriod;
+            prefs.metricsOffset = def.metricsOffset;
         }
     },
 ];
