@@ -53,14 +53,26 @@ PM_STATUS PresentMonSession::SetGpuTelemetryPeriod(uint32_t period_ms) {
         period_ms > MAX_PM_TELEMETRY_PERIOD) {
         return PM_STATUS::PM_STATUS_OUT_OF_RANGE;
     }
-    else {
-        gpu_telemetry_period_ms_ = period_ms;
-        return PM_STATUS_SUCCESS;
-    }
+    gpu_telemetry_period_ms_ = period_ms;
+    return PM_STATUS_SUCCESS;
 }
 
 uint32_t PresentMonSession::GetGpuTelemetryPeriod() {
     return gpu_telemetry_period_ms_;
+}
+
+PM_STATUS PresentMonSession::SetEtwFlushPeriod(std::optional<uint32_t> periodMs)
+{
+    if (periodMs && (*periodMs < 1 || *periodMs > 1000)) {
+        return PM_STATUS::PM_STATUS_OUT_OF_RANGE;
+    }
+    etw_flush_period_ms_ = periodMs;
+    return PM_STATUS_SUCCESS;
+}
+
+std::optional<uint32_t> PresentMonSession::GetEtwFlushPeriod()
+{
+    return etw_flush_period_ms_;
 }
 
 int PresentMonSession::GetActiveStreams() {

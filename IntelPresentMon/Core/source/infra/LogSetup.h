@@ -11,4 +11,6 @@ namespace p2c
 	};
 	// call after command line arguments have been parsed
 	void ConfigureLogging() noexcept;
+	// call when ready to connect to a logging source (logging pipe server)
+	void ConnectToLoggingSourcePipe(const std::string& pipePrefix, int count);
 }

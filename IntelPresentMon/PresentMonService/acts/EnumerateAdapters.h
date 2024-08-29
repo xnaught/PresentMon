@@ -15,7 +15,7 @@ namespace pmon::svc::acts
 	{
 	public:
 		static constexpr const char* Identifier = STRINGIFY(ACTNAME);
-		struct Params { template<class A> void serialize(A& ar) {} };
+		struct Params {};
 		struct Response
 		{
 			struct Adapter

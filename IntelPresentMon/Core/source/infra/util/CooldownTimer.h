@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
-#include "ChiliTimer.h"
+#include <CommonUtilities/Qpc.h>
 #include <deque>
 
 
@@ -15,7 +15,7 @@ namespace p2c::infra::util
 		void Update();
 		bool ThresholdExceeded() const;
 	private:
-		ChiliTimer timer_;
+		::pmon::util::QpcTimer timer_;
 		std::deque<float> instances_;
 		float period_;
 		size_t threshold_;

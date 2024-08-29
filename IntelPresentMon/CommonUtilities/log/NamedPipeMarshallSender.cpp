@@ -8,6 +8,7 @@
 #include "../mt/Thread.h"
 #include "../win/Event.h"
 #include <sstream>
+#include <ranges>
 #include "EntryCereal.h"
 #include <cereal/archives/binary.hpp>
 #include <concurrentqueue/concurrentqueue.h>
@@ -18,22 +19,22 @@
 
 namespace pmon::util::log
 {
+	namespace rn = std::ranges;
 	namespace vi = std::views;
+	using namespace std::chrono_literals;
 
 	class NamedPipe
 	{
 	public:
-		NamedPipe(const std::string& pipeSuffix, size_t nInstances)
+		NamedPipe(const std::string& pipeSuffix, pipe::SecurityMode security)
 			:
+			securityMode_{ security },
 			pipeAddress_{ R"(\\.\pipe\)" + pipeSuffix },
 			entryEvent_{ ioctx_, win::Event{ false }.Release() }
-		{
-			ioThread_ = mt::Thread{ "log-snd", &NamedPipe::IoThreadProcedure_, this };
-		}
+		{}
 		~NamedPipe()
 		{
-			using namespace std::chrono_literals;
-			deactivated_ = true;
+			Deactivate();
 			// give 50ms max grace period to finish queued work
 			pmquell(win::WaitAnyEventFor(50ms, emptyEvent_));
 			pmquell(ioctx_.stop());
@@ -59,51 +60,63 @@ namespace pmon::util::log
 				return true;
 			}
 		}
-	private:
-		// function
-		void IoThreadProcedure_()
+		void Run()
 		{
 			pipe::as::co_spawn(ioctx_, ConnectionAcceptor_(), pipe::as::detached);
 			pipe::as::co_spawn(ioctx_, EventHandler_(), pipe::as::detached);
 			ioctx_.run();
 		}
+		void Deactivate()
+		{
+			deactivated_ = true;
+		}
+	private:
+		// function
 		pipe::as::awaitable<void> EventHandler_()
 		{
 			try {
+				std::set<uint32_t> pipesToErase;
 				MarshallPacket packet = Entry{};
 				while (true) {
 					co_await entryEvent_.async_wait(pipe::as::use_awaitable);
 					while (entryQueue_.try_dequeue(packet)) {
 						// TODO: add ability to pre-serialize and re-use buffer
 						// for all active pipe connections, set transmission sequence and add to action list
-						for (auto pPipe : pipePtrs_) {
+						for (auto& pPipe : pipePtrs_) {
 							try {
 								co_await pPipe->WritePacket(NamedPipeMarshallSender::EmptyHeader{}, packet);
 							}
 							catch (const pipe::PipeBroken&) {
-								pmlog_dbg("Pipe disconnected by client");
-								pipePtrs_.erase(pPipe);
+								pmlog_dbg(std::format("Log pipe disconnected by client {}:{}",
+									pPipe->GetName(), pPipe->GetId()));
+								pipesToErase.insert(pPipe->GetId());
 							}
 							catch (...) {
-								pmlog_error(ReportException());
-								pipePtrs_.erase(pPipe);
+								pmlog_error(ReportException(std::format("Closing log pipe {}:{} due to exception:",
+									pPipe->GetName(), pPipe->GetId())));
+								pipesToErase.insert(pPipe->GetId());
 							}
+						}
+						// we defer erasing any elements while iterating in rbf-loop, erasing here
+						if (!pipesToErase.empty()) {
+							std::erase_if(pipePtrs_, [&](auto&& pPipe) { return pipesToErase.contains(pPipe->GetId()); });
+							pipesToErase.clear();
 						}
 					}
 					emptyEvent_.Set();
 				}
 			}
 			catch (...) {
-				deactivated_ = true;
-				ioctx_.stop();
-				pmlog_error(ReportException());
+				Deactivate();
+				pmlog_error(ReportException("Log sender event handler coro exiting due to exception"));
 			}
 		}
 		pipe::as::awaitable<void> ConnectionAcceptor_()
 		{
 			try {
 				// create pipe instance
-				std::shared_ptr pPipe = pipe::DuplexPipe::MakeAsPtr(pipeAddress_, ioctx_);
+				std::shared_ptr pPipe = pipe::DuplexPipe::MakeAsPtr(pipeAddress_, ioctx_,
+					pipe::DuplexPipe::GetSecurityString(securityMode_));
 				// wait for a client to connect
 				co_await pPipe->Accept();
 				connectionSema_.release(16);
@@ -116,10 +129,11 @@ namespace pmon::util::log
 				pipePtrs_.insert(pPipe);
 			}
 			catch (...) {
-				pmlog_error("Log sender pipe failed in accepting");
+				pmlog_error(ReportException("Log sender pipe failed in accepting connection"));
 			}
 		}
 		// data
+		pipe::SecurityMode securityMode_;
 		std::string pipeAddress_;
 		pipe::as::io_context ioctx_;
 		std::counting_semaphore<> connectionSema_{ 0 };
@@ -128,13 +142,27 @@ namespace pmon::util::log
 		std::unordered_set<std::shared_ptr<pipe::DuplexPipe>> pipePtrs_;
 		pipe::as::windows::object_handle entryEvent_;
 		win::Event emptyEvent_{ false };
-		mt::Thread ioThread_;
 	};
 
-    NamedPipeMarshallSender::NamedPipeMarshallSender(const std::string& pipeName, size_t nInstances)
-		:
-		pNamedPipe_{ std::make_shared<NamedPipe>(pipeName, nInstances) }
-	{}
+    NamedPipeMarshallSender::NamedPipeMarshallSender(const std::string& pipeName, pipe::SecurityMode security)
+	{
+		// there are issues with calling .stop() and subsequently destroying ioctx
+		// for now we will detach the thread and allow it to run independently until process exit,
+		// owning NamedPipe in the detached thread so that ioctx dtor is not called
+		// 
+		mt::Thread{ "log-snd", [&, this] {
+			try {
+				pNamedPipe_ = std::make_shared<NamedPipe>(pipeName, security);
+				constructionSema_.release();
+				std::static_pointer_cast<NamedPipe>(pNamedPipe_)->Run();
+			}
+			catch (...) {
+				std::static_pointer_cast<NamedPipe>(pNamedPipe_)->Deactivate();
+				pmlog_error(ReportException("Log sender run() thread exiting due to exception"));
+			}
+		} }.detach();
+		constructionSema_.acquire();
+	}
 
     NamedPipeMarshallSender::~NamedPipeMarshallSender() = default;
 
@@ -164,4 +192,5 @@ namespace pmon::util::log
 			return false;
 		}
 	}
+
 }

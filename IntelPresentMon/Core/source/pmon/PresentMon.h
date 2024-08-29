@@ -29,12 +29,10 @@ namespace p2c::pmon
 		~PresentMon();
 		void StartTracking(uint32_t pid_);
 		void StopTracking();
-		double GetWindow() const;
-		void SetWindow(double window_);
-		double GetOffset() const;
-		void SetOffset(double offset_);
 		void SetGpuTelemetryPeriod(uint32_t period);
 		uint32_t GetGpuTelemetryPeriod();
+		void SetEtwFlushPeriod(std::optional<uint32_t> periodMs);
+		std::optional<uint32_t> GetEtwFlushPeriod();
 		// std::wstring GetCpuName() const;
 		std::vector<AdapterInfo> EnumerateAdapters() const;
 		void SetAdapter(uint32_t id);
@@ -47,8 +45,8 @@ namespace p2c::pmon
 		pmapi::Session& GetSession();
 	private:
 		double window = -1.;
-		double offset = -1.;
 		uint32_t telemetrySamplePeriod = 0;
+		std::optional<uint32_t> etwFlushPeriodMs;
 		std::unique_ptr<pmapi::Session> pSession;
 		std::unique_ptr<FrameEventFlusher> pFlusher;
 		std::shared_ptr<pmapi::intro::Root> pIntrospectionRoot;

@@ -40,7 +40,7 @@ namespace pmon::util
 		return exception;
 	}
 
-	std::string ReportException(std::exception_ptr pEx = {}) noexcept;
+	std::string ReportException(std::string note = {}, std::exception_ptr pEx = {}) noexcept;
 
 	PM_STATUS GeneratePmStatus(std::exception_ptr pEx = {}) noexcept;
 

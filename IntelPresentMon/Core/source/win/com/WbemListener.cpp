@@ -5,7 +5,6 @@
 #include "WbemSink.h"
 #include <Core/source/infra/Logging.h>
 #include <CommonUtilities/Exception.h>
-#include <Core/source/infra/util/Util.h>
 #include "Comdef.h"
 
 namespace p2c::win::com

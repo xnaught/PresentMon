@@ -22,6 +22,7 @@
     <ClInclude Include="BuildId.h" />
     <ClInclude Include="cli\CliFramework.h" />
     <ClInclude Include="Exception.h" />
+    <ClInclude Include="IntervalWaiter.h" />
     <ClInclude Include="log\ChannelFlusher.h" />
     <ClInclude Include="log\CopyDriver.h" />
     <ClInclude Include="log\DiagnosticDriver.h" />
@@ -75,6 +76,10 @@
     <ClInclude Include="mt\Thread.h" />
     <ClInclude Include="pipe\CoroMutex.h" />
     <ClInclude Include="pipe\Pipe.h" />
+    <ClInclude Include="pipe\SecurityMode.h" />
+    <ClInclude Include="PrecisionWaiter.h" />
+    <ClInclude Include="Qpc.h" />
+    <ClInclude Include="rng\PairToRange.h" />
     <ClInclude Include="str\String.h" />
     <ClInclude Include="third\reflect.hpp" />
     <ClInclude Include="win\Event.h" />
@@ -83,11 +88,13 @@
     <ClInclude Include="win\Overlapped.h" />
     <ClInclude Include="win\Utilities.h" />
     <ClInclude Include="win\WinAPI.h" />
+    <ClInclude Include="pipe\WrapAsio.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BuildId.cpp" />
     <ClCompile Include="cli\CliFramework.cpp" />
     <ClCompile Include="Exception.cpp" />
+    <ClCompile Include="IntervalWaiter.cpp" />
     <ClCompile Include="log\ChannelFlusher.cpp" />
     <ClCompile Include="log\CopyDriver.cpp" />
     <ClCompile Include="log\DiagnosticDriver.cpp" />
@@ -120,6 +127,8 @@
     <ClCompile Include="mt\Thread.cpp" />
     <ClCompile Include="pipe\CoroMutex.cpp" />
     <ClCompile Include="pipe\Pipe.cpp" />
+    <ClCompile Include="PrecisionWaiter.cpp" />
+    <ClCompile Include="Qpc.cpp" />
     <ClCompile Include="str\String.cpp" />
     <ClCompile Include="win\Event.cpp" />
     <ClCompile Include="win\Handle.cpp" />

@@ -1,7 +1,6 @@
 #pragma once
 #include "../win/WinAPI.h"
-#include <boost/asio.hpp>
-#include <boost/asio/windows/object_handle.hpp>
+#include "WrapAsio.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
@@ -10,6 +9,7 @@
 #include "../win/Event.h"
 #include "../Exception.h"
 #include "../log/Log.h"
+#include "SecurityMode.h"
 #include <ranges>
 
 namespace pmon::util::pipe
@@ -37,6 +37,7 @@ namespace pmon::util::pipe
 		as::awaitable<void> WritePacket(const H& header, const P& payload, std::optional<uint32_t> timeoutMs = {})
 		{
 			assert(writeBuf_.size() == 0);
+			assert(asioPipeHandle_.is_open());
 			// first we directly write bytes for the size of the body as a placeholder until we know how many are serialized
 			const uint32_t placeholderSize = 'TEMP';
 			writeStream_.write(reinterpret_cast<const char*>(&placeholderSize), sizeof(placeholderSize));
@@ -58,6 +59,7 @@ namespace pmon::util::pipe
 		as::awaitable<H> ReadPacketConsumeHeader(std::optional<uint32_t> timeoutMs = {})
 		{
 			assert(readBuf_.size() == 0);
+			assert(asioPipeHandle_.is_open());
 			// read in request
 			// first read the number of bytes in the request payload (always 4-byte read)
 			uint32_t payloadSize;
@@ -86,9 +88,11 @@ namespace pmon::util::pipe
 		void ClearWriteBuffer();
 		static bool WaitForAvailability(const std::string& name, uint32_t timeoutMs, uint32_t pollPeriodMs = 10);
 		uint32_t GetId() const;
+		std::string GetName() const;
+		static std::string GetSecurityString(SecurityMode mode);
 	private:
 		// functions
-		DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle, std::string name);
+		DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle, std::string name, bool asClient);
 		static HANDLE Connect_(const std::string& name);
 		static HANDLE Make_(const std::string& name, const std::string& security = {});
 		// wrapper to convert EOF system_error to PipeBroken error, with optional timeout
@@ -101,12 +105,11 @@ namespace pmon::util::pipe
 		static std::atomic<uint32_t> nextUid_;
 		std::string name_;
 		uint32_t uid_ = nextUid_++;
-		as::windows::stream_handle stream_;
-		CoroMutex readMtx_;
+		win::Handle rawPipeHandle_;
+		as::windows::stream_handle asioPipeHandle_;
 		as::streambuf readBuf_;
 		std::istream readStream_;
 		cereal::BinaryInputArchive readArchive_;
-		CoroMutex writeMtx_;
 		as::streambuf writeBuf_;
 		std::ostream writeStream_;
 		cereal::BinaryOutputArchive writeArchive_;

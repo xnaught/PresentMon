@@ -128,6 +128,18 @@ export default Vue.extend({
         Preferences.writeAttribute({ attr: 'metricsWindow', val: metricsWindow });
       },
     },
+    etwFlushPeriod: {
+      get(): number { return Preferences.preferences.etwFlushPeriod; },
+      set(etwFlushPeriod: number) {
+        Preferences.writeAttribute({ attr: 'etwFlushPeriod', val: etwFlushPeriod });
+      },
+    },
+    manualEtwFlush: {
+      get(): boolean { return Preferences.preferences.manualEtwFlush; },
+      set(manualEtwFlush: boolean) {
+        Preferences.writeAttribute({ attr: 'manualEtwFlush', val: manualEtwFlush });
+      },
+    },
     adapters(): Adapter[] {
       return Adapters.adapters;
     },

@@ -76,6 +76,8 @@ namespace p2c::kern
         double graphDataWindowSize;
         double averagingWindowSize;
         double metricsOffset;
+        double etwFlushPeriod;
+        bool manualEtwFlush;
         OverlayPosition overlayPosition;
         std::vector<std::variant<GraphSpec, ReadoutSpec>> widgets;
         int overlayWidth;

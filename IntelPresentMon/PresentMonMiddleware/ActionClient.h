@@ -55,7 +55,7 @@ namespace pmon::mid
             return fut.get();
         }
         // data
-        uint32_t timeoutMs_ = 500;
+        uint32_t timeoutMs_ = 1000;
         uint32_t token_ = 0;
         uint32_t thisPid_;
         std::string pipeName_;

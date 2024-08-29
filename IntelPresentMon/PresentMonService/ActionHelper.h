@@ -6,6 +6,7 @@
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/utility.hpp>
+#include <cereal/types/optional.hpp>
 
 #ifdef PM_SERVICE_ASYNC_ACTION_REGISTRATION_
 #include "../Interprocess/source/act/AsyncActionCollection.h"

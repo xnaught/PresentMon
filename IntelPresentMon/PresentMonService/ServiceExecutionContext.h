@@ -20,6 +20,8 @@ namespace pmon::svc
         std::set<uint32_t> trackedPids;
         std::optional<uint32_t> requestedAdapterId;
         std::optional<uint32_t> requestedTelemetryPeriodMs;
+        std::optional<uint32_t> requestedEtwFlushPeriodMs;
+        std::optional<bool> requestedEtwFlushEnabled;
         std::optional<uint32_t> lastTokenSeen;
         // uint32_t nextCommandToken = 0;
         std::chrono::high_resolution_clock::time_point lastReceived;
@@ -38,7 +40,7 @@ namespace pmon::svc
         // data
         Service* pSvc;
         PresentMon* pPmon;
-        uint32_t responseWriteTimeoutMs = 500;
+        uint32_t responseWriteTimeoutMs = 0;
         // maps session uid => session (uid is same as session pipe id)
         std::unordered_map<uint32_t, SessionContextType> sessions;
 

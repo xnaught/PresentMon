@@ -1,5 +1,4 @@
 #include "Pipe.h"
-#include <boost/asio/experimental/awaitable_operators.hpp>
 #include <sddl.h>
 #include <string_view>
 
@@ -11,22 +10,38 @@ namespace pmon::util::pipe
 
 	as::awaitable<void> DuplexPipe::Accept()
 	{
+		assert(!asioPipeHandle_.is_open());
 		pmlog_dbg(std::format("{}:{} awaiting to accept connection", name_, uid_));
 		as::windows::object_handle connEvt{ co_await as::this_coro::executor, win::Event{}.Release() };
 		OVERLAPPED over{ .hEvent = connEvt.native_handle() };
-		const auto result = ConnectNamedPipe(stream_.native_handle(), &over);
+		const auto result = ConnectNamedPipe(rawPipeHandle_, &over);
 		if (result) {
-			// this is not expected in async operation
-			// but if it happens let's interpret as "already connected"
-			pmlog_warn("Non-zero return from async ConnectNamedPipe");
-			co_return;
+			// some error has occurred during connect initiation
+			// (this is not expected for an overlapped connect operation)
+			pmlog_error("Failure accepting pipe connection (unexpected path)").hr().raise<PipeError>();
 		}
 		if (const auto error = GetLastError(); error == ERROR_IO_PENDING) {
-			// not yet connected, await on connection event
-			co_await connEvt.async_wait(as::use_awaitable);
+			// async operation is in-flight and not yet complete, do async wait while not complete
+			bool completed = false;
+			while (!completed) {
+				co_await connEvt.async_wait(as::use_awaitable);
+				// after completion signal, get result to A) make sure not a spurious wake,
+				// B) make sure there was no error, and C) conclude the overlapped operation cleanly
+				DWORD dummyBytes = 0;
+				if (GetOverlappedResult(rawPipeHandle_, &over, &dummyBytes, FALSE)) {
+					break;
+				}
+				if (GetLastError() != ERROR_IO_INCOMPLETE) {
+					pmlog_error("Failure accepting pipe connection").hr().raise<PipeError>();
+				}
+			}
+			// now we have connected, so transfer pipe ownership to asio
+			asioPipeHandle_.assign(rawPipeHandle_.Release());
 		}
 		else if (error == ERROR_PIPE_CONNECTED) {
 			// connected even before we could await event
+			// we have connected, so transfer pipe ownership to asio
+			asioPipeHandle_.assign(rawPipeHandle_.Release());
 		}
 		else {
 			// some error has occurred during connection
@@ -36,19 +51,19 @@ namespace pmon::util::pipe
 	}
 	DuplexPipe DuplexPipe::Connect(const std::string& name, as::io_context& ioctx)
 	{
-		return DuplexPipe{ ioctx, Connect_(name), name };
+		return DuplexPipe{ ioctx, Connect_(name), name, true };
 	}
 	DuplexPipe DuplexPipe::Make(const std::string& name, as::io_context& ioctx, const std::string& security)
 	{
-		return DuplexPipe{ ioctx, Make_(name), name };
+		return DuplexPipe{ ioctx, Make_(name), name, false };
 	}
 	std::unique_ptr<DuplexPipe> DuplexPipe::ConnectAsPtr(const std::string& name, as::io_context& ioctx)
 	{
-		return std::unique_ptr<DuplexPipe>(new DuplexPipe{ ioctx, Connect_(name), name });
+		return std::unique_ptr<DuplexPipe>(new DuplexPipe{ ioctx, Connect_(name), name, true });
 	}
 	std::unique_ptr<DuplexPipe> DuplexPipe::MakeAsPtr(const std::string& name, as::io_context& ioctx, const std::string& security)
 	{
-		return std::unique_ptr<DuplexPipe>(new DuplexPipe{ ioctx, Make_(name, security), name });
+		return std::unique_ptr<DuplexPipe>(new DuplexPipe{ ioctx, Make_(name, security), name, false });
 	}
 	size_t DuplexPipe::GetWriteBufferPending() const
 	{
@@ -75,17 +90,33 @@ namespace pmon::util::pipe
 	{
 		return uid_;
 	}
-	DuplexPipe::DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle, std::string name)
+	std::string DuplexPipe::GetName() const
+	{
+		return name_;
+	}
+	std::string DuplexPipe::GetSecurityString(SecurityMode mode)
+	{
+		switch (mode) {
+		default:case SecurityMode::None: return {};
+		case SecurityMode::Service: return "D:PNO_ACCESS_CONTROLS:(ML;;NW;;;LW)"s;
+		case SecurityMode::Child: return "D:(A;OICI;GA;;;WD)"s;
+		}
+	}
+	DuplexPipe::DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle, std::string name, bool asClient)
 		:
 		name_{ std::move(name) },
-		stream_{ ioctx, pipeHandle },
-		readMtx_{ ioctx },
+		rawPipeHandle_{ pipeHandle },
+		asioPipeHandle_{ ioctx },
 		readStream_{ &readBuf_ },
 		readArchive_{ readStream_ },
-		writeMtx_{ ioctx },
 		writeStream_{ &writeBuf_ },
 		writeArchive_{ writeStream_ }
-	{}
+	{
+		if (asClient) {
+			// client is automatically connected upon creation, so immediatly transfer pipe to asio
+			asioPipeHandle_.assign(rawPipeHandle_.Release());
+		}
+	}
 	HANDLE DuplexPipe::Connect_(const std::string& name)
 	{
 		win::Handle handle(CreateFileA(
@@ -147,7 +178,7 @@ namespace pmon::util::pipe
 	as::awaitable<void> DuplexPipe::Read_(size_t byteCount, std::optional<uint32_t> timeoutMs)
 	{
 		if (timeoutMs) {
-			const auto result = co_await(as::async_read(stream_, readBuf_, as::transfer_exactly(byteCount),
+			const auto result = co_await(as::async_read(asioPipeHandle_, readBuf_, as::transfer_exactly(byteCount),
 				as::as_tuple(as::use_awaitable)) || Timeout_(*timeoutMs));
 			// 2nd index active means timed out
 			if (result.index() == 1) {
@@ -158,7 +189,7 @@ namespace pmon::util::pipe
 			TransformError_(ec);
 		}
 		else {
-			const auto [ec, n] = co_await as::async_read(stream_, readBuf_, as::transfer_exactly(byteCount),
+			const auto [ec, n] = co_await as::async_read(asioPipeHandle_, readBuf_, as::transfer_exactly(byteCount),
 				as::as_tuple(as::use_awaitable));
 			TransformError_(ec);
 		}
@@ -166,7 +197,7 @@ namespace pmon::util::pipe
 	as::awaitable<void> DuplexPipe::Write_(std::optional<uint32_t> timeoutMs)
 	{
 		if (timeoutMs) {
-			const auto result = co_await(as::async_write(stream_, writeBuf_, as::as_tuple(as::use_awaitable))
+			const auto result = co_await(as::async_write(asioPipeHandle_, writeBuf_, as::as_tuple(as::use_awaitable))
 				|| Timeout_(*timeoutMs));
 			// 2nd index active means timed out
 			if (result.index() == 1) {
@@ -177,7 +208,7 @@ namespace pmon::util::pipe
 			TransformError_(ec);
 		}
 		else {
-			const auto [ec, n] = co_await as::async_write(stream_, writeBuf_, as::as_tuple(as::use_awaitable));
+			const auto [ec, n] = co_await as::async_write(asioPipeHandle_, writeBuf_, as::as_tuple(as::use_awaitable));
 			TransformError_(ec);
 		}
 	}
@@ -191,7 +222,7 @@ namespace pmon::util::pipe
 	void DuplexPipe::TransformError_(const boost::system::error_code& ec)
 	{
 		if (ec) {
-			if (ec == as::error::broken_pipe) {
+			if (ec == as::error::broken_pipe || ec.value() == 232/* Pipe is being closed */) {
 				throw Except<PipeBroken>();
 			}
 			else {

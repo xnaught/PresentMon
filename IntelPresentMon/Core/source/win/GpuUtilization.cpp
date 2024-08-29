@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "GpuUtilization.h"
-#include <Core/source/infra/util/rn/PairToRange.h>
+#include <CommonUtilities/rng/PairToRange.h>
 #include <CommonUtilities/Exception.h>
 #include <chrono>
 #include <vector>
@@ -87,7 +87,7 @@ namespace p2c::win
         std::vector<CountedProcess> countedProcesses;
         for (auto& proc : candidates) {
             std::vector<HCOUNTER> counterHandles;
-            for (auto&&[instPid, inst] : instanceMap3D.equal_range(proc.pid) | PairToRange) {
+            for (auto&&[instPid, inst] : instanceMap3D.equal_range(proc.pid) | rng::PairToRange) {
                 counterHandles.emplace_back();
                 const auto counterPath = std::format("\\GPU Engine({})\\Running time", inst);
                 if (PdhAddCounterA(hQuery, counterPath.c_str(), 0, &counterHandles.back())) {

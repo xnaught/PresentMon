@@ -38,11 +38,10 @@ namespace pmon::util::win
     void Handle::Clear()
     {
         if (*this) {
-            if (!CloseHandle(handle_)) {
+            if (!CloseHandle(std::exchange(handle_, nullptr))) {
                 // TODO: throw custom exception, perhaps with more context / error code / formatted error
                 throw std::runtime_error{ "Failed closing handle in Handle wrapper" };
             }
-            handle_ = nullptr;
         }
     }
     Handle Handle::Clone() const

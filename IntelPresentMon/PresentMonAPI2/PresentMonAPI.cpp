@@ -282,6 +282,19 @@ PRESENTMON_API2_EXPORT PM_STATUS pmSetTelemetryPollingPeriod(PM_SESSION_HANDLE h
 	}
 }
 
+PRESENTMON_API2_EXPORT PM_STATUS pmSetEtwFlushPeriod(PM_SESSION_HANDLE handle, uint32_t periodMs)
+{
+	try {
+		LookupMiddleware_(handle).SetEtwFlushPeriod(periodMs ? std::optional{ periodMs } : std::nullopt);
+		return PM_STATUS_SUCCESS;
+	}
+	catch (...) {
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
+	}
+}
+
 PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_SESSION_HANDLE sessionHandle, PM_DYNAMIC_QUERY_HANDLE* pQueryHandle,
 	PM_QUERY_ELEMENT* pElements, uint64_t numElements, double windowSizeMs, double metricOffsetMs)
 {
