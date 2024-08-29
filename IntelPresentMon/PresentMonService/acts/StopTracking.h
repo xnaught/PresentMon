@@ -27,7 +27,7 @@ namespace pmon::svc::acts
 		{
 			ctx.pPmon->StopStreaming(stx.clientPid, in.targetPid);
 			stx.trackedPids.erase(in.targetPid);
-			pmlog_dbg(std::format("StopStreaming action from [{}] un-targeting [{}]", stx.clientPid, in.targetPid));
+			pmlog_info(std::format("StopTracking action from [{}] un-targeting [{}]", stx.clientPid, in.targetPid));
 			return {};
 		}
 	};

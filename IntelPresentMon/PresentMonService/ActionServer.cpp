@@ -80,6 +80,7 @@ namespace pmon::svc
                 // insert a session context object for this connection, will be initialized properly upon OpenSession action
                 sessionId = pPipe->GetId();
                 sessions[*sessionId].pPipe = pPipe;
+                pmlog_info(std::format("Action pipe connected id:{}", *sessionId));
                 // fork this acceptor coroutine
                 as::co_spawn(ioctx_, AcceptConnection_(), as::detached);
                 // run the action handler until client session is terminated
@@ -95,7 +96,7 @@ namespace pmon::svc
                         clientPid = i->second.clientPid;
                     }
                     actionManager_.ctx_.DisposeSession(*sessionId);
-                    pmlog_info(std::format("Action pipe disconnected id:{} pid:{}", *sessionId, clientPid));
+                    pmlog_info(std::format("Action pipe disconnected, session closed id:{} pid:{}", *sessionId, clientPid));
                     co_return;
                 }
                 pmlog_info("Sessionless pipe disconnected");

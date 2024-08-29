@@ -39,7 +39,7 @@ namespace pmon::svc::acts
 			}
 			stx.trackedPids.insert(in.targetPid);
 			const Response out{ .nsmFileName = std::move(nsmFileName) };
-			pmlog_dbg(std::format("StartStreaming action from [{}] targetting [{}] assigned nsm [{}]",
+			pmlog_info(std::format("StartTracking action from [{}] targeting [{}] assigned nsm [{}]",
 				stx.clientPid, in.targetPid, out.nsmFileName));
 			return out;
 		}
