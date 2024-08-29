@@ -83,10 +83,8 @@ namespace pmon::util::pipe
 		:
 		name_{ std::move(name) },
 		stream_{ ioctx, pipeHandle },
-		readMtx_{ ioctx },
 		readStream_{ &readBuf_ },
 		readArchive_{ readStream_ },
-		writeMtx_{ ioctx },
 		writeStream_{ &writeBuf_ },
 		writeArchive_{ writeStream_ }
 	{}

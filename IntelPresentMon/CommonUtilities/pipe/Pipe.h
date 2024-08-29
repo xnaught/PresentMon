@@ -103,11 +103,9 @@ namespace pmon::util::pipe
 		std::string name_;
 		uint32_t uid_ = nextUid_++;
 		as::windows::stream_handle stream_;
-		CoroMutex readMtx_;
 		as::streambuf readBuf_;
 		std::istream readStream_;
 		cereal::BinaryInputArchive readArchive_;
-		CoroMutex writeMtx_;
 		as::streambuf writeBuf_;
 		std::ostream writeStream_;
 		cereal::BinaryOutputArchive writeArchive_;

@@ -76,7 +76,6 @@ namespace pmon::svc
             try {
                 // create pipe instance object
                 std::shared_ptr pPipe = pipe::DuplexPipe::MakeAsPtr(pipeName_, ioctx_, GetSecurityString_());
-                pipes_.push_back(pPipe);
                 // wait for a client to connect
                 co_await pPipe->Accept();
                 // insert a session context object for this connection, will be initialized properly upon OpenSession action
@@ -114,7 +113,6 @@ namespace pmon::svc
         // data
         std::string pipeName_;
         bool elevatedSecurity_; // for now, assume that security is elevated only when using default pipe name
-        std::vector<std::shared_ptr<pipe::DuplexPipe>> pipes_;
         as::io_context ioctx_;
         act::AsyncActionManager<ServiceExecutionContext> actionManager_;
         as::windows::object_handle stopEvent_;
