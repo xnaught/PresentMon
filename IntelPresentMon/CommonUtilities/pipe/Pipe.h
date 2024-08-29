@@ -1,7 +1,6 @@
 #pragma once
 #include "../win/WinAPI.h"
-#include <boost/asio.hpp>
-#include <boost/asio/windows/object_handle.hpp>
+#include "WrapAsio.h"
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
