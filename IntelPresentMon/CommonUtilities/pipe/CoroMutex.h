@@ -1,6 +1,6 @@
 #pragma once
 #include "../win/WinAPI.h"
-#include <boost/asio.hpp>
+#include "WrapAsio.h"
 #include <deque>
 
 namespace pmon::util::pipe

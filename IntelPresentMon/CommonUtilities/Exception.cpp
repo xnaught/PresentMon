@@ -75,24 +75,32 @@ namespace pmon::util
 		}
 	}
 
-	std::string ReportException(std::exception_ptr pEx) noexcept
+	std::string ReportException(std::string note, std::exception_ptr pEx) noexcept
 	{
 		if (!pEx) {
 			pEx = std::current_exception();
 		}
+		const auto concat = [&](std::string what) {
+			if (!note.empty()) {
+				return note + "\n" + what;
+			}
+			else {
+				return what;
+			}
+		};
 		if (pEx) {
 			try {
 				std::rethrow_exception(pEx);
 			}
 			catch (const std::exception& e) {
-				try { return std::format("[{}] {}", typeid(e).name(), e.what()); }
+				try { return concat(std::format("[{}] {}", typeid(e).name(), e.what())); }
 				catch (...) { return {}; }
 			}
 			catch (...) {
-				return "Unrecognized exception";
+				return concat("Unrecognized exception");
 			}
 		}
-		return "No exception in flight";
+		return concat("No exception in flight");
 	}
 
 	PM_STATUS GeneratePmStatus(std::exception_ptr pEx) noexcept

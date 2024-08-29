@@ -27,6 +27,8 @@ export interface Preferences {
     metricPollRate: number;
     overlayDrawRate: number;
     telemetrySamplingPeriodMs: number;
+    etwFlushPeriod: number;
+    manualEtwFlush: boolean;
     metricsOffset: number;
     metricsWindow: number;
     overlayPosition: OverlayPosition;
@@ -65,8 +67,10 @@ export function makeDefaultPreferences(): Preferences {
         independentWindow: false,
         metricPollRate: 40,
         overlayDrawRate: 10,
-        telemetrySamplingPeriodMs: 100, 
-        metricsOffset: 1020, 
+        telemetrySamplingPeriodMs: 100,
+        etwFlushPeriod: 8,
+        manualEtwFlush: true,
+        metricsOffset: 32, 
         metricsWindow: 1000, 
         overlayPosition: 0, 
         timeRange: 10, 
@@ -104,7 +108,7 @@ export function makeDefaultPreferences(): Preferences {
 
 export const signature: Signature = {
     code: "p2c-cap-pref",
-    version: "0.17.0",
+    version: "0.18.0",
 };
 
 export interface PreferenceFile {
@@ -136,6 +140,15 @@ const migrations: Migration[] = [
             console.info(`Migrating preferences to 0.17.0; samplingPeriodMs:${(prefs as any).samplingPeriodMs} => metricPollRate:${pollRate}, samplesPerFrame:${(prefs as any).samplesPerFrame} => overlayDrawRate:${drawRate}`);
             prefs.metricPollRate = pollRate;
             prefs.overlayDrawRate = drawRate;
+        }
+    },
+    {
+        version: '0.18.0',
+        migrate: (prefs: Preferences) => {
+            console.info('Migrating preferences to 0.18.0 (manualEtwFlush enable/rate)');
+            const def = makeDefaultPreferences();
+            prefs.manualEtwFlush = def.manualEtwFlush;
+            prefs.etwFlushPeriod = def.etwFlushPeriod;
         }
     },
 ];

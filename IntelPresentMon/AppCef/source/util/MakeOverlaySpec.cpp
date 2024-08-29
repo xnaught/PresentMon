@@ -32,6 +32,8 @@ namespace p2c::client::util
             .graphDataWindowSize = traversedPref["timeRange"],
             .averagingWindowSize = traversedPref["metricsWindow"],
             .metricsOffset = traversedPref["metricsOffset"],
+            .etwFlushPeriod = traversedPref["etwFlushPeriod"],
+            .manualEtwFlush = traversedPref["manualEtwFlush"],
             .overlayPosition = (kern::OverlaySpec::OverlayPosition)traversedPref["overlayPosition"],
             .overlayWidth = traversedPref["overlayWidth"],
             .upscale = traversedPref["upscale"],

@@ -5,7 +5,6 @@
 #include <PresentMonAPI2/PresentMonAPI.h>
 #include <PresentMonAPIWrapper/PresentMonAPIWrapper.h>
 #include <PresentMonAPIWrapperCommon/EnumMap.h>
-#include <Core/source/infra/util/Util.h>
 #include "RawFrameDataWriter.h"
 
 namespace p2c::pmon
@@ -53,10 +52,9 @@ namespace p2c::pmon
 		// acquire introspection data
 		pIntrospectionRoot = pSession->GetIntrospectionRoot();
 
-		// establish initial sampling / window / processing setting values
-		SetWindow(window_in);
-		SetOffset(offset_in);
+		// establish initial sampling period and flush period
 		SetGpuTelemetryPeriod(telemetrySamplePeriodMs_in);
+		SetEtwFlushPeriod(std::nullopt);
 
 		// create flusher used to clear out piled-up old frame events before capture
 		pFlusher = std::make_unique<FrameEventFlusher>(*pSession);
@@ -84,10 +82,6 @@ namespace p2c::pmon
 		// TODO: caches cleared here maybe
 		pmlog_info(std::format("stopped pmon stream for pid {}", pid));
 	}
-	double PresentMon::GetWindow() const { return window; }
-	void PresentMon::SetWindow(double window_) { window = window_; }
-	double PresentMon::GetOffset() const { return offset; }
-	void PresentMon::SetOffset(double offset_) { offset = offset_; }
 	void PresentMon::SetGpuTelemetryPeriod(uint32_t period)
 	{
 		pSession->SetTelemetryPollingPeriod(1, period);
@@ -165,5 +159,15 @@ namespace p2c::pmon
 	pmapi::Session& PresentMon::GetSession()
 	{
 		return *pSession;
+	}
+	void PresentMon::SetEtwFlushPeriod(std::optional<uint32_t> periodMs)
+	{
+		assert(pSession);
+		etwFlushPeriodMs = periodMs;
+		pSession->SetEtwFlushPeriod(periodMs.value_or(0));
+	}
+	std::optional<uint32_t> PresentMon::GetEtwFlushPeriod()
+	{
+		return etwFlushPeriodMs;
 	}
 }

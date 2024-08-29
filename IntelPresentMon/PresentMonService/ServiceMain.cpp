@@ -19,7 +19,7 @@ int CommonEntry(DWORD argc, LPTSTR* argv, bool asApp = false)
 		return *e;
 	}
 	// configure logging based on CLI arguments
-	logsetup::ConfigureLogging();
+	logsetup::ConfigureLogging(asApp);
 	if (asApp) {
 		auto& svc = ConsoleDebugMockService::Get();
 		svc.Run();

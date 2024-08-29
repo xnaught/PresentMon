@@ -5,7 +5,7 @@
 #include <Core/source/win/EventHookManager.h>
 #include <Core/source/gfx/Graphics.h>
 #include <Core/source/win/KernelWindow.h>
-#include <Core/source/infra/util/IntervalWaiter.h>
+#include <CommonUtilities/IntervalWaiter.h>
 #include <memory>
 #include <vector>
 #include <atomic>
@@ -115,7 +115,7 @@ namespace p2c::kern
         std::shared_ptr<gfx::lay::Element> pRoot;
         std::shared_ptr<pmon::RawFrameDataWriter> pWriter;
         std::shared_ptr<gfx::lay::TextElement> pCaptureIndicatorText;
-        infra::util::IntervalWaiter samplingWaiter;
+        ::pmon::util::IntervalWaiter samplingWaiter;
         bool hideDuringCapture;
         bool hideAlways;
         std::optional<std::chrono::high_resolution_clock::time_point> lastMoveTime;

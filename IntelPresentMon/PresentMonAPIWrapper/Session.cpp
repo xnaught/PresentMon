@@ -105,6 +105,14 @@ namespace pmapi
         }
     }
 
+    void Session::SetEtwFlushPeriod(uint32_t milliseconds)
+    {
+        assert(handle_);
+        if (auto sta = pmSetEtwFlushPeriod(handle_, milliseconds); sta != PM_STATUS_SUCCESS) {
+            throw ApiErrorException{ sta, "set ETW flush period call failed" };
+        }
+    }
+
     PM_SESSION_HANDLE Session::GetHandle() const
     {
         return handle_;

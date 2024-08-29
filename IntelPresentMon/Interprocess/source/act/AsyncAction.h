@@ -2,7 +2,6 @@
 #include "../../../CommonUtilities/win/WinAPI.h"
 #include "../../../CommonUtilities/pipe/Pipe.h"
 #include "../../../CommonUtilities/log/Log.h"
-#include <boost/asio.hpp>
 #include <cereal/archives/binary.hpp>
 #include "Packet.h"
 #include "ActionExecutionError.h"

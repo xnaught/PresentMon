@@ -23,7 +23,7 @@ namespace pmon::svc::acts
 				ar(adapterId);
 			}
 		};
-		struct Response { template<class A> void serialize(A& ar) {} };
+		struct Response {};
 	private:
 		friend class AsyncActionBase_<ACTNAME, ServiceExecutionContext>;
 		static Response Execute_(const ServiceExecutionContext& ctx, SessionContext& stx, Params&& in)

@@ -108,6 +108,7 @@ PMTraceConsumer::PMTraceConsumer()
     , mCompletedPresents(PRESENTEVENT_CIRCULAR_BUFFER_SIZE)
     , mGpuTrace(this)
 {
+    hEventsReadyEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
 }
 
 void PMTraceConsumer::HandleD3D9Event(EVENT_RECORD* pEventRecord)
@@ -1160,7 +1161,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
                                 VerboseTraceBeforeModifyingPresent(p2.get());
                                 if (p2->WaitingForFlipFrameType) {
                                     p2->WaitingForFlipFrameType = false;
-                                    UpdateReadyCount(p2);
+                                    UpdateReadyCount(p2, true);
                                 } else {
                                     p2->PresentIds.clear();
                                 }
@@ -1905,7 +1906,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
                 if (p2->WaitingForFlipFrameType) {
                     VerboseTraceBeforeModifyingPresent(p2.get());
                     p2->WaitingForFlipFrameType = false;
-                    UpdateReadyCount(p2);
+                    UpdateReadyCount(p2, true);
                 } else {
                     CompletePresent(p2);
                 }
@@ -1952,86 +1953,93 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
 
 void PMTraceConsumer::AddPresentToCompletedList(std::shared_ptr<PresentEvent> const& present)
 {
-    {
-        std::unique_lock<std::mutex> lock(mPresentEventMutex);
+    std::unique_lock<std::mutex> lock(mPresentEventMutex);
 
-        uint32_t index;
-        // if completed buffer is full
-        if (mCompletedCount == PRESENTEVENT_CIRCULAR_BUFFER_SIZE) {
-            // if we are in offline ETL processing mode, block instead of overwriting events
-            // unless either A) the buffer is full of non-ready events or B) backpressure disabled via CLI option
-            if (!mIsRealtimeSession && mReadyCount != 0 && !mDisableOfflineBackpressure) {
-                mCompletedRingCondition.wait(lock, [this] { return mCompletedCount < PRESENTEVENT_CIRCULAR_BUFFER_SIZE; });
-                index = GetRingIndex(mCompletedIndex + mCompletedCount);
-                mCompletedCount++;
-            }
-            // Completed present overflow routine (when not blocking):
-            // If the completed list is full, throw away the oldest completed present, if it IsLost; or this
-            // present, if it IsLost; or the oldest completed present.
-            else {
-                if (!mCompletedPresents[mCompletedIndex]->IsLost && present->IsLost) {
-                    return;
-                }
-
-                index = mCompletedIndex;
-                mCompletedIndex = GetRingIndex(mCompletedIndex + 1);
-                if (mReadyCount > 0) {
-                    mReadyCount--;
-                }
-            }
-        // otherwise, completed buffer still has available space
-        } else {
+    uint32_t index;
+    // if completed buffer is full
+    if (mCompletedCount == PRESENTEVENT_CIRCULAR_BUFFER_SIZE) {
+        // if we are in offline ETL processing mode, block instead of overwriting events
+        // unless either A) the buffer is full of non-ready events or B) backpressure disabled via CLI option
+        if (!mIsRealtimeSession && mReadyCount != 0 && !mDisableOfflineBackpressure) {
+            mCompletedRingCondition.wait(lock, [this] { return mCompletedCount < PRESENTEVENT_CIRCULAR_BUFFER_SIZE; });
             index = GetRingIndex(mCompletedIndex + mCompletedCount);
             mCompletedCount++;
         }
+        // Completed present overflow routine (when not blocking):
+        // If the completed list is full, throw away the oldest completed present, if it IsLost; or this
+        // present, if it IsLost; or the oldest completed present.
+        else {
+            if (!mCompletedPresents[mCompletedIndex]->IsLost && present->IsLost) {
+                return;
+            }
 
-        mCompletedPresents[index] = present;
+            index = mCompletedIndex;
+            mCompletedIndex = GetRingIndex(mCompletedIndex + 1);
+            if (mReadyCount > 0) {
+                mReadyCount--;
+            }
+        }
+    // otherwise, completed buffer still has available space
+    } else {
+        index = GetRingIndex(mCompletedIndex + mCompletedCount);
+        mCompletedCount++;
     }
 
-    UpdateReadyCount(present);
-    
-    {
-        std::unique_lock<std::mutex> lock(mPresentEventMutex);
-        // It's possible for a deferred condition to never be cleared.  e.g., a process' last present
-        // doesn't get a Present_Stop event.  When this happens the deferred present will prevent all
-        // subsequent presents from other processes from being dequeued until the ring buffer wraps and
-        // forces it out, which is likely longer than we want to wait.  So we check here if there is 
-        // a stuck deferred present and clear the deferral if it gets too old.
-        if (mReadyCount == 0) {
-            auto const& deferredPresent = mCompletedPresents[mCompletedIndex];
-            if (present->PresentStartTime >= deferredPresent->PresentStartTime &&
-                present->PresentStartTime - deferredPresent->PresentStartTime > mDeferralTimeLimit) {
-                VerboseTraceBeforeModifyingPresent(deferredPresent.get());
-                deferredPresent->IsLost = true;
-                deferredPresent->WaitingForPresentStop = false;
-                deferredPresent->WaitingForFlipFrameType = false;
-                // UpdateReadyCount also locks the mPresentEventMutex so unlock here
-                lock.unlock();
-                UpdateReadyCount(deferredPresent);
-            }
+    mCompletedPresents[index] = present;
+
+    // update ready count WITHOUT locking mutex as it is already locked here
+    UpdateReadyCount(present, false);
+
+    // It's possible for a deferred condition to never be cleared.  e.g., a process' last present
+    // doesn't get a Present_Stop event.  When this happens the deferred present will prevent all
+    // subsequent presents from other processes from being dequeued until the ring buffer wraps and
+    // forces it out, which is likely longer than we want to wait.  So we check here if there is 
+    // a stuck deferred present and clear the deferral if it gets too old.
+    if (mReadyCount == 0 && mCompletedCount > 0) {
+        auto const& deferredPresent = mCompletedPresents[mCompletedIndex];
+        if (present->PresentStartTime >= deferredPresent->PresentStartTime &&
+            present->PresentStartTime - deferredPresent->PresentStartTime > mDeferralTimeLimit) {
+            VerboseTraceBeforeModifyingPresent(deferredPresent.get());
+            deferredPresent->IsLost = true;
+            deferredPresent->WaitingForPresentStop = false;
+            deferredPresent->WaitingForFlipFrameType = false;
+            // UpdateReadyCount also locks the mPresentEventMutex so unlock here
+            lock.unlock();
+            UpdateReadyCount(deferredPresent, false);
         }
     }
 }
 
-void PMTraceConsumer::UpdateReadyCount(std::shared_ptr<PresentEvent> const& present)
+void PMTraceConsumer::UpdateReadyCount(std::shared_ptr<PresentEvent> const& present, bool useLock)
 {
     if (!present->WaitingForPresentStop &&
         !present->WaitingForFlipFrameType) {
 
         StopTrackingPresent(present);
 
+        bool newPresentsReady = false;
         {
-            std::lock_guard<std::mutex> lock(mPresentEventMutex);
+            std::unique_lock<std::mutex> lck{ mPresentEventMutex, std::defer_lock };
+            if (useLock) {
+                lck.lock();
+            }
+            else {
+                assert(!lck.try_lock());
+            }
 
             uint32_t i = GetRingIndex(mCompletedIndex + mReadyCount);
             if (present == mCompletedPresents[i]) {
                 DebugAssert(mReadyCount < mCompletedCount);
                 do {
                     mReadyCount += 1;
+                    newPresentsReady = true;
                     i = GetRingIndex(i + 1);
                 } while (mReadyCount < mCompletedCount && !mCompletedPresents[i]->WaitingForPresentStop
                                                        && !mCompletedPresents[i]->WaitingForFlipFrameType);
             }
+        }
+        if (newPresentsReady) {
+            SignalEventsReady();
         }
     }
 }
@@ -2198,7 +2206,7 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
     if (present->WaitingForPresentStop) {
         present->WaitingForPresentStop = false;
         mPresentByThreadId.erase(eventIter);
-        UpdateReadyCount(present);
+        UpdateReadyCount(present, true);
         return;
     }
 
@@ -2315,8 +2323,11 @@ void PMTraceConsumer::HandleProcessEvent(EVENT_RECORD* pEventRecord)
         }
     }
 
-    std::lock_guard<std::mutex> lock(mProcessEventMutex);
-    mProcessEvents.emplace_back(event);
+    {
+        std::lock_guard<std::mutex> lock(mProcessEventMutex);
+        mProcessEvents.emplace_back(event);
+    }
+    SignalEventsReady();
 }
 
 void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
@@ -2418,6 +2429,12 @@ void PMTraceConsumer::ApplyPresentFrameType(
     }
 }
 
+// TODO: consider separating process and present events, would reduce unneccessary mutex locking
+void PMTraceConsumer::SignalEventsReady()
+{
+    SetEvent(hEventsReadyEvent);
+}
+
 void PMTraceConsumer::HandleMetadataEvent(EVENT_RECORD* pEventRecord)
 {
     mMetadata.AddMetadata(pEventRecord);
@@ -2474,7 +2491,9 @@ void PMTraceConsumer::DequeuePresentEvents(std::vector<std::shared_ptr<PresentEv
             mReadyCount = 0;
         }
     }
-    mCompletedRingCondition.notify_one();
+    if (!mIsRealtimeSession && !mDisableOfflineBackpressure) {
+        mCompletedRingCondition.notify_one();
+    }
 }
 
 #ifdef TRACK_PRESENT_PATHS

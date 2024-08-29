@@ -27,6 +27,7 @@
 #include "FrameEventQuery.h"
 #include "../CommonUtilities/mt/Thread.h"
 #include "../CommonUtilities/log/Log.h"
+#include "../CommonUtilities/Qpc.h"
 
 #include "../CommonUtilities/log/GlogShim.h"
 
@@ -202,6 +203,19 @@ namespace pmon::mid
         try {
             // note: deviceId is being ignored for the time being, but might be used in the future
             pActionClient->DispatchSync(SetTelemetryPeriod::Params{ timeMs });
+        }
+        catch (...) {
+            const auto code = util::GeneratePmStatus();
+            pmlog_error(util::ReportException()).code(code).diag();
+            return code;
+        }
+        return PM_STATUS_SUCCESS;
+    }
+
+    PM_STATUS ConcreteMiddleware::SetEtwFlushPeriod(std::optional<uint32_t> periodMs)
+    {
+        try {
+            pActionClient->DispatchSync(acts::SetEtwFlushPeriod::Params{ periodMs });
         }
         catch (...) {
             const auto code = util::GeneratePmStatus();
@@ -675,6 +689,7 @@ void ReportMetrics(
         
         PmNsmFrameData* frame_data = GetFrameDataStart(client, index, SecondsDeltaToQpc(pQuery->metricOffsetMs/1000., client->GetQpcFrequency()), *queryToFrameDataDelta, adjusted_window_size_in_ms);
         if (frame_data == nullptr) {
+            pmlog_warn("Filling cached data in dynamic metric poll due to nullptr from GetFrameDataStart").diag();
             CopyMetricCacheToBlob(pQuery, processId, pBlob);
             return;
         }
@@ -1234,6 +1249,7 @@ void ReportMetrics(
             if (window_sample_size_in_ms <= 0.0) {
                 return nullptr;
             }
+            pmlog_dbg("Adjusting dynamic stats window due to possible excursion").pmwatch(ms_adjustment);
         }
         else {
             // Find the frame with the appropriate time based on the adjusted
@@ -1527,6 +1543,8 @@ void ReportMetrics(
             auto numFrames = (uint32_t)swapChain.mCPUBusy.size();
             if ((swapChain.display_count <= 1) && (numFrames == 0)) {
                 useCache = true;
+                pmlog_dbg("Filling cached data in dynamic metric poll")
+                    .pmwatch(numFrames).pmwatch(swapChain.display_count).diag();
                 break;
             }
 

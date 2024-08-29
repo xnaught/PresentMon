@@ -1,6 +1,5 @@
 #pragma once
 #include "../../../CommonUtilities/win/WinAPI.h"
-#include <boost/asio.hpp>
 #include "../../../CommonUtilities/pipe/Pipe.h"
 #include "Packet.h"
 #include "ActionExecutionError.h"

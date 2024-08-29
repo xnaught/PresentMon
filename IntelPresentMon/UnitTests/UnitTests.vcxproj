@@ -104,6 +104,7 @@
   <ItemGroup>
     <ClCompile Include="ExtremeQueue.cpp" />
     <ClCompile Include="Style.cpp" />
+    <ClCompile Include="Timing.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">

@@ -1,9 +1,8 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "../CommonUtilities/pipe/Pipe.h"
-#include "..\CommonUtilities\str\String.h"
+#include "../CommonUtilities/str/String.h"
 #include "../Interprocess/source/act/AsyncActionManager.h"
-#include <boost/asio/windows/object_handle.hpp>
 #include "CliOptions.h"
 #include "ActionServer.h"
 #include "GlobalIdentifiers.h"
@@ -31,22 +30,37 @@ namespace pmon::svc
         {
             actionManager_.ctx_.pSvc = pSvc;
             actionManager_.ctx_.pPmon = pPmon;
-            thread_ = std::jthread{ [this] {
-                // coroutine to exit thread on stop signal
-                as::co_spawn(ioctx_, [this]() -> as::awaitable<void> {
-                    co_await stopEvent_.async_wait(as::use_awaitable);
-                    pmlog_dbg("ActionServer received stop signal");
-                    ioctx_.stop();
-                }, as::detached);
-                // maintain 3 available pipe instances at all times
-                for (int i = 0; i < 3; i++) {
+        }
+        void Run_()
+        {
+            try {
+                // there are issues with calling .stop() and subsequently destroying ioctx
+                // for now we will detach the thread and allow it to run independently until
+                // process exit
+                // 
+                //// coroutine to exit thread on stop signal
+                //as::co_spawn(ioctx_, [this]() -> as::awaitable<void> {
+                //    co_await stopEvent_.async_wait(as::use_awaitable);
+                //    pmlog_dbg("ActionServer received stop signal");
+                //    ioctx_.stop();
+                //    }, as::detached);
+                
+                // maintain 2 available pipe instances at all times
+                for (int i = 0; i < 2; i++) {
                     as::co_spawn(ioctx_, AcceptConnection_(), as::detached);
                 }
                 // run the io context event handler until signalled to exit
                 ioctx_.run();
                 pmlog_info("ActionServer exiting");
-            } };
+            }
+            catch (...) {
+                pmlog_error(ReportException());
+                // if the action server crashes for any reason, the service should restart at this point
+                log::GetDefaultChannel()->Flush();
+                std::terminate();
+            }
         }
+
         ActionServerImpl_(const ActionServerImpl_&) = delete;
         ActionServerImpl_& operator=(const ActionServerImpl_&) = delete;
         ActionServerImpl_(ActionServerImpl_&&) = delete;
@@ -89,11 +103,8 @@ namespace pmon::svc
         }
         std::string GetSecurityString_() const
         {
-            return elevatedSecurity_ ?
-                // for when running as server
-                "D:PNO_ACCESS_CONTROLS:(ML;;NW;;;LW)"s :
-                // for when running as a child process
-                "D:(A;OICI;GA;;;WD)"s;
+            return pipe::DuplexPipe::GetSecurityString(elevatedSecurity_ ?
+                pipe::SecurityMode::Service : pipe::SecurityMode::Child);
         }
         // data
         std::string pipeName_;
@@ -101,11 +112,13 @@ namespace pmon::svc
         as::io_context ioctx_;
         act::AsyncActionManager<ServiceExecutionContext> actionManager_;
         as::windows::object_handle stopEvent_;
-        std::jthread thread_;
     };
 
     ActionServer::ActionServer(Service* pSvc, PresentMon* pPmon, std::optional<std::string> pipeName)
-        :
-        pImpl_{ std::make_shared<ActionServerImpl_>(pSvc, pPmon, std::move(pipeName)) }
-    {}
+    {
+        std::thread([=, pipeName = std::move(pipeName)] {
+            ActionServerImpl_ impl(pSvc, pPmon, std::move(pipeName));
+            impl.Run_();
+        }).detach();
+    }
 }

@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <Core/source/infra/util/ChiliTimer.h>
+#include <cstdint>
 
 namespace p2c::pmon
 {
