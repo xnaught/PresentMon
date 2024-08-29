@@ -3,6 +3,7 @@
 #include "IChannel.h"
 #include "GlobalPolicy.h"
 #include "Subsystem.h"
+#include "../Macro.h"
 #include <functional>
 
 namespace pmon::util::log
@@ -22,7 +23,7 @@ namespace pmon::util::log
 }
 
 #ifdef PMLOG_BUILD_LEVEL
-#define PMLOG_BUILD_LEVEL_ ::pmon::util::log::Level::##PMLOG_BUILD_LEVEL
+#define PMLOG_BUILD_LEVEL_ ::pmon::util::log::Level::PMLOG_BUILD_LEVEL
 #endif
 
 #ifndef PMLOG_BUILD_LEVEL_

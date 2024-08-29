@@ -55,8 +55,9 @@ namespace pmon::svc
                 pmlog_info("ActionServer exiting");
             }
             catch (...) {
-                // if the action server crashes for any reason, the service should restart at this point
                 pmlog_error(ReportException());
+                // if the action server crashes for any reason, the service should restart at this point
+                log::GetDefaultChannel()->Flush();
                 std::terminate();
             }
         }
