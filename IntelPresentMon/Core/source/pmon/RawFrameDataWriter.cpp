@@ -360,8 +360,8 @@ namespace p2c::pmon
             "Total Frames,"
             "Average FPS,"
             "Minimum FPS,"
-            "99th Percentile FPS,"
-            "95th Percentile FPS,"
+            "1st Percentile FPS,"
+            "5th Percentile FPS,"
             "Maximum FPS,"
             "AnimationErrorPerSecond,"
             "AnimationErrorPerFrame\n";
