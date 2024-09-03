@@ -254,6 +254,7 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintTime,           ReadyTime)
     FLUSH_MEMBER(PrintTime,           ScreenTime)
     FLUSH_MEMBER(PrintTime,           InputTime)
+    FLUSH_MEMBER(PrintTime,           MouseClickTime)
     FLUSH_MEMBER(PrintTime,           GPUStartTime)
     FLUSH_MEMBER(PrintTimeDelta,      GPUDuration)
     FLUSH_MEMBER(PrintTimeDelta,      GPUVideoDuration)
@@ -611,8 +612,9 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
         }
         if (pmConsumer->mTrackInput) {
             switch (hdr.EventDescriptor.Id) {
-            case InputDeviceRead_Stop::Id:      PrintEventHeader(eventRecord, metadata, "Win32k_InputDeviceRead_Stop", { L"DeviceType", PrintU32, }); break;
-            case RetrieveInputMessage_Info::Id: PrintEventHeader(eventRecord, metadata, "Win32k_RetrieveInputMessage", { L"flags",      PrintU32, }); break;
+            case InputDeviceRead_Stop::Id:      PrintEventHeader(eventRecord, metadata, "Win32k_InputDeviceRead_Stop", { L"DeviceType", PrintU32,  }); break;
+            case RetrieveInputMessage_Info::Id: PrintEventHeader(eventRecord, metadata, "Win32k_RetrieveInputMessage", { L"flags", PrintU32, L"hwnd", PrintU64x}); break;
+            case OnInputXformUpdate_Info::Id:   PrintEventHeader(eventRecord, metadata, "Win32k_OnInputXformUpdate",   { L"Hwnd", PrintU64x, L"XformQPCTime", PrintU64}); break;
             }
         }
         return;

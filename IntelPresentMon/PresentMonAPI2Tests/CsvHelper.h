@@ -41,6 +41,7 @@ enum Header {
     Header_DisplayedTime,
     Header_AnimationError,
     Header_ClickToPhotonLatency,
+    Header_AllInputToPhotonLatency,
 
     // --v1_metrics
     Header_Runtime,
@@ -88,54 +89,56 @@ struct v2Metrics {
     std::optional<double> displayedTime;
     std::optional<double> animationError;
     std::optional<double> clickToPhotonLatency;
+    std::optional<double> AllInputToPhotonLatency;
 };
 
 constexpr char const* GetHeaderString(Header h)
 {
     switch (h) {
-    case Header_Application:            return "Application";
-    case Header_ProcessID:              return "ProcessID";
-    case Header_SwapChainAddress:       return "SwapChainAddress";
-    case Header_PresentRuntime:         return "PresentRuntime";
-    case Header_SyncInterval:           return "SyncInterval";
-    case Header_PresentFlags:           return "PresentFlags";
-    case Header_AllowsTearing:          return "AllowsTearing";
-    case Header_PresentMode:            return "PresentMode";
-    case Header_FrameType:              return "FrameType";
-    case Header_CPUStartTime:           return "CPUStartTime";
-    case Header_CPUStartQPC:            return "CPUStartQPC";
-    case Header_CPUStartQPCTime:        return "CPUStartQPCTime";
-    case Header_CPUStartDateTime:       return "CPUStartDateTime";
-    case Header_FrameTime:              return "FrameTime";
-    case Header_CPUBusy:                return "CPUBusy";
-    case Header_CPUWait:                return "CPUWait";
-    case Header_GPULatency:             return "GPULatency";
-    case Header_GPUTime:                return "GPUTime";
-    case Header_GPUBusy:                return "GPUBusy";
-    case Header_VideoBusy:              return "VideoBusy";
-    case Header_GPUWait:                return "GPUWait";
-    case Header_DisplayLatency:         return "DisplayLatency";
-    case Header_DisplayedTime:          return "DisplayedTime";
-    case Header_AnimationError:         return "AnimationError";
-    case Header_ClickToPhotonLatency:   return "ClickToPhotonLatency";
+    case Header_Application:                return "Application";
+    case Header_ProcessID:                  return "ProcessID";
+    case Header_SwapChainAddress:           return "SwapChainAddress";
+    case Header_PresentRuntime:             return "PresentRuntime";
+    case Header_SyncInterval:               return "SyncInterval";
+    case Header_PresentFlags:               return "PresentFlags";
+    case Header_AllowsTearing:              return "AllowsTearing";
+    case Header_PresentMode:                return "PresentMode";
+    case Header_FrameType:                  return "FrameType";
+    case Header_CPUStartTime:               return "CPUStartTime";
+    case Header_CPUStartQPC:                return "CPUStartQPC";
+    case Header_CPUStartQPCTime:            return "CPUStartQPCTime";
+    case Header_CPUStartDateTime:           return "CPUStartDateTime";
+    case Header_FrameTime:                  return "FrameTime";
+    case Header_CPUBusy:                    return "CPUBusy";
+    case Header_CPUWait:                    return "CPUWait";
+    case Header_GPULatency:                 return "GPULatency";
+    case Header_GPUTime:                    return "GPUTime";
+    case Header_GPUBusy:                    return "GPUBusy";
+    case Header_VideoBusy:                  return "VideoBusy";
+    case Header_GPUWait:                    return "GPUWait";
+    case Header_DisplayLatency:             return "DisplayLatency";
+    case Header_DisplayedTime:              return "DisplayedTime";
+    case Header_AnimationError:             return "AnimationError";
+    case Header_ClickToPhotonLatency:       return "ClickToPhotonLatency";
+    case Header_AllInputToPhotonLatency:    return "AllInputToPhotonLatency";
 
-    case Header_Runtime:                return "Runtime";
-    case Header_Dropped:                return "Dropped";
-    case Header_TimeInSeconds:          return "TimeInSeconds";
-    case Header_msBetweenPresents:      return "msBetweenPresents";
-    case Header_msInPresentAPI:         return "msInPresentAPI";
-    case Header_msBetweenDisplayChange: return "msBetweenDisplayChange";
-    case Header_msUntilRenderComplete:  return "msUntilRenderComplete";
-    case Header_msUntilDisplayed:       return "msUntilDisplayed";
-    case Header_msUntilRenderStart:     return "msUntilRenderStart";
-    case Header_msGPUActive:            return "msGPUActive";
-    case Header_msGPUVideoActive:       return "msGPUVideoActive";
-    case Header_msSinceInput:           return "msSinceInput";
-    case Header_QPCTime:                return "QPCTime";
+    case Header_Runtime:                    return "Runtime";
+    case Header_Dropped:                    return "Dropped";
+    case Header_TimeInSeconds:              return "TimeInSeconds";
+    case Header_msBetweenPresents:          return "msBetweenPresents";
+    case Header_msInPresentAPI:             return "msInPresentAPI";
+    case Header_msBetweenDisplayChange:     return "msBetweenDisplayChange";
+    case Header_msUntilRenderComplete:      return "msUntilRenderComplete";
+    case Header_msUntilDisplayed:           return "msUntilDisplayed";
+    case Header_msUntilRenderStart:         return "msUntilRenderStart";
+    case Header_msGPUActive:                return "msGPUActive";
+    case Header_msGPUVideoActive:           return "msGPUVideoActive";
+    case Header_msSinceInput:               return "msSinceInput";
+    case Header_QPCTime:                    return "QPCTime";
 
-    case Header_WasBatched:             return "WasBatched";
-    case Header_DwmNotified:            return "DwmNotified";
-    default:                            return "<unknown>";
+    case Header_WasBatched:                 return "WasBatched";
+    case Header_DwmNotified:                return "DwmNotified";
+    default:                                return "<unknown>";
     }
 }
 
@@ -294,7 +297,7 @@ public:
     bool Open(std::wstring const& path, uint32_t processId);
     void Close();
     bool VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-        PM_QUERY_ELEMENT(&queryElements)[18], pmapi::BlobContainer& blobs);
+        PM_QUERY_ELEMENT(&queryElements)[19], pmapi::BlobContainer& blobs);
     bool ResetCsv();
 
 private:
@@ -323,7 +326,7 @@ CsvParser::CsvParser()
 {}
 
 bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-    PM_QUERY_ELEMENT(&queryElements)[18], pmapi::BlobContainer& blobs)
+    PM_QUERY_ELEMENT(&queryElements)[19], pmapi::BlobContainer& blobs)
 {
 
     for (auto pBlob : blobs) {
@@ -346,7 +349,8 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
         const auto displayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[14].dataOffset]);
         const auto displayedTime = *reinterpret_cast<const double*>(&pBlob[queryElements[15].dataOffset]);
         const auto animationError = *reinterpret_cast<const double*>(&pBlob[queryElements[16].dataOffset]);
-        const auto clickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[17].dataOffset]);
+        const auto allInputToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[17].dataOffset]);
+        const auto clickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[18].dataOffset]);
         
         // Read rows until we find one with the process we are interested in
         // or we are out of data.
@@ -479,6 +483,21 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                     }
                 }
                 break;
+            case Header_AllInputToPhotonLatency:
+                if (v2MetricRow_.AllInputToPhotonLatency.has_value()) {
+                    columnsMatch = Validate(v2MetricRow_.AllInputToPhotonLatency.value(), allInputToPhotonLatency);
+                }
+                else
+                {
+                    if (std::isnan(allInputToPhotonLatency)) {
+                        columnsMatch = true;
+                    }
+                    else
+                    {
+                        columnsMatch = false;
+                    }
+                }
+                break;
             default:
                 columnsMatch = true;
                 break;
@@ -590,7 +609,8 @@ bool CsvParser::Open(std::wstring const& path, uint32_t processId) {
                                                Header_DisplayLatency,
                                                Header_DisplayedTime,
                                                Header_AnimationError,
-                                               Header_ClickToPhotonLatency, });
+                                               Header_ClickToPhotonLatency,
+                                               Header_AllInputToPhotonLatency});
 
     if (!columnsOK) {
         Assert::Fail(L"Missing required columns");
@@ -781,6 +801,19 @@ void CsvParser::ConvertToMetricDataType(const char* data, Header columnId)
         }
         else {
             v2MetricRow_.clickToPhotonLatency.reset();
+        }
+    }
+    break;
+    case Header_AllInputToPhotonLatency:
+    {
+        if (strncmp(data, "NA", 2) != 0) {
+            double convertedData = 0.;
+            CharConvert<double> converter;
+            converter.Convert(data, convertedData, columnId, line_);
+            v2MetricRow_.AllInputToPhotonLatency = convertedData;
+        }
+        else {
+            v2MetricRow_.AllInputToPhotonLatency.reset();
         }
     }
     break;

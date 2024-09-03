@@ -357,12 +357,29 @@ static void ReportMetrics(
         metrics.mDisplayedTime        = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ScreenTime, nextDisplayedPresent->ScreenTime);
         metrics.mAnimationError       = chain->mLastDisplayedCPUStart == 0 ? 0 : pmSession.TimestampDeltaToMilliSeconds(p->ScreenTime - chain->mLastDisplayedScreenTime,
                                                                                                                         metrics.mCPUStart - chain->mLastDisplayedCPUStart);
-        metrics.mClickToPhotonLatency = p->InputTime == 0 ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, p->ScreenTime);
+        auto updatedInputTime = chain->mLastReceivedNotDisplayedAllInputTime == 0 ? 0 :
+            pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedAllInputTime, p->ScreenTime);
+        metrics.mAllInputPhotonLatency = p->InputTime == 0 ? updatedInputTime : pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, p->ScreenTime);
+
+        updatedInputTime = chain->mLastReceivedNotDisplayedMouseClickTime == 0 ? 0 :
+            pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedMouseClickTime, p->ScreenTime);
+        metrics.mClickToPhotonLatency = p->MouseClickTime == 0 ? updatedInputTime : pmSession.TimestampDeltaToUnsignedMilliSeconds(p->MouseClickTime, p->ScreenTime);
+
+        chain->mLastReceivedNotDisplayedAllInputTime = 0;
+        chain->mLastReceivedNotDisplayedMouseClickTime = 0;
+
     } else {
         metrics.mDisplayLatency       = 0;
         metrics.mDisplayedTime        = 0;
         metrics.mAnimationError       = 0;
         metrics.mClickToPhotonLatency = 0;
+        metrics.mAllInputPhotonLatency = 0;
+        if (p->InputTime != 0) {
+            chain->mLastReceivedNotDisplayedAllInputTime = p->InputTime;
+        }
+        if (p->MouseClickTime != 0) {
+            chain->mLastReceivedNotDisplayedMouseClickTime = p->MouseClickTime;
+        }
     }
 
     if (isRecording) {

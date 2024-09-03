@@ -291,6 +291,7 @@ namespace pmon::mid
             case PM_METRIC_DISPLAYED_FPS:
             case PM_METRIC_DROPPED_FRAMES:
             case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
+            case PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY:
                 pQuery->accumFpsData = true;
                 break;
             case PM_METRIC_GPU_POWER:
@@ -468,8 +469,9 @@ struct FrameMetrics {
     double mGPUWait;
     double mDisplayLatency;
     double mDisplayedTime;
-    double mClickToPhotonLatency;
     double mAnimationError;
+    double mClickToPhotonLatency;
+    double mAllInputPhotonLatency;
 };
 
 // Copied from: PresentMon/OutputThread.cpp
@@ -564,12 +566,34 @@ void ReportMetrics(
         metrics.mDisplayedTime        = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ScreenTime, nextDisplayedPresent->ScreenTime);
         metrics.mAnimationError       = chain->mLastDisplayedCPUStart == 0 ? 0 : pmSession.TimestampDeltaToMilliSeconds(p->ScreenTime - chain->display_n_screen_time,
                                                                                                                         metrics.mCPUStart - chain->mLastDisplayedCPUStart);
-        metrics.mClickToPhotonLatency = p->InputTime == 0 ? 0.0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, p->ScreenTime);
+        // If we have an input time that was associated with a dropped frame calculate the latency
+        // based on this Presents screen time.
+        auto updatedInputTime = chain->mLastReceivedNotDisplayedAllInputTime == 0 ? 0 :
+            pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedAllInputTime, p->ScreenTime);
+        // If this present doesn't have an input associated with it use the time from the latest input time calculated
+        // above. If there is an input associated with the Present use it.
+        metrics.mAllInputPhotonLatency = p->InputTime == 0 ? updatedInputTime :
+            pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, p->ScreenTime);
+        // Do the same for the mouse click input
+        updatedInputTime = chain->mLastReceivedNotDisplayedMouseClickTime == 0 ? 0 :
+            pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedMouseClickTime, p->ScreenTime);
+        metrics.mClickToPhotonLatency = p->MouseClickTime == 0 ? updatedInputTime :
+            pmSession.TimestampDeltaToUnsignedMilliSeconds(p->MouseClickTime, p->ScreenTime);
+
+        chain->mLastReceivedNotDisplayedAllInputTime = 0;
+        chain->mLastReceivedNotDisplayedMouseClickTime = 0;
     } else {
         metrics.mDisplayLatency       = 0.0;
         metrics.mDisplayedTime        = 0.0;
         metrics.mAnimationError       = 0.0;
         metrics.mClickToPhotonLatency = 0.0;
+        metrics.mAllInputPhotonLatency = 0.0;
+        if (p->InputTime != 0) {
+            chain->mLastReceivedNotDisplayedAllInputTime = p->InputTime;
+        }
+        if (p->MouseClickTime != 0) {
+            chain->mLastReceivedNotDisplayedMouseClickTime = p->MouseClickTime;
+        }
     }
 
     if (p->FrameId == nextPresent->FrameId) {
@@ -599,8 +623,12 @@ void ReportMetrics(
             chain->mAppDisplayedTime.back() += metrics.mDisplayedTime;
         }
 
-        if (p->InputTime) {
+        if (p->MouseClickTime) {
             chain->mClickToPhotonLatency.push_back(metrics.mClickToPhotonLatency);
+        }
+
+        if (p->InputTime) {
+            chain->mAllInputToPhotonLatency.push_back(metrics.mAllInputPhotonLatency);
         }
 
         chain->mDisplayLatency.push_back(metrics.mDisplayLatency);
@@ -1058,6 +1086,9 @@ void ReportMetrics(
             break;
         case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
             output = CalculateStatistic(swapChain.mClickToPhotonLatency, element.stat);
+            break;
+        case PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY:
+            output = CalculateStatistic(swapChain.mAllInputToPhotonLatency, element.stat);
             break;
         default:
             output = 0.;
@@ -1545,6 +1576,7 @@ void ReportMetrics(
                 case PM_METRIC_GPU_BUSY:
                 case PM_METRIC_DISPLAY_LATENCY:
                 case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
+                case PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY:
                 case PM_METRIC_PRESENTED_FPS:
                 case PM_METRIC_APPLICATION_FPS:
                 case PM_METRIC_DISPLAYED_FPS:

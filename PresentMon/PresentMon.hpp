@@ -30,6 +30,7 @@ which is controlled from MainThread based on user input or timer.
 #include "../PresentData/PresentMonTraceSession.hpp"
 
 #include <unordered_map>
+#include <queue>
 
 // Verbosity of console output for normal operation:
 enum class ConsoleOutput {
@@ -101,6 +102,7 @@ struct FrameMetrics {
     double mDisplayedTime;
     double mAnimationError;
     double mClickToPhotonLatency;
+    double mAllInputPhotonLatency;
 };
 
 struct FrameMetrics1 {
@@ -131,6 +133,11 @@ struct SwapChainData {
     // The CPU start and screen time for the most recent frame that was displayed
     uint64_t mLastDisplayedCPUStart = 0;
     uint64_t mLastDisplayedScreenTime = 0;
+
+    // QPC of last received input data that did not make it to the screen due 
+    // to the Present() being dropped
+    uint64_t mLastReceivedNotDisplayedAllInputTime;
+    uint64_t mLastReceivedNotDisplayedMouseClickTime;
 
     // Whether to include frame data in the next PresentEvent's FrameMetrics.
     bool mIncludeFrameData = true;
