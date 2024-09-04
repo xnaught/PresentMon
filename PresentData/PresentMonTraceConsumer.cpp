@@ -1505,13 +1505,7 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
                 if (mLastInputDeviceType == InputDeviceType::Mouse) {
                     auto it = mReceivedMouseClickByHwnd.find(hWnd);
                     if (it != mReceivedMouseClickByHwnd.end()) {
-                        // If the time from the last mouse click time to this input
-                        // is greater than 1700000 ticks then we assume this is a mouse
-                        // click down and record the time. If the user happens to be
-                        // holding down the mouse button this could be incorrect. In addition
-                        // if we now have a xform time when we previously didn't then record
-                        // the time.
-                        if (it->second.CurrentMouseClickTime - it->second.LastMouseClickTime > 1700000) {
+                        if (it->second.LastMouseClickTime < it->second.CurrentMouseClickTime) {
                             ii->second.MouseClickTime = it->second.CurrentMouseClickTime;
                             ii->second.XFormTime = it->second.CurrentXFormTime;
                             it->second.LastMouseClickTime = it->second.CurrentMouseClickTime;
@@ -1535,11 +1529,7 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
 
             auto it = mReceivedMouseClickByHwnd.find(hWnd);
             if (it != mReceivedMouseClickByHwnd.end()) {
-                // Have seen where we get two pairs of InputDeviceRead_Stop
-                // OnInputXformUpdate_Info events back to back and then a
-                // RetrieveInputMessage_Info. As in retrieve check if there is
-                // 1500000 tick gap in an attempt to only capture the mouse down
-                if (mLastInputDeviceReadTime - it->second.LastMouseClickTime > 1500000) {
+                if (it->second.LastMouseClickTime < mLastInputDeviceReadTime) {
                     it->second.CurrentMouseClickTime = mLastInputDeviceReadTime;
                     it->second.CurrentXFormTime = xFormQPCTime;
                 }
