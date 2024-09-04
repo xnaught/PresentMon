@@ -1496,21 +1496,26 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
                 if (ii->second.Time < mLastInputDeviceReadTime) {
                     ii->second.Time = mLastInputDeviceReadTime;
                     ii->second.Type = mLastInputDeviceType;
-                    if (mLastInputDeviceType == InputDeviceType::Mouse) {
-                        auto it = mReceivedMouseClickByHwnd.find(hWnd);
-                        if (it != mReceivedMouseClickByHwnd.end()) {
-                            // If the time from the last mouse click time to this input
-                            // is greater than 1500000 ticks then we assume this is a mouse
-                            // click down and record the time. If the user happens to be
-                            // holding down the mouse button this could be incorrect. In addition
-                            // if we now have a xform time when we previously didn't then record
-                            // the time.
-                            if (it->second.CurrentMouseClickTime - it->second.LastMouseClickTime > 1500000) {
-                                ii->second.MouseClickTime = it->second.CurrentMouseClickTime;
-                                ii->second.XFormTime = it->second.CurrentXFormTime;
-                                it->second.LastMouseClickTime = it->second.CurrentMouseClickTime;
-                                it->second.LastXFormTime = it->second.CurrentXFormTime;
-                            }
+                }
+                // We can recieve multiple RetrieveInputMessage_Info events
+                // before we receive an OnInputXformUpdate_Info event. Because
+                // of this if the last device input type was a mouse
+                // check to see if it was a mouse click and update if
+                // necessary
+                if (mLastInputDeviceType == InputDeviceType::Mouse) {
+                    auto it = mReceivedMouseClickByHwnd.find(hWnd);
+                    if (it != mReceivedMouseClickByHwnd.end()) {
+                        // If the time from the last mouse click time to this input
+                        // is greater than 1700000 ticks then we assume this is a mouse
+                        // click down and record the time. If the user happens to be
+                        // holding down the mouse button this could be incorrect. In addition
+                        // if we now have a xform time when we previously didn't then record
+                        // the time.
+                        if (it->second.CurrentMouseClickTime - it->second.LastMouseClickTime > 1700000) {
+                            ii->second.MouseClickTime = it->second.CurrentMouseClickTime;
+                            ii->second.XFormTime = it->second.CurrentXFormTime;
+                            it->second.LastMouseClickTime = it->second.CurrentMouseClickTime;
+                            it->second.LastXFormTime = it->second.CurrentXFormTime;
                         }
                     }
                 }
