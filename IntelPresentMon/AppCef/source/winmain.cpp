@@ -8,7 +8,7 @@
 #include <Core/source/infra/util/FolderResolver.h>
 #include <Core/source/cli/CliOptions.h>
 #include <CommonUtilities/log/IdentificationTable.h>
-#include <CommonUtilities/generated/build_id.h>
+#include <CommonUtilities/BuildId.h>
 #include <CommonUtilities/win/Utilities.h>
 #include <PresentMonAPIWrapper/DiagnosticHandler.h>
 #include <dwmapi.h>
@@ -232,22 +232,31 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
     try {
         // service-as-child handling
+        std::optional<std::string> logSvcPipe;
         std::optional<boost::process::child> childSvc;
         if (!opt.cefType && opt.svcAsChild) {
             using namespace std::literals;
             namespace bp = boost::process;
 
+            logSvcPipe = opt.logSvcPipe.AsOptional().value_or(
+                std::format("pm2-child-svc-log-{}", GetCurrentProcessId()));
             childSvc.emplace("PresentMonService.exe"s,
                 "--control-pipe"s, *opt.controlPipe,
                 "--nsm-prefix"s, "pm-frame-nsm"s,
                 "--intro-nsm"s, *opt.shmName,
                 "--etw-session-name"s, *opt.etwSessionName,
-                "--log-level"s, std::to_string((int)log::GlobalPolicy::Get().GetLogLevel()));
+                "--log-level"s, std::to_string((int)log::GlobalPolicy::Get().GetLogLevel()),
+                "--log-pipe-name"s, *logSvcPipe);
 
             if (!pmon::util::win::WaitForNamedPipe(*opt.controlPipe, 1500)) {
                 pmlog_error("timeout waiting for child service control pipe to go online");
                 return -1;
             }
+        }
+
+        if (!opt.cefType && opt.logSvcPipeEnable) {
+            // connect to service's log pipe (best effort)
+            ConnectToLoggingSourcePipe(logSvcPipe.value_or(*opt.logSvcPipe), 0);
         }
 
         using namespace client;
@@ -261,7 +270,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
         // code from here on is only executed by the root process (browser window process)
 
-        pmlog_info(std::format("== client section starting build#{} clean:{} ==", str::ToNarrow(PM_BID_GIT_HASH_SHORT), !PM_BID_DIRTY));
+        pmlog_info(std::format("== client section starting build#{} clean:{} ==", BuildIdShortHash(), BuildIdDirtyFlag()));
 
         {
             auto& folderResolver = infra::util::FolderResolver::Get();

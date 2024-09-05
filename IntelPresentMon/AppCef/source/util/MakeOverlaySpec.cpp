@@ -32,6 +32,8 @@ namespace p2c::client::util
             .graphDataWindowSize = traversedPref["timeRange"],
             .averagingWindowSize = traversedPref["metricsWindow"],
             .metricsOffset = traversedPref["metricsOffset"],
+            .etwFlushPeriod = traversedPref["etwFlushPeriod"],
+            .manualEtwFlush = traversedPref["manualEtwFlush"],
             .overlayPosition = (kern::OverlaySpec::OverlayPosition)traversedPref["overlayPosition"],
             .overlayWidth = traversedPref["overlayWidth"],
             .upscale = traversedPref["upscale"],
@@ -252,7 +254,7 @@ namespace p2c::client::util
         // populate widgets into spec file
         {         
             auto widgets = traversedSpec["widgets"].AsCefValue();
-            const auto widgetCount = Traverse(widgets).GetArrayLength();
+            const auto widgetCount = Traverse(widgets).GetLength();
             for (size_t i = 0; i < widgetCount; i++)
             {
                 auto widget = Traverse(widgets)[i].AsCefValue();
@@ -266,7 +268,7 @@ namespace p2c::client::util
                         auto type = lay::EnumRegistry<GraphType>::ToEnum(Traverse(vGraph)["graphType"]["name"].AsWString());
                         // create the metric specs for each line etc. in widget
                         std::vector<kern::GraphMetricSpec> graphMetricSpecs;
-                        for (size_t i = 0; i < widgetMetrics.GetArrayLength(); i++) {
+                        for (size_t i = 0; i < widgetMetrics.GetLength(); i++) {
                             auto widgetMetric = Traverse(widgetMetrics)[i];
                             const gfx::lay::AxisAffinity axis = widgetMetric["axisAffinity"];
                             auto qualifiedMetric = widgetMetric["metric"];
@@ -352,7 +354,7 @@ namespace p2c::client::util
                         // why is this hardcoded using index 0?
                         sheets.back()->InsertRaw<at::textColor>(at::make::Color(ColorFromV8(widgetMetrics[0ull]["lineColor"])));
 
-                        const auto widgetMetricCount = widgetMetrics.GetArrayLength();
+                        const auto widgetMetricCount = widgetMetrics.GetLength();
                         bool hasRightAxis = false;
                         for (size_t iWidgetMetric = 0; iWidgetMetric < widgetMetricCount; iWidgetMetric++) {
                             auto widgetMetric = widgetMetrics[iWidgetMetric];
@@ -405,7 +407,7 @@ namespace p2c::client::util
                     auto& vReadout = widget;
                     auto& sheets = pSpec->sheets;
                     const auto tag = std::format("r{}", i);
-                    if (Traverse(vReadout)["metrics"].GetArrayLength() > 1) {
+                    if (Traverse(vReadout)["metrics"].GetLength() > 1) {
                         pmlog_warn("Too many metricIds for readout widget");
                     }
                     auto qualifiedMetric = Traverse(vReadout)["metrics"][0ull]["metric"];

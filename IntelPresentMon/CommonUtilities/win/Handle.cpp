@@ -38,11 +38,19 @@ namespace pmon::util::win
     void Handle::Clear()
     {
         if (*this) {
-            if (!CloseHandle(handle_)) {
+            if (!CloseHandle(std::exchange(handle_, nullptr))) {
                 // TODO: throw custom exception, perhaps with more context / error code / formatted error
                 throw std::runtime_error{ "Failed closing handle in Handle wrapper" };
             }
-            handle_ = nullptr;
+        }
+    }
+    Handle Handle::Clone() const
+    {
+        if (*this) {
+            return Handle::CreateCloned(handle_);
+        }
+        else {
+            return {};
         }
     }
     Handle::HandleType Handle::Release()
@@ -52,5 +60,14 @@ namespace pmon::util::win
     Handle::operator bool() const noexcept
     {
         return handle_ != nullptr && handle_ != INVALID_HANDLE_VALUE;
+    }
+    Handle Handle::CreateCloned(HandleType handle)
+    {
+        const auto processHandle = GetCurrentProcess();
+        HANDLE clonedHandle = NULL;
+        if (!DuplicateHandle(processHandle, handle, processHandle, &clonedHandle, 0, FALSE, DUPLICATE_SAME_ACCESS)) {
+            throw std::runtime_error{ "Failed cloning handle" };
+        }
+        return Handle{ clonedHandle };
     }
 }

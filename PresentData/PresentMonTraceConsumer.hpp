@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <vector>
 #include <set>
+#include <unordered_set>
 #include <windows.h>
 #include <evntcons.h> // must include after windows.h
 
@@ -125,9 +126,20 @@ enum class FrameType {
     AMD_AFMF = 100,
 };
 
-struct InputEvent {
+struct InputData {
     uint64_t Time;
+    uint64_t MouseClickTime;
+    uint64_t XFormTime;
     InputDeviceType Type;
+    uint64_t hWnd;
+};
+
+struct MouseClickData {
+    uint64_t CurrentMouseClickTime;
+    uint64_t CurrentXFormTime;
+    uint64_t LastMouseClickTime;
+    uint64_t LastXFormTime;
+    uint64_t hWnd;
 };
 
 struct PresentFrameTypeEvent {
@@ -159,7 +171,9 @@ struct PresentEvent {
     uint64_t GPUDuration;       // QPC duration during which a frame's DMA packet was running on
                                 // ... any node (if mTrackGPUVideo==false) or non-video nodes (if mTrackGPUVideo==true)
     uint64_t GPUVideoDuration;  // QPC duration during which a frame's DMA packet was running on a video node (if mTrackGPUVideo==true)
-    uint64_t InputTime;         // Earliest QPC value when the keyboard/mouse was clicked and used by this frame
+    uint64_t ScreenTime;        // QPC value when the present was displayed on screen
+    uint64_t InputTime;         // Earliest QPC value when the keyboard/mouse were tapped/moved and used by this frame
+    uint64_t MouseClickTime;    // Earliest QPC value when the mouse was clicked and used by this frame
 
     // Extra present parameters obtained through DXGI or D3D9 present
     uint64_t SwapChainAddress;
@@ -299,8 +313,10 @@ struct PMTraceConsumer
     // Mutexs to protect consumer/dequeue access from different threads:
     std::mutex mProcessEventMutex;
     std::mutex mPresentEventMutex;
+    // condition variable to signal when output ring space becomes available, used for backpressure in offline mode
     std::condition_variable mCompletedRingCondition;
-
+    // event used to signal when new events are available for dequeing
+    HANDLE hEventsReadyEvent;
 
     // EventMetadata stores the structure of ETW events to optimize subsequent property retrieval.
     EventMetadata mMetadata;
@@ -392,6 +408,8 @@ struct PMTraceConsumer
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByVidPnLayerId;                 // VidPnLayerId -> PresentEvent
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mLastPresentByWindow;                   // HWND -> PresentEvent
 
+    std::unordered_map<uint64_t, MouseClickData> mReceivedMouseClickByHwnd;                             // HWND -> MouseClickData
+
     // mGpuTrace tracks work executed on the GPU.
     GpuTrace mGpuTrace;
 
@@ -419,7 +437,7 @@ struct PMTraceConsumer
     uint64_t mLastInputDeviceReadTime = 0;
     InputDeviceType mLastInputDeviceType = InputDeviceType::None;
 
-    std::unordered_map<uint32_t, std::pair<uint64_t, InputDeviceType>> mRetrievedInput; // ProcessID -> <InputTime, InputType>
+    std::unordered_map<uint32_t, InputData> mRetrievedInput; // ProcessID -> InputData<InputTime, InputType, isMouseClick>
 
 
     // -------------------------------------------------------------------------------------------
@@ -467,9 +485,11 @@ struct PMTraceConsumer
     void CompletePresent(std::shared_ptr<PresentEvent> const& present);
     void RemoveLostPresent(std::shared_ptr<PresentEvent> present);
 
-    void UpdateReadyCount();
+    void UpdateReadyCount(bool useLock);
 
     void DeferFlipFrameType(uint64_t vidPnLayerId, uint64_t presentId, uint64_t timestamp, FrameType frameType);
     void ApplyFlipFrameType(std::shared_ptr<PresentEvent> const& present, uint64_t timestamp, FrameType frameType);
     void ApplyPresentFrameType(std::shared_ptr<PresentEvent> const& present);
+
+    void SignalEventsReady();
 };

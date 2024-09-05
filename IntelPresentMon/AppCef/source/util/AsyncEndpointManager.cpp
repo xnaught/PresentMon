@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 #include "AsyncEndpointManager.h"
 #include <Core/source/infra/Logging.h>
-#include <Core/source/infra/util/Util.h>
 #include <algorithm>
 #include "CefValues.h"
 #include <include/cef_task.h>
@@ -30,6 +29,14 @@ namespace p2c::client::util
 				std::forward_as_tuple(std::move(ctx), pEndpoint)
 			);
 			lck.unlock();
+
+			if constexpr (v::v8async) {
+				pmlog_verb(v::v8async)(std::format("Async call {{{}}} from V8 to endpoint [{}] with payload:\n{}",
+					uid, key, Traverse(V8ToCefValue(*pObj)).Dump()));
+			}
+			else {
+				pmlog_dbg(std::format("Async call {{{}}} from V8 to endpoint [{}]", uid, key));
+			}
 
 			switch (pEndpoint->GetEnvironment())
 			{
@@ -86,6 +93,15 @@ namespace p2c::client::util
 		if (auto i = invocations.find(uid); i != std::end(invocations))
 		{
 			auto invocation = std::move(i->second);
+
+			if constexpr (v::v8async) {
+				pmlog_verb(v::v8async)(std::format("Async call {{{}}} resolved with payload:\n{}",
+					uid, Traverse(pArgs).Dump()));
+			}
+			else {
+				pmlog_verb(v::v8async)(std::format("Async call {{{}}} resolved", uid));
+			}
+
 			invocations.erase(i);
 			lck.unlock();
 

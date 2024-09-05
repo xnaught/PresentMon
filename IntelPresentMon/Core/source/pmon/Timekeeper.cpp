@@ -1,12 +1,15 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "Timekeeper.h"
+#include <CommonUtilities/Qpc.h>
 
 namespace p2c::pmon
 {
+	using namespace ::pmon::util;
+
 	double Timekeeper::Now()
 	{
-		return RelativeToEpoch(infra::util::qpc::GetCurrentTimestamp());
+		return RelativeToEpoch(GetCurrentTimestamp());
 	}
 
 	void Timekeeper::LockNow()
@@ -26,8 +29,8 @@ namespace p2c::pmon
 
 	Timekeeper::Timekeeper()
 		:
-		epoch{ infra::util::qpc::GetCurrentTimestamp() },
-		period{ infra::util::qpc::GetPeriodSeconds() }
+		epoch{ GetCurrentTimestamp() },
+		period{ GetTimestampPeriodSeconds() }
 	{}
 
 	Timekeeper Timekeeper::singleton{};

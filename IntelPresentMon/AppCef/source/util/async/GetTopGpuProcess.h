@@ -8,7 +8,7 @@
 #include <ranges>
 #include <Core/source/win/GpuUtilization.h>
 #include <Core/source/win/ProcessMapBuilder.h>
-#include <Core/source/infra/util/Util.h>
+#include <CommonUtilities/str/String.h>
 
 namespace p2c::client::util::async
 {
@@ -40,7 +40,7 @@ namespace p2c::client::util::async
                 std::unordered_set<std::string> blacklistSet(blacklist.begin(), blacklist.end());
                 // remove candidate target processes that match blacklist (lower case compare)
                 std::erase_if(procList, [&](const win::Process& proc) {
-                    auto narrowName = infra::util::ToNarrow(proc.name);
+                    auto narrowName = ::pmon::util::str::ToNarrow(proc.name);
                     for (auto& c : narrowName) {
                         c = std::tolower(c);
                     }

@@ -196,7 +196,7 @@ void InputTest(uint32_t v)
         return;
     }
 
-    char const* inputHeader = v == 1 ? "msSinceInput" : "ClickToPhotonLatency";
+    char const* inputHeader = v == 1 ? "msSinceInput" : "AllInputToPhotonLatency";
 
     auto idxInputHeader = csv.GetColumnIndex(inputHeader);
     if (idxInputHeader == SIZE_MAX) {

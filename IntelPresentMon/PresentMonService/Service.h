@@ -16,13 +16,17 @@ const int NumReportEventStrings = 2;
 class Service
 {
 public:
+	Service();
 	void SignalServiceStop(std::optional<int> errCode = {});
 	std::optional<int> GetErrorCode() const;
 	virtual HANDLE GetServiceStopHandle() = 0;
 	virtual HANDLE GetResetPowerTelemetryHandle() = 0;
+	HANDLE GetClientSessionHandle();
+	void SignalClientSessionOpened();
 	virtual ~Service() = default;
 private:
 	std::optional<int> errCode_;
+	HANDLE clientSessionEvent_;
 };
 
 class ConsoleDebugMockService : public Service

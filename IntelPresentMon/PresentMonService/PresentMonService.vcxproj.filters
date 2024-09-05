@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="NamedPipeCmdProcess.cpp" />
-    <ClCompile Include="NamedPipeServer.cpp" />
+    <ClCompile Include="ActionServer.cpp" />
     <ClCompile Include="PMMainThread.cpp" />
     <ClCompile Include="PowerTelemetryContainer.cpp" />
     <ClCompile Include="PresentMon.cpp" />
@@ -12,11 +11,11 @@
     <ClCompile Include="PresentMonSession.cpp" />
     <ClCompile Include="RealtimePresentMonSession.cpp" />
     <ClCompile Include="MockPresentMonSession.cpp" />
+    <ClCompile Include="ActionRegistration.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="LateStageReprojectionData.hpp" />
-    <ClInclude Include="NamedPipeCmdProcess.h" />
-    <ClInclude Include="NamedPipeServer.h" />
+    <ClInclude Include="ActionServer.h" />
     <ClInclude Include="PowerTelemetryContainer.h" />
     <ClInclude Include="PresentMon.h" />
     <ClInclude Include="Service.h" />
@@ -28,8 +27,23 @@
     <ClInclude Include="MockPresentMonSession.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="LogSetup.h" />
+    <ClInclude Include="acts\OpenSession.h" />
+    <ClInclude Include="ActionHelper.h" />
+    <ClInclude Include="acts\StartTracking.h" />
+    <ClInclude Include="acts\GetStaticCpuMetrics.h" />
+    <ClInclude Include="acts\EnumerateAdapters.h" />
+    <ClInclude Include="acts\SetTelemetryPeriod.h" />
+    <ClInclude Include="acts\SelectAdapter.h" />
+    <ClInclude Include="acts\StopTracking.h" />
+    <ClInclude Include="AllActions.h" />
+    <ClInclude Include="ServiceExecutionContext.h" />
+    <ClInclude Include="Logging.h" />
+    <ClInclude Include="acts\SetEtwFlushPeriod.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PresentMonService.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="build-scripts\pre-build.bat" />
   </ItemGroup>
 </Project>

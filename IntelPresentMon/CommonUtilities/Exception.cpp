@@ -3,6 +3,7 @@
 #include <sstream>
 #include "log/GlobalPolicy.h"
 #include "log/StackTrace.h"
+#include "../PresentMonAPI2/PresentMonAPI.h"
 #include <format>
 
 
@@ -62,6 +63,11 @@ namespace pmon::util
 		return bool(pTrace_);
 	}
 
+	PM_STATUS Exception::GeneratePmStatus() const noexcept
+	{
+		return PM_STATUS_FAILURE;
+	}
+
 	void DoCapture_(Exception& e)
 	{
 		if (log::GlobalPolicy::Get().GetExceptionTrace()) {
@@ -69,7 +75,35 @@ namespace pmon::util
 		}
 	}
 
-	std::string ReportException(std::exception_ptr pEx) noexcept
+	std::string ReportException(std::string note, std::exception_ptr pEx) noexcept
+	{
+		if (!pEx) {
+			pEx = std::current_exception();
+		}
+		const auto concat = [&](std::string what) {
+			if (!note.empty()) {
+				return note + "\n" + what;
+			}
+			else {
+				return what;
+			}
+		};
+		if (pEx) {
+			try {
+				std::rethrow_exception(pEx);
+			}
+			catch (const std::exception& e) {
+				try { return concat(std::format("[{}] {}", typeid(e).name(), e.what())); }
+				catch (...) { return {}; }
+			}
+			catch (...) {
+				return concat("Unrecognized exception");
+			}
+		}
+		return concat("No exception in flight");
+	}
+
+	PM_STATUS GeneratePmStatus(std::exception_ptr pEx) noexcept
 	{
 		if (!pEx) {
 			pEx = std::current_exception();
@@ -78,15 +112,14 @@ namespace pmon::util
 			try {
 				std::rethrow_exception(pEx);
 			}
-			catch (const std::exception& e) {
-				try { return std::format("[{}] {}", typeid(e).name(), e.what()); }
-				catch (...) { return {}; }
+			catch (const Exception& e) {
+				return e.GeneratePmStatus();
 			}
 			catch (...) {
-				return "Unrecognized exception";
+				return PM_STATUS_FAILURE;
 			}
 		}
-		return "No exception in flight";
+		return PM_STATUS_SUCCESS;
 	}
 
 	namespace {

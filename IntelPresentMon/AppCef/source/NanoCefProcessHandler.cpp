@@ -7,15 +7,13 @@
 #include "SchemeHandlerFactory.h"
 #include "DataBindAccessor.h"
 #include <Core/source/infra/Logging.h>
+#include <Core/source/infra/LogSetup.h>
 #include "include/wrapper/cef_closure_task.h"
 #include <include/cef_task.h>
 #include "include/base/cef_callback.h"
 #include "util/AsyncEndpointManager.h"
 #include "util/CefValues.h"
 #include <Core/source/cli/CliOptions.h>
-#include <CommonUtilities/mt/Thread.h>
-#include <CommonUtilities/log/NamedPipeMarshallReceiver.h>
-#include <CommonUtilities/log/EntryMarshallInjector.h>
 #include <include/cef_parser.h>
 
 using namespace pmon::util;
@@ -94,30 +92,7 @@ namespace p2c::client::cef
             std::string pipePrefix = std::format("p2c-logpipe-{}-{}", GetCurrentProcessId(), ++count);
             pChildCommandLine->AppendSwitchWithValue(opt.logPipeName.GetName(), pipePrefix);
             // launch connector thread
-            mt::Thread{ "logconn", count, [pipePrefix] {
-                try {
-                    // initially wait for 50ms to give child time to spawn
-                    std::this_thread::sleep_for(50ms);
-                    // retry connection maximum 100 times, every 15ms
-                    const int nAttempts = 100;
-                    for (int i = 0; i < nAttempts; i++) {
-                        try {
-                            auto pChan = log::GetDefaultChannel();
-                            auto pReceiver = std::make_shared<log::NamedPipeMarshallReceiver>(pipePrefix, log::IdentificationTable::GetPtr());
-                            auto pInjector = std::make_shared<log::EntryMarshallInjector>(pChan, std::move(pReceiver));
-                            pChan->AttachComponent(std::move(pInjector));
-                            return;
-                        }
-                        catch (const log::PipeConnectionError&) {
-                            std::this_thread::sleep_for(15ms);
-                        }
-                    }
-                    pmlog_warn(std::format("Failed to connect to logging source server {} after {} attempts", pipePrefix, nAttempts));
-                }
-                catch (...) {
-                    pmlog_error(ReportException());
-                }
-            } }.detach();
+            ConnectToLoggingSourcePipe(pipePrefix, count);
         }
     }
 

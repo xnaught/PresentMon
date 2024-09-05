@@ -58,6 +58,10 @@ namespace pmapi
         // set the rate at which the service polls device telemetry data
         // NOTE: this is independent/distinct from the rate at which a client app polls dynamic queries
         void SetTelemetryPollingPeriod(uint32_t deviceId, uint32_t milliseconds);
+        // set the rate at which ETW events are flushed from their buffers and processed at the service side
+        // lower values will give lower latency on frame data and enable lower offset values for dynamic metric queries
+        // a value of zero indicates no manual flushing (typically resulting in 1000ms latency on frame data)
+        void SetEtwFlushPeriod(uint32_t milliseconds);
         // get the underlying C API handle to the PresentMon service session
         // NOTE: it is recommended to use the Session member functions instead of using this handle directly
         PM_SESSION_HANDLE GetHandle() const;

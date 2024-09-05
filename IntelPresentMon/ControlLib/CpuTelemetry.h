@@ -10,7 +10,6 @@
 #include <wrl/client.h>
 #include <stdexcept>
 #include "CpuTelemetryInfo.h"
-#include "../PresentMonUtils/StringUtils.h"
 
 namespace pwr::cpu {
 

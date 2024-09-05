@@ -1,7 +1,8 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
+#include "Logging.h"
 #include "Service.h"
-#include "NamedPipeServer.h"
+#include "ActionServer.h"
 #include "PresentMon.h"
 #include "PowerTelemetryContainer.h"
 #include "..\ControlLib\WmiCpu.h"
@@ -11,78 +12,66 @@
 #include "CliOptions.h"
 #include "GlobalIdentifiers.h"
 #include <ranges>
+#include "../CommonUtilities/IntervalWaiter.h"
+#include "../CommonUtilities/PrecisionWaiter.h"
+#include "../CommonUtilities/win/Event.h"
 
 #include "../CommonUtilities/log/GlogShim.h"
 
+using namespace std::literals;
 using namespace pmon;
+using namespace svc;
+using namespace util;
 
-bool NanoSleep(int32_t ms, bool alertable) {
-  HANDLE timer;
-  LARGE_INTEGER li;
-  // Convert from ms to 100ns units and negate
-  int64_t ns = -10000 * (int64_t)ms;
-  // Create a high resolution table
-  if (!(timer = CreateWaitableTimerEx(NULL, NULL,
-                                      CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
-                                      TIMER_ALL_ACCESS))) {
-    return false;
-  }
-  li.QuadPart = ns;
-  if (!SetWaitableTimer(timer, &li, 0, NULL, NULL, FALSE)) {
-    CloseHandle(timer);
-    return false;
-  }
-  WaitForSingleObjectEx(timer, INFINITE, BOOL(alertable));
-  CloseHandle(timer);
-  return true;
-}
-
-// Attempt to use a high resolution sleep but if not
-// supported use regular Sleep().
-void PmSleep(int32_t ms, bool alertable = false) {
-  if (!NanoSleep(ms, alertable)) {
-    Sleep(ms);
-  }
-  return;
-}
-
-void IPCCommunication(Service* srv, PresentMon* pm)
+void EventFlushThreadEntry_(Service* const srv, PresentMon* const pm)
 {
-    // alias for options
-    auto& opt = clio::Options::Get();
-
-    bool createNamedPipeServer = true;
-
-    if (srv == nullptr) {
-        // TODO: log
+    if (srv == nullptr || pm == nullptr) {
+        pmlog_error();
         return;
     }
 
-    try
-    {
-        auto nps = std::make_unique<NamedPipeServer>(srv, pm, opt.controlPipe.AsOptional());
-        while (createNamedPipeServer) {
-            DWORD result = nps->RunServer();
-            if (result == ERROR_SUCCESS) {
-                createNamedPipeServer = false;
+    // this is the interval to wait when manual flush is disabled
+    // we still want to run the inner loop to poll in case it gets enabled
+    const double disabledInterval = 0.25;
+    double currentInterval = pm->GetEtwFlushPeriod().value_or(disabledInterval);
+    IntervalWaiter waiter{ currentInterval };
+
+    // outer dormant loop waits for either start of process tracking or service exit
+    while (true) {
+        pmlog_verb(v::etwq)("Begin idle ETW flush wait");
+        // if event index 0 is signalled that means we are stopping
+        if (*win::WaitAnyEvent(srv->GetServiceStopHandle(), pm->GetStreamingStartHandle()) == 0) {
+            pmlog_dbg("exiting ETW flush thread due to stop handle");
+            return;
+        }
+        pmlog_verb(v::etwq)("Entering ETW flush inner active loop");
+        // otherwise we assume streaming has started and we begin the flushing loop, checking for stop signal
+        while (!win::WaitAnyEventFor(0s, srv->GetServiceStopHandle())) {
+            // use interval wait to time flushes as a fixed cadence
+            waiter.SetInterval(currentInterval);
+            waiter.Wait();
+            // go dormant if there are no active streams left
+            // TODO: GetActiveStreams is not technically thread-safe, reconsider fixing this stuff in Service
+            if (pm->GetActiveStreams() == 0) {
+                pmlog_dbg("ETW flush loop entering dormancy due to 0 active streams");
+                break;
+            }
+            // check to see if manual flush is enabled
+            if (auto flushPeriodMs = pm->GetEtwFlushPeriod()) {
+                // flush events manually to reduce latency
+                pmlog_verb(v::etwq)("Manual ETW flush").pmwatch(*flushPeriodMs);
+                pm->FlushEvents();
+                currentInterval = double(*flushPeriodMs) / 1000.;
             }
             else {
-                // We were unable to start our named pipe server. Sleep for
-                // a bit and then try again.
-                PmSleep(3000);
+                pmlog_verb(v::etwq)("Detected disabled ETW flush, using idle poll period");
+                currentInterval = disabledInterval;
             }
         }
     }
-    catch (const std::bad_alloc& e)
-    {
-        LOG(INFO) << "Unable to create Name Pipe Server. Result: " << e.what();
-        return;
-    }
-
-    return;
 }
 
-void PowerTelemetry(Service* const srv, PresentMon* const pm,
+void PowerTelemetryThreadEntry_(Service* const srv, PresentMon* const pm,
 	PowerTelemetryContainer* const ptc, ipc::ServiceComms* const pComms)
 {
 	if (srv == nullptr || pm == nullptr || ptc == nullptr) {
@@ -96,7 +85,7 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
     // telemetry metric availability is accurately assessed
     {
         const HANDLE events[]{
-              pm->GetFirstConnectionHandle(),
+              srv->GetClientSessionHandle(),
               srv->GetServiceStopHandle(),
         };
         const auto waitResult = WaitForMultipleObjects((DWORD)std::size(events), events, FALSE, INFINITE);
@@ -118,6 +107,7 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
 	// only start periodic polling when streaming starts
     // exit polling loop and this thread when service is stopping
     {
+        IntervalWaiter waiter{ 0.016 };
         const HANDLE events[]{
           pm->GetStreamingStartHandle(),
           srv->GetServiceStopHandle(),
@@ -139,7 +129,8 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
                 for (auto& adapter : ptc->GetPowerTelemetryAdapters()) {
                     adapter->Sample();
                 }
-                PmSleep(pm->GetGpuTelemetryPeriod());
+                waiter.SetInterval(pm->GetGpuTelemetryPeriod());
+                waiter.Wait();
                 // go dormant if there are no active streams left
                 // TODO: consider race condition here if client stops and starts streams rapidly
                 if (pm->GetActiveStreams() == 0) {
@@ -150,9 +141,10 @@ void PowerTelemetry(Service* const srv, PresentMon* const pm,
     }
 }
 
-void CpuTelemetry(Service* const srv, PresentMon* const pm,
+void CpuTelemetryThreadEntry_(Service* const srv, PresentMon* const pm,
 	pwr::cpu::CpuTelemetry* const cpu)
 {
+    IntervalWaiter waiter{ 0.016 };
 	if (srv == nullptr || pm == nullptr) {
 		// TODO: log error on this condition
 		return;
@@ -169,10 +161,10 @@ void CpuTelemetry(Service* const srv, PresentMon* const pm,
 		if (i == 1) {
 			return;
 		}
-		while (WaitForSingleObject(srv->GetServiceStopHandle(), 0) !=
-			WAIT_OBJECT_0) {
+		while (WaitForSingleObject(srv->GetServiceStopHandle(), 0) != WAIT_OBJECT_0) {
 			cpu->Sample();
-			PmSleep(pm->GetGpuTelemetryPeriod());
+            waiter.SetInterval(pm->GetGpuTelemetryPeriod());
+            waiter.Wait();
 			// Get the number of currently active streams
 			auto num_active_streams = pm->GetActiveStreams();
 			if (num_active_streams == 0) {
@@ -181,6 +173,8 @@ void CpuTelemetry(Service* const srv, PresentMon* const pm,
 		}
 	}
 }
+
+
 
 void PresentMonMainThread(Service* const pSvc)
 {
@@ -191,7 +185,6 @@ void PresentMonMainThread(Service* const pSvc)
     // these thread containers need to be created outside of the try scope
     // so that if an exception happens, it won't block during unwinding,
     // trying to join threads that are waiting for a stop signal
-    std::jthread controlPipeThread;
     std::jthread gpuTelemetryThread;
     std::jthread cpuTelemetryThread;
 
@@ -203,7 +196,7 @@ void PresentMonMainThread(Service* const pSvc)
         // debug_service to false in order to proceed
         for (auto debug_service = opt.debug; debug_service;) {
             if (WaitForSingleObject(pSvc->GetServiceStopHandle(), 0) != WAIT_OBJECT_0) {
-                PmSleep(500);
+                Sleep(100);
             }
             else {
                 return;
@@ -247,11 +240,11 @@ void PresentMonMainThread(Service* const pSvc)
         // Set the created power telemetry container 
         pm.SetPowerTelemetryContainer(&ptc);
 
-        // Start IPC communication thread
-        controlPipeThread = std::jthread{ IPCCommunication, pSvc, &pm };
+        // Start named pipe action RPC server (active threaded)
+        auto pActionServer = std::make_unique<ActionServer>(pSvc, &pm, opt.controlPipe.AsOptional());
 
         try {
-            gpuTelemetryThread = std::jthread{ PowerTelemetry, pSvc, &pm, &ptc, pComms.get() };
+            gpuTelemetryThread = std::jthread{ PowerTelemetryThreadEntry_, pSvc, &pm, &ptc, pComms.get() };
         }
         catch (...) {
             LOG(ERROR) << "failed creating gpu(power) telemetry thread" << std::endl;
@@ -271,7 +264,7 @@ void PresentMonMainThread(Service* const pSvc)
         }
 
         if (cpu) {
-            cpuTelemetryThread = std::jthread{ CpuTelemetry, pSvc, &pm, cpu.get() };
+            cpuTelemetryThread = std::jthread{ CpuTelemetryThreadEntry_, pSvc, &pm, cpu.get() };
             pm.SetCpu(cpu);
             // sample once to populate the cap bits
             cpu->Sample();
@@ -298,9 +291,12 @@ void PresentMonMainThread(Service* const pSvc)
             pComms->RegisterCpuDevice(PM_DEVICE_VENDOR_UNKNOWN, "UNKNOWN_CPU", cpuTelemetryCapBits_);
         }
 
-        while (WaitForSingleObjectEx(pSvc->GetServiceStopHandle(), 0, (bool)opt.timedStop) != WAIT_OBJECT_0) {
+        // start thread for manual ETW event buffer flushing
+        std::jthread flushThread{ EventFlushThreadEntry_, pSvc, &pm };
+
+        while (WaitForSingleObjectEx(pSvc->GetServiceStopHandle(), 0, FALSE) != WAIT_OBJECT_0) {
             pm.CheckTraceSessions();
-            PmSleep(1000, opt.timedStop);
+            SleepEx(1000, (bool)opt.timedStop);
         }
 
         // Stop the PresentMon sessions

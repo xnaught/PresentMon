@@ -6,9 +6,6 @@
 
 class PresentMon {
  public:
-  PresentMon() {
-      firstConnectionEvent_.reset(CreateEventA(NULL, TRUE, FALSE, NULL));
-  }
   ~PresentMon();
 
   // Check the status of both ETW logfile and real time trace sessions.
@@ -36,11 +33,21 @@ class PresentMon {
   PM_STATUS SetGpuTelemetryPeriod(uint32_t period_ms) {
     // Only the real time trace sets GPU telemetry period
     return real_time_session_.SetGpuTelemetryPeriod(period_ms);
-
   }
+
   uint32_t GetGpuTelemetryPeriod() {
     // Only the real time trace sets GPU telemetry period
     return real_time_session_.GetGpuTelemetryPeriod();
+  }
+
+  PM_STATUS SetEtwFlushPeriod(std::optional<uint32_t> periodMs) {
+      // Only the real time trace sets ETW flush period
+      return real_time_session_.SetEtwFlushPeriod(periodMs);
+  }
+
+  std::optional<uint32_t> GetEtwFlushPeriod() {
+      // Only the real time trace sets ETW flush period
+      return real_time_session_.GetEtwFlushPeriod();
   }
 
   void SetCpu(const std::shared_ptr<pwr::cpu::CpuTelemetry>& pCpu) {
@@ -64,11 +71,11 @@ class PresentMon {
     return real_time_session_.SetPowerTelemetryContainer(ptc);
   }
 
-  HANDLE GetFirstConnectionHandle() { return firstConnectionEvent_.get(); }
+  void FlushEvents() {
+      real_time_session_.FlushEvents();
+  }
 
  private:
-  std::unique_ptr<std::remove_pointer_t<HANDLE>, HandleDeleter>
-    firstConnectionEvent_;
   RealtimePresentMonSession real_time_session_;
   MockPresentMonSession mock_session_;
 };

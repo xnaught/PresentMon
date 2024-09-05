@@ -1,7 +1,7 @@
 // Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 #define NOMINMAX
-#include "../PresentMonUtils/PresentMonNamedPipe.h"
+#include "../PresentMonUtils/StreamFormat.h"
 #include "FrameEventQuery.h"
 #include "../PresentMonAPIWrapperCommon/Introspection.h"
 #include "../CommonUtilities/Memory.h"
@@ -22,7 +22,7 @@ namespace pmon::mid
 	{
 	public:
 		virtual ~GatherCommand_() = default;
-		virtual void Gather(const Context& ctx, uint8_t* pDestBlob) const = 0;
+		virtual void Gather(Context& ctx, uint8_t* pDestBlob) const = 0;
 		virtual uint32_t GetBeginOffset() const = 0;
 		virtual uint32_t GetEndOffset() const = 0;
 		virtual uint32_t GetOutputOffset() const = 0;
@@ -78,7 +78,7 @@ namespace
 			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(Type));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
-		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			constexpr auto pSubstruct = GetSubstructurePointer<pMember>();
 			if constexpr (std::is_array_v<Type>) {
@@ -159,7 +159,7 @@ namespace
 			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
-		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			const auto qpcDuration = ctx.pSourceFrameData->present_event.*pMember;
 			if (qpcDuration != 0) {
@@ -200,7 +200,7 @@ namespace
 			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
-		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
 				const auto gpuDuration = TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.GPUStartTime,
@@ -282,7 +282,7 @@ namespace
 	{
 	public:
 		DroppedGatherCommand_(size_t nextAvailableByteOffset) : outputOffset_{ (uint32_t)nextAvailableByteOffset } {}
-		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			reinterpret_cast<bool&>(pDestBlob[outputOffset_]) = ctx.dropped;
 		}
@@ -310,7 +310,7 @@ namespace
 			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
-		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			const auto qpcDuration = ctx.pSourceFrameData->present_event.*pEnd - ctx.qpcStart;
 			const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
@@ -336,7 +336,7 @@ namespace
 	{
 	public:
 		CpuFrameQpcGatherCommand_(size_t nextAvailableByteOffset) : outputOffset_{ (uint32_t)nextAvailableByteOffset } {}
-		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			reinterpret_cast<uint64_t&>(pDestBlob[outputOffset_]) = ctx.cpuStart;
 		}
@@ -364,7 +364,7 @@ namespace
 			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
-		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			if constexpr (doDroppedCheck) {
 				if (ctx.dropped) {
@@ -441,7 +441,7 @@ namespace
 			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
-		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			if (ctx.dropped) {
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
@@ -485,7 +485,7 @@ namespace
 			outputPaddingSize_ = (uint16_t) util::GetPadding(nextAvailableByteOffset, alignof(double));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
-		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			if (ctx.dropped) {
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
@@ -529,7 +529,7 @@ namespace
 	{
 	public:
 		CpuFrameQpcFrameTimeCommand_(size_t nextAvailableByteOffset) : outputOffset_{ (uint32_t)nextAvailableByteOffset } {}
-		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
 				const auto cpuBusy = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuStart, ctx.pSourceFrameData->present_event.PresentStartTime,
@@ -562,7 +562,7 @@ namespace
 	{
 	public:
 		GpuWaitGatherCommand_(size_t nextAvailableByteOffset) : outputOffset_{ (uint32_t)nextAvailableByteOffset } {}
-		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
 				const auto gpuDuration = TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.GPUStartTime,
@@ -591,7 +591,72 @@ namespace
 	private:
 		uint32_t outputOffset_;
 	};
+	template<uint64_t PmNsmPresentEvent::* pStart, uint64_t PmNsmPresentEvent::* pEnd, bool doDroppedCheck, bool isMouseClick>
+	class InputLatencyGatherCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		InputLatencyGatherCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
+		{
+			if constexpr (doDroppedCheck) {
+				if (ctx.dropped) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
+					return;
+				}
+			}
 
+			double updatedInputTime = 0.;
+			double val = 0.;
+			if (isMouseClick) {
+				updatedInputTime = ctx.lastReceivedNotDisplayedClickQpc == 0 ? 0. :
+					TimestampDeltaToUnsignedMilliSeconds(ctx.lastReceivedNotDisplayedClickQpc,
+						ctx.pSourceFrameData->present_event.*pEnd, ctx.performanceCounterPeriodMs);
+				val = ctx.pSourceFrameData->present_event.*pStart == 0 ? updatedInputTime :
+					TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pStart,
+						ctx.pSourceFrameData->present_event.*pEnd,
+						ctx.performanceCounterPeriodMs);
+				ctx.lastReceivedNotDisplayedClickQpc = 0;
+			}
+			else {
+				updatedInputTime = ctx.lastReceivedNotDisplayedAllInputTime == 0 ? 0. :
+					TimestampDeltaToUnsignedMilliSeconds(ctx.lastReceivedNotDisplayedAllInputTime,
+						ctx.pSourceFrameData->present_event.*pEnd, ctx.performanceCounterPeriodMs);
+				val = ctx.pSourceFrameData->present_event.*pStart == 0 ? updatedInputTime :
+					TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pStart,
+						ctx.pSourceFrameData->present_event.*pEnd,
+						ctx.performanceCounterPeriodMs);
+				ctx.lastReceivedNotDisplayedAllInputTime = 0;
+			}
+
+			if (val == 0.) {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
+			}
+			else {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			}
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + alignof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
 }
 
 PM_FRAME_QUERY::PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
@@ -631,7 +696,7 @@ PM_FRAME_QUERY::PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
 
 PM_FRAME_QUERY::~PM_FRAME_QUERY() = default;
 
-void PM_FRAME_QUERY::GatherToBlob(const Context& ctx, uint8_t* pDestBlob) const
+void PM_FRAME_QUERY::GatherToBlob(Context& ctx, uint8_t* pDestBlob) const
 {
 	for (auto& cmd : gatherCommands_) {
 		cmd->Gather(ctx, pDestBlob);
@@ -769,7 +834,9 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_DISPLAY_LATENCY:
 		return std::make_unique<DisplayLatencyGatherCommand_>(pos);
 	case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
-		return std::make_unique<ClickToPhotonGatherCommand_>(pos);
+		return std::make_unique<InputLatencyGatherCommand_<&Pre::MouseClickTime, &Pre::ScreenTime, 1, 1>>(pos);
+	case PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY:
+		return std::make_unique<InputLatencyGatherCommand_<&Pre::InputTime, &Pre::ScreenTime, 1, 0>>(pos);
 
 	default:
 		pmlog_error("unknown metric id").pmwatch((int)q.metric).diag();
@@ -784,6 +851,7 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 										       const PmNsmFrameData* pPreviousFrameDataOfLastDisplayed)
 {
 	pSourceFrameData = pSourceFrameData_in;
+    @@@ do manual merge from GameTechDev/main
 	sourceFrameDisplayIndex = 0;
 	dropped = pSourceFrameData->present_event.FinalState != PresentResult::Presented && pSourceFrameData->present_event.DisplayedCount == 0;
 	cpuStart = pFrameDataOfLastPresented->present_event.PresentStartTime + pFrameDataOfLastPresented->present_event.TimeInPresent;

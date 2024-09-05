@@ -103,7 +103,7 @@ PresentEvent::PresentEvent()
     , GPUDuration(0)
     , GPUVideoDuration(0)
     , InputTime(0)
-
+    , MouseClickTime(0)
     , SwapChainAddress(0)
     , SyncInterval(-1)
     , PresentFlags(0)
@@ -153,6 +153,7 @@ PMTraceConsumer::PMTraceConsumer()
     , mCompletedPresents(PRESENTEVENT_CIRCULAR_BUFFER_SIZE)
     , mGpuTrace(this)
 {
+    hEventsReadyEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
 }
 
 void PMTraceConsumer::HandleD3D9Event(EVENT_RECORD* pEventRecord)
@@ -1226,7 +1227,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
                                         StopTrackingPresent(p2);
                                     }
 
-                                    UpdateReadyCount();
+                                    UpdateReadyCount(true);
                                 }
                             }
                         }
@@ -1543,19 +1544,73 @@ void PMTraceConsumer::HandleWin32kEvent(EVENT_RECORD* pEventRecord)
 
         case Microsoft_Windows_Win32k::RetrieveInputMessage_Info::Id:
         {
+            EventDataDesc desc[] = {
+                { L"hwnd" }
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto hWnd = desc[0].GetData<uint64_t>();
+
             auto ii = mRetrievedInput.find(hdr.ProcessId);
             if (ii == mRetrievedInput.end()) {
-                mRetrievedInput.emplace(hdr.ProcessId, std::make_pair(
-                    mLastInputDeviceReadTime,
-                    mLastInputDeviceType));
+                InputData data = { mLastInputDeviceReadTime, 0, 0, mLastInputDeviceType, hWnd };
+                auto it = mReceivedMouseClickByHwnd.find(hWnd);
+                if (it != mReceivedMouseClickByHwnd.end()) {
+                    data.MouseClickTime = it->second.CurrentMouseClickTime;
+                    data.XFormTime = it->second.CurrentXFormTime;
+                    it->second.LastMouseClickTime = it->second.CurrentMouseClickTime;
+                    it->second.LastXFormTime = it->second.CurrentXFormTime;
+                }
+                mRetrievedInput.emplace(hdr.ProcessId, data);
             } else {
-                if (ii->second.first < mLastInputDeviceReadTime) {
-                    ii->second.first = mLastInputDeviceReadTime;
-                    ii->second.second = mLastInputDeviceType;
+                if (ii->second.Time < mLastInputDeviceReadTime) {
+                    ii->second.Time = mLastInputDeviceReadTime;
+                    ii->second.Type = mLastInputDeviceType;
+                }
+                // We can recieve multiple RetrieveInputMessage_Info events
+                // before we receive an OnInputXformUpdate_Info event. Because
+                // of this if the last device input type was a mouse
+                // check to see if it was a mouse click and update if
+                // necessary
+                if (mLastInputDeviceType == InputDeviceType::Mouse) {
+                    auto it = mReceivedMouseClickByHwnd.find(hWnd);
+                    if (it != mReceivedMouseClickByHwnd.end()) {
+                        if (it->second.LastMouseClickTime < it->second.CurrentMouseClickTime) {
+                            ii->second.MouseClickTime = it->second.CurrentMouseClickTime;
+                            ii->second.XFormTime = it->second.CurrentXFormTime;
+                            it->second.LastMouseClickTime = it->second.CurrentMouseClickTime;
+                            it->second.LastXFormTime = it->second.CurrentXFormTime;
+                        }
+                    }
                 }
             }
             return;
         }
+
+        case Microsoft_Windows_Win32k::OnInputXformUpdate_Info::Id:
+        {
+            EventDataDesc desc[] = {
+                { L"Hwnd" },
+                { L"XformQPCTime"}
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto hWnd = desc[0].GetData<uint64_t>();
+            auto xFormQPCTime = desc[1].GetData<uint64_t>();
+
+            auto it = mReceivedMouseClickByHwnd.find(hWnd);
+            if (it != mReceivedMouseClickByHwnd.end()) {
+                if (it->second.LastMouseClickTime < mLastInputDeviceReadTime) {
+                    it->second.CurrentMouseClickTime = mLastInputDeviceReadTime;
+                    it->second.CurrentXFormTime = xFormQPCTime;
+                }
+            }
+            else {
+                MouseClickData data = { mLastInputDeviceReadTime, xFormQPCTime , 0, 0 };
+                mReceivedMouseClickByHwnd.emplace(hWnd, data);
+            }
+
+            return;
+        }
+
         }
     }
 
@@ -1970,6 +2025,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
         }
     }
 
+    @@@ Fix the mutex locking logic here
     // Add the present to the completed list
     if (present != nullptr) {
         std::unique_lock<std::mutex> lock(mPresentEventMutex);
@@ -2003,8 +2059,10 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
             index = GetRingIndex(mCompletedIndex + mCompletedCount);
             mCompletedCount++;
         }
-
-        mCompletedPresents[index] = present;
+    // otherwise, completed buffer still has available space
+    } else {
+        index = GetRingIndex(mCompletedIndex + mCompletedCount);
+        mCompletedCount++;
     }
 
     // Update the ready count
@@ -2032,21 +2090,36 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
                 StopTrackingPresent(deferredPresent);
                 UpdateReadyCount();
             }
+    UpdateReadyCount();
         }
     }
 }
 
-void PMTraceConsumer::UpdateReadyCount()
+void PMTraceConsumer::UpdateReadyCount(bool useLock)
 {
-    std::lock_guard<std::mutex> lock(mPresentEventMutex);
-
+    // TODO: fix this indentation
+    {
+    std::unique_lock<std::mutex> lck{ mPresentEventMutex, std::defer_lock }; 
+    if (useLock) {
+        lck.lock();
+    }
+    else {
+        assert(!lck.try_lock());
+    }
+    
+    bool newPresentsReady = false;
     for (; mReadyCount < mCompletedCount; ++mReadyCount) {
+        newPresentsReady = true;
         auto const& p = mCompletedPresents[GetRingIndex(mCompletedIndex + mReadyCount)];
         if (p->WaitingForPresentStop ||
             p->WaitingForFlipFrameType ||
             p->WaitingForFrameId) {
             break;
         }
+    }
+    }
+    if (newPresentsReady) {
+        SignalEventsReady();
     }
 }
 
@@ -2150,10 +2223,16 @@ void PMTraceConsumer::TrackPresent(
     // Assign any pending retrieved input to this frame
     if (mTrackInput) {
         auto ii = mRetrievedInput.find(present->ProcessId);
-        if (ii != mRetrievedInput.end() && ii->second.second != InputDeviceType::None) {
-            present->InputTime = ii->second.first;
-            present->InputType = ii->second.second;
-            ii->second.second = InputDeviceType::None;
+        if (ii != mRetrievedInput.end() && ii->second.Type != InputDeviceType::None) {
+            present->InputTime = ii->second.Time;
+            present->InputType = ii->second.Type;
+            if (ii->second.MouseClickTime != 0 && ii->second.XFormTime != 0) {
+                present->MouseClickTime = ii->second.MouseClickTime;
+            } else {
+                present->MouseClickTime = 0;
+            }
+            ii->second.Type = InputDeviceType::None;
+            ii->second.XFormTime = 0;
         }
     }
 }
@@ -2208,8 +2287,7 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
         present->WaitingForPresentStop = false;
 
         mPresentByThreadId.erase(eventIter);
-
-        UpdateReadyCount();
+        UpdateReadyCount(true);
         return;
     }
 
@@ -2326,8 +2404,11 @@ void PMTraceConsumer::HandleProcessEvent(EVENT_RECORD* pEventRecord)
         }
     }
 
-    std::lock_guard<std::mutex> lock(mProcessEventMutex);
-    mProcessEvents.emplace_back(event);
+    {
+        std::lock_guard<std::mutex> lock(mProcessEventMutex);
+        mProcessEvents.emplace_back(event);
+    }
+    SignalEventsReady();
 }
 
 void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
@@ -2425,6 +2506,12 @@ void PMTraceConsumer::ApplyPresentFrameType(
     }
 }
 
+// TODO: consider separating process and present events, would reduce unneccessary mutex locking
+void PMTraceConsumer::SignalEventsReady()
+{
+    SetEvent(hEventsReadyEvent);
+}
+
 void PMTraceConsumer::HandleMetadataEvent(EVENT_RECORD* pEventRecord)
 {
     mMetadata.AddMetadata(pEventRecord);
@@ -2481,5 +2568,7 @@ void PMTraceConsumer::DequeuePresentEvents(std::vector<std::shared_ptr<PresentEv
             mReadyCount = 0;
         }
     }
-    mCompletedRingCondition.notify_one();
+    if (!mIsRealtimeSession && !mDisableOfflineBackpressure) {
+        mCompletedRingCondition.notify_one();
+    }
 }

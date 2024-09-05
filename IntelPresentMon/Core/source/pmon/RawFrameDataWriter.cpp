@@ -1,7 +1,6 @@
 // Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "RawFrameDataWriter.h"
-#include <Core/source/infra/util/Util.h>
 #include <CommonUtilities//str/String.h>
 #include <PresentMonAPIWrapper/FrameQuery.h>
 #include <PresentMonAPIWrapperCommon/EnumMap.h>
@@ -137,7 +136,8 @@ namespace p2c::pmon
                 if (metricId == PM_METRIC_DISPLAYED_TIME ||
                     metricId == PM_METRIC_DISPLAY_LATENCY ||
                     metricId == PM_METRIC_ANIMATION_ERROR ||
-                    metricId == PM_METRIC_CLICK_TO_PHOTON_LATENCY) {
+                    metricId == PM_METRIC_CLICK_TO_PHOTON_LATENCY ||
+                    metricId == PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY) {
                     flags |= Annotation_::FLAG_NAN_MEANS_NOT_AVAILABLE;
                 }
 
@@ -361,8 +361,8 @@ namespace p2c::pmon
             "Total Frames,"
             "Average FPS,"
             "Minimum FPS,"
-            "99th Percentile FPS,"
-            "95th Percentile FPS,"
+            "1st Percentile FPS,"
+            "5th Percentile FPS,"
             "Maximum FPS,"
             "AnimationErrorPerSecond,"
             "AnimationErrorPerFrame\n";

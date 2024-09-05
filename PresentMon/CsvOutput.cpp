@@ -304,6 +304,7 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
                      L",AnimationError");
     }
     if (args.mTrackInput) {
+        fwprintf(fp, L",AllInputToPhotonLatency");
         fwprintf(fp, L",ClickToPhotonLatency");
     }
     if (args.mWriteDisplayTime) {
@@ -313,6 +314,10 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
         fwprintf(fp, L",FrameId");
     }
     fwprintf(fp, L"\n");
+
+    if (args.mCSVOutput == CSVOutput::Stdout) {
+        fflush(fp);
+    }
 }
 
 template<>
@@ -387,6 +392,12 @@ void WriteCsvRow<FrameMetrics>(
         }
     }
     if (args.mTrackInput) {
+        if (metrics.mAllInputPhotonLatency == 0.0) {
+            fwprintf(fp, L",NA");
+        }
+        else {
+            fwprintf(fp, L",%.4lf", metrics.mAllInputPhotonLatency);
+        }
         if (metrics.mClickToPhotonLatency == 0.0) {
             fwprintf(fp, L",NA");
         } else {
@@ -405,6 +416,10 @@ void WriteCsvRow<FrameMetrics>(
         fwprintf(fp, L",%u", p.FrameId);
     }
     fwprintf(fp, L"\n");
+
+    if (args.mCSVOutput == CSVOutput::Stdout) {
+        fflush(fp);
+    }
 }
 
 template<typename FrameMetricsT>

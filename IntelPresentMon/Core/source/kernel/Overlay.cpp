@@ -9,7 +9,6 @@
 #include <Core/source/pmon/RawFrameDataWriter.h>
 #include <Core/source/pmon/Timekeeper.h>
 #include <Core/source/gfx/layout/style/StyleProcessor.h>
-#include <Core/source/infra/util/rn/ToVector.h>
 #include <Core/source/win/StandardWindow.h>
 #include <Core/source/win/OverlayWindow.h>
 #include <Core/source/cli/CliOptions.h>
@@ -59,7 +58,7 @@ namespace p2c::kern
                                     .label = std::move(metInfo.fullName),
                                     .units = std::move(metInfo.unitLabel),
                                 });
-                            }) | infra::util::rn::ToVector();
+                            }) | rn::to<std::vector>();
                         pRoot->AddChild(GraphElement::Make(
                             pGraphSpec->type, std::move(packsData), { pGraphSpec->tag }
                         ));

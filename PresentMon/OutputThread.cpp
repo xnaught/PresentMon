@@ -397,6 +397,7 @@ static void ReportMetricsHelper(
             metrics.mAnimationErrorValid = false;
         }
 
+        @@@ manual merge from GameTechDev/main
         if (p->Displayed.empty()) {
             metrics.mFrameType = FrameType::NotSet;
         } else {

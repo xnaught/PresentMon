@@ -301,6 +301,7 @@ ULONG EnableProviders(
         if (pmConsumer->mTrackInput) {
             provider.AddEvent<Microsoft_Windows_Win32k::InputDeviceRead_Stop>();
             provider.AddEvent<Microsoft_Windows_Win32k::RetrieveInputMessage_Info>();
+            provider.AddEvent<Microsoft_Windows_Win32k::OnInputXformUpdate_Info>();
         }
         status = provider.Enable(sessionHandle, Microsoft_Windows_Win32k::GUID);
         if (status != ERROR_SUCCESS) return status;

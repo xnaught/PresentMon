@@ -1,5 +1,6 @@
 #pragma once
 #include "../PresentMonAPI2/PresentMonAPI.h"
+#include "../PresentMonUtils/StreamFormat.h"
 #include <vector>
 #include <span>
 #include <memory>
@@ -45,11 +46,15 @@ public:
 		// Display index to attribute cpu work, gpu work, animation error and
 		// input latency
 		size_t appIndex = 0;
+		// Click time qpc of non displayed frame
+		uint64_t lastReceivedNotDisplayedClickQpc = 0;
+		// All other input time qpc of non displayed frame
+		uint64_t lastReceivedNotDisplayedAllInputTime = 0;
 	};
 	// functions
 	PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements);
 	~PM_FRAME_QUERY();
-	void GatherToBlob(const Context& ctx, uint8_t* pDestBlob) const;
+	void GatherToBlob(Context& ctx, uint8_t* pDestBlob) const;
 	size_t GetBlobSize() const;
 	std::optional<uint32_t> GetReferencedDevice() const;
 

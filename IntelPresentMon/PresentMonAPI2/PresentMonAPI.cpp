@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include "../PresentMonMiddleware/MockMiddleware.h"
 #include "../PresentMonMiddleware/ConcreteMiddleware.h"
-#include "../PresentMonMiddleware/Exception.h"
+#include "../Interprocess/source/PmStatusError.h"
 #include "Internal.h"
 #include "PresentMonAPI.h"
 #include "../PresentMonMiddleware/LogSetup.h"
@@ -27,19 +27,16 @@ Middleware& LookupMiddleware_(const void* handle)
 		return *handleMap_.at(handle);
 	}
 	catch (...) {
-		throw Exception{ PM_STATUS_SESSION_NOT_OPEN };
+		pmlog_error();
+		throw util::Except<ipc::PmStatusError>(PM_STATUS_SESSION_NOT_OPEN);
 	}
 }
 
 void DestroyMiddleware_(PM_SESSION_HANDLE handle)
 {
-	try {
-		if (!handleMap_.erase(handle)) {
-			throw Exception{ PM_STATUS_SESSION_NOT_OPEN };
-		}
-	}
-	catch (...) {
-		throw Exception{ PM_STATUS_FAILURE };
+	if (!handleMap_.erase(handle)) {
+		pmlog_error();
+		throw util::Except<ipc::PmStatusError>(PM_STATUS_SESSION_NOT_OPEN);
 	}
 }
 
@@ -52,7 +49,8 @@ void RemoveHandleMapping_(const void* dependentHandle)
 {
 	if (!handleMap_.erase(dependentHandle)) {
 		// TODO: add error code to indicate a bad / missing handle (other than session handle)
-		throw Exception{ PM_STATUS_FAILURE };
+		pmlog_error();
+		throw util::Except<ipc::PmStatusError>(PM_STATUS_FAILURE);
 	}
 }
 
@@ -83,11 +81,10 @@ PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareSpeak_(PM_SESSION_HANDLE handle, ch
 		LookupMiddleware_(handle).Speak(buffer);
 		return PM_STATUS_SUCCESS;
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
-	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }
 
@@ -98,11 +95,10 @@ PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(PM_SESSION_HANDLE hand
 		dynamic_cast<MockMiddleware&>(mid).AdvanceTime(milliseconds);
 		return PM_STATUS_SUCCESS;
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
-	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }
 
@@ -132,11 +128,10 @@ PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, cons
 		handleMap_[*pHandle] = std::move(pMiddleware);
 		return PM_STATUS_SUCCESS;
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
-	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }
 
@@ -202,11 +197,10 @@ PRESENTMON_API2_EXPORT PM_STATUS pmCloseSession(PM_SESSION_HANDLE handle)
 		DestroyMiddleware_(handle);
 		return PM_STATUS_SUCCESS;
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
-	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }
 
@@ -217,11 +211,10 @@ PRESENTMON_API2_EXPORT PM_STATUS pmStartTrackingProcess(PM_SESSION_HANDLE handle
 		// TODO: middleware should not return status codes
 		return LookupMiddleware_(handle).StartStreaming(processId);
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
-	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }
 
@@ -232,11 +225,10 @@ PRESENTMON_API2_EXPORT PM_STATUS pmStopTrackingProcess(PM_SESSION_HANDLE handle,
 		// TODO: middleware should not return status codes
 		return LookupMiddleware_(handle).StopStreaming(processId);
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
-	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }
 
@@ -252,11 +244,10 @@ PRESENTMON_API2_EXPORT PM_STATUS pmGetIntrospectionRoot(PM_SESSION_HANDLE handle
 		*ppInterface = pIntro;
 		return PM_STATUS_SUCCESS;
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
-	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }
 
@@ -271,11 +262,10 @@ PRESENTMON_API2_EXPORT PM_STATUS pmFreeIntrospectionRoot(const PM_INTROSPECTION_
 		mid.FreeIntrospectionData(pInterface);
 		return PM_STATUS_SUCCESS;
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
-	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }
 
@@ -285,11 +275,23 @@ PRESENTMON_API2_EXPORT PM_STATUS pmSetTelemetryPollingPeriod(PM_SESSION_HANDLE h
 		LookupMiddleware_(handle).SetTelemetryPollingPeriod(deviceId, timeMs);
 		return PM_STATUS_SUCCESS;
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
+	catch (...) {
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
+	}
+}
+
+PRESENTMON_API2_EXPORT PM_STATUS pmSetEtwFlushPeriod(PM_SESSION_HANDLE handle, uint32_t periodMs)
+{
+	try {
+		LookupMiddleware_(handle).SetEtwFlushPeriod(periodMs ? std::optional{ periodMs } : std::nullopt);
+		return PM_STATUS_SUCCESS;
 	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }
 
@@ -311,11 +313,10 @@ PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_SESSION_HANDLE sessio
 		*pQueryHandle = queryHandle;
 		return PM_STATUS_SUCCESS;
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
-	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }
 
@@ -330,11 +331,10 @@ PRESENTMON_API2_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE hand
 		mid.FreeDynamicQuery(handle);
 		return PM_STATUS_SUCCESS;
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
-	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }
 
@@ -348,11 +348,10 @@ PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE hand
 		LookupMiddleware_(handle).PollDynamicQuery(handle, processId, pBlob, numSwapChains);
 		return PM_STATUS_SUCCESS;
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
-	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }
 
@@ -366,11 +365,10 @@ PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(PM_SESSION_HANDLE sessionHand
 		LookupMiddleware_(sessionHandle).PollStaticQuery(*pElement, processId, pBlob);
 		return PM_STATUS_SUCCESS;
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
-	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }
 
@@ -386,11 +384,10 @@ PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameQuery(PM_SESSION_HANDLE sessionH
 		*pQueryHandle = queryHandle;
 		return PM_STATUS_SUCCESS;
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
-	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }
 
@@ -404,11 +401,10 @@ PRESENTMON_API2_EXPORT PM_STATUS pmConsumeFrames(PM_FRAME_QUERY_HANDLE handle, u
 		LookupMiddleware_(handle).ConsumeFrameEvents(handle, processId, pBlob, *pNumFramesToRead);
 		return PM_STATUS_SUCCESS;
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
-	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }
 
@@ -420,10 +416,9 @@ PRESENTMON_API2_EXPORT PM_STATUS pmFreeFrameQuery(PM_FRAME_QUERY_HANDLE handle)
 		mid.FreeFrameEventQuery(handle);
 		return PM_STATUS_SUCCESS;
 	}
-	catch (const Exception& e) {
-		return e.GetErrorCode();
-	}
 	catch (...) {
-		return PM_STATUS_FAILURE;
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
 	}
 }

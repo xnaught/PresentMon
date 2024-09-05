@@ -6,7 +6,7 @@
 #include "CliOptions.h"
 #include "../PresentMonAPIWrapper/PresentMonAPIWrapper.h"
 #include "../CommonUtilities/win/WinAPI.h"
-// #define PMLOG_BUILD_LEVEL ::pmon::util::log::Level::Verbose
+// #define PMLOG_BUILD_LEVEL Verbose
 #include "../CommonUtilities/log/Log.h"
 #include "../CommonUtilities/log/NamedPipeMarshallReceiver.h"
 #include "../CommonUtilities/log/NamedPipeMarshallSender.h"
@@ -18,7 +18,9 @@
 #include "Verbose.h"
 #include "LogSetup.h"
 
-using namespace std::chrono_literals;
+#include "../CommonUtilities/pipe/Pipe.h"
+
+using namespace std::literals;
 using namespace pmon::util;
 
 PM_DEFINE_EX(LogDemoException);

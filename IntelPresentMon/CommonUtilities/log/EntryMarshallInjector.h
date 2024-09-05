@@ -11,11 +11,11 @@ namespace pmon::util::log
 	class EntryMarshallInjector : public IChannelObject
 	{
 	public:
-		EntryMarshallInjector(std::shared_ptr<IEntrySink> pTo_, std::shared_ptr<IEntryMarshallReceiver> pSink);
+		EntryMarshallInjector(std::weak_ptr<IEntrySink> pTo_, std::shared_ptr<IEntryMarshallReceiver> pSink);
 		~EntryMarshallInjector() override;
 	private:
 		std::shared_ptr<IEntryMarshallReceiver> pFrom_;
-		std::shared_ptr<IEntrySink> pTo_;
+		std::weak_ptr<IEntrySink> pTo_;
 		mt::Thread worker_;
 	};
 }

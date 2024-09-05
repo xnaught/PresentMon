@@ -32,6 +32,11 @@ namespace p2c::kern
                 deviceId == rhs.deviceId;
             // TODO: cosider what to do about unitId here
         }
+        std::string Dump() const
+        {
+            return std::format("QMet> metId:{} staId:{} arrIdx:{} devId:{} untId:{}",
+                metricId, statId, arrayIndex, deviceId, unitId);
+        }
     };
 
     struct GraphMetricSpec
@@ -71,6 +76,8 @@ namespace p2c::kern
         double graphDataWindowSize;
         double averagingWindowSize;
         double metricsOffset;
+        double etwFlushPeriod;
+        bool manualEtwFlush;
         OverlayPosition overlayPosition;
         std::vector<std::variant<GraphSpec, ReadoutSpec>> widgets;
         int overlayWidth;
