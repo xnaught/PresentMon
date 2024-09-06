@@ -380,15 +380,11 @@ void WriteCsvRow<FrameMetrics>(
     }
     if (args.mTrackDisplay) {
         if (metrics.mDisplayedTime == 0.0) {
-            fwprintf(fp, L",NA,NA");
+            fwprintf(fp, L",NA,NA,NA");
         } else {
-            fwprintf(fp, L",%.4lf,%.4lf", metrics.mDisplayLatency,
-                                          metrics.mDisplayedTime);
-        }
-        if (metrics.mAnimationErrorValid) {
-            fwprintf(fp, L",%.4lf", metrics.mAnimationError);
-        } else {
-            fwprintf(fp, L",NA");
+            fwprintf(fp, L",%.4lf,%.4lf,%.4lf", metrics.mDisplayLatency,
+                                                metrics.mDisplayedTime,
+                                                metrics.mAnimationError);
         }
     }
     if (args.mTrackInput) {

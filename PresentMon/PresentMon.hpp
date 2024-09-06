@@ -106,8 +106,6 @@ struct FrameMetrics {
     uint64_t mScreenTime;
 
     FrameType mFrameType;
-
-    bool mAnimationErrorValid;
 };
 
 struct FrameMetrics1 {

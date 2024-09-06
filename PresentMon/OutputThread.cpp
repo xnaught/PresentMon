@@ -382,22 +382,43 @@ static void ReportMetricsHelper(
             metrics.mScreenTime     = 0;
         }
 
-        if (displayed && displayIndex == appIndex && p->InputTime != 0) {
+        if (displayIndex == appIndex) {
+            if (displayed) {
+                auto updatedInputTime = chain->mLastReceivedNotDisplayedAllInputTime == 0 ? 0 :
+                    pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedAllInputTime, screenTime);
+                metrics.mAllInputPhotonLatency = p->InputTime == 0 ? updatedInputTime : 
+                    pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, screenTime);
+
+                updatedInputTime = chain->mLastReceivedNotDisplayedMouseClickTime == 0 ? 0 :
+                    pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedMouseClickTime, screenTime);
+                metrics.mClickToPhotonLatency = p->MouseClickTime == 0 ? updatedInputTime :
+                    pmSession.TimestampDeltaToUnsignedMilliSeconds(p->MouseClickTime, screenTime);
+
+                chain->mLastReceivedNotDisplayedAllInputTime = 0;
+                chain->mLastReceivedNotDisplayedMouseClickTime = 0;
+            } else {
+                metrics.mClickToPhotonLatency = 0;
+                metrics.mAllInputPhotonLatency = 0;
+                if (p->InputTime != 0) {
+                    chain->mLastReceivedNotDisplayedAllInputTime = p->InputTime;
+                }
+                if (p->MouseClickTime != 0) {
+                    chain->mLastReceivedNotDisplayedMouseClickTime = p->MouseClickTime;
+                }
+            }
             metrics.mClickToPhotonLatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, screenTime);
         } else {
             metrics.mClickToPhotonLatency = 0;
+            metrics.mAllInputPhotonLatency = 0;
         }
 
         if (displayed && displayIndex == appIndex && chain->mLastDisplayedCPUStart != 0) {
             metrics.mAnimationError      = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
                                                                                   metrics.mCPUStart - chain->mLastDisplayedCPUStart);
-            metrics.mAnimationErrorValid = true;
         } else {
             metrics.mAnimationError      = 0;
-            metrics.mAnimationErrorValid = false;
         }
 
-        @@@ manual merge from GameTechDev/main
         if (p->Displayed.empty()) {
             metrics.mFrameType = FrameType::NotSet;
         } else {

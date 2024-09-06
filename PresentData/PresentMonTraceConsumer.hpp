@@ -171,7 +171,6 @@ struct PresentEvent {
     uint64_t GPUDuration;       // QPC duration during which a frame's DMA packet was running on
                                 // ... any node (if mTrackGPUVideo==false) or non-video nodes (if mTrackGPUVideo==true)
     uint64_t GPUVideoDuration;  // QPC duration during which a frame's DMA packet was running on a video node (if mTrackGPUVideo==true)
-    uint64_t ScreenTime;        // QPC value when the present was displayed on screen
     uint64_t InputTime;         // Earliest QPC value when the keyboard/mouse were tapped/moved and used by this frame
     uint64_t MouseClickTime;    // Earliest QPC value when the mouse was clicked and used by this frame
 
