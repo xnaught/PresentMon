@@ -231,7 +231,9 @@ void RealtimePresentMonSession::AddPresents(
             if (p->FinalState == PresentResult::Presented) {
                 const auto per = util::GetTimestampPeriodSeconds();
                 const auto now = util::GetCurrentTimestamp();
-                const auto lag = util::TimestampDeltaToSeconds(p->ScreenTime, now, per);
+                // TODO: Presents can now have multiple displayed frames if we are tracking
+                // frame types. For now take the first displayed frame for logging stats
+                const auto lag = util::TimestampDeltaToSeconds(p->Displayed[0].second, now, per);
                 pmlog_verb(svc::v::etwq)(std::format("Frame [{}] lag: {} ms", p->FrameId, lag * 1000.));
             }
         }

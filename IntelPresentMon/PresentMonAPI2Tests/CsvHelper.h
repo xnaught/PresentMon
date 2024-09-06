@@ -321,7 +321,7 @@ public:
     bool Open(std::wstring const& path, uint32_t processId);
     void Close();
     bool VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-        PM_QUERY_ELEMENT(&queryElements)[19], pmapi::BlobContainer& blobs);
+        PM_QUERY_ELEMENT(&queryElements)[20], pmapi::BlobContainer& blobs);
     bool ResetCsv();
 
 private:
@@ -350,7 +350,7 @@ CsvParser::CsvParser()
 {}
 
 bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-    PM_QUERY_ELEMENT(&queryElements)[19], pmapi::BlobContainer& blobs)
+    PM_QUERY_ELEMENT(&queryElements)[20], pmapi::BlobContainer& blobs)
 {
 
     for (auto pBlob : blobs) {

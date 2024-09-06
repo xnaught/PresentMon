@@ -124,7 +124,7 @@ namespace
 			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(FrameType));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
-		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
             auto val = ctx.pSourceFrameData->present_event.Displayed_FrameType[ctx.sourceFrameDisplayIndex];
 			// Currently not reporting out not set or repeated frames.
@@ -238,7 +238,7 @@ namespace
 			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
-		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			if (ctx.dropped) {
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
@@ -406,7 +406,7 @@ namespace
 			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
-		void Gather(const Context& ctx, uint8_t* pDestBlob) const override
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
             if (ctx.dropped) {
                 reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
@@ -591,7 +591,7 @@ namespace
 	private:
 		uint32_t outputOffset_;
 	};
-	template<uint64_t PmNsmPresentEvent::* pStart, uint64_t PmNsmPresentEvent::* pEnd, bool doDroppedCheck, bool isMouseClick>
+	template<uint64_t PmNsmPresentEvent::* pStart, bool doDroppedCheck, bool isMouseClick>
 	class InputLatencyGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
@@ -612,25 +612,29 @@ namespace
 
 			double updatedInputTime = 0.;
 			double val = 0.;
-			if (isMouseClick) {
-				updatedInputTime = ctx.lastReceivedNotDisplayedClickQpc == 0 ? 0. :
-					TimestampDeltaToUnsignedMilliSeconds(ctx.lastReceivedNotDisplayedClickQpc,
-						ctx.pSourceFrameData->present_event.*pEnd, ctx.performanceCounterPeriodMs);
-				val = ctx.pSourceFrameData->present_event.*pStart == 0 ? updatedInputTime :
-					TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pStart,
-						ctx.pSourceFrameData->present_event.*pEnd,
-						ctx.performanceCounterPeriodMs);
-				ctx.lastReceivedNotDisplayedClickQpc = 0;
-			}
-			else {
-				updatedInputTime = ctx.lastReceivedNotDisplayedAllInputTime == 0 ? 0. :
-					TimestampDeltaToUnsignedMilliSeconds(ctx.lastReceivedNotDisplayedAllInputTime,
-						ctx.pSourceFrameData->present_event.*pEnd, ctx.performanceCounterPeriodMs);
-				val = ctx.pSourceFrameData->present_event.*pStart == 0 ? updatedInputTime :
-					TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pStart,
-						ctx.pSourceFrameData->present_event.*pEnd,
-						ctx.performanceCounterPeriodMs);
-				ctx.lastReceivedNotDisplayedAllInputTime = 0;
+			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
+				if (isMouseClick) {
+					updatedInputTime = ctx.lastReceivedNotDisplayedClickQpc == 0 ? 0. :
+						TimestampDeltaToUnsignedMilliSeconds(ctx.lastReceivedNotDisplayedClickQpc,
+							ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
+							ctx.performanceCounterPeriodMs);
+					val = ctx.pSourceFrameData->present_event.*pStart == 0 ? updatedInputTime :
+						TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pStart,
+							ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
+							ctx.performanceCounterPeriodMs);
+					ctx.lastReceivedNotDisplayedClickQpc = 0;
+				}
+				else {
+					updatedInputTime = ctx.lastReceivedNotDisplayedAllInputTime == 0 ? 0. :
+						TimestampDeltaToUnsignedMilliSeconds(ctx.lastReceivedNotDisplayedAllInputTime,
+							ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
+							ctx.performanceCounterPeriodMs);
+					val = ctx.pSourceFrameData->present_event.*pStart == 0 ? updatedInputTime :
+						TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pStart,
+							ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
+							ctx.performanceCounterPeriodMs);
+					ctx.lastReceivedNotDisplayedAllInputTime = 0;
+				}
 			}
 
 			if (val == 0.) {
@@ -834,9 +838,9 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_DISPLAY_LATENCY:
 		return std::make_unique<DisplayLatencyGatherCommand_>(pos);
 	case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
-		return std::make_unique<InputLatencyGatherCommand_<&Pre::MouseClickTime, &Pre::ScreenTime, 1, 1>>(pos);
+		return std::make_unique<InputLatencyGatherCommand_<&Pre::MouseClickTime, 1, 1>>(pos);
 	case PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY:
-		return std::make_unique<InputLatencyGatherCommand_<&Pre::InputTime, &Pre::ScreenTime, 1, 0>>(pos);
+		return std::make_unique<InputLatencyGatherCommand_<&Pre::InputTime, 1, 0>>(pos);
 
 	default:
 		pmlog_error("unknown metric id").pmwatch((int)q.metric).diag();
@@ -851,11 +855,35 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 										       const PmNsmFrameData* pPreviousFrameDataOfLastDisplayed)
 {
 	pSourceFrameData = pSourceFrameData_in;
-    @@@ do manual merge from GameTechDev/main
-	sourceFrameDisplayIndex = 0;
+    sourceFrameDisplayIndex = 0;
 	dropped = pSourceFrameData->present_event.FinalState != PresentResult::Presented && pSourceFrameData->present_event.DisplayedCount == 0;
-	cpuStart = pFrameDataOfLastPresented->present_event.PresentStartTime + pFrameDataOfLastPresented->present_event.TimeInPresent;
-	nextDisplayedQpc = pFrameDataOfNextDisplayed->present_event.Displayed_ScreenTime[0];
+	if (dropped) {
+		if (pSourceFrameData->present_event.MouseClickTime != 0) {
+			lastReceivedNotDisplayedClickQpc = pSourceFrameData->present_event.MouseClickTime;
+		}
+		if (pSourceFrameData->present_event.InputTime != 0) {
+			lastReceivedNotDisplayedAllInputTime = pSourceFrameData->present_event.InputTime;
+		}
+	}
+
+	if (pFrameDataOfLastPresented) {
+		cpuStart = pFrameDataOfLastPresented->present_event.PresentStartTime + pFrameDataOfLastPresented->present_event.TimeInPresent;
+	}
+	else {
+		// TODO: log issue or invalidate related columns or drop frame (or some combination)
+		pmlog_info("null pFrameDataOfLastPresented");
+		cpuStart = 0;
+	}
+
+	if (pFrameDataOfNextDisplayed) {
+		nextDisplayedQpc = pFrameDataOfNextDisplayed->present_event.Displayed_ScreenTime[0];
+	}
+	else {
+		// TODO: log issue or invalidate related columns or drop frame (or some combination)
+		pmlog_info("null pFrameDataOfNextDisplayed");
+		nextDisplayedQpc = 0;
+	}
+	
 	if (pFrameDataOfLastDisplayed && pFrameDataOfLastDisplayed->present_event.DisplayedCount > 0) {
 		previousDisplayedQpc = pFrameDataOfLastDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastDisplayed->present_event.DisplayedCount - 1];
 	}
@@ -864,10 +892,13 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 		pmlog_info("null pFrameDataOfLastDisplayed");
 		previousDisplayedQpc = 0;
 	}
+
 	if (pPreviousFrameDataOfLastDisplayed) {
-		previousDisplayedCpuStartQpc = pPreviousFrameDataOfLastDisplayed->present_event.PresentStartTime + pPreviousFrameDataOfLastDisplayed->present_event.TimeInPresent;
+		previousDisplayedCpuStartQpc = pPreviousFrameDataOfLastDisplayed->present_event.PresentStartTime + 
+			pPreviousFrameDataOfLastDisplayed->present_event.TimeInPresent;
 	}
 	else {
+		pmlog_info("null pPreviousFrameDataOfLastDisplayed");
 		previousDisplayedCpuStartQpc = 0;
 	}
 	appIndex = 0;

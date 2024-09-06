@@ -406,7 +406,6 @@ static void ReportMetricsHelper(
                     chain->mLastReceivedNotDisplayedMouseClickTime = p->MouseClickTime;
                 }
             }
-            metrics.mClickToPhotonLatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, screenTime);
         } else {
             metrics.mClickToPhotonLatency = 0;
             metrics.mAllInputPhotonLatency = 0;

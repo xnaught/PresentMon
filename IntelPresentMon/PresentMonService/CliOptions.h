@@ -34,7 +34,5 @@ namespace clio
 
 		static constexpr const char* description = "Intel PresentMon service for frame and system performance measurement";
 		static constexpr const char* name = "PresentMonService.exe";
-	private:
-		CLI::CheckedTransformer logLevelTf_{ GetLevelMapNarrow(), CLI::ignore_case };
 	};
 }

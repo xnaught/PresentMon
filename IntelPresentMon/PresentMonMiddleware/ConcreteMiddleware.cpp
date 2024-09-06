@@ -564,7 +564,6 @@ static void ReportMetricsHelper(
         FrameMetrics metrics;
         metrics.mCPUStart = chain->mLastPresent.PresentStartTime + chain->mLastPresent.TimeInPresent;
 
-        @@@ Merge in fixes from GameTechDev/main
         if (displayIndex == appIndex) {
             msGPUDuration       = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->GPUStartTime, p->ReadyTime);
             metrics.mCPUBusy    = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->PresentStartTime);
@@ -590,19 +589,41 @@ static void ReportMetricsHelper(
             metrics.mDisplayedTime  = 0;
         }
 
-        if (displayed && displayIndex == appIndex && p->InputTime != 0) {
-            metrics.mClickToPhotonLatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, screenTime);
+        if (displayIndex == appIndex) {
+            if (displayed) {
+                auto updatedInputTime = chain->mLastReceivedNotDisplayedAllInputTime == 0 ? 0 :
+                    pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedAllInputTime, screenTime);
+                metrics.mAllInputPhotonLatency = p->InputTime == 0 ? updatedInputTime :
+                    pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, screenTime);
+
+                updatedInputTime = chain->mLastReceivedNotDisplayedMouseClickTime == 0 ? 0 :
+                    pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedMouseClickTime, screenTime);
+                metrics.mClickToPhotonLatency = p->MouseClickTime == 0 ? updatedInputTime :
+                    pmSession.TimestampDeltaToUnsignedMilliSeconds(p->MouseClickTime, screenTime);
+
+                chain->mLastReceivedNotDisplayedAllInputTime = 0;
+                chain->mLastReceivedNotDisplayedMouseClickTime = 0;
+            }
+            else {
+                metrics.mClickToPhotonLatency = 0;
+                metrics.mAllInputPhotonLatency = 0;
+                if (p->InputTime != 0) {
+                    chain->mLastReceivedNotDisplayedAllInputTime = p->InputTime;
+                }
+                if (p->MouseClickTime != 0) {
+                    chain->mLastReceivedNotDisplayedMouseClickTime = p->MouseClickTime;
+                }
+            }
         } else {
             metrics.mClickToPhotonLatency = 0;
+            metrics.mAllInputPhotonLatency = 0;
         }
 
         if (displayed && displayIndex == appIndex && chain->mLastDisplayedCPUStart != 0) {
             metrics.mAnimationError      = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
                                                                                   metrics.mCPUStart - chain->mLastDisplayedCPUStart);
-            metrics.mAnimationErrorValid = true;
         } else {
             metrics.mAnimationError      = 0;
-            metrics.mAnimationErrorValid = false;
         }
 
         if (p->DisplayedCount == 0) {
@@ -636,8 +657,13 @@ static void ReportMetricsHelper(
             }
         }
 
-        if (displayed && displayIndex == appIndex && p->InputTime != 0) {
-            chain->mClickToPhotonLatency.push_back(metrics.mClickToPhotonLatency);
+        if (displayed && displayIndex == appIndex) {
+            if (metrics.mAllInputPhotonLatency != 0) {
+                chain->mAllInputToPhotonLatency.push_back(metrics.mAllInputPhotonLatency);
+            }
+            if (metrics.mClickToPhotonLatency != 0) {
+                chain->mClickToPhotonLatency.push_back(metrics.mClickToPhotonLatency);
+            }
         }
 
         if (metrics.mAnimationErrorValid) {
