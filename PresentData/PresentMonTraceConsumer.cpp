@@ -2025,57 +2025,57 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
         }
     }
 
-    @@@ Fix the mutex locking logic here
-    // Add the present to the completed list
-    if (present != nullptr) {
+    // lock mutex across this sequence:
+    // 1) add present to completed 2) update ready count 3) clear out stale deferred frames
+    {
         std::unique_lock<std::mutex> lock(mPresentEventMutex);
 
-        uint32_t index;
-        // if completed buffer is full
-        if (mCompletedCount == PRESENTEVENT_CIRCULAR_BUFFER_SIZE) {
-            // if we are in offline ETL processing mode, block instead of overwriting events
-            // unless either A) the buffer is full of non-ready events or B) backpressure disabled via CLI option
-            if (!mIsRealtimeSession && mReadyCount != 0 && !mDisableOfflineBackpressure) {
-                mCompletedRingCondition.wait(lock, [this] { return mCompletedCount < PRESENTEVENT_CIRCULAR_BUFFER_SIZE; });
+        // Add the present to the completed list
+        if (present != nullptr) {
+            uint32_t index;
+            // if completed buffer is full
+            if (mCompletedCount == PRESENTEVENT_CIRCULAR_BUFFER_SIZE) {
+                // if we are in offline ETL processing mode, block instead of overwriting events
+                // unless either A) the buffer is full of non-ready events or B) backpressure disabled via CLI option
+                if (!mIsRealtimeSession && mReadyCount != 0 && !mDisableOfflineBackpressure) {
+                    mCompletedRingCondition.wait(lock, [this] { return mCompletedCount < PRESENTEVENT_CIRCULAR_BUFFER_SIZE; });
+                    index = GetRingIndex(mCompletedIndex + mCompletedCount);
+                    mCompletedCount++;
+                }
+                // Completed present overflow routine (when not blocking):
+                // If the completed list is full, throw away the oldest completed present, if it IsLost; or this
+                // present, if it IsLost; or the oldest completed present.
+                else {
+                    if (!mCompletedPresents[mCompletedIndex]->IsLost && present->IsLost) {
+                        return;
+                    }
+
+                    index = mCompletedIndex;
+                    mCompletedIndex = GetRingIndex(mCompletedIndex + 1);
+                    if (mReadyCount > 0) {
+                        mReadyCount--;
+                    }
+                }
+                // otherwise, completed buffer still has available space
+            }
+            else {
                 index = GetRingIndex(mCompletedIndex + mCompletedCount);
                 mCompletedCount++;
             }
-            // Completed present overflow routine (when not blocking):
-            // If the completed list is full, throw away the oldest completed present, if it IsLost; or this
-            // present, if it IsLost; or the oldest completed present.
-            else {
-                if (!mCompletedPresents[mCompletedIndex]->IsLost && present->IsLost) {
-                    return;
-                }
-
-                index = mCompletedIndex;
-                mCompletedIndex = GetRingIndex(mCompletedIndex + 1);
-                if (mReadyCount > 0) {
-                    mReadyCount--;
-                }
-            }
-        // otherwise, completed buffer still has available space
-        } else {
-            index = GetRingIndex(mCompletedIndex + mCompletedCount);
-            mCompletedCount++;
+            // place the present in the completed presents ring buffer
+            mCompletedPresents[index] = present;
         }
-    // otherwise, completed buffer still has available space
-    } else {
-        index = GetRingIndex(mCompletedIndex + mCompletedCount);
-        mCompletedCount++;
-    }
 
-    // Update the ready count
-    UpdateReadyCount();
-    
-    {
-        std::unique_lock<std::mutex> lock(mPresentEventMutex);
+        // Update the ready count (do not lock mutex in this function, already locked)
+        UpdateReadyCount(false);
+
+        // clear out stale deferred frames
         // It's possible for a deferred condition to never be cleared.  e.g., a process' last present
         // doesn't get a Present_Stop event.  When this happens the deferred present will prevent all
         // subsequent presents from other processes from being dequeued until the ring buffer wraps and
         // forces it out, which is likely longer than we want to wait.  So we check here if there is 
         // a stuck deferred present and clear the deferral if it gets too old.
-        if (mReadyCount == 0) {
+        if (mReadyCount == 0 && mCompletedCount > 0) {
             auto const& deferredPresent = mCompletedPresents[mCompletedIndex];
             if (presentStartTime >= deferredPresent->PresentStartTime &&
                 presentStartTime - deferredPresent->PresentStartTime > mDeferralTimeLimit) {
@@ -2085,38 +2085,33 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
                     deferredPresent->IsLost = true;
                 }
                 deferredPresent->WaitingForFlipFrameType = false;
-                // UpdateReadyCount also locks the mPresentEventMutex so unlock here
-                lock.unlock();
                 StopTrackingPresent(deferredPresent);
-                UpdateReadyCount();
+                UpdateReadyCount(false);
             }
-    UpdateReadyCount();
         }
     }
 }
 
 void PMTraceConsumer::UpdateReadyCount(bool useLock)
 {
-    // TODO: fix this indentation
-    {
-    std::unique_lock<std::mutex> lck{ mPresentEventMutex, std::defer_lock }; 
-    if (useLock) {
-        lck.lock();
-    }
-    else {
-        assert(!lck.try_lock());
-    }
-    
     bool newPresentsReady = false;
-    for (; mReadyCount < mCompletedCount; ++mReadyCount) {
-        newPresentsReady = true;
-        auto const& p = mCompletedPresents[GetRingIndex(mCompletedIndex + mReadyCount)];
-        if (p->WaitingForPresentStop ||
-            p->WaitingForFlipFrameType ||
-            p->WaitingForFrameId) {
-            break;
+    {
+        std::unique_lock<std::mutex> lck{ mPresentEventMutex, std::defer_lock }; 
+        if (useLock) {
+            lck.lock();
         }
-    }
+        else {
+            assert(!lck.try_lock());
+        }    
+        for (; mReadyCount < mCompletedCount; ++mReadyCount) {
+            newPresentsReady = true;
+            auto const& p = mCompletedPresents[GetRingIndex(mCompletedIndex + mReadyCount)];
+            if (p->WaitingForPresentStop ||
+                p->WaitingForFlipFrameType ||
+                p->WaitingForFrameId) {
+                break;
+            }
+        }
     }
     if (newPresentsReady) {
         SignalEventsReady();
