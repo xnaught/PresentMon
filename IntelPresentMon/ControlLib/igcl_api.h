@@ -394,11 +394,12 @@ typedef enum _ctl_result_t
     CTL_RESULT_ERROR_CORE_OVERCLOCK_VOLTAGE_OUTSIDE_RANGE = 0x44000002, ///< The Voltage exceeds the acceptable min/max.
     CTL_RESULT_ERROR_CORE_OVERCLOCK_FREQUENCY_OUTSIDE_RANGE = 0x44000003,   ///< The Frequency exceeds the acceptable min/max.
     CTL_RESULT_ERROR_CORE_OVERCLOCK_POWER_OUTSIDE_RANGE = 0x44000004,   ///< The Power exceeds the acceptable min/max.
-    CTL_RESULT_ERROR_CORE_OVERCLOCK_TEMPERATURE_OUTSIDE_RANGE = 0x44000005, ///< The Power exceeds the acceptable min/max.
+    CTL_RESULT_ERROR_CORE_OVERCLOCK_TEMPERATURE_OUTSIDE_RANGE = 0x44000005, ///< The Temperature exceeds the acceptable min/max.
     CTL_RESULT_ERROR_CORE_OVERCLOCK_IN_VOLTAGE_LOCKED_MODE = 0x44000006,///< The Overclock is in voltage locked mode.
     CTL_RESULT_ERROR_CORE_OVERCLOCK_RESET_REQUIRED = 0x44000007,///< It indicates that the requested change will not be applied until the
                                                     ///< device is reset.
     CTL_RESULT_ERROR_CORE_OVERCLOCK_WAIVER_NOT_SET = 0x44000008,///< The $OverclockWaiverSet function has not been called.
+    CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API = 0x44000009,///< The error indicates to switch to newer API version if applicable.
     CTL_RESULT_ERROR_CORE_END = 0x0440FFFF,         ///< "Core error code end value, not to be used
                                                     ///< "
     CTL_RESULT_ERROR_3D_START = 0x60000000,         ///< 3D error code starting value, not to be used
@@ -437,6 +438,10 @@ typedef enum _ctl_result_t
     CTL_RESULT_ERROR_CUSTOM_MODE_STANDARD_CUSTOM_MODE_EXISTS = 0x4800001a,  ///< Standard custom mode exists
     CTL_RESULT_ERROR_CUSTOM_MODE_NON_CUSTOM_MATCHING_MODE_EXISTS = 0x4800001b,  ///< Non custom matching mode exists
     CTL_RESULT_ERROR_CUSTOM_MODE_INSUFFICIENT_MEMORY = 0x4800001c,  ///< Custom mode insufficent memory
+    CTL_RESULT_ERROR_ADAPTER_ALREADY_LINKED = 0x4800001d,   ///< Adapter is already linked
+    CTL_RESULT_ERROR_ADAPTER_NOT_IDENTICAL = 0x4800001e,///< Adapter is not identical for linking
+    CTL_RESULT_ERROR_ADAPTER_NOT_SUPPORTED_ON_LDA_SECONDARY = 0x4800001f,   ///< Adapter is LDA Secondary, so not supporting requested operation
+    CTL_RESULT_ERROR_SET_FBC_FEATURE_NOT_SUPPORTED = 0x48000020,///< Set FBC Feature not supported
     CTL_RESULT_ERROR_DISPLAY_END = 0x4800FFFF,      ///< "Display error code end value, not to be used
                                                     ///< "
     CTL_RESULT_MAX
@@ -452,7 +457,7 @@ typedef enum _ctl_result_t
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef CTL_MAX_RESERVED_SIZE
 /// @brief Maximum reserved size for future members.
-#define CTL_MAX_RESERVED_SIZE  120
+#define CTL_MAX_RESERVED_SIZE  112
 #endif // CTL_MAX_RESERVED_SIZE
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -469,6 +474,10 @@ typedef enum _ctl_units_t
     CTL_UNITS_TIME_SECONDS = 7,                     ///< Type is Time with units in Seconds.
     CTL_UNITS_MEMORY_BYTES = 8,                     ///< Type is Memory with units in Bytes.
     CTL_UNITS_ANGULAR_SPEED_RPM = 9,                ///< Type is Angular Speed with units in Revolutions per Minute.
+    CTL_UNITS_POWER_MILLIWATTS = 10,                ///< Type is Power with units in MilliWatts.
+    CTL_UNITS_PERCENT = 11,                         ///< Type is Percentage.
+    CTL_UNITS_MEM_SPEED_GBPS = 12,                  ///< Type is Memory Speed in Gigabyte per Seconds (Gbps)
+    CTL_UNITS_VOLTAGE_MILLIVOLTS = 13,              ///< Type is Voltage with units in milliVolts.
     CTL_UNITS_UNKNOWN = 0x4800FFFF,                 ///< Type of units unknown.
     CTL_UNITS_MAX
 
@@ -692,9 +701,23 @@ typedef uint32_t ctl_adapter_properties_flags_t;
 typedef enum _ctl_adapter_properties_flag_t
 {
     CTL_ADAPTER_PROPERTIES_FLAG_INTEGRATED = CTL_BIT(0),///< [out] Is Integrated Graphics adapter
+    CTL_ADAPTER_PROPERTIES_FLAG_LDA_PRIMARY = CTL_BIT(1),   ///< [out] Is Primary (Lead) adapter in a Linked Display Adapter (LDA)
+                                                    ///< chain
+    CTL_ADAPTER_PROPERTIES_FLAG_LDA_SECONDARY = CTL_BIT(2), ///< [out] Is Secondary (Linked) adapter in a Linked Display Adapter (LDA)
+                                                    ///< chain
     CTL_ADAPTER_PROPERTIES_FLAG_MAX = 0x80000000
 
 } ctl_adapter_properties_flag_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Adapter Pci Bus, Device, Function
+typedef struct _ctl_adapter_bdf_t
+{
+    uint8_t bus;                                    ///< [out] PCI Bus Number
+    uint8_t device;                                 ///< [out] PCI device number
+    uint8_t function;                               ///< [out] PCI function
+
+} ctl_adapter_bdf_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @brief Device Adapter properties
@@ -717,6 +740,9 @@ typedef struct _ctl_device_adapter_properties_t
     char name[CTL_MAX_DEVICE_NAME_LEN];             ///< [out] Device name
     ctl_adapter_properties_flags_t graphics_adapter_properties; ///< [out] Graphics Adapter Properties
     uint32_t Frequency;                             ///< [out] Clock frequency for this device. Supported only for Version > 0
+    uint16_t pci_subsys_id;                         ///< [out] PCI SubSys ID, Supported only for Version > 1
+    uint16_t pci_subsys_vendor_id;                  ///< [out] PCI SubSys Vendor ID, Supported only for Version > 1
+    ctl_adapter_bdf_t adapter_bdf;                  ///< [out] Pci Bus, Device, Function. Supported only for Version > 1
     char reserved[CTL_MAX_RESERVED_SIZE];           ///< [out] Reserved
 
 } ctl_device_adapter_properties_t;
@@ -933,6 +959,10 @@ typedef struct _ctl_runtime_path_args_t ctl_runtime_path_args_t;
 typedef struct _ctl_firmware_version_t ctl_firmware_version_t;
 
 ///////////////////////////////////////////////////////////////////////////////
+/// @brief Forward-declare ctl_adapter_bdf_t
+typedef struct _ctl_adapter_bdf_t ctl_adapter_bdf_t;
+
+///////////////////////////////////////////////////////////////////////////////
 /// @brief Forward-declare ctl_device_adapter_properties_t
 typedef struct _ctl_device_adapter_properties_t ctl_device_adapter_properties_t;
 
@@ -1027,6 +1057,10 @@ typedef struct _ctl_sharpness_settings_t ctl_sharpness_settings_t;
 ///////////////////////////////////////////////////////////////////////////////
 /// @brief Forward-declare ctl_i2c_access_args_t
 typedef struct _ctl_i2c_access_args_t ctl_i2c_access_args_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Forward-declare ctl_i2c_access_pinpair_args_t
+typedef struct _ctl_i2c_access_pinpair_args_t ctl_i2c_access_pinpair_args_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @brief Forward-declare ctl_aux_access_args_t
@@ -1183,6 +1217,30 @@ typedef struct _ctl_genlock_topology_t ctl_genlock_topology_t;
 ///////////////////////////////////////////////////////////////////////////////
 /// @brief Forward-declare ctl_genlock_args_t
 typedef struct _ctl_genlock_args_t ctl_genlock_args_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Forward-declare ctl_vblank_ts_args_t
+typedef struct _ctl_vblank_ts_args_t ctl_vblank_ts_args_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Forward-declare ctl_lda_args_t
+typedef struct _ctl_lda_args_t ctl_lda_args_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Forward-declare ctl_dce_args_t
+typedef struct _ctl_dce_args_t ctl_dce_args_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Forward-declare ctl_wire_format_t
+typedef struct _ctl_wire_format_t ctl_wire_format_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Forward-declare ctl_get_set_wire_format_config_t
+typedef struct _ctl_get_set_wire_format_config_t ctl_get_set_wire_format_config_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Forward-declare ctl_display_settings_t
+typedef struct _ctl_display_settings_t ctl_display_settings_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @brief Forward-declare ctl_engine_properties_t
@@ -1371,7 +1429,7 @@ typedef struct _ctl_temp_properties_t ctl_temp_properties_t;
 #endif
 // Intel 'ctlApi' for Device Adapter
 #if !defined(__GNUC__)
-#pragma region 3D
+#pragma region _3D
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 /// @brief Feature type
@@ -1398,6 +1456,9 @@ typedef enum _ctl_3d_feature_t
                                                     ///< ::ctl_3d_app_profiles_caps_t & ::ctl_3d_app_profiles_t
     CTL_3D_FEATURE_APP_PROFILE_DETAILS = 12,        ///< Game Profile Customization. Refer custom field ::ctl_3d_tier_details_t
     CTL_3D_FEATURE_EMULATED_TYPED_64BIT_ATOMICS = 13,   ///< Emulated Typed 64bit Atomics support in DG2
+    CTL_3D_FEATURE_VRR_WINDOWED_BLT = 14,           ///< VRR windowed blt. Control VRR for windowed mode game
+    CTL_3D_FEATURE_GLOBAL_OR_PER_APP = 15,          ///< Set global settings or per application settings
+    CTL_3D_FEATURE_LOW_LATENCY = 16,                ///< Low latency mode. Contains generic enum type fields
     CTL_3D_FEATURE_MAX
 
 } ctl_3d_feature_t;
@@ -1472,6 +1533,17 @@ typedef enum _ctl_3d_endurance_gaming_mode_t
     CTL_3D_ENDURANCE_GAMING_MODE_MAX
 
 } ctl_3d_endurance_gaming_mode_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Low latency mode values possible
+typedef enum _ctl_3d_low_latency_types_t
+{
+    CTL_3D_LOW_LATENCY_TYPES_TURN_OFF = 0,          ///< Low latency mode disable
+    CTL_3D_LOW_LATENCY_TYPES_TURN_ON = 1,           ///< Low latency mode enable
+    CTL_3D_LOW_LATENCY_TYPES_TURN_ON_BOOST_MODE_ON = 2, ///< Low latency mode enable with boost
+    CTL_3D_LOW_LATENCY_TYPES_MAX
+
+} ctl_3d_low_latency_types_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @brief Cmaa values possible
@@ -1561,6 +1633,7 @@ typedef struct _ctl_endurance_gaming2_t
                                                     ///< Battery
     bool IsFPRequired;                              ///< [out] Is frame pacing required, dynamic state
     double TargetFPS;                               ///< [out] Target FPS for frame pacing
+    double RefreshRate;                             ///< [out] Refresh rate used to calculate target fps
     uint32_t Reserved[4];                           ///< [out] Reserved fields
 
 } ctl_endurance_gaming2_t;
@@ -1659,6 +1732,28 @@ typedef enum _ctl_emulated_typed_64bit_atomics_types_t
 } ctl_emulated_typed_64bit_atomics_types_t;
 
 ///////////////////////////////////////////////////////////////////////////////
+/// @brief VRR windowed BLT control possible. Reserved functionality
+typedef enum _ctl_3d_vrr_windowed_blt_reserved_t
+{
+    CTL_3D_VRR_WINDOWED_BLT_RESERVED_AUTO = 0,      ///< VRR windowed BLT auto
+    CTL_3D_VRR_WINDOWED_BLT_RESERVED_TURN_ON = 1,   ///< VRR windowed BLT enable
+    CTL_3D_VRR_WINDOWED_BLT_RESERVED_TURN_OFF = 2,  ///< VRR windowed BLT disable
+    CTL_3D_VRR_WINDOWED_BLT_RESERVED_MAX
+
+} ctl_3d_vrr_windowed_blt_reserved_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Global or per app values possible
+typedef enum _ctl_3d_global_or_per_app_types_t
+{
+    CTL_3D_GLOBAL_OR_PER_APP_TYPES_NONE = 0,        ///< none
+    CTL_3D_GLOBAL_OR_PER_APP_TYPES_PER_APP = 1,     ///< Opt for per app settings
+    CTL_3D_GLOBAL_OR_PER_APP_TYPES_GLOBAL = 2,      ///< Opt for global settings
+    CTL_3D_GLOBAL_OR_PER_APP_TYPES_MAX
+
+} ctl_3d_global_or_per_app_types_t;
+
+///////////////////////////////////////////////////////////////////////////////
 /// @brief 3D feature capability details which will have range/supported and
 ///        default values
 typedef struct _ctl_3d_feature_details_t
@@ -1739,6 +1834,8 @@ typedef struct _ctl_kmd_load_features_t
                                                     ///< given adapter. Note that this should contain only the name of the
                                                     ///< application and not the system specific path
     int8_t ApplicationNameLength;                   ///< [in] Length of ApplicationName string
+    int8_t CallerComponent;                         ///< [in] Caller component
+    int64_t Reserved[4];                            ///< [in] Reserved field
 
 } ctl_kmd_load_features_t;
 
@@ -1786,7 +1883,7 @@ ctlGetSet3DFeature(
 
 
 #if !defined(__GNUC__)
-#pragma endregion // 3D
+#pragma endregion // _3D
 #endif
 // Intel 'ctlApi' for Device Adapter
 #if !defined(__GNUC__)
@@ -1795,6 +1892,10 @@ ctlGetSet3DFeature(
 ///////////////////////////////////////////////////////////////////////////////
 /// @brief Handle of a display output instance
 typedef struct _ctl_display_output_handle_t *ctl_display_output_handle_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Handle of a i2c pin-pair instance
+typedef struct _ctl_i2c_pin_pair_handle_t *ctl_i2c_pin_pair_handle_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 /// @brief Check Driver version
@@ -1873,6 +1974,38 @@ ctlEnumerateDisplayOutputs(
     );
 
 ///////////////////////////////////////////////////////////////////////////////
+/// @brief Enumerate I2C Pin Pairs
+/// 
+/// @details
+///     - Returns available list of I2C Pin-Pairs on a requested adapter
+/// 
+/// @returns
+///     - CTL_RESULT_SUCCESS
+///     - CTL_RESULT_ERROR_UNINITIALIZED
+///     - CTL_RESULT_ERROR_DEVICE_LOST
+///     - CTL_RESULT_ERROR_INVALID_NULL_HANDLE
+///         + `nullptr == hDeviceAdapter`
+///     - CTL_RESULT_ERROR_INVALID_NULL_POINTER
+///         + `nullptr == pCount`
+///     - ::CTL_RESULT_ERROR_UNSUPPORTED_VERSION - "Unsupported version"
+///     - ::CTL_RESULT_ERROR_INVALID_NULL_POINTER - "The incoming pointer pCount is null"
+///     - ::CTL_RESULT_ERROR_INVALID_SIZE - "The supplied Count is not equal to actual number of i2c pin-pair instances"
+CTL_APIEXPORT ctl_result_t CTL_APICALL
+ctlEnumerateI2CPinPairs(
+    ctl_device_adapter_handle_t hDeviceAdapter,     ///< [in][release] handle to device adapter
+    uint32_t* pCount,                               ///< [in,out][release] pointer to the number of i2c pin-pair instances. If
+                                                    ///< count is zero, then the api will update the value with the total
+                                                    ///< number of i2c pin-pair instances available. If count is non-zero and
+                                                    ///< matches the avaialble number of pin-pairs, then the api will only
+                                                    ///< return the avaialble number of i2c pin-pair instances in phI2cPinPairs.
+    ctl_i2c_pin_pair_handle_t* phI2cPinPairs        ///< [out][optional][release][range(0, *pCount)] array of i2c pin pair
+                                                    ///< instance handles. Need to be allocated by Caller when supplying the
+                                                    ///< *pCount > 0. 
+                                                    ///< If Count is not equal to actual number of i2c pin-pair instances, it
+                                                    ///< will return CTL_RESULT_ERROR_INVALID_SIZE.
+    );
+
+///////////////////////////////////////////////////////////////////////////////
 /// @brief OS specific Display identifiers
 typedef union _ctl_os_display_encoder_identifier_t
 {
@@ -1921,6 +2054,8 @@ typedef enum _ctl_std_display_feature_flag_t
     CTL_STD_DISPLAY_FEATURE_FLAG_VESA_COMPRESSION = CTL_BIT(4), ///< [out] Is display compression (VESA DSC) supported
     CTL_STD_DISPLAY_FEATURE_FLAG_HDR = CTL_BIT(5),  ///< [out] Is HDR supported
     CTL_STD_DISPLAY_FEATURE_FLAG_HDMI_QMS = CTL_BIT(6), ///< [out] Is HDMI QMS supported
+    CTL_STD_DISPLAY_FEATURE_FLAG_HDR10_PLUS_CERTIFIED = CTL_BIT(7), ///< [out] Is HDR10+ certified
+    CTL_STD_DISPLAY_FEATURE_FLAG_VESA_HDR_CERTIFIED = CTL_BIT(8),   ///< [out] Is VESA HDR certified - for future use
     CTL_STD_DISPLAY_FEATURE_FLAG_MAX = 0x80000000
 
 } ctl_std_display_feature_flag_t;
@@ -1934,6 +2069,7 @@ typedef enum _ctl_intel_display_feature_flag_t
     CTL_INTEL_DISPLAY_FEATURE_FLAG_DPST = CTL_BIT(0),   ///< [out] Is DPST supported
     CTL_INTEL_DISPLAY_FEATURE_FLAG_LACE = CTL_BIT(1),   ///< [out] Is LACE supported
     CTL_INTEL_DISPLAY_FEATURE_FLAG_DRRS = CTL_BIT(2),   ///< [out] Is DRRS supported
+    CTL_INTEL_DISPLAY_FEATURE_FLAG_ARC_ADAPTIVE_SYNC_CERTIFIED = CTL_BIT(3),///< [out] Is Intel Arc certified adaptive sync display
     CTL_INTEL_DISPLAY_FEATURE_FLAG_MAX = 0x80000000
 
 } ctl_intel_display_feature_flag_t;
@@ -2013,6 +2149,7 @@ typedef enum _ctl_encoder_config_flag_t
     CTL_ENCODER_CONFIG_FLAG_COLLAGE_DISPLAY = CTL_BIT(7),   ///< [out] This BIT will be set if this is a collage display
     CTL_ENCODER_CONFIG_FLAG_SPLIT_DISPLAY = CTL_BIT(8), ///< [out] This BIT will be set if this is a split display
     CTL_ENCODER_CONFIG_FLAG_COMPANION_DISPLAY = CTL_BIT(9), ///< [out] This BIT will be set if this is a companion display
+    CTL_ENCODER_CONFIG_FLAG_MGPU_COLLAGE_DISPLAY = CTL_BIT(10), ///< [out] This BIT will be set if this is a Multi GPU collage display
     CTL_ENCODER_CONFIG_FLAG_MAX = 0x80000000
 
 } ctl_encoder_config_flag_t;
@@ -2107,12 +2244,19 @@ typedef struct _ctl_adapter_display_encoder_properties_t
                                                     ///< driver which occupies a portion of a real physical display  
                                                     ///<    Split=1,Virtual=0  : Indicates the physical display which got split
                                                     ///< to form multiple split displays  
-                                                    ///<    Split=1,Collage=1  : Invalid combination                  
+                                                    ///<    Split=1,Collage=1  : Invalid combination    
+                                                    ///<    MgpuCollage=1,Collage=1,Virtual=1: Indicates the fake display
+                                                    ///< output created by driver which has the combined resolution of multiple
+                                                    ///< physical displays spread across multiple GPUs involved in Multi-GPU
+                                                    ///< collage configuration
+                                                    ///<    MgpuCollage=1,Collage=1,Virtual=0: Indicates the child physical
+                                                    ///< displays involved in a Multi-GPU collage configuration. These are real
+                                                    ///< physical outputs 
     ctl_std_display_feature_flags_t FeatureSupportedFlags;  ///< [out] Adapter Supported feature flags. Refer
                                                     ///< ::ctl_std_display_feature_flag_t
     ctl_intel_display_feature_flags_t AdvancedFeatureSupportedFlags;///< [out] Advanced Features Supported by the Adapter. Refer
                                                     ///< ::ctl_intel_display_feature_flag_t
-    uint32_t ReservedFields[16];                    ///< [out] Reserved field of 64 bytes
+    uint32_t ReservedFields[16];                    ///< [out] Reserved field of 60 bytes
 
 } ctl_adapter_display_encoder_properties_t;
 
@@ -2321,11 +2465,21 @@ ctlSetCurrentSharpness(
 #endif // CTL_I2C_MAX_DATA_SIZE
 
 ///////////////////////////////////////////////////////////////////////////////
-/// @brief I2CFlags bitmasks
+/// @brief I2C Access Args input Flags bitmasks
 typedef uint32_t ctl_i2c_flags_t;
 typedef enum _ctl_i2c_flag_t
 {
-    CTL_I2C_FLAG_ATOMICI2C = CTL_BIT(0),            ///< Force Atomic I2C
+    CTL_I2C_FLAG_ATOMICI2C = CTL_BIT(0),            ///< Force Atomic I2C.
+    CTL_I2C_FLAG_1BYTE_INDEX = CTL_BIT(1),          ///< 1-byte Indexed operation. If no Index Size flag set, decided based on
+                                                    ///< Offset Value.
+    CTL_I2C_FLAG_2BYTE_INDEX = CTL_BIT(2),          ///< 2-byte Indexed operation. If no Index Size flag set, decided based on
+                                                    ///< Offset Value.
+    CTL_I2C_FLAG_4BYTE_INDEX = CTL_BIT(3),          ///< 4-byte Indexed operation. If no Index Size flag set, decided based on
+                                                    ///< Offset Value.
+    CTL_I2C_FLAG_SPEED_SLOW = CTL_BIT(4),           ///< If no Speed Flag is set, defaults to Best Option possible.
+    CTL_I2C_FLAG_SPEED_FAST = CTL_BIT(5),           ///< If no Speed Flag is set, defaults to Best Option possible.
+    CTL_I2C_FLAG_SPEED_BIT_BASH = CTL_BIT(6),       ///< Uses Slower access using SW bit bashing method. If no Speed Flag is
+                                                    ///< set, defaults to Best Option possible.
     CTL_I2C_FLAG_MAX = 0x80000000
 
 } ctl_i2c_flag_t;
@@ -2337,7 +2491,7 @@ typedef struct _ctl_i2c_access_args_t
     uint32_t Size;                                  ///< [in] size of this structure
     uint8_t Version;                                ///< [in] version of this structure
     uint32_t DataSize;                              ///< [in,out] Valid data size
-    uint32_t Address;                               ///< [in] Adreess to read or write
+    uint32_t Address;                               ///< [in] Address to read or write
     ctl_operation_type_t OpType;                    ///< [in] Operation type, 1 for Read, 2 for Write, for Write operation, App
                                                     ///< needs to run with admin privileges
     uint32_t Offset;                                ///< [in] Offset
@@ -2352,7 +2506,7 @@ typedef struct _ctl_i2c_access_args_t
 /// @brief I2C Access
 /// 
 /// @details
-///     - The application does I2C aceess
+///     - Interface to access I2C using display handle as identifier.
 /// 
 /// @returns
 ///     - CTL_RESULT_SUCCESS
@@ -2375,6 +2529,75 @@ CTL_APIEXPORT ctl_result_t CTL_APICALL
 ctlI2CAccess(
     ctl_display_output_handle_t hDisplayOutput,     ///< [in] Handle to display output
     ctl_i2c_access_args_t* pI2cAccessArgs           ///< [in,out] I2c access arguments
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief I2C Access on PinPair Args input Flags bitmasks
+typedef uint32_t ctl_i2c_pinpair_flags_t;
+typedef enum _ctl_i2c_pinpair_flag_t
+{
+    CTL_I2C_PINPAIR_FLAG_ATOMICI2C = CTL_BIT(0),    ///< Force Atomic I2C.
+    CTL_I2C_PINPAIR_FLAG_1BYTE_INDEX = CTL_BIT(1),  ///< 1-byte Indexed operation. If no Index Size flag set, decided based on
+                                                    ///< Offset Value.
+    CTL_I2C_PINPAIR_FLAG_2BYTE_INDEX = CTL_BIT(2),  ///< 2-byte Indexed operation. If no Index Size flag set, decided based on
+                                                    ///< Offset Value.
+    CTL_I2C_PINPAIR_FLAG_4BYTE_INDEX = CTL_BIT(3),  ///< 4-byte Indexed operation. If no Index Size flag set, decided based on
+                                                    ///< Offset Value.
+    CTL_I2C_PINPAIR_FLAG_SPEED_SLOW = CTL_BIT(4),   ///< If no Speed Flag is set, defaults to Best Option possible.
+    CTL_I2C_PINPAIR_FLAG_SPEED_FAST = CTL_BIT(5),   ///< If no Speed Flag is set, defaults to Best Option possible.
+    CTL_I2C_PINPAIR_FLAG_SPEED_BIT_BASH = CTL_BIT(6),   ///< Uses Slower access using SW bit bashing method. If no Speed Flag is
+                                                    ///< set, defaults to Best Option possible.
+    CTL_I2C_PINPAIR_FLAG_MAX = 0x80000000
+
+} ctl_i2c_pinpair_flag_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief I2C access on Pin Pair arguments
+typedef struct _ctl_i2c_access_pinpair_args_t
+{
+    uint32_t Size;                                  ///< [in] size of this structure
+    uint8_t Version;                                ///< [in] version of this structure
+    uint32_t DataSize;                              ///< [in,out] Valid data size
+    uint32_t Address;                               ///< [in] Address to read or write
+    ctl_operation_type_t OpType;                    ///< [in] Operation type, 1 for Read, 2 for Write, for Write operation, App
+                                                    ///< needs to run with admin privileges
+    uint32_t Offset;                                ///< [in] Offset
+    ctl_i2c_pinpair_flags_t Flags;                  ///< [in] I2C Flags. Refer ::ctl_i2c_pinpair_flag_t
+    uint8_t Data[CTL_I2C_MAX_DATA_SIZE];            ///< [in,out] Data array
+    uint32_t ReservedFields[4];                     ///< [in] Reserved for future use, must be set to Zero.
+
+} ctl_i2c_access_pinpair_args_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief I2C Access On Pin Pair
+/// 
+/// @details
+///     - Interface to access I2C using pin-pair handle as identifier.
+/// 
+/// @returns
+///     - CTL_RESULT_SUCCESS
+///     - CTL_RESULT_ERROR_UNINITIALIZED
+///     - CTL_RESULT_ERROR_DEVICE_LOST
+///     - CTL_RESULT_ERROR_INVALID_NULL_HANDLE
+///         + `nullptr == hI2cPinPair`
+///     - CTL_RESULT_ERROR_INVALID_NULL_POINTER
+///         + `nullptr == pI2cAccessArgs`
+///     - ::CTL_RESULT_ERROR_UNSUPPORTED_VERSION - "Unsupported version"
+///     - ::CTL_RESULT_ERROR_INVALID_OPERATION_TYPE - "Invalid operation type"
+///     - ::CTL_RESULT_ERROR_INVALID_SIZE - "Invalid I2C data size"
+///     - ::CTL_RESULT_ERROR_INVALID_ARGUMENT - "Invalid Args passed"
+///     - ::CTL_RESULT_ERROR_INSUFFICIENT_PERMISSIONS - "Insufficient permissions"
+///     - ::CTL_RESULT_ERROR_INVALID_NULL_POINTER - "Invalid null pointer"
+///     - ::CTL_RESULT_ERROR_NULL_OS_DISPLAY_OUTPUT_HANDLE - "Null OS display output handle"
+///     - ::CTL_RESULT_ERROR_NULL_OS_INTERFACE - "Null OS interface"
+///     - ::CTL_RESULT_ERROR_NULL_OS_ADAPATER_HANDLE - "Null OS adapter handle"
+///     - ::CTL_RESULT_ERROR_KMD_CALL - "Kernal mode driver call failure"
+///     - ::CTL_RESULT_ERROR_INVALID_NULL_HANDLE - "Invalid or Null handle passed"
+///     - ::CTL_RESULT_ERROR_EXTERNAL_DISPLAY_ATTACHED - "Write to Address not allowed when Display is connected"
+CTL_APIEXPORT ctl_result_t CTL_APICALL
+ctlI2CAccessOnPinPair(
+    ctl_i2c_pin_pair_handle_t hI2cPinPair,          ///< [in] Handle to I2C pin pair.
+    ctl_i2c_access_pinpair_args_t* pI2cAccessArgs   ///< [in,out] I2c access arguments.
     );
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2404,7 +2627,7 @@ typedef struct _ctl_aux_access_args_t
     ctl_operation_type_t OpType;                    ///< [in] Operation type, 1 for Read, 2 for Write, for Write operation, App
                                                     ///< needs to run with admin privileges
     ctl_aux_flags_t Flags;                          ///< [in] Aux Flags. Refer ::ctl_aux_flag_t
-    uint32_t Address;                               ///< [in] Adreess to read or write
+    uint32_t Address;                               ///< [in] Address to read or write
     uint64_t RAD;                                   ///< [in] RAD, For Future use, to be used for branch devices, Interface
                                                     ///< will be provided to get RAD
     uint32_t PortID;                                ///< [in] Port ID, For Future use, to be used for SST tiled devices
@@ -2417,7 +2640,7 @@ typedef struct _ctl_aux_access_args_t
 /// @brief Aux Access
 /// 
 /// @details
-///     - The application does Aux aceess, PSR needs to be disabled for AUX
+///     - The application does Aux access, PSR needs to be disabled for AUX
 ///       call.
 /// 
 /// @returns
@@ -2456,6 +2679,7 @@ typedef enum _ctl_power_optimization_flag_t
     CTL_POWER_OPTIMIZATION_FLAG_LRR = CTL_BIT(3),   ///< Low refresh rate (LRR/ALRR/UBRR), UBRR is supported only for IGCC and
                                                     ///< NDA clients. UBZRR and UBLRR both can not be enabled at the same time,
                                                     ///< only one can be enabled at a given time
+    CTL_POWER_OPTIMIZATION_FLAG_LACE = CTL_BIT(4),  ///< Lighting Aware Contrast Enhancement
     CTL_POWER_OPTIMIZATION_FLAG_MAX = 0x80000000
 
 } ctl_power_optimization_flag_t;
@@ -2470,6 +2694,8 @@ typedef enum _ctl_power_optimization_dpst_flag_t
     CTL_POWER_OPTIMIZATION_DPST_FLAG_OPST = CTL_BIT(2), ///< Intel OLED Power Saving Technology
     CTL_POWER_OPTIMIZATION_DPST_FLAG_ELP = CTL_BIT(3),  ///< TCON based Edge Luminance Profile
     CTL_POWER_OPTIMIZATION_DPST_FLAG_EPSM = CTL_BIT(4), ///< Extra power saving mode
+    CTL_POWER_OPTIMIZATION_DPST_FLAG_APD = CTL_BIT(5),  ///< Adaptive Pixel Dimming
+    CTL_POWER_OPTIMIZATION_DPST_FLAG_PIXOPTIX = CTL_BIT(6), ///< TCON+ based DPST like solution
     CTL_POWER_OPTIMIZATION_DPST_FLAG_MAX = 0x80000000
 
 } ctl_power_optimization_dpst_flag_t;
@@ -2580,7 +2806,8 @@ typedef struct _ctl_power_optimization_dpst_t
     uint8_t MaxLevel;                               ///< [out] Maximum supported aggressiveness level
     uint8_t Level;                                  ///< [in,out] Current aggressiveness level to be set
     ctl_power_optimization_dpst_flags_t SupportedFeatures;  ///< [out] Supported features
-    ctl_power_optimization_dpst_flags_t EnabledFeatures;///< [in,out] Features enabled or to be enabled
+    ctl_power_optimization_dpst_flags_t EnabledFeatures;///< [in,out] Features enabled or to be enabled. Fill only one feature for
+                                                    ///< SET call
 
 } ctl_power_optimization_dpst_t;
 
@@ -2678,6 +2905,7 @@ ctlGetPowerOptimizationSetting(
 ///     - ::CTL_RESULT_ERROR_UNSUPPORTED_VERSION - "Unsupported version"
 ///     - ::CTL_RESULT_ERROR_INVALID_POWERFEATURE_OPTIMIZATION_FLAG - "Unsupported PowerOptimizationFeature"
 ///     - ::CTL_RESULT_ERROR_INVALID_POWERSOURCE_TYPE_FOR_DPST - "DPST is supported only in DC Mode"
+///     - ::CTL_RESULT_ERROR_SET_FBC_FEATURE_NOT_SUPPORTED - "Set FBC Feature not supported"
 CTL_APIEXPORT ctl_result_t CTL_APICALL
 ctlSetPowerOptimizationSetting(
     ctl_display_output_handle_t hDisplayOutput,     ///< [in][release] Handle to display output
@@ -2831,6 +3059,8 @@ typedef enum _ctl_pixtx_color_model_t
     CTL_PIXTX_COLOR_MODEL_YCBCR_422_LR = 3,         ///< Color model YCBCR 422 limited range
     CTL_PIXTX_COLOR_MODEL_YCBCR_420_FR = 4,         ///< Color model YCBCR 420 full range
     CTL_PIXTX_COLOR_MODEL_YCBCR_420_LR = 5,         ///< Color model YCBCR 420 limited range
+    CTL_PIXTX_COLOR_MODEL_YCBCR_444_FR = 6,         ///< Color model YCBCR 444 full range
+    CTL_PIXTX_COLOR_MODEL_YCBCR_444_LR = 7,         ///< Color model YCBCR 444 limited range
     CTL_PIXTX_COLOR_MODEL_MAX
 
 } ctl_pixtx_color_model_t;
@@ -2881,8 +3111,9 @@ typedef struct _ctl_pixtx_1dlut_config_t
                                                     ///< sampling also but not vice versa.
     uint32_t NumSamplesPerChannel;                  ///< [in,out] Number of samples per channel. Resampled internally based on
                                                     ///< HW capability for uniformly sampled LUT.Maximum supported value is
-                                                    ///< MAX_NUM_SAMPLES_PER_CHANNEL_1D_LUT Caller needs to use exact sampling
-                                                    ///< position given in pSamplePositions for non-uniformly sampled LUTs.
+                                                    ///< ::CTL_MAX_NUM_SAMPLES_PER_CHANNEL_1D_LUT Caller needs to use exact
+                                                    ///< sampling position given in pSamplePositions for non-uniformly sampled
+                                                    ///< LUTs.
     uint32_t NumChannels;                           ///< [in,out] Number of channels, 1 for Grey scale LUT, 3 for RGB LUT
     double* pSampleValues;                          ///< [in,out] Pointer to sample values, R array followed by G and B arrays
                                                     ///< in case of multi-channel LUT. Allocation size for pSampleValues should
@@ -3203,14 +3434,21 @@ typedef struct _ctl_scaling_settings_t
     uint32_t Size;                                  ///< [in] size of this structure
     uint8_t Version;                                ///< [in] version of this structure
     bool Enable;                                    ///< [in,out] State of the scaler
-    ctl_scaling_type_flags_t ScalingType;           ///< [in,out] Requested scaling types. Refer ::ctl_scaling_type_flag_t
-    uint32_t CustomScalingX;                        ///< [in,out] Custom Scaling X resolution
-    uint32_t CustomScalingY;                        ///< [in,out] Custom Scaling Y resolution
+    ctl_scaling_type_flags_t ScalingType;           ///< [in,out] Requested scaling type. In Get call this field indicates
+                                                    ///< 'currunt' scaling set. Refer ::ctl_scaling_type_flag_t
+    uint32_t CustomScalingX;                        ///< [in,out] Custom Scaling X in percentage. This is percentage of current
+                                                    ///< OS resolution. Valid values are 0 to 100. Up to 11% of native
+                                                    ///< resolution can be downscaled
+    uint32_t CustomScalingY;                        ///< [in,out] Custom Scaling Y in percentage. This is percentage of current
+                                                    ///< OS resolution. Valid values are 0 to 100. Up to 11% of native
+                                                    ///< resolution can be downscaled
     bool HardwareModeSet;                           ///< [in] Flag to indicate hardware modeset should be done to apply the
                                                     ///< scaling.Setting this to true would result in a flash on the screen. If
                                                     ///< this flag is set to false , API will request the OS to do a virtual
                                                     ///< modeset , but the OS can ignore this request and do a hardware modeset
                                                     ///< in some instances
+    ctl_scaling_type_flags_t PreferredScalingType;  ///< [out] Indicates OS persisted scaling type. This field is only valid
+                                                    ///< when version > 0. Refer ::ctl_scaling_type_flag_t
 
 } ctl_scaling_settings_t;
 
@@ -3883,7 +4121,8 @@ typedef struct _ctl_combined_display_args_t
                                                     ///< configuration
     uint32_t CombinedDesktopWidth;                  ///< [in,out] Width of desired combined display configuration
     uint32_t CombinedDesktopHeight;                 ///< [in,out] Height of desired combined display configuration
-    ctl_combined_display_child_info_t* pChildInfo;  ///< [in,out] List of child display information respective to each output
+    ctl_combined_display_child_info_t* pChildInfo;  ///< [in,out] List of child display information respective to each output.
+                                                    ///< Up to 16 displays are supported with up to 4 displays per GPU.
     ctl_display_output_handle_t hCombinedDisplayOutput; ///< [in,out] Handle to combined display output
 
 } ctl_combined_display_args_t;
@@ -3892,7 +4131,16 @@ typedef struct _ctl_combined_display_args_t
 /// @brief Get/Set Combined Display
 /// 
 /// @details
-///     - To get or set combined display.
+///     - To get or set combined display with given Child Targets on a Single
+///       GPU or across identical GPUs. Multi-GPU(MGPU) combined display is
+///       reserved i.e. it is not public and requires special application GUID.
+///       MGPU Combined Display will get activated or deactivated in next boot.
+///       MGPU scenario will internally link the associated adapters via Linked
+///       Display Adapter Call, with supplied hDeviceAdapter being the LDA
+///       Primary. If Genlock and enabled in Driver registry and supported by
+///       given Display Config, MGPU Combined Display will enable MGPU Genlock
+///       with supplied hDeviceAdapter being the Genlock Primary Adapter and the
+///       First Child Display being the Primary Display.
 /// 
 /// @returns
 ///     - CTL_RESULT_SUCCESS
@@ -3911,6 +4159,7 @@ typedef struct _ctl_combined_display_args_t
 ///     - ::CTL_RESULT_ERROR_NULL_OS_ADAPATER_HANDLE - "Null OS adapter handle"
 ///     - ::CTL_RESULT_ERROR_KMD_CALL - "Kernel mode driver call failure"
 ///     - ::CTL_RESULT_ERROR_FEATURE_NOT_SUPPORTED - "Combined Display feature is not supported in this platform"
+///     - ::CTL_RESULT_ERROR_ADAPTER_NOT_SUPPORTED_ON_LDA_SECONDARY - "Unsupported (secondary) adapter handle passed"
 CTL_APIEXPORT ctl_result_t CTL_APICALL
 ctlGetSetCombinedDisplay(
     ctl_device_adapter_handle_t hDeviceAdapter,     ///< [in][release] Handle to control device adapter
@@ -3999,9 +4248,415 @@ typedef struct _ctl_genlock_args_t
 CTL_APIEXPORT ctl_result_t CTL_APICALL
 ctlGetSetDisplayGenlock(
     ctl_device_adapter_handle_t* hDeviceAdapter,    ///< [in][release] Handle to control device adapter
-    ctl_genlock_args_t** pGenlockArgs,              ///< [in,out] Display Genlock operation and information
+    ctl_genlock_args_t* pGenlockArgs,               ///< [in,out] Display Genlock operation and information
     uint32_t AdapterCount,                          ///< [in] Number of device adapters
     ctl_device_adapter_handle_t* hFailureDeviceAdapter  ///< [out] Handle to address the failure device adapter in an error case
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+#ifndef CTL_MAX_DISPLAYS_FOR_MGPU_COLLAGE
+/// @brief Maximum number of displays for Single Large Screen
+#define CTL_MAX_DISPLAYS_FOR_MGPU_COLLAGE  16
+#endif // CTL_MAX_DISPLAYS_FOR_MGPU_COLLAGE
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Vblank timestamp arguments
+typedef struct _ctl_vblank_ts_args_t
+{
+    uint32_t Size;                                  ///< [in] size of this structure
+    uint8_t Version;                                ///< [in] version of this structure
+    uint8_t NumOfTargets;                           ///< [out] Number of child targets
+    uint64_t VblankTS[CTL_MAX_DISPLAYS_FOR_MGPU_COLLAGE];   ///< [out] List of vblank timestamps in microseconds per child target
+
+} ctl_vblank_ts_args_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Get Vblank Timestamp
+/// 
+/// @details
+///     - To get a list of vblank timestamps in microseconds for each child
+///       target of a display.
+/// 
+/// @returns
+///     - CTL_RESULT_SUCCESS
+///     - CTL_RESULT_ERROR_UNINITIALIZED
+///     - CTL_RESULT_ERROR_DEVICE_LOST
+///     - CTL_RESULT_ERROR_INVALID_NULL_HANDLE
+///         + `nullptr == hDisplayOutput`
+///     - CTL_RESULT_ERROR_INVALID_NULL_POINTER
+///         + `nullptr == pVblankTSArgs`
+///     - ::CTL_RESULT_ERROR_UNSUPPORTED_VERSION - "Unsupported version"
+///     - ::CTL_RESULT_ERROR_INSUFFICIENT_PERMISSIONS - "Insufficient permissions"
+///     - ::CTL_RESULT_ERROR_NULL_OS_DISPLAY_OUTPUT_HANDLE - "Null OS display output handle"
+///     - ::CTL_RESULT_ERROR_NULL_OS_INTERFACE - "Null OS interface"
+///     - ::CTL_RESULT_ERROR_NULL_OS_ADAPATER_HANDLE - "Null OS adapter handle"
+///     - ::CTL_RESULT_ERROR_KMD_CALL - "Kernel mode driver call failure"
+CTL_APIEXPORT ctl_result_t CTL_APICALL
+ctlGetVblankTimestamp(
+    ctl_display_output_handle_t hDisplayOutput,     ///< [in] Handle to display output
+    ctl_vblank_ts_args_t* pVblankTSArgs             ///< [out] Get vblank timestamp arguments
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Link Display Adapters Arguments
+typedef struct _ctl_lda_args_t
+{
+    uint32_t Size;                                  ///< [in] size of this structure
+    uint8_t Version;                                ///< [in] version of this structure
+    uint8_t NumAdapters;                            ///< [in,out] Numbers of adapters to be linked. Up to 4 adapters are
+                                                    ///< supported
+    ctl_device_adapter_handle_t* hLinkedAdapters;   ///< [in,out][release] List of Control device adapter handles to be linked,
+                                                    ///< first one being Primary Adapter
+    uint64_t Reserved[4];                           ///< [out] Reserved fields. Set to zero.
+
+} ctl_lda_args_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Link Display Adapters
+/// 
+/// @details
+///     - To Link Display Adapters.
+/// 
+/// @returns
+///     - CTL_RESULT_SUCCESS
+///     - CTL_RESULT_ERROR_UNINITIALIZED
+///     - CTL_RESULT_ERROR_DEVICE_LOST
+///     - CTL_RESULT_ERROR_INVALID_NULL_HANDLE
+///         + `nullptr == hPrimaryAdapter`
+///     - CTL_RESULT_ERROR_INVALID_NULL_POINTER
+///         + `nullptr == pLdaArgs`
+///     - ::CTL_RESULT_ERROR_UNSUPPORTED_VERSION - "Unsupported version"
+///     - ::CTL_RESULT_ERROR_INVALID_NULL_POINTER - "Invalid null pointer"
+///     - ::CTL_RESULT_ERROR_NULL_OS_INTERFACE - "Null OS interface"
+///     - ::CTL_RESULT_ERROR_NULL_OS_ADAPATER_HANDLE - "Null OS adapter handle"
+///     - ::CTL_RESULT_ERROR_KMD_CALL - "Kernel mode driver call failure"
+///     - ::CTL_RESULT_ERROR_ADAPTER_ALREADY_LINKED - "Adapter is already linked"
+CTL_APIEXPORT ctl_result_t CTL_APICALL
+ctlLinkDisplayAdapters(
+    ctl_device_adapter_handle_t hPrimaryAdapter,    ///< [in][release] Handle to Primary adapter in LDA chain
+    ctl_lda_args_t* pLdaArgs                        ///< [in] Link Display Adapters Arguments
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Unlink Display Adapters
+/// 
+/// @details
+///     - To Unlink Display Adapters
+/// 
+/// @returns
+///     - CTL_RESULT_SUCCESS
+///     - CTL_RESULT_ERROR_UNINITIALIZED
+///     - CTL_RESULT_ERROR_DEVICE_LOST
+///     - CTL_RESULT_ERROR_INVALID_NULL_HANDLE
+///         + `nullptr == hPrimaryAdapter`
+///     - ::CTL_RESULT_ERROR_UNSUPPORTED_VERSION - "Unsupported version"
+///     - ::CTL_RESULT_ERROR_NULL_OS_INTERFACE - "Null OS interface"
+///     - ::CTL_RESULT_ERROR_NULL_OS_ADAPATER_HANDLE - "Null OS adapter handle"
+///     - ::CTL_RESULT_ERROR_KMD_CALL - "Kernel mode driver call failure"
+///     - ::CTL_RESULT_ERROR_ADAPTER_NOT_SUPPORTED_ON_LDA_SECONDARY - "Unsupported (secondary) adapter handle passed"
+CTL_APIEXPORT ctl_result_t CTL_APICALL
+ctlUnlinkDisplayAdapters(
+    ctl_device_adapter_handle_t hPrimaryAdapter     ///< [in][release] Handle to Primary adapter in LDA chain
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Get Linked Display Adapters
+/// 
+/// @details
+///     - To return list of Linked Display Adapters.
+/// 
+/// @returns
+///     - CTL_RESULT_SUCCESS
+///     - CTL_RESULT_ERROR_UNINITIALIZED
+///     - CTL_RESULT_ERROR_DEVICE_LOST
+///     - CTL_RESULT_ERROR_INVALID_NULL_HANDLE
+///         + `nullptr == hPrimaryAdapter`
+///     - CTL_RESULT_ERROR_INVALID_NULL_POINTER
+///         + `nullptr == pLdaArgs`
+///     - ::CTL_RESULT_ERROR_UNSUPPORTED_VERSION - "Unsupported version"
+///     - ::CTL_RESULT_ERROR_INVALID_NULL_POINTER - "Invalid null pointer"
+///     - ::CTL_RESULT_ERROR_NULL_OS_INTERFACE - "Null OS interface"
+///     - ::CTL_RESULT_ERROR_NULL_OS_ADAPATER_HANDLE - "Null OS adapter handle"
+///     - ::CTL_RESULT_ERROR_KMD_CALL - "Kernel mode driver call failure"
+///     - ::CTL_RESULT_ERROR_ADAPTER_NOT_SUPPORTED_ON_LDA_SECONDARY - "Unsupported (secondary) adapter handle passed"
+CTL_APIEXPORT ctl_result_t CTL_APICALL
+ctlGetLinkedDisplayAdapters(
+    ctl_device_adapter_handle_t hPrimaryAdapter,    ///< [in][release] Handle to Primary adapter in LDA chain
+    ctl_lda_args_t* pLdaArgs                        ///< [out] Link Display Adapters Arguments
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Get/Set Dynamic Contrast Enhancement arguments
+typedef struct _ctl_dce_args_t
+{
+    uint32_t Size;                                  ///< [in] size of this structure
+    uint8_t Version;                                ///< [in] version of this structure
+    bool Set;                                       ///< [in] Flag to indicate Set or Get operation
+    uint32_t TargetBrightnessPercent;               ///< [in] Target brightness percent
+    double PhaseinSpeedMultiplier;                  ///< [in] Phase-in speed multiplier for brightness to take effect
+    uint32_t NumBins;                               ///< [in,out] Number of histogram bins
+    bool Enable;                                    ///< [in,out] For get calls, this represents current state & for set this
+                                                    ///< represents future state
+    bool IsSupported;                               ///< [out] is DCE feature supported
+    uint32_t* pHistogram;                           ///< [out] Bin wise histogram data of size NumBins * sizeof(uint32_t) for
+                                                    ///< current frame
+
+} ctl_dce_args_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Get/Set Dynamic Contrast Enhancement
+/// 
+/// @details
+///     - To get the DCE feature status and, if feature is enabled, returns the
+///       current histogram, or to set the brightness at the phase-in speed
+/// 
+/// @returns
+///     - CTL_RESULT_SUCCESS
+///     - CTL_RESULT_ERROR_UNINITIALIZED
+///     - CTL_RESULT_ERROR_DEVICE_LOST
+///     - CTL_RESULT_ERROR_INVALID_NULL_HANDLE
+///         + `nullptr == hDisplayOutput`
+///     - CTL_RESULT_ERROR_INVALID_NULL_POINTER
+///         + `nullptr == pDceArgs`
+///     - ::CTL_RESULT_ERROR_UNSUPPORTED_VERSION - "Unsupported version"
+///     - ::CTL_RESULT_ERROR_NULL_OS_DISPLAY_OUTPUT_HANDLE - "Null OS display output handle"
+///     - ::CTL_RESULT_ERROR_NULL_OS_INTERFACE - "Null OS interface"
+///     - ::CTL_RESULT_ERROR_NULL_OS_ADAPATER_HANDLE - "Null OS adapter handle"
+///     - ::CTL_RESULT_ERROR_KMD_CALL - "Kernel mode driver call failure"
+///     - ::CTL_RESULT_ERROR_INVALID_NULL_HANDLE - "Invalid or Null handle passed"
+///     - ::CTL_RESULT_ERROR_INVALID_NULL_POINTER - "Invalid null pointer"
+///     - ::CTL_RESULT_ERROR_INVALID_OPERATION_TYPE - "Invalid operation type"
+///     - ::CTL_RESULT_ERROR_INVALID_ARGUMENT - "Invalid combination of parameters"
+CTL_APIEXPORT ctl_result_t CTL_APICALL
+ctlGetSetDynamicContrastEnhancement(
+    ctl_display_output_handle_t hDisplayOutput,     ///< [in] Handle to display output
+    ctl_dce_args_t* pDceArgs                        ///< [in,out] Dynamic Contrast Enhancement arguments
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Color model
+typedef enum _ctl_wire_format_color_model_t
+{
+    CTL_WIRE_FORMAT_COLOR_MODEL_RGB = 0,            ///< Color model RGB
+    CTL_WIRE_FORMAT_COLOR_MODEL_YCBCR_420 = 1,      ///< Color model YCBCR 420
+    CTL_WIRE_FORMAT_COLOR_MODEL_YCBCR_422 = 2,      ///< Color model YCBCR 422
+    CTL_WIRE_FORMAT_COLOR_MODEL_YCBCR_444 = 3,      ///< Color model YCBCR 444
+    CTL_WIRE_FORMAT_COLOR_MODEL_MAX
+
+} ctl_wire_format_color_model_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Operation type
+typedef enum _ctl_wire_format_operation_type_t
+{
+    CTL_WIRE_FORMAT_OPERATION_TYPE_GET = 0,         ///< Get request
+    CTL_WIRE_FORMAT_OPERATION_TYPE_SET = 1,         ///< Set request
+    CTL_WIRE_FORMAT_OPERATION_TYPE_RESTORE_DEFAULT = 2, ///< Restore to default values
+    CTL_WIRE_FORMAT_OPERATION_TYPE_MAX
+
+} ctl_wire_format_operation_type_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Wire Format
+typedef struct _ctl_wire_format_t
+{
+    uint32_t Size;                                  ///< [in] size of this structure
+    uint8_t Version;                                ///< [in] version of this structure
+    ctl_wire_format_color_model_t ColorModel;       ///< [in,out] Color model
+    ctl_output_bpc_flags_t ColorDepth;              ///< [in,out] Color Depth
+
+} ctl_wire_format_t;
+
+///////////////////////////////////////////////////////////////////////////////
+#ifndef CTL_MAX_WIREFORMAT_COLOR_MODELS_SUPPORTED
+/// @brief Maximum Wire Formats Supported
+#define CTL_MAX_WIREFORMAT_COLOR_MODELS_SUPPORTED  4
+#endif // CTL_MAX_WIREFORMAT_COLOR_MODELS_SUPPORTED
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Get Set Wire Format
+typedef struct _ctl_get_set_wire_format_config_t
+{
+    uint32_t Size;                                  ///< [in] size of this structure
+    uint8_t Version;                                ///< [in] version of this structure
+    ctl_wire_format_operation_type_t Operation;     ///< [in] Get/Set Operation
+    ctl_wire_format_t SupportedWireFormat[CTL_MAX_WIREFORMAT_COLOR_MODELS_SUPPORTED];   ///< [out] Array of WireFormats supported
+    ctl_wire_format_t WireFormat;                   ///< [in,out]  Current/Requested WireFormat based on Operation. During SET
+                                                    ///< Operation, if multiple bpc is set, the MIN bpc will be applied
+
+} ctl_get_set_wire_format_config_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Get/Set Color Format and Color Depth
+/// 
+/// @details
+///     - Get and Set the Color Format and Color Depth of a target
+/// 
+/// @returns
+///     - CTL_RESULT_SUCCESS
+///     - CTL_RESULT_ERROR_UNINITIALIZED
+///     - CTL_RESULT_ERROR_DEVICE_LOST
+///     - CTL_RESULT_ERROR_INVALID_NULL_HANDLE
+///         + `nullptr == hDisplayOutput`
+///     - CTL_RESULT_ERROR_INVALID_NULL_POINTER
+///         + `nullptr == pGetSetWireFormatSetting`
+///     - ::CTL_RESULT_ERROR_UNSUPPORTED_VERSION - "Unsupported version"
+///     - ::CTL_RESULT_ERROR_INVALID_ARGUMENT - "Invalid data passed as argument, WireFormat is not supported"
+///     - ::CTL_RESULT_ERROR_DISPLAY_NOT_ACTIVE - "Display not active"
+///     - ::CTL_RESULT_ERROR_INVALID_OPERATION_TYPE - "Invalid operation type"
+///     - ::CTL_RESULT_ERROR_NULL_OS_DISPLAY_OUTPUT_HANDLE - "Null OS display output handle"
+///     - ::CTL_RESULT_ERROR_NULL_OS_INTERFACE - "Null OS interface"
+///     - ::CTL_RESULT_ERROR_NULL_OS_ADAPATER_HANDLE - "Null OS adapter handle"
+CTL_APIEXPORT ctl_result_t CTL_APICALL
+ctlGetSetWireFormat(
+    ctl_display_output_handle_t hDisplayOutput,     ///< [in][release] Handle to display output
+    ctl_get_set_wire_format_config_t* pGetSetWireFormatSetting  ///< [in][release] Get/Set Wire Format settings to be fetched/applied
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Various display settings
+typedef uint32_t ctl_display_setting_flags_t;
+typedef enum _ctl_display_setting_flag_t
+{
+    CTL_DISPLAY_SETTING_FLAG_LOW_LATENCY = CTL_BIT(0),  ///< Low latency
+    CTL_DISPLAY_SETTING_FLAG_SOURCE_TM = CTL_BIT(1),///< Source tone mapping
+    CTL_DISPLAY_SETTING_FLAG_CONTENT_TYPE = CTL_BIT(2), ///< Content type
+    CTL_DISPLAY_SETTING_FLAG_QUANTIZATION_RANGE = CTL_BIT(3),   ///< Quantization range, full range or limited range
+    CTL_DISPLAY_SETTING_FLAG_PICTURE_AR = CTL_BIT(4),   ///< Picture aspect ratio
+    CTL_DISPLAY_SETTING_FLAG_AUDIO = CTL_BIT(5),    ///< Audio settings
+    CTL_DISPLAY_SETTING_FLAG_MAX = 0x80000000
+
+} ctl_display_setting_flag_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Low latency setting
+typedef enum _ctl_display_setting_low_latency_t
+{
+    CTL_DISPLAY_SETTING_LOW_LATENCY_DEFAULT = 0,    ///< Default
+    CTL_DISPLAY_SETTING_LOW_LATENCY_DISABLED = 1,   ///< Disabled
+    CTL_DISPLAY_SETTING_LOW_LATENCY_ENABLED = 2,    ///< Enabled
+    CTL_DISPLAY_SETTING_LOW_LATENCY_MAX
+
+} ctl_display_setting_low_latency_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Source tone mapping setting
+typedef enum _ctl_display_setting_sourcetm_t
+{
+    CTL_DISPLAY_SETTING_SOURCETM_DEFAULT = 0,       ///< Default
+    CTL_DISPLAY_SETTING_SOURCETM_DISABLED = 1,      ///< Disabled
+    CTL_DISPLAY_SETTING_SOURCETM_ENABLED = 2,       ///< Enabled
+    CTL_DISPLAY_SETTING_SOURCETM_MAX
+
+} ctl_display_setting_sourcetm_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Content type settings
+typedef enum _ctl_display_setting_content_type_t
+{
+    CTL_DISPLAY_SETTING_CONTENT_TYPE_DEFAULT = 0,   ///< Default content type used by driver. Driver will use internal
+                                                    ///< techniques to determine content type and indicate to panel
+    CTL_DISPLAY_SETTING_CONTENT_TYPE_DISABLED = 1,  ///< Content type indication is disabled
+    CTL_DISPLAY_SETTING_CONTENT_TYPE_DESKTOP = 2,   ///< Typical desktop with a mix of text and graphics
+    CTL_DISPLAY_SETTING_CONTENT_TYPE_MEDIA = 3,     ///< Video or media content
+    CTL_DISPLAY_SETTING_CONTENT_TYPE_GAMING = 4,    ///< Gaming content
+    CTL_DISPLAY_SETTING_CONTENT_TYPE_MAX
+
+} ctl_display_setting_content_type_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Quantization range
+typedef enum _ctl_display_setting_quantization_range_t
+{
+    CTL_DISPLAY_SETTING_QUANTIZATION_RANGE_DEFAULT = 0, ///< Default based on video format
+    CTL_DISPLAY_SETTING_QUANTIZATION_RANGE_LIMITED_RANGE = 1,   ///< Limited range
+    CTL_DISPLAY_SETTING_QUANTIZATION_RANGE_FULL_RANGE = 2,  ///< Full range
+    CTL_DISPLAY_SETTING_QUANTIZATION_RANGE_MAX
+
+} ctl_display_setting_quantization_range_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Picture aspect ratio
+typedef uint32_t ctl_display_setting_picture_ar_flags_t;
+typedef enum _ctl_display_setting_picture_ar_flag_t
+{
+    CTL_DISPLAY_SETTING_PICTURE_AR_FLAG_DEFAULT = CTL_BIT(0),   ///< Default picture aspect ratio
+    CTL_DISPLAY_SETTING_PICTURE_AR_FLAG_DISABLED = CTL_BIT(1),  ///< Picture aspect ratio indication is explicitly disabled
+    CTL_DISPLAY_SETTING_PICTURE_AR_FLAG_AR_4_3 = CTL_BIT(2),///< Aspect ratio of 4:3
+    CTL_DISPLAY_SETTING_PICTURE_AR_FLAG_AR_16_9 = CTL_BIT(3),   ///< Aspect ratio of 16:9
+    CTL_DISPLAY_SETTING_PICTURE_AR_FLAG_AR_64_27 = CTL_BIT(4),  ///< Aspect ratio of 64:27 or 21:9 anamorphic
+    CTL_DISPLAY_SETTING_PICTURE_AR_FLAG_AR_256_135 = CTL_BIT(5),///< Aspect ratio of 256:135
+    CTL_DISPLAY_SETTING_PICTURE_AR_FLAG_MAX = 0x80000000
+
+} ctl_display_setting_picture_ar_flag_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Audio settings
+typedef enum _ctl_display_setting_audio_t
+{
+    CTL_DISPLAY_SETTING_AUDIO_DEFAULT = 0,          ///< Default audio settings, always enumerated and enabled if display
+                                                    ///< supports it
+    CTL_DISPLAY_SETTING_AUDIO_DISABLED = 1,         ///< Forcefully disable display audio end point enumeration to OS
+    CTL_DISPLAY_SETTING_AUDIO_MAX
+
+} ctl_display_setting_audio_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Get/Set end display settings
+typedef struct _ctl_display_settings_t
+{
+    uint32_t Size;                                  ///< [in] size of this structure
+    uint8_t Version;                                ///< [in] version of this structure
+    bool Set;                                       ///< [in] Flag to indicate Set or Get operation. Default option for all
+                                                    ///< features are reserved for Set=true calls, which will reset the setting
+                                                    ///< to driver defaults.
+    ctl_display_setting_flags_t SupportedFlags;     ///< [out] Display setting flags supported by the display.
+    ctl_display_setting_flags_t ControllableFlags;  ///< [out] Display setting flags which can be controlled by the caller.
+                                                    ///< Features which doesn't have this flag set cannot be changed by caller.
+    ctl_display_setting_flags_t ValidFlags;         ///< [in,out] Display setting flags which caller can use to indicate the
+                                                    ///< features it's interested in. This cannot have a bit set which is not
+                                                    ///< supported by SupportedFlags and ControllableFlags.
+    ctl_display_setting_low_latency_t LowLatency;   ///< [in,out] Low latency state of panel. For HDR10+ Gaming this need to be
+                                                    ///< in ENABLED state.
+    ctl_display_setting_sourcetm_t SourceTM;        ///< [in,out] Source tone mapping state known to panel. For HDR10+ Gaming
+                                                    ///< this need to be in ENABLED state.
+    ctl_display_setting_content_type_t ContentType; ///< [in,out] Source content type known to panel.
+    ctl_display_setting_quantization_range_t QuantizationRange; ///< [in,out] Quantization range
+    ctl_display_setting_picture_ar_flags_t SupportedPictureAR;  ///< [out] Supported Picture aspect ratios
+    ctl_display_setting_picture_ar_flag_t PictureAR;///< [in,out] Picture aspect ratio
+    ctl_display_setting_audio_t AudioSettings;      ///< [in,out] Audio settings
+    uint32_t Reserved[25];                          ///< [out] Reserved fields for future enumerations
+
+} ctl_display_settings_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Get/Set Display settings
+/// 
+/// @details
+///     - To get/set end display settings like low latency, HDR10+ signaling
+///       etc. which are controlled via info-frames/secondary data packets
+/// 
+/// @returns
+///     - CTL_RESULT_SUCCESS
+///     - CTL_RESULT_ERROR_UNINITIALIZED
+///     - CTL_RESULT_ERROR_DEVICE_LOST
+///     - CTL_RESULT_ERROR_INVALID_NULL_HANDLE
+///         + `nullptr == hDisplayOutput`
+///     - CTL_RESULT_ERROR_INVALID_NULL_POINTER
+///         + `nullptr == pDisplaySettings`
+///     - ::CTL_RESULT_ERROR_UNSUPPORTED_VERSION - "Unsupported version"
+///     - ::CTL_RESULT_ERROR_NULL_OS_DISPLAY_OUTPUT_HANDLE - "Null OS display output handle"
+///     - ::CTL_RESULT_ERROR_NULL_OS_INTERFACE - "Null OS interface"
+///     - ::CTL_RESULT_ERROR_NULL_OS_ADAPATER_HANDLE - "Null OS adapter handle"
+///     - ::CTL_RESULT_ERROR_KMD_CALL - "Kernel mode driver call failure"
+///     - ::CTL_RESULT_ERROR_INVALID_NULL_HANDLE - "Invalid or Null handle passed"
+///     - ::CTL_RESULT_ERROR_INVALID_NULL_POINTER - "Invalid null pointer"
+///     - ::CTL_RESULT_ERROR_INVALID_OPERATION_TYPE - "Invalid operation type"
+///     - ::CTL_RESULT_ERROR_INVALID_ARGUMENT - "Invalid combination of parameters"
+CTL_APIEXPORT ctl_result_t CTL_APICALL
+ctlGetSetDisplaySettings(
+    ctl_display_output_handle_t hDisplayOutput,     ///< [in] Handle to display output
+    ctl_display_settings_t* pDisplaySettings        ///< [in,out] End display capabilities
     );
 
 
@@ -4428,6 +5083,7 @@ typedef enum _ctl_freq_domain_t
 {
     CTL_FREQ_DOMAIN_GPU = 0,                        ///< GPU Core Domain.
     CTL_FREQ_DOMAIN_MEMORY = 1,                     ///< Local Memory Domain.
+    CTL_FREQ_DOMAIN_MEDIA = 2,                      ///< Media Domain
     CTL_FREQ_DOMAIN_MAX
 
 } ctl_freq_domain_t;
@@ -4458,14 +5114,17 @@ typedef struct _ctl_freq_range_t
     uint8_t Version;                                ///< [in] version of this structure
     double min;                                     ///< [in,out] The min frequency in MHz below which hardware frequency
                                                     ///< management will not request frequencies. On input, setting to 0 will
-                                                    ///< permit the frequency to go down to the hardware minimum. On output, a
-                                                    ///< negative value indicates that no external minimum frequency limit is
-                                                    ///< in effect.
+                                                    ///< permit the frequency to go down to the hardware minimum while setting
+                                                    ///< to -1 will return the min frequency limit to the factory value (can be
+                                                    ///< larger than the hardware min). On output, a negative value indicates
+                                                    ///< that no external minimum frequency limit is in effect.
     double max;                                     ///< [in,out] The max frequency in MHz above which hardware frequency
                                                     ///< management will not request frequencies. On input, setting to 0 or a
                                                     ///< very big number will permit the frequency to go all the way up to the
-                                                    ///< hardware maximum. On output, a negative number indicates that no
-                                                    ///< external maximum frequency limit is in effect.
+                                                    ///< hardware maximum while setting to -1 will return the max frequency to
+                                                    ///< the factory value (which can be less than the hardware max). On
+                                                    ///< output, a negative number indicates that no external maximum frequency
+                                                    ///< limit is in effect.
 
 } ctl_freq_range_t;
 
@@ -5307,8 +5966,8 @@ typedef struct _ctl_oc_properties_t
     bool bSupported;                                ///< [out] Indicates if the adapter supports overclocking.
     ctl_oc_control_info_t gpuFrequencyOffset;       ///< [out] related to function ::ctlOverclockGpuFrequencyOffsetSet
     ctl_oc_control_info_t gpuVoltageOffset;         ///< [out] related to function ::ctlOverclockGpuVoltageOffsetSet
-    ctl_oc_control_info_t vramFrequencyOffset;      ///< [out] related to function ::ctlOverclockVramFrequencyOffsetSet
-    ctl_oc_control_info_t vramVoltageOffset;        ///< [out] related to function ::ctlOverclockVramVoltageOffsetSet
+    ctl_oc_control_info_t vramFrequencyOffset;      ///< [out] Property Field Deprecated / No Longer Supported
+    ctl_oc_control_info_t vramVoltageOffset;        ///< [out] Property Field Deprecated / No Longer Supported
     ctl_oc_control_info_t powerLimit;               ///< [out] related to function ::ctlOverclockPowerLimitSet
     ctl_oc_control_info_t temperatureLimit;         ///< [out] related to function ::ctlOverclockTemperatureLimitSet
 
@@ -5935,6 +6594,27 @@ ctlPowerTelemetryGet(
     ctl_power_telemetry_t* pTelemetryInfo           ///< [out] The overclocking properties for the specified domain.
     );
 
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Reset all Overclock Settings to stock
+/// 
+/// @details
+///     - Reset all Overclock setting to default using single API call
+///     - This request resets any changes made to GpuFrequencyOffset,
+///       GpuVoltageOffset, PowerLimit, TemperatureLimit, GpuLock
+///     - This Doesn't reset any Fan Curve Changes. It can be reset using
+///       ctlFanSetDefaultMode
+/// 
+/// @returns
+///     - CTL_RESULT_SUCCESS
+///     - CTL_RESULT_ERROR_UNINITIALIZED
+///     - CTL_RESULT_ERROR_DEVICE_LOST
+///     - CTL_RESULT_ERROR_INVALID_NULL_HANDLE
+///         + `nullptr == hDeviceHandle`
+CTL_APIEXPORT ctl_result_t CTL_APICALL
+ctlOverclockResetToDefault(
+    ctl_device_adapter_handle_t hDeviceHandle       ///< [in][release] Handle to display adapter
+    );
+
 
 #if !defined(__GNUC__)
 #pragma endregion // overclock
@@ -6475,6 +7155,15 @@ typedef ctl_result_t (CTL_APICALL *ctl_pfnEnumerateDisplayOutputs_t)(
 
 
 ///////////////////////////////////////////////////////////////////////////////
+/// @brief Function-pointer for ctlEnumerateI2CPinPairs 
+typedef ctl_result_t (CTL_APICALL *ctl_pfnEnumerateI2CPinPairs_t)(
+    ctl_device_adapter_handle_t,
+    uint32_t*,
+    ctl_i2c_pin_pair_handle_t*
+    );
+
+
+///////////////////////////////////////////////////////////////////////////////
 /// @brief Function-pointer for ctlGetDeviceProperties 
 typedef ctl_result_t (CTL_APICALL *ctl_pfnGetDeviceProperties_t)(
     ctl_device_adapter_handle_t,
@@ -6536,6 +7225,14 @@ typedef ctl_result_t (CTL_APICALL *ctl_pfnSetCurrentSharpness_t)(
 typedef ctl_result_t (CTL_APICALL *ctl_pfnI2CAccess_t)(
     ctl_display_output_handle_t,
     ctl_i2c_access_args_t*
+    );
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Function-pointer for ctlI2CAccessOnPinPair 
+typedef ctl_result_t (CTL_APICALL *ctl_pfnI2CAccessOnPinPair_t)(
+    ctl_i2c_pin_pair_handle_t,
+    ctl_i2c_access_pinpair_args_t*
     );
 
 
@@ -6752,9 +7449,64 @@ typedef ctl_result_t (CTL_APICALL *ctl_pfnGetSetCombinedDisplay_t)(
 /// @brief Function-pointer for ctlGetSetDisplayGenlock 
 typedef ctl_result_t (CTL_APICALL *ctl_pfnGetSetDisplayGenlock_t)(
     ctl_device_adapter_handle_t*,
-    ctl_genlock_args_t**,
+    ctl_genlock_args_t*,
     uint32_t,
     ctl_device_adapter_handle_t*
+    );
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Function-pointer for ctlGetVblankTimestamp 
+typedef ctl_result_t (CTL_APICALL *ctl_pfnGetVblankTimestamp_t)(
+    ctl_display_output_handle_t,
+    ctl_vblank_ts_args_t*
+    );
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Function-pointer for ctlLinkDisplayAdapters 
+typedef ctl_result_t (CTL_APICALL *ctl_pfnLinkDisplayAdapters_t)(
+    ctl_device_adapter_handle_t,
+    ctl_lda_args_t*
+    );
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Function-pointer for ctlUnlinkDisplayAdapters 
+typedef ctl_result_t (CTL_APICALL *ctl_pfnUnlinkDisplayAdapters_t)(
+    ctl_device_adapter_handle_t
+    );
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Function-pointer for ctlGetLinkedDisplayAdapters 
+typedef ctl_result_t (CTL_APICALL *ctl_pfnGetLinkedDisplayAdapters_t)(
+    ctl_device_adapter_handle_t,
+    ctl_lda_args_t*
+    );
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Function-pointer for ctlGetSetDynamicContrastEnhancement 
+typedef ctl_result_t (CTL_APICALL *ctl_pfnGetSetDynamicContrastEnhancement_t)(
+    ctl_display_output_handle_t,
+    ctl_dce_args_t*
+    );
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Function-pointer for ctlGetSetWireFormat 
+typedef ctl_result_t (CTL_APICALL *ctl_pfnGetSetWireFormat_t)(
+    ctl_display_output_handle_t,
+    ctl_get_set_wire_format_config_t*
+    );
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Function-pointer for ctlGetSetDisplaySettings 
+typedef ctl_result_t (CTL_APICALL *ctl_pfnGetSetDisplaySettings_t)(
+    ctl_display_output_handle_t,
+    ctl_display_settings_t*
     );
 
 
@@ -7079,6 +7831,13 @@ typedef ctl_result_t (CTL_APICALL *ctl_pfnOverclockTemperatureLimitSet_t)(
 typedef ctl_result_t (CTL_APICALL *ctl_pfnPowerTelemetryGet_t)(
     ctl_device_adapter_handle_t,
     ctl_power_telemetry_t*
+    );
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Function-pointer for ctlOverclockResetToDefault 
+typedef ctl_result_t (CTL_APICALL *ctl_pfnOverclockResetToDefault_t)(
+    ctl_device_adapter_handle_t
     );
 
 

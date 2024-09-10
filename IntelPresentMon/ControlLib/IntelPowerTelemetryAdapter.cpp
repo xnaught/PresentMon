@@ -38,10 +38,12 @@ namespace pwr::intel
         QueryPerformanceCounter(&qpc);
         bool success = true;
 
-        ctl_power_telemetry_t currentSample{};
-        currentSample.Size = sizeof(ctl_power_telemetry_t);
+        ctl_power_telemetry2_t currentSample{
+            .Size = sizeof(ctl_power_telemetry2_t),
+            .Version = 1
+        };
         if (const auto result = ctlPowerTelemetryGet(deviceHandle,
-            &currentSample); result != CTL_RESULT_SUCCESS)
+            (ctl_power_telemetry_t*)&currentSample); result != CTL_RESULT_SUCCESS)
         {
             success = false;
             IGCL_ERR(result);
@@ -234,7 +236,7 @@ namespace pwr::intel
 
     // TODO: stop using CTL stuff for non-ctl logic
     // TODO: better functional programming
-    ctl_result_t IntelPowerTelemetryAdapter::GetTimeDelta(const ctl_power_telemetry_t& currentSample)
+    ctl_result_t IntelPowerTelemetryAdapter::GetTimeDelta(const ctl_power_telemetry2_t& currentSample)
     {
         if (!previousSample) {
             // We do not have a previous power telemetry item to calculate time
@@ -255,7 +257,7 @@ namespace pwr::intel
     }
 
     ctl_result_t IntelPowerTelemetryAdapter::GetGPUPowerTelemetryData(
-        const ctl_power_telemetry_t& currentSample,
+        const ctl_power_telemetry2_t& currentSample,
         PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info)
     {
         ctl_result_t result;
@@ -354,7 +356,7 @@ namespace pwr::intel
     }
 
     ctl_result_t IntelPowerTelemetryAdapter::GetVramPowerTelemetryData(
-        const ctl_power_telemetry_t& currentSample,
+        const ctl_power_telemetry2_t& currentSample,
         PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info)
     {
         ctl_result_t result;
@@ -394,18 +396,16 @@ namespace pwr::intel
             return result;
         }
 
-        result = GetPowerTelemetryItemUsage(
+        result = GetInstantaneousPowerTelemetryItem(
             currentSample.vramReadBandwidthCounter,
-            previousSample->vramReadBandwidthCounter,
             pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
             GpuTelemetryCapBits::gpu_mem_read_bandwidth);
         if (result != CTL_RESULT_SUCCESS) {
           return result;
         }
 
-        result = GetPowerTelemetryItemUsage(
+        result = GetInstantaneousPowerTelemetryItem(
             currentSample.vramWriteBandwidthCounter,
-            previousSample->vramWriteBandwidthCounter,
             pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
             GpuTelemetryCapBits::gpu_mem_write_bandwidth);
         if (result != CTL_RESULT_SUCCESS) {
@@ -442,7 +442,7 @@ namespace pwr::intel
     }
 
     ctl_result_t IntelPowerTelemetryAdapter::GetFanPowerTelemetryData(
-        const ctl_power_telemetry_t& currentSample,
+        const ctl_power_telemetry2_t& currentSample,
         PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info)
     {
         ctl_result_t result = CTL_RESULT_SUCCESS;
@@ -467,7 +467,7 @@ namespace pwr::intel
     }
 
     ctl_result_t IntelPowerTelemetryAdapter::GetPsuPowerTelemetryData(
-        const ctl_power_telemetry_t& currentSample,
+        const ctl_power_telemetry2_t& currentSample,
         PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info)
     {
         ctl_result_t result = CTL_RESULT_SUCCESS;
@@ -597,18 +597,6 @@ namespace pwr::intel
               pm_telemetry_value =
                   static_cast<double>(data_delta) / time_delta_;
               SetTelemetryCapBit(telemetry_cap_bit);
-              // TODO: File issue with control lib to determine why read bandwidth
-              // occasionally returns what appears to be an invalid counter value. If the currently monotomic value
-              // is less than the previous value OR the calculated bandwidth is greater then the max bandwidth
-              // return back the cached value
-              if (telemetry_cap_bit == GpuTelemetryCapBits::gpu_mem_read_bandwidth) {
-                if ((current_telemetry_item.value.datau64 < previous_telemetry_item.value.datau64) ||
-                    ((current_telemetry_item.value.datau64 - previous_telemetry_item.value.datau64) > gpu_mem_max_bw_cache_value_bps_)) {
-                  pm_telemetry_value = gpu_mem_read_bw_cache_value_bps_;
-                } else {
-                  gpu_mem_read_bw_cache_value_bps_ = pm_telemetry_value;
-                }
-              }
             }
             else {
                 // Expecting a double return type here
@@ -619,7 +607,7 @@ namespace pwr::intel
     }
 
     ctl_result_t IntelPowerTelemetryAdapter::SaveTelemetry(
-        const ctl_power_telemetry_t& currentSample,
+        const ctl_power_telemetry2_t& currentSample,
         const ctl_mem_bandwidth_t& currentMemBandwidthSample)
     {
         if (currentSample.timeStamp.type == CTL_DATA_TYPE_DOUBLE) {

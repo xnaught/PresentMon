@@ -6,6 +6,7 @@
 #include "igcl_api.h"
 #include "PowerTelemetryAdapter.h"
 #include "TelemetryHistory.h"
+#include "ctlpvttemp_api.h"
 #include <mutex>
 #include <optional>
 
@@ -30,20 +31,20 @@ namespace pwr::intel
 		// functions
 		ctl_result_t EnumerateMemoryModules();
 
-		ctl_result_t GetTimeDelta(const ctl_power_telemetry_t& power_telemetry);
+		ctl_result_t GetTimeDelta(const ctl_power_telemetry2_t& power_telemetry);
 
 		// TODO: meld these into the sample function
 		ctl_result_t GetGPUPowerTelemetryData(
-			const ctl_power_telemetry_t& power_telemetry,
+			const ctl_power_telemetry2_t& power_telemetry,
 			PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info);
 		ctl_result_t GetVramPowerTelemetryData(
-			const ctl_power_telemetry_t& power_telemetry,
+			const ctl_power_telemetry2_t& power_telemetry,
 			PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info);
 		ctl_result_t GetFanPowerTelemetryData(
-			const ctl_power_telemetry_t& power_telemetry,
+			const ctl_power_telemetry2_t& power_telemetry,
 			PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info);
 		ctl_result_t GetPsuPowerTelemetryData(
-			const ctl_power_telemetry_t& power_telemetry,
+			const ctl_power_telemetry2_t& power_telemetry,
 			PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info);
 
 		void GetMemStateTelemetryData(
@@ -55,7 +56,7 @@ namespace pwr::intel
 
 		void SavePmPowerTelemetryData(PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info);
         ctl_result_t SaveTelemetry(
-            const ctl_power_telemetry_t& power_telemetry,
+            const ctl_power_telemetry2_t& power_telemetry,
             const ctl_mem_bandwidth_t& mem_bandwidth);
 
 		// TODO: put these as part of the telemetry data object
@@ -82,12 +83,9 @@ namespace pwr::intel
 		std::vector<ctl_mem_handle_t> memoryModules;
 		mutable std::mutex historyMutex;
 		TelemetryHistory<PresentMonPowerTelemetryInfo> history{ PowerTelemetryAdapter::defaultHistorySize };
-		std::optional<ctl_power_telemetry_t> previousSample;
+		std::optional<ctl_power_telemetry2_t> previousSample;
 		std::optional<ctl_mem_bandwidth_t> previousMemBwSample;
 		double time_delta_ = 0.f;
-		// TODO: File issue with control lib to determine why readbandwidth
-		// occasionally returns what appears to be an invalid counter value
-		double gpu_mem_read_bw_cache_value_bps_ = 0.;
 		uint64_t gpu_mem_max_bw_cache_value_bps_ = 0;
 	};
 }
