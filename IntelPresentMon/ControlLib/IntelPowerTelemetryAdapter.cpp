@@ -397,7 +397,7 @@ namespace pwr::intel
         }
 
         result = GetInstantaneousPowerTelemetryItem(
-            currentSample.vramReadBandwidthCounter,
+            currentSample.vramReadBandwidth,
             pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
             GpuTelemetryCapBits::gpu_mem_read_bandwidth);
         if (result != CTL_RESULT_SUCCESS) {
@@ -405,7 +405,7 @@ namespace pwr::intel
         }
 
         result = GetInstantaneousPowerTelemetryItem(
-            currentSample.vramWriteBandwidthCounter,
+            currentSample.vramWriteBandwidth,
             pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
             GpuTelemetryCapBits::gpu_mem_write_bandwidth);
         if (result != CTL_RESULT_SUCCESS) {

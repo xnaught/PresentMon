@@ -13,7 +13,6 @@ namespace pwr::intel
         // to obtain a legit application Id or is default fine?
         ctl_init_args_t ctl_init_args{
             .Size = sizeof(ctl_init_args),
-            .Version = 0,
             .AppVersion = CTL_MAKE_VERSION(CTL_IMPL_MAJOR_VERSION, CTL_IMPL_MINOR_VERSION),
             .flags = CTL_INIT_FLAG_USE_LEVEL_ZERO,
         };
@@ -23,6 +22,11 @@ namespace pwr::intel
             IGCL_ERR(result);
             throw Except<TelemetrySubsystemAbsent>("Unable to initialize Intel Graphics Control Library");
         }
+
+        pmlog_dbg(std::format("Initialized IGCL with version={}.{}",
+            CTL_MAJOR_VERSION(ctl_init_args.SupportedVersion),
+            CTL_MINOR_VERSION(ctl_init_args.SupportedVersion)
+        ));
 
         // enumerate devices available via igcl (get a list of device handles)
         std::vector<ctl_device_adapter_handle_t> handles;

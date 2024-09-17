@@ -4,6 +4,7 @@
 #include <string>
 #include <format>
 #include "igcl_api.h"
+#include "../CommonUtilities/log/Log.h"
 
 namespace pwr::log
 {
@@ -29,5 +30,5 @@ namespace pwr::log
     }
 }
 
-#define IGCL_ERR(code) OutputDebugStringA(pwr::log::MakeIgclDebugErrorString((code), __LINE__, __FILE__, __FUNCTION__).c_str())
+#define IGCL_ERR(ec) pmlog_error("IGCL").code((unsigned int)ec);
 #define TELE_ERR(msg) OutputDebugStringA(pwr::log::MakeTelemetryDebugErrorString((msg), __LINE__, __FILE__, __FUNCTION__).c_str())
