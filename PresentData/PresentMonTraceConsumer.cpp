@@ -1243,7 +1243,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
                         // Apply any pending FlipFrameType events
                         auto ii = mPendingFlipFrameTypeEvents.find(vidPnLayerId);
                         if (ii != mPendingFlipFrameTypeEvents.end()) {
-                            if (present != nullptr) {
+                            if (present != nullptr && ii->second.PresentId == PresentId[i]) {
                                 ApplyFlipFrameType(present, ii->second.Timestamp, ii->second.FrameType);
                             }
                             mPendingFlipFrameTypeEvents.erase(ii);
