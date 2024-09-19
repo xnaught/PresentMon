@@ -183,7 +183,6 @@ bool IsValid(
     return (inputType & ~(PresentMonProvider_Input_MouseClick |
         PresentMonProvider_Input_KeyboardClick)) == 0;
 }
-
 }
 
 PresentMonProvider* PresentMonProvider_Initialize()
