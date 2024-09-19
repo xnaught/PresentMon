@@ -2011,12 +2011,18 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
     auto present = p;
     auto presentStartTime = p->PresentStartTime;
     if (present->WaitingForFrameId) {
+        std::unique_lock<std::mutex> lock(mPresentEventMutex);
         for (uint32_t i = mReadyCount; i < mCompletedCount; ++i) {
             auto const& p2 = mCompletedPresents[GetRingIndex(mCompletedIndex + i)];
             if (p2->WaitingForFrameId && p2->ProcessId == present->ProcessId) {
                 VerboseTraceBeforeModifyingPresent(p2.get());
                 if (p2->FrameId == present->FrameId) {
                     p2->Displayed.insert(p2->Displayed.end(), present->Displayed.begin(), present->Displayed.end());
+                    if (p2->InputTime < present->InputTime || p2->MouseClickTime < present->MouseClickTime) {
+                        p2->InputTime = present->InputTime;
+                        p2->MouseClickTime = present->MouseClickTime;
+                        p2->InputType = present->InputType;
+                    }
                     present = nullptr;
                     break;
                 }
@@ -2447,8 +2453,8 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
                 } else {
                     ApplyFlipFrameType(present, timestamp, frameType);
                 }
-            }
-            return;
+        }
+        return;
         }
     }
 
