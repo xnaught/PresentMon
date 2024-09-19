@@ -1,4 +1,4 @@
-// Copyright (C) 2017-2024 Intel Corporation
+// Copyright (C) 2023 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #define WIN32_LEAN_AND_MEAN
@@ -14,36 +14,40 @@
 
 namespace {
 
-static GUID const ProviderGUID = { 0xecaa4712, 0x4644, 0x442f, { 0xb9, 0x4c, 0xa3, 0x2f, 0x6c, 0xf8, 0xa4, 0x99 }};
+static GUID const ProviderGUID = { 0xecaa4712, 0x4644, 0x442f, { 0xb9, 0x4c, 0xa3, 0x2f, 0x6c, 0xf8, 0xa4, 0x99 } };
 
 enum {
-    ID_PresentFrameType         = 1,
-    ID_FlipFrameType            = 2,
-    ID_MeasuredInput            = 10,
-    ID_MeasuredScreenChange     = 11,
-    ID_AppFrameStart            = 20,
-    ID_AppReceivedInput         = 21,
-    ID_AppSimulationTime        = 22,
-    ID_AppWaitableObjectBegin   = 23,
-    ID_AppWaitableObjectEnd     = 24,    
+    ID_PresentGeneratedFrame = 1,
+    ID_FlipGeneratedFrame = 2,
+    ID_AppSleepStart = 50,
+    ID_AppSleepEnd = 51,
+    ID_AppSimulationStart = 52,
+    ID_AppSimulationEnd = 53,
+    ID_AppRenderSubmitStart = 54,
+    ID_AppRenderSubmitEnd = 55,
+    ID_AppPresentStart = 56,
+    ID_AppPresentEnd = 57,
+    ID_AppInputSample = 58,
 };
 
 enum {
-    Keyword_FrameTypes      = 1 << 0,
-    Keyword_Measurements    = 1 << 1,
-    Keyword_Application     = 1 << 2,
+    Keyword_GeneratedFrames = 1 << 0,
+    Keyword_Measurements = 1 << 1,
+    Keyword_Application = 1 << 2
 };
 
 enum Event {
-    Event_PresentFrameType,
-    Event_FlipFrameType,
-    Event_MeasuredInput,
-    Event_MeasuredScreenChange,
-    Event_AppFrameStart,
-    Event_AppReceivedInput,
-    Event_AppSimulationTime,
-    Event_AppWaitableObjectBegin,
-    Event_AppWaitableObjectEnd,    
+    Event_PresentGeneratedFrame,
+    Event_FlipGeneratedFrame,
+    Event_AppSleepStart,
+    Event_AppSleepEnd,
+    Event_AppSimulationStart,
+    Event_AppSimulationEnd,
+    Event_AppRenderSubmitStart,
+    Event_AppRenderSubmitEnd,
+    Event_AppPresentStart,
+    Event_AppPresentEnd,
+    Event_AppInputSample,
     Event_Count
 };
 
@@ -51,27 +55,29 @@ enum Event {
 // and would need to be updated if you extend this to use other levels.
 static EVENT_DESCRIPTOR const EventDescriptor[] = {
     // ID, Version, Channel, Level, Opcode, Task, Keyword
-    { ID_PresentFrameType,       0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_PresentFrameType,       Keyword_FrameTypes },
-    { ID_FlipFrameType,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_FlipFrameType,          Keyword_FrameTypes },
-    { ID_MeasuredInput,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_MeasuredInput,          Keyword_Measurements },
-    { ID_MeasuredScreenChange,   0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_MeasuredScreenChange,   Keyword_Measurements },
-    { ID_AppFrameStart,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppFrameStart,          Keyword_Application },
-    { ID_AppReceivedInput,       0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppReceivedInput,       Keyword_Application },
-    { ID_AppSimulationTime,      0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSimulationTime,      Keyword_Application },
-    { ID_AppWaitableObjectBegin, 0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppWaitableObjectBegin, Keyword_Application },
-    { ID_AppWaitableObjectEnd,   0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppWaitableObjectEnd,   Keyword_Application },    
+    { ID_PresentGeneratedFrame,  0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_PresentGeneratedFrame,  Keyword_GeneratedFrames },
+    { ID_FlipGeneratedFrame,     0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_FlipGeneratedFrame,     Keyword_GeneratedFrames },
+    { ID_AppSleepStart,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSleepStart,          Keyword_Application },
+    { ID_AppSleepEnd,            0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSleepEnd,            Keyword_Application },
+    { ID_AppSimulationStart,     0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSimulationStart,     Keyword_Application },
+    { ID_AppSimulationEnd,       0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSimulationEnd,       Keyword_Application },
+    { ID_AppRenderSubmitStart,   0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppRenderSubmitStart,   Keyword_Application },
+    { ID_AppRenderSubmitEnd,     0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppRenderSubmitEnd,     Keyword_Application },
+    { ID_AppPresentStart,        0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppPresentStart,        Keyword_Application },
+    { ID_AppPresentEnd,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppPresentEnd,          Keyword_Application },
+    { ID_AppInputSample,         0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppInputSample,         Keyword_Application },
 };
 
 static_assert(Event_Count == _countof(EventDescriptor), "Event enum and EventDescriptor size mismatch");
-static_assert(Event_Count <= 32,                        "Too many events for current PresentMonProvider::EnableBits");
+static_assert(Event_Count <= 32, "Too many events for current PresentMonProvider::EnableBits");
 
 }
 
 struct PresentMonProvider {
     HMODULE   Advapi32Module;
-    ULONG     (*pEventRegister)(LPCGUID, PENABLECALLBACK, PVOID, PREGHANDLE);
-    ULONG     (*pEventUnregister)(REGHANDLE);
-    ULONG     (*pEventWrite)(REGHANDLE, PCEVENT_DESCRIPTOR, ULONG, PEVENT_DATA_DESCRIPTOR);
+    ULONG(*pEventRegister)(LPCGUID, PENABLECALLBACK, PVOID, PREGHANDLE);
+    ULONG(*pEventUnregister)(REGHANDLE);
+    ULONG(*pEventWrite)(REGHANDLE, PCEVENT_DESCRIPTOR, ULONG, PEVENT_DATA_DESCRIPTOR);
 
     REGHANDLE ProviderHandle;
     ULONG     EnableBits;
@@ -95,15 +101,17 @@ bool KeywordIsEnabled(
 }
 
 void EnableCallback(
-    LPCGUID, // SourceId
+    LPCGUID SourceId,
     ULONG ControlCode,
     UCHAR Level,
     ULONGLONG MatchAnyKeyword,
     ULONGLONG MatchAllKeyword,
-    PEVENT_FILTER_DESCRIPTOR, // FilterData
+    PEVENT_FILTER_DESCRIPTOR FilterData,
     PVOID CallbackContext)
 {
-    auto ctxt = (PresentMonProvider*) CallbackContext;
+    (void)SourceId, FilterData;
+
+    auto ctxt = (PresentMonProvider*)CallbackContext;
     if (ctxt != nullptr) {
         switch (ControlCode) {
         case EVENT_CONTROL_CODE_ENABLE_PROVIDER:
@@ -131,7 +139,7 @@ void FillDesc(
     T* param,
     Ts... params)
 {
-    data->Ptr = (ULONGLONG) param;
+    data->Ptr = (ULONGLONG)param;
     data->Size = sizeof(*param);
 
     FillDesc(data + 1, params...);
@@ -169,6 +177,12 @@ bool IsValid(
            frameType == PresentMonProvider_FrameType_Intel_XEFG ||
            frameType == PresentMonProvider_FrameType_AMD_AFMF;
 }
+bool IsValid(
+    PresentMonProvider_InputType inputType)
+{
+    return (inputType & ~(PresentMonProvider_Input_MouseClick |
+        PresentMonProvider_Input_KeyboardClick)) == 0;
+}
 
 }
 
@@ -185,9 +199,9 @@ PresentMonProvider* PresentMonProvider_Initialize()
         return nullptr;
     }
 
-    ctxt->pEventRegister   = (decltype(ctxt->pEventRegister))   GetProcAddress(ctxt->Advapi32Module, "EventRegister");
-    ctxt->pEventUnregister = (decltype(ctxt->pEventUnregister)) GetProcAddress(ctxt->Advapi32Module, "EventUnregister");
-    ctxt->pEventWrite      = (decltype(ctxt->pEventWrite))      GetProcAddress(ctxt->Advapi32Module, "EventWrite");
+    ctxt->pEventRegister = (decltype(ctxt->pEventRegister))GetProcAddress(ctxt->Advapi32Module, "EventRegister");
+    ctxt->pEventUnregister = (decltype(ctxt->pEventUnregister))GetProcAddress(ctxt->Advapi32Module, "EventUnregister");
+    ctxt->pEventWrite = (decltype(ctxt->pEventWrite))GetProcAddress(ctxt->Advapi32Module, "EventWrite");
     if (ctxt->pEventRegister == nullptr ||
         ctxt->pEventUnregister == nullptr ||
         ctxt->pEventWrite == nullptr) {
@@ -197,7 +211,7 @@ PresentMonProvider* PresentMonProvider_Initialize()
     }
 
     ctxt->EnableBits = 0;
-    ULONG status = (*ctxt->pEventRegister)(&ProviderGUID, (PENABLECALLBACK) &EnableCallback, ctxt, &ctxt->ProviderHandle);
+    ULONG status = (*ctxt->pEventRegister)(&ProviderGUID, (PENABLECALLBACK)&EnableCallback, ctxt, &ctxt->ProviderHandle);
     if (status != ERROR_SUCCESS) {
         FreeLibrary(ctxt->Advapi32Module);
         delete ctxt;
@@ -214,7 +228,7 @@ void PresentMonProvider_ShutDown(
 
     if (ctxt->ProviderHandle != 0) {
         ULONG e = (*ctxt->pEventUnregister)(ctxt->ProviderHandle);
-        (void) e;
+        (void)e;
     }
 
     if (ctxt->Advapi32Module != nullptr) {
@@ -225,93 +239,110 @@ void PresentMonProvider_ShutDown(
     delete ctxt;
 }
 
-ULONG PresentMonProvider_PresentFrameType(
+ULONG PresentMonProvider_PresentGeneratedFrame(
     PresentMonProvider* ctxt,
-    uint32_t frameId,
-    PresentMonProvider_FrameType frameType)
+    PresentMonProvider_PresentAPI presentType)
 {
     PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
-    PRESENTMONPROVIDER_ASSERT(IsValid(frameType));
+    PRESENTMONPROVIDER_ASSERT(IsValid(presentType));
 
-    return WriteEvent(ctxt, Event_PresentFrameType, frameId,
-                                                    (uint8_t) frameType);
+    return WriteEvent(ctxt, Event_PresentGeneratedFrame, (uint8_t)presentType);
 }
 
-ULONG PresentMonProvider_FlipFrameType(
+ULONG PresentMonProvider_FlipGeneratedFrame(
     PresentMonProvider* ctxt,
-    uint32_t vidPnSourceId,
-    uint32_t layerIndex,
-    uint64_t presentId,
-    PresentMonProvider_FrameType frameType)
+    uint64_t sourcePresentID,
+    PresentMonProvider_PresentIDType sourcePresentIDType,
+    PresentMonProvider_GeneratedFrameType generatedFrameType)
 {
     PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
-    PRESENTMONPROVIDER_ASSERT(IsValid(frameType));
+    PRESENTMONPROVIDER_ASSERT(IsValid(sourcePresentIDType));
+    PRESENTMONPROVIDER_ASSERT(IsValid(generatedFrameType));
 
-    return WriteEvent(ctxt, Event_FlipFrameType, vidPnSourceId,
-                                                 layerIndex,
-                                                 presentId,
-                                                 (uint8_t) frameType);
+    return WriteEvent(ctxt, Event_FlipGeneratedFrame, sourcePresentID,
+        (uint8_t)sourcePresentIDType,
+        (uint8_t)generatedFrameType);
 }
 
-ULONG PresentMonProvider_MeasuredInput(
+ULONG PresentMonProvider_Application_SleepStart(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppSleepStart, frame_id);
+}
+
+ULONG PresentMonProvider_Application_SleepEnd(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppSleepEnd, frame_id);
+}
+
+ULONG PresentMonProvider_Application_SimulationStart(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppSimulationStart, frame_id);
+}
+
+ULONG PresentMonProvider_Application_SimulationEnd(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppSimulationEnd, frame_id);
+}
+
+ULONG PresentMonProvider_Application_RenderSubmitStart(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppRenderSubmitStart, frame_id);
+}
+
+ULONG PresentMonProvider_Application_RenderSubmitEnd(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppRenderSubmitEnd, frame_id);
+}
+
+ULONG PresentMonProvider_Application_PresentStart(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppPresentStart, frame_id);
+}
+
+ULONG PresentMonProvider_Application_PresentEnd(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppPresentEnd, frame_id);
+}
+
+ULONG PresentMonProvider_Application_InputSample(
     PresentMonProvider* ctxt,
     PresentMonProvider_InputType inputType,
-    uint64_t inputQPCTime)
+    uint32_t frame_id)
 {
     PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
     PRESENTMONPROVIDER_ASSERT(IsValid(inputType));
 
-    return WriteEvent(ctxt, Event_MeasuredInput, inputQPCTime,
-                                                 (uint8_t) inputType);
-}
-
-ULONG PresentMonProvider_MeasuredScreenChange(
-    PresentMonProvider* ctxt,
-    uint64_t screenQPCTime)
-{
-    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
-
-    return WriteEvent(ctxt, Event_MeasuredScreenChange, screenQPCTime);
-}
-
-ULONG PresentMonProvider_Application_FrameStart(PresentMonProvider* ctxt)
-{
-    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
-
-    return WriteEvent(ctxt, Event_AppFrameStart);
-}
-
-ULONG PresentMonProvider_Application_ReceivedInput(
-    PresentMonProvider* ctxt,
-    PresentMonProvider_InputType inputType)
-{
-    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
-    PRESENTMONPROVIDER_ASSERT(IsValid(inputType));
-
-    return WriteEvent(ctxt, Event_AppReceivedInput, inputType);
-}
-
-ULONG PresentMonProvider_Application_SimulationTime(
-    PresentMonProvider* ctxt,
-    uint64_t expectedScreenQPCTime)
-{
-    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
-
-    return WriteEvent(ctxt, Event_AppSimulationTime, expectedScreenQPCTime);
-}
-
-ULONG PresentMonProvider_Application_WaitableObjectBegin(
-    PresentMonProvider* ctxt)
-{
-    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
-
-    return WriteEvent(ctxt, Event_AppWaitableObjectBegin);
-}
-
-ULONG PresentMonProvider_Application_WaitableObjectEnd(
-    PresentMonProvider* ctxt)
-{
-    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
-
-    return WriteEvent(ctxt, Event_AppWaitableObjectEnd);
+    return WriteEvent(ctxt, Event_AppInputSample, inputType, frame_id);
 }
