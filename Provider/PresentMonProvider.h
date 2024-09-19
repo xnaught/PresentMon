@@ -80,7 +80,6 @@ ULONG PresentMonProvider_FlipFrameType(PresentMonProvider* ctxt,
                                        uint64_t presentId,
                                        PresentMonProvider_FrameType frameType);
 
-
 // MEASURED INPUT/PHOTON LATENCY
 //
 // These provide times associated with user input and monitor updates that were measured using some
@@ -101,23 +100,18 @@ enum PresentMonProvider_InputType {
     PresentMonProvider_Input_KeyboardClick  = 1 << 1,
 };
 
-ULONG PresentMonProvider_MeasuredInput(PresentMonProvider* ctxt,
-                                       PresentMonProvider_InputType inputType,
-                                       uint64_t inputQPCTime);
-
-ULONG PresentMonProvider_MeasuredScreenChange(PresentMonProvider* ctxt,
-                                              uint64_t screenQPCTime);
-
 // GRAPHICS APPLICATION FRAME INFORMATION
 
-ULONG PresentMonProvider_Application_FrameStart(PresentMonProvider* ctxt);
+ULONG PresentMonProvider_Application_SleepStart(PresentMonProvider* ctxt, uint32_t frame_id);
+ULONG PresentMonProvider_Application_SleepEnd(PresentMonProvider* ctxt, uint32_t frame_id);
+ULONG PresentMonProvider_Application_SimulationStart(PresentMonProvider* ctxt, uint32_t frame_id);
+ULONG PresentMonProvider_Application_SimulationEnd(PresentMonProvider* ctxt, uint32_t frame_id);
+ULONG PresentMonProvider_Application_RenderSubmitStart(PresentMonProvider* ctxt, uint32_t frame_id);
+ULONG PresentMonProvider_Application_RenderSubmitEnd(PresentMonProvider* ctxt, uint32_t frame_id);
+ULONG PresentMonProvider_Application_PresentStart(PresentMonProvider* ctxt, uint32_t frame_id);
+ULONG PresentMonProvider_Application_PresentEnd(PresentMonProvider* ctxt, uint32_t frame_id);
 
-ULONG PresentMonProvider_Application_ReceivedInput(PresentMonProvider* ctxt,
-                                                   PresentMonProvider_InputType inputType);
 
-ULONG PresentMonProvider_Application_SimulationTime(PresentMonProvider* ctxt,
-                                                    uint64_t expectedScreenQPCTime);
+ULONG PresentMonProvider_Application_InputSample(PresentMonProvider* ctxt,
+                                                   PresentMonProvider_InputType inputType, uint32_t frame_id);
 
-ULONG PresentMonProvider_Application_WaitableObjectBegin(PresentMonProvider* ctxt);
-
-ULONG PresentMonProvider_Application_WaitableObjectEnd(PresentMonProvider* ctxt);
