@@ -228,7 +228,7 @@ void PresentMonProvider_ShutDown(
 
     if (ctxt->ProviderHandle != 0) {
         ULONG e = (*ctxt->pEventUnregister)(ctxt->ProviderHandle);
-        (void)e;
+        (void) e;
     }
 
     if (ctxt->Advapi32Module != nullptr) {
@@ -249,6 +249,7 @@ ULONG PresentMonProvider_PresentFrameType(
 
     return WriteEvent(ctxt, Event_PresentFrameType, frameId,
                                                     (uint8_t) frameType);
+}
 
 ULONG PresentMonProvider_FlipFrameType(
     PresentMonProvider* ctxt,
