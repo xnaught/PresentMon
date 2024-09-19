@@ -1,4 +1,4 @@
-// Copyright (C) 2023 Intel Corporation
+// Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
 #define WIN32_LEAN_AND_MEAN
@@ -17,8 +17,8 @@ namespace {
 static GUID const ProviderGUID = { 0xecaa4712, 0x4644, 0x442f, { 0xb9, 0x4c, 0xa3, 0x2f, 0x6c, 0xf8, 0xa4, 0x99 } };
 
 enum {
-    ID_PresentGeneratedFrame = 1,
-    ID_FlipGeneratedFrame = 2,
+    ID_PresentFrameType = 1,
+    ID_FlipFrameType    = 2,
     ID_AppSleepStart = 50,
     ID_AppSleepEnd = 51,
     ID_AppSimulationStart = 52,
@@ -31,14 +31,14 @@ enum {
 };
 
 enum {
-    Keyword_GeneratedFrames = 1 << 0,
+    Keyword_FrameTypes = 1 << 0,
     Keyword_Measurements = 1 << 1,
     Keyword_Application = 1 << 2
 };
 
 enum Event {
-    Event_PresentGeneratedFrame,
-    Event_FlipGeneratedFrame,
+    Event_PresentFrameType,
+    Event_FlipFrameType,
     Event_AppSleepStart,
     Event_AppSleepEnd,
     Event_AppSimulationStart,
@@ -55,8 +55,8 @@ enum Event {
 // and would need to be updated if you extend this to use other levels.
 static EVENT_DESCRIPTOR const EventDescriptor[] = {
     // ID, Version, Channel, Level, Opcode, Task, Keyword
-    { ID_PresentGeneratedFrame,  0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_PresentGeneratedFrame,  Keyword_GeneratedFrames },
-    { ID_FlipGeneratedFrame,     0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_FlipGeneratedFrame,     Keyword_GeneratedFrames },
+    { ID_PresentFrameType,       0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_PresentFrameType,       Keyword_FrameTypes  },
+    { ID_FlipFrameType,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_FlipFrameType,          Keyword_FrameTypes  },
     { ID_AppSleepStart,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSleepStart,          Keyword_Application },
     { ID_AppSleepEnd,            0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSleepEnd,            Keyword_Application },
     { ID_AppSimulationStart,     0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSimulationStart,     Keyword_Application },
@@ -69,15 +69,15 @@ static EVENT_DESCRIPTOR const EventDescriptor[] = {
 };
 
 static_assert(Event_Count == _countof(EventDescriptor), "Event enum and EventDescriptor size mismatch");
-static_assert(Event_Count <= 32, "Too many events for current PresentMonProvider::EnableBits");
+static_assert(Event_Count <= 32,                        "Too many events for current PresentMonProvider::EnableBits");
 
 }
 
 struct PresentMonProvider {
     HMODULE   Advapi32Module;
-    ULONG(*pEventRegister)(LPCGUID, PENABLECALLBACK, PVOID, PREGHANDLE);
-    ULONG(*pEventUnregister)(REGHANDLE);
-    ULONG(*pEventWrite)(REGHANDLE, PCEVENT_DESCRIPTOR, ULONG, PEVENT_DATA_DESCRIPTOR);
+    ULONG   (*pEventRegister)(LPCGUID, PENABLECALLBACK, PVOID, PREGHANDLE);
+    ULONG   (*pEventUnregister)(REGHANDLE);
+    ULONG   (*pEventWrite)(REGHANDLE, PCEVENT_DESCRIPTOR, ULONG, PEVENT_DATA_DESCRIPTOR);
 
     REGHANDLE ProviderHandle;
     ULONG     EnableBits;
@@ -177,6 +177,7 @@ bool IsValid(
            frameType == PresentMonProvider_FrameType_Intel_XEFG ||
            frameType == PresentMonProvider_FrameType_AMD_AFMF;
 }
+
 bool IsValid(
     PresentMonProvider_InputType inputType)
 {
