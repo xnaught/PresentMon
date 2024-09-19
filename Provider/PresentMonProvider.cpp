@@ -17,28 +17,32 @@ namespace {
 static GUID const ProviderGUID = { 0xecaa4712, 0x4644, 0x442f, { 0xb9, 0x4c, 0xa3, 0x2f, 0x6c, 0xf8, 0xa4, 0x99 }};
 
 enum {
-    ID_PresentFrameType = 1,
-    ID_FlipFrameType    = 2,
-    ID_AppSleepStart = 50,
-    ID_AppSleepEnd = 51,
-    ID_AppSimulationStart = 52,
-    ID_AppSimulationEnd = 53,
-    ID_AppRenderSubmitStart = 54,
-    ID_AppRenderSubmitEnd = 55,
-    ID_AppPresentStart = 56,
-    ID_AppPresentEnd = 57,
-    ID_AppInputSample = 58,
+    ID_PresentFrameType         = 1,
+    ID_FlipFrameType            = 2,
+    ID_MeasuredInput            = 10,
+    ID_MeasuredScreenChange     = 11,
+    ID_AppSleepStart            = 50,
+    ID_AppSleepEnd              = 51,
+    ID_AppSimulationStart       = 52,
+    ID_AppSimulationEnd         = 53,
+    ID_AppRenderSubmitStart     = 54,
+    ID_AppRenderSubmitEnd       = 55,
+    ID_AppPresentStart          = 56,
+    ID_AppPresentEnd            = 57,
+    ID_AppInputSample           = 58,
 };
 
 enum {
-    Keyword_FrameTypes = 1 << 0,
-    Keyword_Measurements = 1 << 1,
-    Keyword_Application = 1 << 2
+    Keyword_FrameTypes      = 1 << 0,
+    Keyword_Measurements    = 1 << 1,
+    Keyword_Application     = 1 << 5,
 };
 
 enum Event {
     Event_PresentFrameType,
     Event_FlipFrameType,
+    Event_MeasuredInput,
+    Event_MeasuredScreenChange,
     Event_AppSleepStart,
     Event_AppSleepEnd,
     Event_AppSimulationStart,
@@ -55,8 +59,10 @@ enum Event {
 // and would need to be updated if you extend this to use other levels.
 static EVENT_DESCRIPTOR const EventDescriptor[] = {
     // ID, Version, Channel, Level, Opcode, Task, Keyword
-    { ID_PresentFrameType,       0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_PresentFrameType,       Keyword_FrameTypes  },
-    { ID_FlipFrameType,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_FlipFrameType,          Keyword_FrameTypes  },
+    { ID_PresentFrameType,       0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_PresentFrameType,       Keyword_FrameTypes },
+    { ID_FlipFrameType,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_FlipFrameType,          Keyword_FrameTypes },
+    { ID_MeasuredInput,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_MeasuredInput,          Keyword_Measurements },
+    { ID_MeasuredScreenChange,   0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_MeasuredScreenChange,   Keyword_Measurements },
     { ID_AppSleepStart,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSleepStart,          Keyword_Application },
     { ID_AppSleepEnd,            0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSleepEnd,            Keyword_Application },
     { ID_AppSimulationStart,     0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSimulationStart,     Keyword_Application },
@@ -101,17 +107,15 @@ bool KeywordIsEnabled(
 }
 
 void EnableCallback(
-    LPCGUID SourceId,
+    LPCGUID, // SourceId
     ULONG ControlCode,
     UCHAR Level,
     ULONGLONG MatchAnyKeyword,
     ULONGLONG MatchAllKeyword,
-    PEVENT_FILTER_DESCRIPTOR FilterData,
+    PEVENT_FILTER_DESCRIPTOR, // FilterData
     PVOID CallbackContext)
 {
-    (void)SourceId, FilterData;
-
-    auto ctxt = (PresentMonProvider*)CallbackContext;
+    auto ctxt = (PresentMonProvider*) CallbackContext;
     if (ctxt != nullptr) {
         switch (ControlCode) {
         case EVENT_CONTROL_CODE_ENABLE_PROVIDER:
@@ -265,6 +269,27 @@ ULONG PresentMonProvider_FlipFrameType(
                                                  layerIndex,
                                                  presentId,
                                                  (uint8_t) frameType);
+}
+
+ULONG PresentMonProvider_MeasuredInput(
+    PresentMonProvider* ctxt,
+    PresentMonProvider_InputType inputType,
+    uint64_t inputQPCTime)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+    PRESENTMONPROVIDER_ASSERT(IsValid(inputType));
+
+    return WriteEvent(ctxt, Event_MeasuredInput, inputQPCTime,
+                                                 (uint8_t) inputType);
+}
+
+ULONG PresentMonProvider_MeasuredScreenChange(
+    PresentMonProvider* ctxt,
+    uint64_t screenQPCTime)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_MeasuredScreenChange, screenQPCTime);
 }
 
 ULONG PresentMonProvider_Application_SleepStart(
