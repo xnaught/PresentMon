@@ -75,9 +75,9 @@ static_assert(Event_Count <= 32,                        "Too many events for cur
 
 struct PresentMonProvider {
     HMODULE   Advapi32Module;
-    ULONG   (*pEventRegister)(LPCGUID, PENABLECALLBACK, PVOID, PREGHANDLE);
-    ULONG   (*pEventUnregister)(REGHANDLE);
-    ULONG   (*pEventWrite)(REGHANDLE, PCEVENT_DESCRIPTOR, ULONG, PEVENT_DATA_DESCRIPTOR);
+    ULONG     (*pEventRegister)(LPCGUID, PENABLECALLBACK, PVOID, PREGHANDLE);
+    ULONG     (*pEventUnregister)(REGHANDLE);
+    ULONG     (*pEventWrite)(REGHANDLE, PCEVENT_DESCRIPTOR, ULONG, PEVENT_DATA_DESCRIPTOR);
 
     REGHANDLE ProviderHandle;
     ULONG     EnableBits;
@@ -211,7 +211,7 @@ PresentMonProvider* PresentMonProvider_Initialize()
     }
 
     ctxt->EnableBits = 0;
-    ULONG status = (*ctxt->pEventRegister)(&ProviderGUID, (PENABLECALLBACK)&EnableCallback, ctxt, &ctxt->ProviderHandle);
+    ULONG status = (*ctxt->pEventRegister)(&ProviderGUID, (PENABLECALLBACK) &EnableCallback, ctxt, &ctxt->ProviderHandle);
     if (status != ERROR_SUCCESS) {
         FreeLibrary(ctxt->Advapi32Module);
         delete ctxt;
