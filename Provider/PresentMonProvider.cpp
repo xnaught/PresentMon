@@ -199,9 +199,9 @@ PresentMonProvider* PresentMonProvider_Initialize()
         return nullptr;
     }
 
-    ctxt->pEventRegister = (decltype(ctxt->pEventRegister))GetProcAddress(ctxt->Advapi32Module, "EventRegister");
-    ctxt->pEventUnregister = (decltype(ctxt->pEventUnregister))GetProcAddress(ctxt->Advapi32Module, "EventUnregister");
-    ctxt->pEventWrite = (decltype(ctxt->pEventWrite))GetProcAddress(ctxt->Advapi32Module, "EventWrite");
+    ctxt->pEventRegister   = (decltype(ctxt->pEventRegister))   GetProcAddress(ctxt->Advapi32Module, "EventRegister");
+    ctxt->pEventUnregister = (decltype(ctxt->pEventUnregister)) GetProcAddress(ctxt->Advapi32Module, "EventUnregister");
+    ctxt->pEventWrite      = (decltype(ctxt->pEventWrite))      GetProcAddress(ctxt->Advapi32Module, "EventWrite");
     if (ctxt->pEventRegister == nullptr ||
         ctxt->pEventUnregister == nullptr ||
         ctxt->pEventWrite == nullptr) {
@@ -239,29 +239,31 @@ void PresentMonProvider_ShutDown(
     delete ctxt;
 }
 
-ULONG PresentMonProvider_PresentGeneratedFrame(
+ULONG PresentMonProvider_PresentFrameType(
     PresentMonProvider* ctxt,
-    PresentMonProvider_PresentAPI presentType)
+    uint32_t frameId,
+    PresentMonProvider_FrameType frameType)
 {
     PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
-    PRESENTMONPROVIDER_ASSERT(IsValid(presentType));
+    PRESENTMONPROVIDER_ASSERT(IsValid(frameType));
 
-    return WriteEvent(ctxt, Event_PresentGeneratedFrame, (uint8_t)presentType);
-}
+    return WriteEvent(ctxt, Event_PresentFrameType, frameId,
+                                                    (uint8_t) frameType);
 
-ULONG PresentMonProvider_FlipGeneratedFrame(
+ULONG PresentMonProvider_FlipFrameType(
     PresentMonProvider* ctxt,
-    uint64_t sourcePresentID,
-    PresentMonProvider_PresentIDType sourcePresentIDType,
-    PresentMonProvider_GeneratedFrameType generatedFrameType)
+    uint32_t vidPnSourceId,
+    uint32_t layerIndex,
+    uint64_t presentId,
+    PresentMonProvider_FrameType frameType)
 {
     PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
-    PRESENTMONPROVIDER_ASSERT(IsValid(sourcePresentIDType));
-    PRESENTMONPROVIDER_ASSERT(IsValid(generatedFrameType));
+    PRESENTMONPROVIDER_ASSERT(IsValid(frameType));
 
-    return WriteEvent(ctxt, Event_FlipGeneratedFrame, sourcePresentID,
-        (uint8_t)sourcePresentIDType,
-        (uint8_t)generatedFrameType);
+    return WriteEvent(ctxt, Event_FlipFrameType, vidPnSourceId,
+                                                 layerIndex,
+                                                 presentId,
+                                                 (uint8_t) frameType);
 }
 
 ULONG PresentMonProvider_Application_SleepStart(
