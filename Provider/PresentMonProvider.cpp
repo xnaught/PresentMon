@@ -139,7 +139,7 @@ void FillDesc(
     T* param,
     Ts... params)
 {
-    data->Ptr = (ULONGLONG)param;
+    data->Ptr = (ULONGLONG) param;
     data->Size = sizeof(*param);
 
     FillDesc(data + 1, params...);
