@@ -155,15 +155,15 @@ struct FlipFrameTypeEvent {
 };
 
 struct AppTimingData {
-    uint64_t AppSleepStartTime;
-    uint64_t AppSleepEndTime;
-    uint64_t AppSimStartTime;
-    uint64_t AppSimEndTime;
-    uint64_t AppRenderSubmitStartTime;
-    uint64_t AppRenderSubmitEndTime;
-    uint64_t AppPresentStartTime;
-    uint64_t AppPresentEndTime;
-    std::pair<uint64_t, InputDeviceType> AppInputSample;
+    uint64_t AppSleepStartTime = 0;
+    uint64_t AppSleepEndTime = 0;
+    uint64_t AppSimStartTime = 0;
+    uint64_t AppSimEndTime = 0;
+    uint64_t AppRenderSubmitStartTime = 0;
+    uint64_t AppRenderSubmitEndTime = 0;
+    uint64_t AppPresentStartTime = 0;
+    uint64_t AppPresentEndTime = 0;
+    std::pair<uint64_t, InputDeviceType> AppInputSample = { 0, InputDeviceType::None };
 };
 
 // A ProcessEvent occurs whenever a Process starts or stops.
@@ -187,6 +187,7 @@ struct PresentEvent {
     uint64_t InputTime;         // Earliest QPC value when the keyboard/mouse were tapped/moved and used by this frame
     uint64_t MouseClickTime;    // Earliest QPC value when the mouse was clicked and used by this frame
 
+    uint32_t AppFrameId;
     uint64_t AppSleepStartTime;         // QPC value of
     uint64_t AppSleepEndTime;           // QPC value of
     uint64_t AppSimStartTime;           // QPC value of
@@ -433,7 +434,7 @@ struct PMTraceConsumer
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mLastPresentByWindow;                   // HWND -> PresentEvent
     std::unordered_map<uint64_t, MouseClickData> mReceivedMouseClickByHwnd;                             // HWND -> MouseClickData
     std::unordered_map<uint32_t, std::shared_ptr<PresentEvent>> mPresentByAppFrameId;                   // Intel provider app frame id -> PresentEvent
-    std::unordered_map<uint32_t, std::shared_ptr<PresentEvent>> mPendingAppTimingDataByAppFrameId;      // Intel provider app frame id -> PresentEvent
+    std::unordered_map<uint32_t, AppTimingData> mPendingAppTimingDataByAppFrameId;                      // Intel provider app frame id -> AppTimingData
 
     // mGpuTrace tracks work executed on the GPU.
     GpuTrace mGpuTrace;

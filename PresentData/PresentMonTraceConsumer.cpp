@@ -2258,9 +2258,14 @@ void PMTraceConsumer::RuntimePresentStart(Runtime runtime, EVENT_HEADER const& h
     present->SwapChainAddress = swapchainAddr;
     present->PresentFlags = dxgiPresentFlags;
     present->SyncInterval = syncInterval;
+    present->AppFrameId = 0;
 
     ApplyPresentFrameType(present);
 
+    if (mNextAppFrameId != 0) {
+        present->AppFrameId = mNextAppFrameId;
+        mNextAppFrameId = 0;
+    }
     TrackPresent(present, &mOrderedPresentsByProcessId[present->ProcessId]);
 }
 
@@ -2413,6 +2418,16 @@ void PMTraceConsumer::HandleProcessEvent(EVENT_RECORD* pEventRecord)
     SignalEventsReady();
 }
 
+InputDeviceType ConvertIntelProviderInputTypes(Intel_PresentMon::InputType ipmInputType) {
+    switch (ipmInputType) {
+    case Intel_PresentMon::InputType::Unspecified:   return InputDeviceType::Unknown;
+    case Intel_PresentMon::InputType::MouseClick:    return InputDeviceType::Mouse;
+    case Intel_PresentMon::InputType::KeyboardClick: return InputDeviceType::Keyboard;
+    }
+    assert(false);
+    return InputDeviceType::Unknown;
+}
+
 void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
 {
     if (mTrackFrameType) {
@@ -2462,45 +2477,141 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
         switch (pEventRecord->EventHeader.EventDescriptor.Id) {
         case Intel_PresentMon::AppSleepStart_Info::Id: {
             DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSleepStart_Info_Props));
+            auto props = (Intel_PresentMon::AppSleepStart_Info_Props*)pEventRecord->UserData;
+            auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+            auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+            if (ii != mPendingAppTimingDataByAppFrameId.end()) {
+                ii->second.AppSleepStartTime = timestamp;
+            }
+            else {
+                AppTimingData data;
+                data.AppSleepStartTime = timestamp;
+                mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            }
         }
         return;
         case Intel_PresentMon::AppSleepEnd_Info::Id: {
             DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSleepEnd_Info_Props));
+            auto props = (Intel_PresentMon::AppSleepEnd_Info_Props*)pEventRecord->UserData;
+            auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+            auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+            if (ii != mPendingAppTimingDataByAppFrameId.end()) {
+                ii->second.AppSleepEndTime = timestamp;
+            }
+            else {
+                AppTimingData data;
+                data.AppSleepEndTime = timestamp;
+                mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            }
         }
         return;
         case Intel_PresentMon::AppSimulationStart_Info::Id: {
             DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSimulationStart_Info_Props));
+            auto props = (Intel_PresentMon::AppSimulationStart_Info_Props*)pEventRecord->UserData;
+            auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+            auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+            if (ii != mPendingAppTimingDataByAppFrameId.end()) {
+                ii->second.AppSimStartTime = timestamp;
+            }
+            else {
+                AppTimingData data;
+                data.AppSimStartTime = timestamp;
+                mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            }
         }
         return;
         case Intel_PresentMon::AppSimulationEnd_Info::Id: {
             DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSimulationEnd_Info_Props));
+            auto props = (Intel_PresentMon::AppSimulationEnd_Info_Props*)pEventRecord->UserData;
+            auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+            auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+            if (ii != mPendingAppTimingDataByAppFrameId.end()) {
+                ii->second.AppSimEndTime = timestamp;
+            }
+            else {
+                AppTimingData data;
+                data.AppSimEndTime = timestamp;
+                mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            }
         }
         return;
         case Intel_PresentMon::AppRenderSubmitStart_Info::Id: {
             DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppRenderSubmitStart_Info_Props));
+            auto props = (Intel_PresentMon::AppRenderSubmitStart_Info_Props*)pEventRecord->UserData;
+            auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+            auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+            if (ii != mPendingAppTimingDataByAppFrameId.end()) {
+                ii->second.AppRenderSubmitStartTime = timestamp;
+            }
+            else {
+                AppTimingData data;
+                data.AppRenderSubmitStartTime = timestamp;
+                mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            }
         }
         return;
         case Intel_PresentMon::AppRenderSubmitEnd_Info::Id: {
             DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppRenderSubmitEnd_Info_Props));
+            auto props = (Intel_PresentMon::AppRenderSubmitStart_Info_Props*)pEventRecord->UserData;
+            auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+            auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+            if (ii != mPendingAppTimingDataByAppFrameId.end()) {
+                ii->second.AppRenderSubmitEndTime = timestamp;
+            }
+            else {
+                AppTimingData data;
+                data.AppRenderSubmitEndTime = timestamp;
+                mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            }
         }
         return;
         case Intel_PresentMon::AppPresentStart_Info::Id: {
             DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppPresentStart_Info_Props));
             auto props = (Intel_PresentMon::AppPresentStart_Info_Props*)pEventRecord->UserData;
             auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+            // Save off the application frame id for next created present event
             mNextAppFrameId = props->FrameId;
-            auto iter = mPendingAppTimingDataByAppFrameId.find(mNextAppFrameId);
-            if (iter != mPendingAppTimingDataByAppFrameId.end()) {
-                iter->second->AppPresentStartTime = timestamp;
+            // Add the application frame id to the save application timing data
+            auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+            if (ii != mPendingAppTimingDataByAppFrameId.end()) {
+                ii->second.AppPresentStartTime = timestamp;
+            } else {
+                AppTimingData data;
+                data.AppPresentStartTime = timestamp;
+                mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
             }
         }
         return;
         case Intel_PresentMon::AppPresentEnd_Info::Id: {
             DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppPresentEnd_Info_Props));
+            auto props = (Intel_PresentMon::AppPresentEnd_Info_Props*)pEventRecord->UserData;
+            auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+            auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+            if (ii != mPendingAppTimingDataByAppFrameId.end()) {
+                ii->second.AppPresentEndTime = timestamp;
+            }
+            else {
+                AppTimingData data;
+                data.AppPresentEndTime = timestamp;
+                mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            }
         }
         return;
         case Intel_PresentMon::AppInputSample_Info::Id: {
             DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppInputSample_Info_Props));
+            auto props = (Intel_PresentMon::AppInputSample_Info_Props*)pEventRecord->UserData;
+            auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+            auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+            if (ii != mPendingAppTimingDataByAppFrameId.end()) {
+                ii->second.AppInputSample.first = timestamp;
+                ii->second.AppInputSample.second = ConvertIntelProviderInputTypes(props->InputType);
+            }
+            else {
+                AppTimingData data;
+                data.AppInputSample.first = timestamp;
+                data.AppInputSample.second = ConvertIntelProviderInputTypes(props->InputType);
+                mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            }
         }
         return;
         }

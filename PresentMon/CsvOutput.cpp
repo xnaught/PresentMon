@@ -314,6 +314,14 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     if (args.mWriteFrameId) {
         fwprintf(fp, L",FrameId");
     }
+    if (args.mTrackAppTiming) {
+        fwprintf(fp, L",AppFrameId");
+        fwprintf(fp, L",AppSleepTime");
+        fwprintf(fp, L",AppSimTime");
+        fwprintf(fp, L",AppRenderSubmitTime");
+        fwprintf(fp, L",AppPresentTime");
+
+    }
     fwprintf(fp, L"\n");
 
     if (args.mCSVOutput == CSVOutput::Stdout) {
@@ -411,6 +419,13 @@ void WriteCsvRow<FrameMetrics>(
     }
     if (args.mWriteFrameId) {
         fwprintf(fp, L",%u", p.FrameId);
+    }
+    if (args.mTrackAppTiming) {
+        fwprintf(fp, L",%u", p.AppFrameId);
+        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToUnsignedMilliSeconds(p.AppSleepEndTime, p.AppSleepStartTime));
+        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToMilliSeconds(p.AppSimStartTime, p.AppSimEndTime));
+        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToMilliSeconds(p.AppRenderSubmitStartTime, p.AppRenderSubmitEndTime));
+        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToMilliSeconds(p.AppPresentStartTime, p.AppPresentEndTime));
     }
     fwprintf(fp, L"\n");
 
