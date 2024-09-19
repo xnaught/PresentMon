@@ -259,6 +259,7 @@ int wmain(int argc, wchar_t** argv)
     pmConsumer.mTrackGPUVideo  = args.mTrackGPUVideo;
     pmConsumer.mTrackInput     = args.mTrackInput;
     pmConsumer.mTrackFrameType = args.mTrackFrameType;
+    pmConsumer.mTrackAppTiming = args.mTrackAppTiming;
     pmConsumer.mDisableOfflineBackpressure = args.mDisableOfflineBackpressure;
 
     if (args.mTargetPid != 0) {

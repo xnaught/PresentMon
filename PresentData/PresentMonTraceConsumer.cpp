@@ -2458,6 +2458,54 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
         }
     }
 
+    if (mTrackAppTiming) {
+        switch (pEventRecord->EventHeader.EventDescriptor.Id) {
+        case Intel_PresentMon::AppSleepStart_Info::Id: {
+            DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSleepStart_Info_Props));
+        }
+        return;
+        case Intel_PresentMon::AppSleepEnd_Info::Id: {
+            DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSleepEnd_Info_Props));
+        }
+        return;
+        case Intel_PresentMon::AppSimulationStart_Info::Id: {
+            DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSimulationStart_Info_Props));
+        }
+        return;
+        case Intel_PresentMon::AppSimulationEnd_Info::Id: {
+            DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSimulationEnd_Info_Props));
+        }
+        return;
+        case Intel_PresentMon::AppRenderSubmitStart_Info::Id: {
+            DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppRenderSubmitStart_Info_Props));
+        }
+        return;
+        case Intel_PresentMon::AppRenderSubmitEnd_Info::Id: {
+            DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppRenderSubmitEnd_Info_Props));
+        }
+        return;
+        case Intel_PresentMon::AppPresentStart_Info::Id: {
+            DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppPresentStart_Info_Props));
+            auto props = (Intel_PresentMon::AppPresentStart_Info_Props*)pEventRecord->UserData;
+            auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+            mNextAppFrameId = props->FrameId;
+            auto iter = mPendingAppTimingDataByAppFrameId.find(mNextAppFrameId);
+            if (iter != mPendingAppTimingDataByAppFrameId.end()) {
+                iter->second->AppPresentStartTime = timestamp;
+            }
+        }
+        return;
+        case Intel_PresentMon::AppPresentEnd_Info::Id: {
+            DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppPresentEnd_Info_Props));
+        }
+        return;
+        case Intel_PresentMon::AppInputSample_Info::Id: {
+            DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppInputSample_Info_Props));
+        }
+        return;
+        }
+    }
+
     assert(!mFilteredEvents); // Assert that filtering is working if expected
 }
 

@@ -73,6 +73,7 @@ struct CommandLineArgs {
     bool mTrackGPU;
     bool mTrackGPUVideo;
     bool mTrackFrameType;
+    bool mTrackAppTiming;
     bool mScrollLockIndicator;
     bool mExcludeDropped;
     bool mTerminateExistingSession;

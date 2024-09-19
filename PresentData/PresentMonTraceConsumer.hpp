@@ -154,6 +154,18 @@ struct FlipFrameTypeEvent {
     FrameType FrameType;
 };
 
+struct AppTimingData {
+    uint64_t AppSleepStartTime;
+    uint64_t AppSleepEndTime;
+    uint64_t AppSimStartTime;
+    uint64_t AppSimEndTime;
+    uint64_t AppRenderSubmitStartTime;
+    uint64_t AppRenderSubmitEndTime;
+    uint64_t AppPresentStartTime;
+    uint64_t AppPresentEndTime;
+    std::pair<uint64_t, InputDeviceType> AppInputSample;
+};
+
 // A ProcessEvent occurs whenever a Process starts or stops.
 struct ProcessEvent {
     std::wstring ImageFileName; // The name of the process exe file.  This is only available on process start events.
@@ -174,6 +186,16 @@ struct PresentEvent {
     uint64_t GPUVideoDuration;  // QPC duration during which a frame's DMA packet was running on a video node (if mTrackGPUVideo==true)
     uint64_t InputTime;         // Earliest QPC value when the keyboard/mouse were tapped/moved and used by this frame
     uint64_t MouseClickTime;    // Earliest QPC value when the mouse was clicked and used by this frame
+
+    uint64_t AppSleepStartTime;         // QPC value of
+    uint64_t AppSleepEndTime;           // QPC value of
+    uint64_t AppSimStartTime;           // QPC value of
+    uint64_t AppSimEndTime;             // QPC value of
+    uint64_t AppRenderSubmitStartTime;  // QPC value of
+    uint64_t AppRenderSubmitEndTime;    // QPC value of
+    uint64_t AppPresentStartTime;       // QPC value of
+    uint64_t AppPresentEndTime;         // QPC value of
+    std::pair<uint64_t, InputDeviceType> AppInputSample;    // QPC value of
 
     // Extra present parameters obtained through DXGI or D3D9 present
     uint64_t SwapChainAddress;
@@ -266,6 +288,7 @@ struct PMTraceConsumer
     bool mTrackGPUVideo = false;  // ... GPU video work (separately from non-video GPU work).
     bool mTrackInput = false;     // ... keyboard/mouse latency.
     bool mTrackFrameType = false; // ... the frame type communicated through the Intel-PresentMon provider.
+    bool mTrackAppTiming = false; // ...app timing data communicated through the Intel-PresentMon provider.
 
     // When PresentEvents are missing data that may still arrive later, they get put into a deferred
     // state until the data arrives.  This time limit specifies how long a PresentEvent can be
@@ -309,6 +332,7 @@ struct PMTraceConsumer
     uint32_t mCompletedIndex = 0;       // The index of mCompletedPresents of the oldest completed present.
     uint32_t mCompletedCount = 0;       // The total number of presents in mCompletedPresents.
     uint32_t mReadyCount = 0;           // The number of presents in mCompletedPresents, starting at mCompletedIndex, that are ready to be dequeued.
+    uint32_t mNextAppFrameId = 0;       // If not zero, the application frame id when creating the next present
 
     // Mutexs to protect consumer/dequeue access from different threads:
     std::mutex mProcessEventMutex;
@@ -407,8 +431,9 @@ struct PMTraceConsumer
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByDxgkContext;                  // DxgkContex -> PresentEvent
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByVidPnLayerId;                 // VidPnLayerId -> PresentEvent
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mLastPresentByWindow;                   // HWND -> PresentEvent
-
     std::unordered_map<uint64_t, MouseClickData> mReceivedMouseClickByHwnd;                             // HWND -> MouseClickData
+    std::unordered_map<uint32_t, std::shared_ptr<PresentEvent>> mPresentByAppFrameId;                   // Intel provider app frame id -> PresentEvent
+    std::unordered_map<uint32_t, std::shared_ptr<PresentEvent>> mPendingAppTimingDataByAppFrameId;      // Intel provider app frame id -> PresentEvent
 
     // mGpuTrace tracks work executed on the GPU.
     GpuTrace mGpuTrace;
