@@ -2032,6 +2032,23 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
         }
     }
 
+    // If the present contains an app frame id, copy any frame timing information we
+    // accumulated from the provider
+    if (present->AppFrameId != 0) {
+        auto ii = mPendingAppTimingDataByAppFrameId.find(present->AppFrameId);
+        if (ii != mPendingAppTimingDataByAppFrameId.end()) {
+            present->AppSleepStartTime = ii->second.AppSleepStartTime;
+            present->AppSleepEndTime = ii->second.AppSleepEndTime;
+            present->AppSimStartTime = ii->second.AppSimStartTime;
+            present->AppSimEndTime = ii->second.AppSimEndTime;
+            present->AppPresentStartTime = ii->second.AppPresentStartTime;
+            present->AppPresentEndTime = ii->second.AppPresentEndTime;
+            present->AppRenderSubmitStartTime = ii->second.AppRenderSubmitStartTime;
+            present->AppRenderSubmitEndTime = ii->second.AppRenderSubmitEndTime;
+            mPendingAppTimingDataByAppFrameId.erase(ii);
+        }
+    }
+
     // lock mutex across this sequence:
     // 1) add present to completed 2) update ready count 3) clear out stale deferred frames
     {
@@ -2258,7 +2275,16 @@ void PMTraceConsumer::RuntimePresentStart(Runtime runtime, EVENT_HEADER const& h
     present->SwapChainAddress = swapchainAddr;
     present->PresentFlags = dxgiPresentFlags;
     present->SyncInterval = syncInterval;
+    
     present->AppFrameId = 0;
+    present->AppSleepStartTime = 0;
+    present->AppSleepEndTime = 0;
+    present->AppSimStartTime = 0;
+    present->AppSimEndTime = 0;
+    present->AppRenderSubmitStartTime = 0;
+    present->AppRenderSubmitEndTime = 0;
+    present->AppPresentStartTime = 0;
+    present->AppPresentEndTime = 0;
 
     ApplyPresentFrameType(present);
 

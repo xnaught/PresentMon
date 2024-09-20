@@ -422,10 +422,10 @@ void WriteCsvRow<FrameMetrics>(
     }
     if (args.mTrackAppTiming) {
         fwprintf(fp, L",%u", p.AppFrameId);
-        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToUnsignedMilliSeconds(p.AppSleepEndTime, p.AppSleepStartTime));
-        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToMilliSeconds(p.AppSimStartTime, p.AppSimEndTime));
-        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToMilliSeconds(p.AppRenderSubmitStartTime, p.AppRenderSubmitEndTime));
-        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToMilliSeconds(p.AppPresentStartTime, p.AppPresentEndTime));
+        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToUnsignedMilliSeconds(p.AppSleepStartTime, p.AppSleepEndTime));
+        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToUnsignedMilliSeconds(p.AppSimStartTime, p.AppSimEndTime));
+        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToUnsignedMilliSeconds(p.AppRenderSubmitStartTime, p.AppRenderSubmitEndTime));
+        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToUnsignedMilliSeconds(p.AppPresentStartTime, p.AppPresentEndTime));
     }
     fwprintf(fp, L"\n");
 
