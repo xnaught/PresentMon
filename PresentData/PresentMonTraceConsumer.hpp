@@ -155,6 +155,7 @@ struct FlipFrameTypeEvent {
 };
 
 struct AppTimingData {
+    uint32_t AppProcessId = 0;
     uint64_t AppSleepStartTime = 0;
     uint64_t AppSleepEndTime = 0;
     uint64_t AppSimStartTime = 0;
