@@ -53,6 +53,12 @@ enum class FrameType : uint8_t {
     AMD_AFMF = 100,
 };
 
+enum class InputType : uint8_t {
+    Unspecified = 0,
+    MouseClick = 1,
+    KeyboardClick = 2,
+};
+
 #pragma pack(push, 1)
 
 struct AppInputSample_Info_Props {
