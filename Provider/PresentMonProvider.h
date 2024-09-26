@@ -134,5 +134,5 @@ ULONG PresentMonProvider_Application_PresentEnd(PresentMonProvider* ctxt,
                                                 uint32_t frame_id);
 
 ULONG PresentMonProvider_Application_InputSample(PresentMonProvider* ctxt,
-                                                 PresentMonProvider_InputType inputType,
-                                                 uint32_t frame_id);
+                                                 uint32_t frame_id,
+                                                 PresentMonProvider_InputType inputType);
