@@ -62,8 +62,8 @@ enum class InputType : uint8_t {
 #pragma pack(push, 1)
 
 struct AppInputSample_Info_Props {
-    InputType   InputType;
     uint32_t    FrameId;
+    InputType   InputType;
 };
 
 struct AppPresentEnd_Info_Props {
