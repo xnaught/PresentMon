@@ -356,20 +356,28 @@ static void ReportMetricsHelper(
         metrics.mCPUStart = chain->mLastPresent->PresentStartTime + chain->mLastPresent->TimeInPresent;
 
         if (displayIndex == appIndex) {
-            msGPUDuration       = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->GPUStartTime, p->ReadyTime);
-            metrics.mCPUBusy    = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->PresentStartTime);
-            metrics.mCPUWait    = pmSession.TimestampDeltaToMilliSeconds(p->TimeInPresent);
-            metrics.mGPULatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->GPUStartTime);
-            metrics.mGPUBusy    = pmSession.TimestampDeltaToMilliSeconds(p->GPUDuration);
-            metrics.mVideoBusy  = pmSession.TimestampDeltaToMilliSeconds(p->GPUVideoDuration);
-            metrics.mGPUWait    = std::max(0.0, msGPUDuration - metrics.mGPUBusy);
+            msGPUDuration                = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->GPUStartTime, p->ReadyTime);
+            metrics.mCPUBusy             = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->PresentStartTime);
+            metrics.mCPUWait             = pmSession.TimestampDeltaToMilliSeconds(p->TimeInPresent);
+            metrics.mGPULatency          = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->GPUStartTime);
+            metrics.mGPUBusy             = pmSession.TimestampDeltaToMilliSeconds(p->GPUDuration);
+            metrics.mVideoBusy           = pmSession.TimestampDeltaToMilliSeconds(p->GPUVideoDuration);
+            metrics.mGPUWait             = std::max(0.0, msGPUDuration - metrics.mGPUBusy);
+            metrics.mAppSleepTime        = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppSleepStartTime, p->AppSleepEndTime);
+            metrics.mAppSimTime          = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppSimStartTime, p->AppSimEndTime);
+            metrics.mAppRenderSubmitTime = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppRenderSubmitStartTime, p->AppRenderSubmitEndTime);
+            metrics.mAppPresentTime      = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppPresentStartTime, p->AppPresentEndTime);
         } else {
-            metrics.mCPUBusy    = 0;
-            metrics.mCPUWait    = 0;
-            metrics.mGPULatency = 0;
-            metrics.mGPUBusy    = 0;
-            metrics.mVideoBusy  = 0;
-            metrics.mGPUWait    = 0;
+            metrics.mCPUBusy             = 0;
+            metrics.mCPUWait             = 0;
+            metrics.mGPULatency          = 0;
+            metrics.mGPUBusy             = 0;
+            metrics.mVideoBusy           = 0;
+            metrics.mGPUWait             = 0;
+            metrics.mAppSleepTime        = 0;
+            metrics.mAppSimTime          = 0;
+            metrics.mAppRenderSubmitTime = 0;
+            metrics.mAppPresentTime      = 0;
         }
 
         if (displayed) {
@@ -394,21 +402,32 @@ static void ReportMetricsHelper(
                 metrics.mClickToPhotonLatency = p->MouseClickTime == 0 ? updatedInputTime :
                     pmSession.TimestampDeltaToUnsignedMilliSeconds(p->MouseClickTime, screenTime);
 
+                updatedInputTime = chain->mLastReceivedNotDisplayedAppProviderInputTime == 0 ? 0 :
+                    pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedAppProviderInputTime, screenTime);
+                metrics.mAppInputTime = p->AppInputSample.first == 0 ? updatedInputTime :
+                    pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppInputSample.first, screenTime);
+
                 chain->mLastReceivedNotDisplayedAllInputTime = 0;
                 chain->mLastReceivedNotDisplayedMouseClickTime = 0;
+                chain->mLastReceivedNotDisplayedAppProviderInputTime = 0;
             } else {
                 metrics.mClickToPhotonLatency = 0;
                 metrics.mAllInputPhotonLatency = 0;
+                metrics.mAppInputTime = 0;
                 if (p->InputTime != 0) {
                     chain->mLastReceivedNotDisplayedAllInputTime = p->InputTime;
                 }
                 if (p->MouseClickTime != 0) {
                     chain->mLastReceivedNotDisplayedMouseClickTime = p->MouseClickTime;
                 }
+                if (p->AppInputSample.first != 0) {
+                    chain->mLastReceivedNotDisplayedAppProviderInputTime = p->AppInputSample.first;
+                }
             }
         } else {
             metrics.mClickToPhotonLatency = 0;
             metrics.mAllInputPhotonLatency = 0;
+            metrics.mAppInputTime = 0;
         }
 
         if (displayed && displayIndex == appIndex && chain->mLastDisplayedCPUStart != 0) {

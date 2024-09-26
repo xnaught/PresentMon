@@ -311,16 +311,18 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     if (args.mWriteDisplayTime) {
         fwprintf(fp, L",DisplayTimeAbs");
     }
-    if (args.mWriteFrameId) {
-        fwprintf(fp, L",FrameId");
-    }
     if (args.mTrackAppTiming) {
-        fwprintf(fp, L",AppFrameId");
         fwprintf(fp, L",AppSleepTime");
         fwprintf(fp, L",AppSimTime");
         fwprintf(fp, L",AppRenderSubmitTime");
         fwprintf(fp, L",AppPresentTime");
-
+        fwprintf(fp, L",AppInputTime");
+    }
+    if (args.mWriteFrameId) {
+        fwprintf(fp, L",FrameId");
+        if (args.mTrackAppTiming) {
+            fwprintf(fp, L",AppFrameId");
+        }
     }
     fwprintf(fp, L"\n");
 
@@ -417,15 +419,19 @@ void WriteCsvRow<FrameMetrics>(
             fwprintf(fp, L",%.4lf", pmSession.TimestampToMilliSeconds(metrics.mScreenTime));
         }
     }
+    if (args.mTrackAppTiming) {
+        fwprintf(fp, L",%.4lf", metrics.mAppSleepTime);
+        fwprintf(fp, L",%.4lf", metrics.mAppSimTime);
+        fwprintf(fp, L",%.4lf", metrics.mAppRenderSubmitTime);
+        fwprintf(fp, L",%.4lf", metrics.mAppPresentTime);
+        fwprintf(fp, L",%.4lf", metrics.mAppInputTime);
+    }
     if (args.mWriteFrameId) {
         fwprintf(fp, L",%u", p.FrameId);
-    }
-    if (args.mTrackAppTiming) {
-        fwprintf(fp, L",%u", p.AppFrameId);
-        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToUnsignedMilliSeconds(p.AppSleepStartTime, p.AppSleepEndTime));
-        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToUnsignedMilliSeconds(p.AppSimStartTime, p.AppSimEndTime));
-        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToUnsignedMilliSeconds(p.AppRenderSubmitStartTime, p.AppRenderSubmitEndTime));
-        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToUnsignedMilliSeconds(p.AppPresentStartTime, p.AppPresentEndTime));
+        if (args.mTrackAppTiming) {
+            fwprintf(fp, L",%u", p.AppFrameId);
+        }
+        
     }
     fwprintf(fp, L"\n");
 

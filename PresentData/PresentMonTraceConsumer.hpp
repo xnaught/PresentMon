@@ -517,6 +517,8 @@ struct PMTraceConsumer
     void DeferFlipFrameType(uint64_t vidPnLayerId, uint64_t presentId, uint64_t timestamp, FrameType frameType);
     void ApplyFlipFrameType(std::shared_ptr<PresentEvent> const& present, uint64_t timestamp, FrameType frameType);
     void ApplyPresentFrameType(std::shared_ptr<PresentEvent> const& present);
+    void UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecord);
+    bool UpdateAppTimingPresent(const EVENT_RECORD* pEventRecord);
 
     void SignalEventsReady();
 };
