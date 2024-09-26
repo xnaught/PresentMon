@@ -197,6 +197,16 @@ void PrintFrameType(FrameType type)
     default:                     wprintf(L"Unknown (%u)", type); assert(false); break;
     }
 }
+void PrintInputType(uint32_t type)
+{
+    using namespace Intel_PresentMon;
+    switch (type) {
+    case InputType::Unspecified:   wprintf(L"Unspecified"); break;
+    case InputType::MouseClick:    wprintf(L"MouseClick"); break;
+    case InputType::KeyboardClick: wprintf(L"KeyboardClick"); break;
+    default:                       wprintf(L"Unknown (%u)", type); assert(false); break;
+    }
+}
 
 void PrintEventHeader(EVENT_HEADER const& hdr)
 {
@@ -233,6 +243,7 @@ void PrintEventHeader(EVENT_RECORD* eventRecord, EventMetadata* metadata, char c
         else if (propFunc == PrintDmaPacketType)       PrintDmaPacketType(metadata->GetEventData<uint32_t>(eventRecord, propName));
         else if (propFunc == PrintPresentFlags)        PrintPresentFlags(metadata->GetEventData<uint32_t>(eventRecord, propName));
         else if (propFunc == PrintPresentHistoryModel) PrintPresentHistoryModel(metadata->GetEventData<uint32_t>(eventRecord, propName));
+        else if (propFunc == PrintInputType)           PrintInputType(metadata->GetEventData<uint8_t>(eventRecord, propName));
         else assert(false);
     }
     wprintf(L"\n");
@@ -663,6 +674,13 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
                 wprintf(L"PM_PresentFrameType FrameType=%s\n", PMPFrameTypeToString(props->FrameType));
                 break;
             }
+            }
+        }
+        if (pmConsumer->mTrackPMMeasurements) {
+            switch (hdr.EventDescriptor.Id) {
+            case MeasuredInput_Info::Id:         PrintEventHeader(eventRecord, metadata, "PM_Measurement_Input",        { L"InputType", PrintInputType,
+                                                                                                                          L"Time", PrintTime }); break;
+            case MeasuredScreenChange_Info::Id:  PrintEventHeader(eventRecord, metadata, "PM_Measurement_ScreenChange", { L"Time", PrintTime }); break;
             }
         }
         return;

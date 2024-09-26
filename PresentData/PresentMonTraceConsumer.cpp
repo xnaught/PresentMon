@@ -2458,6 +2458,37 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
         }
     }
 
+    if (mTrackPMMeasurements) {
+        switch (pEventRecord->EventHeader.EventDescriptor.Id) {
+        case Intel_PresentMon::MeasuredInput_Info::Id: {
+            EventDataDesc desc[] = {
+                { L"InputType" },
+                { L"Time" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto InputType = desc[0].GetData<uint8_t>();
+            auto Time      = desc[1].GetData<uint64_t>();
+
+            (void) InputType, Time;
+            // TODO
+
+        }   return;
+
+        case Intel_PresentMon::MeasuredScreenChange_Info::Id: {
+            EventDataDesc desc[] = {
+                { L"Time" },
+            };
+            mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
+            auto Time = desc[0].GetData<uint32_t>();
+
+            (void) Time;
+            // TODO
+
+        }   return;
+        }
+    }
+
+
     assert(!mFilteredEvents); // Assert that filtering is working if expected
 }
 
