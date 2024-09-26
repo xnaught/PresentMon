@@ -366,11 +366,11 @@ ULONG PresentMonProvider_Application_PresentEnd(
 
 ULONG PresentMonProvider_Application_InputSample(
     PresentMonProvider* ctxt,
-    PresentMonProvider_InputType inputType,
-    uint32_t frame_id)
+    uint32_t frame_id,
+    PresentMonProvider_InputType inputType)
 {
     PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
     PRESENTMONPROVIDER_ASSERT(IsValid(inputType));
 
-    return WriteEvent(ctxt, Event_AppInputSample, inputType, frame_id);
+    return WriteEvent(ctxt, Event_AppInputSample, frame_id, inputType);
 }
