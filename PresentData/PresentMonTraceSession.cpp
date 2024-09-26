@@ -348,11 +348,15 @@ ULONG EnableProviders(
     if (status != ERROR_SUCCESS) return status;
 
     // Intel_PresentMon
-    if (pmConsumer->mTrackFrameType || pmConsumer->mTrackAppTiming) {
+    if (pmConsumer->mTrackFrameType || pmConsumer->mTrackPMMeasurements || pmConsumer->mTrackAppTiming) {
         provider.ClearFilter();
         if (pmConsumer->mTrackFrameType) {
             provider.AddEvent<Intel_PresentMon::PresentFrameType_Info>();
             provider.AddEvent<Intel_PresentMon::FlipFrameType_Info>();
+        }
+        if (pmConsumer->mTrackPMMeasurements) {
+            provider.AddEvent<Intel_PresentMon::MeasuredInput_Info>();
+            provider.AddEvent<Intel_PresentMon::MeasuredScreenChange_Info>();
         }
         if (pmConsumer->mTrackAppTiming) {
             provider.AddEvent<Intel_PresentMon::AppInputSample_Info>();
@@ -573,7 +577,7 @@ ULONG PMTraceSession::Start(
         mIsRealtimeSession,            // IS_REALTIME_SESSION
         mPMConsumer->mTrackDisplay,    // TRACK_DISPLAY
         mPMConsumer->mTrackInput,      // TRACK_INPUT
-        mPMConsumer->mTrackFrameType); // TRACK_PRESENTMON
+        mPMConsumer->mTrackFrameType || mPMConsumer->mTrackPMMeasurements); // TRACK_PRESENTMON
 
     mTraceHandle = OpenTraceW(&traceProps);
     if (mTraceHandle == INVALID_PROCESSTRACE_HANDLE) {

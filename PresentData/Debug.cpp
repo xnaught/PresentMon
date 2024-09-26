@@ -197,18 +197,16 @@ void PrintFrameType(FrameType type)
     default:                     wprintf(L"Unknown (%u)", type); assert(false); break;
     }
 }
-wchar_t const* PMPInputTypeToString(Intel_PresentMon::InputType type)
+void PrintInputType(uint32_t type)
 {
+    using namespace Intel_PresentMon;
     switch (type) {
-    case Intel_PresentMon::InputType::Unspecified:    return L"Unspecified";
-    case Intel_PresentMon::InputType::MouseClick:     return L"MouseClick";
-    case Intel_PresentMon::InputType::KeyboardClick:  return L"KeyboardClick";
+    case InputType::Unspecified:   wprintf(L"Unspecified"); break;
+    case InputType::MouseClick:    wprintf(L"MouseClick"); break;
+    case InputType::KeyboardClick: wprintf(L"KeyboardClick"); break;
+    default:                       wprintf(L"Unknown (%u)", type); assert(false); break;
     }
-
-    assert(false);
-    return L"Unknown";
 }
-
 
 void PrintEventHeader(EVENT_HEADER const& hdr)
 {
@@ -245,6 +243,7 @@ void PrintEventHeader(EVENT_RECORD* eventRecord, EventMetadata* metadata, char c
         else if (propFunc == PrintDmaPacketType)       PrintDmaPacketType(metadata->GetEventData<uint32_t>(eventRecord, propName));
         else if (propFunc == PrintPresentFlags)        PrintPresentFlags(metadata->GetEventData<uint32_t>(eventRecord, propName));
         else if (propFunc == PrintPresentHistoryModel) PrintPresentHistoryModel(metadata->GetEventData<uint32_t>(eventRecord, propName));
+        else if (propFunc == PrintInputType)           PrintInputType(metadata->GetEventData<uint8_t>(eventRecord, propName));
         else assert(false);
     }
     wprintf(L"\n");
@@ -676,6 +675,13 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
                 break;
             }
             }
+        }
+        if (pmConsumer->mTrackPMMeasurements) {
+            switch (hdr.EventDescriptor.Id) {
+            case MeasuredInput_Info::Id:         PrintEventHeader(eventRecord, metadata, "PM_Measurement_Input",        { L"InputType", PrintInputType,
+                                                                                                                          L"Time", PrintTime }); break;
+            case MeasuredScreenChange_Info::Id:  PrintEventHeader(eventRecord, metadata, "PM_Measurement_ScreenChange", { L"Time", PrintTime }); break;
+            }
             return;
         }
 
@@ -683,74 +689,48 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
             switch (hdr.EventDescriptor.Id) {
             case Intel_PresentMon::AppSleepStart_Info::Id: {
                 DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSleepStart_Info_Props));
-                auto props = (Intel_PresentMon::AppSleepStart_Info_Props*)eventRecord->UserData;
-                PrintEventHeader(eventRecord->EventHeader);
-                wprintf(L"PM_AppSleepStart FrameId=%u\n",
-                    props->FrameId);
+                PrintEventHeader(eventRecord, metadata, "PM_AppSleepStart", { L"FrameId", PrintU32 });
             }
             return;
             case Intel_PresentMon::AppSleepEnd_Info::Id: {
                 DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSleepEnd_Info_Props));
-                auto props = (Intel_PresentMon::AppSleepEnd_Info_Props*)eventRecord->UserData;
-                PrintEventHeader(eventRecord->EventHeader);
-                wprintf(L"PM_AppSleepEnd FrameId=%u\n",
-                    props->FrameId);
+                PrintEventHeader(eventRecord, metadata, "PM_AppSleepEnd", { L"FrameId", PrintU32 });
             }
             return;
             case Intel_PresentMon::AppSimulationStart_Info::Id: {
                 DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSimulationStart_Info_Props));
-                auto props = (Intel_PresentMon::AppSimulationStart_Info_Props*)eventRecord->UserData;
-                PrintEventHeader(eventRecord->EventHeader);
-                wprintf(L"PM_AppSimulationStart FrameId=%u\n",
-                    props->FrameId);
-
+                PrintEventHeader(eventRecord, metadata, "PM_AppSimulationStart", { L"FrameId", PrintU32 });
             }
             return;
             case Intel_PresentMon::AppSimulationEnd_Info::Id: {
                 DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSimulationEnd_Info_Props));
-                auto props = (Intel_PresentMon::AppSimulationEnd_Info_Props*)eventRecord->UserData;
-                PrintEventHeader(eventRecord->EventHeader);
-                wprintf(L"PM_AppSimulationEnd FrameId=%u\n",
-                    props->FrameId);
+                PrintEventHeader(eventRecord, metadata, "PM_AppSimulationEnd", { L"FrameId", PrintU32 });
             }
             return;
             case Intel_PresentMon::AppRenderSubmitStart_Info::Id: {
                 DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppRenderSubmitStart_Info_Props));
-                auto props = (Intel_PresentMon::AppRenderSubmitStart_Info_Props*)eventRecord->UserData;
-                PrintEventHeader(eventRecord->EventHeader);
-                wprintf(L"PM_AppRenderSubmitStart FrameId=%u\n",
-                    props->FrameId);
+                PrintEventHeader(eventRecord, metadata, "PM_AppRenderSubmitStart", { L"FrameId", PrintU32 });
             }
             return;
             case Intel_PresentMon::AppRenderSubmitEnd_Info::Id: {
                 DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppRenderSubmitEnd_Info_Props));
-                auto props = (Intel_PresentMon::AppRenderSubmitEnd_Info_Props*)eventRecord->UserData;
-                PrintEventHeader(eventRecord->EventHeader);
-                wprintf(L"PM_AppRenderSubmitEnd FrameId=%u\n",
-                    props->FrameId);
+                PrintEventHeader(eventRecord, metadata, "PM_AppRenderSubmitEnd", { L"FrameId", PrintU32 });
             }
             return;
             case Intel_PresentMon::AppPresentStart_Info::Id: {
                 DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppPresentStart_Info_Props));
-                auto props = (Intel_PresentMon::AppPresentStart_Info_Props*)eventRecord->UserData;
-                PrintEventHeader(eventRecord->EventHeader);
-                wprintf(L"PM_AppPresentStart FrameId=%u\n",
-                    props->FrameId);
+                PrintEventHeader(eventRecord, metadata, "PM_AppPresentStart", { L"FrameId", PrintU32 });
             }
             return;
             case Intel_PresentMon::AppPresentEnd_Info::Id: {
                 DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppPresentEnd_Info_Props));
-                auto props = (Intel_PresentMon::AppPresentEnd_Info_Props*)eventRecord->UserData;
-                PrintEventHeader(eventRecord->EventHeader);
-                wprintf(L"PM_AppPresentEnd FrameId=%u\n",
-                    props->FrameId);
+                PrintEventHeader(eventRecord, metadata, "PM_AppPresentEnd", { L"FrameId", PrintU32 });
             }
             return;
             case Intel_PresentMon::AppInputSample_Info::Id: {
                 DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppInputSample_Info_Props));
-                auto props = (Intel_PresentMon::AppInputSample_Info_Props*)eventRecord->UserData;
-                PrintEventHeader(eventRecord->EventHeader);
-                wprintf(L"PM_AppInputSample FrameType=%s, FrameId=%u\n", PMPInputTypeToString(props->InputType), props->FrameId);
+                PrintEventHeader(eventRecord, metadata, "PM_AppInputSample", { L"FrameId", PrintU32,
+                                                                               L"InputType", PrintInputType});
             }
             return;
             }

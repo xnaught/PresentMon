@@ -254,14 +254,14 @@ int wmain(int argc, wchar_t** argv)
 
     // Create event consumers
     PMTraceConsumer pmConsumer;
-    pmConsumer.mTrackDisplay   = args.mTrackDisplay;
-    pmConsumer.mTrackGPU       = args.mTrackGPU;
-    pmConsumer.mTrackGPUVideo  = args.mTrackGPUVideo;
-    pmConsumer.mTrackInput     = args.mTrackInput;
-    pmConsumer.mTrackFrameType = args.mTrackFrameType;
-    pmConsumer.mTrackAppTiming = args.mTrackAppTiming;
+    pmConsumer.mTrackDisplay               = args.mTrackDisplay;
+    pmConsumer.mTrackGPU                   = args.mTrackGPU;
+    pmConsumer.mTrackGPUVideo              = args.mTrackGPUVideo;
+    pmConsumer.mTrackInput                 = args.mTrackInput;
+    pmConsumer.mTrackFrameType             = args.mTrackFrameType;
+    pmConsumer.mTrackPMMeasurements        = args.mTrackPMMeasurements;
+    pmConsumer.mTrackAppTiming             = args.mTrackAppTiming;
     pmConsumer.mDisableOfflineBackpressure = args.mDisableOfflineBackpressure;
-
     if (args.mTargetPid != 0) {
         pmConsumer.mFilteredProcessIds = true;
         pmConsumer.AddTrackedProcessForFiltering(args.mTargetPid);
