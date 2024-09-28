@@ -291,7 +291,7 @@ struct PMTraceConsumer
     bool mTrackInput = false;          // ... keyboard/mouse latency.
     bool mTrackFrameType = false;      // ... the frame type communicated through the Intel-PresentMon provider.
     bool mTrackPMMeasurements = false; // ... external measurements provided through the Intel-PresentMon provider
-    bool mTrackAppTiming = false; // ...app timing data communicated through the Intel-PresentMon provider.
+    bool mTrackAppTiming = false;      // ... app timing data communicated through the Intel-PresentMon provider.
 
     // When PresentEvents are missing data that may still arrive later, they get put into a deferred
     // state until the data arrives.  This time limit specifies how long a PresentEvent can be

@@ -678,9 +678,12 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
         }
         if (pmConsumer->mTrackPMMeasurements) {
             switch (hdr.EventDescriptor.Id) {
-            case MeasuredInput_Info::Id:         PrintEventHeader(eventRecord, metadata, "PM_Measurement_Input",        { L"InputType", PrintInputType,
-                                                                                                                          L"Time", PrintTime }); break;
-            case MeasuredScreenChange_Info::Id:  PrintEventHeader(eventRecord, metadata, "PM_Measurement_ScreenChange", { L"Time", PrintTime }); break;
+            case MeasuredInput_Info::Id:
+                PrintEventHeader(eventRecord, metadata, "PM_Measurement_Input", { L"InputType", PrintInputType, L"Time", PrintU64x });
+                break;
+            case MeasuredScreenChange_Info::Id:
+                PrintEventHeader(eventRecord, metadata, "PM_Measurement_ScreenChange", { L"Time", PrintU64x });
+                break;
             }
             return;
         }

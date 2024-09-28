@@ -577,7 +577,7 @@ ULONG PMTraceSession::Start(
         mIsRealtimeSession,            // IS_REALTIME_SESSION
         mPMConsumer->mTrackDisplay,    // TRACK_DISPLAY
         mPMConsumer->mTrackInput,      // TRACK_INPUT
-        mPMConsumer->mTrackFrameType || mPMConsumer->mTrackPMMeasurements); // TRACK_PRESENTMON
+        mPMConsumer->mTrackFrameType || mPMConsumer->mTrackPMMeasurements || mPMConsumer->mTrackAppTiming); // TRACK_PRESENTMON
 
     mTraceHandle = OpenTraceW(&traceProps);
     if (mTraceHandle == INVALID_PROCESSTRACE_HANDLE) {

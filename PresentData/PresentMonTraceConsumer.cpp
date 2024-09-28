@@ -1241,6 +1241,7 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
 
                                     UpdateReadyCount(true);
                                 }
+                                VerboseTraceBeforeModifyingPresent(nullptr);
                             }
                         }
 
@@ -2827,7 +2828,7 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
                 { L"Time" },
             };
             mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
-            auto Time = desc[0].GetData<uint32_t>();
+            auto Time = desc[0].GetData<uint64_t>();
 
             (void) Time;
             // TODO
