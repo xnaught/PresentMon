@@ -131,6 +131,14 @@ int main(int argc, const char** argv)
     }
     auto& opt = clio::Options::Get();
 
+    if (opt.trimRange) {
+        auto& r = *opt.trimRange;
+        if (r.first > r.second) {
+            std::cout << "Lower bound of trim range [" << r.first << "] must not exceed upper [" << r.second << "]" << std::endl;
+            return -1;
+        }
+    }
+
     std::locale::global(std::locale("en_US.UTF-8"));
 
     if (auto hr = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED); FAILED(hr)) {
