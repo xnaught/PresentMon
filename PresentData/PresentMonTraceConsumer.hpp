@@ -529,3 +529,11 @@ struct PMTraceConsumer
 
     void SignalEventsReady();
 };
+
+// interface for injecting a listener callback that will record all provider:event filters
+class IFilterBuildListener
+{
+public:
+    virtual void EventAdded(uint16_t Id) = 0;
+    virtual void ProviderEnabled(bool filterEvents, uint64_t anyKey, uint64_t allKey, uint8_t maxLevel) = 0;
+};
