@@ -31,6 +31,7 @@ private:
     std::optional<std::pair<uint64_t, uint64_t>> trimRange_;
     // analysis stats
     int eventCount_ = 0;
+    int keepCount_ = 0;
     std::optional<uint64_t> firstTimestamp_;
     uint64_t lastTimestamp_ = 0;
 
@@ -79,13 +80,17 @@ public:
         }
         lastTimestamp_ = ts;
         eventCount_++;
-        if (mode_ == Mode::Trim) {
-            if (trimRange_) {
-                if (ts < trimRange_->first || ts > trimRange_->second) {
-                    return S_OK;
-                }
+        bool keep = true;
+        if (trimRange_) {
+            if (ts < trimRange_->first || ts > trimRange_->second) {
+                keep = false;
             }
-            pRelogger->Inject(pEvent);
+        }
+        if (keep) {
+            keepCount_++;
+            if (mode_ == Mode::Trim) {
+                pRelogger->Inject(pEvent);
+            }
         }
         return S_OK;
     }
@@ -104,6 +109,10 @@ public:
     void SetTrimRange(std::pair<uint64_t, uint64_t> range)
     {
         trimRange_ = range;
+    }
+    int GetKeepCount() const
+    {
+        return keepCount_;
     }
 };
 
@@ -187,9 +196,15 @@ int main(int argc, const char** argv)
         std::cout << "Failed to process trace" << std::endl;
     }
 
-    std::cout << "Processed " << pCallbackProcessor->GetEventCount() << std::endl;
     const auto tsr = pCallbackProcessor->GetTimestampRange();
-    std::cout << std::format("Timestamp range {:L}-{:L} (duration: {:L})", tsr.first, tsr.second, tsr.second - tsr.first) << std::endl;
+    const auto dur = tsr.second - tsr.first;
+    std::cout << std::format(" ======== Report for [ {} ] ========\n", *opt.inputFile);
+    std::cout << std::format("Total processed event count: {:L}\n", pCallbackProcessor->GetEventCount());
+    std::cout << std::format("Timestamp range {:L} - {:L} (duration: {:L})\n", tsr.first, tsr.second, dur);
+    std::cout << std::format("Duration of trace in milliseconds: {:L}\n\n", double(dur) / 10'000.);
+    std::cout << std::format("Events trimmed and/or filtered: {:L}\n",
+        pCallbackProcessor->GetEventCount() - pCallbackProcessor->GetKeepCount());
+    std::cout << std::format("Count of relogged events: {:L}\n", pCallbackProcessor->GetKeepCount());
 
     return 0;
 }
