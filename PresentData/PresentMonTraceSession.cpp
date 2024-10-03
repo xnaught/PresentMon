@@ -187,7 +187,7 @@ struct FilteredProvider {
     {
         if (pListener_) {
             if (controlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER) {
-                pListener_->ProviderEnabled(true, providerGuid, anyKeywordMask_, allKeywordMask_, maxLevel_);
+                pListener_->ProviderEnabled(providerGuid, anyKeywordMask_, allKeywordMask_, maxLevel_);
             }
             else {
                 pListener_->ClearEvents();
@@ -217,7 +217,7 @@ struct FilteredProvider {
         UCHAR maxLevel)
     {
         if (pListener_) {
-            pListener_->ProviderEnabled(false, providerGuid, 0, 0, maxLevel);
+            pListener_->ProviderEnabled(providerGuid, 0, 0, maxLevel);
         }
 
         if (!isDryRun_) {

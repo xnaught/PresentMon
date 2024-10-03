@@ -7,14 +7,6 @@
       "Command": "--input-file input.etl"
     },
     {
-      "Id": "ab16d784-c235-4971-b722-99bcc590bc83",
-      "Command": "--input-file inter.etl"
-    },
-    {
-      "Id": "87f0e804-8731-4eb0-9df9-a3b2cd56c584",
-      "Command": "--output-file inter.etl"
-    },
-    {
       "Id": "ca527fdf-cf0c-4bc6-a5e5-362394a8487d",
       "Command": "--output-file output.etl"
     },
@@ -32,19 +24,7 @@
     },
     {
       "Id": "a220f802-99a4-436a-b30f-821a39c2042e",
-      "Command": "--provider"
-    },
-    {
-      "Id": "9f0892bf-6ab8-458d-acf3-27bfdf8b5263",
-      "Command": "--event"
-    },
-    {
-      "Id": "ec1d1533-510d-4c97-bd74-244ff8a59b93",
-      "Command": "--keyword"
-    },
-    {
-      "Id": "58921db6-fffe-4fc3-bef5-635f0370df9e",
-      "Command": "--level"
+      "Command": "-pe"
     }
   ]
 }

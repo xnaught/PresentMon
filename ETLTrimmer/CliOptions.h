@@ -25,5 +25,6 @@ namespace clio
 	private:
 		Dependency eventDep_{ event, provider };
 		Dependency keywordDep_{ keyword, provider };
+		Dependency levelDep_{ level, provider };
 	};
 }

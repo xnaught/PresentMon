@@ -1,4 +1,5 @@
 #include "../IntelPresentMon/CommonUtilities/win/WinAPI.h"
+#include "../IntelPresentMon/CommonUtilities/Hash.h"
 #include <initguid.h>
 #include <evntcons.h>
 #include <cguid.h>
@@ -9,7 +10,14 @@
 #include <iostream>
 #include <optional>
 #include <format>
+#include <memory>
+#include <unordered_map>
+#include <unordered_set>
 #include "CliOptions.h"
+#include "../PresentData/PresentMonTraceSession.hpp"
+#include "../PresentData/PresentMonTraceConsumer.hpp"
+#include "../PresentData/ETW/Microsoft_Windows_EventMetadata.h"
+#include "../PresentData/ETW/NT_Process.h"
 
 DEFINE_GUID(IID_ITraceRelogger, 0xF754AD43, 0x3BCC, 0x4286, 0x80, 0x09, 0x9C, 0x5D, 0xA2, 0x14, 0xE8, 0x4E); // {F754AD43-3BCC-4286-8009-9C5DA214E84E}
 DEFINE_GUID(IID_ITraceEventCallback, 0x3ED25501, 0x593F, 0x43E9, 0x8F, 0x38, 0x3A, 0xB4, 0x6F, 0x5A, 0x4A, 0x52); // {3ED25501-593F-43E9-8F38-3AB46F5A4A52}
@@ -18,6 +26,78 @@ enum class Mode
 {
     Analysis,
     Trim,
+};
+
+struct ProviderFilter
+{
+    std::unordered_set<uint16_t> eventSet;
+    uint64_t anyKeyMask;
+    uint64_t allKeyMask;
+    uint8_t maxLevel;
+    GUID providerGuid;
+};
+
+namespace std
+{
+    template <>
+    struct hash<GUID>
+    {
+        size_t operator()(const GUID& guid) const noexcept
+        {
+            return pmon::util::hash::HashGuid(guid);
+        }
+    };
+}
+
+class Filter : public IFilterBuildListener
+{
+public:
+    Filter()
+    {
+        // there are events from providers that are not explicitly enabled / filtered by presentmon
+        // but that are nonetheless required for PresentMon tracking operations
+        // they are likely enabled by default when doing ETW tracing
+        // we must add them manually here instead of adding them by listening to the FilteredProvider
+
+        // NT_Process
+        //
+        ProviderEnabled(NT_Process::GUID, 0, 0, 100);
+
+        // Microsoft_Windows_EventMetadata::GUID
+        //
+        ProviderEnabled(Microsoft_Windows_EventMetadata::GUID, 0, 0, 100);
+    }
+    // Inherited via IFilterBuildListener
+    void EventAdded(uint16_t id) override
+    {
+        eventsOnDeck_.push_back(id);
+    }
+    void ProviderEnabled(const GUID& providerGuid, uint64_t anyKey, uint64_t allKey, uint8_t maxLevel) override
+    {
+        ProviderFilter filter{
+            .anyKeyMask = anyKey ? anyKey : 0xFFFF'FFFF,
+            .allKeyMask = allKey,
+            .maxLevel = maxLevel,
+            .providerGuid = providerGuid,
+        };
+        filter.eventSet.insert_range(eventsOnDeck_);
+        ClearEvents();
+        providers_.emplace(filter.providerGuid, filter);
+    }
+    void ClearEvents() override
+    {
+        eventsOnDeck_.clear();
+    }
+    const ProviderFilter* LookupProvider(const GUID& guid)
+    {
+        if (auto i = providers_.find({ guid }); i != providers_.end()) {
+            return &i->second;
+        }
+        return nullptr;
+    }
+private:
+    std::vector<uint16_t> eventsOnDeck_;
+    std::unordered_map<GUID, ProviderFilter> providers_;
 };
 
 class EventCallback : public ITraceEventCallback
@@ -29,6 +109,11 @@ private:
     Mode mode_;
     // trim region
     std::optional<std::pair<uint64_t, uint64_t>> trimRange_;
+    // pruning options
+    std::shared_ptr<Filter> pFilter_;
+    bool byId_;
+    bool byKeyword_;
+    bool byLevel_;
     // analysis stats
     int eventCount_ = 0;
     int keepCount_ = 0;
@@ -36,9 +121,13 @@ private:
     uint64_t lastTimestamp_ = 0;
 
 public:
-    EventCallback(bool infoOnly)
+    EventCallback(bool infoOnly, std::shared_ptr<Filter> pFilter, bool byId, bool byKeyword, bool byLevel)
         :
-        mode_{ infoOnly ? Mode::Analysis : Mode::Trim }
+        mode_{ infoOnly ? Mode::Analysis : Mode::Trim },
+        pFilter_{ std::move(pFilter) },
+        byId_{ byId },
+        byKeyword_{ byKeyword },
+        byLevel_{ byLevel }
     {}
     STDMETHODIMP QueryInterface(const IID& iid, void** pObj)
     {
@@ -74,23 +163,48 @@ public:
     {
         EVENT_RECORD* pEvt = nullptr;
         pEvent->GetEventRecord(&pEvt);
-        const auto ts = (uint64_t)pEvt->EventHeader.TimeStamp.QuadPart;
+        const auto& hdr = pEvt->EventHeader;
+        const auto& desc = hdr.EventDescriptor;
+        const auto ts = (uint64_t)hdr.TimeStamp.QuadPart;
         if (!firstTimestamp_) {
             firstTimestamp_ = ts;
         }
         lastTimestamp_ = ts;
         eventCount_++;
-        bool keep = true;
         if (trimRange_) {
             if (ts < trimRange_->first || ts > trimRange_->second) {
-                keep = false;
+                return S_OK;
             }
         }
-        if (keep) {
-            keepCount_++;
-            if (mode_ == Mode::Trim) {
-                pRelogger->Inject(pEvent);
+        // filter only if we have a filter object
+        if (pFilter_) {
+            if (auto pProducerFilter = pFilter_->LookupProvider(hdr.ProviderId)) {
+                // if filtering by event id, discard if id not in set
+                // empty set indicates this provider should not be filtered by id
+                if (byId_ && !pProducerFilter->eventSet.empty() && !pProducerFilter->eventSet.contains(desc.Id)) {
+                    return S_OK;
+                }
+                // if keyword filtering, discard if keyword contains no bits from any mask,
+                // or is missing 1 or more bits from all mask
+                if (byKeyword_) {
+                    const bool all = (pProducerFilter->allKeyMask & desc.Keyword) == pProducerFilter->allKeyMask;
+                    const bool any = !bool(pProducerFilter->anyKeyMask) || bool(pProducerFilter->anyKeyMask & desc.Keyword);
+                    if (!all || !any) {
+                        return S_OK;
+                    }
+                }
+                // level filter is simple threshold
+                if (byLevel_ && desc.Level > pProducerFilter->maxLevel) {
+                    return S_OK;
+                }
             }
+            else {
+                return S_OK;
+            }
+        }
+        keepCount_++;
+        if (mode_ == Mode::Trim) {
+            pRelogger->Inject(pEvent);
         }
         return S_OK;
     }
@@ -183,8 +297,22 @@ int main(int argc, const char** argv)
         std::cout << "Failed to set output file: " << *opt.outputFile << std::endl;
     }
 
-    EventCallback* pCallbackProcessor = new EventCallback(!opt.outputFile);
-    if (auto hr = pRelogger->RegisterCallback(pCallbackProcessor); FAILED(hr)) {
+    // do a dry run of PresentMon provider/filter processing to enumerate the filter parameters
+    std::shared_ptr<Filter> pFilter;
+    if (opt.provider) {
+        pFilter = std::make_shared<Filter>();
+        PMTraceConsumer traceConsumer;
+        traceConsumer.mTrackDisplay = true;   // ... presents to the display.
+        traceConsumer.mTrackGPU = true;       // ... GPU work.
+        traceConsumer.mTrackGPUVideo = true;  // ... GPU video work (separately from non-video GPU work).
+        traceConsumer.mTrackInput = true;     // ... keyboard/mouse latency.
+        traceConsumer.mTrackFrameType = true; // ... the frame type communicated through the Intel-PresentMon provider.
+        EnableProvidersListing(0, nullptr, &traceConsumer, true, true, pFilter);
+    }
+
+    auto pCallbackProcessor = std::make_unique<EventCallback>(!opt.outputFile, pFilter,
+        (bool)opt.event, (bool)opt.keyword, (bool)opt.level);
+    if (auto hr = pRelogger->RegisterCallback(pCallbackProcessor.get()); FAILED(hr)) {
         std::cout << "Failed to register callback" << std::endl;
     }
 
@@ -199,12 +327,20 @@ int main(int argc, const char** argv)
     const auto tsr = pCallbackProcessor->GetTimestampRange();
     const auto dur = tsr.second - tsr.first;
     std::cout << std::format(" ======== Report for [ {} ] ========\n", *opt.inputFile);
-    std::cout << std::format("Total processed event count: {:L}\n", pCallbackProcessor->GetEventCount());
+    std::cout << std::format("Total event count: {:L}\n", pCallbackProcessor->GetEventCount());
     std::cout << std::format("Timestamp range {:L} - {:L} (duration: {:L})\n", tsr.first, tsr.second, dur);
     std::cout << std::format("Duration of trace in milliseconds: {:L}\n\n", double(dur) / 10'000.);
+
     std::cout << std::format("Events trimmed and/or filtered: {:L}\n",
         pCallbackProcessor->GetEventCount() - pCallbackProcessor->GetKeepCount());
-    std::cout << std::format("Count of relogged events: {:L}\n", pCallbackProcessor->GetKeepCount());
+    std::cout << std::format("Count of persisted events: {:L}\n", pCallbackProcessor->GetKeepCount());
+
+    if (!opt.outputFile) {
+        std::cout << "No output specified; running in analysis mode\n";
+    }
+    else {
+        std::cout << "Output written to: " << *opt.outputFile << std::endl;
+    }
 
     return 0;
 }
