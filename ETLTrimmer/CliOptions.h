@@ -11,7 +11,7 @@ namespace clio
 		Option<std::string> inputFile{ this, "--input-file", "", "Path to input file to use", [this](CLI::Option* pOpt) {
 			pOpt->required();
 		} };
-		Option<std::string> outputFile{ this, "--output-file", "", "Path for the trimmed output file" };
+		Option<std::string> outputFile{ this, "--output-file", "", "Path for the trimmed output file. Omitting this enables analysis-only mode" };
 
 	private: Group gt_{ this, "Trimming", "Options for trimming and pruning events" }; public:
 		Flag provider{ this, "--provider,-p", "Enable pruning by provider (uses same provider set as PresentMon)" };

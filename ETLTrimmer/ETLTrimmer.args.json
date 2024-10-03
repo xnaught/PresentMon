@@ -31,8 +31,20 @@
       "Command": "--help"
     },
     {
-      "Id": "05fd0de6-2c77-4d2f-8938-3875ab55bb00",
-      "Command": "-k"
+      "Id": "a220f802-99a4-436a-b30f-821a39c2042e",
+      "Command": "--provider"
+    },
+    {
+      "Id": "9f0892bf-6ab8-458d-acf3-27bfdf8b5263",
+      "Command": "--event"
+    },
+    {
+      "Id": "ec1d1533-510d-4c97-bd74-244ff8a59b93",
+      "Command": "--keyword"
+    },
+    {
+      "Id": "58921db6-fffe-4fc3-bef5-635f0370df9e",
+      "Command": "--level"
     }
   ]
 }
