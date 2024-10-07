@@ -18,6 +18,7 @@ namespace clio
 		Flag event{ this, "--event,-e", "Enable pruning by event (uses same event set as PresentMon)" };
 		Flag keyword{ this, "--keyword,-k", "Enable pruning by keyword (uses same keyword set as PresentMon)" };
 		Flag level{ this, "--level,-l", "Enable pruning by level (uses same level set as PresentMon)" };
+		Flag noTrimState{ this, "--no-trim-state,-s", "Do not discard stateful events like process and DC start/stop when trimming by timestamp range" };
 		Option<std::pair<uint64_t, uint64_t>> trimRange{ this, "--trim-range", {}, "Range of timestamps outside of which to trim" };
 
 		static constexpr const char* description = "Postprocessing tool for trimming and pruning ETL files";
@@ -26,5 +27,6 @@ namespace clio
 		Dependency eventDep_{ event, provider };
 		Dependency keywordDep_{ keyword, provider };
 		Dependency levelDep_{ level, provider };
+		Dependency noTrimDep_{ noTrimState, trimRange };
 	};
 }

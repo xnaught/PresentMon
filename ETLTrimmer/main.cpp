@@ -18,9 +18,13 @@
 #include "../PresentData/PresentMonTraceConsumer.hpp"
 #include "../PresentData/ETW/Microsoft_Windows_EventMetadata.h"
 #include "../PresentData/ETW/NT_Process.h"
+#include "../PresentData/ETW/Microsoft_Windows_Kernel_Process.h"
+#include "../PresentData/ETW/Microsoft_Windows_DxgKrnl.h"
 
 DEFINE_GUID(IID_ITraceRelogger, 0xF754AD43, 0x3BCC, 0x4286, 0x80, 0x09, 0x9C, 0x5D, 0xA2, 0x14, 0xE8, 0x4E); // {F754AD43-3BCC-4286-8009-9C5DA214E84E}
 DEFINE_GUID(IID_ITraceEventCallback, 0x3ED25501, 0x593F, 0x43E9, 0x8F, 0x38, 0x3A, 0xB4, 0x6F, 0x5A, 0x4A, 0x52); // {3ED25501-593F-43E9-8F38-3AB46F5A4A52}
+
+constexpr uint8_t EnableAllLevels = 255u;
 
 enum class Mode
 {
@@ -35,6 +39,10 @@ struct ProviderFilter
     uint64_t allKeyMask;
     uint8_t maxLevel;
     GUID providerGuid;
+    bool MatchesId(uint16_t eventId) const
+    {
+        return eventSet.empty() || eventSet.contains(eventId);
+    }
 };
 
 namespace std
@@ -61,11 +69,11 @@ public:
 
         // NT_Process
         //
-        ProviderEnabled(NT_Process::GUID, 0, 0, 100);
+        ProviderEnabled(NT_Process::GUID, 0, 0, EnableAllLevels);
 
         // Microsoft_Windows_EventMetadata::GUID
         //
-        ProviderEnabled(Microsoft_Windows_EventMetadata::GUID, 0, 0, 100);
+        ProviderEnabled(Microsoft_Windows_EventMetadata::GUID, 0, 0, EnableAllLevels);
     }
     // Inherited via IFilterBuildListener
     void EventAdded(uint16_t id) override
@@ -111,9 +119,11 @@ private:
     std::optional<std::pair<uint64_t, uint64_t>> trimRange_;
     // pruning options
     std::shared_ptr<Filter> pFilter_;
+    Filter stateFilter_; // don't discard these events outside trim range
     bool byId_;
     bool byKeyword_;
     bool byLevel_;
+    bool noTrimState_;
     // analysis stats
     int eventCount_ = 0;
     int keepCount_ = 0;
@@ -121,14 +131,30 @@ private:
     uint64_t lastTimestamp_ = 0;
 
 public:
-    EventCallback(bool infoOnly, std::shared_ptr<Filter> pFilter, bool byId, bool byKeyword, bool byLevel)
+    EventCallback(bool infoOnly, std::shared_ptr<Filter> pFilter, bool noTrimState, bool byId, bool byKeyword, bool byLevel)
         :
         mode_{ infoOnly ? Mode::Analysis : Mode::Trim },
         pFilter_{ std::move(pFilter) },
+        noTrimState_{ noTrimState },
         byId_{ byId },
         byKeyword_{ byKeyword },
         byLevel_{ byLevel }
-    {}
+    {
+        // when trimming by timestamp, we must take care not to remove the state data psuedo-events generated
+        // at the beginning of the trace (also true state events coming before the trim region)
+        // nt process
+        stateFilter_.ProviderEnabled(NT_Process::GUID, 0, 0, EnableAllLevels);
+        // dxgkrnl DCStarts
+        stateFilter_.EventAdded(Microsoft_Windows_DxgKrnl::Context_DCStart::Id);
+        stateFilter_.EventAdded(Microsoft_Windows_DxgKrnl::Device_DCStart::Id);
+        stateFilter_.ProviderEnabled(Microsoft_Windows_DxgKrnl::GUID, 0, 0, EnableAllLevels);
+        // kernel proc start/stop
+        stateFilter_.EventAdded(Microsoft_Windows_Kernel_Process::ProcessStart_Start::Id);
+        stateFilter_.EventAdded(Microsoft_Windows_Kernel_Process::ProcessStop_Stop::Id);
+        stateFilter_.ProviderEnabled(Microsoft_Windows_Kernel_Process::GUID, 0, 0, EnableAllLevels);
+        // experiment: never trim metadata => fixes track GPU state issue?
+        stateFilter_.ProviderEnabled(Microsoft_Windows_EventMetadata::GUID, 0, 0, EnableAllLevels);
+    }
     STDMETHODIMP QueryInterface(const IID& iid, void** pObj)
     {
         if (iid == IID_IUnknown) {
@@ -171,21 +197,30 @@ public:
         }
         lastTimestamp_ = ts;
         eventCount_++;
+        bool canDiscard = true;
         if (trimRange_) {
-            if (ts < trimRange_->first || ts > trimRange_->second) {
+            // if we are trimming by time range, we probably want to preserve state events
+            if (noTrimState_) {
+                if (auto pProducerFilter = stateFilter_.LookupProvider(hdr.ProviderId)) {
+                    if (pProducerFilter->MatchesId(desc.Id)) {
+                        canDiscard = false;
+                    }
+                }
+            }
+            if (canDiscard && (ts < trimRange_->first || ts > trimRange_->second)) {
                 return S_OK;
             }
         }
-        // filter only if we have a filter object
-        if (pFilter_) {
+        // filter only if we have a filter object and not skipping filter step
+        if (canDiscard && pFilter_) {
             if (auto pProducerFilter = pFilter_->LookupProvider(hdr.ProviderId)) {
-                // if filtering by event id, discard if id not in set
-                // empty set indicates this provider should not be filtered by id
-                if (byId_ && !pProducerFilter->eventSet.empty() && !pProducerFilter->eventSet.contains(desc.Id)) {
+                // if filtering by event id, discard if id not allowed by producer filter
+                if (byId_ && !pProducerFilter->MatchesId(desc.Id)) {
                     return S_OK;
                 }
                 // if keyword filtering, discard if keyword contains no bits from any mask,
                 // or is missing 1 or more bits from all mask
+                // NOTE: currently misbehaving, probably not useful either
                 if (byKeyword_) {
                     const bool all = (pProducerFilter->allKeyMask & desc.Keyword) == pProducerFilter->allKeyMask;
                     const bool any = !bool(pProducerFilter->anyKeyMask) || bool(pProducerFilter->anyKeyMask & desc.Keyword);
@@ -194,6 +229,7 @@ public:
                     }
                 }
                 // level filter is simple threshold
+                // NOTE: currently suspected of misbehaving, probably not useful either
                 if (byLevel_ && desc.Level > pProducerFilter->maxLevel) {
                     return S_OK;
                 }
@@ -311,7 +347,7 @@ int main(int argc, const char** argv)
     }
 
     auto pCallbackProcessor = std::make_unique<EventCallback>(!opt.outputFile, pFilter,
-        (bool)opt.event, (bool)opt.keyword, (bool)opt.level);
+        (bool)opt.noTrimState, (bool)opt.event, (bool)opt.keyword, (bool)opt.level);
     if (auto hr = pRelogger->RegisterCallback(pCallbackProcessor.get()); FAILED(hr)) {
         std::cout << "Failed to register callback" << std::endl;
     }

@@ -15,8 +15,8 @@
       "Command": "--trim-range  114600000000 114700000000"
     },
     {
-      "Id": "68194940-aa79-4e43-944a-e24c34b4b1d5",
-      "Command": "--trim-range 400 300"
+      "Id": "72aa3f3a-db72-48e5-93ec-11ef00ccf00e",
+      "Command": "--no-trim-state"
     },
     {
       "Id": "ee3aa6c6-1568-4347-8847-ad556ceedbdd",
