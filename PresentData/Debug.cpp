@@ -678,12 +678,66 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
         }
         if (pmConsumer->mTrackPMMeasurements) {
             switch (hdr.EventDescriptor.Id) {
-            case MeasuredInput_Info::Id:         PrintEventHeader(eventRecord, metadata, "PM_Measurement_Input",        { L"InputType", PrintInputType,
-                                                                                                                          L"Time", PrintTime }); break;
-            case MeasuredScreenChange_Info::Id:  PrintEventHeader(eventRecord, metadata, "PM_Measurement_ScreenChange", { L"Time", PrintTime }); break;
+            case MeasuredInput_Info::Id:
+                PrintEventHeader(eventRecord, metadata, "PM_Measurement_Input", { L"InputType", PrintInputType, L"Time", PrintU64x });
+                break;
+            case MeasuredScreenChange_Info::Id:
+                PrintEventHeader(eventRecord, metadata, "PM_Measurement_ScreenChange", { L"Time", PrintU64x });
+                break;
+            }
+            return;
+        }
+
+        if (pmConsumer->mTrackAppTiming) {
+            switch (hdr.EventDescriptor.Id) {
+            case Intel_PresentMon::AppSleepStart_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSleepStart_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppSleepStart", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppSleepEnd_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSleepEnd_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppSleepEnd", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppSimulationStart_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSimulationStart_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppSimulationStart", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppSimulationEnd_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSimulationEnd_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppSimulationEnd", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppRenderSubmitStart_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppRenderSubmitStart_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppRenderSubmitStart", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppRenderSubmitEnd_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppRenderSubmitEnd_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppRenderSubmitEnd", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppPresentStart_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppPresentStart_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppPresentStart", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppPresentEnd_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppPresentEnd_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppPresentEnd", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppInputSample_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppInputSample_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppInputSample", { L"FrameId", PrintU32,
+                                                                               L"InputType", PrintInputType});
+            }
+            return;
             }
         }
-        return;
     }
 
     if (hdr.ProviderId == NT_Process::GUID) {

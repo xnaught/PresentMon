@@ -260,6 +260,7 @@ int wmain(int argc, wchar_t** argv)
     pmConsumer.mTrackInput                 = args.mTrackInput;
     pmConsumer.mTrackFrameType             = args.mTrackFrameType;
     pmConsumer.mTrackPMMeasurements        = args.mTrackPMMeasurements;
+    pmConsumer.mTrackAppTiming             = args.mTrackAppTiming;
     pmConsumer.mDisableOfflineBackpressure = args.mDisableOfflineBackpressure;
     if (args.mTargetPid != 0) {
         pmConsumer.mFilteredProcessIds = true;

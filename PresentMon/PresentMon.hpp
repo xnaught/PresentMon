@@ -74,6 +74,7 @@ struct CommandLineArgs {
     bool mTrackGPUVideo;
     bool mTrackFrameType;
     bool mTrackPMMeasurements;
+    bool mTrackAppTiming;
     bool mScrollLockIndicator;
     bool mExcludeDropped;
     bool mTerminateExistingSession;
@@ -104,6 +105,11 @@ struct FrameMetrics {
     double mAnimationError;
     double mClickToPhotonLatency;
     double mAllInputPhotonLatency;
+    double mAppSleepTime;
+    double mAppSimTime;
+    double mAppRenderSubmitTime;
+    double mAppPresentTime;
+    double mAppInputTime;
     uint64_t mScreenTime;
 
     FrameType mFrameType;
@@ -143,6 +149,7 @@ struct SwapChainData {
     // to the Present() being dropped
     uint64_t mLastReceivedNotDisplayedAllInputTime;
     uint64_t mLastReceivedNotDisplayedMouseClickTime;
+    uint64_t mLastReceivedNotDisplayedAppProviderInputTime;
 
     // Frame statistics
     float mAvgCPUDuration = 0.f;
