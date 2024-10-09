@@ -417,8 +417,12 @@ namespace
 
 			uint64_t startQpc = 0;
 			if constexpr (isRenderLatency) {
-				const auto val = ctx.pSourceFrameData->present_event.AppRenderSubmitStartTime == 0 ? 0 :
-					             TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.AppRenderSubmitStartTime,
+				if (ctx.pSourceFrameData->present_event.AppRenderSubmitStartTime == 0) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
+					return;
+				}
+				const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.AppRenderSubmitStartTime,
 							                                          ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
 							                                          ctx.performanceCounterPeriodMs);
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
