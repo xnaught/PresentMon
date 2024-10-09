@@ -353,10 +353,15 @@ static void ReportMetricsHelper(
         double msGPUDuration = 0.0;
 
         FrameMetrics metrics;
-        metrics.mCPUStart = chain->mLastPresent->PresentStartTime + chain->mLastPresent->TimeInPresent;
+        // If AppSleepEnd is non-zero then use it as the CPUStart if not use the previous Present return
+        metrics.mCPUStart = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : 
+            chain->mLastPresent->PresentStartTime + chain->mLastPresent->TimeInPresent;
 
         if (displayIndex == appIndex) {
             msGPUDuration                = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->GPUStartTime, p->ReadyTime);
+            // Need both AppSleepStart and AppSleepEnd to calculate CPUSleep
+            metrics.mCPUSleep            = (p->AppSleepEndTime == 0 || p->AppSleepStartTime == 0) ? 0 :
+                                           pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppSleepStartTime, p->AppSleepEndTime);
             metrics.mCPUBusy             = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->PresentStartTime);
             metrics.mCPUWait             = pmSession.TimestampDeltaToMilliSeconds(p->TimeInPresent);
             metrics.mGPULatency          = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->GPUStartTime);
@@ -368,6 +373,7 @@ static void ReportMetricsHelper(
             metrics.mAppRenderSubmitTime = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppRenderSubmitStartTime, p->AppRenderSubmitEndTime);
             metrics.mAppPresentTime      = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppPresentStartTime, p->AppPresentEndTime);
         } else {
+            metrics.mCPUSleep            = 0;
             metrics.mCPUBusy             = 0;
             metrics.mCPUWait             = 0;
             metrics.mGPULatency          = 0;
@@ -384,10 +390,14 @@ static void ReportMetricsHelper(
             metrics.mDisplayLatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, screenTime);
             metrics.mDisplayedTime  = pmSession.TimestampDeltaToUnsignedMilliSeconds(screenTime, nextScreenTime);
             metrics.mScreenTime     = screenTime;
+            // If we have AppRenderSubmitStart calculate the render latency
+            metrics.mRenderLatency  = p->AppRenderSubmitStartTime == 0 ? 0 : 
+                                      pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppRenderSubmitStartTime, screenTime);
         } else {
             metrics.mDisplayLatency = 0;
             metrics.mDisplayedTime  = 0;
             metrics.mScreenTime     = 0;
+            metrics.mRenderLatency  = 0;
         }
 
         if (displayIndex == appIndex) {
@@ -431,8 +441,10 @@ static void ReportMetricsHelper(
         }
 
         if (displayed && displayIndex == appIndex && chain->mLastDisplayedCPUStart != 0) {
-            metrics.mAnimationError      = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
-                                                                                  metrics.mCPUStart - chain->mLastDisplayedCPUStart);
+            // Calculate the sim start time based on if AppSimStartTime is non-zero
+            auto simStartTime       = p->AppSimStartTime != 0 ? p->AppSimStartTime : metrics.mCPUStart;
+            metrics.mAnimationError = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
+                                                                             simStartTime - chain->mLastDisplayedCPUStart);
         } else {
             metrics.mAnimationError      = 0;
         }
@@ -449,7 +461,7 @@ static void ReportMetricsHelper(
 
         if (computeAvg) {
             if (displayIndex == appIndex) {
-                UpdateAverage(&chain->mAvgCPUDuration, metrics.mCPUBusy + metrics.mCPUWait);
+                UpdateAverage(&chain->mAvgCPUDuration, metrics.mCPUSleep + metrics.mCPUBusy + metrics.mCPUWait);
                 UpdateAverage(&chain->mAvgGPUDuration, msGPUDuration);
             }
             if (displayed) {

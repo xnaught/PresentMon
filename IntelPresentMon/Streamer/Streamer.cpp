@@ -81,6 +81,17 @@ void Streamer::CopyFromPresentMonPresentEvent(
     nsm_present_event->InputTime = present_event->InputTime;
     nsm_present_event->MouseClickTime = present_event->MouseClickTime;
 
+    nsm_present_event->AppSleepStartTime = present_event->AppSleepStartTime;
+    nsm_present_event->AppSleepEndTime = present_event->AppSleepEndTime;
+    nsm_present_event->AppSimStartTime = present_event->AppSimStartTime;
+    nsm_present_event->AppSimEndTime = present_event->AppSimEndTime;
+    nsm_present_event->AppRenderSubmitStartTime = present_event->AppRenderSubmitStartTime;
+    nsm_present_event->AppRenderSubmitEndTime = present_event->AppRenderSubmitEndTime;
+    nsm_present_event->AppPresentStartTime = present_event->AppPresentStartTime;
+    nsm_present_event->AppPresentEndTime = present_event->AppPresentEndTime;
+    nsm_present_event->AppInputTime = present_event->AppInputSample.first;
+    nsm_present_event->AppInputType = present_event->AppInputSample.second;
+
     nsm_present_event->SwapChainAddress = present_event->SwapChainAddress;
     nsm_present_event->SyncInterval = present_event->SyncInterval;
     nsm_present_event->PresentFlags = present_event->PresentFlags;

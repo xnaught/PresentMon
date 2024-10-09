@@ -292,6 +292,7 @@ namespace pmon::mid
             case PM_METRIC_DROPPED_FRAMES:
             case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
             case PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY:
+            case PM_METRIC_RENDER_LATENCY:
                 pQuery->accumFpsData = true;
                 break;
             case PM_METRIC_GPU_POWER:
@@ -461,6 +462,7 @@ struct FakePMTraceSession {
 // Metrics computed per-frame.  Duration and Latency metrics are in milliseconds.
 struct FrameMetrics {
     uint64_t mCPUStart;
+    double mCPUSleep;
     double mCPUBusy;
     double mCPUWait;
     double mGPULatency;
@@ -469,6 +471,7 @@ struct FrameMetrics {
     double mGPUWait;
     double mDisplayLatency;
     double mDisplayedTime;
+    double mRenderLatency;
     double mAnimationError;
     double mClickToPhotonLatency;
     double mAllInputPhotonLatency;
@@ -484,7 +487,13 @@ void UpdateChain(
     if (p.FinalState == PresentResult::Presented) {
         // Used when calculating animation error
         if (chain->mLastPresentIsValid == true) {
-            chain->mLastDisplayedCPUStart = chain->mLastPresent.PresentStartTime + chain->mLastPresent.TimeInPresent;
+            // If AppSleepEnd is non-zero then use it as the CPUStart if not
+            // use the previous Present return
+            auto lastCpuStart = p.AppSleepEndTime != 0 ? p.AppSleepEndTime :
+                chain->mLastPresent.PresentStartTime + chain->mLastPresent.TimeInPresent;
+            // If AppSimStartTime is non-zero use it as simulation start else
+            // use lastCpuStart
+            chain->mLastDisplayedSimStart = p.AppSimStartTime != 0 ? p.AppSimStartTime : lastCpuStart;
         }
         uint64_t mLastDisplayedScreenTime = p.DisplayedCount == 0 ? 0 : p.Displayed_ScreenTime[0];
 
@@ -562,10 +571,17 @@ static void ReportMetricsHelper(
         double msGPUDuration = 0.0;
 
         FrameMetrics metrics;
-        metrics.mCPUStart = chain->mLastPresent.PresentStartTime + chain->mLastPresent.TimeInPresent;
+
+        // If AppSleepEnd is non-zero then use it as the CPUStart if not
+        // use the previous Present return
+        metrics.mCPUStart = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : 
+            chain->mLastPresent.PresentStartTime + chain->mLastPresent.TimeInPresent;
 
         if (displayIndex == appIndex) {
             msGPUDuration       = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->GPUStartTime, p->ReadyTime);
+            // Need both AppSleepStart and AppSleepEnd to calculate CPUSleep
+            metrics.mCPUSleep   = (p->AppSleepEndTime == 0 || p->AppSleepStartTime == 0) ? 0 : 
+                                  pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppSleepStartTime, p->AppSleepEndTime);
             metrics.mCPUBusy    = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->PresentStartTime);
             metrics.mCPUWait    = pmSession.TimestampDeltaToMilliSeconds(p->TimeInPresent);
             metrics.mGPULatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->GPUStartTime);
@@ -573,6 +589,7 @@ static void ReportMetricsHelper(
             metrics.mVideoBusy  = pmSession.TimestampDeltaToMilliSeconds(p->GPUVideoDuration);
             metrics.mGPUWait    = std::max(0.0, msGPUDuration - metrics.mGPUBusy);
         } else {
+            metrics.mCPUSleep   = 0;
             metrics.mCPUBusy    = 0;
             metrics.mCPUWait    = 0;
             metrics.mGPULatency = 0;
@@ -584,9 +601,13 @@ static void ReportMetricsHelper(
         if (displayed) {
             metrics.mDisplayLatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, screenTime);
             metrics.mDisplayedTime  = pmSession.TimestampDeltaToUnsignedMilliSeconds(screenTime, nextScreenTime);
+            // If we have AppRenderSubmitStart calculate the render latency
+            metrics.mRenderLatency  = p->AppRenderSubmitStartTime == 0 ? 0 : 
+                pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppRenderSubmitStartTime, screenTime);
         } else {
             metrics.mDisplayLatency = 0;
             metrics.mDisplayedTime  = 0;
+            metrics.mRenderLatency  = 0;
         }
 
         if (displayIndex == appIndex) {
@@ -619,9 +640,11 @@ static void ReportMetricsHelper(
             metrics.mAllInputPhotonLatency = 0;
         }
 
-        if (displayed && displayIndex == appIndex && chain->mLastDisplayedCPUStart != 0) {
+        if (displayed && displayIndex == appIndex && chain->mLastDisplayedSimStart != 0) {
+            // Calculate the sim start time based on if AppSimStartTime is non-zero
+            auto simStartTime            = p->AppSimStartTime != 0 ? p->AppSimStartTime : metrics.mCPUStart;
             metrics.mAnimationError      = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
-                                                                                  metrics.mCPUStart - chain->mLastDisplayedCPUStart);
+                                                                                  simStartTime - chain->mLastDisplayedSimStart);
         } else {
             metrics.mAnimationError      = 0;
         }
@@ -633,6 +656,7 @@ static void ReportMetricsHelper(
         }
 
         if (displayIndex == appIndex) {
+            chain->mCPUSleep  .push_back(metrics.mCPUSleep);
             chain->mCPUBusy   .push_back(metrics.mCPUBusy);
             chain->mCPUWait   .push_back(metrics.mCPUWait);
             chain->mGPULatency.push_back(metrics.mGPULatency);
@@ -668,6 +692,10 @@ static void ReportMetricsHelper(
 
         if (metrics.mAnimationErrorValid) {
             chain->mAnimationError.push_back(std::abs(metrics.mAnimationError));
+        }
+
+        if (displayed && displayIndex == appIndex && metrics.mRenderLatency != 0) {
+            chain->mRenderLatency.push_back(metrics.mRenderLatency);
         }
 
         displayIndex += 1;
@@ -1096,7 +1124,7 @@ static void ReportMetrics(
         {
             std::vector<double> frame_times(swapChain.mCPUBusy.size());
             for (size_t i = 0; i < swapChain.mCPUBusy.size(); ++i) {
-                frame_times[i] = swapChain.mCPUBusy[i] + swapChain.mCPUWait[i];
+                frame_times[i] = swapChain.mCPUSleep[i] + swapChain.mCPUBusy[i] + swapChain.mCPUWait[i];
             }
             output = CalculateStatistic(frame_times, element.stat);
             break;
@@ -1128,12 +1156,15 @@ static void ReportMetrics(
         case PM_METRIC_ANIMATION_ERROR:
             output = CalculateStatistic(swapChain.mAnimationError, element.stat);
             break;
+        case PM_METRIC_RENDER_LATENCY:
+            output = CalculateStatistic(swapChain.mRenderLatency, element.stat);
+            break;
         case PM_METRIC_PRESENTED_FPS:
         {
             std::vector<double> presented_fps(swapChain.mCPUBusy.size());
             for (size_t i = 0; i < swapChain.mCPUBusy.size(); ++i) {
-                presented_fps[i] = (swapChain.mCPUBusy[i] + swapChain.mCPUWait[i]) == 0. ? 0. : 
-                    1000.0 / (swapChain.mCPUBusy[i] + swapChain.mCPUWait[i]);
+                presented_fps[i] = (swapChain.mCPUSleep[i] + swapChain.mCPUBusy[i] + swapChain.mCPUWait[i]) == 0. ? 0. :
+                    1000.0 / (swapChain.mCPUSleep[i] + swapChain.mCPUBusy[i] + swapChain.mCPUWait[i]);
             }
             output = CalculateStatistic(presented_fps, element.stat);
             break;
@@ -1665,6 +1696,7 @@ static void ReportMetrics(
                 case PM_METRIC_DISPLAYED_TIME:
                 case PM_METRIC_ANIMATION_ERROR:
                 case PM_METRIC_APPLICATION:
+                case PM_METRIC_RENDER_LATENCY:
                     CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
                     break;
                 case PM_METRIC_CPU_VENDOR:

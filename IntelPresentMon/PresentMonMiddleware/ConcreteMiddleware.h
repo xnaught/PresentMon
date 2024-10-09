@@ -40,6 +40,7 @@ namespace pmon::mid
         bool mIncludeFrameData = true;
 
         // IntelPresentMon specifics:
+		std::vector<double> mCPUSleep;
         std::vector<double> mCPUBusy;
         std::vector<double> mCPUWait;
         std::vector<double> mGPULatency;
@@ -52,6 +53,7 @@ namespace pmon::mid
 		std::vector<double> mAnimationError;
         std::vector<double> mClickToPhotonLatency;
 		std::vector<double> mAllInputToPhotonLatency;
+		std::vector<double> mRenderLatency;
         std::vector<double> mDropped;
 
 		// QPC of last received input data that did not make it to the screen due 
@@ -62,7 +64,7 @@ namespace pmon::mid
         // begin/end screen times to optimize average calculation:
 		uint64_t mLastDisplayedScreenTime = 0;    // The last presented frame's ScreenTime (qpc)
 		uint64_t display_0_screen_time = 0;       // The first presented frame's ScreenTime (qpc)
-		uint64_t mLastDisplayedCPUStart = 0;      // The CPU start of the last presented frame
+		uint64_t mLastDisplayedSimStart = 0;      // The simulation start of the last presented frame
 		uint32_t display_count = 0;               // The number of presented frames
 	};
 

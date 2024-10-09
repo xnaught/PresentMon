@@ -288,6 +288,7 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     case TimeUnit::DateTime:        fwprintf(fp, L",CPUStartDateTime"); break;
     }
     fwprintf(fp, L",FrameTime"
+                 L",CPUSleep"
                  L",CPUBusy"
                  L",CPUWait");
     if (args.mTrackGPU) {
@@ -302,7 +303,8 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     if (args.mTrackDisplay) {
         fwprintf(fp, L",DisplayLatency"
                      L",DisplayedTime"
-                     L",AnimationError");
+                     L",AnimationError"
+                     L",RenderLatency");
     }
     if (args.mTrackInput) {
         fwprintf(fp, L",AllInputToPhotonLatency");
@@ -377,9 +379,10 @@ void WriteCsvRow<FrameMetrics>(
                                                        ns);
     }   break;
     }
-    fwprintf(fp, L",%.4lf,%.4lf,%.4lf", metrics.mCPUBusy + metrics.mCPUWait,
-                                        metrics.mCPUBusy,
-                                        metrics.mCPUWait);
+    fwprintf(fp, L",%.4lf,%.4lf,%.4lf,%.4lf", metrics.mCPUSleep + metrics.mCPUBusy + metrics.mCPUWait,
+                                              metrics.mCPUSleep,
+                                              metrics.mCPUBusy,
+                                              metrics.mCPUWait);
     if (args.mTrackGPU) {
         fwprintf(fp, L",%.4lf,%.4lf,%.4lf,%.4lf", metrics.mGPULatency,
                                                   metrics.mGPUBusy + metrics.mGPUWait,
@@ -391,11 +394,12 @@ void WriteCsvRow<FrameMetrics>(
     }
     if (args.mTrackDisplay) {
         if (metrics.mDisplayedTime == 0.0) {
-            fwprintf(fp, L",NA,NA,NA");
+            fwprintf(fp, L",NA,NA,NA,NA");
         } else {
-            fwprintf(fp, L",%.4lf,%.4lf,%.4lf", metrics.mDisplayLatency,
-                                                metrics.mDisplayedTime,
-                                                metrics.mAnimationError);
+            fwprintf(fp, L",%.4lf,%.4lf,%.4lf,%.4lf", metrics.mDisplayLatency,
+                                                      metrics.mDisplayedTime,
+                                                      metrics.mAnimationError,
+                                                      metrics.mRenderLatency);
         }
     }
     if (args.mTrackInput) {

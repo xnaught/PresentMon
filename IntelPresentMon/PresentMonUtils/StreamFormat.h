@@ -74,6 +74,17 @@ struct PmNsmPresentEvent
 	uint64_t InputTime;			// Earliest QPC value for all keyboard/mouse input used by this frame
 	uint64_t MouseClickTime;	// Earliest QPC value when the mouse was clicked and used by this frame
 
+	uint64_t AppSleepStartTime;         // QPC value of app sleep start time provided by Intel App Provider
+	uint64_t AppSleepEndTime;           // QPC value of app sleep end time provided by Intel App Provider
+	uint64_t AppSimStartTime;           // QPC value of app sim start time provided by Intel App Provider
+	uint64_t AppSimEndTime;             // QPC value of app sim end time provided by Intel App Provider
+	uint64_t AppRenderSubmitStartTime;  // QPC value of app render submit start time provided by Intel App Provider
+	uint64_t AppRenderSubmitEndTime;    // QPC value of app render submit end time provided by Intel App Provider
+	uint64_t AppPresentStartTime;       // QPC value of app present start time provided by Intel App Provider
+	uint64_t AppPresentEndTime;         // QPC value of app present end time provided by Intel App Provider
+	uint64_t AppInputTime;              // QPC value of app input time provided by Intel App Provider
+	InputDeviceType AppInputType;		// Input type provided by Intel App Provider
+
 	// Extra present parameters obtained through DXGI or D3D9 present
 	uint64_t SwapChainAddress;
 	int32_t SyncInterval;

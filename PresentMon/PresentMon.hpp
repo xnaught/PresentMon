@@ -94,6 +94,7 @@ struct CommandLineArgs {
 // Metrics computed per-frame.  Duration and Latency metrics are in milliseconds.
 struct FrameMetrics {
     uint64_t mCPUStart;
+    double mCPUSleep;
     double mCPUBusy;
     double mCPUWait;
     double mGPULatency;
@@ -101,6 +102,7 @@ struct FrameMetrics {
     double mVideoBusy;
     double mGPUWait;
     double mDisplayLatency;
+    double mRenderLatency;
     double mDisplayedTime;
     double mAnimationError;
     double mClickToPhotonLatency;
