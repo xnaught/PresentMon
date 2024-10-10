@@ -191,7 +191,50 @@ namespace
 		uint32_t outputOffset_;
 		uint16_t outputPaddingSize_;
 	};
-	
+	template<uint64_t PmNsmPresentEvent::* pFromMember, uint64_t PmNsmPresentEvent::* pToMember>
+	class QpcDeltaGatherCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		QpcDeltaGatherCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
+		{
+			const auto qpcFrom = ctx.pSourceFrameData->present_event.*pFromMember;
+			const auto qpcTo = ctx.pSourceFrameData->present_event.*pToMember;
+			if (qpcFrom != 0) {
+				if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
+					const auto val = TimestampDeltaToUnsignedMilliSeconds(qpcFrom, qpcTo, ctx.performanceCounterPeriodMs);
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+				}
+				else {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
+				}
+			}
+			else {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
+			}
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + alignof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
 	class GpuTimeGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
@@ -556,8 +599,8 @@ namespace
 		{
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
 				// Need both AppSleepStart and AppSleepEnd to calculate CPUSleep
-				const auto cpuSleep = ctx.pSourceFrameData->present_event.AppSleepStartTime != 0 || 
-					                  ctx.pSourceFrameData->present_event.AppSleepEndTime != 0 ? 0 : 
+				const auto cpuSleep = ctx.pSourceFrameData->present_event.AppSleepStartTime == 0 || 
+					                  ctx.pSourceFrameData->present_event.AppSleepEndTime == 0 ? 0 : 
 					                  TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.AppSleepStartTime,
 										                                   ctx.pSourceFrameData->present_event.AppSleepEndTime,
 										                                   ctx.performanceCounterPeriodMs);
@@ -850,6 +893,8 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 		return std::make_unique<StartDifferenceGatherCommand_<&Pre::PresentStartTime>>(pos);
 	case PM_METRIC_CPU_FRAME_TIME:
 		return std::make_unique<CpuFrameQpcFrameTimeCommand_>(pos);
+	case PM_METRIC_CPU_SLEEP:
+		return std::make_unique<QpcDeltaGatherCommand_<&Pre::AppSleepStartTime, &Pre::AppSleepEndTime>>(pos);
 	case PM_METRIC_CPU_BUSY:
 		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::PresentStartTime, 0>>(pos);
 	case PM_METRIC_CPU_WAIT:

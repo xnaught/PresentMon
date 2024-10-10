@@ -174,6 +174,8 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
         auto track_gpu_video  = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_VideoBusy });
         auto track_input      = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_ClickToPhotonLatency });
         auto track_frame_type = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_FrameType });
+        auto track_app_timing = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_CPUSleep,
+                                                                                Header_RenderLatency });
 
         switch (time) {
         case 1: params_.emplace_back(L"--qpc_time");    break;
@@ -185,6 +187,7 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
         if (track_gpu_video)  params_.emplace_back(L"--track_gpu_video");
         if (!track_input)     params_.emplace_back(L"--no_track_input");
         if (track_frame_type) params_.emplace_back(L"--track_frame_type");
+        if (track_app_timing) params_.emplace_back(L"--track_app_timing");
     }
 
     if (!columnsOK) {

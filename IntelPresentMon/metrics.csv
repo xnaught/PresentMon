@@ -14,6 +14,7 @@ PM_METRIC_FRAME_TYPE,,Frame Type,Whether the frame was rendered by the applicati
 PM_METRIC_CPU_START_TIME,,CPU Start Time,The time the CPU started working on this frame.
 PM_METRIC_CPU_START_QPC,1,CPU Start QPC,"The time the CPU started working on this frame, as a QueryPerformanceCounter() value."
 PM_METRIC_CPU_FRAME_TIME,,Frame Time,How long it took from the start of this frame until the CPU started working on the next frame.
+PM_METRIC_CPU_SLEEP,,CPU Sleep,How long the CPU spent sleeping on this frame before presenting it. Only available through the Intel App Sleep Events.
 PM_METRIC_CPU_BUSY,,CPU Busy,How long the CPU spent working on this frame before presenting it.
 PM_METRIC_CPU_WAIT,,CPU Wait,How long the CPU spent waiting before starting the next frame.
 ,,,
@@ -28,7 +29,7 @@ PM_METRIC_DISPLAYED_TIME,,Displayed Time,"How long the frame was displayed on th
 PM_METRIC_ANIMATION_ERROR,,Animation Error,"The difference between the previous frame's CPU delta and display delta."
 PM_METRIC_CLICK_TO_PHOTON_LATENCY,,Click-To-Photon Latency,How long it took from the earliest mouse click that contributed to this frame until this frame was displayed.
 PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY,,All-Input-To-Photon Latency,How long it took from the earliest keyboard or mouse interaction that contributed to this frame until this frame was displayed.
-PM_METRIC_RENDER_LATENCY,,Render Latency,How long it took from the start of CPU render until the frame was displayed on the screen. Only available if provided by application.
+PM_METRIC_RENDER_LATENCY,,Render Latency,How long it took from the start of CPU render until the frame was displayed on the screen. Only available through the Intel Render Submit Start Event.
 ,,,
 PM_METRIC_DISPLAYED_FPS,1,Displayed FPS,The rate at which new frames are being displayed on the screen.
 PM_METRIC_APPLICATION_FPS,1,Application FPS,The rate at which the application is rendering and displaying new frames to the screen.

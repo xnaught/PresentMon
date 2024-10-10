@@ -276,6 +276,7 @@ namespace pmon::mid
             case PM_METRIC_ALLOWS_TEARING:
             case PM_METRIC_FRAME_TYPE:
             case PM_METRIC_CPU_START_QPC:
+            case PM_METRIC_CPU_SLEEP:
             case PM_METRIC_CPU_BUSY:
             case PM_METRIC_CPU_WAIT:
             case PM_METRIC_CPU_FRAME_TIME:
@@ -1114,6 +1115,9 @@ static void ReportMetrics(
         case PM_METRIC_FRAME_TYPE:
             reinterpret_cast<PM_FRAME_TYPE&>(pBlob[element.dataOffset]) = (PM_FRAME_TYPE)(swapChain.mLastPresent.DisplayedCount == 0 ? FrameType::NotSet : swapChain.mLastPresent.Displayed_FrameType[0]);
             break;
+        case PM_METRIC_CPU_SLEEP:
+            output = CalculateStatistic(swapChain.mCPUSleep, element.stat);
+            break;
         case PM_METRIC_CPU_BUSY:
             output = CalculateStatistic(swapChain.mCPUBusy, element.stat);
             break;
@@ -1690,6 +1694,7 @@ static void ReportMetrics(
                 case PM_METRIC_DISPLAYED_FPS:
                 case PM_METRIC_DROPPED_FRAMES:
                 case PM_METRIC_CPU_FRAME_TIME:
+                case PM_METRIC_CPU_SLEEP:
                 case PM_METRIC_CPU_BUSY:
                 case PM_METRIC_CPU_WAIT:
                 case PM_METRIC_GPU_TIME:

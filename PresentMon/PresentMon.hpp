@@ -144,7 +144,7 @@ struct SwapChainData {
     std::shared_ptr<PresentEvent> mLastPresent;
 
     // The CPU start and screen time for the most recent frame that was displayed
-    uint64_t mLastDisplayedCPUStart = 0;
+    uint64_t mLastDisplayedSimStartTime = 0;
     uint64_t mLastDisplayedScreenTime = 0;
 
     // QPC of last received input data that did not make it to the screen due 

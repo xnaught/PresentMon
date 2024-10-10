@@ -239,7 +239,10 @@ static void UpdateChain(
 {
     if (p->FinalState == PresentResult::Presented) {
         if (chain->mLastPresent != nullptr) {
-            chain->mLastDisplayedCPUStart = chain->mLastPresent->PresentStartTime + chain->mLastPresent->TimeInPresent;
+            auto lastDisplayedCpuStart = chain->mLastPresent->AppSleepEndTime != 0 ? chain->mLastPresent->AppSleepEndTime :
+                                         chain->mLastPresent->PresentStartTime + chain->mLastPresent->TimeInPresent;
+            chain->mLastDisplayedSimStartTime = chain->mLastPresent->AppSimStartTime != 0 ? chain->mLastPresent->AppSimStartTime :
+                                                lastDisplayedCpuStart;
         }
 
         chain->mLastDisplayedScreenTime = p->Displayed.empty() ? 0 : p->Displayed.back().second;
@@ -440,11 +443,11 @@ static void ReportMetricsHelper(
             metrics.mAppInputTime = 0;
         }
 
-        if (displayed && displayIndex == appIndex && chain->mLastDisplayedCPUStart != 0) {
+        if (displayed && displayIndex == appIndex && chain->mLastDisplayedSimStartTime != 0) {
             // Calculate the sim start time based on if AppSimStartTime is non-zero
             auto simStartTime       = p->AppSimStartTime != 0 ? p->AppSimStartTime : metrics.mCPUStart;
             metrics.mAnimationError = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
-                                                                             simStartTime - chain->mLastDisplayedCPUStart);
+                                                                             simStartTime - chain->mLastDisplayedSimStartTime);
         } else {
             metrics.mAnimationError      = 0;
         }

@@ -27,6 +27,7 @@ struct PresentMonCsv
         Header_CPUStartQPCTime,
         Header_CPUStartDateTime,
         Header_FrameTime,
+        Header_CPUSleep,
         Header_CPUBusy,
         Header_CPUWait,
         Header_GPULatency,
@@ -37,6 +38,7 @@ struct PresentMonCsv
         Header_DisplayLatency,
         Header_DisplayedTime,
         Header_AnimationError,
+        Header_RenderLatency,
         Header_ClickToPhotonLatency,
         Header_AllInputToPhotonLatency,
 
@@ -81,6 +83,7 @@ struct PresentMonCsv
         case Header_CPUStartQPCTime:            return "CPUStartQPCTime";
         case Header_CPUStartDateTime:           return "CPUStartDateTime";
         case Header_FrameTime:                  return "FrameTime";
+        case Header_CPUSleep:                   return "CPUSleep";
         case Header_CPUBusy:                    return "CPUBusy";
         case Header_CPUWait:                    return "CPUWait";
         case Header_GPULatency:                 return "GPULatency";
@@ -91,6 +94,7 @@ struct PresentMonCsv
         case Header_DisplayLatency:             return "DisplayLatency";
         case Header_DisplayedTime:              return "DisplayedTime";
         case Header_AnimationError:             return "AnimationError";
+        case Header_RenderLatency:              return "RenderLatency";
         case Header_ClickToPhotonLatency:       return "ClickToPhotonLatency";
         case Header_AllInputToPhotonLatency:    return "AllInputToPhotonLatency";
 
