@@ -30,6 +30,7 @@ enum Header {
     Header_CPUStartQPCTime,
     Header_CPUStartDateTime,
     Header_FrameTime,
+    Header_CPUSleep,
     Header_CPUBusy,
     Header_CPUWait,
     Header_GPULatency,
@@ -42,6 +43,7 @@ enum Header {
     Header_AnimationError,
     Header_ClickToPhotonLatency,
     Header_AllInputToPhotonLatency,
+    Header_RenderLatency,
 
     // --v1_metrics
     Header_Runtime,
@@ -91,6 +93,8 @@ struct v2Metrics {
     std::optional<double> animationError;
     std::optional<double> clickToPhotonLatency;
     std::optional<double> AllInputToPhotonLatency;
+    std::optional<double> cpuSleep;
+    std::optional<double> renderLatency;
 };
 
 constexpr char const* GetHeaderString(Header h)
@@ -110,6 +114,7 @@ constexpr char const* GetHeaderString(Header h)
     case Header_CPUStartQPCTime:            return "CPUStartQPCTime";
     case Header_CPUStartDateTime:           return "CPUStartDateTime";
     case Header_FrameTime:                  return "FrameTime";
+    case Header_CPUSleep:                   return "CPUSleep";
     case Header_CPUBusy:                    return "CPUBusy";
     case Header_CPUWait:                    return "CPUWait";
     case Header_GPULatency:                 return "GPULatency";
@@ -122,6 +127,7 @@ constexpr char const* GetHeaderString(Header h)
     case Header_AnimationError:             return "AnimationError";
     case Header_ClickToPhotonLatency:       return "ClickToPhotonLatency";
     case Header_AllInputToPhotonLatency:    return "AllInputToPhotonLatency";
+    case Header_RenderLatency:              return "RenderLatency";
 
     case Header_Runtime:                    return "Runtime";
     case Header_Dropped:                    return "Dropped";
@@ -321,7 +327,7 @@ public:
     bool Open(std::wstring const& path, uint32_t processId);
     void Close();
     bool VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-        PM_QUERY_ELEMENT(&queryElements)[20], pmapi::BlobContainer& blobs);
+        PM_QUERY_ELEMENT(&queryElements)[22], pmapi::BlobContainer& blobs);
     bool ResetCsv();
 
 private:
@@ -350,7 +356,7 @@ CsvParser::CsvParser()
 {}
 
 bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-    PM_QUERY_ELEMENT(&queryElements)[20], pmapi::BlobContainer& blobs)
+    PM_QUERY_ELEMENT(&queryElements)[22], pmapi::BlobContainer& blobs)
 {
 
     for (auto pBlob : blobs) {
@@ -376,6 +382,8 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
         const auto animationError = *reinterpret_cast<const double*>(&pBlob[queryElements[17].dataOffset]);
         const auto allInputToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[18].dataOffset]);
         const auto clickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[19].dataOffset]);
+        const auto cpuSleep = *reinterpret_cast<const double*>(&pBlob[queryElements[20].dataOffset]);
+        const auto renderLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[21].dataOffset]);
         
         // Read rows until we find one with the process we are interested in
         // or we are out of data.
@@ -406,7 +414,7 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                 columnsMatch = Validate(v2MetricRow_.processId, processId_);
                 break;
             case Header_SwapChainAddress:
-                columnsMatch = Validate(v2MetricRow_.swapChain, swapChain);
+                    columnsMatch = Validate(v2MetricRow_.swapChain, swapChain);
                 break;
             case Header_Runtime:
                 columnsMatch = Validate(v2MetricRow_.runtime, graphicsRuntime);
@@ -431,6 +439,21 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                 break;
             case Header_FrameTime:
                 columnsMatch = Validate(v2MetricRow_.cpuFrameTime, cpuFrameTime);
+                break;
+            case Header_CPUSleep:
+                if (v2MetricRow_.cpuSleep.has_value()) {
+                    columnsMatch = Validate(v2MetricRow_.cpuSleep.value(), cpuSleep);
+                }
+                else
+                {
+                    if (std::isnan(cpuSleep)) {
+                        columnsMatch = true;
+                    }
+                    else
+                    {
+                        columnsMatch = false;
+                    }
+                }
                 break;
             case Header_CPUBusy:
                 columnsMatch = Validate(v2MetricRow_.cpuBusy, cpuBusy);
@@ -518,6 +541,21 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                 else
                 {
                     if (std::isnan(allInputToPhotonLatency)) {
+                        columnsMatch = true;
+                    }
+                    else
+                    {
+                        columnsMatch = false;
+                    }
+                }
+                break;
+            case Header_RenderLatency:
+                if (v2MetricRow_.renderLatency.has_value()) {
+                    columnsMatch = Validate(v2MetricRow_.renderLatency.value(), renderLatency);
+                }
+                else
+                {
+                    if (std::isnan(renderLatency)) {
                         columnsMatch = true;
                     }
                     else
@@ -628,6 +666,7 @@ bool CsvParser::Open(std::wstring const& path, uint32_t processId) {
                                                Header_FrameType,
                                                Header_CPUStartQPC,
                                                Header_FrameTime,
+                                               Header_CPUSleep,
                                                Header_CPUBusy,
                                                Header_CPUWait,
                                                Header_GPULatency,
@@ -639,7 +678,8 @@ bool CsvParser::Open(std::wstring const& path, uint32_t processId) {
                                                Header_DisplayedTime,
                                                Header_AnimationError,
                                                Header_ClickToPhotonLatency,
-                                               Header_AllInputToPhotonLatency});
+                                               Header_AllInputToPhotonLatency,
+                                               Header_RenderLatency});
 
     if (!columnsOK) {
         Assert::Fail(L"Missing required columns");
@@ -742,6 +782,20 @@ void CsvParser::ConvertToMetricDataType(const char* data, Header columnId)
     {
         CharConvert<double> converter;
         converter.Convert(data, v2MetricRow_.cpuFrameTime, columnId, line_);
+    }
+    break;
+    case Header_CPUSleep:
+    {
+        if (strncmp(data, "NA", 2) != 0) {
+            double convertedData = 0.;
+            CharConvert<double> converter;
+            converter.Convert(data, convertedData, columnId, line_);
+            v2MetricRow_.cpuSleep = convertedData;
+        }
+        else
+        {
+            v2MetricRow_.cpuSleep.reset();
+        }
     }
     break;
     case Header_CPUBusy:
@@ -849,6 +903,20 @@ void CsvParser::ConvertToMetricDataType(const char* data, Header columnId)
         }
         else {
             v2MetricRow_.AllInputToPhotonLatency.reset();
+        }
+    }
+    break;
+    case Header_RenderLatency:
+    {
+        if (strncmp(data, "NA", 2) != 0) {
+            double convertedData = 0.;
+            CharConvert<double> converter;
+            converter.Convert(data, convertedData, columnId, line_);
+            v2MetricRow_.renderLatency = convertedData;
+        }
+        else
+        {
+            v2MetricRow_.renderLatency.reset();
         }
     }
     break;

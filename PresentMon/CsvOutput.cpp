@@ -288,6 +288,7 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     case TimeUnit::DateTime:        fwprintf(fp, L",CPUStartDateTime"); break;
     }
     fwprintf(fp, L",FrameTime"
+                 L",CPUSleep"
                  L",CPUBusy"
                  L",CPUWait");
     if (args.mTrackGPU) {
@@ -302,7 +303,8 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     if (args.mTrackDisplay) {
         fwprintf(fp, L",DisplayLatency"
                      L",DisplayedTime"
-                     L",AnimationError");
+                     L",AnimationError"
+                     L",RenderLatency");
     }
     if (args.mTrackInput) {
         fwprintf(fp, L",AllInputToPhotonLatency");
@@ -310,13 +312,6 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     }
     if (args.mWriteDisplayTime) {
         fwprintf(fp, L",DisplayTimeAbs");
-    }
-    if (args.mTrackAppTiming) {
-        fwprintf(fp, L",AppSleepTime");
-        fwprintf(fp, L",AppSimTime");
-        fwprintf(fp, L",AppRenderSubmitTime");
-        fwprintf(fp, L",AppPresentTime");
-        fwprintf(fp, L",AppInputTime");
     }
     if (args.mWriteFrameId) {
         fwprintf(fp, L",FrameId");
@@ -377,9 +372,23 @@ void WriteCsvRow<FrameMetrics>(
                                                        ns);
     }   break;
     }
-    fwprintf(fp, L",%.4lf,%.4lf,%.4lf", metrics.mCPUBusy + metrics.mCPUWait,
-                                        metrics.mCPUBusy,
-                                        metrics.mCPUWait);
+
+    if (args.mTrackAppTiming) {
+        fwprintf(fp, L",%.4lf", metrics.mCPUSleep + metrics.mCPUBusy + metrics.mCPUWait);
+        if (metrics.mCPUSleep == 0.0) {
+            fwprintf(fp, L",NA");
+        }
+        else {
+            fwprintf(fp, L",%.4lf", metrics.mCPUSleep);
+        }
+        fwprintf(fp, L",%.4lf,%.4lf", metrics.mCPUBusy,
+                                      metrics.mCPUWait);
+
+    } else {
+        fwprintf(fp, L",%.4lf,%.4lf,%.4lf", metrics.mCPUBusy + metrics.mCPUWait,
+            metrics.mCPUBusy,
+            metrics.mCPUWait);
+    }
     if (args.mTrackGPU) {
         fwprintf(fp, L",%.4lf,%.4lf,%.4lf,%.4lf", metrics.mGPULatency,
                                                   metrics.mGPUBusy + metrics.mGPUWait,
@@ -391,11 +400,16 @@ void WriteCsvRow<FrameMetrics>(
     }
     if (args.mTrackDisplay) {
         if (metrics.mDisplayedTime == 0.0) {
-            fwprintf(fp, L",NA,NA,NA");
+            fwprintf(fp, L",NA,NA,NA,NA");
         } else {
             fwprintf(fp, L",%.4lf,%.4lf,%.4lf", metrics.mDisplayLatency,
                                                 metrics.mDisplayedTime,
                                                 metrics.mAnimationError);
+            if (metrics.mRenderLatency == 0.0) {
+                fwprintf(fp, L",NA");
+            } else {
+                fwprintf(fp, L",%.4lf", metrics.mRenderLatency);
+            }
         }
     }
     if (args.mTrackInput) {
@@ -418,13 +432,6 @@ void WriteCsvRow<FrameMetrics>(
         else {
             fwprintf(fp, L",%.4lf", pmSession.TimestampToMilliSeconds(metrics.mScreenTime));
         }
-    }
-    if (args.mTrackAppTiming) {
-        fwprintf(fp, L",%.4lf", metrics.mAppSleepTime);
-        fwprintf(fp, L",%.4lf", metrics.mAppSimTime);
-        fwprintf(fp, L",%.4lf", metrics.mAppRenderSubmitTime);
-        fwprintf(fp, L",%.4lf", metrics.mAppPresentTime);
-        fwprintf(fp, L",%.4lf", metrics.mAppInputTime);
     }
     if (args.mWriteFrameId) {
         fwprintf(fp, L",%u", p.FrameId);
