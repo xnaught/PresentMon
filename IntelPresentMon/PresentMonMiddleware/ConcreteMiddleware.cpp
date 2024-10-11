@@ -478,7 +478,6 @@ struct FrameMetrics {
     double mClickToPhotonLatency;
     double mAllInputPhotonLatency;
     FrameType mFrameType;
-    bool mAnimationErrorValid;
 };
 
 // Copied from: PresentMon/OutputThread.cpp
@@ -647,6 +646,7 @@ static void ReportMetricsHelper(
             auto simStartTime            = p->AppSimStartTime != 0 ? p->AppSimStartTime : metrics.mCPUStart;
             metrics.mAnimationError      = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
                                                                                   simStartTime - chain->mLastDisplayedSimStart);
+            chain->mAnimationError.push_back(std::abs(metrics.mAnimationError));
         } else {
             metrics.mAnimationError      = 0;
         }
@@ -690,10 +690,6 @@ static void ReportMetricsHelper(
             if (metrics.mClickToPhotonLatency != 0) {
                 chain->mClickToPhotonLatency.push_back(metrics.mClickToPhotonLatency);
             }
-        }
-
-        if (metrics.mAnimationErrorValid) {
-            chain->mAnimationError.push_back(std::abs(metrics.mAnimationError));
         }
 
         if (displayed && displayIndex == appIndex && metrics.mRenderLatency != 0) {
