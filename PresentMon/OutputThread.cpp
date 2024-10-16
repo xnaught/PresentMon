@@ -238,13 +238,12 @@ static void UpdateChain(
     std::shared_ptr<PresentEvent> const& p)
 {
     if (p->FinalState == PresentResult::Presented) {
-        if (chain->mLastPresent != nullptr) {
-            auto lastDisplayedCpuStart = chain->mLastPresent->AppSleepEndTime != 0 ? chain->mLastPresent->AppSleepEndTime :
-                                         chain->mLastPresent->PresentStartTime + chain->mLastPresent->TimeInPresent;
-            chain->mLastDisplayedSimStartTime = chain->mLastPresent->AppSimStartTime != 0 ? chain->mLastPresent->AppSimStartTime :
-                                                lastDisplayedCpuStart;
+        if (p->AppSimStartTime != 0) {
+            chain->mLastDisplayedSimStartTime = p->AppSimStartTime;
+        } else if (chain->mLastPresent != nullptr) {
+            chain->mLastDisplayedSimStartTime = chain->mLastPresent->PresentStartTime +
+                                                chain->mLastPresent->TimeInPresent;
         }
-
         chain->mLastDisplayedScreenTime = p->Displayed.empty() ? 0 : p->Displayed.back().second;
     }
 
@@ -356,37 +355,34 @@ static void ReportMetricsHelper(
         double msGPUDuration = 0.0;
 
         FrameMetrics metrics;
-        // If AppSleepEnd is non-zero then use it as the CPUStart if not use the previous Present return
-        metrics.mCPUStart = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : 
-            chain->mLastPresent->PresentStartTime + chain->mLastPresent->TimeInPresent;
+        metrics.mCPUStart = chain->mLastPresent->PresentStartTime + chain->mLastPresent->TimeInPresent;
 
         if (displayIndex == appIndex) {
             msGPUDuration                = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->GPUStartTime, p->ReadyTime);
-            // Need both AppSleepStart and AppSleepEnd to calculate CPUSleep
-            metrics.mCPUSleep            = (p->AppSleepEndTime == 0 || p->AppSleepStartTime == 0) ? 0 :
-                                           pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppSleepStartTime, p->AppSleepEndTime);
             metrics.mCPUBusy             = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->PresentStartTime);
             metrics.mCPUWait             = pmSession.TimestampDeltaToMilliSeconds(p->TimeInPresent);
             metrics.mGPULatency          = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->GPUStartTime);
             metrics.mGPUBusy             = pmSession.TimestampDeltaToMilliSeconds(p->GPUDuration);
             metrics.mVideoBusy           = pmSession.TimestampDeltaToMilliSeconds(p->GPUVideoDuration);
             metrics.mGPUWait             = std::max(0.0, msGPUDuration - metrics.mGPUBusy);
-            metrics.mAppSleepTime        = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppSleepStartTime, p->AppSleepEndTime);
-            metrics.mAppSimTime          = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppSimStartTime, p->AppSimEndTime);
-            metrics.mAppRenderSubmitTime = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppRenderSubmitStartTime, p->AppRenderSubmitEndTime);
-            metrics.mAppPresentTime      = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppPresentStartTime, p->AppPresentEndTime);
+            // Need both AppSleepStart and AppSleepEnd to calculate XellSleep
+            metrics.mXellSleep           = (p->AppSleepEndTime == 0 || p->AppSleepStartTime == 0) ? 0 :
+                                           pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppSleepStartTime, p->AppSleepEndTime);
+            // If there isn't a valid sleep end time use the sim start time
+            auto xellStartTime           = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : p->AppSimStartTime;
+            // If neither the sleep end time or sim start time is valid, there is no
+            // way to calculate the Xell Gpu latency
+            metrics.mXellGpuLatency      = xellStartTime == 0 ? 0 :
+                                           pmSession.TimestampDeltaToUnsignedMilliSeconds(xellStartTime, p->GPUStartTime);
         } else {
-            metrics.mCPUSleep            = 0;
             metrics.mCPUBusy             = 0;
             metrics.mCPUWait             = 0;
             metrics.mGPULatency          = 0;
             metrics.mGPUBusy             = 0;
             metrics.mVideoBusy           = 0;
             metrics.mGPUWait             = 0;
-            metrics.mAppSleepTime        = 0;
-            metrics.mAppSimTime          = 0;
-            metrics.mAppRenderSubmitTime = 0;
-            metrics.mAppPresentTime      = 0;
+            metrics.mXellSleep           = 0;
+            metrics.mXellGpuLatency      = 0;
         }
 
         if (displayed) {
@@ -396,11 +392,20 @@ static void ReportMetricsHelper(
             // If we have AppRenderSubmitStart calculate the render latency
             metrics.mRenderLatency  = p->AppRenderSubmitStartTime == 0 ? 0 : 
                                       pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppRenderSubmitStartTime, screenTime);
+            metrics.mXellRenderEndToDisplayLatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ReadyTime, screenTime);
+            // If there isn't a valid sleep end time use the sim start time
+            auto xellStartTime = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : p->AppSimStartTime;
+            // If neither the sleep end time or sim start time is valid, there is no
+            // way to calculate the Xell Gpu latency
+            metrics.mXellDisplayLatency = xellStartTime == 0 ? 0 :
+                pmSession.TimestampDeltaToUnsignedMilliSeconds(xellStartTime, screenTime);
         } else {
             metrics.mDisplayLatency = 0;
             metrics.mDisplayedTime  = 0;
             metrics.mScreenTime     = 0;
             metrics.mRenderLatency  = 0;
+            metrics.mXellRenderEndToDisplayLatency = 0;
+            metrics.mXellDisplayLatency = 0;
         }
 
         if (displayIndex == appIndex) {
@@ -417,7 +422,7 @@ static void ReportMetricsHelper(
 
                 updatedInputTime = chain->mLastReceivedNotDisplayedAppProviderInputTime == 0 ? 0 :
                     pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedAppProviderInputTime, screenTime);
-                metrics.mAppInputTime = p->AppInputSample.first == 0 ? updatedInputTime :
+                metrics.mXellInputTime = p->AppInputSample.first == 0 ? updatedInputTime :
                     pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppInputSample.first, screenTime);
 
                 chain->mLastReceivedNotDisplayedAllInputTime = 0;
@@ -426,7 +431,7 @@ static void ReportMetricsHelper(
             } else {
                 metrics.mClickToPhotonLatency = 0;
                 metrics.mAllInputPhotonLatency = 0;
-                metrics.mAppInputTime = 0;
+                metrics.mXellInputTime = 0;
                 if (p->InputTime != 0) {
                     chain->mLastReceivedNotDisplayedAllInputTime = p->InputTime;
                 }
@@ -440,14 +445,20 @@ static void ReportMetricsHelper(
         } else {
             metrics.mClickToPhotonLatency = 0;
             metrics.mAllInputPhotonLatency = 0;
-            metrics.mAppInputTime = 0;
+            metrics.mXellInputTime = 0;
         }
 
         if (displayed && displayIndex == appIndex && chain->mLastDisplayedSimStartTime != 0) {
             // Calculate the sim start time based on if AppSimStartTime is non-zero
-            auto simStartTime       = p->AppSimStartTime != 0 ? p->AppSimStartTime : metrics.mCPUStart;
-            metrics.mAnimationError = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
-                                                                             simStartTime - chain->mLastDisplayedSimStartTime);
+            auto simStartTime = p->AppSimStartTime != 0 ? p->AppSimStartTime : metrics.mCPUStart;
+            // If the simulation start time is less than the last displated simulation start time it means
+            // we are transitioning to app provider events.
+            if (simStartTime > chain->mLastDisplayedSimStartTime) {
+                metrics.mAnimationError = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
+                    simStartTime - chain->mLastDisplayedSimStartTime);
+            } else {
+                metrics.mAnimationError = 0;
+            }
         } else {
             metrics.mAnimationError      = 0;
         }
@@ -464,7 +475,7 @@ static void ReportMetricsHelper(
 
         if (computeAvg) {
             if (displayIndex == appIndex) {
-                UpdateAverage(&chain->mAvgCPUDuration, metrics.mCPUSleep + metrics.mCPUBusy + metrics.mCPUWait);
+                UpdateAverage(&chain->mAvgCPUDuration, metrics.mCPUBusy + metrics.mCPUWait);
                 UpdateAverage(&chain->mAvgGPUDuration, msGPUDuration);
             }
             if (displayed) {

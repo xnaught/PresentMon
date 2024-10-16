@@ -40,7 +40,6 @@ namespace pmon::mid
         bool mIncludeFrameData = true;
 
         // IntelPresentMon specifics:
-		std::vector<double> mCPUSleep;
         std::vector<double> mCPUBusy;
         std::vector<double> mCPUWait;
         std::vector<double> mGPULatency;
@@ -55,6 +54,11 @@ namespace pmon::mid
 		std::vector<double> mAllInputToPhotonLatency;
 		std::vector<double> mRenderLatency;
         std::vector<double> mDropped;
+
+		std::vector<double> mXellSleep;
+		std::vector<double> mXellDisplayLatency;
+		std::vector<double> mXellGpuLatency;
+		std::vector<double> mXellRenderEndToDisplayLatency;
 
 		// QPC of last received input data that did not make it to the screen due 
 		// to the Present() being dropped

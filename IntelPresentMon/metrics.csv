@@ -14,7 +14,6 @@ PM_METRIC_FRAME_TYPE,,Frame Type,Whether the frame was rendered by the applicati
 PM_METRIC_CPU_START_TIME,,CPU Start Time,The time the CPU started working on this frame.
 PM_METRIC_CPU_START_QPC,1,CPU Start QPC,"The time the CPU started working on this frame, as a QueryPerformanceCounter() value."
 PM_METRIC_CPU_FRAME_TIME,,Frame Time,How long it took from the start of this frame until the CPU started working on the next frame.
-PM_METRIC_CPU_SLEEP,,CPU Sleep,How long the CPU spent sleeping on this frame before presenting it. Only available through the Intel App Sleep Events.
 PM_METRIC_CPU_BUSY,,CPU Busy,How long the CPU spent working on this frame before presenting it.
 PM_METRIC_CPU_WAIT,,CPU Wait,How long the CPU spent waiting before starting the next frame.
 ,,,
@@ -82,3 +81,8 @@ PM_METRIC_CPU_POWER,1,CPU Power,Power consumed by the CPU.
 PM_METRIC_CPU_TEMPERATURE,1,CPU Temperature,Temperature of the CPU.
 PM_METRIC_CPU_FREQUENCY,1,CPU Frequency,Clock speed of the CPU.
 PM_METRIC_CPU_CORE_UTILITY,1,CPU Core Utility,Amount of CPU processing utility being used per core.
+,,,
+PM_METRIC_XELL_SLEEP,,XeLL Sleep,How long the CPU spent sleeping on this frame before starting work. Only available through the XeLL App Sleep Events.
+PM_METRIC_XELL_DISPLAY_LATENCY,,XeLL Frame Start To Display Latency,How long it took from the start of this frame until the frame was displayed on the screen using XeLL.
+PM_METRIC_XELL_GPU_LATENCY,,XeLL Frame Start To GPU Start Latency,How long it took from the start of this frame until the GPU started working on it using XeLL.
+PM_METRIC_XELL_RENDERSCREEN_LATENCY,,XeLL GPU End To Display Latency,How long it took from the end of GPU rendering until the frame was displayed on the screen using XeLL.

@@ -2761,8 +2761,11 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
             AppTimingData data;
             data.AppInputSample.first = timestamp;
             data.AppProcessId = processId;
-            data.AppInputSample.second = ConvertIntelProviderInputTypes(props->InputType);
-            mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            //data.AppInputSample.second = ConvertIntelProviderInputTypes(props->InputType);
+            //mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            // These are coming in backwards for xell 0.9.1
+            data.AppInputSample.second = ConvertIntelProviderInputTypes((Intel_PresentMon::InputType)props->FrameId);
+            mPendingAppTimingDataByAppFrameId.emplace((uint32_t)props->InputType, data);
         }
     }
     return;
@@ -2848,6 +2851,7 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
     if (mTrackAppTiming) {
         if (!UpdateAppTimingPresent(pEventRecord)) {
             UpdatePendingAppTimingData(pEventRecord);
+            return;
         }
     }
 
