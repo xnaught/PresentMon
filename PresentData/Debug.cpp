@@ -84,7 +84,7 @@ namespace {
 bool gVerboseTraceEnabled = false;
 
 PresentEvent const* gModifiedPresent = nullptr;
-PresentEvent gOriginalPresentValues;
+PresentEvent gOriginalPresentValues{ 0 };
 
 void PrintU32(uint32_t value) { wprintf(L"%u", value); }
 void PrintU64(uint64_t value) { wprintf(L"%llu", value); }

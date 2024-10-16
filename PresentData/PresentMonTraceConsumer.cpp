@@ -160,6 +160,61 @@ PresentEvent::PresentEvent()
 {
 }
 
+PresentEvent::PresentEvent(uint32_t fid)
+    : PresentStartTime(0)
+    , ProcessId(0)
+    , ThreadId(0)
+    , TimeInPresent(0)
+    , GPUStartTime(0)
+    , ReadyTime(0)
+    , GPUDuration(0)
+    , GPUVideoDuration(0)
+    , ScreenTime(0)
+    , InputTime(0)
+    , MouseClickTime(0)
+    , SwapChainAddress(0)
+    , SyncInterval(-1)
+    , PresentFlags(0)
+
+    , CompositionSurfaceLuid(0)
+    , Win32KPresentCount(0)
+    , Win32KBindId(0)
+    , DxgkPresentHistoryToken(0)
+    , DxgkPresentHistoryTokenData(0)
+    , DxgkContext(0)
+    , Hwnd(0)
+    , QueueSubmitSequence(0)
+    , RingIndex(UINT32_MAX)
+
+    , DestWidth(0)
+    , DestHeight(0)
+    , DriverThreadId(0)
+
+    , FrameId(fid)
+
+    , Runtime(Runtime::Other)
+    , PresentMode(PresentMode::Unknown)
+    , FinalState(PresentResult::Unknown)
+    , InputType(InputDeviceType::None)
+    , FrameType(FrameType::NotSet)
+
+    , SupportsTearing(false)
+    , WaitForFlipEvent(false)
+    , WaitForMPOFlipEvent(false)
+    , SeenDxgkPresent(false)
+    , SeenWin32KEvents(false)
+    , SeenInFrameEvent(false)
+    , GpuFrameCompleted(false)
+    , IsCompleted(false)
+    , IsLost(false)
+    , PresentFailed(false)
+    , PresentInDwmWaitingStruct(false)
+
+    , WaitingForPresentStop(false)
+    , WaitingForFlipFrameType(false)
+{
+}
+
 PMTraceConsumer::PMTraceConsumer()
     : mTrackedPresents(PRESENTEVENT_CIRCULAR_BUFFER_SIZE)
     , mCompletedPresents(PRESENTEVENT_CIRCULAR_BUFFER_SIZE)
