@@ -118,8 +118,8 @@ namespace pmon::mid
 
 		void CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency);
 		void CalculateGpuCpuMetric(std::unordered_map<PM_METRIC, MetricInfo>& metricInfo, const PM_QUERY_ELEMENT& element, uint8_t* pBlob);
-		double CalculateStatistic(std::vector<double>& inData, PM_STAT stat) const;
-		double CalculatePercentile(std::vector<double>& inData, double percentile) const;
+		double CalculateStatistic(std::vector<double>& inData, PM_STAT stat, bool invert = false) const;
+		double CalculatePercentile(std::vector<double>& inData, double percentile, bool invert) const;
 		bool GetGpuMetricData(size_t telemetry_item_bit, PresentMonPowerTelemetryInfo& power_telemetry_info, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo);
 		bool GetCpuMetricData(size_t telemetryBit, CpuTelemetryInfo& cpuTelemetry, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo);
 		void GetStaticCpuMetrics();

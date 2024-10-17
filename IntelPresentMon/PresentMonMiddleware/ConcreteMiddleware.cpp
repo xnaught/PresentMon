@@ -1178,32 +1178,24 @@ static void ReportMetrics(
             break;
         case PM_METRIC_PRESENTED_FPS:
         {
-            std::vector<double> presented_fps(swapChain.mCPUBusy.size());
+            std::vector<double> presented_fts(swapChain.mCPUBusy.size());
             for (size_t i = 0; i < swapChain.mCPUBusy.size(); ++i) {
-                presented_fps[i] = (swapChain.mCPUBusy[i] + swapChain.mCPUWait[i]) == 0. ? 0. :
-                    1000.0 / (swapChain.mCPUBusy[i] + swapChain.mCPUWait[i]);
+                presented_fts[i] = swapChain.mCPUBusy[i] + swapChain.mCPUWait[i];
             }
-            output = CalculateStatistic(presented_fps, element.stat);
+            output = CalculateStatistic(presented_fts, element.stat, true);
+            output = output == 0 ? 0 : 1000.0 / output;
             break;
         }
         case PM_METRIC_APPLICATION_FPS:
         {
-            std::vector<double> application_fps(swapChain.mAppDisplayedTime.size());
-            for (size_t i = 0; i < swapChain.mAppDisplayedTime.size(); ++i) {
-                application_fps[i] = swapChain.mAppDisplayedTime[i] == 0. ? 0. : 
-                    1000.0 / swapChain.mAppDisplayedTime[i];
-            }
-            output = CalculateStatistic(application_fps, element.stat);
+            output = CalculateStatistic(swapChain.mAppDisplayedTime, element.stat, true);
+            output = output == 0 ? 0 : 1000.0 / output;
             break;
         }
         case PM_METRIC_DISPLAYED_FPS:
         {
-            std::vector<double> displayed_fps(swapChain.mDisplayedTime.size());
-            for (size_t i = 0; i < swapChain.mDisplayedTime.size(); ++i) {
-                displayed_fps[i] = swapChain.mDisplayedTime[i] == 0. ? 0. : 
-                    1000.0 / swapChain.mDisplayedTime[i];
-            }
-            output = CalculateStatistic(displayed_fps, element.stat);
+            output = CalculateStatistic(swapChain.mDisplayedTime, element.stat, true);
+            output = output == 0 ? 0 : 1000.0 / output;
             break;
         }
         case PM_METRIC_DROPPED_FRAMES:
@@ -1250,8 +1242,8 @@ static void ReportMetrics(
         }
         return;
     }
-
-    double ConcreteMiddleware::CalculateStatistic(std::vector<double>& inData, PM_STAT stat) const
+    
+    double ConcreteMiddleware::CalculateStatistic(std::vector<double>& inData, PM_STAT stat, bool invert) const
     {
         if (inData.size() == 1) {
             return inData[0];
@@ -1269,12 +1261,12 @@ static void ReportMetrics(
                 }
                 return sum / inData.size();
             }
-            case PM_STAT_PERCENTILE_99: return CalculatePercentile(inData, 0.99);
-            case PM_STAT_PERCENTILE_95: return CalculatePercentile(inData, 0.95);
-            case PM_STAT_PERCENTILE_90: return CalculatePercentile(inData, 0.90);
-            case PM_STAT_PERCENTILE_01: return CalculatePercentile(inData, 0.01);
-            case PM_STAT_PERCENTILE_05: return CalculatePercentile(inData, 0.05);
-            case PM_STAT_PERCENTILE_10: return CalculatePercentile(inData, 0.10);
+            case PM_STAT_PERCENTILE_99: return CalculatePercentile(inData, 0.99, invert);
+            case PM_STAT_PERCENTILE_95: return CalculatePercentile(inData, 0.95, invert);
+            case PM_STAT_PERCENTILE_90: return CalculatePercentile(inData, 0.90, invert);
+            case PM_STAT_PERCENTILE_01: return CalculatePercentile(inData, 0.01, invert);
+            case PM_STAT_PERCENTILE_05: return CalculatePercentile(inData, 0.05, invert);
+            case PM_STAT_PERCENTILE_10: return CalculatePercentile(inData, 0.10, invert);
             case PM_STAT_MAX:
             {
                 double max = inData[0];
@@ -1325,8 +1317,11 @@ static void ReportMetrics(
     }
 
     // Calculate percentile using linear interpolation between the closet ranks
-    double ConcreteMiddleware::CalculatePercentile(std::vector<double>& inData, double percentile) const
+    double ConcreteMiddleware::CalculatePercentile(std::vector<double>& inData, double percentile, bool invert) const
     {
+        if (invert) {
+            percentile = 1.0 - percentile;
+        }
         percentile = std::min(std::max(percentile, 0.), 1.);
 
         double integral_part_as_double;
