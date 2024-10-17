@@ -87,7 +87,9 @@ namespace pwr::intel
 
         PresentMonPowerTelemetryInfo pm_gpu_power_telemetry_info{ .qpc = (uint64_t)qpc.QuadPart };
 
-        if (previousSample) {
+        
+
+        if (previousSampleVariant.index()) {
 
             if (const auto result = GetGPUPowerTelemetryData(
                 currentSample, pm_gpu_power_telemetry_info); result != CTL_RESULT_SUCCESS)
@@ -236,15 +238,17 @@ namespace pwr::intel
 
     // TODO: stop using CTL stuff for non-ctl logic
     // TODO: better functional programming
-    ctl_result_t IntelPowerTelemetryAdapter::GetTimeDelta(const ctl_power_telemetry2_t& currentSample)
+    template<class T>
+    ctl_result_t IntelPowerTelemetryAdapter::GetTimeDelta(const T& currentSample)
     {
-        if (!previousSample) {
+        if (!previousSampleVariant.index()) {
             // We do not have a previous power telemetry item to calculate time
             // delta against.
             time_delta_ = 0.f;
         }
         else {
-            if (currentSample.timeStamp.type == CTL_DATA_TYPE_DOUBLE) {
+            auto previousSample = std::get_if<T>(&previousSampleVariant);
+            if (previousSample && currentSample.timeStamp.type == CTL_DATA_TYPE_DOUBLE) {
                 time_delta_ = currentSample.timeStamp.value.datadouble -
                     previousSample->timeStamp.value.datadouble;
             }
@@ -256,12 +260,14 @@ namespace pwr::intel
         return CTL_RESULT_SUCCESS;
     }
 
+    template<class T>
     ctl_result_t IntelPowerTelemetryAdapter::GetGPUPowerTelemetryData(
-        const ctl_power_telemetry2_t& currentSample,
+        const T& currentSample,
         PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info)
     {
         ctl_result_t result;
 
+        auto previousSample = std::get_if<T>(&previousSampleVariant);
         if (!previousSample) {
             return CTL_RESULT_ERROR_INVALID_ARGUMENT;
         }
@@ -355,12 +361,14 @@ namespace pwr::intel
         return result;
     }
 
+    template<class T>
     ctl_result_t IntelPowerTelemetryAdapter::GetVramPowerTelemetryData(
-        const ctl_power_telemetry2_t& currentSample,
+        const T& currentSample,
         PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info)
     {
         ctl_result_t result;
 
+        auto previousSample = std::get_if<T>(&previousSampleVariant);
         if (!previousSample) {
             return CTL_RESULT_ERROR_INVALID_ARGUMENT;
         }
@@ -441,8 +449,9 @@ namespace pwr::intel
         return result;
     }
 
+    template<class T>
     ctl_result_t IntelPowerTelemetryAdapter::GetFanPowerTelemetryData(
-        const ctl_power_telemetry2_t& currentSample,
+        const T& currentSample,
         PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info)
     {
         ctl_result_t result = CTL_RESULT_SUCCESS;
@@ -466,12 +475,14 @@ namespace pwr::intel
         return result;
     }
 
+    template<class T>
     ctl_result_t IntelPowerTelemetryAdapter::GetPsuPowerTelemetryData(
-        const ctl_power_telemetry2_t& currentSample,
+        const T& currentSample,
         PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info)
     {
         ctl_result_t result = CTL_RESULT_SUCCESS;
 
+        auto previousSample = std::get_if<T>(&previousSampleVariant);
         if (!previousSample) {
             return CTL_RESULT_ERROR_INVALID_ARGUMENT;
         }
@@ -606,12 +617,13 @@ namespace pwr::intel
         return CTL_RESULT_SUCCESS;
     }
 
+    template<class T>
     ctl_result_t IntelPowerTelemetryAdapter::SaveTelemetry(
-        const ctl_power_telemetry2_t& currentSample,
+        const T& currentSample,
         const ctl_mem_bandwidth_t& currentMemBandwidthSample)
     {
         if (currentSample.timeStamp.type == CTL_DATA_TYPE_DOUBLE) {
-            previousSample = currentSample;
+            previousSampleVariant = currentSample;
         }
         else {
             return CTL_RESULT_ERROR_INVALID_ARGUMENT;
