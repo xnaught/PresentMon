@@ -18,8 +18,7 @@ namespace pwr::intel
         };
 
         if (auto result = ctlGetDeviceProperties(deviceHandle, &properties);
-            result != CTL_RESULT_SUCCESS)
-        {
+            result != CTL_RESULT_SUCCESS) {
             throw std::runtime_error{ "Failure to get device properties" };
         }
 
@@ -38,15 +37,45 @@ namespace pwr::intel
         QueryPerformanceCounter(&qpc);
         bool success = true;
 
-        ctl_power_telemetry2_t currentSample{
-            .Size = sizeof(ctl_power_telemetry2_t),
-            .Version = 1
-        };
-        if (const auto result = ctlPowerTelemetryGet(deviceHandle,
-            (ctl_power_telemetry_t*)&currentSample); result != CTL_RESULT_SUCCESS)
-        {
-            success = false;
-            IGCL_ERR(result);
+        decltype(previousSampleVariant) currentSampleVariant;
+
+        if (useV1PowerTelemetry) {
+            currentSampleVariant = ctl_power_telemetry2_t{
+                .Size = sizeof(ctl_power_telemetry2_t),
+                .Version = 1
+            };
+            auto currentSample = std::get_if<ctl_power_telemetry2_t>(&currentSampleVariant);
+            // sanity check; should never fail
+            if (!currentSample) {
+                success = false;
+                IGCL_ERR(CTL_RESULT_ERROR_INVALID_ARGUMENT);
+            }
+            if (const auto result = ctlPowerTelemetryGet(deviceHandle,
+                (ctl_power_telemetry_t*)currentSample); result != CTL_RESULT_SUCCESS) {
+                // treating any error as unavailability of the API version since some driver version do not correctly report
+                // version error
+                useV1PowerTelemetry = false;
+                useNewBandwidthTelemetry = false;
+                success = false;
+                IGCL_ERR(result);
+            }
+        }
+        if (!useV1PowerTelemetry) {
+            currentSampleVariant = ctl_power_telemetry_t{
+                .Size = sizeof(ctl_power_telemetry_t),
+                .Version = 0
+            };
+            auto currentSample = std::get_if<ctl_power_telemetry_t>(&currentSampleVariant);
+            // sanity check; should never fail
+            if (!currentSample) {
+                success = false;
+                IGCL_ERR(CTL_RESULT_ERROR_INVALID_ARGUMENT);
+            }
+            if (const auto result = ctlPowerTelemetryGet(deviceHandle, currentSample);
+                result != CTL_RESULT_SUCCESS) {
+                success = false;
+                IGCL_ERR(result);
+            }
         }
 
         // Query memory state and bandwidth if supported
@@ -69,81 +98,38 @@ namespace pwr::intel
               IGCL_ERR(result);
             }
         }
-        
-        if (const auto result = GetTimeDelta(currentSample);
-            result != CTL_RESULT_SUCCESS)
-        {
-            success = false;
-            IGCL_ERR(result);
-        }
 
         double gpu_sustained_power_limit_mw = 0.;
         if (const auto result = ctlOverclockPowerLimitGet(
-                deviceHandle, &gpu_sustained_power_limit_mw);
+            deviceHandle, &gpu_sustained_power_limit_mw);
             result != CTL_RESULT_SUCCESS) {
             success = false;
             IGCL_ERR(result);
         }
 
-        PresentMonPowerTelemetryInfo pm_gpu_power_telemetry_info{ .qpc = (uint64_t)qpc.QuadPart };
-
-        
-
-        if (previousSampleVariant.index()) {
-
-            if (const auto result = GetGPUPowerTelemetryData(
-                currentSample, pm_gpu_power_telemetry_info); result != CTL_RESULT_SUCCESS)
-            {
+        if (useV1PowerTelemetry) {
+            auto currentSample = std::get_if<ctl_power_telemetry2_t>(&currentSampleVariant);
+            // sanity check; should never fail
+            if (!currentSample) {
                 success = false;
-                IGCL_ERR(result);
+                IGCL_ERR(CTL_RESULT_ERROR_INVALID_ARGUMENT);
             }
-
-            if (const auto result = GetVramPowerTelemetryData(
-                currentSample, pm_gpu_power_telemetry_info); result != CTL_RESULT_SUCCESS)
-            {
-                success = false;
-                IGCL_ERR(result);
+            else {
+                success = GatherSampleData(*currentSample, memory_state,
+                    memory_bandwidth, gpu_sustained_power_limit_mw, (uint64_t)qpc.QuadPart) && success;
             }
-
-            if (const auto result = GetFanPowerTelemetryData(currentSample,
-                pm_gpu_power_telemetry_info); result != CTL_RESULT_SUCCESS)
-            {
-                success = false;
-                IGCL_ERR(result);
-            }
-
-            if (const auto result = GetPsuPowerTelemetryData(
-                currentSample, pm_gpu_power_telemetry_info); result != CTL_RESULT_SUCCESS)
-            {
-                success = false;
-                IGCL_ERR(result);
-            }
-
-            // Get memory state and bandwidth data
-            if (memoryModules.size() > 0) {
-                GetMemStateTelemetryData(memory_state,
-                                         pm_gpu_power_telemetry_info);
-                GetMemBandwidthData(memory_bandwidth,
-                                    pm_gpu_power_telemetry_info);
-            }
-
-            // Save and convert the gpu sustained power limit
-            pm_gpu_power_telemetry_info.gpu_sustained_power_limit_w =
-                gpu_sustained_power_limit_mw / 1000.;
-            SetTelemetryCapBit(GpuTelemetryCapBits::gpu_sustained_power_limit);
-
-            // Save off the calculated PresentMon power telemetry values. These are
-            // saved off for clients to extrace out timing information based on QPC
-            SavePmPowerTelemetryData(pm_gpu_power_telemetry_info);
         }
-
-        // Save off the raw control library data for calculating time delta
-        // and usage data.
-        if (const auto result = SaveTelemetry(currentSample, memory_bandwidth);
-            result != CTL_RESULT_SUCCESS)
-        {
-            success = false;
-            IGCL_ERR(result);
+        else {
+            auto currentSample = std::get_if<ctl_power_telemetry_t>(&currentSampleVariant);
+            // sanity check; should never fail
+            if (!currentSample) {
+                success = false;
+                IGCL_ERR(CTL_RESULT_ERROR_INVALID_ARGUMENT);
+            }
+            else {
+                success = GatherSampleData(*currentSample, memory_state,
+                    memory_bandwidth, gpu_sustained_power_limit_mw, (uint64_t)qpc.QuadPart) && success;
+            }
         }
 
         return success;
@@ -234,6 +220,76 @@ namespace pwr::intel
         }
 
         return CTL_RESULT_SUCCESS;
+    }
+
+    template<class T>
+    bool IntelPowerTelemetryAdapter::GatherSampleData(T& currentSample,
+        ctl_mem_state_t& memory_state,
+        ctl_mem_bandwidth_t& memory_bandwidth,
+        double gpu_sustained_power_limit_mw,
+        uint64_t qpc)
+    {
+        bool success = true;
+
+        if (const auto result = GetTimeDelta(currentSample);
+            result != CTL_RESULT_SUCCESS)
+        {
+            success = false;
+            IGCL_ERR(result);
+        }
+
+        PresentMonPowerTelemetryInfo pm_gpu_power_telemetry_info{ .qpc = qpc };
+
+        if (previousSampleVariant.index()) {
+
+            if (const auto result = GetGPUPowerTelemetryData(
+                currentSample, pm_gpu_power_telemetry_info); result != CTL_RESULT_SUCCESS)
+            {
+                success = false;
+                IGCL_ERR(result);
+            }
+
+            if (const auto result = GetVramPowerTelemetryData(
+                currentSample, pm_gpu_power_telemetry_info); result != CTL_RESULT_SUCCESS)
+            {
+                success = false;
+                IGCL_ERR(result);
+            }
+
+            if (const auto result = GetFanPowerTelemetryData(currentSample,
+                pm_gpu_power_telemetry_info); result != CTL_RESULT_SUCCESS)
+            {
+                success = false;
+                IGCL_ERR(result);
+            }
+
+            if (const auto result = GetPsuPowerTelemetryData(
+                currentSample, pm_gpu_power_telemetry_info); result != CTL_RESULT_SUCCESS)
+            {
+                success = false;
+                IGCL_ERR(result);
+            }
+
+            // Save and convert the gpu sustained power limit
+            pm_gpu_power_telemetry_info.gpu_sustained_power_limit_w =
+                gpu_sustained_power_limit_mw / 1000.;
+            SetTelemetryCapBit(GpuTelemetryCapBits::gpu_sustained_power_limit);
+
+            // Save off the calculated PresentMon power telemetry values. These are
+            // saved off for clients to extrace out timing information based on QPC
+            SavePmPowerTelemetryData(pm_gpu_power_telemetry_info);
+        }
+
+        // Save off the raw control library data for calculating time delta
+        // and usage data.
+        if (const auto result = SaveTelemetry(currentSample, memory_bandwidth);
+            result != CTL_RESULT_SUCCESS)
+        {
+            success = false;
+            IGCL_ERR(result);
+        }
+
+        return success;
     }
 
     // TODO: stop using CTL stuff for non-ctl logic
@@ -404,20 +460,42 @@ namespace pwr::intel
             return result;
         }
 
-        result = GetInstantaneousPowerTelemetryItem(
-            currentSample.vramReadBandwidth,
-            pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
-            GpuTelemetryCapBits::gpu_mem_read_bandwidth);
-        if (result != CTL_RESULT_SUCCESS) {
-          return result;
+        // bandwidth telemetry has 2 possible paths for aquisition
+        if constexpr (std::same_as<T, ctl_power_telemetry2_t>) {
+            if (useNewBandwidthTelemetry) {
+                result = GetInstantaneousPowerTelemetryItem(
+                    currentSample.vramReadBandwidth,
+                    pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
+                    GpuTelemetryCapBits::gpu_mem_read_bandwidth);
+                if (result != CTL_RESULT_SUCCESS) {
+                    useNewBandwidthTelemetry = false;
+                }
+                result = GetInstantaneousPowerTelemetryItem(
+                    currentSample.vramWriteBandwidth,
+                    pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
+                    GpuTelemetryCapBits::gpu_mem_write_bandwidth);
+                if (result != CTL_RESULT_SUCCESS) {
+                    useNewBandwidthTelemetry = false;
+                }
+            }
         }
-
-        result = GetInstantaneousPowerTelemetryItem(
-            currentSample.vramWriteBandwidth,
-            pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
-            GpuTelemetryCapBits::gpu_mem_write_bandwidth);
-        if (result != CTL_RESULT_SUCCESS) {
-          return result;
+        if (!useNewBandwidthTelemetry) {
+            result = GetPowerTelemetryItemUsage(
+                currentSample.vramReadBandwidthCounter,
+                previousSample->vramReadBandwidthCounter,
+                pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
+                GpuTelemetryCapBits::gpu_mem_read_bandwidth);
+            if (result != CTL_RESULT_SUCCESS) {
+                return result;
+            }
+            result = GetPowerTelemetryItemUsage(
+                currentSample.vramWriteBandwidthCounter,
+                previousSample->vramWriteBandwidthCounter,
+                pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
+                GpuTelemetryCapBits::gpu_mem_write_bandwidth);
+            if (result != CTL_RESULT_SUCCESS) {
+                return result;
+            }
         }
 
         result = GetPowerTelemetryItemUsage(currentSample.vramEnergyCounter,

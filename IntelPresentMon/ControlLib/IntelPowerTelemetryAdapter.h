@@ -29,8 +29,15 @@ namespace pwr::intel
 		class NonGraphicsDeviceException : public std::exception {};
 
 	private:
+		// types
+		using SampleVariantType = std::variant<std::monostate, ctl_power_telemetry_t, ctl_power_telemetry2_t>;
 		// functions
-
+		template<class T>
+		bool GatherSampleData(T& currentSample,
+			ctl_mem_state_t& memory_state,
+			ctl_mem_bandwidth_t& memory_bandwidth,
+			double gpu_sustained_power_limit_mw,
+			uint64_t qpc);
 
 		ctl_result_t EnumerateMemoryModules();
 
@@ -92,7 +99,9 @@ namespace pwr::intel
 		std::vector<ctl_mem_handle_t> memoryModules;
 		mutable std::mutex historyMutex;
 		TelemetryHistory<PresentMonPowerTelemetryInfo> history{ PowerTelemetryAdapter::defaultHistorySize };
-		std::variant<std::monostate, ctl_power_telemetry_t, ctl_power_telemetry2_t> previousSampleVariant;
+		SampleVariantType previousSampleVariant;
+		bool useV1PowerTelemetry = true;
+		bool useNewBandwidthTelemetry = true;
 		double time_delta_ = 0.f;
 		// this cache is only used with old V0 api bandwidth counters
 		uint64_t gpu_mem_max_bw_cache_value_bps_ = 0;

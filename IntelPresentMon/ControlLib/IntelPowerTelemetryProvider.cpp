@@ -19,7 +19,9 @@ namespace pwr::intel
 
         // initialize the igcl api
         if (const auto result = ctlInit(&ctl_init_args, &apiHandle); result != CTL_RESULT_SUCCESS) {
-            IGCL_ERR(result);
+            if (result != CTL_RESULT_ERROR_NOT_INITIALIZED) {
+                IGCL_ERR(result);
+            }
             throw Except<TelemetrySubsystemAbsent>("Unable to initialize Intel Graphics Control Library");
         }
 
