@@ -617,8 +617,6 @@ namespace pwr::intel
             return CTL_RESULT_ERROR_INVALID_ARGUMENT;
         }
 
-        previousMemBwSample = currentMemBandwidthSample;
-
         return CTL_RESULT_SUCCESS;
     }
 

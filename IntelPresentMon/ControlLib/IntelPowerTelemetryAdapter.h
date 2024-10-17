@@ -84,7 +84,6 @@ namespace pwr::intel
 		mutable std::mutex historyMutex;
 		TelemetryHistory<PresentMonPowerTelemetryInfo> history{ PowerTelemetryAdapter::defaultHistorySize };
 		std::optional<ctl_power_telemetry2_t> previousSample;
-		std::optional<ctl_mem_bandwidth_t> previousMemBwSample;
 		double time_delta_ = 0.f;
 		uint64_t gpu_mem_max_bw_cache_value_bps_ = 0;
 	};
