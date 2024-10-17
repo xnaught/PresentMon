@@ -337,7 +337,7 @@ public:
     bool Open(std::wstring const& path, uint32_t processId);
     void Close();
     bool VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-        PM_QUERY_ELEMENT(&queryElements)[25], pmapi::BlobContainer& blobs);
+        PM_QUERY_ELEMENT(&queryElements)[24], pmapi::BlobContainer& blobs);
     bool ResetCsv();
 
 private:
@@ -366,7 +366,7 @@ CsvParser::CsvParser()
 {}
 
 bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-    PM_QUERY_ELEMENT(&queryElements)[25], pmapi::BlobContainer& blobs)
+    PM_QUERY_ELEMENT(&queryElements)[24], pmapi::BlobContainer& blobs)
 {
 
     for (auto pBlob : blobs) {
@@ -396,7 +396,7 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
         const auto xellSleep = *reinterpret_cast<const double*>(&pBlob[queryElements[21].dataOffset]);
         const auto xellDisplayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[22].dataOffset]);
         const auto xellGpuStartLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[23].dataOffset]);
-        const auto xellGpuEndLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[24].dataOffset]);
+        //const auto xellGpuEndLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[24].dataOffset]);
 
         
         // Read rows until we find one with the process we are interested in
@@ -608,21 +608,21 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                     }
                 }
                 break;
-            case Header_XeLLGpuEndToDisplayLatency:
-                if (v2MetricRow_.xellGpuEndToDisplayLatency.has_value()) {
-                    columnsMatch = Validate(v2MetricRow_.xellGpuEndToDisplayLatency.value(), xellGpuEndLatency);
-                }
-                else
-                {
-                    if (std::isnan(xellGpuEndLatency)) {
-                        columnsMatch = true;
-                    }
-                    else
-                    {
-                        columnsMatch = false;
-                    }
-                }
-                break;
+            //case Header_XeLLGpuEndToDisplayLatency:
+            //    if (v2MetricRow_.xellGpuEndToDisplayLatency.has_value()) {
+            //        columnsMatch = Validate(v2MetricRow_.xellGpuEndToDisplayLatency.value(), xellGpuEndLatency);
+            //    }
+            //    else
+            //    {
+            //        if (std::isnan(xellGpuEndLatency)) {
+            //            columnsMatch = true;
+            //        }
+            //        else
+            //        {
+            //            columnsMatch = false;
+            //        }
+            //    }
+            //    break;
             default:
                 columnsMatch = true;
                 break;
@@ -740,8 +740,7 @@ bool CsvParser::Open(std::wstring const& path, uint32_t processId) {
                                                Header_RenderLatency,
                                                Header_XeLLSleep,
                                                Header_XeLLFrameStartToDisplayLatency,
-                                               Header_XeLLFrameStartToGPUStartLatency,
-                                               Header_XeLLGpuEndToDisplayLatency });
+                                               Header_XeLLFrameStartToGPUStartLatency });
 
     if (!columnsOK) {
         Assert::Fail(L"Missing required columns");

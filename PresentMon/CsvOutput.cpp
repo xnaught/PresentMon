@@ -312,8 +312,8 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     if (args.mTrackAppTiming) {
         fwprintf(fp, L",XeLLSleep"
                      L",XeLLFrameStartToDisplayLatency"
-                     L",XeLLFrameStartToGPUStartLatency"
-                     L",XeLLGpuEndToDisplayLatency");
+                     L",XeLLFrameStartToGPUStartLatency");
+                     //L",XeLLGpuEndToDisplayLatency");
     }
     if (args.mWriteDisplayTime) {
         fwprintf(fp, L",DisplayTimeAbs");
@@ -437,12 +437,12 @@ void WriteCsvRow<FrameMetrics>(
         else {
             fwprintf(fp, L",%.4lf", metrics.mXellGpuLatency);
         }
-        if (metrics.mXellRenderEndToDisplayLatency == 0.0) {
-            fwprintf(fp, L",NA");
-        }
-        else {
-            fwprintf(fp, L",%.4lf", metrics.mXellRenderEndToDisplayLatency);
-        }
+        //if (metrics.mXellRenderEndToDisplayLatency == 0.0) {
+        //    fwprintf(fp, L",NA");
+        //}
+        //else {
+        //   fwprintf(fp, L",%.4lf", metrics.mXellRenderEndToDisplayLatency);
+        //}
     }
 
     if (args.mWriteDisplayTime) {

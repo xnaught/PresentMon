@@ -297,7 +297,7 @@ namespace pmon::mid
             case PM_METRIC_XELL_SLEEP:
             case PM_METRIC_XELL_DISPLAY_LATENCY:
             case PM_METRIC_XELL_GPU_LATENCY:
-            case PM_METRIC_XELL_RENDERSCREEN_LATENCY:
+            //case PM_METRIC_XELL_RENDERSCREEN_LATENCY:
                 pQuery->accumFpsData = true;
                 break;
             case PM_METRIC_GPU_POWER:
@@ -1224,9 +1224,9 @@ static void ReportMetrics(
         case PM_METRIC_XELL_GPU_LATENCY:
             output = CalculateStatistic(swapChain.mXellGpuLatency, element.stat);
             break;
-        case PM_METRIC_XELL_RENDERSCREEN_LATENCY:
-            output = CalculateStatistic(swapChain.mXellRenderEndToDisplayLatency, element.stat);
-            break;
+        //case PM_METRIC_XELL_RENDERSCREEN_LATENCY:
+        //    output = CalculateStatistic(swapChain.mXellRenderEndToDisplayLatency, element.stat);
+        //    break;
         default:
             output = 0.;
             break;
@@ -1729,7 +1729,7 @@ static void ReportMetrics(
                 case PM_METRIC_XELL_SLEEP:
                 case PM_METRIC_XELL_DISPLAY_LATENCY:
                 case PM_METRIC_XELL_GPU_LATENCY:
-                case PM_METRIC_XELL_RENDERSCREEN_LATENCY:
+                //case PM_METRIC_XELL_RENDERSCREEN_LATENCY:
                     CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
                     break;
                 case PM_METRIC_CPU_VENDOR:

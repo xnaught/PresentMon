@@ -85,4 +85,4 @@ PM_METRIC_CPU_CORE_UTILITY,1,CPU Core Utility,Amount of CPU processing utility b
 PM_METRIC_XELL_SLEEP,,XeLL Sleep,How long the CPU spent sleeping on this frame before starting work. Only available through the XeLL App Sleep Events.
 PM_METRIC_XELL_DISPLAY_LATENCY,,XeLL Frame Start To Display Latency,How long it took from the start of this frame until the frame was displayed on the screen using XeLL.
 PM_METRIC_XELL_GPU_LATENCY,,XeLL Frame Start To GPU Start Latency,How long it took from the start of this frame until the GPU started working on it using XeLL.
-PM_METRIC_XELL_RENDERSCREEN_LATENCY,,XeLL GPU End To Display Latency,How long it took from the end of GPU rendering until the frame was displayed on the screen using XeLL.
+// PM_METRIC_XELL_RENDERSCREEN_LATENCY,,XeLL GPU End To Display Latency,How long it took from the end of GPU rendering until the frame was displayed on the screen using XeLL.

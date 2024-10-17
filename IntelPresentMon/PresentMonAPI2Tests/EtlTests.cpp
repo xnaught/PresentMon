@@ -165,7 +165,7 @@ namespace EtlTests
 			{ PM_METRIC_XELL_SLEEP, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_XELL_DISPLAY_LATENCY, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_XELL_GPU_LATENCY, PM_STAT_NONE, 0, 0 },
-			{ PM_METRIC_XELL_RENDERSCREEN_LATENCY, PM_STAT_NONE, 0, 0 },
+			//{ PM_METRIC_XELL_RENDERSCREEN_LATENCY, PM_STAT_NONE, 0, 0 },
 		};
 
 		auto frameQuery = pSession->RegisterFrameQuery(queryElements);
