@@ -2005,8 +2005,6 @@ void PMTraceConsumer::AddPresentToCompletedList(std::shared_ptr<PresentEvent> co
             deferredPresent->IsLost = true;
             deferredPresent->WaitingForPresentStop = false;
             deferredPresent->WaitingForFlipFrameType = false;
-            // UpdateReadyCount also locks the mPresentEventMutex so unlock here
-            lock.unlock();
             UpdateReadyCount(deferredPresent, false);
         }
     }

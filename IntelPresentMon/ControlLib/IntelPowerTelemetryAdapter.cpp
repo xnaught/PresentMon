@@ -57,7 +57,7 @@ namespace pwr::intel
                 useV1PowerTelemetry = false;
                 useNewBandwidthTelemetry = false;
                 success = false;
-                IGCL_ERR(result);
+                pmlog_warn("Failed to access ctlPowerTelemetryGet.v1, falling back to .v0");
             }
         }
         if (!useV1PowerTelemetry) {
@@ -85,14 +85,12 @@ namespace pwr::intel
             .Version = 1,
         };
         if (memoryModules.size() > 0) {
-            if (const auto result =
-                    ctlMemoryGetState(memoryModules[0], &memory_state);
+            if (const auto result = ctlMemoryGetState(memoryModules[0], &memory_state);
                 result != CTL_RESULT_SUCCESS) {
               success = false;
               IGCL_ERR(result);
             }
-            if (const auto result =
-                    ctlMemoryGetBandwidth(memoryModules[0], &memory_bandwidth);
+            if (const auto result = ctlMemoryGetBandwidth(memoryModules[0], &memory_bandwidth);
                 result != CTL_RESULT_SUCCESS) {
               success = false;
               IGCL_ERR(result);
@@ -467,15 +465,21 @@ namespace pwr::intel
                     currentSample.vramReadBandwidth,
                     pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
                     GpuTelemetryCapBits::gpu_mem_read_bandwidth);
-                if (result != CTL_RESULT_SUCCESS) {
+                if (result != CTL_RESULT_SUCCESS ||
+                    !(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_read_bandwidth))) {
                     useNewBandwidthTelemetry = false;
+                    pmlog_dbg("V1 vram bandwidth not available, falling back to V0 counters");
                 }
+            }
+            if (useNewBandwidthTelemetry) {
                 result = GetInstantaneousPowerTelemetryItem(
                     currentSample.vramWriteBandwidth,
                     pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
                     GpuTelemetryCapBits::gpu_mem_write_bandwidth);
-                if (result != CTL_RESULT_SUCCESS) {
+                if (result != CTL_RESULT_SUCCESS ||
+                    !(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_write_bandwidth))) {
                     useNewBandwidthTelemetry = false;
+                    pmlog_dbg("V1 vram bandwidth not available, falling back to V0 counters");
                 }
             }
         }
@@ -686,6 +690,16 @@ namespace pwr::intel
               pm_telemetry_value =
                   static_cast<double>(data_delta) / time_delta_;
               SetTelemetryCapBit(telemetry_cap_bit);
+              // stopgap measure for bad vram bandwidth telemetry coming out of V0 api
+              if (telemetry_cap_bit == GpuTelemetryCapBits::gpu_mem_read_bandwidth && !useNewBandwidthTelemetry) {
+                  if ((current_telemetry_item.value.datau64 < previous_telemetry_item.value.datau64) ||
+                      ((current_telemetry_item.value.datau64 - previous_telemetry_item.value.datau64) > gpu_mem_max_bw_cache_value_bps_)) {
+                      pm_telemetry_value = gpu_mem_read_bw_cache_value_bps_;
+                  }
+                  else {
+                      gpu_mem_read_bw_cache_value_bps_ = pm_telemetry_value;
+                  }
+              }
             }
             else {
                 // Expecting a double return type here

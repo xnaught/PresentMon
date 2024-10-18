@@ -103,7 +103,9 @@ namespace pwr::intel
 		bool useV1PowerTelemetry = true;
 		bool useNewBandwidthTelemetry = true;
 		double time_delta_ = 0.f;
-		// this cache is only used with old V0 api bandwidth counters
+		// in V0 api readbandwidth occasionally returns what appears to be an invalid counter value
+		// this is a stopgap to cover for cases where IGCL is reporting bad data in V0 bandwidth telemetry
+		double gpu_mem_read_bw_cache_value_bps_ = 0.;
 		uint64_t gpu_mem_max_bw_cache_value_bps_ = 0;
 	};
 }
