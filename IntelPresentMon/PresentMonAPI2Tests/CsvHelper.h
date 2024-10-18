@@ -30,7 +30,6 @@ enum Header {
     Header_CPUStartQPCTime,
     Header_CPUStartDateTime,
     Header_FrameTime,
-    Header_CPUSleep,
     Header_CPUBusy,
     Header_CPUWait,
     Header_GPULatency,
@@ -44,6 +43,10 @@ enum Header {
     Header_ClickToPhotonLatency,
     Header_AllInputToPhotonLatency,
     Header_RenderLatency,
+    Header_XeLLSleep,
+    Header_XeLLFrameStartToDisplayLatency,
+    Header_XeLLFrameStartToGPUStartLatency,
+    Header_XeLLGpuEndToDisplayLatency,
 
     // --v1_metrics
     Header_Runtime,
@@ -93,8 +96,11 @@ struct v2Metrics {
     std::optional<double> animationError;
     std::optional<double> clickToPhotonLatency;
     std::optional<double> AllInputToPhotonLatency;
-    std::optional<double> cpuSleep;
     std::optional<double> renderLatency;
+    std::optional<double> xellSleep;
+    std::optional<double> xellFrameStartToDisplayLatency;
+    std::optional<double> xellFrameStartToGPUStartLatency;
+    std::optional<double> xellGpuEndToDisplayLatency;
 };
 
 constexpr char const* GetHeaderString(Header h)
@@ -114,7 +120,6 @@ constexpr char const* GetHeaderString(Header h)
     case Header_CPUStartQPCTime:            return "CPUStartQPCTime";
     case Header_CPUStartDateTime:           return "CPUStartDateTime";
     case Header_FrameTime:                  return "FrameTime";
-    case Header_CPUSleep:                   return "CPUSleep";
     case Header_CPUBusy:                    return "CPUBusy";
     case Header_CPUWait:                    return "CPUWait";
     case Header_GPULatency:                 return "GPULatency";
@@ -145,6 +150,11 @@ constexpr char const* GetHeaderString(Header h)
 
     case Header_WasBatched:                 return "WasBatched";
     case Header_DwmNotified:                return "DwmNotified";
+    case Header_XeLLSleep:                  return "XeLLSleep";
+    case Header_XeLLFrameStartToDisplayLatency:     return "XeLLFrameStartToDisplayLatency";
+    case Header_XeLLFrameStartToGPUStartLatency:    return "XeLLFrameStartToGPUStartLatency";
+    case Header_XeLLGpuEndToDisplayLatency:         return "XeLLGpuEndToDisplayLatency";
+
     default:                                return "<unknown>";
     }
 }
@@ -327,7 +337,7 @@ public:
     bool Open(std::wstring const& path, uint32_t processId);
     void Close();
     bool VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-        PM_QUERY_ELEMENT(&queryElements)[22], pmapi::BlobContainer& blobs);
+        PM_QUERY_ELEMENT(&queryElements)[24], pmapi::BlobContainer& blobs);
     bool ResetCsv();
 
 private:
@@ -356,7 +366,7 @@ CsvParser::CsvParser()
 {}
 
 bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-    PM_QUERY_ELEMENT(&queryElements)[22], pmapi::BlobContainer& blobs)
+    PM_QUERY_ELEMENT(&queryElements)[24], pmapi::BlobContainer& blobs)
 {
 
     for (auto pBlob : blobs) {
@@ -382,8 +392,12 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
         const auto animationError = *reinterpret_cast<const double*>(&pBlob[queryElements[17].dataOffset]);
         const auto allInputToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[18].dataOffset]);
         const auto clickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[19].dataOffset]);
-        const auto cpuSleep = *reinterpret_cast<const double*>(&pBlob[queryElements[20].dataOffset]);
-        const auto renderLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[21].dataOffset]);
+        const auto renderLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[20].dataOffset]);
+        const auto xellSleep = *reinterpret_cast<const double*>(&pBlob[queryElements[21].dataOffset]);
+        const auto xellDisplayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[22].dataOffset]);
+        const auto xellGpuStartLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[23].dataOffset]);
+        //const auto xellGpuEndLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[24].dataOffset]);
+
         
         // Read rows until we find one with the process we are interested in
         // or we are out of data.
@@ -439,21 +453,6 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                 break;
             case Header_FrameTime:
                 columnsMatch = Validate(v2MetricRow_.cpuFrameTime, cpuFrameTime);
-                break;
-            case Header_CPUSleep:
-                if (v2MetricRow_.cpuSleep.has_value()) {
-                    columnsMatch = Validate(v2MetricRow_.cpuSleep.value(), cpuSleep);
-                }
-                else
-                {
-                    if (std::isnan(cpuSleep)) {
-                        columnsMatch = true;
-                    }
-                    else
-                    {
-                        columnsMatch = false;
-                    }
-                }
                 break;
             case Header_CPUBusy:
                 columnsMatch = Validate(v2MetricRow_.cpuBusy, cpuBusy);
@@ -564,6 +563,66 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                     }
                 }
                 break;
+            case Header_XeLLSleep:
+                if (v2MetricRow_.xellSleep.has_value()) {
+                    columnsMatch = Validate(v2MetricRow_.xellSleep.value(), xellSleep);
+                }
+                else
+                {
+                    if (std::isnan(xellSleep)) {
+                        columnsMatch = true;
+                    }
+                    else
+                    {
+                        columnsMatch = false;
+                    }
+                }
+                break;
+            case Header_XeLLFrameStartToDisplayLatency:
+                if (v2MetricRow_.xellFrameStartToDisplayLatency.has_value()) {
+                    columnsMatch = Validate(v2MetricRow_.xellFrameStartToDisplayLatency.value(), xellDisplayLatency);
+                }
+                else
+                {
+                    if (std::isnan(xellDisplayLatency)) {
+                        columnsMatch = true;
+                    }
+                    else
+                    {
+                        columnsMatch = false;
+                    }
+                }
+                break;
+            case Header_XeLLFrameStartToGPUStartLatency:
+                if (v2MetricRow_.xellFrameStartToGPUStartLatency.has_value()) {
+                    columnsMatch = Validate(v2MetricRow_.xellFrameStartToGPUStartLatency.value(), xellGpuStartLatency);
+                }
+                else
+                {
+                    if (std::isnan(xellGpuStartLatency)) {
+                        columnsMatch = true;
+                    }
+                    else
+                    {
+                        columnsMatch = false;
+                    }
+                }
+                break;
+            //case Header_XeLLGpuEndToDisplayLatency:
+            //    if (v2MetricRow_.xellGpuEndToDisplayLatency.has_value()) {
+            //        columnsMatch = Validate(v2MetricRow_.xellGpuEndToDisplayLatency.value(), xellGpuEndLatency);
+            //    }
+            //    else
+            //    {
+            //        if (std::isnan(xellGpuEndLatency)) {
+            //            columnsMatch = true;
+            //        }
+            //        else
+            //        {
+            //            columnsMatch = false;
+            //        }
+            //    }
+            //    break;
             default:
                 columnsMatch = true;
                 break;
@@ -666,7 +725,6 @@ bool CsvParser::Open(std::wstring const& path, uint32_t processId) {
                                                Header_FrameType,
                                                Header_CPUStartQPC,
                                                Header_FrameTime,
-                                               Header_CPUSleep,
                                                Header_CPUBusy,
                                                Header_CPUWait,
                                                Header_GPULatency,
@@ -679,7 +737,10 @@ bool CsvParser::Open(std::wstring const& path, uint32_t processId) {
                                                Header_AnimationError,
                                                Header_ClickToPhotonLatency,
                                                Header_AllInputToPhotonLatency,
-                                               Header_RenderLatency});
+                                               Header_RenderLatency,
+                                               Header_XeLLSleep,
+                                               Header_XeLLFrameStartToDisplayLatency,
+                                               Header_XeLLFrameStartToGPUStartLatency });
 
     if (!columnsOK) {
         Assert::Fail(L"Missing required columns");
@@ -782,20 +843,6 @@ void CsvParser::ConvertToMetricDataType(const char* data, Header columnId)
     {
         CharConvert<double> converter;
         converter.Convert(data, v2MetricRow_.cpuFrameTime, columnId, line_);
-    }
-    break;
-    case Header_CPUSleep:
-    {
-        if (strncmp(data, "NA", 2) != 0) {
-            double convertedData = 0.;
-            CharConvert<double> converter;
-            converter.Convert(data, convertedData, columnId, line_);
-            v2MetricRow_.cpuSleep = convertedData;
-        }
-        else
-        {
-            v2MetricRow_.cpuSleep.reset();
-        }
     }
     break;
     case Header_CPUBusy:
@@ -920,6 +967,63 @@ void CsvParser::ConvertToMetricDataType(const char* data, Header columnId)
         }
     }
     break;
+    case Header_XeLLSleep:
+    {
+        if (strncmp(data, "NA", 2) != 0) {
+            double convertedData = 0.;
+            CharConvert<double> converter;
+            converter.Convert(data, convertedData, columnId, line_);
+            v2MetricRow_.xellSleep = convertedData;
+        }
+        else
+        {
+            v2MetricRow_.xellSleep.reset();
+        }
+    }
+    break;
+    case Header_XeLLFrameStartToDisplayLatency:
+    {
+        if (strncmp(data, "NA", 2) != 0) {
+            double convertedData = 0.;
+            CharConvert<double> converter;
+            converter.Convert(data, convertedData, columnId, line_);
+            v2MetricRow_.xellFrameStartToDisplayLatency = convertedData;
+        }
+        else
+        {
+            v2MetricRow_.xellFrameStartToDisplayLatency.reset();
+        }
+    }
+    break;
+    case Header_XeLLFrameStartToGPUStartLatency:
+    {
+        if (strncmp(data, "NA", 2) != 0) {
+            double convertedData = 0.;
+            CharConvert<double> converter;
+            converter.Convert(data, convertedData, columnId, line_);
+            v2MetricRow_.xellFrameStartToGPUStartLatency = convertedData;
+        }
+        else
+        {
+            v2MetricRow_.xellFrameStartToGPUStartLatency.reset();
+        }
+    }
+    break;
+    case Header_XeLLGpuEndToDisplayLatency:
+    {
+        if (strncmp(data, "NA", 2) != 0) {
+            double convertedData = 0.;
+            CharConvert<double> converter;
+            converter.Convert(data, convertedData, columnId, line_);
+            v2MetricRow_.xellGpuEndToDisplayLatency = convertedData;
+        }
+        else
+        {
+            v2MetricRow_.xellGpuEndToDisplayLatency.reset();
+        }
+    }
+    break;
+
     default:
         Assert::Fail(CreateErrorString(UnknownHeader, line_).c_str());
     }

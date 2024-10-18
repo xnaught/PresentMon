@@ -39,6 +39,8 @@ public:
 		uint64_t cpuStart = 0;
 		// The simulation start of the last displayed frame
 		uint64_t previousDisplayedSimStartQpc = 0;
+		// Start cpustart qpc of the previously displayed frame
+		uint64_t lastDisplayedCpuStart = 0;
 		// Screen time qpc of the previously displayed frame.
 		uint64_t previousDisplayedQpc = 0;
 		// Screen time qpc of the first display in the next displayed PmNsmFrameData

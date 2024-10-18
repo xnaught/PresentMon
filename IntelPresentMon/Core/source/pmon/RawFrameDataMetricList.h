@@ -44,6 +44,11 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY, .deviceId = 0 },
             Element{.metricId = PM_METRIC_CLICK_TO_PHOTON_LATENCY, .deviceId = 0 },
 
+            Element{.metricId = PM_METRIC_XELL_SLEEP, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_XELL_DISPLAY_LATENCY, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_XELL_GPU_LATENCY, .deviceId = 0 },
+            //Element{.metricId = PM_METRIC_XELL_RENDERSCREEN_LATENCY, .deviceId = 0 },
+
             Element{.metricId = PM_METRIC_GPU_POWER, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_VOLTAGE, .deviceId = activeDeviceId },
             Element{.metricId = PM_METRIC_GPU_FREQUENCY, .deviceId = activeDeviceId },

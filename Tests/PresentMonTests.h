@@ -27,7 +27,6 @@ struct PresentMonCsv
         Header_CPUStartQPCTime,
         Header_CPUStartDateTime,
         Header_FrameTime,
-        Header_CPUSleep,
         Header_CPUBusy,
         Header_CPUWait,
         Header_GPULatency,
@@ -41,6 +40,10 @@ struct PresentMonCsv
         Header_RenderLatency,
         Header_ClickToPhotonLatency,
         Header_AllInputToPhotonLatency,
+        Header_XeLLSleep,
+        Header_XeLLFrameStartToDisplayLatency,
+        Header_XeLLFrameStartToGPUStartLatency,
+        Header_XeLLGpuEndToDisplayLatency,
 
         // --v1_metrics
         Header_Runtime,
@@ -83,7 +86,6 @@ struct PresentMonCsv
         case Header_CPUStartQPCTime:            return "CPUStartQPCTime";
         case Header_CPUStartDateTime:           return "CPUStartDateTime";
         case Header_FrameTime:                  return "FrameTime";
-        case Header_CPUSleep:                   return "CPUSleep";
         case Header_CPUBusy:                    return "CPUBusy";
         case Header_CPUWait:                    return "CPUWait";
         case Header_GPULatency:                 return "GPULatency";
@@ -97,7 +99,10 @@ struct PresentMonCsv
         case Header_RenderLatency:              return "RenderLatency";
         case Header_ClickToPhotonLatency:       return "ClickToPhotonLatency";
         case Header_AllInputToPhotonLatency:    return "AllInputToPhotonLatency";
-
+        case Header_XeLLSleep:                  return "XeLLSleep";
+        case Header_XeLLFrameStartToDisplayLatency:     return "XeLLFrameStartToDisplayLatency";
+        case Header_XeLLFrameStartToGPUStartLatency:    return "XeLLFrameStartToGPUStartLatency";
+        case Header_XeLLGpuEndToDisplayLatency:         return "XeLLGpuEndToDisplayLatency";
         case Header_Runtime:                    return "Runtime";
         case Header_Dropped:                    return "Dropped";
         case Header_TimeInSeconds:              return "TimeInSeconds";
