@@ -25,7 +25,7 @@ namespace pwr::intel
             throw Except<TelemetrySubsystemAbsent>("Unable to initialize Intel Graphics Control Library");
         }
 
-        pmlog_dbg(std::format("Initialized IGCL with version={}.{}",
+        pmlog_info(std::format("Initialized IGCL with version={}.{}",
             CTL_MAJOR_VERSION(ctl_init_args.SupportedVersion),
             CTL_MINOR_VERSION(ctl_init_args.SupportedVersion)
         ));

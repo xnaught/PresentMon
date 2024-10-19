@@ -268,6 +268,14 @@ namespace pwr::intel
                 IGCL_ERR(result);
             }
 
+            // Get memory state and bandwidth data
+            if (memoryModules.size() > 0) {
+                GetMemStateTelemetryData(memory_state,
+                    pm_gpu_power_telemetry_info);
+                GetMemBandwidthData(memory_bandwidth,
+                    pm_gpu_power_telemetry_info);
+            }
+
             // Save and convert the gpu sustained power limit
             pm_gpu_power_telemetry_info.gpu_sustained_power_limit_w =
                 gpu_sustained_power_limit_mw / 1000.;
