@@ -8,6 +8,8 @@
 #include "CliOptions.h"
 #include "LogSetup.h"
 #include "Registry.h"
+#include "../CommonUtilities/BuildId.h"
+#include "../CommonUtilities/log/GlobalPolicy.h"
 
 TCHAR serviceName[MaxBufferLength] = TEXT("Intel PresentMon Service");
 
@@ -23,6 +25,13 @@ int CommonEntry(DWORD argc, LPTSTR* argv, bool asApp)
 	Reg::SetPrivileged(!asApp);
 	// configure logging based on CLI arguments and registry settings
 	logsetup::ConfigureLogging(asApp);
+
+	// annouce versioning etc.
+	pmlog_info(std::format("Starting service, build #{} ({}) [{}], logging @{} (log build @{})",
+		BuildIdShortHash(), BuildIdDirtyFlag() ? "dirty" : "clean",
+		BuildIdTimestamp(),
+		log::GetLevelName(log::GlobalPolicy::Get().GetLogLevel()),
+		log::GetLevelName(PMLOG_BUILD_LEVEL_)));
 
 	if (asApp) {
 		auto& svc = ConsoleDebugMockService::Get();
