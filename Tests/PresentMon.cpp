@@ -174,10 +174,10 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
         auto track_gpu_video  = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_VideoBusy });
         auto track_input      = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_ClickToPhotonLatency });
         auto track_frame_type = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_FrameType });
-        auto track_app_timing = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_XeLLSleep,
-                                                                                Header_RenderLatency,
-                                                                                Header_XeLLFrameStartToDisplayLatency,
-                                                                                Header_XeLLFrameStartToGPUStartLatency,});
+        auto track_app_timing = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_InstrumentedLatency,
+                                                                                Header_InstrumentedSleep,
+                                                                                Header_InstrumentedRenderLatency,
+                                                                                Header_InstrumentedGPULatency,});
 
         switch (time) {
         case 1: params_.emplace_back(L"--qpc_time");    break;

@@ -43,10 +43,11 @@ namespace p2c::pmon
             Element{.metricId = PM_METRIC_ANIMATION_ERROR, .deviceId = 0 },
             Element{.metricId = PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY, .deviceId = 0 },
             Element{.metricId = PM_METRIC_CLICK_TO_PHOTON_LATENCY, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_INSTRUMENTED_LATENCY, .deviceId = 0 },
 
-            Element{.metricId = PM_METRIC_XELL_SLEEP, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_XELL_DISPLAY_LATENCY, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_XELL_GPU_LATENCY, .deviceId = 0 },
+            // Internal Intel Metrics
+            Element{.metricId = PM_METRIC_INSTRUMENTED_SLEEP, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_INSTRUMENTED_LATENCY, .deviceId = 0 },
             //Element{.metricId = PM_METRIC_XELL_RENDERSCREEN_LATENCY, .deviceId = 0 },
 
             Element{.metricId = PM_METRIC_GPU_POWER, .deviceId = activeDeviceId },

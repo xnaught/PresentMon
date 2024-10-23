@@ -52,13 +52,13 @@ namespace pmon::mid
 		std::vector<double> mAnimationError;
         std::vector<double> mClickToPhotonLatency;
 		std::vector<double> mAllInputToPhotonLatency;
-		std::vector<double> mRenderLatency;
         std::vector<double> mDropped;
+		std::vector<double> mInstrumentedDisplayLatency;
 
-		std::vector<double> mXellSleep;
-		std::vector<double> mXellDisplayLatency;
-		std::vector<double> mXellGpuLatency;
-		std::vector<double> mXellRenderEndToDisplayLatency;
+		std::vector<double> mInstrumentedSleep;
+		std::vector<double> mInstrumentedRenderLatency;
+		std::vector<double> mInstrumentedGpuLatency;
+		std::vector<double> mInstrumentedReadyTimeToDisplayLatency;
 
 		// QPC of last received input data that did not make it to the screen due 
 		// to the Present() being dropped

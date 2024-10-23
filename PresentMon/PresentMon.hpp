@@ -101,18 +101,20 @@ struct FrameMetrics {
     double mVideoBusy;
     double mGPUWait;
     double mDisplayLatency;
-    double mRenderLatency;
     double mDisplayedTime;
     double mAnimationError;
     double mClickToPhotonLatency;
     double mAllInputPhotonLatency;
     uint64_t mScreenTime;
     FrameType mFrameType;
-    double mXellSleep;
-    double mXellDisplayLatency;
-    double mXellGpuLatency;
-    double mXellRenderEndToDisplayLatency;
-    double mXellInputTime;
+    double mInstrumentedLatency;
+
+    // Internal Intel Metrics
+    double mInstrumentedRenderLatency;
+    double mInstrumentedSleep;
+    double mInstrumentedGpuLatency;
+    double mReadyTimeToDisplayLatency;
+    double mInstrumentedInputTime;
 };
 
 struct FrameMetrics1 {

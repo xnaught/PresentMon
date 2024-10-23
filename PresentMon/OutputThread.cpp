@@ -358,31 +358,31 @@ static void ReportMetricsHelper(
         metrics.mCPUStart = chain->mLastPresent->PresentStartTime + chain->mLastPresent->TimeInPresent;
 
         if (displayIndex == appIndex) {
-            msGPUDuration                = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->GPUStartTime, p->ReadyTime);
-            metrics.mCPUBusy             = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->PresentStartTime);
-            metrics.mCPUWait             = pmSession.TimestampDeltaToMilliSeconds(p->TimeInPresent);
-            metrics.mGPULatency          = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->GPUStartTime);
-            metrics.mGPUBusy             = pmSession.TimestampDeltaToMilliSeconds(p->GPUDuration);
-            metrics.mVideoBusy           = pmSession.TimestampDeltaToMilliSeconds(p->GPUVideoDuration);
-            metrics.mGPUWait             = std::max(0.0, msGPUDuration - metrics.mGPUBusy);
+            msGPUDuration                   = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->GPUStartTime, p->ReadyTime);
+            metrics.mCPUBusy                = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->PresentStartTime);
+            metrics.mCPUWait                = pmSession.TimestampDeltaToMilliSeconds(p->TimeInPresent);
+            metrics.mGPULatency             = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->GPUStartTime);
+            metrics.mGPUBusy                = pmSession.TimestampDeltaToMilliSeconds(p->GPUDuration);
+            metrics.mVideoBusy              = pmSession.TimestampDeltaToMilliSeconds(p->GPUVideoDuration);
+            metrics.mGPUWait                = std::max(0.0, msGPUDuration - metrics.mGPUBusy);
             // Need both AppSleepStart and AppSleepEnd to calculate XellSleep
-            metrics.mXellSleep           = (p->AppSleepEndTime == 0 || p->AppSleepStartTime == 0) ? 0 :
-                                           pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppSleepStartTime, p->AppSleepEndTime);
+            metrics.mInstrumentedSleep      = (p->AppSleepEndTime == 0 || p->AppSleepStartTime == 0) ? 0 :
+                                              pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppSleepStartTime, p->AppSleepEndTime);
             // If there isn't a valid sleep end time use the sim start time
-            auto xellStartTime           = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : p->AppSimStartTime;
+            auto InstrumentedStartTime      = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : p->AppSimStartTime;
             // If neither the sleep end time or sim start time is valid, there is no
             // way to calculate the Xell Gpu latency
-            metrics.mXellGpuLatency      = xellStartTime == 0 ? 0 :
-                                           pmSession.TimestampDeltaToUnsignedMilliSeconds(xellStartTime, p->GPUStartTime);
+            metrics.mInstrumentedGpuLatency = InstrumentedStartTime == 0 ? 0 :
+                                           pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, p->GPUStartTime);
         } else {
-            metrics.mCPUBusy             = 0;
-            metrics.mCPUWait             = 0;
-            metrics.mGPULatency          = 0;
-            metrics.mGPUBusy             = 0;
-            metrics.mVideoBusy           = 0;
-            metrics.mGPUWait             = 0;
-            metrics.mXellSleep           = 0;
-            metrics.mXellGpuLatency      = 0;
+            metrics.mCPUBusy                = 0;
+            metrics.mCPUWait                = 0;
+            metrics.mGPULatency             = 0;
+            metrics.mGPUBusy                = 0;
+            metrics.mVideoBusy              = 0;
+            metrics.mGPUWait                = 0;
+            metrics.mInstrumentedSleep      = 0;
+            metrics.mInstrumentedGpuLatency = 0;
         }
 
         if (displayed) {
@@ -390,22 +390,22 @@ static void ReportMetricsHelper(
             metrics.mDisplayedTime  = pmSession.TimestampDeltaToUnsignedMilliSeconds(screenTime, nextScreenTime);
             metrics.mScreenTime     = screenTime;
             // If we have AppRenderSubmitStart calculate the render latency
-            metrics.mRenderLatency  = p->AppRenderSubmitStartTime == 0 ? 0 : 
+            metrics.mInstrumentedRenderLatency  = p->AppRenderSubmitStartTime == 0 ? 0 : 
                                       pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppRenderSubmitStartTime, screenTime);
-            metrics.mXellRenderEndToDisplayLatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ReadyTime, screenTime);
+            metrics.mReadyTimeToDisplayLatency  = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ReadyTime, screenTime);
             // If there isn't a valid sleep end time use the sim start time
-            auto xellStartTime = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : p->AppSimStartTime;
+            auto InstrumentedStartTime = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : p->AppSimStartTime;
             // If neither the sleep end time or sim start time is valid, there is no
             // way to calculate the Xell Gpu latency
-            metrics.mXellDisplayLatency = xellStartTime == 0 ? 0 :
-                pmSession.TimestampDeltaToUnsignedMilliSeconds(xellStartTime, screenTime);
+            metrics.mInstrumentedLatency = InstrumentedStartTime == 0 ? 0 :
+                pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, screenTime);
         } else {
-            metrics.mDisplayLatency = 0;
-            metrics.mDisplayedTime  = 0;
-            metrics.mScreenTime     = 0;
-            metrics.mRenderLatency  = 0;
-            metrics.mXellRenderEndToDisplayLatency = 0;
-            metrics.mXellDisplayLatency = 0;
+            metrics.mDisplayLatency            = 0;
+            metrics.mDisplayedTime             = 0;
+            metrics.mScreenTime                = 0;
+            metrics.mInstrumentedLatency       = 0;
+            metrics.mInstrumentedRenderLatency = 0;
+            metrics.mReadyTimeToDisplayLatency = 0;
         }
 
         if (displayIndex == appIndex) {
@@ -422,7 +422,7 @@ static void ReportMetricsHelper(
 
                 updatedInputTime = chain->mLastReceivedNotDisplayedAppProviderInputTime == 0 ? 0 :
                     pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedAppProviderInputTime, screenTime);
-                metrics.mXellInputTime = p->AppInputSample.first == 0 ? updatedInputTime :
+                metrics.mInstrumentedInputTime = p->AppInputSample.first == 0 ? updatedInputTime :
                     pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppInputSample.first, screenTime);
 
                 chain->mLastReceivedNotDisplayedAllInputTime = 0;
@@ -431,7 +431,7 @@ static void ReportMetricsHelper(
             } else {
                 metrics.mClickToPhotonLatency = 0;
                 metrics.mAllInputPhotonLatency = 0;
-                metrics.mXellInputTime = 0;
+                metrics.mInstrumentedInputTime = 0;
                 if (p->InputTime != 0) {
                     chain->mLastReceivedNotDisplayedAllInputTime = p->InputTime;
                 }
@@ -445,7 +445,7 @@ static void ReportMetricsHelper(
         } else {
             metrics.mClickToPhotonLatency = 0;
             metrics.mAllInputPhotonLatency = 0;
-            metrics.mXellInputTime = 0;
+            metrics.mInstrumentedInputTime = 0;
         }
 
         if (displayed && displayIndex == appIndex && chain->mLastDisplayedSimStartTime != 0) {
