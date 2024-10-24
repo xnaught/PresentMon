@@ -476,7 +476,8 @@ namespace pwr::intel
                 if (result != CTL_RESULT_SUCCESS ||
                     !(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_read_bandwidth))) {
                     useNewBandwidthTelemetry = false;
-                    pmlog_dbg("V1 vram bandwidth not available, falling back to V0 counters");
+                    pmlog_dbg("V1 vram bandwidth not available, falling back to V0 counters")
+                        .code(result).pmwatch(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_read_bandwidth));
                 }
             }
             if (useNewBandwidthTelemetry) {
@@ -487,7 +488,8 @@ namespace pwr::intel
                 if (result != CTL_RESULT_SUCCESS ||
                     !(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_write_bandwidth))) {
                     useNewBandwidthTelemetry = false;
-                    pmlog_dbg("V1 vram bandwidth not available, falling back to V0 counters");
+                    pmlog_dbg("V1 vram bandwidth not available, falling back to V0 counters")
+                        .code(result).pmwatch(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_write_bandwidth));
                 }
             }
         }
