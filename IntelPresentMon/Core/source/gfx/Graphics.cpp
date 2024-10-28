@@ -16,9 +16,10 @@ namespace p2c::gfx
 {
     using namespace ::pmon::util;
 
-	Graphics::Graphics(HWND hWnd, DimensionsI dimensions, float upscaleFactor, bool enableTearing)
+	Graphics::Graphics(HWND hWnd, DimensionsI dimensions, float upscaleFactor, bool enableTearing, bool enableAlpha)
         :
-        dims{ dimensions }
+        dims{ dimensions },
+        enableAlpha{ enableAlpha }
 	{
         // Direct3D 11 stuff
         if (auto hr = D3D11CreateDevice(
@@ -77,6 +78,10 @@ namespace p2c::gfx
             }
         }
 
+        if (!enableAlpha) {
+            pmlog_info("Alpha composition disabled");
+        }
+
         {
             // set swap chain configuration
             DXGI_SWAP_CHAIN_DESC1 description{};
@@ -85,7 +90,7 @@ namespace p2c::gfx
             description.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
             description.BufferCount = 2;
             description.SampleDesc.Count = 1;
-            description.AlphaMode = DXGI_ALPHA_MODE_PREMULTIPLIED;
+            description.AlphaMode = enableAlpha ? DXGI_ALPHA_MODE_PREMULTIPLIED : DXGI_ALPHA_MODE_IGNORE;
             description.Width = dims.width;
             description.Height = dims.height;
             description.Flags = tearingActive ? DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING : 0;
@@ -350,7 +355,7 @@ namespace p2c::gfx
         {
             // Create a Direct2D bitmap that points to the swap chain surface
             D2D1_BITMAP_PROPERTIES1 properties = {};
-            properties.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
+            properties.pixelFormat.alphaMode = enableAlpha ? D2D1_ALPHA_MODE_PREMULTIPLIED : D2D1_ALPHA_MODE_IGNORE;
             properties.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
             properties.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW;
 

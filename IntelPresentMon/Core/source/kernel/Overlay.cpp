@@ -127,7 +127,7 @@ namespace p2c::kern
         graphicsDimensions{ pSpec->overlayWidth, 240 },
         windowDimensions{ Dimensions{ graphicsDimensions } * upscaleFactor },
         pWindow{ MakeWindow_(pos_) },
-        gfx{ pWindow->GetHandle(), graphicsDimensions, upscaleFactor, cli::Options::Get().allowTearing},
+        gfx{ pWindow->GetHandle(), graphicsDimensions, upscaleFactor, cli::Options::Get().allowTearing, !cli::Options::Get().disableAlpha },
         hideDuringCapture{ pSpec->hideDuringCapture },
         hideAlways{ pSpec->hideAlways },
         samplingWaiter{ 1.f / pSpec->metricPollRate }
