@@ -161,10 +161,10 @@ namespace EtlTests
 			{ PM_METRIC_ANIMATION_ERROR, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY, PM_STAT_NONE, 0, 0},
 			{ PM_METRIC_CLICK_TO_PHOTON_LATENCY, PM_STAT_NONE, 0, 0},
-			{ PM_METRIC_RENDER_LATENCY, PM_STAT_NONE, 0, 0 },
-			{ PM_METRIC_XELL_SLEEP, PM_STAT_NONE, 0, 0 },
-			{ PM_METRIC_XELL_DISPLAY_LATENCY, PM_STAT_NONE, 0, 0 },
-			{ PM_METRIC_XELL_GPU_LATENCY, PM_STAT_NONE, 0, 0 },
+			{ PM_METRIC_INSTRUMENTED_LATENCY, PM_STAT_NONE, 0, 0 },
+			{ PM_METRIC_INSTRUMENTED_RENDER_LATENCY, PM_STAT_NONE, 0, 0 },
+			{ PM_METRIC_INSTRUMENTED_SLEEP, PM_STAT_NONE, 0, 0 },
+			{ PM_METRIC_INSTRUMENTED_GPU_LATENCY, PM_STAT_NONE, 0, 0 },
 			//{ PM_METRIC_XELL_RENDERSCREEN_LATENCY, PM_STAT_NONE, 0, 0 },
 		};
 
@@ -1684,7 +1684,7 @@ namespace EtlTests
 			}
 
 			oChild.emplace("PresentMonService.exe"s,
-				//"--timed-stop"s, "10000"s,
+				"--timed-stop"s, "20000"s,
 				"--control-pipe"s, pipeName,
 				"--nsm-prefix"s, "pmon_nsm_utest_"s,
 				"--intro-nsm"s, introName,

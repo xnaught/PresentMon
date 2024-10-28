@@ -293,11 +293,11 @@ namespace pmon::mid
             case PM_METRIC_DROPPED_FRAMES:
             case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
             case PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY:
-            case PM_METRIC_RENDER_LATENCY:
-            case PM_METRIC_XELL_SLEEP:
-            case PM_METRIC_XELL_DISPLAY_LATENCY:
-            case PM_METRIC_XELL_GPU_LATENCY:
-            //case PM_METRIC_XELL_RENDERSCREEN_LATENCY:
+            case PM_METRIC_INSTRUMENTED_LATENCY:
+            case PM_METRIC_INSTRUMENTED_RENDER_LATENCY:
+            case PM_METRIC_INSTRUMENTED_SLEEP:
+            case PM_METRIC_INSTRUMENTED_GPU_LATENCY:
+            //case PM_METRIC_INSTRUMENTED_RENDER_DISPLAY_LATENCY:
                 pQuery->accumFpsData = true;
                 break;
             case PM_METRIC_GPU_POWER:
@@ -475,15 +475,16 @@ struct FrameMetrics {
     double mGPUWait;
     double mDisplayLatency;
     double mDisplayedTime;
-    double mRenderLatency;
     double mAnimationError;
     double mClickToPhotonLatency;
     double mAllInputPhotonLatency;
     FrameType mFrameType;
-    double mXellSleep;
-    double mXellDisplayLatency;
-    double mXellGpuLatency;
-    double mXellRenderEndToDisplayLatency;
+    double mInstrumentedDisplayLatency;
+
+    double mInstrumentedRenderLatency;
+    double mInstrumentedSleep;
+    double mInstrumentedGpuLatency;
+    double mInstrumentedReadyTimeToDisplayLatency;
 };
 
 // Copied from: PresentMon/OutputThread.cpp
@@ -587,44 +588,44 @@ static void ReportMetricsHelper(
             metrics.mVideoBusy  = pmSession.TimestampDeltaToMilliSeconds(p->GPUVideoDuration);
             metrics.mGPUWait    = std::max(0.0, msGPUDuration - metrics.mGPUBusy);
             // Need both AppSleepStart and AppSleepEnd to calculate XellSleep
-            metrics.mXellSleep  = (p->AppSleepEndTime == 0 || p->AppSleepStartTime == 0) ? 0 :
+            metrics.mInstrumentedSleep  = (p->AppSleepEndTime == 0 || p->AppSleepStartTime == 0) ? 0 :
                 pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppSleepStartTime, p->AppSleepEndTime);
             // If there isn't a valid sleep end time use the sim start time
-            auto xellStartTime  = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : p->AppSimStartTime;
+            auto instrumentedStartTime  = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : p->AppSimStartTime;
             // If neither the sleep end time or sim start time is valid, there is no
             // way to calculate the Xell Gpu latency
-            metrics.mXellGpuLatency = xellStartTime == 0 ? 0 :
-                                      pmSession.TimestampDeltaToUnsignedMilliSeconds(xellStartTime, p->GPUStartTime);
+            metrics.mInstrumentedGpuLatency = instrumentedStartTime == 0 ? 0 :
+                                      pmSession.TimestampDeltaToUnsignedMilliSeconds(instrumentedStartTime, p->GPUStartTime);
         } else {
-            metrics.mCPUBusy        = 0;
-            metrics.mCPUWait        = 0;
-            metrics.mGPULatency     = 0;
-            metrics.mGPUBusy        = 0;
-            metrics.mVideoBusy      = 0;
-            metrics.mGPUWait        = 0;
-            metrics.mXellSleep      = 0;
-            metrics.mXellGpuLatency = 0;
+            metrics.mCPUBusy                = 0;
+            metrics.mCPUWait                = 0;
+            metrics.mGPULatency             = 0;
+            metrics.mGPUBusy                = 0;
+            metrics.mVideoBusy              = 0;
+            metrics.mGPUWait                = 0;
+            metrics.mInstrumentedSleep      = 0;
+            metrics.mInstrumentedGpuLatency = 0;
         }
 
         if (displayed) {
             metrics.mDisplayLatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, screenTime);
             metrics.mDisplayedTime  = pmSession.TimestampDeltaToUnsignedMilliSeconds(screenTime, nextScreenTime);
             // If AppRenderSubmitStart is valid calculate the render latency
-            metrics.mRenderLatency  = p->AppRenderSubmitStartTime == 0 ? 0 : 
+            metrics.mInstrumentedRenderLatency = p->AppRenderSubmitStartTime == 0 ? 0 :
                 pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppRenderSubmitStartTime, screenTime);
-            metrics.mXellRenderEndToDisplayLatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ReadyTime, screenTime);
+            metrics.mInstrumentedReadyTimeToDisplayLatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ReadyTime, screenTime);
             // If there isn't a valid sleep end time use the sim start time
             auto xellStartTime = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : p->AppSimStartTime;
             // If neither the sleep end time or sim start time is valid, there is no
             // way to calculate the Xell Gpu latency
-            metrics.mXellDisplayLatency = xellStartTime == 0 ? 0 :
+            metrics.mInstrumentedDisplayLatency = xellStartTime == 0 ? 0 :
                 pmSession.TimestampDeltaToUnsignedMilliSeconds(xellStartTime, screenTime);
         } else {
-            metrics.mDisplayLatency                 = 0;
-            metrics.mDisplayedTime                  = 0;
-            metrics.mRenderLatency                  = 0;
-            metrics.mXellRenderEndToDisplayLatency  = 0;
-            metrics.mXellDisplayLatency             = 0;
+            metrics.mDisplayLatency                         = 0;
+            metrics.mDisplayedTime                          = 0;
+            metrics.mInstrumentedRenderLatency              = 0;
+            metrics.mInstrumentedReadyTimeToDisplayLatency  = 0;
+            metrics.mInstrumentedDisplayLatency             = 0;
         }
 
         if (displayIndex == appIndex) {
@@ -674,22 +675,22 @@ static void ReportMetricsHelper(
         }
 
         if (displayIndex == appIndex) {
-            chain->mCPUBusy       .push_back(metrics.mCPUBusy);
-            chain->mCPUWait       .push_back(metrics.mCPUWait);
-            chain->mGPULatency    .push_back(metrics.mGPULatency);
-            chain->mGPUBusy       .push_back(metrics.mGPUBusy);
-            chain->mVideoBusy     .push_back(metrics.mVideoBusy);
-            chain->mGPUWait       .push_back(metrics.mGPUWait);
-            chain->mXellSleep     .push_back(metrics.mXellSleep);
-            chain->mXellGpuLatency.push_back(metrics.mXellGpuLatency);
+            chain->mCPUBusy               .push_back(metrics.mCPUBusy);
+            chain->mCPUWait               .push_back(metrics.mCPUWait);
+            chain->mGPULatency            .push_back(metrics.mGPULatency);
+            chain->mGPUBusy               .push_back(metrics.mGPUBusy);
+            chain->mVideoBusy             .push_back(metrics.mVideoBusy);
+            chain->mGPUWait               .push_back(metrics.mGPUWait);
+            chain->mInstrumentedSleep     .push_back(metrics.mInstrumentedSleep);
+            chain->mInstrumentedGpuLatency.push_back(metrics.mInstrumentedGpuLatency);
         }
 
         if (displayed) {
-            chain->mDisplayLatency               .push_back(metrics.mDisplayLatency);
-            chain->mDisplayedTime                .push_back(metrics.mDisplayedTime);
-            chain->mDropped                      .push_back(0.0);
-            chain->mXellDisplayLatency           .push_back(metrics.mXellDisplayLatency);
-            chain->mXellRenderEndToDisplayLatency.push_back(metrics.mXellRenderEndToDisplayLatency);
+            chain->mDisplayLatency                       .push_back(metrics.mDisplayLatency);
+            chain->mDisplayedTime                        .push_back(metrics.mDisplayedTime);
+            chain->mDropped                              .push_back(0.0);
+            chain->mInstrumentedDisplayLatency           .push_back(metrics.mInstrumentedDisplayLatency);
+            chain->mInstrumentedReadyTimeToDisplayLatency.push_back(metrics.mInstrumentedReadyTimeToDisplayLatency);
         } else {
             chain->mDropped       .push_back(1.0);
         }
@@ -711,8 +712,8 @@ static void ReportMetricsHelper(
             }
         }
 
-        if (displayed && displayIndex == appIndex && metrics.mRenderLatency != 0) {
-            chain->mRenderLatency.push_back(metrics.mRenderLatency);
+        if (displayed && displayIndex == appIndex && metrics.mInstrumentedRenderLatency != 0) {
+            chain->mInstrumentedRenderLatency.push_back(metrics.mInstrumentedRenderLatency);
         }
 
         displayIndex += 1;
@@ -1173,9 +1174,6 @@ static void ReportMetrics(
         case PM_METRIC_ANIMATION_ERROR:
             output = CalculateStatistic(swapChain.mAnimationError, element.stat);
             break;
-        case PM_METRIC_RENDER_LATENCY:
-            output = CalculateStatistic(swapChain.mRenderLatency, element.stat);
-            break;
         case PM_METRIC_PRESENTED_FPS:
         {
             std::vector<double> presented_fts(swapChain.mCPUBusy.size());
@@ -1207,14 +1205,17 @@ static void ReportMetrics(
         case PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY:
             output = CalculateStatistic(swapChain.mAllInputToPhotonLatency, element.stat);
             break;
-        case PM_METRIC_XELL_SLEEP:
-            output = CalculateStatistic(swapChain.mXellSleep, element.stat);
+        case PM_METRIC_INSTRUMENTED_LATENCY:
+            output = CalculateStatistic(swapChain.mInstrumentedDisplayLatency, element.stat);
             break;
-        case PM_METRIC_XELL_DISPLAY_LATENCY:
-            output = CalculateStatistic(swapChain.mXellDisplayLatency, element.stat);
+        case PM_METRIC_INSTRUMENTED_RENDER_LATENCY:
+            output = CalculateStatistic(swapChain.mInstrumentedRenderLatency, element.stat);
             break;
-        case PM_METRIC_XELL_GPU_LATENCY:
-            output = CalculateStatistic(swapChain.mXellGpuLatency, element.stat);
+        case PM_METRIC_INSTRUMENTED_SLEEP:
+            output = CalculateStatistic(swapChain.mInstrumentedSleep, element.stat);
+            break;
+        case PM_METRIC_INSTRUMENTED_GPU_LATENCY:
+            output = CalculateStatistic(swapChain.mInstrumentedGpuLatency, element.stat);
             break;
         //case PM_METRIC_XELL_RENDERSCREEN_LATENCY:
         //    output = CalculateStatistic(swapChain.mXellRenderEndToDisplayLatency, element.stat);
@@ -1720,10 +1721,10 @@ static void ReportMetrics(
                 case PM_METRIC_DISPLAYED_TIME:
                 case PM_METRIC_ANIMATION_ERROR:
                 case PM_METRIC_APPLICATION:
-                case PM_METRIC_RENDER_LATENCY:
-                case PM_METRIC_XELL_SLEEP:
-                case PM_METRIC_XELL_DISPLAY_LATENCY:
-                case PM_METRIC_XELL_GPU_LATENCY:
+                case PM_METRIC_INSTRUMENTED_LATENCY:
+                case PM_METRIC_INSTRUMENTED_RENDER_LATENCY:
+                case PM_METRIC_INSTRUMENTED_SLEEP:
+                case PM_METRIC_INSTRUMENTED_GPU_LATENCY:
                 //case PM_METRIC_XELL_RENDERSCREEN_LATENCY:
                     CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
                     break;

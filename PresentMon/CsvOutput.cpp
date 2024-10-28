@@ -302,18 +302,18 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     if (args.mTrackDisplay) {
         fwprintf(fp, L",DisplayLatency"
                      L",DisplayedTime"
-                     L",AnimationError"
-                     L",RenderLatency");
+                     L",AnimationError");
     }
     if (args.mTrackInput) {
         fwprintf(fp, L",AllInputToPhotonLatency");
         fwprintf(fp, L",ClickToPhotonLatency");
     }
     if (args.mTrackAppTiming) {
-        fwprintf(fp, L",XeLLSleep"
-                     L",XeLLFrameStartToDisplayLatency"
-                     L",XeLLFrameStartToGPUStartLatency");
-                     //L",XeLLGpuEndToDisplayLatency");
+        fwprintf(fp, L",InstrumentedLatency"
+                     L",InstrumentedRenderLatency"
+                     L",InstrumentedSleep"
+                     L",InstrumentedGPULatency");
+                     //L",GPUEndToDisplayLatency");
     }
     if (args.mWriteDisplayTime) {
         fwprintf(fp, L",DisplayTimeAbs");
@@ -393,16 +393,11 @@ void WriteCsvRow<FrameMetrics>(
     }
     if (args.mTrackDisplay) {
         if (metrics.mDisplayedTime == 0.0) {
-            fwprintf(fp, L",NA,NA,NA,NA");
+            fwprintf(fp, L",NA,NA,NA");
         } else {
             fwprintf(fp, L",%.4lf,%.4lf,%.4lf", metrics.mDisplayLatency,
                                                 metrics.mDisplayedTime,
                                                 metrics.mAnimationError);
-            if (metrics.mRenderLatency == 0.0) {
-                fwprintf(fp, L",NA");
-            } else {
-                fwprintf(fp, L",%.4lf", metrics.mRenderLatency);
-            }
         }
     }
     if (args.mTrackInput) {
@@ -419,29 +414,35 @@ void WriteCsvRow<FrameMetrics>(
         }
     }
     if (args.mTrackAppTiming) {
-        if (metrics.mXellSleep == 0.0) {
+        if (metrics.mInstrumentedLatency == 0.0) {
             fwprintf(fp, L",NA");
         }
         else {
-            fwprintf(fp, L",%.4lf", metrics.mXellSleep);
+            fwprintf(fp, L",%.4lf", metrics.mInstrumentedLatency);
         }
-        if (metrics.mXellDisplayLatency == 0.0) {
+        if (metrics.mInstrumentedRenderLatency == 0.0) {
             fwprintf(fp, L",NA");
         }
         else {
-            fwprintf(fp, L",%.4lf", metrics.mXellDisplayLatency);
+            fwprintf(fp, L",%.4lf", metrics.mInstrumentedRenderLatency);
         }
-        if (metrics.mXellGpuLatency == 0.0) {
+        if (metrics.mInstrumentedSleep == 0.0) {
             fwprintf(fp, L",NA");
         }
         else {
-            fwprintf(fp, L",%.4lf", metrics.mXellGpuLatency);
+            fwprintf(fp, L",%.4lf", metrics.mInstrumentedSleep);
         }
-        //if (metrics.mXellRenderEndToDisplayLatency == 0.0) {
+        if (metrics.mInstrumentedGpuLatency == 0.0) {
+            fwprintf(fp, L",NA");
+        }
+        else {
+            fwprintf(fp, L",%.4lf", metrics.mInstrumentedGpuLatency);
+        }
+        //if (metrics.mReadyTimeToDisplayLatency == 0.0) {
         //    fwprintf(fp, L",NA");
         //}
         //else {
-        //   fwprintf(fp, L",%.4lf", metrics.mXellRenderEndToDisplayLatency);
+        //   fwprintf(fp, L",%.4lf", metrics.mReadyTimeToDisplayLatency);
         //}
     }
 

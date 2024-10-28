@@ -37,13 +37,15 @@ struct PresentMonCsv
         Header_DisplayLatency,
         Header_DisplayedTime,
         Header_AnimationError,
-        Header_RenderLatency,
         Header_ClickToPhotonLatency,
         Header_AllInputToPhotonLatency,
-        Header_XeLLSleep,
-        Header_XeLLFrameStartToDisplayLatency,
-        Header_XeLLFrameStartToGPUStartLatency,
-        Header_XeLLGpuEndToDisplayLatency,
+
+        // Internal Intel Metrics
+        Header_InstrumentedLatency,
+        Header_InstrumentedRenderLatency,
+        Header_InstrumentedSleep,
+        Header_InstrumentedGPULatency,
+        Header_ReadyTimeToDisplayLatency,
 
         // --v1_metrics
         Header_Runtime,
@@ -96,13 +98,8 @@ struct PresentMonCsv
         case Header_DisplayLatency:             return "DisplayLatency";
         case Header_DisplayedTime:              return "DisplayedTime";
         case Header_AnimationError:             return "AnimationError";
-        case Header_RenderLatency:              return "RenderLatency";
         case Header_ClickToPhotonLatency:       return "ClickToPhotonLatency";
         case Header_AllInputToPhotonLatency:    return "AllInputToPhotonLatency";
-        case Header_XeLLSleep:                  return "XeLLSleep";
-        case Header_XeLLFrameStartToDisplayLatency:     return "XeLLFrameStartToDisplayLatency";
-        case Header_XeLLFrameStartToGPUStartLatency:    return "XeLLFrameStartToGPUStartLatency";
-        case Header_XeLLGpuEndToDisplayLatency:         return "XeLLGpuEndToDisplayLatency";
         case Header_Runtime:                    return "Runtime";
         case Header_Dropped:                    return "Dropped";
         case Header_TimeInSeconds:              return "TimeInSeconds";
@@ -119,6 +116,12 @@ struct PresentMonCsv
 
         case Header_WasBatched:                 return "WasBatched";
         case Header_DwmNotified:                return "DwmNotified";
+
+        case Header_InstrumentedLatency:        return "InstrumentedLatency";
+        case Header_InstrumentedRenderLatency:  return "InstrumentedRenderLatency";
+        case Header_InstrumentedSleep:          return "InstrumentedSleep";
+        case Header_InstrumentedGPULatency:     return "InstrumentedGPULatency";
+        case Header_ReadyTimeToDisplayLatency:  return "GPUEndToDisplayLatency";
         }
         return "<unknown>";
     }

@@ -42,11 +42,13 @@ enum Header {
     Header_AnimationError,
     Header_ClickToPhotonLatency,
     Header_AllInputToPhotonLatency,
-    Header_RenderLatency,
-    Header_XeLLSleep,
-    Header_XeLLFrameStartToDisplayLatency,
-    Header_XeLLFrameStartToGPUStartLatency,
-    Header_XeLLGpuEndToDisplayLatency,
+
+    // Internal Intel Metrics
+    Header_InstrumentedLatency,
+    Header_InstrumentedRenderLatency,
+    Header_InstrumentedSleep,
+    Header_InstrumentedGPULatency,
+    Header_ReadyTimeToDisplayLatency,
 
     // --v1_metrics
     Header_Runtime,
@@ -96,11 +98,11 @@ struct v2Metrics {
     std::optional<double> animationError;
     std::optional<double> clickToPhotonLatency;
     std::optional<double> AllInputToPhotonLatency;
-    std::optional<double> renderLatency;
-    std::optional<double> xellSleep;
-    std::optional<double> xellFrameStartToDisplayLatency;
-    std::optional<double> xellFrameStartToGPUStartLatency;
-    std::optional<double> xellGpuEndToDisplayLatency;
+    std::optional<double> InstrumentedLatency;
+    std::optional<double> InstrumentedRenderLatency;
+    std::optional<double> InstrumentedSleep;
+    std::optional<double> InstrumentedGPULatency;
+    std::optional<double> ReadyTimeToDisplayLatency;
 };
 
 constexpr char const* GetHeaderString(Header h)
@@ -132,7 +134,6 @@ constexpr char const* GetHeaderString(Header h)
     case Header_AnimationError:             return "AnimationError";
     case Header_ClickToPhotonLatency:       return "ClickToPhotonLatency";
     case Header_AllInputToPhotonLatency:    return "AllInputToPhotonLatency";
-    case Header_RenderLatency:              return "RenderLatency";
 
     case Header_Runtime:                    return "Runtime";
     case Header_Dropped:                    return "Dropped";
@@ -150,10 +151,12 @@ constexpr char const* GetHeaderString(Header h)
 
     case Header_WasBatched:                 return "WasBatched";
     case Header_DwmNotified:                return "DwmNotified";
-    case Header_XeLLSleep:                  return "XeLLSleep";
-    case Header_XeLLFrameStartToDisplayLatency:     return "XeLLFrameStartToDisplayLatency";
-    case Header_XeLLFrameStartToGPUStartLatency:    return "XeLLFrameStartToGPUStartLatency";
-    case Header_XeLLGpuEndToDisplayLatency:         return "XeLLGpuEndToDisplayLatency";
+
+    case Header_InstrumentedLatency:        return "InstrumentedLatency";
+    case Header_InstrumentedRenderLatency:  return "InstrumentedRenderLatency";
+    case Header_InstrumentedSleep:          return "InstrumentedSleep";
+    case Header_InstrumentedGPULatency:     return "InstrumentedGPULatency";
+    case Header_ReadyTimeToDisplayLatency:  return "GPUEndToDisplayLatency";
 
     default:                                return "<unknown>";
     }
@@ -392,11 +395,11 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
         const auto animationError = *reinterpret_cast<const double*>(&pBlob[queryElements[17].dataOffset]);
         const auto allInputToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[18].dataOffset]);
         const auto clickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[19].dataOffset]);
-        const auto renderLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[20].dataOffset]);
-        const auto xellSleep = *reinterpret_cast<const double*>(&pBlob[queryElements[21].dataOffset]);
-        const auto xellDisplayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[22].dataOffset]);
-        const auto xellGpuStartLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[23].dataOffset]);
-        //const auto xellGpuEndLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[24].dataOffset]);
+        const auto InstrumentedLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[20].dataOffset]);
+        const auto InstrumentedRenderLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[21].dataOffset]);
+        const auto InstrumentedSleep = *reinterpret_cast<const double*>(&pBlob[queryElements[22].dataOffset]);
+        const auto InstrumentedGpuLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[23].dataOffset]);
+        //const auto ReadyTimeToDisplayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[24].dataOffset]);
 
         
         // Read rows until we find one with the process we are interested in
@@ -548,13 +551,13 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                     }
                 }
                 break;
-            case Header_RenderLatency:
-                if (v2MetricRow_.renderLatency.has_value()) {
-                    columnsMatch = Validate(v2MetricRow_.renderLatency.value(), renderLatency);
+            case Header_InstrumentedLatency:
+                if (v2MetricRow_.InstrumentedLatency.has_value()) {
+                    columnsMatch = Validate(v2MetricRow_.InstrumentedLatency.value(), InstrumentedLatency);
                 }
                 else
                 {
-                    if (std::isnan(renderLatency)) {
+                    if (std::isnan(InstrumentedLatency)) {
                         columnsMatch = true;
                     }
                     else
@@ -563,13 +566,13 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                     }
                 }
                 break;
-            case Header_XeLLSleep:
-                if (v2MetricRow_.xellSleep.has_value()) {
-                    columnsMatch = Validate(v2MetricRow_.xellSleep.value(), xellSleep);
+            case Header_InstrumentedRenderLatency:
+                if (v2MetricRow_.InstrumentedRenderLatency.has_value()) {
+                    columnsMatch = Validate(v2MetricRow_.InstrumentedRenderLatency.value(), InstrumentedRenderLatency);
                 }
                 else
                 {
-                    if (std::isnan(xellSleep)) {
+                    if (std::isnan(InstrumentedRenderLatency)) {
                         columnsMatch = true;
                     }
                     else
@@ -578,13 +581,13 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                     }
                 }
                 break;
-            case Header_XeLLFrameStartToDisplayLatency:
-                if (v2MetricRow_.xellFrameStartToDisplayLatency.has_value()) {
-                    columnsMatch = Validate(v2MetricRow_.xellFrameStartToDisplayLatency.value(), xellDisplayLatency);
+            case Header_InstrumentedSleep:
+                if (v2MetricRow_.InstrumentedSleep.has_value()) {
+                    columnsMatch = Validate(v2MetricRow_.InstrumentedSleep.value(), InstrumentedSleep);
                 }
                 else
                 {
-                    if (std::isnan(xellDisplayLatency)) {
+                    if (std::isnan(InstrumentedSleep)) {
                         columnsMatch = true;
                     }
                     else
@@ -593,13 +596,13 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                     }
                 }
                 break;
-            case Header_XeLLFrameStartToGPUStartLatency:
-                if (v2MetricRow_.xellFrameStartToGPUStartLatency.has_value()) {
-                    columnsMatch = Validate(v2MetricRow_.xellFrameStartToGPUStartLatency.value(), xellGpuStartLatency);
+            case Header_InstrumentedGPULatency:
+                if (v2MetricRow_.InstrumentedGPULatency.has_value()) {
+                    columnsMatch = Validate(v2MetricRow_.InstrumentedGPULatency.value(), InstrumentedGpuLatency);
                 }
                 else
                 {
-                    if (std::isnan(xellGpuStartLatency)) {
+                    if (std::isnan(InstrumentedGpuLatency)) {
                         columnsMatch = true;
                     }
                     else
@@ -608,13 +611,13 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                     }
                 }
                 break;
-            //case Header_XeLLGpuEndToDisplayLatency:
-            //    if (v2MetricRow_.xellGpuEndToDisplayLatency.has_value()) {
-            //        columnsMatch = Validate(v2MetricRow_.xellGpuEndToDisplayLatency.value(), xellGpuEndLatency);
+            //case Header_ReadyTimeToDisplayLatency:
+            //    if (v2MetricRow_.ReadyTimeToDisplayLatency.has_value()) {
+            //        columnsMatch = Validate(v2MetricRow_.ReadyTimeToDisplayLatency.value(), ReadyTimeToDisplayLatency);
             //    }
             //    else
             //    {
-            //        if (std::isnan(xellGpuEndLatency)) {
+            //        if (std::isnan(ReadyTimeToDisplayLatency)) {
             //            columnsMatch = true;
             //        }
             //        else
@@ -737,10 +740,10 @@ bool CsvParser::Open(std::wstring const& path, uint32_t processId) {
                                                Header_AnimationError,
                                                Header_ClickToPhotonLatency,
                                                Header_AllInputToPhotonLatency,
-                                               Header_RenderLatency,
-                                               Header_XeLLSleep,
-                                               Header_XeLLFrameStartToDisplayLatency,
-                                               Header_XeLLFrameStartToGPUStartLatency });
+                                               Header_InstrumentedLatency,
+                                               Header_InstrumentedRenderLatency,
+                                               Header_InstrumentedSleep,
+                                               Header_InstrumentedGPULatency });
 
     if (!columnsOK) {
         Assert::Fail(L"Missing required columns");
@@ -953,73 +956,73 @@ void CsvParser::ConvertToMetricDataType(const char* data, Header columnId)
         }
     }
     break;
-    case Header_RenderLatency:
+    case Header_InstrumentedLatency:
     {
         if (strncmp(data, "NA", 2) != 0) {
             double convertedData = 0.;
             CharConvert<double> converter;
             converter.Convert(data, convertedData, columnId, line_);
-            v2MetricRow_.renderLatency = convertedData;
+            v2MetricRow_.InstrumentedLatency = convertedData;
         }
         else
         {
-            v2MetricRow_.renderLatency.reset();
+            v2MetricRow_.InstrumentedLatency.reset();
         }
     }
     break;
-    case Header_XeLLSleep:
+    case Header_InstrumentedRenderLatency:
     {
         if (strncmp(data, "NA", 2) != 0) {
             double convertedData = 0.;
             CharConvert<double> converter;
             converter.Convert(data, convertedData, columnId, line_);
-            v2MetricRow_.xellSleep = convertedData;
+            v2MetricRow_.InstrumentedRenderLatency = convertedData;
         }
         else
         {
-            v2MetricRow_.xellSleep.reset();
+            v2MetricRow_.InstrumentedRenderLatency.reset();
         }
     }
     break;
-    case Header_XeLLFrameStartToDisplayLatency:
+    case Header_InstrumentedSleep:
     {
         if (strncmp(data, "NA", 2) != 0) {
             double convertedData = 0.;
             CharConvert<double> converter;
             converter.Convert(data, convertedData, columnId, line_);
-            v2MetricRow_.xellFrameStartToDisplayLatency = convertedData;
+            v2MetricRow_.InstrumentedSleep = convertedData;
         }
         else
         {
-            v2MetricRow_.xellFrameStartToDisplayLatency.reset();
+            v2MetricRow_.InstrumentedSleep.reset();
         }
     }
     break;
-    case Header_XeLLFrameStartToGPUStartLatency:
+    case Header_InstrumentedGPULatency:
     {
         if (strncmp(data, "NA", 2) != 0) {
             double convertedData = 0.;
             CharConvert<double> converter;
             converter.Convert(data, convertedData, columnId, line_);
-            v2MetricRow_.xellFrameStartToGPUStartLatency = convertedData;
+            v2MetricRow_.InstrumentedGPULatency = convertedData;
         }
         else
         {
-            v2MetricRow_.xellFrameStartToGPUStartLatency.reset();
+            v2MetricRow_.InstrumentedGPULatency.reset();
         }
     }
     break;
-    case Header_XeLLGpuEndToDisplayLatency:
+    case Header_ReadyTimeToDisplayLatency:
     {
         if (strncmp(data, "NA", 2) != 0) {
             double convertedData = 0.;
             CharConvert<double> converter;
             converter.Convert(data, convertedData, columnId, line_);
-            v2MetricRow_.xellGpuEndToDisplayLatency = convertedData;
+            v2MetricRow_.ReadyTimeToDisplayLatency = convertedData;
         }
         else
         {
-            v2MetricRow_.xellGpuEndToDisplayLatency.reset();
+            v2MetricRow_.ReadyTimeToDisplayLatency.reset();
         }
     }
     break;
