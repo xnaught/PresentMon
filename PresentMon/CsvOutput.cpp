@@ -309,11 +309,7 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
         fwprintf(fp, L",ClickToPhotonLatency");
     }
     if (args.mTrackAppTiming) {
-        fwprintf(fp, L",InstrumentedLatency"
-                     L",InstrumentedRenderLatency"
-                     L",InstrumentedSleep"
-                     L",InstrumentedGPULatency");
-                     //L",GPUEndToDisplayLatency");
+        fwprintf(fp, L",InstrumentedLatency");
     }
     if (args.mWriteDisplayTime) {
         fwprintf(fp, L",DisplayTimeAbs");
@@ -420,30 +416,6 @@ void WriteCsvRow<FrameMetrics>(
         else {
             fwprintf(fp, L",%.4lf", metrics.mInstrumentedLatency);
         }
-        if (metrics.mInstrumentedRenderLatency == 0.0) {
-            fwprintf(fp, L",NA");
-        }
-        else {
-            fwprintf(fp, L",%.4lf", metrics.mInstrumentedRenderLatency);
-        }
-        if (metrics.mInstrumentedSleep == 0.0) {
-            fwprintf(fp, L",NA");
-        }
-        else {
-            fwprintf(fp, L",%.4lf", metrics.mInstrumentedSleep);
-        }
-        if (metrics.mInstrumentedGpuLatency == 0.0) {
-            fwprintf(fp, L",NA");
-        }
-        else {
-            fwprintf(fp, L",%.4lf", metrics.mInstrumentedGpuLatency);
-        }
-        //if (metrics.mReadyTimeToDisplayLatency == 0.0) {
-        //    fwprintf(fp, L",NA");
-        //}
-        //else {
-        //   fwprintf(fp, L",%.4lf", metrics.mReadyTimeToDisplayLatency);
-        //}
     }
 
     if (args.mWriteDisplayTime) {

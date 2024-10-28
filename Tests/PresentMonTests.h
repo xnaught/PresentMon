@@ -40,12 +40,8 @@ struct PresentMonCsv
         Header_ClickToPhotonLatency,
         Header_AllInputToPhotonLatency,
 
-        // Internal Intel Metrics
+        // App Provided Metrics
         Header_InstrumentedLatency,
-        Header_InstrumentedRenderLatency,
-        Header_InstrumentedSleep,
-        Header_InstrumentedGPULatency,
-        Header_ReadyTimeToDisplayLatency,
 
         // --v1_metrics
         Header_Runtime,
@@ -118,10 +114,6 @@ struct PresentMonCsv
         case Header_DwmNotified:                return "DwmNotified";
 
         case Header_InstrumentedLatency:        return "InstrumentedLatency";
-        case Header_InstrumentedRenderLatency:  return "InstrumentedRenderLatency";
-        case Header_InstrumentedSleep:          return "InstrumentedSleep";
-        case Header_InstrumentedGPULatency:     return "InstrumentedGPULatency";
-        case Header_ReadyTimeToDisplayLatency:  return "GPUEndToDisplayLatency";
         }
         return "<unknown>";
     }

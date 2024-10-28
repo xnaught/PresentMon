@@ -960,14 +960,6 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 		return std::make_unique<InputLatencyGatherCommand_<&Pre::InputTime, 1, 0>>(pos);
 	case PM_METRIC_INSTRUMENTED_LATENCY:
 		return std::make_unique<DisplayLatencyGatherCommand_<0, 0, 1>>(pos);
-	case PM_METRIC_INSTRUMENTED_RENDER_LATENCY:
-		return std::make_unique<DisplayLatencyGatherCommand_<1,0,0>>(pos);
-	case PM_METRIC_INSTRUMENTED_SLEEP:
-		return std::make_unique<QpcDeltaGatherCommand_<&Pre::AppSleepStartTime, &Pre::AppSleepEndTime>>(pos);
-	//case PM_METRIC_XELL_RENDERSCREEN_LATENCY:
-	//	return std::make_unique<DisplayLatencyGatherCommand_<0, 1, 0>>(pos);
-	case PM_METRIC_INSTRUMENTED_GPU_LATENCY:
-		return std::make_unique<QpcDeltaGatherCommand_<&Pre::AppSleepEndTime, &Pre::GPUStartTime>>(pos);
 	default:
 		pmlog_error("unknown metric id").pmwatch((int)q.metric).diag();
 		return {};

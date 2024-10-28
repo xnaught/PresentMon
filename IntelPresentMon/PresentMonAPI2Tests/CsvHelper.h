@@ -43,12 +43,8 @@ enum Header {
     Header_ClickToPhotonLatency,
     Header_AllInputToPhotonLatency,
 
-    // Internal Intel Metrics
+    // App Provided Metrics
     Header_InstrumentedLatency,
-    Header_InstrumentedRenderLatency,
-    Header_InstrumentedSleep,
-    Header_InstrumentedGPULatency,
-    Header_ReadyTimeToDisplayLatency,
 
     // --v1_metrics
     Header_Runtime,
@@ -99,10 +95,6 @@ struct v2Metrics {
     std::optional<double> clickToPhotonLatency;
     std::optional<double> AllInputToPhotonLatency;
     std::optional<double> InstrumentedLatency;
-    std::optional<double> InstrumentedRenderLatency;
-    std::optional<double> InstrumentedSleep;
-    std::optional<double> InstrumentedGPULatency;
-    std::optional<double> ReadyTimeToDisplayLatency;
 };
 
 constexpr char const* GetHeaderString(Header h)
@@ -153,10 +145,6 @@ constexpr char const* GetHeaderString(Header h)
     case Header_DwmNotified:                return "DwmNotified";
 
     case Header_InstrumentedLatency:        return "InstrumentedLatency";
-    case Header_InstrumentedRenderLatency:  return "InstrumentedRenderLatency";
-    case Header_InstrumentedSleep:          return "InstrumentedSleep";
-    case Header_InstrumentedGPULatency:     return "InstrumentedGPULatency";
-    case Header_ReadyTimeToDisplayLatency:  return "GPUEndToDisplayLatency";
 
     default:                                return "<unknown>";
     }
@@ -340,7 +328,7 @@ public:
     bool Open(std::wstring const& path, uint32_t processId);
     void Close();
     bool VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-        PM_QUERY_ELEMENT(&queryElements)[24], pmapi::BlobContainer& blobs);
+        PM_QUERY_ELEMENT(&queryElements)[21], pmapi::BlobContainer& blobs);
     bool ResetCsv();
 
 private:
@@ -369,7 +357,7 @@ CsvParser::CsvParser()
 {}
 
 bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-    PM_QUERY_ELEMENT(&queryElements)[24], pmapi::BlobContainer& blobs)
+    PM_QUERY_ELEMENT(&queryElements)[21], pmapi::BlobContainer& blobs)
 {
 
     for (auto pBlob : blobs) {
@@ -395,12 +383,7 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
         const auto animationError = *reinterpret_cast<const double*>(&pBlob[queryElements[17].dataOffset]);
         const auto allInputToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[18].dataOffset]);
         const auto clickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[19].dataOffset]);
-        const auto InstrumentedLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[20].dataOffset]);
-        const auto InstrumentedRenderLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[21].dataOffset]);
-        const auto InstrumentedSleep = *reinterpret_cast<const double*>(&pBlob[queryElements[22].dataOffset]);
-        const auto InstrumentedGpuLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[23].dataOffset]);
-        //const auto ReadyTimeToDisplayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[24].dataOffset]);
-
+        const auto instrumentedLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[20].dataOffset]);
         
         // Read rows until we find one with the process we are interested in
         // or we are out of data.
@@ -553,11 +536,11 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                 break;
             case Header_InstrumentedLatency:
                 if (v2MetricRow_.InstrumentedLatency.has_value()) {
-                    columnsMatch = Validate(v2MetricRow_.InstrumentedLatency.value(), InstrumentedLatency);
+                    columnsMatch = Validate(v2MetricRow_.InstrumentedLatency.value(), instrumentedLatency);
                 }
                 else
                 {
-                    if (std::isnan(InstrumentedLatency)) {
+                    if (std::isnan(instrumentedLatency)) {
                         columnsMatch = true;
                     }
                     else
@@ -566,66 +549,6 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                     }
                 }
                 break;
-            case Header_InstrumentedRenderLatency:
-                if (v2MetricRow_.InstrumentedRenderLatency.has_value()) {
-                    columnsMatch = Validate(v2MetricRow_.InstrumentedRenderLatency.value(), InstrumentedRenderLatency);
-                }
-                else
-                {
-                    if (std::isnan(InstrumentedRenderLatency)) {
-                        columnsMatch = true;
-                    }
-                    else
-                    {
-                        columnsMatch = false;
-                    }
-                }
-                break;
-            case Header_InstrumentedSleep:
-                if (v2MetricRow_.InstrumentedSleep.has_value()) {
-                    columnsMatch = Validate(v2MetricRow_.InstrumentedSleep.value(), InstrumentedSleep);
-                }
-                else
-                {
-                    if (std::isnan(InstrumentedSleep)) {
-                        columnsMatch = true;
-                    }
-                    else
-                    {
-                        columnsMatch = false;
-                    }
-                }
-                break;
-            case Header_InstrumentedGPULatency:
-                if (v2MetricRow_.InstrumentedGPULatency.has_value()) {
-                    columnsMatch = Validate(v2MetricRow_.InstrumentedGPULatency.value(), InstrumentedGpuLatency);
-                }
-                else
-                {
-                    if (std::isnan(InstrumentedGpuLatency)) {
-                        columnsMatch = true;
-                    }
-                    else
-                    {
-                        columnsMatch = false;
-                    }
-                }
-                break;
-            //case Header_ReadyTimeToDisplayLatency:
-            //    if (v2MetricRow_.ReadyTimeToDisplayLatency.has_value()) {
-            //        columnsMatch = Validate(v2MetricRow_.ReadyTimeToDisplayLatency.value(), ReadyTimeToDisplayLatency);
-            //    }
-            //    else
-            //    {
-            //        if (std::isnan(ReadyTimeToDisplayLatency)) {
-            //            columnsMatch = true;
-            //        }
-            //        else
-            //        {
-            //            columnsMatch = false;
-            //        }
-            //    }
-            //    break;
             default:
                 columnsMatch = true;
                 break;
@@ -740,10 +663,7 @@ bool CsvParser::Open(std::wstring const& path, uint32_t processId) {
                                                Header_AnimationError,
                                                Header_ClickToPhotonLatency,
                                                Header_AllInputToPhotonLatency,
-                                               Header_InstrumentedLatency,
-                                               Header_InstrumentedRenderLatency,
-                                               Header_InstrumentedSleep,
-                                               Header_InstrumentedGPULatency });
+                                               Header_InstrumentedLatency });
 
     if (!columnsOK) {
         Assert::Fail(L"Missing required columns");
@@ -967,62 +887,6 @@ void CsvParser::ConvertToMetricDataType(const char* data, Header columnId)
         else
         {
             v2MetricRow_.InstrumentedLatency.reset();
-        }
-    }
-    break;
-    case Header_InstrumentedRenderLatency:
-    {
-        if (strncmp(data, "NA", 2) != 0) {
-            double convertedData = 0.;
-            CharConvert<double> converter;
-            converter.Convert(data, convertedData, columnId, line_);
-            v2MetricRow_.InstrumentedRenderLatency = convertedData;
-        }
-        else
-        {
-            v2MetricRow_.InstrumentedRenderLatency.reset();
-        }
-    }
-    break;
-    case Header_InstrumentedSleep:
-    {
-        if (strncmp(data, "NA", 2) != 0) {
-            double convertedData = 0.;
-            CharConvert<double> converter;
-            converter.Convert(data, convertedData, columnId, line_);
-            v2MetricRow_.InstrumentedSleep = convertedData;
-        }
-        else
-        {
-            v2MetricRow_.InstrumentedSleep.reset();
-        }
-    }
-    break;
-    case Header_InstrumentedGPULatency:
-    {
-        if (strncmp(data, "NA", 2) != 0) {
-            double convertedData = 0.;
-            CharConvert<double> converter;
-            converter.Convert(data, convertedData, columnId, line_);
-            v2MetricRow_.InstrumentedGPULatency = convertedData;
-        }
-        else
-        {
-            v2MetricRow_.InstrumentedGPULatency.reset();
-        }
-    }
-    break;
-    case Header_ReadyTimeToDisplayLatency:
-    {
-        if (strncmp(data, "NA", 2) != 0) {
-            double convertedData = 0.;
-            CharConvert<double> converter;
-            converter.Convert(data, convertedData, columnId, line_);
-            v2MetricRow_.ReadyTimeToDisplayLatency = convertedData;
-        }
-        else
-        {
-            v2MetricRow_.ReadyTimeToDisplayLatency.reset();
         }
     }
     break;

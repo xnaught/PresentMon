@@ -294,10 +294,6 @@ namespace pmon::mid
             case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
             case PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY:
             case PM_METRIC_INSTRUMENTED_LATENCY:
-            case PM_METRIC_INSTRUMENTED_RENDER_LATENCY:
-            case PM_METRIC_INSTRUMENTED_SLEEP:
-            case PM_METRIC_INSTRUMENTED_GPU_LATENCY:
-            //case PM_METRIC_INSTRUMENTED_RENDER_DISPLAY_LATENCY:
                 pQuery->accumFpsData = true;
                 break;
             case PM_METRIC_GPU_POWER:
@@ -1208,18 +1204,6 @@ static void ReportMetrics(
         case PM_METRIC_INSTRUMENTED_LATENCY:
             output = CalculateStatistic(swapChain.mInstrumentedDisplayLatency, element.stat);
             break;
-        case PM_METRIC_INSTRUMENTED_RENDER_LATENCY:
-            output = CalculateStatistic(swapChain.mInstrumentedRenderLatency, element.stat);
-            break;
-        case PM_METRIC_INSTRUMENTED_SLEEP:
-            output = CalculateStatistic(swapChain.mInstrumentedSleep, element.stat);
-            break;
-        case PM_METRIC_INSTRUMENTED_GPU_LATENCY:
-            output = CalculateStatistic(swapChain.mInstrumentedGpuLatency, element.stat);
-            break;
-        //case PM_METRIC_XELL_RENDERSCREEN_LATENCY:
-        //    output = CalculateStatistic(swapChain.mXellRenderEndToDisplayLatency, element.stat);
-        //    break;
         default:
             output = 0.;
             break;
@@ -1722,10 +1706,6 @@ static void ReportMetrics(
                 case PM_METRIC_ANIMATION_ERROR:
                 case PM_METRIC_APPLICATION:
                 case PM_METRIC_INSTRUMENTED_LATENCY:
-                case PM_METRIC_INSTRUMENTED_RENDER_LATENCY:
-                case PM_METRIC_INSTRUMENTED_SLEEP:
-                case PM_METRIC_INSTRUMENTED_GPU_LATENCY:
-                //case PM_METRIC_XELL_RENDERSCREEN_LATENCY:
                     CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
                     break;
                 case PM_METRIC_CPU_VENDOR:
