@@ -47,7 +47,8 @@ namespace p2c::pmon
 
             // Internal Intel Metrics
             Element{.metricId = PM_METRIC_INSTRUMENTED_SLEEP, .deviceId = 0 },
-            Element{.metricId = PM_METRIC_INSTRUMENTED_LATENCY, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_INSTRUMENTED_GPU_LATENCY, .deviceId = 0 },
+            Element{.metricId = PM_METRIC_INSTRUMENTED_RENDER_LATENCY, .deviceId = 0 },
             //Element{.metricId = PM_METRIC_XELL_RENDERSCREEN_LATENCY, .deviceId = 0 },
 
             Element{.metricId = PM_METRIC_GPU_POWER, .deviceId = activeDeviceId },
