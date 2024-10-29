@@ -344,7 +344,7 @@ namespace
 	private:
 		uint32_t outputOffset_;
 	};
-	template<uint64_t PmNsmPresentEvent::* pEnd>
+	template<uint64_t PmNsmPresentEvent::* pEnd, bool doDroppedCheck, bool calcAnimationTime>
 	class StartDifferenceGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
@@ -355,9 +355,28 @@ namespace
 		}
 		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
-			const auto qpcDuration = ctx.pSourceFrameData->present_event.*pEnd - ctx.qpcStart;
-			const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
-			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			if constexpr (calcAnimationTime)  {
+				if constexpr(doDroppedCheck) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+				}
+				if (ctx.sourceFrameDisplayIndex != ctx.appIndex) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+				}
+				const auto firstSimStartTime = ctx.firstAppSimStartTime != 0 ? ctx.firstAppSimStartTime :
+					ctx.qpcStart;
+				if (ctx.pSourceFrameData->present_event.*pEnd > firstSimStartTime) {
+					const auto val = TimestampDeltaToUnsignedMilliSeconds(firstSimStartTime,
+						ctx.pSourceFrameData->present_event.*pEnd, ctx.performanceCounterPeriodMs);
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+				}
+				else {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+				}
+			} else {
+				const auto qpcDuration = ctx.pSourceFrameData->present_event.*pEnd - ctx.qpcStart;
+				const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			}
 		}
 		uint32_t GetBeginOffset() const override
 		{
@@ -935,7 +954,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_PRESENT_FLAGS:
 		return std::make_unique<CopyGatherCommand_<&Pre::PresentFlags>>(pos);
 	case PM_METRIC_CPU_START_TIME:
-		return std::make_unique<StartDifferenceGatherCommand_<&Pre::PresentStartTime>>(pos);
+		return std::make_unique<StartDifferenceGatherCommand_<&Pre::PresentStartTime, 0, 0>>(pos);
 	case PM_METRIC_CPU_FRAME_TIME:
 		return std::make_unique<CpuFrameQpcFrameTimeCommand_>(pos);
 	case PM_METRIC_CPU_BUSY:
@@ -950,6 +969,8 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 		return std::make_unique<DisplayDifferenceGatherCommand_>(pos);
 	case PM_METRIC_ANIMATION_ERROR:
 		return std::make_unique<AnimationErrorGatherCommand_<1,1>>(pos);
+	case PM_METRIC_ANIMATION_TIME:
+		return std::make_unique<StartDifferenceGatherCommand_<&Pre::AppSimStartTime, 1, 1>>(pos);
 	case PM_METRIC_GPU_LATENCY:
 		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::GPUStartTime, 0>>(pos);
 	case PM_METRIC_DISPLAY_LATENCY:
@@ -989,6 +1010,11 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 		}
 		if (pSourceFrameData->present_event.InputTime != 0) {
 			lastReceivedNotDisplayedAllInputTime = pSourceFrameData->present_event.InputTime;
+		}
+	}
+	if (pSourceFrameData->present_event.AppSimStartTime != 0) {
+		if (firstAppSimStartTime == 0) {
+			firstAppSimStartTime = pSourceFrameData->present_event.AppSimStartTime;
 		}
 	}
 

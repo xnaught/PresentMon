@@ -52,6 +52,7 @@ public:
 		uint64_t lastReceivedNotDisplayedClickQpc = 0;
 		// All other input time qpc of non displayed frame
 		uint64_t lastReceivedNotDisplayedAllInputTime = 0;
+		uint64_t firstAppSimStartTime = 0;
 	};
 	// functions
 	PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements);
