@@ -473,10 +473,13 @@ namespace pwr::intel
                     currentSample.vramReadBandwidth,
                     pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
                     GpuTelemetryCapBits::gpu_mem_read_bandwidth);
+                pmlog_verb(v::gpu)(std::format("VR read BW bSupported [{}] type [{}] units [{}] data [{}]",
+                    currentSample.vramReadBandwidth.bSupported, (int)currentSample.vramReadBandwidth.type,
+                    (int)currentSample.vramReadBandwidth.units, currentSample.vramReadBandwidth.value.datau64));
                 if (result != CTL_RESULT_SUCCESS ||
                     !(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_read_bandwidth))) {
                     useNewBandwidthTelemetry = false;
-                    pmlog_dbg("V1 vram bandwidth not available, falling back to V0 counters")
+                    pmlog_info("V1 vram bandwidth not available, falling back to V0 counters")
                         .code(result).pmwatch(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_read_bandwidth));
                 }
             }
@@ -485,10 +488,13 @@ namespace pwr::intel
                     currentSample.vramWriteBandwidth,
                     pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
                     GpuTelemetryCapBits::gpu_mem_write_bandwidth);
+                pmlog_verb(v::gpu)(std::format("VR write BW bSupported [{}] type [{}] units [{}] data [{}]",
+                    currentSample.vramWriteBandwidth.bSupported, (int)currentSample.vramWriteBandwidth.type,
+                    (int)currentSample.vramWriteBandwidth.units, currentSample.vramWriteBandwidth.value.datau64));
                 if (result != CTL_RESULT_SUCCESS ||
                     !(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_write_bandwidth))) {
                     useNewBandwidthTelemetry = false;
-                    pmlog_dbg("V1 vram bandwidth not available, falling back to V0 counters")
+                    pmlog_info("V1 vram bandwidth not available, falling back to V0 counters")
                         .code(result).pmwatch(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_write_bandwidth));
                 }
             }
