@@ -1685,7 +1685,7 @@ namespace EtlTests
 			}
 
 			oChild.emplace("PresentMonService.exe"s,
-				"--timed-stop"s, "20000"s,
+				"--timed-stop"s, "60000"s,
 				"--control-pipe"s, pipeName,
 				"--nsm-prefix"s, "pmon_nsm_utest_"s,
 				"--intro-nsm"s, introName,
@@ -1733,7 +1733,7 @@ namespace EtlTests
 			}
 
 			oChild.emplace("PresentMonService.exe"s,
-				"--timed-stop"s, "20000"s,
+				"--timed-stop"s, "60000"s,
 				"--control-pipe"s, pipeName,
 				"--nsm-prefix"s, "pmon_nsm_utest_"s,
 				"--intro-nsm"s, introName,
