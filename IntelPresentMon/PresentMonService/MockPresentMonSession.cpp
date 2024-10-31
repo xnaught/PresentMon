@@ -194,6 +194,7 @@ void MockPresentMonSession::AddPresents(
     // If mStartTimestamp contains a value an etl file is being processed.
     // Set this value in the streamer to have the correct start time.
     streamer_.SetStartQpc(trace_session_.mStartTimestamp.QuadPart);
+    streamer_.SetStreamMode(StreamMode::kOfflineEtl);
 
     for (auto n = presentEvents.size(); i < n; ++i) {
         auto presentEvent = presentEvents[i];

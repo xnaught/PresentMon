@@ -159,6 +159,7 @@ namespace EtlTests
 			{ PM_METRIC_DISPLAY_LATENCY, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_DISPLAYED_TIME, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_ANIMATION_ERROR, PM_STAT_NONE, 0, 0 },
+			{ PM_METRIC_ANIMATION_TIME, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY, PM_STAT_NONE, 0, 0},
 			{ PM_METRIC_CLICK_TO_PHOTON_LATENCY, PM_STAT_NONE, 0, 0},
 			{ PM_METRIC_INSTRUMENTED_LATENCY, PM_STAT_NONE, 0, 0 },
@@ -1677,6 +1678,54 @@ namespace EtlTests
 			const auto introName = "PM_intro_test_nsm_2"s;
 			const auto etlName = "F:\\EtlTesting\\test_case_6.etl";
 			const auto goldCsvName = L"F:\\EtlTesting\\test_case_6.csv";
+
+			CsvParser goldCsvFile;
+			if (!goldCsvFile.Open(goldCsvName, processId)) {
+				return;
+			}
+
+			oChild.emplace("PresentMonService.exe"s,
+				"--timed-stop"s, "20000"s,
+				"--control-pipe"s, pipeName,
+				"--nsm-prefix"s, "pmon_nsm_utest_"s,
+				"--intro-nsm"s, introName,
+				"--etl-test-file"s, etlName,
+				bp::std_out > out, bp::std_in < in);
+
+			std::this_thread::sleep_for(1000ms);
+
+			std::unique_ptr<pmapi::Session> pSession;
+			{
+				try
+				{
+					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+				}
+				catch (const std::exception& e) {
+					std::cout << "Error: " << e.what() << std::endl;
+					Assert::AreEqual(false, true, L"*** Connecting to service via named pipe");
+					return;
+				}
+			}
+
+			RunTestCaseV2(std::move(pSession), processId, processName, goldCsvFile);
+			goldCsvFile.Close();
+		}
+		TEST_METHOD(Tc7v2CPXellOnFgOn11320Ext)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+			using namespace std::chrono_literals;
+
+			const uint32_t processId = 11320;
+			const std::string processName = "cpLauncher.exe";
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
+			const auto introName = "PM_intro_test_nsm_2"s;
+			const auto etlName = "F:\\EtlTesting\\test_case_7.etl";
+			const auto goldCsvName = L"F:\\EtlTesting\\test_case_7.csv";
 
 			CsvParser goldCsvFile;
 			if (!goldCsvFile.Open(goldCsvName, processId)) {

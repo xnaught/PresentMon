@@ -356,24 +356,25 @@ namespace
 		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			if constexpr (calcAnimationTime)  {
-				if constexpr(doDroppedCheck) {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+				if constexpr (doDroppedCheck) {
+					if (ctx.dropped) {
+						reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+							std::numeric_limits<double>::quiet_NaN();
+						return;
+					}
 				}
 				if (ctx.sourceFrameDisplayIndex != ctx.appIndex) {
 					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+					return;
 				}
 				const auto firstSimStartTime = ctx.firstAppSimStartTime != 0 ? ctx.firstAppSimStartTime :
 					ctx.qpcStart;
-				if (ctx.pSourceFrameData->present_event.*pEnd > firstSimStartTime) {
-					const auto val = TimestampDeltaToUnsignedMilliSeconds(firstSimStartTime,
-						ctx.pSourceFrameData->present_event.*pEnd, ctx.performanceCounterPeriodMs);
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
-				}
-				else {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
-				}
+				const auto currentSimTime = ctx.pSourceFrameData->present_event.*pEnd != 0 ? ctx.pSourceFrameData->present_event.*pEnd :
+					ctx.cpuStart;
+				const auto val = TimestampDeltaToUnsignedMilliSeconds(firstSimStartTime, currentSimTime, ctx.performanceCounterPeriodMs);
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 			} else {
-				const auto qpcDuration = ctx.pSourceFrameData->present_event.*pEnd - ctx.qpcStart;
+				const auto qpcDuration = ctx.cpuStart - ctx.qpcStart;
 				const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 			}
@@ -1012,10 +1013,9 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 			lastReceivedNotDisplayedAllInputTime = pSourceFrameData->present_event.InputTime;
 		}
 	}
-	if (pSourceFrameData->present_event.AppSimStartTime != 0) {
-		if (firstAppSimStartTime == 0) {
-			firstAppSimStartTime = pSourceFrameData->present_event.AppSimStartTime;
-		}
+
+	if (firstAppSimStartTime == 0) {
+		firstAppSimStartTime = pSourceFrameData->present_event.AppSimStartTime;
 	}
 
 	if (pFrameDataOfLastPresented) {
