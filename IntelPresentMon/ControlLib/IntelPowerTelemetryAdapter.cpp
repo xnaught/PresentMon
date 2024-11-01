@@ -33,6 +33,8 @@ namespace pwr::intel
 
     bool IntelPowerTelemetryAdapter::Sample() noexcept
     {
+        pmlog_verb(v::gpu)("Sample called");
+
         LARGE_INTEGER qpc;
         QueryPerformanceCounter(&qpc);
         bool success = true;
@@ -473,9 +475,10 @@ namespace pwr::intel
                     currentSample.vramReadBandwidth,
                     pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
                     GpuTelemetryCapBits::gpu_mem_read_bandwidth);
-                pmlog_verb(v::gpu)(std::format("VR read BW bSupported [{}] type [{}] units [{}] data [{}]",
+                pmlog_verb(v::gpu)(std::format("VRAM read BW bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}]",
                     currentSample.vramReadBandwidth.bSupported, (int)currentSample.vramReadBandwidth.type,
-                    (int)currentSample.vramReadBandwidth.units, currentSample.vramReadBandwidth.value.datau64));
+                    (int)currentSample.vramReadBandwidth.units, currentSample.vramReadBandwidth.value.datau64,
+                    currentSample.vramReadBandwidth.value.datadouble));
                 if (result != CTL_RESULT_SUCCESS ||
                     !(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_read_bandwidth))) {
                     useNewBandwidthTelemetry = false;
@@ -488,9 +491,10 @@ namespace pwr::intel
                     currentSample.vramWriteBandwidth,
                     pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
                     GpuTelemetryCapBits::gpu_mem_write_bandwidth);
-                pmlog_verb(v::gpu)(std::format("VR write BW bSupported [{}] type [{}] units [{}] data [{}]",
+                pmlog_verb(v::gpu)(std::format("VRAM write BW bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}]",
                     currentSample.vramWriteBandwidth.bSupported, (int)currentSample.vramWriteBandwidth.type,
-                    (int)currentSample.vramWriteBandwidth.units, currentSample.vramWriteBandwidth.value.datau64));
+                    (int)currentSample.vramWriteBandwidth.units, currentSample.vramWriteBandwidth.value.datau64,
+                    currentSample.vramReadBandwidth.value.datadouble));
                 if (result != CTL_RESULT_SUCCESS ||
                     !(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_write_bandwidth))) {
                     useNewBandwidthTelemetry = false;

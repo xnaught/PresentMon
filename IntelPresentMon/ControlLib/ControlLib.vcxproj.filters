@@ -79,6 +79,7 @@
     <ClInclude Include="ctlpvttemp_api.h">
       <Filter>Intel</Filter>
     </ClInclude>
+    <ClInclude Include="LoggingVerbose.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NvapiWrapper.cpp">
