@@ -494,7 +494,7 @@ namespace pwr::intel
                 pmlog_verb(v::gpu)(std::format("VRAM write BW bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}]",
                     currentSample.vramWriteBandwidth.bSupported, (int)currentSample.vramWriteBandwidth.type,
                     (int)currentSample.vramWriteBandwidth.units, currentSample.vramWriteBandwidth.value.datau64,
-                    currentSample.vramReadBandwidth.value.datadouble));
+                    currentSample.vramWriteBandwidth.value.datadouble));
                 if (result != CTL_RESULT_SUCCESS ||
                     !(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_write_bandwidth))) {
                     useNewBandwidthTelemetry = false;
