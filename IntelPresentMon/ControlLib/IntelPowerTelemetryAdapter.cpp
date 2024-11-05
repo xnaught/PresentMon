@@ -481,9 +481,18 @@ namespace pwr::intel
 
         // bandwidth telemetry has 2 possible paths for aquisition
         if constexpr (std::same_as<T, ctl_power_telemetry2_t>) {
+            // fake spoofing for test purposes
+            ctl_oc_telemetry_item_t spoofItem{
+                .bSupported = true,
+                .units = ctl_units_t::CTL_UNITS_MEM_SPEED_GBPS,
+                .type = ctl_data_type_t::CTL_DATA_TYPE_DOUBLE,
+                .value{ .datadouble = 44.777 },
+            };
+            // end fake spoof
+
             if (useNewBandwidthTelemetry) {
                 result = GetInstantaneousPowerTelemetryItem(
-                    currentSample.vramReadBandwidth,
+                    spoofItem,
                     pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
                     GpuTelemetryCapBits::gpu_mem_read_bandwidth);
                 pmlog_verb(v::gpu)(std::format("VRAM read BW V1: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
@@ -499,7 +508,7 @@ namespace pwr::intel
             }
             if (useNewBandwidthTelemetry) {
                 result = GetInstantaneousPowerTelemetryItem(
-                    currentSample.vramWriteBandwidth,
+                    spoofItem,
                     pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
                     GpuTelemetryCapBits::gpu_mem_write_bandwidth);
                 pmlog_verb(v::gpu)(std::format("VRAM write BW V1: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
