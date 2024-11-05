@@ -40,6 +40,7 @@ enum Header {
     Header_DisplayLatency,
     Header_DisplayedTime,
     Header_AnimationError,
+    Header_AnimationTime,
     Header_ClickToPhotonLatency,
     Header_AllInputToPhotonLatency,
 
@@ -96,6 +97,7 @@ struct v2Metrics {
     std::optional<double> displayLatency;
     std::optional<double> displayedTime;
     std::optional<double> animationError;
+    std::optional<double> animationTime;
     std::optional<double> clickToPhotonLatency;
     std::optional<double> AllInputToPhotonLatency;
     std::optional<double> InstrumentedLatency;
@@ -132,6 +134,7 @@ constexpr char const* GetHeaderString(Header h)
     case Header_DisplayLatency:             return "DisplayLatency";
     case Header_DisplayedTime:              return "DisplayedTime";
     case Header_AnimationError:             return "AnimationError";
+    case Header_AnimationTime:              return "AnimationTime";
     case Header_ClickToPhotonLatency:       return "ClickToPhotonLatency";
     case Header_AllInputToPhotonLatency:    return "AllInputToPhotonLatency";
 
@@ -340,7 +343,7 @@ public:
     bool Open(std::wstring const& path, uint32_t processId);
     void Close();
     bool VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-        PM_QUERY_ELEMENT(&queryElements)[24], pmapi::BlobContainer& blobs);
+        PM_QUERY_ELEMENT(&queryElements)[25], pmapi::BlobContainer& blobs);
     bool ResetCsv();
 
 private:
@@ -369,7 +372,7 @@ CsvParser::CsvParser()
 {}
 
 bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-    PM_QUERY_ELEMENT(&queryElements)[24], pmapi::BlobContainer& blobs)
+    PM_QUERY_ELEMENT(&queryElements)[25], pmapi::BlobContainer& blobs)
 {
 
     for (auto pBlob : blobs) {
@@ -393,13 +396,14 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
         const auto displayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[15].dataOffset]);
         const auto displayedTime = *reinterpret_cast<const double*>(&pBlob[queryElements[16].dataOffset]);
         const auto animationError = *reinterpret_cast<const double*>(&pBlob[queryElements[17].dataOffset]);
-        const auto allInputToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[18].dataOffset]);
-        const auto clickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[19].dataOffset]);
-        const auto InstrumentedLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[20].dataOffset]);
-        const auto InstrumentedRenderLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[21].dataOffset]);
-        const auto InstrumentedSleep = *reinterpret_cast<const double*>(&pBlob[queryElements[22].dataOffset]);
-        const auto InstrumentedGpuLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[23].dataOffset]);
-        //const auto ReadyTimeToDisplayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[24].dataOffset]);
+        const auto animationTime = *reinterpret_cast<const double*>(&pBlob[queryElements[18].dataOffset]);
+        const auto allInputToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[19].dataOffset]);
+        const auto clickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[20].dataOffset]);
+        const auto InstrumentedLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[21].dataOffset]);
+        const auto InstrumentedRenderLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[22].dataOffset]);
+        const auto InstrumentedSleep = *reinterpret_cast<const double*>(&pBlob[queryElements[23].dataOffset]);
+        const auto InstrumentedGpuLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[24].dataOffset]);
+        //const auto ReadyTimeToDisplayLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[25].dataOffset]);
 
         
         // Read rows until we find one with the process we are interested in
@@ -513,6 +517,21 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                 else
                 {
                     if (std::isnan(animationError)) {
+                        columnsMatch = true;
+                    }
+                    else
+                    {
+                        columnsMatch = false;
+                    }
+                }
+                break;
+            case Header_AnimationTime:
+                if (v2MetricRow_.animationTime.has_value()) {
+                    columnsMatch = Validate(v2MetricRow_.animationTime.value(), animationTime);
+                }
+                else
+                {
+                    if (std::isnan(animationTime)) {
                         columnsMatch = true;
                     }
                     else
@@ -738,6 +757,7 @@ bool CsvParser::Open(std::wstring const& path, uint32_t processId) {
                                                Header_DisplayLatency,
                                                Header_DisplayedTime,
                                                Header_AnimationError,
+                                               Header_AnimationTime,
                                                Header_ClickToPhotonLatency,
                                                Header_AllInputToPhotonLatency,
                                                Header_InstrumentedLatency,
@@ -927,6 +947,19 @@ void CsvParser::ConvertToMetricDataType(const char* data, Header columnId)
         }
         else {
             v2MetricRow_.animationError.reset();
+        }
+    }
+    break;
+    case Header_AnimationTime:
+    {
+        if (strncmp(data, "NA", 2) != 0) {
+            double convertedData = 0.;
+            CharConvert<double> converter;
+            converter.Convert(data, convertedData, columnId, line_);
+            v2MetricRow_.animationTime = convertedData;
+        }
+        else {
+            v2MetricRow_.animationTime.reset();
         }
     }
     break;

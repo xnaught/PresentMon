@@ -22,8 +22,9 @@ public:
 	struct Context
 	{
 		// functions
-		Context(uint64_t qpcStart, long long perfCounterFrequency) : qpcStart{ qpcStart },
-			performanceCounterPeriodMs{ perfCounterFrequency != 0.f ? 1000.0 / perfCounterFrequency : 0.f } {}
+		Context(uint64_t qpcStart, long long perfCounterFrequency, uint64_t appSimStartTime) : qpcStart{ qpcStart },
+			performanceCounterPeriodMs{ perfCounterFrequency != 0.f ? 1000.0 / perfCounterFrequency : 0.f },
+			firstAppSimStartTime { appSimStartTime} {}
 		void UpdateSourceData(const PmNsmFrameData* pSourceFrameData_in,
 			const PmNsmFrameData* pFrameDataOfNextDisplayed,
 			const PmNsmFrameData* pFrameDataofLastPresented,
@@ -52,6 +53,8 @@ public:
 		uint64_t lastReceivedNotDisplayedClickQpc = 0;
 		// All other input time qpc of non displayed frame
 		uint64_t lastReceivedNotDisplayedAllInputTime = 0;
+		// The first app sim start time
+		uint64_t firstAppSimStartTime = 0;
 	};
 	// functions
 	PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements);

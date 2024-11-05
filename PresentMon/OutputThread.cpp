@@ -240,6 +240,11 @@ static void UpdateChain(
     if (p->FinalState == PresentResult::Presented) {
         if (p->AppSimStartTime != 0) {
             chain->mLastDisplayedSimStartTime = p->AppSimStartTime;
+            if (chain->mFirstAppSimStartTime == 0) {
+                // Received the first app sim start time.
+                chain->mFirstAppSimStartTime = p->AppSimStartTime;
+            }
+            
         } else if (chain->mLastPresent != nullptr) {
             chain->mLastDisplayedSimStartTime = chain->mLastPresent->PresentStartTime +
                                                 chain->mLastPresent->TimeInPresent;
@@ -290,6 +295,20 @@ static void ReportMetrics1(
     }
 
     UpdateChain(chain, p);
+}
+
+static void CalculateAnimationTime(
+    PMTraceSession const& pmSession,
+    const uint64_t& firstAppSimStartTime,
+    const uint64_t& currentSimTime,
+    double& animationTime) {
+
+    auto firstSimStartTime = firstAppSimStartTime != 0 ? firstAppSimStartTime : pmSession.mStartTimestamp.QuadPart;
+    if (currentSimTime > firstSimStartTime) {
+        animationTime = pmSession.TimestampDeltaToMilliSeconds(firstSimStartTime, currentSimTime);
+    } else {
+        animationTime = 0.;
+    }
 }
 
 static void ReportMetricsHelper(
@@ -448,20 +467,38 @@ static void ReportMetricsHelper(
             metrics.mInstrumentedInputTime = 0;
         }
 
-        if (displayed && displayIndex == appIndex && chain->mLastDisplayedSimStartTime != 0) {
+        if (displayed && displayIndex == appIndex) {
             // Calculate the sim start time based on if AppSimStartTime is non-zero
             auto simStartTime = p->AppSimStartTime != 0 ? p->AppSimStartTime : metrics.mCPUStart;
-            // If the simulation start time is less than the last displated simulation start time it means
-            // we are transitioning to app provider events.
-            if (simStartTime > chain->mLastDisplayedSimStartTime) {
-                metrics.mAnimationError = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
-                    simStartTime - chain->mLastDisplayedSimStartTime);
+
+            if (chain->mLastDisplayedSimStartTime != 0) {
+                // If the simulation start time is less than the last displated simulation start time it means
+                // we are transitioning to app provider events.
+                if (simStartTime > chain->mLastDisplayedSimStartTime) {
+                    metrics.mAnimationError = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
+                        simStartTime - chain->mLastDisplayedSimStartTime);
+                }
+                else {
+                    metrics.mAnimationError = 0;
+                }
             } else {
                 metrics.mAnimationError = 0;
             }
+            // If we have a value in app sim start and we haven't set the first
+            // sim start time then we are transitioning from using cpu start to
+            // an application provided timestamp. Set the animation time to zero
+            // for the first frame.
+            if (p->AppSimStartTime != 0 && chain->mFirstAppSimStartTime == 0) {
+                metrics.mAnimationTime = 0.;
+            } else {
+                CalculateAnimationTime(pmSession, chain->mFirstAppSimStartTime, simStartTime, metrics.mAnimationTime);
+            }
+            
         } else {
             metrics.mAnimationError      = 0;
+            metrics.mAnimationTime       = 0;
         }
+
 
         if (p->Displayed.empty()) {
             metrics.mFrameType = FrameType::NotSet;
