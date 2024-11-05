@@ -2298,6 +2298,22 @@ void PMTraceConsumer::RuntimePresentStart(Runtime runtime, EVENT_HEADER const& h
 
     ApplyPresentFrameType(present);
 
+    TrackPresent(present, &mOrderedPresentsByProcessId[present->ProcessId]);
+}
+
+// No TRACK_PRESENT instrumentation here because each runtime Present::Start
+// event is instrumented and we assume we'll see the corresponding Stop event
+// for any completed present.
+void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hdr, uint32_t result)
+{
+    // Present_Start and Present_Stop happen on the same thread, so Lookup the PresentEvent
+    // most-recently operated on by the same thread.  If there is none, ignore this event.
+    auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
+    if (eventIter == mPresentByThreadId.end()) {
+        return;
+    }
+    auto present = eventIter->second;
+
     if (mNextAppFrameId != 0) {
         auto ii = mPendingAppTimingDataByAppFrameId.find(mNextAppFrameId);
         if (ii != mPendingAppTimingDataByAppFrameId.end()) {
@@ -2321,22 +2337,6 @@ void PMTraceConsumer::RuntimePresentStart(Runtime runtime, EVENT_HEADER const& h
             }
         }
     }
-
-    TrackPresent(present, &mOrderedPresentsByProcessId[present->ProcessId]);
-}
-
-// No TRACK_PRESENT instrumentation here because each runtime Present::Start
-// event is instrumented and we assume we'll see the corresponding Stop event
-// for any completed present.
-void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hdr, uint32_t result)
-{
-    // Present_Start and Present_Stop happen on the same thread, so Lookup the PresentEvent
-    // most-recently operated on by the same thread.  If there is none, ignore this event.
-    auto eventIter = mPresentByThreadId.find(hdr.ThreadId);
-    if (eventIter == mPresentByThreadId.end()) {
-        return;
-    }
-    auto present = eventIter->second;
 
     // Set the runtime and Present_Stop time.
     VerboseTraceBeforeModifyingPresent(present.get());
