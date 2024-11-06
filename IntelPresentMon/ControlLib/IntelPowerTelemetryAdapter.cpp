@@ -490,7 +490,7 @@ namespace pwr::intel
                     GpuTelemetryCapBits::gpu_mem_read_bandwidth);
                 pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps = ConvertMagnitudePrefix(
                     pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
-                    MagnitudePrefix::Gibi,
+                    MagnitudePrefix::Mebi,
                     MagnitudePrefix::Base);
                 pmlog_verb(v::gpu)(std::format("VRAM read BW V1: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
                     currentSample.vramReadBandwidth.bSupported, (int)currentSample.vramReadBandwidth.type,
@@ -510,7 +510,7 @@ namespace pwr::intel
                     GpuTelemetryCapBits::gpu_mem_write_bandwidth);
                 pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps = ConvertMagnitudePrefix(
                     pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
-                    MagnitudePrefix::Gibi,
+                    MagnitudePrefix::Mebi,
                     MagnitudePrefix::Base);
                 pmlog_verb(v::gpu)(std::format("VRAM write BW V1: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
                     currentSample.vramWriteBandwidth.bSupported, (int)currentSample.vramWriteBandwidth.type,
