@@ -138,6 +138,8 @@ namespace pmon::mid
 		uint32_t clientProcessId = 0;
 		// Stream clients mapping to process id
 		std::map<uint32_t, std::unique_ptr<StreamClient>> presentMonStreamClients;
+		// App sim start time for each process id
+		std::map<uint32_t, uint64_t> appSimStartTime;
 		std::unique_ptr<ipc::MiddlewareComms> pComms;
 		// Dynamic query handle to frame data delta
 		std::unordered_map<std::pair<const PM_DYNAMIC_QUERY*, uint32_t>, uint64_t> queryFrameDataDeltas;

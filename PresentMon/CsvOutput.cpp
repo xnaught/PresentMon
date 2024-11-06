@@ -302,7 +302,8 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     if (args.mTrackDisplay) {
         fwprintf(fp, L",DisplayLatency"
                      L",DisplayedTime"
-                     L",AnimationError");
+                     L",AnimationError"
+                     L",AnimationTime");
     }
     if (args.mTrackInput) {
         fwprintf(fp, L",AllInputToPhotonLatency");
@@ -389,11 +390,12 @@ void WriteCsvRow<FrameMetrics>(
     }
     if (args.mTrackDisplay) {
         if (metrics.mDisplayedTime == 0.0) {
-            fwprintf(fp, L",NA,NA,NA");
+            fwprintf(fp, L",NA,NA,NA,NA");
         } else {
-            fwprintf(fp, L",%.4lf,%.4lf,%.4lf", metrics.mDisplayLatency,
-                                                metrics.mDisplayedTime,
-                                                metrics.mAnimationError);
+            fwprintf(fp, L",%.4lf,%.4lf,%.4lf,%.4lf", metrics.mDisplayLatency,
+                                                      metrics.mDisplayedTime,
+                                                      metrics.mAnimationError,
+                                                      metrics.mAnimationTime);
         }
     }
     if (args.mTrackInput) {

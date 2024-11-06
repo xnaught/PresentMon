@@ -1052,8 +1052,14 @@ static void ReportMetrics(
             SetActiveGraphicsAdapter(*devId);
         }
 
+        uint64_t simStartTime = 0;
+        auto iter = appSimStartTime.find(processId);
+        if (iter != appSimStartTime.end()) {
+            simStartTime = iter->second;
+        }
+
         // context transmits various data that applies to each gather command in the query
-        PM_FRAME_QUERY::Context ctx{ nsm_hdr->start_qpc, pShmClient->GetQpcFrequency().QuadPart };
+        PM_FRAME_QUERY::Context ctx{ nsm_hdr->start_qpc, pShmClient->GetQpcFrequency().QuadPart, simStartTime };
 
         while (frames_copied < frames_to_copy) {
             const PmNsmFrameData* pCurrentFrameData = nullptr;
@@ -1078,6 +1084,10 @@ static void ReportMetrics(
                     pFrameDataOfLastDisplayed,
                     pPreviousFrameDataOfLastDisplayed);
 
+                if (simStartTime == 0 && ctx.firstAppSimStartTime != 0) {
+                    simStartTime = ctx.firstAppSimStartTime;
+                }
+
                 if (ctx.dropped) {
                     pQuery->GatherToBlob(ctx, pBlob);
                     pBlob += pQuery->GetBlobSize();
@@ -1099,6 +1109,9 @@ static void ReportMetrics(
         }
         // Set to the actual number of frames copied
         numFrames = frames_copied;
+        if (simStartTime != 0) {
+            appSimStartTime[processId] = simStartTime;
+        }
     }
 
     void ConcreteMiddleware::CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)

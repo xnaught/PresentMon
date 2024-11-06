@@ -166,7 +166,8 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
                                                                                 Header_PresentMode,
                                                                                 Header_DisplayLatency,
                                                                                 Header_DisplayedTime,
-                                                                                Header_AnimationError });
+                                                                                Header_AnimationError,
+                                                                                Header_AnimationTime });
         auto track_gpu        = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_GPULatency,
                                                                                 Header_GPUTime,
                                                                                 Header_GPUBusy,

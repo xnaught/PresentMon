@@ -103,6 +103,7 @@ struct FrameMetrics {
     double mDisplayLatency;
     double mDisplayedTime;
     double mAnimationError;
+    double mAnimationTime;
     double mClickToPhotonLatency;
     double mAllInputPhotonLatency;
     uint64_t mScreenTime;
@@ -146,6 +147,8 @@ struct SwapChainData {
     // The CPU start and screen time for the most recent frame that was displayed
     uint64_t mLastDisplayedSimStartTime = 0;
     uint64_t mLastDisplayedScreenTime = 0;
+    // QPC of first received simulation start time from the application provider
+    uint64_t mFirstAppSimStartTime = 0;
 
     // QPC of last received input data that did not make it to the screen due 
     // to the Present() being dropped

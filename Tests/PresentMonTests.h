@@ -37,6 +37,7 @@ struct PresentMonCsv
         Header_DisplayLatency,
         Header_DisplayedTime,
         Header_AnimationError,
+        Header_AnimationTime,
         Header_ClickToPhotonLatency,
         Header_AllInputToPhotonLatency,
 
@@ -94,6 +95,7 @@ struct PresentMonCsv
         case Header_DisplayLatency:             return "DisplayLatency";
         case Header_DisplayedTime:              return "DisplayedTime";
         case Header_AnimationError:             return "AnimationError";
+        case Header_AnimationTime:              return "AnimationTime";
         case Header_ClickToPhotonLatency:       return "ClickToPhotonLatency";
         case Header_AllInputToPhotonLatency:    return "AllInputToPhotonLatency";
         case Header_Runtime:                    return "Runtime";

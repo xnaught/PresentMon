@@ -199,7 +199,7 @@ namespace pmon::mid
 		}
 		const auto numFramesToProcess = std::min(numFrames, (uint32_t)frames.size());
 		const auto blobSize = pQuery->GetBlobSize();
-		PM_FRAME_QUERY::Context ctx{ 0ull, 0ll };
+		PM_FRAME_QUERY::Context ctx{ 0ull, 0ll , 0ull};
 		for (uint32_t i = 0; i < numFramesToProcess; i++) {
 			// TODO: feed actual prev/next frames into this function
 			ctx.UpdateSourceData(&frames.front(), nullptr, nullptr, nullptr, nullptr);
