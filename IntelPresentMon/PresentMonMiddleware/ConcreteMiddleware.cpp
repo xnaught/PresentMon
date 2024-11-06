@@ -685,8 +685,6 @@ static void ReportMetricsHelper(
             chain->mDisplayLatency                       .push_back(metrics.mDisplayLatency);
             chain->mDisplayedTime                        .push_back(metrics.mDisplayedTime);
             chain->mDropped                              .push_back(0.0);
-            chain->mInstrumentedDisplayLatency           .push_back(metrics.mInstrumentedDisplayLatency);
-            chain->mInstrumentedReadyTimeToDisplayLatency.push_back(metrics.mInstrumentedReadyTimeToDisplayLatency);
         } else {
             chain->mDropped       .push_back(1.0);
         }
@@ -708,8 +706,16 @@ static void ReportMetricsHelper(
             }
         }
 
-        if (displayed && displayIndex == appIndex && metrics.mInstrumentedRenderLatency != 0) {
-            chain->mInstrumentedRenderLatency.push_back(metrics.mInstrumentedRenderLatency);
+        if (displayed && displayIndex == appIndex) {
+            if (metrics.mInstrumentedRenderLatency != 0) {
+                chain->mInstrumentedRenderLatency.push_back(metrics.mInstrumentedRenderLatency);
+            }
+            if (metrics.mInstrumentedDisplayLatency != 0) {
+                chain->mInstrumentedDisplayLatency.push_back(metrics.mInstrumentedDisplayLatency);
+            }
+            if (metrics.mInstrumentedReadyTimeToDisplayLatency != 0) {
+                chain->mInstrumentedReadyTimeToDisplayLatency.push_back(metrics.mInstrumentedReadyTimeToDisplayLatency);
+            }
         }
 
         displayIndex += 1;
