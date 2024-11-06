@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 #include "IntelPowerTelemetryAdapter.h"
 #include "Logging.h"
+#include "../CommonUtilities/Math.h"
 
 namespace pwr::intel
 {
@@ -481,12 +482,14 @@ namespace pwr::intel
 
         // bandwidth telemetry has 2 possible paths for aquisition
         if constexpr (std::same_as<T, ctl_power_telemetry2_t>) {
+            using namespace pmon::util;
             // fake spoofing for test purposes
             ctl_oc_telemetry_item_t spoofItem{
                 .bSupported = true,
                 .units = ctl_units_t::CTL_UNITS_MEM_SPEED_GBPS,
                 .type = ctl_data_type_t::CTL_DATA_TYPE_DOUBLE,
-                .value{ .datadouble = 44.777 },
+                .value{ .datadouble = ConvertMagnitudePrefix(44.777,
+                    MagnitudePrefix::Gibi, MagnitudePrefix::Base) },
             };
             // end fake spoof
 
