@@ -483,21 +483,15 @@ namespace pwr::intel
         // bandwidth telemetry has 2 possible paths for aquisition
         if constexpr (std::same_as<T, ctl_power_telemetry2_t>) {
             using namespace pmon::util;
-            // fake spoofing for test purposes
-            ctl_oc_telemetry_item_t spoofItem{
-                .bSupported = true,
-                .units = ctl_units_t::CTL_UNITS_MEM_SPEED_GBPS,
-                .type = ctl_data_type_t::CTL_DATA_TYPE_DOUBLE,
-                .value{ .datadouble = ConvertMagnitudePrefix(44.777,
-                    MagnitudePrefix::Gibi, MagnitudePrefix::Base) },
-            };
-            // end fake spoof
-
             if (useNewBandwidthTelemetry) {
                 result = GetInstantaneousPowerTelemetryItem(
-                    spoofItem,
+                    currentSample.vramReadBandwidth,
                     pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
                     GpuTelemetryCapBits::gpu_mem_read_bandwidth);
+                pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps = ConvertMagnitudePrefix(
+                    pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
+                    MagnitudePrefix::Gibi,
+                    MagnitudePrefix::Base);
                 pmlog_verb(v::gpu)(std::format("VRAM read BW V1: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
                     currentSample.vramReadBandwidth.bSupported, (int)currentSample.vramReadBandwidth.type,
                     (int)currentSample.vramReadBandwidth.units, currentSample.vramReadBandwidth.value.datau64,
@@ -511,9 +505,13 @@ namespace pwr::intel
             }
             if (useNewBandwidthTelemetry) {
                 result = GetInstantaneousPowerTelemetryItem(
-                    spoofItem,
+                    currentSample.vramWriteBandwidth,
                     pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
                     GpuTelemetryCapBits::gpu_mem_write_bandwidth);
+                pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps = ConvertMagnitudePrefix(
+                    pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
+                    MagnitudePrefix::Gibi,
+                    MagnitudePrefix::Base);
                 pmlog_verb(v::gpu)(std::format("VRAM write BW V1: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
                     currentSample.vramWriteBandwidth.bSupported, (int)currentSample.vramWriteBandwidth.type,
                     (int)currentSample.vramWriteBandwidth.units, currentSample.vramWriteBandwidth.value.datau64,
