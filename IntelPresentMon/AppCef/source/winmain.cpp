@@ -8,7 +8,7 @@
 #include <Core/source/infra/util/FolderResolver.h>
 #include <Core/source/cli/CliOptions.h>
 #include <CommonUtilities/log/IdentificationTable.h>
-#include <CommonUtilities/BuildId.h>
+#include <Versioning/BuildId.h>
 #include <CommonUtilities/win/Utilities.h>
 #include <PresentMonAPIWrapper/DiagnosticHandler.h>
 #include <dwmapi.h>
@@ -22,6 +22,7 @@
 
 using namespace p2c;
 using namespace pmon::util;
+using namespace pmon::bid;
 using p2c::cli::Options;
 namespace ccef = client::cef;
 using namespace std::chrono_literals;

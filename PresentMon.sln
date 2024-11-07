@@ -95,6 +95,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CommonUtilities", "IntelPre
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Provider", "Provider\Provider.vcxproj", "{807370FB-ADE0-403A-A278-DF50893E5F94}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Versioning", "IntelPresentMon\Versioning\Versioning.vcxproj", "{C73AA532-E532-4D93-9279-905444653C08}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -390,6 +392,15 @@ Global
 		{807370FB-ADE0-403A-A278-DF50893E5F94}.Release-EDSS|x64.Build.0 = Release|x64
 		{807370FB-ADE0-403A-A278-DF50893E5F94}.Release-EDSS|x86.ActiveCfg = Release|Win32
 		{807370FB-ADE0-403A-A278-DF50893E5F94}.Release-EDSS|x86.Build.0 = Release|Win32
+		{C73AA532-E532-4D93-9279-905444653C08}.Debug|x64.ActiveCfg = Debug|x64
+		{C73AA532-E532-4D93-9279-905444653C08}.Debug|x64.Build.0 = Debug|x64
+		{C73AA532-E532-4D93-9279-905444653C08}.Debug|x86.ActiveCfg = Debug|x64
+		{C73AA532-E532-4D93-9279-905444653C08}.Release|x64.ActiveCfg = Release|x64
+		{C73AA532-E532-4D93-9279-905444653C08}.Release|x64.Build.0 = Release|x64
+		{C73AA532-E532-4D93-9279-905444653C08}.Release|x86.ActiveCfg = Release|x64
+		{C73AA532-E532-4D93-9279-905444653C08}.Release-EDSS|x64.ActiveCfg = Release|x64
+		{C73AA532-E532-4D93-9279-905444653C08}.Release-EDSS|x64.Build.0 = Release|x64
+		{C73AA532-E532-4D93-9279-905444653C08}.Release-EDSS|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -424,6 +435,7 @@ Global
 		{F612934B-9333-4628-9076-7DFE0B5C3E0C} = {6DCB803B-9FCE-456C-87B9-1365F59BD190}
 		{08A704D8-CA1C-45E9-8EDE-542A1A43B53E} = {B4CC5828-9638-42EC-A692-E81E8227DD84}
 		{807370FB-ADE0-403A-A278-DF50893E5F94} = {61877103-313D-4140-8449-834D5D73C72E}
+		{C73AA532-E532-4D93-9279-905444653C08} = {B4CC5828-9638-42EC-A692-E81E8227DD84}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {485BBDCE-E37E-4C3F-A336-A96029B45E1B}

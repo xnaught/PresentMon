@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <Core/source/infra/util/FolderResolver.h>
 #include <Core/source/infra/Logging.h>
+#include <CommonUtilities/str/String.h>
 
 
 namespace p2c::client::util
@@ -43,8 +44,9 @@ namespace p2c::client::util
 	}
 	bool PathSanitaryCheck(const std::filesystem::path& path, const std::filesystem::path& root)
 	{
-		const auto canonicalString = std::filesystem::weakly_canonical(path).wstring();
-		const auto rootString = root.wstring();
-		return canonicalString.starts_with(rootString);
+		const auto canonicalString = pmon::util::str::ToLower(std::filesystem::weakly_canonical(path).wstring());
+		const auto rootString = pmon::util::str::ToLower(root.wstring());
+        const auto isSanitary = canonicalString.starts_with(rootString);
+        return isSanitary;
 	}
 }

@@ -6,8 +6,10 @@
 #include "igcl_api.h"
 #include "PowerTelemetryAdapter.h"
 #include "TelemetryHistory.h"
+#include "ctlpvttemp_api.h"
 #include <mutex>
 #include <optional>
+#include <variant>
 
 namespace pwr::intel
 {
@@ -27,23 +29,37 @@ namespace pwr::intel
 		class NonGraphicsDeviceException : public std::exception {};
 
 	private:
+		// types
+		using SampleVariantType = std::variant<std::monostate, ctl_power_telemetry_t, ctl_power_telemetry2_t>;
 		// functions
+		template<class T>
+		bool GatherSampleData(T& currentSample,
+			ctl_mem_state_t& memory_state,
+			ctl_mem_bandwidth_t& memory_bandwidth,
+			double gpu_sustained_power_limit_mw,
+			uint64_t qpc);
+
 		ctl_result_t EnumerateMemoryModules();
 
-		ctl_result_t GetTimeDelta(const ctl_power_telemetry_t& power_telemetry);
+		template<class T>
+		ctl_result_t GetTimeDelta(const T& power_telemetry);
 
 		// TODO: meld these into the sample function
+		template<class T>
 		ctl_result_t GetGPUPowerTelemetryData(
-			const ctl_power_telemetry_t& power_telemetry,
+			const T& power_telemetry,
 			PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info);
+		template<class T>
 		ctl_result_t GetVramPowerTelemetryData(
-			const ctl_power_telemetry_t& power_telemetry,
+			const T& power_telemetry,
 			PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info);
+		template<class T>
 		ctl_result_t GetFanPowerTelemetryData(
-			const ctl_power_telemetry_t& power_telemetry,
+			const T& power_telemetry,
 			PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info);
+		template<class T>
 		ctl_result_t GetPsuPowerTelemetryData(
-			const ctl_power_telemetry_t& power_telemetry,
+			const T& power_telemetry,
 			PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info);
 
 		void GetMemStateTelemetryData(
@@ -54,8 +70,9 @@ namespace pwr::intel
 			PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info);
 
 		void SavePmPowerTelemetryData(PresentMonPowerTelemetryInfo& pm_gpu_power_telemetry_info);
+		template<class T>
         ctl_result_t SaveTelemetry(
-            const ctl_power_telemetry_t& power_telemetry,
+            const T& power_telemetry,
             const ctl_mem_bandwidth_t& mem_bandwidth);
 
 		// TODO: put these as part of the telemetry data object
@@ -82,11 +99,12 @@ namespace pwr::intel
 		std::vector<ctl_mem_handle_t> memoryModules;
 		mutable std::mutex historyMutex;
 		TelemetryHistory<PresentMonPowerTelemetryInfo> history{ PowerTelemetryAdapter::defaultHistorySize };
-		std::optional<ctl_power_telemetry_t> previousSample;
-		std::optional<ctl_mem_bandwidth_t> previousMemBwSample;
+		SampleVariantType previousSampleVariant;
+		bool useV1PowerTelemetry = true;
+		bool useNewBandwidthTelemetry = true;
 		double time_delta_ = 0.f;
-		// TODO: File issue with control lib to determine why readbandwidth
-		// occasionally returns what appears to be an invalid counter value
+		// in V0 api readbandwidth occasionally returns what appears to be an invalid counter value
+		// this is a stopgap to cover for cases where IGCL is reporting bad data in V0 bandwidth telemetry
 		double gpu_mem_read_bw_cache_value_bps_ = 0.;
 		uint64_t gpu_mem_max_bw_cache_value_bps_ = 0;
 	};
