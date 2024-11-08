@@ -484,13 +484,15 @@ namespace pwr::intel
         if constexpr (std::same_as<T, ctl_power_telemetry2_t>) {
             using namespace pmon::util;
             if (useNewBandwidthTelemetry) {
+                double gpuMemReadBandwidthMegabytesPerSecond = 0;
                 result = GetInstantaneousPowerTelemetryItem(
                     currentSample.vramReadBandwidth,
-                    pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
+                    gpuMemReadBandwidthMegabytesPerSecond,
                     GpuTelemetryCapBits::gpu_mem_read_bandwidth);
+                // we need bandwidth in bits per second, IGCL V1 gives in megabytes per second
                 pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps = ConvertMagnitudePrefix(
-                    pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
-                    MagnitudePrefix::Mebi,
+                    gpuMemReadBandwidthMegabytesPerSecond * 8.,
+                    MagnitudePrefix::Mega,
                     MagnitudePrefix::Base);
                 pmlog_verb(v::gpu)(std::format("VRAM read BW V1: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
                     currentSample.vramReadBandwidth.bSupported, (int)currentSample.vramReadBandwidth.type,
@@ -504,13 +506,15 @@ namespace pwr::intel
                 }
             }
             if (useNewBandwidthTelemetry) {
+                double gpuMemWriteBandwidthMegabytesPerSecond = 0;
                 result = GetInstantaneousPowerTelemetryItem(
                     currentSample.vramWriteBandwidth,
-                    pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
+                    gpuMemWriteBandwidthMegabytesPerSecond,
                     GpuTelemetryCapBits::gpu_mem_write_bandwidth);
+                // we need bandwidth in bits per second, IGCL V1 gives in megabytes per second
                 pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps = ConvertMagnitudePrefix(
-                    pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
-                    MagnitudePrefix::Mebi,
+                    gpuMemWriteBandwidthMegabytesPerSecond * 8.,
+                    MagnitudePrefix::Mega,
                     MagnitudePrefix::Base);
                 pmlog_verb(v::gpu)(std::format("VRAM write BW V1: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
                     currentSample.vramWriteBandwidth.bSupported, (int)currentSample.vramWriteBandwidth.type,
