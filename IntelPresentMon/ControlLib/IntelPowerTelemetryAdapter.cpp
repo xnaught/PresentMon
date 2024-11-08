@@ -103,7 +103,7 @@ namespace pwr::intel
         double gpu_sustained_power_limit_mw = 0.;
         if (const auto result = ctlOverclockPowerLimitGet(
             deviceHandle, &gpu_sustained_power_limit_mw);
-            result != CTL_RESULT_SUCCESS) {
+            result != CTL_RESULT_SUCCESS && result != CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
             success = false;
             IGCL_ERR(result);
         }
