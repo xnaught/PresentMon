@@ -529,9 +529,9 @@ static void ReportMetricsHelper(
     size_t displayIndex = displayed && nextDisplayedPresent != nullptr ? displayCount - 1 : 0;
 
     // Figure out what display index to attribute cpu work, gpu work, animation error, and input
-    // latency to.
+    // latency to. Start looking from the current display index.
     size_t appIndex = 0;
-    for (size_t i = 0; i < displayCount; ++i) {
+    for (size_t i = displayIndex; i < displayCount; ++i) {
         if (p->Displayed_FrameType[i] == FrameType::NotSet ||
             p->Displayed_FrameType[i] == FrameType::Application) {
             appIndex = i;
