@@ -1275,7 +1275,11 @@ static void ReportMetrics(
             {
                 double max = inData[0];
                 for (size_t i = 1; i < inData.size(); ++i) {
-                    max = std::max(max, inData[i]);
+                    if (invert) {
+                        max = std::min(max, inData[i]);
+                    } else {
+                        max = std::max(max, inData[i]);
+                    }
                 }
                 return max;
             }
@@ -1283,7 +1287,12 @@ static void ReportMetrics(
             {
                 double min = inData[0];
                 for (size_t i = 1; i < inData.size(); ++i) {
-                    min = std::min(min, inData[i]);
+                    if (invert) {
+                        min = std::max(min, inData[i]);
+                    }
+                    else {
+                        min = std::min(min, inData[i]);
+                    }
                 }
                 return min;
             }
