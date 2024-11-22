@@ -107,5 +107,9 @@ namespace pwr::intel
 		// this is a stopgap to cover for cases where IGCL is reporting bad data in V0 bandwidth telemetry
 		double gpu_mem_read_bw_cache_value_bps_ = 0.;
 		uint64_t gpu_mem_max_bw_cache_value_bps_ = 0;
+		// in V1 api vramEnergyCounter rolls over after hitting 1000.0 causing the current sample to be
+		// less than the previous sample. Working with IGCL to determine the correct behavior for roll
+		// over occasions
+		double gpu_mem_power_cache_value_w_ = 0;
 	};
 }

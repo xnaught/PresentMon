@@ -730,6 +730,14 @@ namespace pwr::intel
                     previous_telemetry_item.value.datadouble;
                 pm_telemetry_value = (data_delta / time_delta_);
                 SetTelemetryCapBit(telemetry_cap_bit);
+                if (telemetry_cap_bit == GpuTelemetryCapBits::vram_power && useV1PowerTelemetry) {
+                    if (current_telemetry_item.value.datadouble < previous_telemetry_item.value.datadouble) {
+                        pm_telemetry_value = gpu_mem_power_cache_value_w_;
+                    }
+                    else {
+                        gpu_mem_power_cache_value_w_ = pm_telemetry_value;
+                    }
+                }
             } 
             else if (current_telemetry_item.type == CTL_DATA_TYPE_INT64) {
                 auto data_delta = current_telemetry_item.value.data64 -
