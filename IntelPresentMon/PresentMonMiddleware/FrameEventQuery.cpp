@@ -191,7 +191,7 @@ namespace
 		uint32_t outputOffset_;
 		uint16_t outputPaddingSize_;
 	};
-	template<uint64_t PmNsmPresentEvent::* pFromMember, uint64_t PmNsmPresentEvent::* pToMember>
+	template<uint64_t PmNsmPresentEvent::* pFromMember, uint64_t PmNsmPresentEvent::* pBackupFromMember, uint64_t PmNsmPresentEvent::* pToMember, bool isInstrumentedGpuLatency>
 	class QpcDeltaGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
@@ -202,12 +202,20 @@ namespace
 		}
 		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
-			const auto qpcFrom = ctx.pSourceFrameData->present_event.*pFromMember;
-			const auto qpcTo = ctx.pSourceFrameData->present_event.*pToMember;
-			if (qpcFrom != 0) {
-				if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
-					const auto val = TimestampDeltaToUnsignedMilliSeconds(qpcFrom, qpcTo, ctx.performanceCounterPeriodMs);
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			if constexpr (isInstrumentedGpuLatency) {
+				const auto qpcFrom = ctx.pSourceFrameData->present_event.*pFromMember;
+				const auto qpcBackupFrom = ctx.pSourceFrameData->present_event.*pBackupFromMember;
+				const auto qpcTo = ctx.pSourceFrameData->present_event.*pToMember;
+				auto instrumentedStart = qpcFrom != 0 ? qpcFrom : qpcBackupFrom;
+				if (instrumentedStart != 0) {
+					if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
+						const auto val = TimestampDeltaToUnsignedMilliSeconds(instrumentedStart, qpcTo, ctx.performanceCounterPeriodMs);
+						reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+					}
+					else {
+						reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+							std::numeric_limits<double>::quiet_NaN();
+					}
 				}
 				else {
 					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
@@ -215,8 +223,22 @@ namespace
 				}
 			}
 			else {
-				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
-					std::numeric_limits<double>::quiet_NaN();
+				const auto qpcFrom = ctx.pSourceFrameData->present_event.*pFromMember;
+				const auto qpcTo = ctx.pSourceFrameData->present_event.*pToMember;
+				if (qpcFrom != 0) {
+					if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
+						const auto val = TimestampDeltaToUnsignedMilliSeconds(qpcFrom, qpcTo, ctx.performanceCounterPeriodMs);
+						reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+					}
+					else {
+						reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+							std::numeric_limits<double>::quiet_NaN();
+					}
+				}
+				else {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
+				}
 			}
 		}
 		uint32_t GetBeginOffset() const override
