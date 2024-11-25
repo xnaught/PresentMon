@@ -4,7 +4,7 @@
   "Items": [
     {
       "Id": "0f02ddbd-6110-43dd-982a-900bffd8549c",
-      "Command": "--input-file input.etl"
+      "Command": "--input-file original.etl"
     },
     {
       "Id": "ca527fdf-cf0c-4bc6-a5e5-362394a8487d",

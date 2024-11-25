@@ -1,4 +1,5 @@
 #include "../IntelPresentMon/CommonUtilities/win/WinAPI.h"
+#include "../IntelPresentMon/CommonUtilities/win/Utilities.h"
 #include "../IntelPresentMon/CommonUtilities/Hash.h"
 #include <initguid.h>
 #include <evntcons.h>
@@ -284,6 +285,8 @@ private:
 
 int main(int argc, const char** argv)
 {
+    using namespace pmon;
+
     // parse command line, return with error code from CLI11 if running as app
     if (auto e = clio::Options::Init(argc, argv)) {
         return *e;
@@ -357,7 +360,7 @@ int main(int argc, const char** argv)
     }
 
     if (auto hr = pRelogger->ProcessTrace(); FAILED(hr)) {
-        std::cout << "Failed to process trace" << std::endl;
+        std::cout << "Failed to process trace: " << util::win::GetErrorDescription(hr) << std::endl;
     }
 
     const auto tsr = pCallbackProcessor->GetTimestampRange();
