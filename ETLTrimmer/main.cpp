@@ -163,8 +163,6 @@ public:
         stateFilter_.EventAdded(Microsoft_Windows_Kernel_Process::ProcessStart_Start::Id);
         stateFilter_.EventAdded(Microsoft_Windows_Kernel_Process::ProcessStop_Stop::Id);
         stateFilter_.ProviderEnabled(Microsoft_Windows_Kernel_Process::GUID, 0, 0, EnableAllLevels);
-        // TODO:revist: experiment: never trim metadata => fixes track GPU state issue?
-        stateFilter_.ProviderEnabled(Microsoft_Windows_EventMetadata::GUID, 0, 0, EnableAllLevels);
     }
     STDMETHODIMP QueryInterface(const IID& iid, void** pObj)
     {
