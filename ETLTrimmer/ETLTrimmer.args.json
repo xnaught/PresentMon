@@ -20,7 +20,7 @@
     },
     {
       "Id": "72aa3f3a-db72-48e5-93ec-11ef00ccf00e",
-      "Command": "--no-trim-state"
+      "Command": "--trim-state"
     },
     {
       "Id": "ee3aa6c6-1568-4347-8847-ad556ceedbdd",

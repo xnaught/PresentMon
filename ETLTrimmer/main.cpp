@@ -122,9 +122,7 @@ private:
     std::shared_ptr<Filter> pFilter_;
     Filter stateFilter_; // don't discard these events outside trim range
     bool byId_;
-    bool byKeyword_;
-    bool byLevel_;
-    bool noTrimState_;
+    bool trimState_;
     // analysis stats
     int eventCount_ = 0;
     int keepCount_ = 0;
@@ -132,14 +130,12 @@ private:
     uint64_t lastTimestamp_ = 0;
 
 public:
-    EventCallback(bool infoOnly, std::shared_ptr<Filter> pFilter, bool noTrimState, bool byId, bool byKeyword, bool byLevel)
+    EventCallback(bool infoOnly, std::shared_ptr<Filter> pFilter, bool trimState, bool byId)
         :
         mode_{ infoOnly ? Mode::Analysis : Mode::Trim },
         pFilter_{ std::move(pFilter) },
-        noTrimState_{ noTrimState },
-        byId_{ byId },
-        byKeyword_{ byKeyword },
-        byLevel_{ byLevel }
+        trimState_{ trimState },
+        byId_{ byId }
     {
         // when trimming by timestamp, we must take care not to remove the state data psuedo-events generated
         // at the beginning of the trace (also true state events coming before the trim region)
@@ -208,15 +204,20 @@ public:
         eventCount_++;
         bool canDiscard = true;
         if (trimRange_) {
+            // tail events always discardable
+            if (ts > trimRange_->second) {
+                return S_OK;
+            }
             // if we are trimming by time range, we probably want to preserve state events
-            if (noTrimState_) {
+            if (!trimState_) {
                 if (auto pProducerFilter = stateFilter_.LookupProvider(hdr.ProviderId)) {
                     if (pProducerFilter->MatchesId(desc.Id)) {
                         canDiscard = false;
                     }
                 }
             }
-            if (canDiscard && (ts < trimRange_->first || ts > trimRange_->second)) {
+            // trim non-state events in head preceding the trim range
+            if (canDiscard && ts < trimRange_->first) {
                 return S_OK;
             }
         }
@@ -225,21 +226,6 @@ public:
             if (auto pProducerFilter = pFilter_->LookupProvider(hdr.ProviderId)) {
                 // if filtering by event id, discard if id not allowed by producer filter
                 if (byId_ && !pProducerFilter->MatchesId(desc.Id)) {
-                    return S_OK;
-                }
-                // if keyword filtering, discard if keyword contains no bits from any mask,
-                // or is missing 1 or more bits from all mask
-                // NOTE: currently misbehaving, probably not useful either
-                if (byKeyword_) {
-                    const bool all = (pProducerFilter->allKeyMask & desc.Keyword) == pProducerFilter->allKeyMask;
-                    const bool any = !bool(pProducerFilter->anyKeyMask) || bool(pProducerFilter->anyKeyMask & desc.Keyword);
-                    if (!all || !any) {
-                        return S_OK;
-                    }
-                }
-                // level filter is simple threshold
-                // NOTE: currently suspected of misbehaving, probably not useful either
-                if (byLevel_ && desc.Level > pProducerFilter->maxLevel) {
                     return S_OK;
                 }
             }
@@ -357,8 +343,8 @@ int main(int argc, const char** argv)
         EnableProvidersListing(0, nullptr, &traceConsumer, true, true, pFilter);
     }
 
-    auto pCallbackProcessor = std::make_unique<EventCallback>(!opt.outputFile, pFilter,
-        (bool)opt.noTrimState, (bool)opt.event, (bool)opt.keyword, (bool)opt.level);
+    auto pCallbackProcessor = std::make_unique<EventCallback>(!opt.outputFile,
+        pFilter, (bool)opt.trimState, (bool)opt.event);
     if (auto hr = pRelogger->RegisterCallback(pCallbackProcessor.get()); FAILED(hr)) {
         std::cout << "Failed to register callback" << std::endl;
     }
