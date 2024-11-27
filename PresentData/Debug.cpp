@@ -210,7 +210,7 @@ void PrintInputType(uint32_t type)
 
 void PrintEventHeader(EVENT_HEADER const& hdr)
 {
-    wprintf(L"%16llu %5u %5u ", hdr.TimeStamp.QuadPart, hdr.ProcessId, hdr.ThreadId);
+    wprintf(L"%16hs %5u %5u ", AddCommas(ConvertTimestampToNs(hdr.TimeStamp.QuadPart)), hdr.ProcessId, hdr.ThreadId);
 }
 
 void PrintEventHeader(EVENT_HEADER const& hdr, char const* name)
