@@ -753,10 +753,27 @@ ULONG EnableProvidersListing(
 
     // Intel_PresentMon
     //
-    if (pmConsumer->mTrackFrameType) {
+    if (pmConsumer->mTrackFrameType || pmConsumer->mTrackPMMeasurements || pmConsumer->mTrackAppTiming) {
         provider.ClearFilter();
-        provider.AddEvent<Intel_PresentMon::PresentFrameType_Info>();
-        provider.AddEvent<Intel_PresentMon::FlipFrameType_Info>();
+        if (pmConsumer->mTrackFrameType) {
+            provider.AddEvent<Intel_PresentMon::PresentFrameType_Info>();
+            provider.AddEvent<Intel_PresentMon::FlipFrameType_Info>();
+        }
+        if (pmConsumer->mTrackPMMeasurements) {
+            provider.AddEvent<Intel_PresentMon::MeasuredInput_Info>();
+            provider.AddEvent<Intel_PresentMon::MeasuredScreenChange_Info>();
+        }
+        if (pmConsumer->mTrackAppTiming) {
+            provider.AddEvent<Intel_PresentMon::AppInputSample_Info>();
+            provider.AddEvent<Intel_PresentMon::AppPresentStart_Info>();
+            provider.AddEvent<Intel_PresentMon::AppPresentEnd_Info>();
+            provider.AddEvent<Intel_PresentMon::AppSimulationStart_Info>();
+            provider.AddEvent<Intel_PresentMon::AppSimulationEnd_Info>();
+            provider.AddEvent<Intel_PresentMon::AppRenderSubmitStart_Info>();
+            provider.AddEvent<Intel_PresentMon::AppRenderSubmitEnd_Info>();
+            provider.AddEvent<Intel_PresentMon::AppSleepStart_Info>();
+            provider.AddEvent<Intel_PresentMon::AppSleepEnd_Info>();
+        }
         status = provider.Enable(sessionHandle, Intel_PresentMon::GUID);
         if (status != ERROR_SUCCESS) return status;
     }
