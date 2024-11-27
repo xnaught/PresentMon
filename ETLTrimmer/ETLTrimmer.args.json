@@ -8,7 +8,11 @@
     },
     {
       "Id": "ca527fdf-cf0c-4bc6-a5e5-362394a8487d",
-      "Command": "--output-file output.etl"
+      "Command": "--output-file output-trim-start.etl"
+    },
+    {
+      "Id": "df1b242f-0b8c-4871-9bf8-6877fca7a4f1",
+      "Command": "--trim-range  114450000000 114550000000"
     },
     {
       "Id": "3930fadb-01e5-4e50-a419-08341b14d6d8",
