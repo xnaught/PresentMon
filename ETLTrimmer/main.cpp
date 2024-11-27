@@ -145,15 +145,25 @@ public:
         // at the beginning of the trace (also true state events coming before the trim region)
         // nt process
         stateFilter_.ProviderEnabled(NT_Process::GUID, 0, 0, EnableAllLevels);
-        // dxgkrnl DCStarts
+        // dxgkrnl --> DCs
         stateFilter_.EventAdded(Microsoft_Windows_DxgKrnl::Context_DCStart::Id);
         stateFilter_.EventAdded(Microsoft_Windows_DxgKrnl::Device_DCStart::Id);
+        //         --> Contexts
+        stateFilter_.EventAdded(Microsoft_Windows_DxgKrnl::Context_Start::Id);
+        stateFilter_.EventAdded(Microsoft_Windows_DxgKrnl::Context_Stop::Id);
+        //         --> Devices
+        stateFilter_.EventAdded(Microsoft_Windows_DxgKrnl::Device_Start::Id);
+        stateFilter_.EventAdded(Microsoft_Windows_DxgKrnl::Device_Stop::Id);
+        //         --> hwqueue starts
+        stateFilter_.EventAdded(Microsoft_Windows_DxgKrnl::HwQueue_DCStart::Id);
+        stateFilter_.EventAdded(Microsoft_Windows_DxgKrnl::HwQueue_Start::Id);
+        // <-- finish
         stateFilter_.ProviderEnabled(Microsoft_Windows_DxgKrnl::GUID, 0, 0, EnableAllLevels);
         // kernel proc start/stop
         stateFilter_.EventAdded(Microsoft_Windows_Kernel_Process::ProcessStart_Start::Id);
         stateFilter_.EventAdded(Microsoft_Windows_Kernel_Process::ProcessStop_Stop::Id);
         stateFilter_.ProviderEnabled(Microsoft_Windows_Kernel_Process::GUID, 0, 0, EnableAllLevels);
-        // experiment: never trim metadata => fixes track GPU state issue?
+        // TODO:revist: experiment: never trim metadata => fixes track GPU state issue?
         stateFilter_.ProviderEnabled(Microsoft_Windows_EventMetadata::GUID, 0, 0, EnableAllLevels);
     }
     STDMETHODIMP QueryInterface(const IID& iid, void** pObj)
