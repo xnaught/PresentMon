@@ -117,7 +117,8 @@ private:
     // operation mode
     Mode mode_;
     // trim region
-    std::optional<std::pair<uint64_t, uint64_t>> trimRange_;
+    std::optional<std::pair<uint64_t, uint64_t>> trimRangeQpc_;
+    std::optional<std::pair<double, double>> trimRangeMs_;
     // pruning options
     std::shared_ptr<Filter> pFilter_;
     Filter stateFilter_; // don't discard these events outside trim range
@@ -199,13 +200,19 @@ public:
         const auto ts = (uint64_t)hdr.TimeStamp.QuadPart;
         if (!firstTimestamp_) {
             firstTimestamp_ = ts;
+            if (trimRangeMs_) {
+                trimRangeQpc_ = {
+                    ts + uint64_t(trimRangeMs_->first * 10'000),
+                    ts + uint64_t(trimRangeMs_->second * 10'000),
+                };
+            }
         }
         lastTimestamp_ = ts;
         eventCount_++;
         bool canDiscard = true;
-        if (trimRange_) {
+        if (trimRangeQpc_) {
             // tail events always discardable
-            if (ts > trimRange_->second) {
+            if (ts > trimRangeQpc_->second) {
                 return S_OK;
             }
             // if we are trimming by time range, we probably want to preserve state events
@@ -217,7 +224,7 @@ public:
                 }
             }
             // trim non-state events in head preceding the trim range
-            if (canDiscard && ts < trimRange_->first) {
+            if (canDiscard && ts < trimRangeQpc_->first) {
                 return S_OK;
             }
         }
@@ -251,9 +258,13 @@ public:
     {
         return { firstTimestamp_.value_or(0), lastTimestamp_};
     }
-    void SetTrimRange(std::pair<uint64_t, uint64_t> range)
+    void SetTrimRangeQpc(std::pair<uint64_t, uint64_t> range)
     {
-        trimRange_ = range;
+        trimRangeQpc_ = range;
+    }
+    void SetTrimRangeMs(std::pair<double, double> range)
+    {
+        trimRangeMs_ = range;
     }
     int GetKeepCount() const
     {
@@ -287,13 +298,20 @@ int main(int argc, const char** argv)
     }
     auto& opt = clio::Options::Get();
 
-    if (opt.trimRange) {
-        auto& r = *opt.trimRange;
-        if (r.first > r.second) {
-            std::cout << "Lower bound of trim range [" << r.first << "] must not exceed upper [" << r.second << "]" << std::endl;
-            return -1;
+    const auto ValidateRange = [](const auto& range) {
+        if (range) {
+            auto& r = *range;
+            if (r.first > r.second) {
+                std::cout << "Lower bound of trim range [" << r.first <<
+                    "] must not exceed upper [" << r.second << "]" << std::endl;
+                return 1;
+            }
         }
-    }
+        return 0;
+    };
+    if (ValidateRange(opt.trimRangeQpc)) return -1;
+    if (ValidateRange(opt.trimRangeMs)) return -1;
+    if (ValidateRange(opt.trimRangeNs)) return -1;
 
     std::locale::global(std::locale("en_US.UTF-8"));
 
@@ -349,8 +367,18 @@ int main(int argc, const char** argv)
         std::cout << "Failed to register callback" << std::endl;
     }
 
-    if (opt.trimRange) {
-        pCallbackProcessor->SetTrimRange(*opt.trimRange);
+    if (opt.trimRangeQpc) {
+        pCallbackProcessor->SetTrimRangeQpc(*opt.trimRangeQpc);
+    }
+    else if (opt.trimRangeMs) {
+        pCallbackProcessor->SetTrimRangeMs(*opt.trimRangeMs);
+    }
+    else if (opt.trimRangeNs) {
+        auto& r = *opt.trimRangeNs;
+        pCallbackProcessor->SetTrimRangeMs({
+            r.first * 1'000'000.,
+            r.second * 1'000'000.
+        });
     }
 
     if (auto hr = pRelogger->ProcessTrace(); FAILED(hr)) {
