@@ -2314,26 +2314,32 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
     }
     auto present = eventIter->second;
 
-    if (mNextAppFrameId != 0) {
-        auto ii = mPendingAppTimingDataByAppFrameId.find(mNextAppFrameId);
-        if (ii != mPendingAppTimingDataByAppFrameId.end()) {
-            if (present->ProcessId == ii->second.AppProcessId) {
-                present->AppFrameId = mNextAppFrameId;
-                present->AppSimStartTime = ii->second.AppSimStartTime;
-                present->AppSimEndTime = ii->second.AppSimEndTime;
-                present->AppSleepStartTime = ii->second.AppSleepStartTime;
-                present->AppSleepEndTime = ii->second.AppSleepEndTime;
-                present->AppRenderSubmitStartTime = ii->second.AppRenderSubmitStartTime;
-                present->AppRenderSubmitEndTime = ii->second.AppRenderSubmitEndTime;
-                present->AppPresentStartTime = ii->second.AppPresentStartTime;
-                present->AppPresentEndTime = ii->second.AppPresentEndTime;
-                present->AppInputSample.first = ii->second.AppInputSample.first;
-                present->AppInputSample.second = ii->second.AppInputSample.second;
-                // Will no longer track the pending timing data as now we have
-                // a present event for tracking the app provider data
-                mPendingAppTimingDataByAppFrameId.erase(ii);
-                // Start tracking using the app frame id to this present
-                mPresentByAppFrameId.emplace(mNextAppFrameId, present);
+    if (mTrackAppTiming) {
+        auto appFrameIdIter = mNextAppFrameIdByProcessid.find(present->ProcessId);
+        if (appFrameIdIter != mNextAppFrameIdByProcessid.end()) {
+            auto appFrameId = appFrameIdIter->second;
+            if (appFrameId != 0) {
+                auto ii = mPendingAppTimingDataByAppFrameId.find(appFrameId);
+                if (ii != mPendingAppTimingDataByAppFrameId.end()) {
+                    if (present->ProcessId == ii->second.AppProcessId) {
+                        present->AppFrameId = appFrameId;
+                        present->AppSimStartTime = ii->second.AppSimStartTime;
+                        present->AppSimEndTime = ii->second.AppSimEndTime;
+                        present->AppSleepStartTime = ii->second.AppSleepStartTime;
+                        present->AppSleepEndTime = ii->second.AppSleepEndTime;
+                        present->AppRenderSubmitStartTime = ii->second.AppRenderSubmitStartTime;
+                        present->AppRenderSubmitEndTime = ii->second.AppRenderSubmitEndTime;
+                        present->AppPresentStartTime = ii->second.AppPresentStartTime;
+                        present->AppPresentEndTime = ii->second.AppPresentEndTime;
+                        present->AppInputSample.first = ii->second.AppInputSample.first;
+                        present->AppInputSample.second = ii->second.AppInputSample.second;
+                        // Will no longer track the pending timing data as now we have
+                        // a present event for tracking the app provider data
+                        mPendingAppTimingDataByAppFrameId.erase(ii);
+                        // Start tracking using the app frame id to this present
+                        mPresentByAppFrameId.emplace(appFrameId, present);
+                    }
+                }
             }
         }
     }
@@ -2436,6 +2442,14 @@ void PMTraceConsumer::HandleProcessEvent(EVENT_RECORD* pEventRecord)
             mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
             event.ProcessId    = desc[0].GetData<uint32_t>();
             event.IsStartEvent = false;
+
+            if (mTrackAppTiming) {
+                auto appFrameIdIter = mNextAppFrameIdByProcessid.find(event.ProcessId);
+                if (appFrameIdIter != mNextAppFrameIdByProcessid.end()) {
+                    mNextAppFrameIdByProcessid.erase(appFrameIdIter);
+                }
+            }
+
             break;
         }
         default:
@@ -2713,7 +2727,7 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
         auto processId = pEventRecord->EventHeader.ProcessId;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
         // Save off the application frame id for next created present event
-        mNextAppFrameId = props->FrameId;
+        mNextAppFrameIdByProcessid[processId] = props->FrameId;
         // Add the application frame id to the save application timing data
         auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
         if (ii != mPendingAppTimingDataByAppFrameId.end()) {
