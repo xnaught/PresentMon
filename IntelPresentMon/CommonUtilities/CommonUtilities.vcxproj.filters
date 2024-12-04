@@ -198,9 +198,6 @@
     <ClInclude Include="Macro.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="log\StructDump.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="third\reflect.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -223,6 +220,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="reg\Registry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ref\WrapReflect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ref\StructDump.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

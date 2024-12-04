@@ -2,10 +2,10 @@
 #include <concepts>
 #include <string>
 #include <sstream>
-#include "../third/reflect.hpp"
+#include "WrapReflect.h"
 
 
-namespace pmon::util::log
+namespace pmon::util::ref
 {
 	template <typename T> concept Arithmetic = std::is_arithmetic_v<T>;
 

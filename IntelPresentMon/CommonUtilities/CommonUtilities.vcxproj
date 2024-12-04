@@ -58,7 +58,6 @@
     <ClInclude Include="log\StackTrace.h" />
     <ClInclude Include="log\StackTraceCereal.h" />
     <ClInclude Include="log\StdioDriver.h" />
-    <ClInclude Include="log\StructDump.h" />
     <ClInclude Include="log\Subsystem.h" />
     <ClInclude Include="log\TextFormatter.h" />
     <ClInclude Include="log\MarshallDriver.h" />
@@ -78,6 +77,8 @@
     <ClInclude Include="pipe\SecurityMode.h" />
     <ClInclude Include="PrecisionWaiter.h" />
     <ClInclude Include="Qpc.h" />
+    <ClInclude Include="ref\StructDump.h" />
+    <ClInclude Include="ref\WrapReflect.h" />
     <ClInclude Include="reg\Registry.h" />
     <ClInclude Include="rng\PairToRange.h" />
     <ClInclude Include="str\String.h" />
