@@ -20,6 +20,9 @@
 
 #include "../CommonUtilities/pipe/Pipe.h"
 
+#include "../CommonUtilities/ref/GeneratedReflection.h"
+#include "../../Reflector/Test1.h"
+
 using namespace std::literals;
 using namespace pmon::util;
 
@@ -53,6 +56,8 @@ void RunLogDemo(int mode)
 	// basic log info w/ message
 	if (mode == 0) {
 		pmlog_info("information goes here");
+		A a{ .x = 69, .foo = "buttman", .barff = B{.fff = 420.f } };
+		pmlog_info(ref::DumpStructGenerated(a));
 	}
 	// basic warn w/ format message
 	else if (mode == 1) {

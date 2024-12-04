@@ -1,0 +1,31 @@
+#pragma once
+#include <unordered_map>
+#include <functional>
+#include <string>
+#include <typeindex>
+#include <sstream>
+#include "../GeneratedReflection.h"
+
+// target includes
+{{ for include in includes }}
+#include "../../../../{{ include }}"
+{{ end }}
+
+namespace pmon::util::ref::gen
+{
+	void RegisterStructDumpers_(std::unordered_map<std::type_index, std::function<std::string(const void*)>>& dumpers)
+	{
+{{ for struct in structs }}
+		dumpers[typeid({{ struct.Name }})] = [](const void* pStruct) {
+			const auto& s = *static_cast<const {{ struct.Name }}*>(pStruct);
+			std::ostringstream oss;
+			oss << "struct {{ struct.Name }} {"
+{{ for member in struct.Members }}
+				<< " .{{ member.Name }} = " << {{ member.DumpExpression }}
+{{ end }}
+				<< " }";
+			return oss.str();
+		};
+{{ end }}
+	}
+}

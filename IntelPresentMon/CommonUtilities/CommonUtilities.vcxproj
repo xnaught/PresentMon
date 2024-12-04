@@ -77,6 +77,9 @@
     <ClInclude Include="pipe\SecurityMode.h" />
     <ClInclude Include="PrecisionWaiter.h" />
     <ClInclude Include="Qpc.h" />
+    <ClInclude Include="ref\GeneratedReflection.h" />
+    <ClInclude Include="ref\gen\GeneratedReflection-bak.h" />
+    <ClInclude Include="ref\gen\GeneratedReflection.h" />
     <ClInclude Include="ref\StructDump.h" />
     <ClInclude Include="ref\WrapReflect.h" />
     <ClInclude Include="reg\Registry.h" />
@@ -129,6 +132,7 @@
     <ClCompile Include="pipe\Pipe.cpp" />
     <ClCompile Include="PrecisionWaiter.cpp" />
     <ClCompile Include="Qpc.cpp" />
+    <ClCompile Include="ref\GeneratedReflection.cpp" />
     <ClCompile Include="str\String.cpp" />
     <ClCompile Include="win\Event.cpp" />
     <ClCompile Include="win\Handle.cpp" />
