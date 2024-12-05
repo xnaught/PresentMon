@@ -57,7 +57,7 @@ void RunLogDemo(int mode)
 	if (mode == 0) {
 		pmlog_info("information goes here");
 		A a{ .x = 69, .foo = "buttman", .barff = B{.fff = 420.f, .benum = Barbie::party, .nnn = { 4, 7, 7, 9 },
-			.ccc = C{.x = 42, .y = 69 }, .bbb = {Barbie::in, Barbie::world, Barbie::gir }} };
+			.ccc = C{.x = 42, .y = 69 }, .bbb = {Barbie::in, Barbie::world, Barbie::gir }}, .pThing = &mode };
 		pmlog_info(ref::DumpGenerated(a));
 	}
 	// basic warn w/ format message

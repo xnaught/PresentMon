@@ -184,6 +184,9 @@ namespace StructDumperGenerator
                     return $"DumpArray_<{arrayType.ElementType.FullName}, {arrayType.Size}, {isPrimitiveString}>({variableAccess})";
                 }
             }
+            else if (unwrappedType is CppPointerType pointerType) {
+                return $"({variableAccess} ? std::format(\"0x{{:016X}}\", reinterpret_cast<std::uintptr_t>({variableAccess})) : \"null\"s)";
+            }
             return "\"{ unsupported }\"";
         }
 

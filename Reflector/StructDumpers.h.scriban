@@ -4,6 +4,7 @@
 #include <string>
 #include <typeindex>
 #include <sstream>
+#include <format>
 #include "../GeneratedReflection.h"
 
 // target includes

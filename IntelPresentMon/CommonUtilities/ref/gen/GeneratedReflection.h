@@ -4,6 +4,7 @@
 #include <string>
 #include <typeindex>
 #include <sstream>
+#include <format>
 #include "../GeneratedReflection.h"
 
 // target includes
@@ -71,6 +72,7 @@ namespace pmon::util::ref::gen
 				<< " .x = " << s.x
 				<< " .foo = " << s.foo
 				<< " .barff = " << DumpGenerated(s.barff)
+				<< " .pThing = " << (s.pThing ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pThing)) : "null"s)
 				<< " }";
 			return oss.str();
 		};
