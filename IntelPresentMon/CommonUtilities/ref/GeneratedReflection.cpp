@@ -32,4 +32,12 @@ namespace pmon::util::ref
 		}
 		return "{ unknown }";
 	}
+
+	bool SupportsGeneratedDump(const std::type_info& type)
+	{
+		if (!initialized_) {
+			Init_();
+		}
+		return dumpers_.contains(type);
+	}
 }
