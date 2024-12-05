@@ -57,7 +57,7 @@ void RunLogDemo(int mode)
 	if (mode == 0) {
 		pmlog_info("information goes here");
 		A a{ .x = 69, .foo = "buttman", .barff = B{.fff = 420.f } };
-		pmlog_info(ref::DumpStructGenerated(a));
+		pmlog_info(ref::DumpGenerated(a));
 	}
 	// basic warn w/ format message
 	else if (mode == 1) {

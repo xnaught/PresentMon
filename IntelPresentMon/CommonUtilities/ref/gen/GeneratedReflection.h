@@ -15,8 +15,19 @@
 
 namespace pmon::util::ref::gen
 {
-	void RegisterStructDumpers_(std::unordered_map<std::type_index, std::function<std::string(const void*)>>& dumpers)
+	void RegisterDumpers_(std::unordered_map<std::type_index, std::function<std::string(const void*)>>& dumpers)
 	{
+
+		dumpers[typeid(B)] = [](const void* pStruct) {
+			const auto& s = *static_cast<const B*>(pStruct);
+			std::ostringstream oss;
+			oss << "struct B {"
+
+				<< " .fff = " << s.fff
+
+				<< " }";
+			return oss.str();
+		};
 
 		dumpers[typeid(AAA)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const AAA*>(pStruct);
@@ -27,18 +38,24 @@ namespace pmon::util::ref::gen
 
 				<< " .foo = " << s.foo
 
-				<< " .barff = " << DumpStructGenerated(s.barff)
+				<< " .barff = " << DumpGenerated(s.barff)
 
 				<< " }";
 			return oss.str();
 		};
 
-		dumpers[typeid(B)] = [](const void* pStruct) {
-			const auto& s = *static_cast<const B*>(pStruct);
+		dumpers[typeid(ctl_application_id_t)] = [](const void* pStruct) {
+			const auto& s = *static_cast<const ctl_application_id_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct B {"
+			oss << "struct ctl_application_id_t {"
 
-				<< " .fff = " << s.fff
+				<< " .Data1 = " << s.Data1
+
+				<< " .Data2 = " << s.Data2
+
+				<< " .Data3 = " << s.Data3
+
+				<< " .Data4 = " << "{ unsupported }"
 
 				<< " }";
 			return oss.str();
@@ -59,7 +76,37 @@ namespace pmon::util::ref::gen
 
 				<< " .SupportedVersion = " << s.SupportedVersion
 
-				<< " .ApplicationUID = " << DumpStructGenerated(s.ApplicationUID)
+				<< " .ApplicationUID = " << DumpGenerated(s.ApplicationUID)
+
+				<< " }";
+			return oss.str();
+		};
+
+		dumpers[typeid(ctl_firmware_version_t)] = [](const void* pStruct) {
+			const auto& s = *static_cast<const ctl_firmware_version_t*>(pStruct);
+			std::ostringstream oss;
+			oss << "struct ctl_firmware_version_t {"
+
+				<< " .major_version = " << s.major_version
+
+				<< " .minor_version = " << s.minor_version
+
+				<< " .build_number = " << s.build_number
+
+				<< " }";
+			return oss.str();
+		};
+
+		dumpers[typeid(ctl_adapter_bdf_t)] = [](const void* pStruct) {
+			const auto& s = *static_cast<const ctl_adapter_bdf_t*>(pStruct);
+			std::ostringstream oss;
+			oss << "struct ctl_adapter_bdf_t {"
+
+				<< " .bus = " << s.bus
+
+				<< " .device = " << s.device
+
+				<< " .function = " << s.function
 
 				<< " }";
 			return oss.str();
@@ -84,7 +131,7 @@ namespace pmon::util::ref::gen
 
 				<< " .driver_version = " << s.driver_version
 
-				<< " .firmware_version = " << DumpStructGenerated(s.firmware_version)
+				<< " .firmware_version = " << DumpGenerated(s.firmware_version)
 
 				<< " .pci_vendor_id = " << s.pci_vendor_id
 
@@ -108,7 +155,7 @@ namespace pmon::util::ref::gen
 
 				<< " .pci_subsys_vendor_id = " << s.pci_subsys_vendor_id
 
-				<< " .adapter_bdf = " << DumpStructGenerated(s.adapter_bdf)
+				<< " .adapter_bdf = " << DumpGenerated(s.adapter_bdf)
 
 				<< " .reserved = " << s.reserved
 

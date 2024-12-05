@@ -18,11 +18,11 @@ namespace pmon::util::ref
 
 		void Init_()
 		{
-			gen::RegisterStructDumpers_(dumpers_);
+			gen::RegisterDumpers_(dumpers_);
 		}
 	}
 
-	std::string DumpStructGenerated(const std::type_info& type, const void* pStruct)
+	std::string DumpGenerated(const std::type_info& type, const void* pStruct)
 	{
 		if (!initialized_) {
 			Init_();

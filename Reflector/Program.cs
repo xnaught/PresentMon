@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using CppAst;
 using Scriban;
 using Scriban.Runtime;
@@ -14,7 +15,7 @@ namespace StructDumperGenerator
             // List of structs with their header files
             var structDefinitions = new List<HeaderStruct>
             {
-                new HeaderStruct("Reflector/Test1.h", new HashSet<string> { "AAA", "B" }),
+                new HeaderStruct("Reflector/Test1.h", new HashSet<string> { "AAA" }),
                 new HeaderStruct("IntelPresentMon/ControlLib/igcl_api.h", new HashSet<string> { "ctl_init_args_t", "ctl_device_adapter_properties_t" })
             };
 
@@ -30,44 +31,11 @@ namespace StructDumperGenerator
             // Collect structs and their members
             var structs = new List<StructInfo>();
             var includes = new HashSet<string>();
+            var processedStructs = new HashSet<string>();
 
             foreach (var headerStruct in structDefinitions) {
                 foreach (var targetStructName in headerStruct.StructNames) {
-                    CppClass? cppClass = null;
-
-                    // search for struct in classes
-                    cppClass = compilation.Classes.Where(c => c.Name == targetStructName).FirstOrDefault();
-
-                    // if not in classes, attempt to resolve typedef
-                    if (cppClass == null) {
-                        var resolved = compilation.Typedefs.Where(t => t.Name == targetStructName).FirstOrDefault()?.ElementType;
-                        if (resolved is CppClass resolvedCpp) {
-                            cppClass = resolvedCpp;
-                        }
-                        else {
-                            Console.WriteLine($"Struct {targetStructName} not found in {headerStruct.HeaderFile}");
-                            continue;
-                        }
-                    }
-
-                    var structInfo = new StructInfo {
-                        Name = targetStructName,
-                        Members = new List<MemberInfo>()
-                    };
-
-                    foreach (var field in cppClass.Fields) {
-                        var memberInfo = new MemberInfo {
-                            Name = field.Name,
-                            Type = field.Type.GetDisplayName(),
-                            DumpExpression = GetDumpExpression(field.Type, $"s.{field.Name}")
-                        };
-                        structInfo.Members.Add(memberInfo);
-                    }
-
-                    structs.Add(structInfo);
-
-                    // Collect includes (assuming the struct's header)
-                    includes.Add(headerStruct.HeaderFile);
+                    ProcessStruct(targetStructName, headerStruct.HeaderFile, compilation, structs, includes, processedStructs);
                 }
             }
 
@@ -90,6 +58,52 @@ namespace StructDumperGenerator
             Console.WriteLine("Code generation complete.");
         }
 
+        // Recursive method to process structs
+        static void ProcessStruct(string structName, string headerFile, CppCompilation compilation, List<StructInfo> structs, HashSet<string> includes, HashSet<string> processedStructs)
+        {
+            if (processedStructs.Contains(structName))
+                return;
+
+            processedStructs.Add(structName);
+
+            CppClass? cppClass = compilation.Classes.FirstOrDefault(c => c.Name == structName);
+
+            // If not found, attempt to resolve typedef
+            if (cppClass == null) {
+                var resolved = compilation.Typedefs.FirstOrDefault(t => t.Name == structName)?.ElementType;
+                if (resolved is CppClass resolvedCpp) {
+                    cppClass = resolvedCpp;
+                }
+                else {
+                    Console.WriteLine($"Struct {structName} not found in {headerFile}");
+                    return;
+                }
+            }
+
+            var structInfo = new StructInfo {
+                Name = structName,
+                Members = new List<MemberInfo>()
+            };
+
+            foreach (var field in cppClass.Fields) {
+                var memberInfo = new MemberInfo {
+                    Name = field.Name,
+                    Type = field.Type.GetDisplayName(),
+                    DumpExpression = GetDumpExpression(field.Type, $"s.{field.Name}")
+                };
+                structInfo.Members.Add(memberInfo);
+
+                // Check if the field's type is a struct, and process it recursively
+                var fieldType = UnwrapType(field.Type);
+                if (fieldType is CppClass fieldCppClass) {
+                    ProcessStruct(field.Type.GetDisplayName(), headerFile, compilation, structs, includes, processedStructs);
+                }
+            }
+
+            structs.Add(structInfo);
+            includes.Add(headerFile);
+        }
+
         // Helper method to generate the dump expression for a field
         static string GetDumpExpression(CppType type, string variableAccess)
         {
@@ -105,7 +119,7 @@ namespace StructDumperGenerator
                 return $"DumpStructGenerated({variableAccess})";
             }
             else if (unwrappedType is CppArrayType arrayType) {
-                if (arrayType.ElementType.FullName == "char") {
+                if (UnwrapType(arrayType.ElementType).FullName == "char") {
                     // char arrays are output directly as string (null-terminated)
                     return variableAccess;
                 }

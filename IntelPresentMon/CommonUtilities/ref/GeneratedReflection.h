@@ -4,11 +4,11 @@
 
 namespace pmon::util::ref
 {
-	std::string DumpStructGenerated(const std::type_info&, const void* pStruct);
+	std::string DumpGenerated(const std::type_info&, const void* pStruct);
 
 	template<class T>
-	std::string DumpStructGenerated(const T& s)
+	std::string DumpGenerated(const T& s)
 	{
-		return DumpStructGenerated(typeid(T), &s);
+		return DumpGenerated(typeid(T), &s);
 	}
 }

@@ -13,7 +13,7 @@
 
 namespace pmon::util::ref::gen
 {
-	void RegisterStructDumpers_(std::unordered_map<std::type_index, std::function<std::string(const void*)>>& dumpers)
+	void RegisterDumpers_(std::unordered_map<std::type_index, std::function<std::string(const void*)>>& dumpers)
 	{
 {{ for struct in structs }}
 		dumpers[typeid({{ struct.Name }})] = [](const void* pStruct) {
