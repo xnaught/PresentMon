@@ -11,21 +11,14 @@ namespace StructDumperGenerator
     {
         static void Main(string[] args)
         {
-            // List of header files to parse
-            var headerFiles = new List<string>
+            // List of structs with their header files
+            var structDefinitions = new List<HeaderStruct>
             {
-                "Reflector/Test1.h"
-                // Add more headers as needed
+                new HeaderStruct("Reflector/Test1.h", new HashSet<string> { "AAA", "B" }),
+                new HeaderStruct("IntelPresentMon/ControlLib/igcl_api.h", new HashSet<string> { "ctl_init_args_t", "ctl_device_adapter_properties_t" })
             };
 
-            // Map of header file to list of structs to target
-            var targetStructs = new Dictionary<string, List<string>>
-            {
-                { "Reflector/Test1.h", new List<string> { "A", "B" } }
-                // Add more structs as needed
-            };
-
-            var compilation = CppParser.ParseFiles(headerFiles);
+            var compilation = CppParser.ParseFiles(structDefinitions.ConvertAll(hs => hs.HeaderFile));
 
             if (compilation.HasErrors) {
                 foreach (var message in compilation.Diagnostics.Messages) {
@@ -38,20 +31,27 @@ namespace StructDumperGenerator
             var structs = new List<StructInfo>();
             var includes = new HashSet<string>();
 
-            foreach (var header in headerFiles) {
-                var structsInHeader = targetStructs.ContainsKey(header) ? targetStructs[header] : null;
-                if (structsInHeader == null)
-                    continue;
+            foreach (var headerStruct in structDefinitions) {
+                foreach (var targetStructName in headerStruct.StructNames) {
+                    CppClass? cppClass = null;
 
-                foreach (var cppClass in compilation.Classes) {
-                    if (cppClass.ClassKind != CppClassKind.Struct)
-                        continue;
+                    // search for struct in classes
+                    cppClass = compilation.Classes.Where(c => c.Name == targetStructName).FirstOrDefault();
 
-                    if (!structsInHeader.Contains(cppClass.Name))
-                        continue;
+                    // if not in classes, attempt to resolve typedef
+                    if (cppClass == null) {
+                        var resolved = compilation.Typedefs.Where(t => t.Name == targetStructName).FirstOrDefault()?.ElementType;
+                        if (resolved is CppClass resolvedCpp) {
+                            cppClass = resolvedCpp;
+                        }
+                        else {
+                            Console.WriteLine($"Struct {targetStructName} not found in {headerStruct.HeaderFile}");
+                            continue;
+                        }
+                    }
 
                     var structInfo = new StructInfo {
-                        Name = cppClass.Name,
+                        Name = targetStructName,
                         Members = new List<MemberInfo>()
                     };
 
@@ -61,14 +61,13 @@ namespace StructDumperGenerator
                             Type = field.Type.GetDisplayName(),
                             DumpExpression = GetDumpExpression(field.Type, $"s.{field.Name}")
                         };
-
                         structInfo.Members.Add(memberInfo);
                     }
 
                     structs.Add(structInfo);
 
                     // Collect includes (assuming the struct's header)
-                    includes.Add(header);
+                    includes.Add(headerStruct.HeaderFile);
                 }
             }
 
@@ -103,21 +102,16 @@ namespace StructDumperGenerator
             }
             else if (unwrappedType is CppClass cppClass) {
                 // For user-defined types, call DumpStructGenerated recursively
-                return $"DumpStructGenerated(typeid({variableAccess}), &{variableAccess})";
-            }
-            else if (unwrappedType is CppPointerType) {
-                // Handle pointers (you might want to customize this)
-                return variableAccess;
+                return $"DumpStructGenerated({variableAccess})";
             }
             else if (unwrappedType is CppArrayType arrayType) {
-                // Handle arrays
-                // For simplicity, we can output the array elements or indicate it's an array
-                return $"/* Array type */ {variableAccess}";
+                if (arrayType.ElementType.FullName == "char") {
+                    // char arrays are output directly as string (null-terminated)
+                    return variableAccess;
+                }
             }
-            else {
-                // Default case
-                return $"/* Unsupported type */ {variableAccess}";
-            }
+            // Default case
+            return "\"{ unsupported }\"";
         }
 
         static CppType UnwrapType(CppType type)
@@ -134,6 +128,19 @@ namespace StructDumperGenerator
                 }
             }
             return type;
+        }
+    }
+
+    // Class to represent a header file and its target structs
+    class HeaderStruct
+    {
+        public string HeaderFile { get; }
+        public HashSet<string> StructNames { get; }
+
+        public HeaderStruct(string headerFile, HashSet<string> structNames)
+        {
+            HeaderFile = headerFile;
+            StructNames = structNames;
         }
     }
 

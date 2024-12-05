@@ -231,9 +231,6 @@
     <ClInclude Include="ref\GeneratedReflection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ref\gen\GeneratedReflection-bak.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ref\gen\GeneratedReflection.h">
       <Filter>Header Files</Filter>
     </ClInclude>

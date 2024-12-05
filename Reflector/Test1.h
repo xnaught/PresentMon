@@ -6,3 +6,5 @@ struct A
 	char foo[51];
 	B barff;
 };
+
+typedef A AAA;
