@@ -225,7 +225,7 @@
     <ClInclude Include="ref\WrapReflect.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ref\StructDump.h">
+    <ClInclude Include="ref\StaticReflection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ref\GeneratedReflection.h">

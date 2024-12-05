@@ -1,6 +1,6 @@
 #pragma once
 #include "../CommonUtilities/win/WinAPI.h"
-#include "../CommonUtilities/ref/StructDump.h"
+#include "../CommonUtilities/ref/StaticReflection.h"
 #include "../Interprocess/source/act/AsyncActionManager.h"
 #include "../CommonUtilities/pipe/Pipe.h"
 #include "../PresentMonService/AllActions.h"
@@ -38,7 +38,7 @@ namespace pmon::mid
         {
             using Action = typename ipc::act::ActionParamsTraits<std::decay_t<Params>>::Action;
             using Response = Action::Response;
-            pmlog_dbg(std::format("dispatching action [{}] w/ params: {}", Action::Identifier, ref::DumpStruct(params)));
+            pmlog_dbg(std::format("dispatching action [{}] w/ params: {}", Action::Identifier, ref::DumpStatic(params)));
             return ExecuteSynchronous_([this](Params&& params) -> pipe::as::awaitable<Response> {
                 co_return co_await ipc::act::SyncRequest<Action>(std::forward<Params>(params), token_++, pipe_, timeoutMs_);
             }(std::forward<Params>(params)));

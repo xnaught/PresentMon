@@ -15,14 +15,14 @@ namespace pmon::util::ref
 	};
 
 	template<typename S, typename N>
-	void DumpScalarImpl(const S& s, N&& name, std::ostringstream& oss)
+	void DumpStaticScalarImpl(const S& s, N&& name, std::ostringstream& oss)
 	{
 		oss << name << ": " << s << ", ";
 	}
 
 	// TODO: support recursive dumping via nested structures and/or containers (vector, array, etc.)
 	template<class S>
-	void DumpStructImpl(const S& s, std::ostringstream& oss)
+	void DumpStaticImpl(const S& s, std::ostringstream& oss)
 	{
 		if constexpr (reflect::size<S>() == 0) {
 			oss << "{empty}";
@@ -32,7 +32,7 @@ namespace pmon::util::ref
 			auto&& v = reflect::get<I>(s);
 			using T = std::decay_t<decltype(v)>;
 			if constexpr (std::same_as<std::string, T> || Arithmetic<T>) {
-				DumpScalarImpl(v, reflect::member_name<I>(s), oss);
+				DumpStaticScalarImpl(v, reflect::member_name<I>(s), oss);
 			}
 			else {
 				oss << reflect::member_name<I>(s) << ": {unknown}, ";
@@ -41,10 +41,10 @@ namespace pmon::util::ref
 	}
 
 	template<class S>
-	std::string DumpStruct(const S& s)
+	std::string DumpStatic(const S& s)
 	{
 		std::ostringstream oss;
-		DumpStructImpl(s, oss);
+		DumpStaticImpl(s, oss);
 		return oss.str();
 	}
 }

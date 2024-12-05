@@ -13,19 +13,13 @@ namespace StructDumperGenerator
         static void Main(string[] args)
         {
             // List of structs and enums with their header files
-            var structDefinitions = new List<HeaderStruct>
+            var targetHeaders = new List<string>
             {
-                new HeaderStruct("Reflector/Test1.h",
-                    new HashSet<string> { "AAA"
-                    }),
-                //new HeaderStruct("IntelPresentMon/ControlLib/igcl_api.h",
-                //    new HashSet<string> { "ctl_init_args_t",
-                //        "ctl_device_adapter_properties_t",
-                //        "ctl_power_telemetry_t",
-                //    }),
+                "Reflector/Test1.h",
+                "IntelPresentMon/ControlLib/igcl_api.h",
             };
 
-            var compilation = CppParser.ParseFiles(structDefinitions.ConvertAll(hs => hs.HeaderFile));
+            var compilation = CppParser.ParseFiles(targetHeaders);
 
             if (compilation.HasErrors) {
                 foreach (var message in compilation.Diagnostics.Messages) {
@@ -37,19 +31,17 @@ namespace StructDumperGenerator
             // Collect structs, enums, and their members
             var structs = new List<StructInfo>();
             var enums = new List<EnumInfo>();
-            var includes = new HashSet<string>();
-            var processedStructs = new HashSet<string>();
-            var processedEnums = new HashSet<string>();
 
-            foreach (var headerStruct in structDefinitions) {
-                foreach (var targetName in headerStruct.StructNames) {
-                    if (IsEnum(compilation, targetName)) {
-                        ProcessEnum(targetName, headerStruct.HeaderFile, compilation, enums, includes, processedEnums);
-                    }
-                    else {
-                        ProcessStruct(targetName, headerStruct.HeaderFile, compilation, structs, enums, includes, processedStructs, processedEnums);
-                    }
+            // iterate over all structs (classes, unions)
+            foreach (var cppClass in compilation.Classes) {
+                if (cppClass.IsDefinition) {
+                    ProcessStruct(cppClass, compilation, structs);
                 }
+            }
+
+            // iterate over all enums
+            foreach (var cppEnum in compilation.Enums) {
+                ProcessEnum(cppEnum, compilation, enums);
             }
 
             // Load the Scriban template
@@ -58,7 +50,7 @@ namespace StructDumperGenerator
 
             // Prepare the model for the template
             var model = new {
-                includes = includes,
+                includes = new HashSet<string>(targetHeaders),
                 structs = structs,
                 enums = enums
             };
@@ -73,29 +65,10 @@ namespace StructDumperGenerator
         }
 
         // Recursive method to process structs
-        static void ProcessStruct(string structName, string headerFile, CppCompilation compilation, List<StructInfo> structs, List<EnumInfo> enums, HashSet<string> includes, HashSet<string> processedStructs, HashSet<string> processedEnums)
+        static void ProcessStruct(CppClass cppClass, CppCompilation compilation, List<StructInfo> structs)
         {
-            if (processedStructs.Contains(structName))
-                return;
-
-            processedStructs.Add(structName);
-
-            CppClass? cppClass = compilation.Classes.FirstOrDefault(c => c.Name == structName);
-
-            // If not found, attempt to resolve typedef
-            if (cppClass == null) {
-                var resolved = compilation.Typedefs.FirstOrDefault(t => t.Name == structName)?.ElementType;
-                if (resolved is CppClass resolvedCpp) {
-                    cppClass = resolvedCpp;
-                }
-                else {
-                    Console.WriteLine($"Struct {structName} not found in {headerFile}");
-                    return;
-                }
-            }
-
             var structInfo = new StructInfo {
-                Name = structName,
+                Name = cppClass.Name,
                 Members = new List<MemberInfo>(),
                 Type =  cppClass.ClassKind == CppClassKind.Class ? "class" :
                         cppClass.ClassKind == CppClassKind.Union ? "union" :
@@ -110,53 +83,23 @@ namespace StructDumperGenerator
                     DumpExpression = GetDumpExpression(field.Type, $"s.{field.Name}")
                 };
                 structInfo.Members.Add(memberInfo);
-
-                // Check if the field's type is a struct or enum, and process it recursively, including arrays
-                CppType? inclusiveFieldType = fieldType;
-                if (fieldType is CppArrayType arrayType) {
-                    inclusiveFieldType = arrayType.ElementType;
-                }
-                if (inclusiveFieldType is CppClass fieldCppClass) {
-                    ProcessStruct(fieldCppClass.Name, headerFile, compilation, structs, enums, includes, processedStructs, processedEnums);
-                }
-                else if (inclusiveFieldType is CppEnum fieldEnum) {
-                    ProcessEnum(fieldEnum.Name, headerFile, compilation, enums, includes, processedEnums);
-                }
             }
 
             structs.Add(structInfo);
-            includes.Add(headerFile);
         }
 
         // Method to process enums
-        static void ProcessEnum(string enumName, string headerFile, CppCompilation compilation, List<EnumInfo> enums, HashSet<string> includes, HashSet<string> processedEnums)
+        static void ProcessEnum(CppEnum cppEnum, CppCompilation compilation, List<EnumInfo> enums)
         {
-            if (processedEnums.Contains(enumName))
-                return;
-
-            processedEnums.Add(enumName);
-
-            var cppEnum = compilation.Enums.FirstOrDefault(e => e.Name == enumName);
-            if (cppEnum == null) {
-                Console.WriteLine($"Enum {enumName} not found in {headerFile}");
-                return;
-            }
-
+            
             var enumInfo = new EnumInfo {
                 Name = cppEnum.Name,
-                Values = cppEnum.Items.Select(item => new EnumValue {
+                Values = cppEnum.Items.DistinctBy(item => item.Value).Select(item => new EnumValue {
                     Name = item.Name
                 }).ToList()
             };
 
             enums.Add(enumInfo);
-            includes.Add(headerFile);
-        }
-
-        // Helper method to determine if a name corresponds to an enum
-        static bool IsEnum(CppCompilation compilation, string name)
-        {
-            return compilation.Enums.Any(e => e.Name == name);
         }
 
         // Helper method to generate the dump expression for a field
@@ -181,7 +124,8 @@ namespace StructDumperGenerator
                 // sized arrays can be displayed
                 else {
                     var isPrimitiveString = arrayType.ElementType is CppPrimitiveType ? "true" : "false";
-                    return $"DumpArray_<{arrayType.ElementType.FullName}, {arrayType.Size}, {isPrimitiveString}>({variableAccess})";
+                    var name = arrayType.ElementType is CppTypedef typedef ? typedef.Name : arrayType.ElementType.FullName;
+                    return $"DumpArray_<{name}, {arrayType.Size}, {isPrimitiveString}>({variableAccess})";
                 }
             }
             else if (unwrappedType is CppPointerType pointerType) {
@@ -223,29 +167,29 @@ namespace StructDumperGenerator
     // Class to hold struct information
     class StructInfo
     {
-        public string Name { get; set; }
-        public string Type {  get; set; }
-        public List<MemberInfo> Members { get; set; }
+        public required string Name { get; set; }
+        public required string Type {  get; set; }
+        public required List<MemberInfo> Members { get; set; }
     }
 
     // Class to hold member information
     class MemberInfo
     {
-        public string Name { get; set; }
-        public string Type { get; set; }
-        public string DumpExpression { get; set; }
+        public required string Name { get; set; }
+        public required string Type { get; set; }
+        public required string DumpExpression { get; set; }
     }
 
     // Class to hold enum information
     class EnumInfo
     {
-        public string Name { get; set; }
-        public List<EnumValue> Values { get; set; }
+        public required string Name { get; set; }
+        public required List<EnumValue> Values { get; set; }
     }
 
     // Class to hold enum value information
     class EnumValue
     {
-        public string Name { get; set; }
+        public required string Name { get; set; }
     }
 }
