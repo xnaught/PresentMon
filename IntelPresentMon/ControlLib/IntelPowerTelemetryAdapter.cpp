@@ -100,12 +100,21 @@ namespace pwr::intel
             }
         }
 
-        double gpu_sustained_power_limit_mw = 0.;
-        if (const auto result = ctlOverclockPowerLimitGet(
-            deviceHandle, &gpu_sustained_power_limit_mw);
-            result != CTL_RESULT_SUCCESS && result != CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
-            success = false;
-            IGCL_ERR(result);
+        std::optional<double> gpu_sustained_power_limit_mw;
+        {
+            double gpu_sustained_power_limit_mw_temp = 0.;
+            if (const auto result = ctlOverclockPowerLimitGet(deviceHandle, &gpu_sustained_power_limit_mw_temp);
+                result == CTL_RESULT_SUCCESS || result == CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
+                if (result == CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
+                    pmlog_warn("ctlOverclockPowerLimitGet indicates deprecation");
+                }
+                gpu_sustained_power_limit_mw = gpu_sustained_power_limit_mw_temp;
+            }
+            else {
+                success = false;
+                IGCL_ERR(result);
+            }
+            pmlog_verb(v::gpu)(std::format("ctlOverclockPowerLimitGet output: {}", gpu_sustained_power_limit_mw_temp));
         }
 
         if (useV1PowerTelemetry) {
@@ -198,14 +207,15 @@ namespace pwr::intel
     double IntelPowerTelemetryAdapter::GetSustainedPowerLimit() const noexcept
     {
         double gpuSustainedPowerLimit = 0.;
-        if (const auto result = ctlOverclockPowerLimitGet(
-            deviceHandle, &gpuSustainedPowerLimit);
-            result == CTL_RESULT_SUCCESS) {
+        if (const auto result = ctlOverclockPowerLimitGet(deviceHandle, &gpuSustainedPowerLimit);
+            result == CTL_RESULT_SUCCESS || result == CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
+            if (result == CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
+                pmlog_warn("ctlOverclockPowerLimitGet indicates deprecation");
+            }
             // Control lib returns back in milliwatts
-            gpuSustainedPowerLimit =
-                gpuSustainedPowerLimit / 1000.;
+            gpuSustainedPowerLimit = gpuSustainedPowerLimit / 1000.;
         }
-
+        pmlog_verb(v::gpu)(std::format("ctlOverclockPowerLimitGet output: {}", gpuSustainedPowerLimit));
         return gpuSustainedPowerLimit;
     }
 
@@ -238,7 +248,7 @@ namespace pwr::intel
     bool IntelPowerTelemetryAdapter::GatherSampleData(T& currentSample,
         ctl_mem_state_t& memory_state,
         ctl_mem_bandwidth_t& memory_bandwidth,
-        double gpu_sustained_power_limit_mw,
+        std::optional<double> gpu_sustained_power_limit_mw,
         uint64_t qpc)
     {
         bool success = true;
@@ -292,8 +302,10 @@ namespace pwr::intel
 
             // Save and convert the gpu sustained power limit
             pm_gpu_power_telemetry_info.gpu_sustained_power_limit_w =
-                gpu_sustained_power_limit_mw / 1000.;
-            SetTelemetryCapBit(GpuTelemetryCapBits::gpu_sustained_power_limit);
+                gpu_sustained_power_limit_mw.value_or(0.) / 1000.;
+            if (gpu_sustained_power_limit_mw) {
+                SetTelemetryCapBit(GpuTelemetryCapBits::gpu_sustained_power_limit);                
+            }
 
             // Save off the calculated PresentMon power telemetry values. These are
             // saved off for clients to extrace out timing information based on QPC

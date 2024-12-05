@@ -36,7 +36,7 @@ namespace pwr::intel
 		bool GatherSampleData(T& currentSample,
 			ctl_mem_state_t& memory_state,
 			ctl_mem_bandwidth_t& memory_bandwidth,
-			double gpu_sustained_power_limit_mw,
+			std::optional<double> gpu_sustained_power_limit_mw,
 			uint64_t qpc);
 
 		ctl_result_t EnumerateMemoryModules();
