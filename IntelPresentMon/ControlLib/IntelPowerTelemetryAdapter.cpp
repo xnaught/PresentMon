@@ -3,6 +3,10 @@
 #include "IntelPowerTelemetryAdapter.h"
 #include "Logging.h"
 #include "../CommonUtilities/Math.h"
+#include "../CommonUtilities/ref/GeneratedReflection.h"
+
+using namespace pmon;
+using namespace util;
 
 namespace pwr::intel
 {
@@ -22,6 +26,7 @@ namespace pwr::intel
             result != CTL_RESULT_SUCCESS) {
             throw std::runtime_error{ "Failure to get device properties" };
         }
+        pmlog_verb(v::gpu)("Device properties").pmwatch(ref::DumpGenerated(properties));
 
         if (properties.device_type != CTL_DEVICE_TYPE_GRAPHICS) {
             throw NonGraphicsDeviceException{};
@@ -62,6 +67,7 @@ namespace pwr::intel
                 success = false;
                 pmlog_warn("Failed to access ctlPowerTelemetryGet.v1, falling back to .v0");
             }
+            pmlog_verb(v::gpu)("get power telemetry V1").pmwatch(ref::DumpGenerated(*currentSample));
         }
         if (!useV1PowerTelemetry) {
             currentSampleVariant = ctl_power_telemetry_t{
@@ -79,6 +85,7 @@ namespace pwr::intel
                 success = false;
                 IGCL_ERR(result);
             }
+            pmlog_verb(v::gpu)("get power telemetry V0").pmwatch(ref::DumpGenerated(*currentSample));
         }
 
         // Query memory state and bandwidth if supported
@@ -87,17 +94,20 @@ namespace pwr::intel
             .Size = sizeof(ctl_mem_bandwidth_t),
             .Version = 1,
         };
+        // Question: why are we only using the first element of memoryModules here?
         if (memoryModules.size() > 0) {
             if (const auto result = ctlMemoryGetState(memoryModules[0], &memory_state);
                 result != CTL_RESULT_SUCCESS) {
-              success = false;
-              IGCL_ERR(result);
+                success = false;
+                IGCL_ERR(result);
             }
+            pmlog_verb(v::gpu)("get memory state").pmwatch(ref::DumpGenerated(memory_state));
             if (const auto result = ctlMemoryGetBandwidth(memoryModules[0], &memory_bandwidth);
                 result != CTL_RESULT_SUCCESS) {
-              success = false;
-              IGCL_ERR(result);
+                success = false;
+                IGCL_ERR(result);
             }
+            pmlog_verb(v::gpu)("get memory bandwidth").pmwatch(ref::DumpGenerated(memory_bandwidth));
         }
 
         std::optional<double> gpu_sustained_power_limit_mw;
@@ -177,11 +187,14 @@ namespace pwr::intel
         ctl_mem_state_t memory_state = {.Size = sizeof(ctl_mem_state_t)};
         uint64_t video_mem_size = 0;
         if (memoryModules.size() > 0) {
-            if (const auto result =
-                    ctlMemoryGetState(memoryModules[0], &memory_state);
+            if (const auto result = ctlMemoryGetState(memoryModules[0], &memory_state);
                 result == CTL_RESULT_SUCCESS) {
                 video_mem_size = memory_state.size;
             }
+            else {
+                IGCL_ERR(result);
+            }
+            pmlog_verb(v::gpu)("get memory state").pmwatch(ref::DumpGenerated(memory_state));
         }
         return video_mem_size;
     }
@@ -194,12 +207,14 @@ namespace pwr::intel
         };
         uint64_t videoMemMaxBandwidth = 0;
         if (memoryModules.size() > 0) {
-            if (const auto result =
-                ctlMemoryGetBandwidth(memoryModules[0], &memoryBandwidth);
+            if (const auto result = ctlMemoryGetBandwidth(memoryModules[0], &memoryBandwidth);
                 result == CTL_RESULT_SUCCESS) {
                 videoMemMaxBandwidth = memoryBandwidth.maxBandwidth;
             }
-
+            else {
+                IGCL_ERR(result);
+            }
+            pmlog_verb(v::gpu)("get memory bandwidth").pmwatch(ref::DumpGenerated(memoryBandwidth));
         }
         return videoMemMaxBandwidth;
     }
@@ -232,6 +247,7 @@ namespace pwr::intel
             {
                 return result;
             }
+            pmlog_verb(v::gpu)("Memory module count").pmwatch(memory_module_count);
             memoryModules.resize(size_t(memory_module_count));
         }
 

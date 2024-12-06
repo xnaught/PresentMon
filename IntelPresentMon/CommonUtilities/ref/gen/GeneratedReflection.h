@@ -3,6 +3,7 @@
 #include <functional>
 #include <string>
 #include <typeindex>
+#include <type_traits>
 #include <sstream>
 #include <format>
 #include "../GeneratedReflection.h"
@@ -10,6 +11,7 @@
 // target includes
 #include "../../../../Reflector/Test1.h"
 #include "../../../../IntelPresentMon/ControlLib/igcl_api.h"
+#include "../../../../IntelPresentMon/ControlLib/ctlpvttemp_api.h"
 
 namespace pmon::util::ref::gen
 {
@@ -48,7 +50,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(C)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const C*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct C {"
+			oss << std::boolalpha << "struct C {"
 				<< " .x = " << s.x
 				<< " .y = " << s.y
 				<< " }";
@@ -57,7 +59,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(B)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const B*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct B {"
+			oss << std::boolalpha << "struct B {"
 				<< " .fff = " << s.fff
 				<< " .benum = " << DumpGenerated(s.benum)
 				<< " .nnn = " << DumpArray_<int, 4, true>(s.nnn)
@@ -69,7 +71,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(A)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const A*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct A {"
+			oss << std::boolalpha << "struct A {"
 				<< " .x = " << s.x
 				<< " .foo = " << s.foo
 				<< " .barff = " << DumpGenerated(s.barff)
@@ -80,7 +82,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_base_interface_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_base_interface_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_base_interface_t {"
+			oss << std::boolalpha << "struct _ctl_base_interface_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " }";
@@ -89,7 +91,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_range_info_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_range_info_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_property_range_info_t {"
+			oss << std::boolalpha << "struct _ctl_property_range_info_t {"
 				<< " .min_possible_value = " << s.min_possible_value
 				<< " .max_possible_value = " << s.max_possible_value
 				<< " .step_size = " << s.step_size
@@ -100,7 +102,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_range_info_int_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_range_info_int_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_property_range_info_int_t {"
+			oss << std::boolalpha << "struct _ctl_property_range_info_int_t {"
 				<< " .min_possible_value = " << s.min_possible_value
 				<< " .max_possible_value = " << s.max_possible_value
 				<< " .step_size = " << s.step_size
@@ -111,7 +113,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_range_info_uint_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_range_info_uint_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_property_range_info_uint_t {"
+			oss << std::boolalpha << "struct _ctl_property_range_info_uint_t {"
 				<< " .min_possible_value = " << s.min_possible_value
 				<< " .max_possible_value = " << s.max_possible_value
 				<< " .step_size = " << s.step_size
@@ -122,7 +124,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_info_boolean_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_info_boolean_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_property_info_boolean_t {"
+			oss << std::boolalpha << "struct _ctl_property_info_boolean_t {"
 				<< " .DefaultState = " << s.DefaultState
 				<< " }";
 			return oss.str();
@@ -130,7 +132,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_boolean_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_boolean_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_property_boolean_t {"
+			oss << std::boolalpha << "struct _ctl_property_boolean_t {"
 				<< " .Enable = " << s.Enable
 				<< " }";
 			return oss.str();
@@ -138,7 +140,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_info_enum_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_info_enum_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_property_info_enum_t {"
+			oss << std::boolalpha << "struct _ctl_property_info_enum_t {"
 				<< " .SupportedTypes = " << s.SupportedTypes
 				<< " .DefaultType = " << s.DefaultType
 				<< " }";
@@ -147,7 +149,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_enum_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_enum_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_property_enum_t {"
+			oss << std::boolalpha << "struct _ctl_property_enum_t {"
 				<< " .EnableType = " << s.EnableType
 				<< " }";
 			return oss.str();
@@ -155,7 +157,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_info_float_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_info_float_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_property_info_float_t {"
+			oss << std::boolalpha << "struct _ctl_property_info_float_t {"
 				<< " .DefaultEnable = " << s.DefaultEnable
 				<< " .RangeInfo = " << DumpGenerated(s.RangeInfo)
 				<< " }";
@@ -164,7 +166,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_float_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_float_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_property_float_t {"
+			oss << std::boolalpha << "struct _ctl_property_float_t {"
 				<< " .Enable = " << s.Enable
 				<< " .Value = " << s.Value
 				<< " }";
@@ -173,7 +175,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_info_int_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_info_int_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_property_info_int_t {"
+			oss << std::boolalpha << "struct _ctl_property_info_int_t {"
 				<< " .DefaultEnable = " << s.DefaultEnable
 				<< " .RangeInfo = " << DumpGenerated(s.RangeInfo)
 				<< " }";
@@ -182,7 +184,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_int_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_int_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_property_int_t {"
+			oss << std::boolalpha << "struct _ctl_property_int_t {"
 				<< " .Enable = " << s.Enable
 				<< " .Value = " << s.Value
 				<< " }";
@@ -191,7 +193,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_info_uint_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_info_uint_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_property_info_uint_t {"
+			oss << std::boolalpha << "struct _ctl_property_info_uint_t {"
 				<< " .DefaultEnable = " << s.DefaultEnable
 				<< " .RangeInfo = " << DumpGenerated(s.RangeInfo)
 				<< " }";
@@ -200,7 +202,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_uint_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_uint_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_property_uint_t {"
+			oss << std::boolalpha << "struct _ctl_property_uint_t {"
 				<< " .Enable = " << s.Enable
 				<< " .Value = " << s.Value
 				<< " }";
@@ -209,7 +211,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_info_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_info_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_property_info_t {"
+			oss << std::boolalpha << "struct _ctl_property_info_t {"
 				<< " .BoolType = " << DumpGenerated(s.BoolType)
 				<< " .FloatType = " << DumpGenerated(s.FloatType)
 				<< " .IntType = " << DumpGenerated(s.IntType)
@@ -221,7 +223,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_property_t {"
+			oss << std::boolalpha << "struct _ctl_property_t {"
 				<< " .BoolType = " << DumpGenerated(s.BoolType)
 				<< " .FloatType = " << DumpGenerated(s.FloatType)
 				<< " .IntType = " << DumpGenerated(s.IntType)
@@ -233,7 +235,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_data_value_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_data_value_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_data_value_t {"
+			oss << std::boolalpha << "struct _ctl_data_value_t {"
 				<< " .data8 = " << s.data8
 				<< " .datau8 = " << s.datau8
 				<< " .data16 = " << s.data16
@@ -250,7 +252,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_base_properties_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_base_properties_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_base_properties_t {"
+			oss << std::boolalpha << "struct _ctl_base_properties_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " }";
@@ -259,7 +261,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_application_id_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_application_id_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_application_id_t {"
+			oss << std::boolalpha << "struct _ctl_application_id_t {"
 				<< " .Data1 = " << s.Data1
 				<< " .Data2 = " << s.Data2
 				<< " .Data3 = " << s.Data3
@@ -270,7 +272,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_init_args_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_init_args_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_init_args_t {"
+			oss << std::boolalpha << "struct _ctl_init_args_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .AppVersion = " << s.AppVersion
@@ -283,7 +285,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_reserved_args_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_reserved_args_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_reserved_args_t {"
+			oss << std::boolalpha << "struct _ctl_reserved_args_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .pSpecialArg = " << (s.pSpecialArg ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pSpecialArg)) : "null"s)
@@ -294,7 +296,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_reserved_args_base_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_reserved_args_base_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_reserved_args_base_t {"
+			oss << std::boolalpha << "struct _ctl_reserved_args_base_t {"
 				<< " .ReservedFuncID = " << DumpGenerated(s.ReservedFuncID)
 				<< " }";
 			return oss.str();
@@ -302,7 +304,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_unlock_capability_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_unlock_capability_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_unlock_capability_t {"
+			oss << std::boolalpha << "struct _ctl_unlock_capability_t {"
 				<< " .ReservedFuncID = " << DumpGenerated(s.ReservedFuncID)
 				<< " .UnlockCapsID = " << DumpGenerated(s.UnlockCapsID)
 				<< " }";
@@ -311,7 +313,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_runtime_path_args_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_runtime_path_args_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_runtime_path_args_t {"
+			oss << std::boolalpha << "struct _ctl_runtime_path_args_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .UnlockID = " << DumpGenerated(s.UnlockID)
@@ -324,7 +326,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_firmware_version_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_firmware_version_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_firmware_version_t {"
+			oss << std::boolalpha << "struct _ctl_firmware_version_t {"
 				<< " .major_version = " << s.major_version
 				<< " .minor_version = " << s.minor_version
 				<< " .build_number = " << s.build_number
@@ -334,7 +336,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_adapter_bdf_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_adapter_bdf_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_adapter_bdf_t {"
+			oss << std::boolalpha << "struct _ctl_adapter_bdf_t {"
 				<< " .bus = " << s.bus
 				<< " .device = " << s.device
 				<< " .function = " << s.function
@@ -344,7 +346,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_device_adapter_properties_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_device_adapter_properties_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_device_adapter_properties_t {"
+			oss << std::boolalpha << "struct _ctl_device_adapter_properties_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .pDeviceID = " << (s.pDeviceID ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pDeviceID)) : "null"s)
@@ -372,7 +374,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_generic_void_datatype_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_generic_void_datatype_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_generic_void_datatype_t {"
+			oss << std::boolalpha << "struct _ctl_generic_void_datatype_t {"
 				<< " .pData = " << (s.pData ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pData)) : "null"s)
 				<< " .size = " << s.size
 				<< " }";
@@ -381,7 +383,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_revision_datatype_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_revision_datatype_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_revision_datatype_t {"
+			oss << std::boolalpha << "struct _ctl_revision_datatype_t {"
 				<< " .major_version = " << s.major_version
 				<< " .minor_version = " << s.minor_version
 				<< " .revision_version = " << s.revision_version
@@ -391,7 +393,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_wait_property_change_args_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_wait_property_change_args_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_wait_property_change_args_t {"
+			oss << std::boolalpha << "struct _ctl_wait_property_change_args_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .PropertyType = " << s.PropertyType
@@ -405,7 +407,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_rect_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_rect_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_rect_t {"
+			oss << std::boolalpha << "struct _ctl_rect_t {"
 				<< " .Left = " << s.Left
 				<< " .Top = " << s.Top
 				<< " .Right = " << s.Right
@@ -416,7 +418,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_endurance_gaming_caps_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_endurance_gaming_caps_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_endurance_gaming_caps_t {"
+			oss << std::boolalpha << "struct _ctl_endurance_gaming_caps_t {"
 				<< " .EGControlCaps = " << DumpGenerated(s.EGControlCaps)
 				<< " .EGModeCaps = " << DumpGenerated(s.EGModeCaps)
 				<< " }";
@@ -425,7 +427,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_endurance_gaming_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_endurance_gaming_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_endurance_gaming_t {"
+			oss << std::boolalpha << "struct _ctl_endurance_gaming_t {"
 				<< " .EGControl = " << DumpGenerated(s.EGControl)
 				<< " .EGMode = " << DumpGenerated(s.EGMode)
 				<< " }";
@@ -434,7 +436,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_endurance_gaming2_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_endurance_gaming2_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_endurance_gaming2_t {"
+			oss << std::boolalpha << "struct _ctl_endurance_gaming2_t {"
 				<< " .EGControl = " << DumpGenerated(s.EGControl)
 				<< " .EGMode = " << DumpGenerated(s.EGMode)
 				<< " .IsFPRequired = " << s.IsFPRequired
@@ -447,7 +449,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_adaptivesync_caps_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_adaptivesync_caps_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_adaptivesync_caps_t {"
+			oss << std::boolalpha << "struct _ctl_adaptivesync_caps_t {"
 				<< " .AdaptiveBalanceSupported = " << s.AdaptiveBalanceSupported
 				<< " .AdaptiveBalanceStrengthCaps = " << DumpGenerated(s.AdaptiveBalanceStrengthCaps)
 				<< " }";
@@ -456,7 +458,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_adaptivesync_getset_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_adaptivesync_getset_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_adaptivesync_getset_t {"
+			oss << std::boolalpha << "struct _ctl_adaptivesync_getset_t {"
 				<< " .AdaptiveSync = " << s.AdaptiveSync
 				<< " .AdaptiveBalance = " << s.AdaptiveBalance
 				<< " .AllowAsyncForHighFPS = " << s.AllowAsyncForHighFPS
@@ -467,7 +469,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_3d_app_profiles_caps_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_3d_app_profiles_caps_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_3d_app_profiles_caps_t {"
+			oss << std::boolalpha << "struct _ctl_3d_app_profiles_caps_t {"
 				<< " .SupportedTierTypes = " << s.SupportedTierTypes
 				<< " .Reserved = " << s.Reserved
 				<< " }";
@@ -476,7 +478,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_3d_app_profiles_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_3d_app_profiles_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_3d_app_profiles_t {"
+			oss << std::boolalpha << "struct _ctl_3d_app_profiles_t {"
 				<< " .TierType = " << DumpGenerated(s.TierType)
 				<< " .SupportedTierProfiles = " << s.SupportedTierProfiles
 				<< " .DefaultEnabledTierProfiles = " << s.DefaultEnabledTierProfiles
@@ -490,7 +492,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_3d_tier_details_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_3d_tier_details_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_3d_tier_details_t {"
+			oss << std::boolalpha << "struct _ctl_3d_tier_details_t {"
 				<< " .TierType = " << DumpGenerated(s.TierType)
 				<< " .TierProfile = " << DumpGenerated(s.TierProfile)
 				<< " .Reserved = " << DumpArray_<uint64_t, 4, false>(s.Reserved)
@@ -500,7 +502,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_3d_feature_details_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_3d_feature_details_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_3d_feature_details_t {"
+			oss << std::boolalpha << "struct _ctl_3d_feature_details_t {"
 				<< " .FeatureType = " << DumpGenerated(s.FeatureType)
 				<< " .ValueType = " << DumpGenerated(s.ValueType)
 				<< " .Value = " << DumpGenerated(s.Value)
@@ -518,7 +520,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_3d_feature_caps_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_3d_feature_caps_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_3d_feature_caps_t {"
+			oss << std::boolalpha << "struct _ctl_3d_feature_caps_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .NumSupportedFeatures = " << s.NumSupportedFeatures
@@ -529,7 +531,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_3d_feature_getset_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_3d_feature_getset_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_3d_feature_getset_t {"
+			oss << std::boolalpha << "struct _ctl_3d_feature_getset_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .FeatureType = " << DumpGenerated(s.FeatureType)
@@ -546,7 +548,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_kmd_load_features_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_kmd_load_features_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_kmd_load_features_t {"
+			oss << std::boolalpha << "struct _ctl_kmd_load_features_t {"
 				<< " .ReservedFuncID = " << DumpGenerated(s.ReservedFuncID)
 				<< " .bLoad = " << s.bLoad
 				<< " .SubsetFeatureMask = " << s.SubsetFeatureMask
@@ -560,7 +562,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_display_timing_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_display_timing_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_display_timing_t {"
+			oss << std::boolalpha << "struct _ctl_display_timing_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .PixelClock = " << s.PixelClock
@@ -581,7 +583,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_display_properties_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_display_properties_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_display_properties_t {"
+			oss << std::boolalpha << "struct _ctl_display_properties_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .Os_display_encoder_handle = " << DumpGenerated(s.Os_display_encoder_handle)
@@ -604,7 +606,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_os_display_encoder_identifier_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_os_display_encoder_identifier_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_os_display_encoder_identifier_t {"
+			oss << std::boolalpha << "struct _ctl_os_display_encoder_identifier_t {"
 				<< " .WindowsDisplayEncoderID = " << s.WindowsDisplayEncoderID
 				<< " .DisplayEncoderID = " << DumpGenerated(s.DisplayEncoderID)
 				<< " }";
@@ -613,7 +615,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_adapter_display_encoder_properties_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_adapter_display_encoder_properties_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_adapter_display_encoder_properties_t {"
+			oss << std::boolalpha << "struct _ctl_adapter_display_encoder_properties_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .Os_display_encoder_handle = " << DumpGenerated(s.Os_display_encoder_handle)
@@ -631,7 +633,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_sharpness_filter_properties_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_sharpness_filter_properties_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_sharpness_filter_properties_t {"
+			oss << std::boolalpha << "struct _ctl_sharpness_filter_properties_t {"
 				<< " .FilterType = " << s.FilterType
 				<< " .FilterDetails = " << DumpGenerated(s.FilterDetails)
 				<< " }";
@@ -640,7 +642,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_sharpness_caps_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_sharpness_caps_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_sharpness_caps_t {"
+			oss << std::boolalpha << "struct _ctl_sharpness_caps_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .SupportedFilterFlags = " << s.SupportedFilterFlags
@@ -652,7 +654,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_sharpness_settings_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_sharpness_settings_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_sharpness_settings_t {"
+			oss << std::boolalpha << "struct _ctl_sharpness_settings_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .Enable = " << s.Enable
@@ -664,7 +666,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_i2c_access_args_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_i2c_access_args_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_i2c_access_args_t {"
+			oss << std::boolalpha << "struct _ctl_i2c_access_args_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .DataSize = " << s.DataSize
@@ -680,7 +682,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_i2c_access_pinpair_args_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_i2c_access_pinpair_args_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_i2c_access_pinpair_args_t {"
+			oss << std::boolalpha << "struct _ctl_i2c_access_pinpair_args_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .DataSize = " << s.DataSize
@@ -696,7 +698,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_aux_access_args_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_aux_access_args_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_aux_access_args_t {"
+			oss << std::boolalpha << "struct _ctl_aux_access_args_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .OpType = " << DumpGenerated(s.OpType)
@@ -712,7 +714,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_power_optimization_caps_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_power_optimization_caps_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_power_optimization_caps_t {"
+			oss << std::boolalpha << "struct _ctl_power_optimization_caps_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .SupportedFeatures = " << s.SupportedFeatures
@@ -722,7 +724,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_power_optimization_lrr_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_power_optimization_lrr_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_power_optimization_lrr_t {"
+			oss << std::boolalpha << "struct _ctl_power_optimization_lrr_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .SupportedLRRTypes = " << s.SupportedLRRTypes
@@ -735,7 +737,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_power_optimization_psr_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_power_optimization_psr_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_power_optimization_psr_t {"
+			oss << std::boolalpha << "struct _ctl_power_optimization_psr_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .PSRVersion = " << s.PSRVersion
@@ -746,7 +748,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_power_optimization_dpst_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_power_optimization_dpst_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_power_optimization_dpst_t {"
+			oss << std::boolalpha << "struct _ctl_power_optimization_dpst_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .MinLevel = " << s.MinLevel
@@ -760,7 +762,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_power_optimization_settings_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_power_optimization_settings_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_power_optimization_settings_t {"
+			oss << std::boolalpha << "struct _ctl_power_optimization_settings_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .PowerOptimizationPlan = " << DumpGenerated(s.PowerOptimizationPlan)
@@ -774,7 +776,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_power_optimization_feature_specific_info_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_power_optimization_feature_specific_info_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_power_optimization_feature_specific_info_t {"
+			oss << std::boolalpha << "struct _ctl_power_optimization_feature_specific_info_t {"
 				<< " .LRRInfo = " << DumpGenerated(s.LRRInfo)
 				<< " .PSRInfo = " << DumpGenerated(s.PSRInfo)
 				<< " .DPSTInfo = " << DumpGenerated(s.DPSTInfo)
@@ -784,7 +786,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_set_brightness_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_set_brightness_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_set_brightness_t {"
+			oss << std::boolalpha << "struct _ctl_set_brightness_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .TargetBrightness = " << s.TargetBrightness
@@ -796,7 +798,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_get_brightness_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_get_brightness_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_get_brightness_t {"
+			oss << std::boolalpha << "struct _ctl_get_brightness_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .TargetBrightness = " << s.TargetBrightness
@@ -808,7 +810,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_pixtx_color_primaries_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_pixtx_color_primaries_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_pixtx_color_primaries_t {"
+			oss << std::boolalpha << "struct _ctl_pixtx_color_primaries_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .xR = " << s.xR
@@ -825,7 +827,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_pixtx_pixel_format_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_pixtx_pixel_format_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_pixtx_pixel_format_t {"
+			oss << std::boolalpha << "struct _ctl_pixtx_pixel_format_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .BitsPerColor = " << s.BitsPerColor
@@ -842,7 +844,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_pixtx_1dlut_config_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_pixtx_1dlut_config_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_pixtx_1dlut_config_t {"
+			oss << std::boolalpha << "struct _ctl_pixtx_1dlut_config_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .SamplingType = " << DumpGenerated(s.SamplingType)
@@ -856,7 +858,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_pixtx_matrix_config_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_pixtx_matrix_config_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_pixtx_matrix_config_t {"
+			oss << std::boolalpha << "struct _ctl_pixtx_matrix_config_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .PreOffsets = " << DumpArray_<double, 3, true>(s.PreOffsets)
@@ -868,7 +870,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_pixtx_3dlut_sample_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_pixtx_3dlut_sample_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_pixtx_3dlut_sample_t {"
+			oss << std::boolalpha << "struct _ctl_pixtx_3dlut_sample_t {"
 				<< " .Red = " << s.Red
 				<< " .Green = " << s.Green
 				<< " .Blue = " << s.Blue
@@ -878,7 +880,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_pixtx_3dlut_config_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_pixtx_3dlut_config_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_pixtx_3dlut_config_t {"
+			oss << std::boolalpha << "struct _ctl_pixtx_3dlut_config_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .NumSamplesPerChannel = " << s.NumSamplesPerChannel
@@ -889,7 +891,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_pixtx_block_config_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_pixtx_block_config_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_pixtx_block_config_t {"
+			oss << std::boolalpha << "struct _ctl_pixtx_block_config_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .BlockId = " << s.BlockId
@@ -901,7 +903,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_pixtx_config_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_pixtx_config_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_pixtx_config_t {"
+			oss << std::boolalpha << "struct _ctl_pixtx_config_t {"
 				<< " .OneDLutConfig = " << DumpGenerated(s.OneDLutConfig)
 				<< " .ThreeDLutConfig = " << DumpGenerated(s.ThreeDLutConfig)
 				<< " .MatrixConfig = " << DumpGenerated(s.MatrixConfig)
@@ -911,7 +913,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_pixtx_pipe_get_config_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_pixtx_pipe_get_config_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_pixtx_pipe_get_config_t {"
+			oss << std::boolalpha << "struct _ctl_pixtx_pipe_get_config_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .QueryType = " << DumpGenerated(s.QueryType)
@@ -925,7 +927,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_pixtx_pipe_set_config_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_pixtx_pipe_set_config_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_pixtx_pipe_set_config_t {"
+			oss << std::boolalpha << "struct _ctl_pixtx_pipe_set_config_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .OpertaionType = " << DumpGenerated(s.OpertaionType)
@@ -938,7 +940,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_panel_descriptor_access_args_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_panel_descriptor_access_args_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_panel_descriptor_access_args_t {"
+			oss << std::boolalpha << "struct _ctl_panel_descriptor_access_args_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .OpType = " << DumpGenerated(s.OpType)
@@ -951,7 +953,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_retro_scaling_settings_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_retro_scaling_settings_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_retro_scaling_settings_t {"
+			oss << std::boolalpha << "struct _ctl_retro_scaling_settings_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .Get = " << s.Get
@@ -963,7 +965,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_retro_scaling_caps_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_retro_scaling_caps_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_retro_scaling_caps_t {"
+			oss << std::boolalpha << "struct _ctl_retro_scaling_caps_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .SupportedRetroScaling = " << s.SupportedRetroScaling
@@ -973,7 +975,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_scaling_caps_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_scaling_caps_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_scaling_caps_t {"
+			oss << std::boolalpha << "struct _ctl_scaling_caps_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .SupportedScaling = " << s.SupportedScaling
@@ -983,7 +985,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_scaling_settings_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_scaling_settings_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_scaling_settings_t {"
+			oss << std::boolalpha << "struct _ctl_scaling_settings_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .Enable = " << s.Enable
@@ -998,7 +1000,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_lace_lux_aggr_map_entry_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_lace_lux_aggr_map_entry_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_lace_lux_aggr_map_entry_t {"
+			oss << std::boolalpha << "struct _ctl_lace_lux_aggr_map_entry_t {"
 				<< " .Lux = " << s.Lux
 				<< " .AggressivenessPercent = " << s.AggressivenessPercent
 				<< " }";
@@ -1007,7 +1009,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_lace_lux_aggr_map_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_lace_lux_aggr_map_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_lace_lux_aggr_map_t {"
+			oss << std::boolalpha << "struct _ctl_lace_lux_aggr_map_t {"
 				<< " .MaxNumEntries = " << s.MaxNumEntries
 				<< " .NumEntries = " << s.NumEntries
 				<< " .pLuxToAggrMappingTable = " << (s.pLuxToAggrMappingTable ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pLuxToAggrMappingTable)) : "null"s)
@@ -1017,7 +1019,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_lace_config_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_lace_config_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_lace_config_t {"
+			oss << std::boolalpha << "struct _ctl_lace_config_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .Enabled = " << s.Enabled
@@ -1031,7 +1033,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_lace_aggr_config_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_lace_aggr_config_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_lace_aggr_config_t {"
+			oss << std::boolalpha << "struct _ctl_lace_aggr_config_t {"
 				<< " .FixedAggressivenessLevelPercent = " << s.FixedAggressivenessLevelPercent
 				<< " .AggrLevelMap = " << DumpGenerated(s.AggrLevelMap)
 				<< " }";
@@ -1040,7 +1042,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_sw_psr_settings_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_sw_psr_settings_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_sw_psr_settings_t {"
+			oss << std::boolalpha << "struct _ctl_sw_psr_settings_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .Set = " << s.Set
@@ -1052,7 +1054,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_intel_arc_sync_monitor_params_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_intel_arc_sync_monitor_params_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_intel_arc_sync_monitor_params_t {"
+			oss << std::boolalpha << "struct _ctl_intel_arc_sync_monitor_params_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .IsIntelArcSyncSupported = " << s.IsIntelArcSyncSupported
@@ -1066,7 +1068,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_mux_properties_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_mux_properties_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_mux_properties_t {"
+			oss << std::boolalpha << "struct _ctl_mux_properties_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .MuxId = " << s.MuxId
@@ -1079,7 +1081,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_intel_arc_sync_profile_params_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_intel_arc_sync_profile_params_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_intel_arc_sync_profile_params_t {"
+			oss << std::boolalpha << "struct _ctl_intel_arc_sync_profile_params_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .IntelArcSyncProfile = " << DumpGenerated(s.IntelArcSyncProfile)
@@ -1093,7 +1095,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_edid_management_args_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_edid_management_args_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_edid_management_args_t {"
+			oss << std::boolalpha << "struct _ctl_edid_management_args_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .OpType = " << DumpGenerated(s.OpType)
@@ -1107,7 +1109,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_get_set_custom_mode_args_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_get_set_custom_mode_args_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_get_set_custom_mode_args_t {"
+			oss << std::boolalpha << "struct _ctl_get_set_custom_mode_args_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .CustomModeOpType = " << DumpGenerated(s.CustomModeOpType)
@@ -1119,7 +1121,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_custom_src_mode_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_custom_src_mode_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_custom_src_mode_t {"
+			oss << std::boolalpha << "struct _ctl_custom_src_mode_t {"
 				<< " .SourceX = " << s.SourceX
 				<< " .SourceY = " << s.SourceY
 				<< " }";
@@ -1128,7 +1130,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_child_display_target_mode_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_child_display_target_mode_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_child_display_target_mode_t {"
+			oss << std::boolalpha << "struct _ctl_child_display_target_mode_t {"
 				<< " .Width = " << s.Width
 				<< " .Height = " << s.Height
 				<< " .RefreshRate = " << s.RefreshRate
@@ -1139,7 +1141,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_combined_display_child_info_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_combined_display_child_info_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_combined_display_child_info_t {"
+			oss << std::boolalpha << "struct _ctl_combined_display_child_info_t {"
 				<< " .hDisplayOutput = " << (s.hDisplayOutput ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.hDisplayOutput)) : "null"s)
 				<< " .FbSrc = " << DumpGenerated(s.FbSrc)
 				<< " .FbPos = " << DumpGenerated(s.FbPos)
@@ -1151,7 +1153,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_combined_display_args_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_combined_display_args_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_combined_display_args_t {"
+			oss << std::boolalpha << "struct _ctl_combined_display_args_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .OpType = " << DumpGenerated(s.OpType)
@@ -1167,7 +1169,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_genlock_display_info_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_genlock_display_info_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_genlock_display_info_t {"
+			oss << std::boolalpha << "struct _ctl_genlock_display_info_t {"
 				<< " .hDisplayOutput = " << (s.hDisplayOutput ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.hDisplayOutput)) : "null"s)
 				<< " .IsPrimary = " << s.IsPrimary
 				<< " }";
@@ -1176,7 +1178,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_genlock_target_mode_list_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_genlock_target_mode_list_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_genlock_target_mode_list_t {"
+			oss << std::boolalpha << "struct _ctl_genlock_target_mode_list_t {"
 				<< " .hDisplayOutput = " << (s.hDisplayOutput ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.hDisplayOutput)) : "null"s)
 				<< " .NumModes = " << s.NumModes
 				<< " .pTargetModes = " << (s.pTargetModes ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pTargetModes)) : "null"s)
@@ -1186,7 +1188,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_genlock_topology_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_genlock_topology_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_genlock_topology_t {"
+			oss << std::boolalpha << "struct _ctl_genlock_topology_t {"
 				<< " .NumGenlockDisplays = " << s.NumGenlockDisplays
 				<< " .IsPrimaryGenlockSystem = " << s.IsPrimaryGenlockSystem
 				<< " .CommonTargetMode = " << DumpGenerated(s.CommonTargetMode)
@@ -1198,7 +1200,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_genlock_args_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_genlock_args_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_genlock_args_t {"
+			oss << std::boolalpha << "struct _ctl_genlock_args_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .Operation = " << DumpGenerated(s.Operation)
@@ -1211,7 +1213,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_vblank_ts_args_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_vblank_ts_args_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_vblank_ts_args_t {"
+			oss << std::boolalpha << "struct _ctl_vblank_ts_args_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .NumOfTargets = " << s.NumOfTargets
@@ -1222,7 +1224,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_lda_args_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_lda_args_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_lda_args_t {"
+			oss << std::boolalpha << "struct _ctl_lda_args_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .NumAdapters = " << s.NumAdapters
@@ -1234,7 +1236,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_dce_args_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_dce_args_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_dce_args_t {"
+			oss << std::boolalpha << "struct _ctl_dce_args_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .Set = " << s.Set
@@ -1250,7 +1252,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_wire_format_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_wire_format_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_wire_format_t {"
+			oss << std::boolalpha << "struct _ctl_wire_format_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .ColorModel = " << DumpGenerated(s.ColorModel)
@@ -1261,7 +1263,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_get_set_wire_format_config_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_get_set_wire_format_config_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_get_set_wire_format_config_t {"
+			oss << std::boolalpha << "struct _ctl_get_set_wire_format_config_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .Operation = " << DumpGenerated(s.Operation)
@@ -1273,7 +1275,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_display_settings_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_display_settings_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_display_settings_t {"
+			oss << std::boolalpha << "struct _ctl_display_settings_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .Set = " << s.Set
@@ -1294,7 +1296,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_engine_properties_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_engine_properties_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_engine_properties_t {"
+			oss << std::boolalpha << "struct _ctl_engine_properties_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .type = " << DumpGenerated(s.type)
@@ -1304,7 +1306,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_engine_stats_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_engine_stats_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_engine_stats_t {"
+			oss << std::boolalpha << "struct _ctl_engine_stats_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .activeTime = " << s.activeTime
@@ -1315,7 +1317,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_fan_speed_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_fan_speed_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_fan_speed_t {"
+			oss << std::boolalpha << "struct _ctl_fan_speed_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .speed = " << s.speed
@@ -1326,7 +1328,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_fan_temp_speed_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_fan_temp_speed_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_fan_temp_speed_t {"
+			oss << std::boolalpha << "struct _ctl_fan_temp_speed_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .temperature = " << s.temperature
@@ -1337,7 +1339,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_fan_speed_table_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_fan_speed_table_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_fan_speed_table_t {"
+			oss << std::boolalpha << "struct _ctl_fan_speed_table_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .numPoints = " << s.numPoints
@@ -1348,7 +1350,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_fan_properties_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_fan_properties_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_fan_properties_t {"
+			oss << std::boolalpha << "struct _ctl_fan_properties_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .canControl = " << s.canControl
@@ -1362,7 +1364,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_fan_config_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_fan_config_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_fan_config_t {"
+			oss << std::boolalpha << "struct _ctl_fan_config_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .mode = " << DumpGenerated(s.mode)
@@ -1374,7 +1376,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_freq_properties_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_freq_properties_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_freq_properties_t {"
+			oss << std::boolalpha << "struct _ctl_freq_properties_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .type = " << DumpGenerated(s.type)
@@ -1387,7 +1389,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_freq_range_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_freq_range_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_freq_range_t {"
+			oss << std::boolalpha << "struct _ctl_freq_range_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .min = " << s.min
@@ -1398,7 +1400,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_freq_state_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_freq_state_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_freq_state_t {"
+			oss << std::boolalpha << "struct _ctl_freq_state_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .currentVoltage = " << s.currentVoltage
@@ -1413,7 +1415,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_freq_throttle_time_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_freq_throttle_time_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_freq_throttle_time_t {"
+			oss << std::boolalpha << "struct _ctl_freq_throttle_time_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .throttleTime = " << s.throttleTime
@@ -1424,7 +1426,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_video_processing_super_resolution_info_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_video_processing_super_resolution_info_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_video_processing_super_resolution_info_t {"
+			oss << std::boolalpha << "struct _ctl_video_processing_super_resolution_info_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .super_resolution_flag = " << s.super_resolution_flag
@@ -1437,7 +1439,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_video_processing_super_resolution_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_video_processing_super_resolution_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_video_processing_super_resolution_t {"
+			oss << std::boolalpha << "struct _ctl_video_processing_super_resolution_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .super_resolution_flag = " << s.super_resolution_flag
@@ -1453,7 +1455,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_video_processing_noise_reduction_info_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_video_processing_noise_reduction_info_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_video_processing_noise_reduction_info_t {"
+			oss << std::boolalpha << "struct _ctl_video_processing_noise_reduction_info_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .noise_reduction = " << DumpGenerated(s.noise_reduction)
@@ -1466,7 +1468,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_video_processing_noise_reduction_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_video_processing_noise_reduction_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_video_processing_noise_reduction_t {"
+			oss << std::boolalpha << "struct _ctl_video_processing_noise_reduction_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .noise_reduction = " << DumpGenerated(s.noise_reduction)
@@ -1478,7 +1480,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_video_processing_adaptive_contrast_enhancement_info_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_video_processing_adaptive_contrast_enhancement_info_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_video_processing_adaptive_contrast_enhancement_info_t {"
+			oss << std::boolalpha << "struct _ctl_video_processing_adaptive_contrast_enhancement_info_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .adaptive_contrast_enhancement = " << DumpGenerated(s.adaptive_contrast_enhancement)
@@ -1491,7 +1493,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_video_processing_adaptive_contrast_enhancement_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_video_processing_adaptive_contrast_enhancement_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_video_processing_adaptive_contrast_enhancement_t {"
+			oss << std::boolalpha << "struct _ctl_video_processing_adaptive_contrast_enhancement_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .adaptive_contrast_enhancement = " << DumpGenerated(s.adaptive_contrast_enhancement)
@@ -1503,7 +1505,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_video_processing_standard_color_correction_info_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_video_processing_standard_color_correction_info_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_video_processing_standard_color_correction_info_t {"
+			oss << std::boolalpha << "struct _ctl_video_processing_standard_color_correction_info_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .standard_color_correction_default_enable = " << s.standard_color_correction_default_enable
@@ -1518,7 +1520,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_video_processing_standard_color_correction_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_video_processing_standard_color_correction_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_video_processing_standard_color_correction_t {"
+			oss << std::boolalpha << "struct _ctl_video_processing_standard_color_correction_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .standard_color_correction_enable = " << s.standard_color_correction_enable
@@ -1533,7 +1535,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_video_processing_total_color_correction_info_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_video_processing_total_color_correction_info_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_video_processing_total_color_correction_info_t {"
+			oss << std::boolalpha << "struct _ctl_video_processing_total_color_correction_info_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .total_color_correction_default_enable = " << s.total_color_correction_default_enable
@@ -1550,7 +1552,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_video_processing_total_color_correction_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_video_processing_total_color_correction_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_video_processing_total_color_correction_t {"
+			oss << std::boolalpha << "struct _ctl_video_processing_total_color_correction_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .total_color_correction_enable = " << s.total_color_correction_enable
@@ -1567,7 +1569,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_video_processing_feature_details_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_video_processing_feature_details_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_video_processing_feature_details_t {"
+			oss << std::boolalpha << "struct _ctl_video_processing_feature_details_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .FeatureType = " << DumpGenerated(s.FeatureType)
@@ -1582,7 +1584,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_video_processing_feature_caps_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_video_processing_feature_caps_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_video_processing_feature_caps_t {"
+			oss << std::boolalpha << "struct _ctl_video_processing_feature_caps_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .NumSupportedFeatures = " << s.NumSupportedFeatures
@@ -1594,7 +1596,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_video_processing_feature_getset_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_video_processing_feature_getset_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_video_processing_feature_getset_t {"
+			oss << std::boolalpha << "struct _ctl_video_processing_feature_getset_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .FeatureType = " << DumpGenerated(s.FeatureType)
@@ -1612,7 +1614,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_mem_properties_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_mem_properties_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_mem_properties_t {"
+			oss << std::boolalpha << "struct _ctl_mem_properties_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .type = " << DumpGenerated(s.type)
@@ -1626,7 +1628,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_mem_state_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_mem_state_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_mem_state_t {"
+			oss << std::boolalpha << "struct _ctl_mem_state_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .free = " << s.free
@@ -1637,7 +1639,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_mem_bandwidth_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_mem_bandwidth_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_mem_bandwidth_t {"
+			oss << std::boolalpha << "struct _ctl_mem_bandwidth_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .maxBandwidth = " << s.maxBandwidth
@@ -1650,7 +1652,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_oc_telemetry_item_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_oc_telemetry_item_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_oc_telemetry_item_t {"
+			oss << std::boolalpha << "struct _ctl_oc_telemetry_item_t {"
 				<< " .bSupported = " << s.bSupported
 				<< " .units = " << DumpGenerated(s.units)
 				<< " .type = " << DumpGenerated(s.type)
@@ -1661,7 +1663,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_oc_control_info_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_oc_control_info_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_oc_control_info_t {"
+			oss << std::boolalpha << "struct _ctl_oc_control_info_t {"
 				<< " .bSupported = " << s.bSupported
 				<< " .bRelative = " << s.bRelative
 				<< " .bReference = " << s.bReference
@@ -1677,7 +1679,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_oc_properties_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_oc_properties_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_oc_properties_t {"
+			oss << std::boolalpha << "struct _ctl_oc_properties_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .bSupported = " << s.bSupported
@@ -1693,7 +1695,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_oc_vf_pair_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_oc_vf_pair_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_oc_vf_pair_t {"
+			oss << std::boolalpha << "struct _ctl_oc_vf_pair_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .Voltage = " << s.Voltage
@@ -1704,7 +1706,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_psu_info_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_psu_info_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_psu_info_t {"
+			oss << std::boolalpha << "struct _ctl_psu_info_t {"
 				<< " .bSupported = " << s.bSupported
 				<< " .psuType = " << DumpGenerated(s.psuType)
 				<< " .energyCounter = " << DumpGenerated(s.energyCounter)
@@ -1715,7 +1717,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_power_telemetry_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_power_telemetry_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_power_telemetry_t {"
+			oss << std::boolalpha << "struct _ctl_power_telemetry_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .timeStamp = " << DumpGenerated(s.timeStamp)
@@ -1752,7 +1754,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_pci_address_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_pci_address_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_pci_address_t {"
+			oss << std::boolalpha << "struct _ctl_pci_address_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .domain = " << s.domain
@@ -1765,7 +1767,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_pci_speed_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_pci_speed_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_pci_speed_t {"
+			oss << std::boolalpha << "struct _ctl_pci_speed_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .gen = " << s.gen
@@ -1777,7 +1779,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_pci_properties_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_pci_properties_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_pci_properties_t {"
+			oss << std::boolalpha << "struct _ctl_pci_properties_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .address = " << DumpGenerated(s.address)
@@ -1790,7 +1792,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_pci_state_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_pci_state_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_pci_state_t {"
+			oss << std::boolalpha << "struct _ctl_pci_state_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .speed = " << DumpGenerated(s.speed)
@@ -1800,7 +1802,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_power_properties_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_power_properties_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_power_properties_t {"
+			oss << std::boolalpha << "struct _ctl_power_properties_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .canControl = " << s.canControl
@@ -1813,7 +1815,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_power_energy_counter_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_power_energy_counter_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_power_energy_counter_t {"
+			oss << std::boolalpha << "struct _ctl_power_energy_counter_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .energy = " << s.energy
@@ -1824,7 +1826,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_power_sustained_limit_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_power_sustained_limit_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_power_sustained_limit_t {"
+			oss << std::boolalpha << "struct _ctl_power_sustained_limit_t {"
 				<< " .enabled = " << s.enabled
 				<< " .power = " << s.power
 				<< " .interval = " << s.interval
@@ -1834,7 +1836,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_power_burst_limit_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_power_burst_limit_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_power_burst_limit_t {"
+			oss << std::boolalpha << "struct _ctl_power_burst_limit_t {"
 				<< " .enabled = " << s.enabled
 				<< " .power = " << s.power
 				<< " }";
@@ -1843,7 +1845,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_power_peak_limit_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_power_peak_limit_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_power_peak_limit_t {"
+			oss << std::boolalpha << "struct _ctl_power_peak_limit_t {"
 				<< " .powerAC = " << s.powerAC
 				<< " .powerDC = " << s.powerDC
 				<< " }";
@@ -1852,7 +1854,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_power_limits_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_power_limits_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_power_limits_t {"
+			oss << std::boolalpha << "struct _ctl_power_limits_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .sustainedPowerLimit = " << DumpGenerated(s.sustainedPowerLimit)
@@ -1864,7 +1866,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_energy_threshold_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_energy_threshold_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_energy_threshold_t {"
+			oss << std::boolalpha << "struct _ctl_energy_threshold_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .enable = " << s.enable
@@ -1876,11 +1878,85 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_temp_properties_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_temp_properties_t*>(pStruct);
 			std::ostringstream oss;
-			oss << "struct _ctl_temp_properties_t {"
+			oss << std::boolalpha << "struct _ctl_temp_properties_t {"
 				<< " .Size = " << s.Size
 				<< " .Version = " << s.Version
 				<< " .type = " << DumpGenerated(s.type)
 				<< " .maxTemperature = " << s.maxTemperature
+				<< " }";
+			return oss.str();
+		};
+		dumpers[typeid(_ctl_voltage_frequency_point_t)] = [](const void* pStruct) {
+			const auto& s = *static_cast<const _ctl_voltage_frequency_point_t*>(pStruct);
+			std::ostringstream oss;
+			oss << std::boolalpha << "struct _ctl_voltage_frequency_point_t {"
+				<< " .Voltage = " << s.Voltage
+				<< " .Frequency = " << s.Frequency
+				<< " }";
+			return oss.str();
+		};
+		dumpers[typeid(_ctl_oc_properties2_t)] = [](const void* pStruct) {
+			const auto& s = *static_cast<const _ctl_oc_properties2_t*>(pStruct);
+			std::ostringstream oss;
+			oss << std::boolalpha << "struct _ctl_oc_properties2_t {"
+				<< " .Size = " << s.Size
+				<< " .Version = " << s.Version
+				<< " .bSupported = " << s.bSupported
+				<< " .gpuFrequencyOffset = " << DumpGenerated(s.gpuFrequencyOffset)
+				<< " .gpuVoltageOffset = " << DumpGenerated(s.gpuVoltageOffset)
+				<< " .vramFrequencyOffset = " << DumpGenerated(s.vramFrequencyOffset)
+				<< " .vramVoltageOffset = " << DumpGenerated(s.vramVoltageOffset)
+				<< " .powerLimit = " << DumpGenerated(s.powerLimit)
+				<< " .temperatureLimit = " << DumpGenerated(s.temperatureLimit)
+				<< " .vramMemSpeedLimit = " << DumpGenerated(s.vramMemSpeedLimit)
+				<< " .gpuVFCurveVoltageLimit = " << DumpGenerated(s.gpuVFCurveVoltageLimit)
+				<< " .gpuVFCurveFrequencyLimit = " << DumpGenerated(s.gpuVFCurveFrequencyLimit)
+				<< " }";
+			return oss.str();
+		};
+		dumpers[typeid(_ctl_power_telemetry2_t)] = [](const void* pStruct) {
+			const auto& s = *static_cast<const _ctl_power_telemetry2_t*>(pStruct);
+			std::ostringstream oss;
+			oss << std::boolalpha << "struct _ctl_power_telemetry2_t {"
+				<< " .Size = " << s.Size
+				<< " .Version = " << s.Version
+				<< " .timeStamp = " << DumpGenerated(s.timeStamp)
+				<< " .gpuEnergyCounter = " << DumpGenerated(s.gpuEnergyCounter)
+				<< " .gpuVoltage = " << DumpGenerated(s.gpuVoltage)
+				<< " .gpuCurrentClockFrequency = " << DumpGenerated(s.gpuCurrentClockFrequency)
+				<< " .gpuCurrentTemperature = " << DumpGenerated(s.gpuCurrentTemperature)
+				<< " .globalActivityCounter = " << DumpGenerated(s.globalActivityCounter)
+				<< " .renderComputeActivityCounter = " << DumpGenerated(s.renderComputeActivityCounter)
+				<< " .mediaActivityCounter = " << DumpGenerated(s.mediaActivityCounter)
+				<< " .gpuPowerLimited = " << s.gpuPowerLimited
+				<< " .gpuTemperatureLimited = " << s.gpuTemperatureLimited
+				<< " .gpuCurrentLimited = " << s.gpuCurrentLimited
+				<< " .gpuVoltageLimited = " << s.gpuVoltageLimited
+				<< " .gpuUtilizationLimited = " << s.gpuUtilizationLimited
+				<< " .vramEnergyCounter = " << DumpGenerated(s.vramEnergyCounter)
+				<< " .vramVoltage = " << DumpGenerated(s.vramVoltage)
+				<< " .vramCurrentClockFrequency = " << DumpGenerated(s.vramCurrentClockFrequency)
+				<< " .vramCurrentEffectiveFrequency = " << DumpGenerated(s.vramCurrentEffectiveFrequency)
+				<< " .vramReadBandwidthCounter = " << DumpGenerated(s.vramReadBandwidthCounter)
+				<< " .vramWriteBandwidthCounter = " << DumpGenerated(s.vramWriteBandwidthCounter)
+				<< " .vramCurrentTemperature = " << DumpGenerated(s.vramCurrentTemperature)
+				<< " .vramPowerLimited = " << s.vramPowerLimited
+				<< " .vramTemperatureLimited = " << s.vramTemperatureLimited
+				<< " .vramCurrentLimited = " << s.vramCurrentLimited
+				<< " .vramVoltageLimited = " << s.vramVoltageLimited
+				<< " .vramUtilizationLimited = " << s.vramUtilizationLimited
+				<< " .totalCardEnergyCounter = " << DumpGenerated(s.totalCardEnergyCounter)
+				<< " .psu = " << DumpArray_<ctl_psu_info_t, 5, false>(s.psu)
+				<< " .fanSpeed = " << DumpArray_<ctl_oc_telemetry_item_t, 5, false>(s.fanSpeed)
+				<< " .gpuVrTemp = " << DumpGenerated(s.gpuVrTemp)
+				<< " .vramVrTemp = " << DumpGenerated(s.vramVrTemp)
+				<< " .saVrTemp = " << DumpGenerated(s.saVrTemp)
+				<< " .gpuEffectiveClock = " << DumpGenerated(s.gpuEffectiveClock)
+				<< " .gpuOverVoltagePercent = " << DumpGenerated(s.gpuOverVoltagePercent)
+				<< " .gpuPowerPercent = " << DumpGenerated(s.gpuPowerPercent)
+				<< " .gpuTemperaturePercent = " << DumpGenerated(s.gpuTemperaturePercent)
+				<< " .vramReadBandwidth = " << DumpGenerated(s.vramReadBandwidth)
+				<< " .vramWriteBandwidth = " << DumpGenerated(s.vramWriteBandwidth)
 				<< " }";
 			return oss.str();
 		};
@@ -2987,6 +3063,25 @@ namespace pmon::util::ref::gen
 			case _ctl_video_processing_super_resolution_flag_t::CTL_VIDEO_PROCESSING_SUPER_RESOLUTION_FLAG_ENABLE_CONFERENCE_SCENARIO_MODE: return "CTL_VIDEO_PROCESSING_SUPER_RESOLUTION_FLAG_ENABLE_CONFERENCE_SCENARIO_MODE"s;
 			case _ctl_video_processing_super_resolution_flag_t::CTL_VIDEO_PROCESSING_SUPER_RESOLUTION_FLAG_ENABLE_CAMERA_SCENARIO_MODE: return "CTL_VIDEO_PROCESSING_SUPER_RESOLUTION_FLAG_ENABLE_CAMERA_SCENARIO_MODE"s;
 			case _ctl_video_processing_super_resolution_flag_t::CTL_VIDEO_PROCESSING_SUPER_RESOLUTION_FLAG_MAX: return "CTL_VIDEO_PROCESSING_SUPER_RESOLUTION_FLAG_MAX"s;
+			default: return "{ unknown }"s;
+			}
+		};
+		dumpers[typeid(_ctl_vf_curve_details_t)] = [](const void* pEnum) {
+			const auto& e = *static_cast<const _ctl_vf_curve_details_t*>(pEnum);
+			switch (e) {
+			case _ctl_vf_curve_details_t::CTL_VF_CURVE_DETAILS_SIMPLIFIED: return "CTL_VF_CURVE_DETAILS_SIMPLIFIED"s;
+			case _ctl_vf_curve_details_t::CTL_VF_CURVE_DETAILS_MEDIUM: return "CTL_VF_CURVE_DETAILS_MEDIUM"s;
+			case _ctl_vf_curve_details_t::CTL_VF_CURVE_DETAILS_ELABORATE: return "CTL_VF_CURVE_DETAILS_ELABORATE"s;
+			case _ctl_vf_curve_details_t::CTL_VF_CURVE_DETAILS_MAX: return "CTL_VF_CURVE_DETAILS_MAX"s;
+			default: return "{ unknown }"s;
+			}
+		};
+		dumpers[typeid(_ctl_vf_curve_type_t)] = [](const void* pEnum) {
+			const auto& e = *static_cast<const _ctl_vf_curve_type_t*>(pEnum);
+			switch (e) {
+			case _ctl_vf_curve_type_t::CTL_VF_CURVE_TYPE_STOCK: return "CTL_VF_CURVE_TYPE_STOCK"s;
+			case _ctl_vf_curve_type_t::CTL_VF_CURVE_TYPE_LIVE: return "CTL_VF_CURVE_TYPE_LIVE"s;
+			case _ctl_vf_curve_type_t::CTL_VF_CURVE_TYPE_MAX: return "CTL_VF_CURVE_TYPE_MAX"s;
 			default: return "{ unknown }"s;
 			}
 		};

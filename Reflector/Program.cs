@@ -17,6 +17,7 @@ namespace StructDumperGenerator
             {
                 "Reflector/Test1.h",
                 "IntelPresentMon/ControlLib/igcl_api.h",
+                "IntelPresentMon/ControlLib/ctlpvttemp_api.h",
             };
 
             var compilation = CppParser.ParseFiles(targetHeaders);
