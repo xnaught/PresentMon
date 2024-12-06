@@ -107,7 +107,10 @@ namespace StructDumperGenerator
         {
             var unwrappedType = UnwrapType(type);
 
-            if (unwrappedType is CppPrimitiveType) {
+            if (unwrappedType is CppPrimitiveType cppPrim) {
+                if (cppPrim.FullName == "char" || cppPrim.FullName == "unsigned char") {
+                    return $"(int){variableAccess}";
+                }
                 return variableAccess;
             }
             else if (unwrappedType is CppClass) {
