@@ -9,7 +9,6 @@
 #include "../GeneratedReflection.h"
 
 // target includes
-#include "../../../../Reflector/Test1.h"
 #include "../../../../IntelPresentMon/ControlLib/igcl_api.h"
 #include "../../../../IntelPresentMon/ControlLib/ctlpvttemp_api.h"
 
@@ -47,38 +46,6 @@ namespace pmon::util::ref::gen
 	void RegisterDumpers_(std::unordered_map<std::type_index, std::function<std::string(const void*)>>& dumpers)
 	{
 		// structs
-		dumpers[typeid(C)] = [](const void* pStruct) {
-			const auto& s = *static_cast<const C*>(pStruct);
-			std::ostringstream oss;
-			oss << std::boolalpha << "struct C {"
-				<< " .x = " << s.x
-				<< " .y = " << s.y
-				<< " }";
-			return oss.str();
-		};
-		dumpers[typeid(B)] = [](const void* pStruct) {
-			const auto& s = *static_cast<const B*>(pStruct);
-			std::ostringstream oss;
-			oss << std::boolalpha << "struct B {"
-				<< " .fff = " << s.fff
-				<< " .benum = " << DumpGenerated(s.benum)
-				<< " .nnn = " << DumpArray_<int, 4, true>(s.nnn)
-				<< " .ccc = " << DumpArray_<C, 2, false>(s.ccc)
-				<< " .bbb = " << DumpArray_<Barbie, 3, false>(s.bbb)
-				<< " }";
-			return oss.str();
-		};
-		dumpers[typeid(A)] = [](const void* pStruct) {
-			const auto& s = *static_cast<const A*>(pStruct);
-			std::ostringstream oss;
-			oss << std::boolalpha << "struct A {"
-				<< " .x = " << s.x
-				<< " .foo = " << s.foo
-				<< " .barff = " << DumpGenerated(s.barff)
-				<< " .pThing = " << (s.pThing ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pThing)) : "null"s)
-				<< " }";
-			return oss.str();
-		};
 		dumpers[typeid(_ctl_base_interface_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_base_interface_t*>(pStruct);
 			std::ostringstream oss;
@@ -1962,17 +1929,6 @@ namespace pmon::util::ref::gen
 		};
 
 		// enums
-		dumpers[typeid(Barbie)] = [](const void* pEnum) {
-			const auto& e = *static_cast<const Barbie*>(pEnum);
-			switch (e) {
-			case Barbie::gir: return "gir"s;
-			case Barbie::in: return "in"s;
-			case Barbie::a: return "a"s;
-			case Barbie::party: return "party"s;
-			case Barbie::world: return "world"s;
-			default: return "{ unknown }"s;
-			}
-		};
 		dumpers[typeid(_ctl_init_flag_t)] = [](const void* pEnum) {
 			const auto& e = *static_cast<const _ctl_init_flag_t*>(pEnum);
 			switch (e) {
