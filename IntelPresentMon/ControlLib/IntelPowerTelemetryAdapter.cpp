@@ -117,7 +117,7 @@ namespace pwr::intel
             if (const auto result = ctlOverclockPowerLimitGet(deviceHandle, &gpu_sustained_power_limit_mw_temp);
                 result == CTL_RESULT_SUCCESS || result == CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
                 if (result == CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
-                    pmlog_warn("ctlOverclockPowerLimitGet indicates deprecation");
+                    pmlog_warn("ctlOverclockPowerLimitGet indicates deprecation").code(result);
                 }
                 gpu_sustained_power_limit_mw = gpu_sustained_power_limit_mw_temp;
             }
@@ -224,7 +224,7 @@ namespace pwr::intel
         if (const auto result = ctlOverclockPowerLimitGet(deviceHandle, &gpuSustainedPowerLimit);
             result == CTL_RESULT_SUCCESS || result == CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
             if (result == CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
-                pmlog_warn("ctlOverclockPowerLimitGet indicates deprecation");
+                pmlog_warn("ctlOverclockPowerLimitGet indicates deprecation").code(result);
             }
             // Control lib returns back in milliwatts
             gpuSustainedPowerLimit = gpuSustainedPowerLimit / 1000.;

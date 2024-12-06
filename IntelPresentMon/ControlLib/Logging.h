@@ -14,22 +14,11 @@ namespace pwr::log
         return std::format("{} at {}:{}", function, file, line);
     }
 
-    inline std::string MakeIgclDebugErrorString(ctl_result_t code, int line, const char* file, const char* function)
-    {
-        try
-        {
-            return std::format("(TEL) IGCL_ERR [{}] in {}\n", (int)code, MakeErrorLocationString(line, file, function));
-        } catch (...) {
-            std::string exception_string = "(TEL) IGCL_ERR debug error string failed";
-            return exception_string;
-        }
-    }
-
     inline std::string MakeTelemetryDebugErrorString(const char* msg, int line, const char* file, const char* function)
     {
         return std::format("(TEL) {} in {}\n", msg, MakeErrorLocationString(line, file, function));
     }
 }
 
-#define IGCL_ERR(ec) pmlog_error("IGCL").code((unsigned int)ec);
+#define IGCL_ERR(ec) pmlog_error("IGCL").code(ec);
 #define TELE_ERR(msg) OutputDebugStringA(pwr::log::MakeTelemetryDebugErrorString((msg), __LINE__, __FILE__, __FUNCTION__).c_str())

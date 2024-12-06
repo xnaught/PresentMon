@@ -51,7 +51,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_base_interface_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " }";
 			return oss.str();
 		};
@@ -203,8 +203,8 @@ namespace pmon::util::ref::gen
 			const auto& s = *static_cast<const _ctl_data_value_t*>(pStruct);
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_data_value_t {"
-				<< " .data8 = " << s.data8
-				<< " .datau8 = " << s.datau8
+				<< " .data8 = " << (int)s.data8
+				<< " .datau8 = " << (int)s.datau8
 				<< " .data16 = " << s.data16
 				<< " .datau16 = " << s.datau16
 				<< " .data32 = " << s.data32
@@ -221,7 +221,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_base_properties_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " }";
 			return oss.str();
 		};
@@ -241,7 +241,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_init_args_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .AppVersion = " << s.AppVersion
 				<< " .flags = " << s.flags
 				<< " .SupportedVersion = " << s.SupportedVersion
@@ -254,7 +254,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_reserved_args_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .pSpecialArg = " << (s.pSpecialArg ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pSpecialArg)) : "null"s)
 				<< " .ArgSize = " << s.ArgSize
 				<< " }";
@@ -282,11 +282,11 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_runtime_path_args_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .UnlockID = " << DumpGenerated(s.UnlockID)
 				<< " .pRuntimePath = " << (s.pRuntimePath ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pRuntimePath)) : "null"s)
 				<< " .DeviceID = " << s.DeviceID
-				<< " .RevID = " << s.RevID
+				<< " .RevID = " << (int)s.RevID
 				<< " }";
 			return oss.str();
 		};
@@ -304,9 +304,9 @@ namespace pmon::util::ref::gen
 			const auto& s = *static_cast<const _ctl_adapter_bdf_t*>(pStruct);
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_adapter_bdf_t {"
-				<< " .bus = " << s.bus
-				<< " .device = " << s.device
-				<< " .function = " << s.function
+				<< " .bus = " << (int)s.bus
+				<< " .device = " << (int)s.device
+				<< " .function = " << (int)s.function
 				<< " }";
 			return oss.str();
 		};
@@ -315,7 +315,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_device_adapter_properties_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .pDeviceID = " << (s.pDeviceID ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pDeviceID)) : "null"s)
 				<< " .device_id_size = " << s.device_id_size
 				<< " .device_type = " << DumpGenerated(s.device_type)
@@ -351,9 +351,9 @@ namespace pmon::util::ref::gen
 			const auto& s = *static_cast<const _ctl_revision_datatype_t*>(pStruct);
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_revision_datatype_t {"
-				<< " .major_version = " << s.major_version
-				<< " .minor_version = " << s.minor_version
-				<< " .revision_version = " << s.revision_version
+				<< " .major_version = " << (int)s.major_version
+				<< " .minor_version = " << (int)s.minor_version
+				<< " .revision_version = " << (int)s.revision_version
 				<< " }";
 			return oss.str();
 		};
@@ -362,7 +362,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_wait_property_change_args_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .PropertyType = " << s.PropertyType
 				<< " .TimeOutMilliSec = " << s.TimeOutMilliSec
 				<< " .EventMiscFlags = " << s.EventMiscFlags
@@ -489,7 +489,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_3d_feature_caps_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .NumSupportedFeatures = " << s.NumSupportedFeatures
 				<< " .pFeatureDetails = " << (s.pFeatureDetails ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pFeatureDetails)) : "null"s)
 				<< " }";
@@ -500,10 +500,10 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_3d_feature_getset_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .FeatureType = " << DumpGenerated(s.FeatureType)
 				<< " .ApplicationName = " << (s.ApplicationName ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.ApplicationName)) : "null"s)
-				<< " .ApplicationNameLength = " << s.ApplicationNameLength
+				<< " .ApplicationNameLength = " << (int)s.ApplicationNameLength
 				<< " .bSet = " << s.bSet
 				<< " .ValueType = " << DumpGenerated(s.ValueType)
 				<< " .Value = " << DumpGenerated(s.Value)
@@ -520,8 +520,8 @@ namespace pmon::util::ref::gen
 				<< " .bLoad = " << s.bLoad
 				<< " .SubsetFeatureMask = " << s.SubsetFeatureMask
 				<< " .ApplicationName = " << (s.ApplicationName ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.ApplicationName)) : "null"s)
-				<< " .ApplicationNameLength = " << s.ApplicationNameLength
-				<< " .CallerComponent = " << s.CallerComponent
+				<< " .ApplicationNameLength = " << (int)s.ApplicationNameLength
+				<< " .CallerComponent = " << (int)s.CallerComponent
 				<< " .Reserved = " << DumpArray_<int64_t, 4, false>(s.Reserved)
 				<< " }";
 			return oss.str();
@@ -531,7 +531,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_display_timing_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .PixelClock = " << s.PixelClock
 				<< " .HActive = " << s.HActive
 				<< " .VActive = " << s.VActive
@@ -543,7 +543,7 @@ namespace pmon::util::ref::gen
 				<< " .VSync = " << s.VSync
 				<< " .RefreshRate = " << s.RefreshRate
 				<< " .SignalStandard = " << DumpGenerated(s.SignalStandard)
-				<< " .VicId = " << s.VicId
+				<< " .VicId = " << (int)s.VicId
 				<< " }";
 			return oss.str();
 		};
@@ -552,7 +552,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_display_properties_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .Os_display_encoder_handle = " << DumpGenerated(s.Os_display_encoder_handle)
 				<< " .Type = " << DumpGenerated(s.Type)
 				<< " .AttachedDisplayMuxType = " << DumpGenerated(s.AttachedDisplayMuxType)
@@ -584,7 +584,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_adapter_display_encoder_properties_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .Os_display_encoder_handle = " << DumpGenerated(s.Os_display_encoder_handle)
 				<< " .Type = " << DumpGenerated(s.Type)
 				<< " .IsOnBoardProtocolConverterOutputPresent = " << s.IsOnBoardProtocolConverterOutputPresent
@@ -611,9 +611,9 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_sharpness_caps_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .SupportedFilterFlags = " << s.SupportedFilterFlags
-				<< " .NumFilterTypes = " << s.NumFilterTypes
+				<< " .NumFilterTypes = " << (int)s.NumFilterTypes
 				<< " .pFilterProperty = " << (s.pFilterProperty ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pFilterProperty)) : "null"s)
 				<< " }";
 			return oss.str();
@@ -623,7 +623,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_sharpness_settings_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .Enable = " << s.Enable
 				<< " .FilterType = " << s.FilterType
 				<< " .Intensity = " << s.Intensity
@@ -635,7 +635,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_i2c_access_args_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .DataSize = " << s.DataSize
 				<< " .Address = " << s.Address
 				<< " .OpType = " << DumpGenerated(s.OpType)
@@ -651,7 +651,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_i2c_access_pinpair_args_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .DataSize = " << s.DataSize
 				<< " .Address = " << s.Address
 				<< " .OpType = " << DumpGenerated(s.OpType)
@@ -667,7 +667,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_aux_access_args_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .OpType = " << DumpGenerated(s.OpType)
 				<< " .Flags = " << s.Flags
 				<< " .Address = " << s.Address
@@ -683,7 +683,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_power_optimization_caps_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .SupportedFeatures = " << s.SupportedFeatures
 				<< " }";
 			return oss.str();
@@ -693,7 +693,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_power_optimization_lrr_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .SupportedLRRTypes = " << s.SupportedLRRTypes
 				<< " .CurrentLRRTypes = " << s.CurrentLRRTypes
 				<< " .bRequirePSRDisable = " << s.bRequirePSRDisable
@@ -706,8 +706,8 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_power_optimization_psr_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
-				<< " .PSRVersion = " << s.PSRVersion
+				<< " .Version = " << (int)s.Version
+				<< " .PSRVersion = " << (int)s.PSRVersion
 				<< " .FullFetchUpdate = " << s.FullFetchUpdate
 				<< " }";
 			return oss.str();
@@ -717,10 +717,10 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_power_optimization_dpst_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
-				<< " .MinLevel = " << s.MinLevel
-				<< " .MaxLevel = " << s.MaxLevel
-				<< " .Level = " << s.Level
+				<< " .Version = " << (int)s.Version
+				<< " .MinLevel = " << (int)s.MinLevel
+				<< " .MaxLevel = " << (int)s.MaxLevel
+				<< " .Level = " << (int)s.Level
 				<< " .SupportedFeatures = " << s.SupportedFeatures
 				<< " .EnabledFeatures = " << s.EnabledFeatures
 				<< " }";
@@ -731,7 +731,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_power_optimization_settings_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .PowerOptimizationPlan = " << DumpGenerated(s.PowerOptimizationPlan)
 				<< " .PowerOptimizationFeature = " << s.PowerOptimizationFeature
 				<< " .Enable = " << s.Enable
@@ -755,7 +755,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_set_brightness_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .TargetBrightness = " << s.TargetBrightness
 				<< " .SmoothTransitionTimeInMs = " << s.SmoothTransitionTimeInMs
 				<< " .ReservedFields = " << DumpArray_<uint32_t, 4, false>(s.ReservedFields)
@@ -767,7 +767,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_get_brightness_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .TargetBrightness = " << s.TargetBrightness
 				<< " .CurrentBrightness = " << s.CurrentBrightness
 				<< " .ReservedFields = " << DumpArray_<uint32_t, 4, false>(s.ReservedFields)
@@ -779,7 +779,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_pixtx_color_primaries_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .xR = " << s.xR
 				<< " .yR = " << s.yR
 				<< " .xG = " << s.xG
@@ -796,7 +796,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_pixtx_pixel_format_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .BitsPerColor = " << s.BitsPerColor
 				<< " .IsFloat = " << s.IsFloat
 				<< " .EncodingType = " << DumpGenerated(s.EncodingType)
@@ -813,7 +813,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_pixtx_1dlut_config_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .SamplingType = " << DumpGenerated(s.SamplingType)
 				<< " .NumSamplesPerChannel = " << s.NumSamplesPerChannel
 				<< " .NumChannels = " << s.NumChannels
@@ -827,7 +827,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_pixtx_matrix_config_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .PreOffsets = " << DumpArray_<double, 3, true>(s.PreOffsets)
 				<< " .PostOffsets = " << DumpArray_<double, 3, true>(s.PostOffsets)
 				<< " .Matrix = " << DumpArray_<double[3], 3, false>(s.Matrix)
@@ -849,7 +849,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_pixtx_3dlut_config_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .NumSamplesPerChannel = " << s.NumSamplesPerChannel
 				<< " .pSampleValues = " << (s.pSampleValues ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pSampleValues)) : "null"s)
 				<< " }";
@@ -860,7 +860,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_pixtx_block_config_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .BlockId = " << s.BlockId
 				<< " .BlockType = " << DumpGenerated(s.BlockType)
 				<< " .Config = " << DumpGenerated(s.Config)
@@ -882,7 +882,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_pixtx_pipe_get_config_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .QueryType = " << DumpGenerated(s.QueryType)
 				<< " .InputPixelFormat = " << DumpGenerated(s.InputPixelFormat)
 				<< " .OutputPixelFormat = " << DumpGenerated(s.OutputPixelFormat)
@@ -896,7 +896,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_pixtx_pipe_set_config_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .OpertaionType = " << DumpGenerated(s.OpertaionType)
 				<< " .Flags = " << s.Flags
 				<< " .NumBlocks = " << s.NumBlocks
@@ -909,7 +909,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_panel_descriptor_access_args_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .OpType = " << DumpGenerated(s.OpType)
 				<< " .BlockNumber = " << s.BlockNumber
 				<< " .DescriptorDataSize = " << s.DescriptorDataSize
@@ -922,7 +922,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_retro_scaling_settings_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .Get = " << s.Get
 				<< " .Enable = " << s.Enable
 				<< " .RetroScalingType = " << s.RetroScalingType
@@ -934,7 +934,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_retro_scaling_caps_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .SupportedRetroScaling = " << s.SupportedRetroScaling
 				<< " }";
 			return oss.str();
@@ -944,7 +944,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_scaling_caps_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .SupportedScaling = " << s.SupportedScaling
 				<< " }";
 			return oss.str();
@@ -954,7 +954,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_scaling_settings_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .Enable = " << s.Enable
 				<< " .ScalingType = " << s.ScalingType
 				<< " .CustomScalingX = " << s.CustomScalingX
@@ -969,7 +969,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_lace_lux_aggr_map_entry_t {"
 				<< " .Lux = " << s.Lux
-				<< " .AggressivenessPercent = " << s.AggressivenessPercent
+				<< " .AggressivenessPercent = " << (int)s.AggressivenessPercent
 				<< " }";
 			return oss.str();
 		};
@@ -988,7 +988,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_lace_config_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .Enabled = " << s.Enabled
 				<< " .OpTypeGet = " << s.OpTypeGet
 				<< " .OpTypeSet = " << DumpGenerated(s.OpTypeSet)
@@ -1001,7 +1001,7 @@ namespace pmon::util::ref::gen
 			const auto& s = *static_cast<const _ctl_lace_aggr_config_t*>(pStruct);
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_lace_aggr_config_t {"
-				<< " .FixedAggressivenessLevelPercent = " << s.FixedAggressivenessLevelPercent
+				<< " .FixedAggressivenessLevelPercent = " << (int)s.FixedAggressivenessLevelPercent
 				<< " .AggrLevelMap = " << DumpGenerated(s.AggrLevelMap)
 				<< " }";
 			return oss.str();
@@ -1011,7 +1011,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_sw_psr_settings_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .Set = " << s.Set
 				<< " .Supported = " << s.Supported
 				<< " .Enable = " << s.Enable
@@ -1023,7 +1023,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_intel_arc_sync_monitor_params_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .IsIntelArcSyncSupported = " << s.IsIntelArcSyncSupported
 				<< " .MinimumRefreshRateInHz = " << s.MinimumRefreshRateInHz
 				<< " .MaximumRefreshRateInHz = " << s.MaximumRefreshRateInHz
@@ -1037,11 +1037,11 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_mux_properties_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
-				<< " .MuxId = " << s.MuxId
+				<< " .Version = " << (int)s.Version
+				<< " .MuxId = " << (int)s.MuxId
 				<< " .Count = " << s.Count
 				<< " .phDisplayOutputs = " << (s.phDisplayOutputs ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.phDisplayOutputs)) : "null"s)
-				<< " .IndexOfDisplayOutputOwningMux = " << s.IndexOfDisplayOutputOwningMux
+				<< " .IndexOfDisplayOutputOwningMux = " << (int)s.IndexOfDisplayOutputOwningMux
 				<< " }";
 			return oss.str();
 		};
@@ -1050,7 +1050,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_intel_arc_sync_profile_params_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .IntelArcSyncProfile = " << DumpGenerated(s.IntelArcSyncProfile)
 				<< " .MaxRefreshRateInHz = " << s.MaxRefreshRateInHz
 				<< " .MinRefreshRateInHz = " << s.MinRefreshRateInHz
@@ -1064,7 +1064,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_edid_management_args_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .OpType = " << DumpGenerated(s.OpType)
 				<< " .EdidType = " << DumpGenerated(s.EdidType)
 				<< " .EdidSize = " << s.EdidSize
@@ -1078,7 +1078,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_get_set_custom_mode_args_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .CustomModeOpType = " << DumpGenerated(s.CustomModeOpType)
 				<< " .NumOfModes = " << s.NumOfModes
 				<< " .pCustomSrcModeList = " << (s.pCustomSrcModeList ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pCustomSrcModeList)) : "null"s)
@@ -1122,10 +1122,10 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_combined_display_args_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .OpType = " << DumpGenerated(s.OpType)
 				<< " .IsSupported = " << s.IsSupported
-				<< " .NumOutputs = " << s.NumOutputs
+				<< " .NumOutputs = " << (int)s.NumOutputs
 				<< " .CombinedDesktopWidth = " << s.CombinedDesktopWidth
 				<< " .CombinedDesktopHeight = " << s.CombinedDesktopHeight
 				<< " .pChildInfo = " << (s.pChildInfo ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pChildInfo)) : "null"s)
@@ -1156,7 +1156,7 @@ namespace pmon::util::ref::gen
 			const auto& s = *static_cast<const _ctl_genlock_topology_t*>(pStruct);
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_genlock_topology_t {"
-				<< " .NumGenlockDisplays = " << s.NumGenlockDisplays
+				<< " .NumGenlockDisplays = " << (int)s.NumGenlockDisplays
 				<< " .IsPrimaryGenlockSystem = " << s.IsPrimaryGenlockSystem
 				<< " .CommonTargetMode = " << DumpGenerated(s.CommonTargetMode)
 				<< " .pGenlockDisplayInfo = " << (s.pGenlockDisplayInfo ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pGenlockDisplayInfo)) : "null"s)
@@ -1169,7 +1169,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_genlock_args_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .Operation = " << DumpGenerated(s.Operation)
 				<< " .GenlockTopology = " << DumpGenerated(s.GenlockTopology)
 				<< " .IsGenlockEnabled = " << s.IsGenlockEnabled
@@ -1182,8 +1182,8 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_vblank_ts_args_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
-				<< " .NumOfTargets = " << s.NumOfTargets
+				<< " .Version = " << (int)s.Version
+				<< " .NumOfTargets = " << (int)s.NumOfTargets
 				<< " .VblankTS = " << DumpArray_<uint64_t, 16, false>(s.VblankTS)
 				<< " }";
 			return oss.str();
@@ -1193,8 +1193,8 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_lda_args_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
-				<< " .NumAdapters = " << s.NumAdapters
+				<< " .Version = " << (int)s.Version
+				<< " .NumAdapters = " << (int)s.NumAdapters
 				<< " .hLinkedAdapters = " << (s.hLinkedAdapters ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.hLinkedAdapters)) : "null"s)
 				<< " .Reserved = " << DumpArray_<uint64_t, 4, false>(s.Reserved)
 				<< " }";
@@ -1205,7 +1205,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_dce_args_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .Set = " << s.Set
 				<< " .TargetBrightnessPercent = " << s.TargetBrightnessPercent
 				<< " .PhaseinSpeedMultiplier = " << s.PhaseinSpeedMultiplier
@@ -1221,7 +1221,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_wire_format_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .ColorModel = " << DumpGenerated(s.ColorModel)
 				<< " .ColorDepth = " << s.ColorDepth
 				<< " }";
@@ -1232,7 +1232,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_get_set_wire_format_config_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .Operation = " << DumpGenerated(s.Operation)
 				<< " .SupportedWireFormat = " << DumpArray_<ctl_wire_format_t, 4, false>(s.SupportedWireFormat)
 				<< " .WireFormat = " << DumpGenerated(s.WireFormat)
@@ -1244,7 +1244,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_display_settings_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .Set = " << s.Set
 				<< " .SupportedFlags = " << s.SupportedFlags
 				<< " .ControllableFlags = " << s.ControllableFlags
@@ -1265,7 +1265,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_engine_properties_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .type = " << DumpGenerated(s.type)
 				<< " }";
 			return oss.str();
@@ -1275,7 +1275,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_engine_stats_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .activeTime = " << s.activeTime
 				<< " .timestamp = " << s.timestamp
 				<< " }";
@@ -1286,7 +1286,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_fan_speed_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .speed = " << s.speed
 				<< " .units = " << DumpGenerated(s.units)
 				<< " }";
@@ -1297,7 +1297,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_fan_temp_speed_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .temperature = " << s.temperature
 				<< " .speed = " << DumpGenerated(s.speed)
 				<< " }";
@@ -1308,7 +1308,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_fan_speed_table_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .numPoints = " << s.numPoints
 				<< " .table = " << DumpArray_<ctl_fan_temp_speed_t, 32, false>(s.table)
 				<< " }";
@@ -1319,7 +1319,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_fan_properties_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .canControl = " << s.canControl
 				<< " .supportedModes = " << s.supportedModes
 				<< " .supportedUnits = " << s.supportedUnits
@@ -1333,7 +1333,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_fan_config_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .mode = " << DumpGenerated(s.mode)
 				<< " .speedFixed = " << DumpGenerated(s.speedFixed)
 				<< " .speedTable = " << DumpGenerated(s.speedTable)
@@ -1345,7 +1345,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_freq_properties_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .type = " << DumpGenerated(s.type)
 				<< " .canControl = " << s.canControl
 				<< " .min = " << s.min
@@ -1358,7 +1358,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_freq_range_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .min = " << s.min
 				<< " .max = " << s.max
 				<< " }";
@@ -1369,7 +1369,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_freq_state_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .currentVoltage = " << s.currentVoltage
 				<< " .request = " << s.request
 				<< " .tdp = " << s.tdp
@@ -1384,7 +1384,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_freq_throttle_time_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .throttleTime = " << s.throttleTime
 				<< " .timestamp = " << s.timestamp
 				<< " }";
@@ -1395,7 +1395,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_video_processing_super_resolution_info_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .super_resolution_flag = " << s.super_resolution_flag
 				<< " .super_resolution_range_in_width = " << DumpGenerated(s.super_resolution_range_in_width)
 				<< " .super_resolution_range_in_height = " << DumpGenerated(s.super_resolution_range_in_height)
@@ -1408,7 +1408,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_video_processing_super_resolution_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .super_resolution_flag = " << s.super_resolution_flag
 				<< " .super_resolution_max_in_enabled = " << s.super_resolution_max_in_enabled
 				<< " .super_resolution_max_in_width = " << s.super_resolution_max_in_width
@@ -1424,7 +1424,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_video_processing_noise_reduction_info_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .noise_reduction = " << DumpGenerated(s.noise_reduction)
 				<< " .noise_reduction_auto_detect_supported = " << s.noise_reduction_auto_detect_supported
 				<< " .noise_reduction_auto_detect = " << DumpGenerated(s.noise_reduction_auto_detect)
@@ -1437,7 +1437,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_video_processing_noise_reduction_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .noise_reduction = " << DumpGenerated(s.noise_reduction)
 				<< " .noise_reduction_auto_detect = " << DumpGenerated(s.noise_reduction_auto_detect)
 				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
@@ -1449,7 +1449,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_video_processing_adaptive_contrast_enhancement_info_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .adaptive_contrast_enhancement = " << DumpGenerated(s.adaptive_contrast_enhancement)
 				<< " .adaptive_contrast_enhancement_coexistence_supported = " << s.adaptive_contrast_enhancement_coexistence_supported
 				<< " .adaptive_contrast_enhancement_coexistence = " << DumpGenerated(s.adaptive_contrast_enhancement_coexistence)
@@ -1462,7 +1462,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_video_processing_adaptive_contrast_enhancement_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .adaptive_contrast_enhancement = " << DumpGenerated(s.adaptive_contrast_enhancement)
 				<< " .adaptive_contrast_enhancement_coexistence = " << DumpGenerated(s.adaptive_contrast_enhancement_coexistence)
 				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
@@ -1474,7 +1474,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_video_processing_standard_color_correction_info_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .standard_color_correction_default_enable = " << s.standard_color_correction_default_enable
 				<< " .brightness = " << DumpGenerated(s.brightness)
 				<< " .contrast = " << DumpGenerated(s.contrast)
@@ -1489,7 +1489,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_video_processing_standard_color_correction_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .standard_color_correction_enable = " << s.standard_color_correction_enable
 				<< " .brightness = " << s.brightness
 				<< " .contrast = " << s.contrast
@@ -1504,7 +1504,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_video_processing_total_color_correction_info_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .total_color_correction_default_enable = " << s.total_color_correction_default_enable
 				<< " .red = " << DumpGenerated(s.red)
 				<< " .green = " << DumpGenerated(s.green)
@@ -1521,7 +1521,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_video_processing_total_color_correction_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .total_color_correction_enable = " << s.total_color_correction_enable
 				<< " .red = " << s.red
 				<< " .green = " << s.green
@@ -1538,7 +1538,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_video_processing_feature_details_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .FeatureType = " << DumpGenerated(s.FeatureType)
 				<< " .ValueType = " << DumpGenerated(s.ValueType)
 				<< " .Value = " << DumpGenerated(s.Value)
@@ -1553,7 +1553,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_video_processing_feature_caps_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .NumSupportedFeatures = " << s.NumSupportedFeatures
 				<< " .pFeatureDetails = " << (s.pFeatureDetails ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pFeatureDetails)) : "null"s)
 				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
@@ -1565,10 +1565,10 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_video_processing_feature_getset_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .FeatureType = " << DumpGenerated(s.FeatureType)
 				<< " .ApplicationName = " << (s.ApplicationName ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.ApplicationName)) : "null"s)
-				<< " .ApplicationNameLength = " << s.ApplicationNameLength
+				<< " .ApplicationNameLength = " << (int)s.ApplicationNameLength
 				<< " .bSet = " << s.bSet
 				<< " .ValueType = " << DumpGenerated(s.ValueType)
 				<< " .Value = " << DumpGenerated(s.Value)
@@ -1583,7 +1583,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_mem_properties_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .type = " << DumpGenerated(s.type)
 				<< " .location = " << DumpGenerated(s.location)
 				<< " .physicalSize = " << s.physicalSize
@@ -1597,7 +1597,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_mem_state_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .free = " << s.free
 				<< " .size = " << s.size
 				<< " }";
@@ -1608,7 +1608,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_mem_bandwidth_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .maxBandwidth = " << s.maxBandwidth
 				<< " .timestamp = " << s.timestamp
 				<< " .readCounter = " << s.readCounter
@@ -1648,7 +1648,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_oc_properties_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .bSupported = " << s.bSupported
 				<< " .gpuFrequencyOffset = " << DumpGenerated(s.gpuFrequencyOffset)
 				<< " .gpuVoltageOffset = " << DumpGenerated(s.gpuVoltageOffset)
@@ -1664,7 +1664,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_oc_vf_pair_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .Voltage = " << s.Voltage
 				<< " .Frequency = " << s.Frequency
 				<< " }";
@@ -1686,7 +1686,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_power_telemetry_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .timeStamp = " << DumpGenerated(s.timeStamp)
 				<< " .gpuEnergyCounter = " << DumpGenerated(s.gpuEnergyCounter)
 				<< " .gpuVoltage = " << DumpGenerated(s.gpuVoltage)
@@ -1723,7 +1723,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_pci_address_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .domain = " << s.domain
 				<< " .bus = " << s.bus
 				<< " .device = " << s.device
@@ -1736,7 +1736,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_pci_speed_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .gen = " << s.gen
 				<< " .width = " << s.width
 				<< " .maxBandwidth = " << s.maxBandwidth
@@ -1748,7 +1748,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_pci_properties_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .address = " << DumpGenerated(s.address)
 				<< " .maxSpeed = " << DumpGenerated(s.maxSpeed)
 				<< " .resizable_bar_supported = " << s.resizable_bar_supported
@@ -1761,7 +1761,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_pci_state_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .speed = " << DumpGenerated(s.speed)
 				<< " }";
 			return oss.str();
@@ -1771,7 +1771,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_power_properties_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .canControl = " << s.canControl
 				<< " .defaultLimit = " << s.defaultLimit
 				<< " .minLimit = " << s.minLimit
@@ -1784,7 +1784,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_power_energy_counter_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .energy = " << s.energy
 				<< " .timestamp = " << s.timestamp
 				<< " }";
@@ -1823,7 +1823,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_power_limits_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .sustainedPowerLimit = " << DumpGenerated(s.sustainedPowerLimit)
 				<< " .burstPowerLimit = " << DumpGenerated(s.burstPowerLimit)
 				<< " .peakPowerLimits = " << DumpGenerated(s.peakPowerLimits)
@@ -1835,7 +1835,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_energy_threshold_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .enable = " << s.enable
 				<< " .threshold = " << s.threshold
 				<< " .processId = " << s.processId
@@ -1847,7 +1847,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_temp_properties_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .type = " << DumpGenerated(s.type)
 				<< " .maxTemperature = " << s.maxTemperature
 				<< " }";
@@ -1867,7 +1867,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_oc_properties2_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .bSupported = " << s.bSupported
 				<< " .gpuFrequencyOffset = " << DumpGenerated(s.gpuFrequencyOffset)
 				<< " .gpuVoltageOffset = " << DumpGenerated(s.gpuVoltageOffset)
@@ -1886,7 +1886,7 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << std::boolalpha << "struct _ctl_power_telemetry2_t {"
 				<< " .Size = " << s.Size
-				<< " .Version = " << s.Version
+				<< " .Version = " << (int)s.Version
 				<< " .timeStamp = " << DumpGenerated(s.timeStamp)
 				<< " .gpuEnergyCounter = " << DumpGenerated(s.gpuEnergyCounter)
 				<< " .gpuVoltage = " << DumpGenerated(s.gpuVoltage)

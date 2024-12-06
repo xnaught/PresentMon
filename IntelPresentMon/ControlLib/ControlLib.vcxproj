@@ -204,6 +204,7 @@
     <ClInclude Include="DllModule.h" />
     <ClInclude Include="CpuTelemetry.h" />
     <ClInclude Include="Exceptions.h" />
+    <ClInclude Include="IgclErrorCodeProvider.h" />
     <ClInclude Include="IntelPowerTelemetryAdapter.h" />
     <ClInclude Include="Logging.h" />
     <ClInclude Include="LoggingVerbose.h" />
@@ -230,6 +231,7 @@
     <ClCompile Include="Adl2Wrapper.cpp" />
     <ClCompile Include="cApiWrapper.cpp" />
     <ClCompile Include="ctlpvttempWrapper.cpp" />
+    <ClCompile Include="IgclErrorCodeProvider.cpp" />
     <ClCompile Include="IntelPowerTelemetryProvider.cpp" />
     <ClCompile Include="IntelPowerTelemetryAdapter.cpp" />
     <ClCompile Include="NvapiWrapper.cpp" />
