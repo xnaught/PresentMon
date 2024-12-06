@@ -161,12 +161,10 @@ namespace pwr::intel
         const auto nearest = history.GetNearest(qpc);
         if constexpr (PMLOG_BUILD_LEVEL_ >= pmon::util::log::Level::Verbose) {
             if (!nearest) {
-                pmlog_verb(v::gpu)("Empty telemetry info sample returned");
+                pmlog_verb(v::gpu)("Empty telemetry info sample returned").pmwatch(qpc);
             }
             else {
-                pmlog_verb(v::gpu)(std::format("Nearest telemetry info sampled; read bw [{}] write bw [{}]",
-                    nearest->gpu_mem_read_bandwidth_bps, nearest->gpu_mem_write_bandwidth_bps
-                ));
+                pmlog_verb(v::gpu)("Nearest telemetry info sampled").pmwatch(qpc);
             }
         }
         return nearest;

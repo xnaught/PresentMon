@@ -27,4 +27,15 @@ namespace pmon::util
             return sizeof(T);
         }
     }
+
+    // Concept to detect if a type `T` is an instantiation of a container-like template (has value_type)
+    template <typename T>
+    concept IsContainerLike = requires {
+        typename T::value_type;
+    };
+
+    // Concept to detect if a type `T` is an instantiation of a container-like template `Template`
+    template <template <typename...> typename Template, typename T>
+    concept IsContainer = IsContainerLike<T> && std::is_same_v<T, Template<typename T::value_type>>;
+
 }
