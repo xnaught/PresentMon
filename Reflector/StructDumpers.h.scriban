@@ -51,7 +51,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid({{ struct.Name }})] = [](const void* pStruct) {
 			const auto& s = *static_cast<const {{ struct.Name }}*>(pStruct);
 			std::ostringstream oss;
-			oss << std::boolalpha << "struct {{ struct.Name }} {"
+			oss << std::boolalpha << "{{ struct.Type }} {{ struct.Name }} {"
 {{~ for member in struct.Members ~}}
 				<< " .{{ member.Name }} = " << {{ member.DumpExpression }}
 {{~ end ~}}

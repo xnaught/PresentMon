@@ -178,7 +178,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_info_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_info_t*>(pStruct);
 			std::ostringstream oss;
-			oss << std::boolalpha << "struct _ctl_property_info_t {"
+			oss << std::boolalpha << "union _ctl_property_info_t {"
 				<< " .BoolType = " << DumpGenerated(s.BoolType)
 				<< " .FloatType = " << DumpGenerated(s.FloatType)
 				<< " .IntType = " << DumpGenerated(s.IntType)
@@ -190,7 +190,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_property_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_property_t*>(pStruct);
 			std::ostringstream oss;
-			oss << std::boolalpha << "struct _ctl_property_t {"
+			oss << std::boolalpha << "union _ctl_property_t {"
 				<< " .BoolType = " << DumpGenerated(s.BoolType)
 				<< " .FloatType = " << DumpGenerated(s.FloatType)
 				<< " .IntType = " << DumpGenerated(s.IntType)
@@ -202,7 +202,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_data_value_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_data_value_t*>(pStruct);
 			std::ostringstream oss;
-			oss << std::boolalpha << "struct _ctl_data_value_t {"
+			oss << std::boolalpha << "union _ctl_data_value_t {"
 				<< " .data8 = " << (int)s.data8
 				<< " .datau8 = " << (int)s.datau8
 				<< " .data16 = " << s.data16
@@ -573,7 +573,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_os_display_encoder_identifier_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_os_display_encoder_identifier_t*>(pStruct);
 			std::ostringstream oss;
-			oss << std::boolalpha << "struct _ctl_os_display_encoder_identifier_t {"
+			oss << std::boolalpha << "union _ctl_os_display_encoder_identifier_t {"
 				<< " .WindowsDisplayEncoderID = " << s.WindowsDisplayEncoderID
 				<< " .DisplayEncoderID = " << DumpGenerated(s.DisplayEncoderID)
 				<< " }";
@@ -743,7 +743,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_power_optimization_feature_specific_info_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_power_optimization_feature_specific_info_t*>(pStruct);
 			std::ostringstream oss;
-			oss << std::boolalpha << "struct _ctl_power_optimization_feature_specific_info_t {"
+			oss << std::boolalpha << "union _ctl_power_optimization_feature_specific_info_t {"
 				<< " .LRRInfo = " << DumpGenerated(s.LRRInfo)
 				<< " .PSRInfo = " << DumpGenerated(s.PSRInfo)
 				<< " .DPSTInfo = " << DumpGenerated(s.DPSTInfo)
@@ -870,7 +870,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_pixtx_config_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_pixtx_config_t*>(pStruct);
 			std::ostringstream oss;
-			oss << std::boolalpha << "struct _ctl_pixtx_config_t {"
+			oss << std::boolalpha << "union _ctl_pixtx_config_t {"
 				<< " .OneDLutConfig = " << DumpGenerated(s.OneDLutConfig)
 				<< " .ThreeDLutConfig = " << DumpGenerated(s.ThreeDLutConfig)
 				<< " .MatrixConfig = " << DumpGenerated(s.MatrixConfig)
@@ -1000,7 +1000,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_lace_aggr_config_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_lace_aggr_config_t*>(pStruct);
 			std::ostringstream oss;
-			oss << std::boolalpha << "struct _ctl_lace_aggr_config_t {"
+			oss << std::boolalpha << "union _ctl_lace_aggr_config_t {"
 				<< " .FixedAggressivenessLevelPercent = " << (int)s.FixedAggressivenessLevelPercent
 				<< " .AggrLevelMap = " << DumpGenerated(s.AggrLevelMap)
 				<< " }";
