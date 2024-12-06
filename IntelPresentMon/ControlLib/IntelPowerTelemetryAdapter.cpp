@@ -4,6 +4,7 @@
 #include "Logging.h"
 #include "../CommonUtilities/Math.h"
 #include "../CommonUtilities/ref/GeneratedReflection.h"
+#include "../CommonUtilities/ref/StaticReflection.h"
 
 using namespace pmon;
 using namespace util;
@@ -164,7 +165,7 @@ namespace pwr::intel
                 pmlog_verb(v::gpu)("Empty telemetry info sample returned").pmwatch(qpc);
             }
             else {
-                pmlog_verb(v::gpu)("Nearest telemetry info sampled").pmwatch(qpc);
+                pmlog_verb(v::gpu)("Nearest telemetry info sampled").pmwatch(qpc).pmwatch(ref::DumpStatic(*nearest));
             }
         }
         return nearest;
@@ -510,6 +511,7 @@ namespace pwr::intel
         if constexpr (std::same_as<T, ctl_power_telemetry2_t>) {
             using namespace pmon::util;
             if (useNewBandwidthTelemetry) {
+                pmlog_verb(v::gpu)("Processing VRAM BW V1");
                 double gpuMemReadBandwidthMegabytesPerSecond = 0;
                 result = GetInstantaneousPowerTelemetryItem(
                     currentSample.vramReadBandwidth,
@@ -520,10 +522,6 @@ namespace pwr::intel
                     gpuMemReadBandwidthMegabytesPerSecond * 8.,
                     MagnitudePrefix::Mega,
                     MagnitudePrefix::Base);
-                pmlog_verb(v::gpu)(std::format("VRAM read BW V1: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
-                    currentSample.vramReadBandwidth.bSupported, (int)currentSample.vramReadBandwidth.type,
-                    (int)currentSample.vramReadBandwidth.units, currentSample.vramReadBandwidth.value.datau64,
-                    currentSample.vramReadBandwidth.value.datadouble, pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps));
                 if (result != CTL_RESULT_SUCCESS ||
                     !(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_read_bandwidth))) {
                     useNewBandwidthTelemetry = false;
@@ -542,10 +540,6 @@ namespace pwr::intel
                     gpuMemWriteBandwidthMegabytesPerSecond * 8.,
                     MagnitudePrefix::Mega,
                     MagnitudePrefix::Base);
-                pmlog_verb(v::gpu)(std::format("VRAM write BW V1: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
-                    currentSample.vramWriteBandwidth.bSupported, (int)currentSample.vramWriteBandwidth.type,
-                    (int)currentSample.vramWriteBandwidth.units, currentSample.vramWriteBandwidth.value.datau64,
-                    currentSample.vramWriteBandwidth.value.datadouble, pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps));
                 if (result != CTL_RESULT_SUCCESS ||
                     !(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_write_bandwidth))) {
                     useNewBandwidthTelemetry = false;
@@ -555,15 +549,12 @@ namespace pwr::intel
             }
         }
         if (!useNewBandwidthTelemetry) {
+            pmlog_verb(v::gpu)("Processing VRAM BW V0");
             result = GetPowerTelemetryItemUsage(
                 currentSample.vramReadBandwidthCounter,
                 previousSample->vramReadBandwidthCounter,
                 pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
                 GpuTelemetryCapBits::gpu_mem_read_bandwidth);
-            pmlog_verb(v::gpu)(std::format("VRAM read BW V0: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
-                currentSample.vramReadBandwidthCounter.bSupported, (int)currentSample.vramReadBandwidthCounter.type,
-                (int)currentSample.vramReadBandwidthCounter.units, currentSample.vramReadBandwidthCounter.value.datau64,
-                currentSample.vramReadBandwidthCounter.value.datadouble, pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps));
             if (result != CTL_RESULT_SUCCESS) {
                 return result;
             }
@@ -572,10 +563,6 @@ namespace pwr::intel
                 previousSample->vramWriteBandwidthCounter,
                 pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
                 GpuTelemetryCapBits::gpu_mem_write_bandwidth);
-            pmlog_verb(v::gpu)(std::format("VRAM write BW V0: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
-                currentSample.vramWriteBandwidthCounter.bSupported, (int)currentSample.vramWriteBandwidthCounter.type,
-                (int)currentSample.vramWriteBandwidthCounter.units, currentSample.vramWriteBandwidthCounter.value.datau64,
-                currentSample.vramWriteBandwidthCounter.value.datadouble, pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps));
             if (result != CTL_RESULT_SUCCESS) {
                 return result;
             }
@@ -805,9 +792,7 @@ namespace pwr::intel
 
     void IntelPowerTelemetryAdapter::SavePmPowerTelemetryData(PresentMonPowerTelemetryInfo& info)
     {
-        pmlog_verb(v::gpu)(std::format("Saving gathered telemetry info to history; read bw [{}] write bw [{}]",
-            info.gpu_mem_read_bandwidth_bps, info.gpu_mem_write_bandwidth_bps
-        ));
+        pmlog_verb(v::gpu)("Saving gathered telemetry info to history").pmwatch(ref::DumpStatic(info));
         std::lock_guard<std::mutex> lock(historyMutex);
         history.Push(info);
     }
