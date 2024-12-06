@@ -232,7 +232,7 @@ namespace pmon::util::ref::gen
 				<< " .Data1 = " << s.Data1
 				<< " .Data2 = " << s.Data2
 				<< " .Data3 = " << s.Data3
-				<< " .Data4 = " << DumpArray_<uint8_t, 8, false>(s.Data4)
+				<< " .Data4 = " << DumpArray_<uint8_t, 8, true>(s.Data4)
 				<< " }";
 			return oss.str();
 		};
@@ -409,7 +409,7 @@ namespace pmon::util::ref::gen
 				<< " .IsFPRequired = " << s.IsFPRequired
 				<< " .TargetFPS = " << s.TargetFPS
 				<< " .RefreshRate = " << s.RefreshRate
-				<< " .Reserved = " << DumpArray_<uint32_t, 4, false>(s.Reserved)
+				<< " .Reserved = " << DumpArray_<uint32_t, 4, true>(s.Reserved)
 				<< " }";
 			return oss.str();
 		};
@@ -462,7 +462,7 @@ namespace pmon::util::ref::gen
 			oss << std::boolalpha << "struct _ctl_3d_tier_details_t {"
 				<< " .TierType = " << DumpGenerated(s.TierType)
 				<< " .TierProfile = " << DumpGenerated(s.TierProfile)
-				<< " .Reserved = " << DumpArray_<uint64_t, 4, false>(s.Reserved)
+				<< " .Reserved = " << DumpArray_<uint64_t, 4, true>(s.Reserved)
 				<< " }";
 			return oss.str();
 		};
@@ -522,7 +522,7 @@ namespace pmon::util::ref::gen
 				<< " .ApplicationName = " << (s.ApplicationName ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.ApplicationName)) : "null"s)
 				<< " .ApplicationNameLength = " << (int)s.ApplicationNameLength
 				<< " .CallerComponent = " << (int)s.CallerComponent
-				<< " .Reserved = " << DumpArray_<int64_t, 4, false>(s.Reserved)
+				<< " .Reserved = " << DumpArray_<int64_t, 4, true>(s.Reserved)
 				<< " }";
 			return oss.str();
 		};
@@ -566,7 +566,7 @@ namespace pmon::util::ref::gen
 				<< " .AdvancedFeatureEnabledFlags = " << s.AdvancedFeatureEnabledFlags
 				<< " .AdvancedFeatureSupportedFlags = " << s.AdvancedFeatureSupportedFlags
 				<< " .Display_Timing_Info = " << DumpGenerated(s.Display_Timing_Info)
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -593,7 +593,7 @@ namespace pmon::util::ref::gen
 				<< " .EncoderConfigFlags = " << s.EncoderConfigFlags
 				<< " .FeatureSupportedFlags = " << s.FeatureSupportedFlags
 				<< " .AdvancedFeatureSupportedFlags = " << s.AdvancedFeatureSupportedFlags
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -642,7 +642,7 @@ namespace pmon::util::ref::gen
 				<< " .Offset = " << s.Offset
 				<< " .Flags = " << s.Flags
 				<< " .RAD = " << s.RAD
-				<< " .Data = " << DumpArray_<uint8_t, 128, false>(s.Data)
+				<< " .Data = " << DumpArray_<uint8_t, 128, true>(s.Data)
 				<< " }";
 			return oss.str();
 		};
@@ -657,8 +657,8 @@ namespace pmon::util::ref::gen
 				<< " .OpType = " << DumpGenerated(s.OpType)
 				<< " .Offset = " << s.Offset
 				<< " .Flags = " << s.Flags
-				<< " .Data = " << DumpArray_<uint8_t, 128, false>(s.Data)
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 4, false>(s.ReservedFields)
+				<< " .Data = " << DumpArray_<uint8_t, 128, true>(s.Data)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 4, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -674,7 +674,7 @@ namespace pmon::util::ref::gen
 				<< " .RAD = " << s.RAD
 				<< " .PortID = " << s.PortID
 				<< " .DataSize = " << s.DataSize
-				<< " .Data = " << DumpArray_<uint8_t, 132, false>(s.Data)
+				<< " .Data = " << DumpArray_<uint8_t, 132, true>(s.Data)
 				<< " }";
 			return oss.str();
 		};
@@ -758,7 +758,7 @@ namespace pmon::util::ref::gen
 				<< " .Version = " << (int)s.Version
 				<< " .TargetBrightness = " << s.TargetBrightness
 				<< " .SmoothTransitionTimeInMs = " << s.SmoothTransitionTimeInMs
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 4, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 4, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -770,7 +770,7 @@ namespace pmon::util::ref::gen
 				<< " .Version = " << (int)s.Version
 				<< " .TargetBrightness = " << s.TargetBrightness
 				<< " .CurrentBrightness = " << s.CurrentBrightness
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 4, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 4, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -1101,7 +1101,7 @@ namespace pmon::util::ref::gen
 				<< " .Width = " << s.Width
 				<< " .Height = " << s.Height
 				<< " .RefreshRate = " << s.RefreshRate
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 4, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 4, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -1184,7 +1184,7 @@ namespace pmon::util::ref::gen
 				<< " .Size = " << s.Size
 				<< " .Version = " << (int)s.Version
 				<< " .NumOfTargets = " << (int)s.NumOfTargets
-				<< " .VblankTS = " << DumpArray_<uint64_t, 16, false>(s.VblankTS)
+				<< " .VblankTS = " << DumpArray_<uint64_t, 16, true>(s.VblankTS)
 				<< " }";
 			return oss.str();
 		};
@@ -1196,7 +1196,7 @@ namespace pmon::util::ref::gen
 				<< " .Version = " << (int)s.Version
 				<< " .NumAdapters = " << (int)s.NumAdapters
 				<< " .hLinkedAdapters = " << (s.hLinkedAdapters ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.hLinkedAdapters)) : "null"s)
-				<< " .Reserved = " << DumpArray_<uint64_t, 4, false>(s.Reserved)
+				<< " .Reserved = " << DumpArray_<uint64_t, 4, true>(s.Reserved)
 				<< " }";
 			return oss.str();
 		};
@@ -1256,7 +1256,7 @@ namespace pmon::util::ref::gen
 				<< " .SupportedPictureAR = " << s.SupportedPictureAR
 				<< " .PictureAR = " << DumpGenerated(s.PictureAR)
 				<< " .AudioSettings = " << DumpGenerated(s.AudioSettings)
-				<< " .Reserved = " << DumpArray_<uint32_t, 25, false>(s.Reserved)
+				<< " .Reserved = " << DumpArray_<uint32_t, 25, true>(s.Reserved)
 				<< " }";
 			return oss.str();
 		};
@@ -1399,7 +1399,7 @@ namespace pmon::util::ref::gen
 				<< " .super_resolution_flag = " << s.super_resolution_flag
 				<< " .super_resolution_range_in_width = " << DumpGenerated(s.super_resolution_range_in_width)
 				<< " .super_resolution_range_in_height = " << DumpGenerated(s.super_resolution_range_in_height)
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -1414,7 +1414,7 @@ namespace pmon::util::ref::gen
 				<< " .super_resolution_max_in_width = " << s.super_resolution_max_in_width
 				<< " .super_resolution_max_in_height = " << s.super_resolution_max_in_height
 				<< " .super_resolution_reboot_reset = " << s.super_resolution_reboot_reset
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 15, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 15, true>(s.ReservedFields)
 				<< " .ReservedBytes = " << s.ReservedBytes
 				<< " }";
 			return oss.str();
@@ -1428,7 +1428,7 @@ namespace pmon::util::ref::gen
 				<< " .noise_reduction = " << DumpGenerated(s.noise_reduction)
 				<< " .noise_reduction_auto_detect_supported = " << s.noise_reduction_auto_detect_supported
 				<< " .noise_reduction_auto_detect = " << DumpGenerated(s.noise_reduction_auto_detect)
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -1440,7 +1440,7 @@ namespace pmon::util::ref::gen
 				<< " .Version = " << (int)s.Version
 				<< " .noise_reduction = " << DumpGenerated(s.noise_reduction)
 				<< " .noise_reduction_auto_detect = " << DumpGenerated(s.noise_reduction_auto_detect)
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -1453,7 +1453,7 @@ namespace pmon::util::ref::gen
 				<< " .adaptive_contrast_enhancement = " << DumpGenerated(s.adaptive_contrast_enhancement)
 				<< " .adaptive_contrast_enhancement_coexistence_supported = " << s.adaptive_contrast_enhancement_coexistence_supported
 				<< " .adaptive_contrast_enhancement_coexistence = " << DumpGenerated(s.adaptive_contrast_enhancement_coexistence)
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -1465,7 +1465,7 @@ namespace pmon::util::ref::gen
 				<< " .Version = " << (int)s.Version
 				<< " .adaptive_contrast_enhancement = " << DumpGenerated(s.adaptive_contrast_enhancement)
 				<< " .adaptive_contrast_enhancement_coexistence = " << DumpGenerated(s.adaptive_contrast_enhancement_coexistence)
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -1480,7 +1480,7 @@ namespace pmon::util::ref::gen
 				<< " .contrast = " << DumpGenerated(s.contrast)
 				<< " .hue = " << DumpGenerated(s.hue)
 				<< " .saturation = " << DumpGenerated(s.saturation)
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -1495,7 +1495,7 @@ namespace pmon::util::ref::gen
 				<< " .contrast = " << s.contrast
 				<< " .hue = " << s.hue
 				<< " .saturation = " << s.saturation
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -1512,7 +1512,7 @@ namespace pmon::util::ref::gen
 				<< " .yellow = " << DumpGenerated(s.yellow)
 				<< " .cyan = " << DumpGenerated(s.cyan)
 				<< " .magenta = " << DumpGenerated(s.magenta)
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -1529,7 +1529,7 @@ namespace pmon::util::ref::gen
 				<< " .yellow = " << s.yellow
 				<< " .cyan = " << s.cyan
 				<< " .magenta = " << s.magenta
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -1544,7 +1544,7 @@ namespace pmon::util::ref::gen
 				<< " .Value = " << DumpGenerated(s.Value)
 				<< " .CustomValueSize = " << s.CustomValueSize
 				<< " .pCustomValue = " << (s.pCustomValue ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pCustomValue)) : "null"s)
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -1556,7 +1556,7 @@ namespace pmon::util::ref::gen
 				<< " .Version = " << (int)s.Version
 				<< " .NumSupportedFeatures = " << s.NumSupportedFeatures
 				<< " .pFeatureDetails = " << (s.pFeatureDetails ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pFeatureDetails)) : "null"s)
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};
@@ -1574,7 +1574,7 @@ namespace pmon::util::ref::gen
 				<< " .Value = " << DumpGenerated(s.Value)
 				<< " .CustomValueSize = " << s.CustomValueSize
 				<< " .pCustomValue = " << (s.pCustomValue ? std::format("0x{:016X}", reinterpret_cast<std::uintptr_t>(s.pCustomValue)) : "null"s)
-				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, false>(s.ReservedFields)
+				<< " .ReservedFields = " << DumpArray_<uint32_t, 16, true>(s.ReservedFields)
 				<< " }";
 			return oss.str();
 		};

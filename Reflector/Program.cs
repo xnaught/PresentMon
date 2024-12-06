@@ -120,13 +120,14 @@ namespace StructDumperGenerator
                 return $"DumpGenerated({variableAccess})";
             }
             else if (unwrappedType is CppArrayType arrayType) {
+                var elementType = UnwrapType(arrayType.ElementType);
                 // special case for char arrays, dump as c-string
-                if (UnwrapType(arrayType.ElementType).FullName == "char") {
+                if (elementType.FullName == "char") {
                     return variableAccess;
                 }
                 // sized arrays can be displayed
                 else {
-                    var isPrimitiveString = arrayType.ElementType is CppPrimitiveType ? "true" : "false";
+                    var isPrimitiveString = elementType is CppPrimitiveType ? "true" : "false";
                     var name = arrayType.ElementType is CppTypedef typedef ? typedef.Name : arrayType.ElementType.FullName;
                     return $"DumpArray_<{name}, {arrayType.Size}, {isPrimitiveString}>({variableAccess})";
                 }
