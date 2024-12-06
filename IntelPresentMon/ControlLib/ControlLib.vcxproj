@@ -236,6 +236,7 @@
     <ClCompile Include="NvidiaPowerTelemetryAdapter.cpp" />
     <ClCompile Include="NvidiaPowerTelemetryProvider.cpp" />
     <ClCompile Include="NvmlWrapper.cpp" />
+    <ClCompile Include="PowerTelemetryAdapter.cpp" />
     <ClCompile Include="PowerTelemetryProviderFactory.cpp" />
     <ClCompile Include="SignatureComparison.cpp" />
     <ClCompile Include="AmdPowerTelemetryProvider.cpp" />

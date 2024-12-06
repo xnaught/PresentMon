@@ -123,5 +123,6 @@
     <ClCompile Include="ctlpvttempWrapper.cpp">
       <Filter>Intel</Filter>
     </ClCompile>
+    <ClCompile Include="PowerTelemetryAdapter.cpp" />
   </ItemGroup>
 </Project>
