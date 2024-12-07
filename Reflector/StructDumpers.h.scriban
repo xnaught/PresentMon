@@ -25,8 +25,15 @@ namespace pmon::util::ref::gen
 			std::ostringstream oss;
 			oss << "[";
 			if constexpr (Primitive) {
-				for (size_t i = 0; i < N; i++) {
-					oss << " " << arr[i] << ",";
+				if constexpr (std::same_as<T, char> || std::same_as<T, unsigned char>) {
+					for (size_t i = 0; i < N; i++) {
+						oss << " " << (int)arr[i] << ",";
+					}
+				}
+				else {
+					for (size_t i = 0; i < N; i++) {
+						oss << " " << arr[i] << ",";
+					}
 				}
 			}
 			else {
