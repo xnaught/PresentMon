@@ -97,6 +97,7 @@ namespace pwr::intel
 		LUID deviceId; // pointed to by a device_adapter_properties member, written to by igcl api
 		ctl_device_adapter_properties_t properties{};
 		std::vector<ctl_mem_handle_t> memoryModules;
+		std::vector<ctl_pwr_handle_t> powerDomains;
 		mutable std::mutex historyMutex;
 		TelemetryHistory<PresentMonPowerTelemetryInfo> history{ PowerTelemetryAdapter::defaultHistorySize };
 		SampleVariantType previousSampleVariant;

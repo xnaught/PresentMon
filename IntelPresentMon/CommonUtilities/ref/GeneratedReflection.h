@@ -1,6 +1,8 @@
 #pragma once
 #include <typeinfo>
 #include <string>
+#include <ranges>
+#include <sstream>
 
 namespace pmon::util::ref
 {
@@ -8,7 +10,18 @@ namespace pmon::util::ref
 	template<class T>
 	std::string DumpGenerated(const T& s)
 	{
-		return DumpGenerated(typeid(T), &s);
+		if constexpr (std::ranges::range<T>) {
+			std::ostringstream oss;
+			oss << "[ ";
+			for (auto&& [i, el] : s | std::views::enumerate) {
+				oss << i << ": " << DumpGenerated(el) << ", ";
+			}
+			oss << "]";
+			return oss.str();
+		}
+		else {
+			return DumpGenerated(typeid(T), &s);
+		}
 	}
 
 	bool SupportsGeneratedDump(const std::type_info&);

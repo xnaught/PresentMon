@@ -33,8 +33,26 @@ namespace pwr::intel
             throw NonGraphicsDeviceException{};
         }
 
-        if (auto result = EnumerateMemoryModules(); result != CTL_RESULT_SUCCESS) {
-            throw std::runtime_error{ "Failed to enumerate memory modules" };
+        // errors are reported inside this function
+        // do not hard-fail on memory module issues
+        EnumerateMemoryModules();
+
+        // get count of power domains
+        uint32_t powerDomainCount = 0;
+        if (auto result = ctlEnumPowerDomains(deviceHandle, &powerDomainCount, nullptr);
+            result == CTL_RESULT_SUCCESS) {
+            powerDomains.resize(powerDomainCount);
+            // get power domain handles
+            if (auto result = ctlEnumPowerDomains(deviceHandle, &powerDomainCount, powerDomains.data());
+                result == CTL_RESULT_SUCCESS) {
+                pmlog_verb(v::gpu)("Power domains enumerated").pmwatch(GetName()).pmwatch(ref::DumpGenerated(powerDomains));
+            }
+            else {
+                pmlog_error("ctlEnumPowerDomains failed enumeration").code(result).pmwatch(GetName());
+            }
+        }
+        else {
+            pmlog_error("ctlEnumPowerDomains failed to get count").code(result).pmwatch(GetName());
         }
     }
 
@@ -112,20 +130,20 @@ namespace pwr::intel
         }
 
         std::optional<double> gpu_sustained_power_limit_mw;
-        {
-            double gpu_sustained_power_limit_mw_temp = 0.;
-            if (const auto result = ctlOverclockPowerLimitGet(deviceHandle, &gpu_sustained_power_limit_mw_temp);
-                result == CTL_RESULT_SUCCESS || result == CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
-                if (result == CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
-                    pmlog_warn("ctlOverclockPowerLimitGet indicates deprecation").code(result);
-                }
-                gpu_sustained_power_limit_mw = gpu_sustained_power_limit_mw_temp;
+        if (!powerDomains.empty()) {
+            ctl_power_limits_t limits{
+                .Size = sizeof(ctl_power_limits_t),
+            };
+            if (const auto result = ctlPowerGetLimits(powerDomains[0], &limits);
+                result == CTL_RESULT_SUCCESS) {
+                gpu_sustained_power_limit_mw = (double)limits.sustainedPowerLimit.power;
+                pmlog_verb(v::gpu)(std::format("ctlPowerGetLimits output")).pmwatch(GetName())
+                    .pmwatch(ref::DumpGenerated(limits));
             }
             else {
                 success = false;
                 IGCL_ERR(result);
             }
-            pmlog_verb(v::gpu)(std::format("ctlOverclockPowerLimitGet output: {}", gpu_sustained_power_limit_mw_temp)).pmwatch(GetName());
         }
 
         if (useV1PowerTelemetry) {
@@ -221,13 +239,20 @@ namespace pwr::intel
     double IntelPowerTelemetryAdapter::GetSustainedPowerLimit() const noexcept
     {
         double gpuSustainedPowerLimit = 0.;
-        if (const auto result = ctlOverclockPowerLimitGet(deviceHandle, &gpuSustainedPowerLimit);
-            result == CTL_RESULT_SUCCESS || result == CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
-            if (result == CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
-                pmlog_warn("ctlOverclockPowerLimitGet indicates deprecation").code(result);
+        if (!powerDomains.empty()) {
+            ctl_power_limits_t limits{
+                .Size = sizeof(ctl_power_limits_t),
+            };
+            if (const auto result = ctlPowerGetLimits(powerDomains[0], &limits);
+                result == CTL_RESULT_SUCCESS) {
+                gpuSustainedPowerLimit = (double)limits.sustainedPowerLimit.power;
+                pmlog_verb(v::gpu)(std::format("ctlPowerGetLimits output")).pmwatch(GetName())
+                    .pmwatch(ref::DumpGenerated(limits));
+            }
+            else {
+                IGCL_ERR(result);
             }
         }
-        pmlog_verb(v::gpu)(std::format("ctlOverclockPowerLimitGet output: {}", gpuSustainedPowerLimit)).pmwatch(GetName());
         // Control lib returns back in milliwatts
         return gpuSustainedPowerLimit / 1000.;
     }
@@ -239,21 +264,22 @@ namespace pwr::intel
         // first call ctlEnumMemoryModules with nullptr to get number of modules
         // and resize vector to accomodate
         uint32_t memory_module_count = 0;
+        if (auto result = ctlEnumMemoryModules(deviceHandle, &memory_module_count,
+            nullptr); result != CTL_RESULT_SUCCESS)
         {
-            if (auto result = ctlEnumMemoryModules(deviceHandle, &memory_module_count,
-                nullptr); result != CTL_RESULT_SUCCESS)
-            {
-                return result;
-            }
-            pmlog_verb(v::gpu)("Memory module count").pmwatch(GetName()).pmwatch(memory_module_count);
-            memoryModules.resize(size_t(memory_module_count));
+            pmlog_error("ctlEnumMemoryModules getting count").code(result).pmwatch(GetName());
+            return result;
         }
-
+        memoryModules.resize(size_t(memory_module_count));
+        // call ctlEnumMemoryModules to get the actual module data now
         if (auto result = ctlEnumMemoryModules(deviceHandle, &memory_module_count,
             memoryModules.data()); result != CTL_RESULT_SUCCESS)
         {
+            pmlog_error("ctlEnumMemoryModules getting module data").code(result).pmwatch(GetName());
+            memoryModules.clear();
             return result;
         }
+        pmlog_verb(v::gpu)("Memory modules enumerated").pmwatch(GetName()).pmwatch(ref::DumpGenerated(memoryModules));
 
         return CTL_RESULT_SUCCESS;
     }
