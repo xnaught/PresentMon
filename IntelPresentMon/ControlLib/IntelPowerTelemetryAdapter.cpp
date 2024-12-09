@@ -601,23 +601,12 @@ namespace pwr::intel
             return result;
         }
 
-        pm_gpu_power_telemetry_info.vram_power_limited =
-            currentSample.vramPowerLimited;
-        pm_gpu_power_telemetry_info.vram_temperature_limited =
-            currentSample.vramTemperatureLimited;
-        pm_gpu_power_telemetry_info.vram_current_limited =
-            currentSample.vramCurrentLimited;
-        pm_gpu_power_telemetry_info.vram_voltage_limited =
-            currentSample.vramVoltageLimited;
-        pm_gpu_power_telemetry_info.vram_utilization_limited =
-            currentSample.vramUtilizationLimited;
-
-        // On Intel all GPU limitation indicators are active
-        SetTelemetryCapBit(GpuTelemetryCapBits::vram_power_limited);
-        SetTelemetryCapBit(GpuTelemetryCapBits::vram_temperature_limited);
-        SetTelemetryCapBit(GpuTelemetryCapBits::vram_current_limited);
-        SetTelemetryCapBit(GpuTelemetryCapBits::vram_voltage_limited);
-        SetTelemetryCapBit(GpuTelemetryCapBits::vram_utilization_limited);
+        // On Intel all VRAM limitation indicators are deprecated / return false
+        // GpuTelemetryCapBits::vram_power_limited
+        // GpuTelemetryCapBits::vram_temperature_limited
+        // GpuTelemetryCapBits::vram_current_limited
+        // GpuTelemetryCapBits::vram_voltage_limited
+        // GpuTelemetryCapBits::vram_utilization_limited
 
         return result;
     }
