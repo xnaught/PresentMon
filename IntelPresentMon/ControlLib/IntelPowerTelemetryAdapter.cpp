@@ -226,11 +226,10 @@ namespace pwr::intel
             if (result == CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
                 pmlog_warn("ctlOverclockPowerLimitGet indicates deprecation").code(result);
             }
-            // Control lib returns back in milliwatts
-            gpuSustainedPowerLimit = gpuSustainedPowerLimit / 1000.;
         }
         pmlog_verb(v::gpu)(std::format("ctlOverclockPowerLimitGet output: {}", gpuSustainedPowerLimit)).pmwatch(GetName());
-        return gpuSustainedPowerLimit;
+        // Control lib returns back in milliwatts
+        return gpuSustainedPowerLimit / 1000.;
     }
 
     // private implementation functions
