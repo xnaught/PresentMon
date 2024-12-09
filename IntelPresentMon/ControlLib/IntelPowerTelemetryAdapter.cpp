@@ -40,7 +40,7 @@ namespace pwr::intel
 
     bool IntelPowerTelemetryAdapter::Sample() noexcept
     {
-        pmlog_verb(v::gpu)("Sample called");
+        pmlog_verb(v::gpu)("Sample called").pmwatch(GetName());
 
         LARGE_INTEGER qpc;
         QueryPerformanceCounter(&qpc);
@@ -68,7 +68,7 @@ namespace pwr::intel
                 success = false;
                 pmlog_warn("Failed to access ctlPowerTelemetryGet.v1, falling back to .v0");
             }
-            pmlog_verb(v::gpu)("get power telemetry V1").pmwatch(ref::DumpGenerated(*currentSample));
+            pmlog_verb(v::gpu)("get power telemetry V1").pmwatch(GetName()).pmwatch(ref::DumpGenerated(*currentSample));
         }
         if (!useV1PowerTelemetry) {
             currentSampleVariant = ctl_power_telemetry_t{
@@ -86,7 +86,7 @@ namespace pwr::intel
                 success = false;
                 IGCL_ERR(result);
             }
-            pmlog_verb(v::gpu)("get power telemetry V0").pmwatch(ref::DumpGenerated(*currentSample));
+            pmlog_verb(v::gpu)("get power telemetry V0").pmwatch(GetName()).pmwatch(ref::DumpGenerated(*currentSample));
         }
 
         // Query memory state and bandwidth if supported
@@ -102,13 +102,13 @@ namespace pwr::intel
                 success = false;
                 IGCL_ERR(result);
             }
-            pmlog_verb(v::gpu)("get memory state").pmwatch(ref::DumpGenerated(memory_state));
+            pmlog_verb(v::gpu)("get memory state").pmwatch(GetName()).pmwatch(ref::DumpGenerated(memory_state));
             if (const auto result = ctlMemoryGetBandwidth(memoryModules[0], &memory_bandwidth);
                 result != CTL_RESULT_SUCCESS) {
                 success = false;
                 IGCL_ERR(result);
             }
-            pmlog_verb(v::gpu)("get memory bandwidth").pmwatch(ref::DumpGenerated(memory_bandwidth));
+            pmlog_verb(v::gpu)("get memory bandwidth").pmwatch(GetName()).pmwatch(ref::DumpGenerated(memory_bandwidth));
         }
 
         std::optional<double> gpu_sustained_power_limit_mw;
@@ -125,7 +125,7 @@ namespace pwr::intel
                 success = false;
                 IGCL_ERR(result);
             }
-            pmlog_verb(v::gpu)(std::format("ctlOverclockPowerLimitGet output: {}", gpu_sustained_power_limit_mw_temp));
+            pmlog_verb(v::gpu)(std::format("ctlOverclockPowerLimitGet output: {}", gpu_sustained_power_limit_mw_temp)).pmwatch(GetName());
         }
 
         if (useV1PowerTelemetry) {
@@ -162,10 +162,10 @@ namespace pwr::intel
         const auto nearest = history.GetNearest(qpc);
         if constexpr (PMLOG_BUILD_LEVEL_ >= pmon::util::log::Level::Verbose) {
             if (!nearest) {
-                pmlog_verb(v::gpu)("Empty telemetry info sample returned").pmwatch(qpc);
+                pmlog_verb(v::gpu)("Empty telemetry info sample returned").pmwatch(GetName()).pmwatch(qpc);
             }
             else {
-                pmlog_verb(v::gpu)("Nearest telemetry info sampled").pmwatch(qpc).pmwatch(ref::DumpStatic(*nearest));
+                pmlog_verb(v::gpu)("Nearest telemetry info sampled").pmwatch(GetName()).pmwatch(qpc).pmwatch(ref::DumpStatic(*nearest));
             }
         }
         return nearest;
@@ -193,7 +193,7 @@ namespace pwr::intel
             else {
                 IGCL_ERR(result);
             }
-            pmlog_verb(v::gpu)("get memory state").pmwatch(ref::DumpGenerated(memory_state));
+            pmlog_verb(v::gpu)("get memory state").pmwatch(GetName()).pmwatch(ref::DumpGenerated(memory_state));
         }
         return video_mem_size;
     }
@@ -213,7 +213,7 @@ namespace pwr::intel
             else {
                 IGCL_ERR(result);
             }
-            pmlog_verb(v::gpu)("get memory bandwidth").pmwatch(ref::DumpGenerated(memoryBandwidth));
+            pmlog_verb(v::gpu)("get memory bandwidth").pmwatch(GetName()).pmwatch(ref::DumpGenerated(memoryBandwidth));
         }
         return videoMemMaxBandwidth;
     }
@@ -229,7 +229,7 @@ namespace pwr::intel
             // Control lib returns back in milliwatts
             gpuSustainedPowerLimit = gpuSustainedPowerLimit / 1000.;
         }
-        pmlog_verb(v::gpu)(std::format("ctlOverclockPowerLimitGet output: {}", gpuSustainedPowerLimit));
+        pmlog_verb(v::gpu)(std::format("ctlOverclockPowerLimitGet output: {}", gpuSustainedPowerLimit)).pmwatch(GetName());
         return gpuSustainedPowerLimit;
     }
 
@@ -246,7 +246,7 @@ namespace pwr::intel
             {
                 return result;
             }
-            pmlog_verb(v::gpu)("Memory module count").pmwatch(memory_module_count);
+            pmlog_verb(v::gpu)("Memory module count").pmwatch(GetName()).pmwatch(memory_module_count);
             memoryModules.resize(size_t(memory_module_count));
         }
 
@@ -511,7 +511,7 @@ namespace pwr::intel
         if constexpr (std::same_as<T, ctl_power_telemetry2_t>) {
             using namespace pmon::util;
             if (useNewBandwidthTelemetry) {
-                pmlog_verb(v::gpu)("Processing VRAM BW V1");
+                pmlog_verb(v::gpu)("Processing VRAM BW V1").pmwatch(GetName());
                 double gpuMemReadBandwidthMegabytesPerSecond = 0;
                 result = GetInstantaneousPowerTelemetryItem(
                     currentSample.vramReadBandwidth,
@@ -549,7 +549,7 @@ namespace pwr::intel
             }
         }
         if (!useNewBandwidthTelemetry) {
-            pmlog_verb(v::gpu)("Processing VRAM BW V0");
+            pmlog_verb(v::gpu)("Processing VRAM BW V0").pmwatch(GetName());
             result = GetPowerTelemetryItemUsage(
                 currentSample.vramReadBandwidthCounter,
                 previousSample->vramReadBandwidthCounter,
@@ -792,7 +792,7 @@ namespace pwr::intel
 
     void IntelPowerTelemetryAdapter::SavePmPowerTelemetryData(PresentMonPowerTelemetryInfo& info)
     {
-        pmlog_verb(v::gpu)("Saving gathered telemetry info to history").pmwatch(ref::DumpStatic(info));
+        pmlog_verb(v::gpu)("Saving gathered telemetry info to history").pmwatch(GetName()).pmwatch(ref::DumpStatic(info));
         std::lock_guard<std::mutex> lock(historyMutex);
         history.Push(info);
     }
