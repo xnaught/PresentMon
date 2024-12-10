@@ -5,6 +5,7 @@
 #include "../CommonUtilities/Math.h"
 #include "../CommonUtilities/ref/GeneratedReflection.h"
 #include "../CommonUtilities/ref/StaticReflection.h"
+#include <regex>
 
 using namespace pmon;
 using namespace util;
@@ -33,8 +34,13 @@ namespace pwr::intel
             throw NonGraphicsDeviceException{};
         }
 
+        // check for alchemist (used to enable features whose support not reported by IGCL)
+        // use device name that match Arc followed by A### part number pattern
+        isAlchemist = std::regex_search(GetName(), std::regex{ R"(Arc.*A\d{3})" });
+        pmlog_verb(v::gpu)("Detecting Alchemist").pmwatch(isAlchemist);
+
         // errors are reported inside this function
-        // do not hard-fail on memory module issues
+        // do not hard-fail on memory module issues, so no need to check error return code
         EnumerateMemoryModules();
 
         // get count of power domains
@@ -479,12 +485,18 @@ namespace pwr::intel
         pm_gpu_power_telemetry_info.gpu_utilization_limited =
             currentSample.gpuUtilizationLimited;
 
-        // On Intel all GPU limitation indicators are active
+        // On Intel all GPU limitation indicators are active except...
         SetTelemetryCapBit(GpuTelemetryCapBits::gpu_power_limited);
         SetTelemetryCapBit(GpuTelemetryCapBits::gpu_temperature_limited);
-        SetTelemetryCapBit(GpuTelemetryCapBits::gpu_current_limited);
         SetTelemetryCapBit(GpuTelemetryCapBits::gpu_voltage_limited);
         SetTelemetryCapBit(GpuTelemetryCapBits::gpu_utilization_limited);
+
+        // gpu_current_limited perf limit reason seems not supported on BMG
+        // because there is no bSupported flags for the perf limit reasons
+        // we detect alchemist and use this as a proxy for support
+        if (isAlchemist) {
+            SetTelemetryCapBit(GpuTelemetryCapBits::gpu_current_limited);
+        }
 
         return result;
     }

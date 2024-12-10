@@ -108,5 +108,8 @@ namespace pwr::intel
 		// this is a stopgap to cover for cases where IGCL is reporting bad data in V0 bandwidth telemetry
 		double gpu_mem_read_bw_cache_value_bps_ = 0.;
 		uint64_t gpu_mem_max_bw_cache_value_bps_ = 0;
+		// we have special handling for GPU current perf limitation on Alchemist
+		// workaround for lack of discoverablity of perf limitation availability
+		bool isAlchemist = false;
 	};
 }
