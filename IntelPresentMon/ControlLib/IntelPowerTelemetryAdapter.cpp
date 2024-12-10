@@ -37,7 +37,7 @@ namespace pwr::intel
         // check for alchemist (used to enable features whose support not reported by IGCL)
         // use device name that match Arc followed by A### part number pattern
         isAlchemist = std::regex_search(GetName(), std::regex{ R"(Arc.*A\d{3})" });
-        pmlog_verb(v::gpu)("Detecting Alchemist").pmwatch(isAlchemist);
+        pmlog_verb(v::gpu)("Detecting Alchemist").pmwatch(GetName()).pmwatch(isAlchemist);
 
         // errors are reported inside this function
         // do not hard-fail on memory module issues, so no need to check error return code
