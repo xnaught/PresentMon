@@ -7,6 +7,7 @@
 #include <sstream>
 #include <format>
 #include "../GeneratedReflection.h"
+#include "../GeneratedReflectionHelpers.h"
 
 // target includes
 #include "../../../../IntelPresentMon/ControlLib/igcl_api.h"
@@ -15,40 +16,6 @@
 namespace pmon::util::ref::gen
 {
 	using namespace std::literals;
-	
-	namespace {
-		template<typename T, size_t N, bool Primitive>
-		std::string DumpArray_(const void* pArray)
-		{
-			auto& arr = *reinterpret_cast<const T(*)[N]>(pArray);
-			std::ostringstream oss;
-			oss << "[";
-			if constexpr (Primitive) {
-				if constexpr (std::same_as<T, char> || std::same_as<T, unsigned char>) {
-					for (size_t i = 0; i < N; i++) {
-						oss << " " << (int)arr[i] << ",";
-					}
-				}
-				else {
-					for (size_t i = 0; i < N; i++) {
-						oss << " " << arr[i] << ",";
-					}
-				}
-			}
-			else {
-				if (SupportsGeneratedDump<T>()) {
-					for (size_t i = 0; i < N; i++) {
-						oss << " " << DumpGenerated(arr[i]) << ",";
-					}
-				}
-				else {
-					oss << " { unsupported } ";
-				}
-			}
-			oss << "]";
-			return oss.str();
-		}
-	}
 
 	void RegisterDumpers_(std::unordered_map<std::type_index, std::function<std::string(const void*)>>& dumpers)
 	{

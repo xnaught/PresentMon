@@ -234,6 +234,9 @@
     <ClInclude Include="ref\gen\GeneratedReflection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ref\GeneratedReflectionHelpers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">

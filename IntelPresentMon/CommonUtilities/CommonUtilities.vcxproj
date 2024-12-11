@@ -78,6 +78,7 @@
     <ClInclude Include="PrecisionWaiter.h" />
     <ClInclude Include="Qpc.h" />
     <ClInclude Include="ref\GeneratedReflection.h" />
+    <ClInclude Include="ref\GeneratedReflectionHelpers.h" />
     <ClInclude Include="ref\gen\GeneratedReflection.h" />
     <ClInclude Include="ref\StaticReflection.h" />
     <ClInclude Include="ref\WrapReflect.h" />
