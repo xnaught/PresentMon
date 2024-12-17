@@ -99,6 +99,7 @@ PM_STATUS MockPresentMonSession::StartTraceSession(uint32_t processId) {
     pm_consumer_->mTrackGPUVideo = false;
     pm_consumer_->mTrackInput = true;
     pm_consumer_->mTrackFrameType = true;
+    pm_consumer_->mTrackAppTiming = true;
 
     if (opt.etwSessionName.AsOptional().has_value()) {
         pm_session_name_ =
@@ -193,6 +194,7 @@ void MockPresentMonSession::AddPresents(
     // If mStartTimestamp contains a value an etl file is being processed.
     // Set this value in the streamer to have the correct start time.
     streamer_.SetStartQpc(trace_session_.mStartTimestamp.QuadPart);
+    streamer_.SetStreamMode(StreamMode::kOfflineEtl);
 
     for (auto n = presentEvents.size(); i < n; ++i) {
         auto presentEvent = presentEvents[i];
@@ -252,6 +254,23 @@ void MockPresentMonSession::AddPresents(
             chain->mLastDisplayedPresentQPC = 0;
         }
 
+        // Remove Repeated flips if they are in Application->Repeated or Repeated->Application sequences.
+        for (size_t i = 0, n = presentEvent->Displayed.size(); i + 1 < n; ) {
+            if (presentEvent->Displayed[i].first == FrameType::Application &&
+                presentEvent->Displayed[i + 1].first == FrameType::Repeated) {
+                presentEvent->Displayed.erase(presentEvent->Displayed.begin() + i + 1);
+                n -= 1;
+            }
+            else if (presentEvent->Displayed[i].first == FrameType::Repeated &&
+                     presentEvent->Displayed[i + 1].first == FrameType::Application) {
+                presentEvent->Displayed.erase(presentEvent->Displayed.begin() + i);
+                n -= 1;
+            }
+            else {
+                i += 1;
+            }
+        }
+
         // Last producer and last consumer are internal fields
         // Remove for public build
         // Send data to streamer if we have more than single present event
@@ -264,7 +283,7 @@ void MockPresentMonSession::AddPresents(
 
         chain->mLastPresentQPC = presentEvent->PresentStartTime;
         if (presentEvent->FinalState == PresentResult::Presented) {
-            chain->mLastDisplayedPresentQPC = presentEvent->ScreenTime;
+            chain->mLastDisplayedPresentQPC = presentEvent->Displayed.empty() ? 0 : presentEvent->Displayed[0].second;
         }
         else if (chain->mLastDisplayedPresentQPC == chain->mLastPresentQPC) {
             chain->mLastDisplayedPresentQPC = 0;

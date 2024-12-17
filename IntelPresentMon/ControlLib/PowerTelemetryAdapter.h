@@ -27,11 +27,14 @@ namespace pwr
         {
             gpuTelemetryCapBits_.set(static_cast<size_t>(telemetryCapBit));
         }
-        std::bitset<
-            static_cast<size_t>(GpuTelemetryCapBits::gpu_telemetry_count)>
+        std::bitset<static_cast<size_t>(GpuTelemetryCapBits::gpu_telemetry_count)>
         GetPowerTelemetryCapBits()
         {
             return gpuTelemetryCapBits_;
+        }
+        bool HasTelemetryCapBit(GpuTelemetryCapBits bit) const
+        {
+            return gpuTelemetryCapBits_.test(size_t(bit));
         }
         // constants
         static constexpr size_t defaultHistorySize = 300;

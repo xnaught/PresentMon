@@ -1,7 +1,7 @@
 #include "BuildId.h"
 #include "generated/build_id.h"
 
-namespace pmon::util
+namespace pmon::bid
 {
 	const char* BuildIdShortHash() noexcept
 	{

@@ -200,11 +200,13 @@
     <ClInclude Include="AmdPowerTelemetryProvider.h" />
     <ClInclude Include="Adl2Wrapper.h" />
     <ClInclude Include="CpuTelemetryInfo.h" />
+    <ClInclude Include="ctlpvttemp_api.h" />
     <ClInclude Include="DllModule.h" />
     <ClInclude Include="CpuTelemetry.h" />
     <ClInclude Include="Exceptions.h" />
     <ClInclude Include="IntelPowerTelemetryAdapter.h" />
     <ClInclude Include="Logging.h" />
+    <ClInclude Include="LoggingVerbose.h" />
     <ClInclude Include="MacroHelpers.h" />
     <ClInclude Include="nvapi.h" />
     <ClInclude Include="NvapiWrapper.h" />
@@ -227,6 +229,7 @@
     <ClCompile Include="AmdPowerTelemetryAdapter.cpp" />
     <ClCompile Include="Adl2Wrapper.cpp" />
     <ClCompile Include="cApiWrapper.cpp" />
+    <ClCompile Include="ctlpvttempWrapper.cpp" />
     <ClCompile Include="IntelPowerTelemetryProvider.cpp" />
     <ClCompile Include="IntelPowerTelemetryAdapter.cpp" />
     <ClCompile Include="NvapiWrapper.cpp" />

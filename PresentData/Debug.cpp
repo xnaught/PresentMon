@@ -178,7 +178,8 @@ wchar_t const* PMPFrameTypeToString(Intel_PresentMon::FrameType type)
     case Intel_PresentMon::FrameType::Unspecified: return L"Unspecified";
     case Intel_PresentMon::FrameType::Original:    return L"Original";
     case Intel_PresentMon::FrameType::Repeated:    return L"Repeated";
-    case Intel_PresentMon::FrameType::AMD_AFMF:    return L"AMD_AFMF";
+    case Intel_PresentMon::FrameType::Intel_XEFG:  return L"Intel XeSS-FG";
+    case Intel_PresentMon::FrameType::AMD_AFMF:    return L"AMD AFMF";
     }
 
     assert(false);
@@ -191,8 +192,19 @@ void PrintFrameType(FrameType type)
     case FrameType::Unspecified: wprintf(L"Unspecified"); break;
     case FrameType::Application: wprintf(L"Application"); break;
     case FrameType::Repeated:    wprintf(L"Repeated"); break;
-    case FrameType::AMD_AFMF:    wprintf(L"AMD_AFMF"); break;
+    case FrameType::Intel_XEFG:  wprintf(L"Intel XeSS-FG"); break;
+    case FrameType::AMD_AFMF:    wprintf(L"AMD AFMF"); break;
     default:                     wprintf(L"Unknown (%u)", type); assert(false); break;
+    }
+}
+void PrintInputType(uint32_t type)
+{
+    using namespace Intel_PresentMon;
+    switch (type) {
+    case InputType::Unspecified:   wprintf(L"Unspecified"); break;
+    case InputType::MouseClick:    wprintf(L"MouseClick"); break;
+    case InputType::KeyboardClick: wprintf(L"KeyboardClick"); break;
+    default:                       wprintf(L"Unknown (%u)", type); assert(false); break;
     }
 }
 
@@ -231,6 +243,7 @@ void PrintEventHeader(EVENT_RECORD* eventRecord, EventMetadata* metadata, char c
         else if (propFunc == PrintDmaPacketType)       PrintDmaPacketType(metadata->GetEventData<uint32_t>(eventRecord, propName));
         else if (propFunc == PrintPresentFlags)        PrintPresentFlags(metadata->GetEventData<uint32_t>(eventRecord, propName));
         else if (propFunc == PrintPresentHistoryModel) PrintPresentHistoryModel(metadata->GetEventData<uint32_t>(eventRecord, propName));
+        else if (propFunc == PrintInputType)           PrintInputType(metadata->GetEventData<uint8_t>(eventRecord, propName));
         else assert(false);
     }
     wprintf(L"\n");
@@ -252,7 +265,6 @@ void FlushModifiedPresent()
     }
     FLUSH_MEMBER(PrintTimeDelta,      TimeInPresent)
     FLUSH_MEMBER(PrintTime,           ReadyTime)
-    FLUSH_MEMBER(PrintTime,           ScreenTime)
     FLUSH_MEMBER(PrintTime,           InputTime)
     FLUSH_MEMBER(PrintTime,           MouseClickTime)
     FLUSH_MEMBER(PrintTime,           GPUStartTime)
@@ -278,8 +290,26 @@ void FlushModifiedPresent()
     FLUSH_MEMBER(PrintBool,           PresentFailed)
     FLUSH_MEMBER(PrintBool,           WaitingForPresentStop)
     FLUSH_MEMBER(PrintBool,           WaitingForFlipFrameType)
-    FLUSH_MEMBER(PrintFrameType,      FrameType)
+    FLUSH_MEMBER(PrintBool,           DoneWaitingForFlipFrameType)
+    FLUSH_MEMBER(PrintBool,           WaitingForFrameId)
 #undef FLUSH_MEMBER
+
+    // Displayed
+    if (gModifiedPresent->Displayed != gOriginalPresentValues.Displayed) {
+        if (changedCount++ == 0) {
+            wprintf(L"%*hsp%u", 17 + 6 + 6, "", gModifiedPresent->FrameId);
+        }
+        wprintf(L" Displayed=");
+        auto first = true;
+        for (auto const& pr : gModifiedPresent->Displayed) {
+            wprintf(L"%c ", first ? L'[' : L',');
+            PrintFrameType(pr.first);
+            wprintf(L":");
+            PrintTime(pr.second);
+            first = false;
+        }
+        wprintf(L"%c]", first ? L'[' : L' ');
+    }
 
     // PresentIds
     if (gModifiedPresent->PresentIds != gOriginalPresentValues.PresentIds) {
@@ -407,7 +437,8 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
             case Blit_Info::Id:                    PrintEventHeader(eventRecord, metadata, "Blit_Info",                    { L"hwnd",               PrintU64x,
                                                                                                                              L"bRedirectedPresent", PrintU32 }); break;
             case BlitCancel_Info::Id:              PrintEventHeader(hdr, "BlitCancel_Info"); break;
-            case FlipMultiPlaneOverlay_Info::Id:   PrintEventHeader(hdr, "FlipMultiPlaneOverlay_Info"); break;
+            case FlipMultiPlaneOverlay_Info::Id:   PrintEventHeader(eventRecord, metadata, "FlipMultiPlaneOverlay_Info",   { L"VidPnSourceId",      PrintU32,
+                                                                                                                             L"LayerIndex",         PrintU32 }); break;
             case Present_Info::Id:                 PrintEventHeader(hdr, "DxgKrnl_Present_Info"); break;
 
             case MMIOFlip_Info::Id:                PrintEventHeader(eventRecord, metadata, "MMIOFlip_Info",                { L"FlipSubmitSequence", PrintU64, }); break;
@@ -645,7 +676,68 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
             }
             }
         }
-        return;
+        if (pmConsumer->mTrackPMMeasurements) {
+            switch (hdr.EventDescriptor.Id) {
+            case MeasuredInput_Info::Id:
+                PrintEventHeader(eventRecord, metadata, "PM_Measurement_Input", { L"InputType", PrintInputType, L"Time", PrintU64x });
+                break;
+            case MeasuredScreenChange_Info::Id:
+                PrintEventHeader(eventRecord, metadata, "PM_Measurement_ScreenChange", { L"Time", PrintU64x });
+                break;
+            }
+            return;
+        }
+
+        if (pmConsumer->mTrackAppTiming) {
+            switch (hdr.EventDescriptor.Id) {
+            case Intel_PresentMon::AppSleepStart_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSleepStart_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppSleepStart", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppSleepEnd_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSleepEnd_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppSleepEnd", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppSimulationStart_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSimulationStart_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppSimulationStart", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppSimulationEnd_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSimulationEnd_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppSimulationEnd", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppRenderSubmitStart_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppRenderSubmitStart_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppRenderSubmitStart", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppRenderSubmitEnd_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppRenderSubmitEnd_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppRenderSubmitEnd", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppPresentStart_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppPresentStart_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppPresentStart", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppPresentEnd_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppPresentEnd_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppPresentEnd", { L"FrameId", PrintU32 });
+            }
+            return;
+            case Intel_PresentMon::AppInputSample_Info::Id: {
+                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppInputSample_Info_Props));
+                PrintEventHeader(eventRecord, metadata, "PM_AppInputSample", { L"FrameId", PrintU32,
+                                                                               L"InputType", PrintInputType});
+            }
+            return;
+            }
+        }
     }
 
     if (hdr.ProviderId == NT_Process::GUID) {

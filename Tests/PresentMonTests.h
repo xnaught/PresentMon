@@ -37,8 +37,12 @@ struct PresentMonCsv
         Header_DisplayLatency,
         Header_DisplayedTime,
         Header_AnimationError,
+        Header_AnimationTime,
         Header_ClickToPhotonLatency,
         Header_AllInputToPhotonLatency,
+
+        // App Provided Metrics
+        Header_InstrumentedLatency,
 
         // --v1_metrics
         Header_Runtime,
@@ -91,9 +95,9 @@ struct PresentMonCsv
         case Header_DisplayLatency:             return "DisplayLatency";
         case Header_DisplayedTime:              return "DisplayedTime";
         case Header_AnimationError:             return "AnimationError";
+        case Header_AnimationTime:              return "AnimationTime";
         case Header_ClickToPhotonLatency:       return "ClickToPhotonLatency";
         case Header_AllInputToPhotonLatency:    return "AllInputToPhotonLatency";
-
         case Header_Runtime:                    return "Runtime";
         case Header_Dropped:                    return "Dropped";
         case Header_TimeInSeconds:              return "TimeInSeconds";
@@ -110,6 +114,8 @@ struct PresentMonCsv
 
         case Header_WasBatched:                 return "WasBatched";
         case Header_DwmNotified:                return "DwmNotified";
+
+        case Header_InstrumentedLatency:        return "InstrumentedLatency";
         }
         return "<unknown>";
     }

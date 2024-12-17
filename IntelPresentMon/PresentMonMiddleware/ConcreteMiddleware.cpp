@@ -293,6 +293,7 @@ namespace pmon::mid
             case PM_METRIC_DROPPED_FRAMES:
             case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
             case PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY:
+            case PM_METRIC_INSTRUMENTED_LATENCY:
                 pQuery->accumFpsData = true;
                 break;
             case PM_METRIC_GPU_POWER:
@@ -473,6 +474,13 @@ struct FrameMetrics {
     double mAnimationError;
     double mClickToPhotonLatency;
     double mAllInputPhotonLatency;
+    FrameType mFrameType;
+    double mInstrumentedDisplayLatency;
+
+    double mInstrumentedRenderLatency;
+    double mInstrumentedSleep;
+    double mInstrumentedGpuLatency;
+    double mInstrumentedReadyTimeToDisplayLatency;
 };
 
 // Copied from: PresentMon/OutputThread.cpp
@@ -480,17 +488,21 @@ void UpdateChain(
     fpsSwapChainData* chain,
     PmNsmPresentEvent const& p)
 {
-
     if (p.FinalState == PresentResult::Presented) {
         // Used when calculating animation error
-        if (chain->mLastPresentIsValid == true) {
-            chain->mLastDisplayedCPUStart = chain->mLastPresent.PresentStartTime + chain->mLastPresent.TimeInPresent;
+        if (p.AppSimStartTime != 0) {
+            chain->mLastDisplayedSimStart = p.AppSimStartTime;
+        } else if (chain->mLastPresentIsValid == true) {
+            chain->mLastDisplayedSimStart = chain->mLastPresent.PresentStartTime +
+                chain->mLastPresent.TimeInPresent;
         }
+        uint64_t mLastDisplayedScreenTime = p.DisplayedCount == 0 ? 0 : p.Displayed_ScreenTime[0];
+
         // IntelPresentMon specifics:
         if (chain->display_count == 0) {
-            chain->display_0_screen_time = p.ScreenTime;
+            chain->display_0_screen_time = mLastDisplayedScreenTime;
         }
-        chain->display_n_screen_time = p.ScreenTime;
+        chain->mLastDisplayedScreenTime = mLastDisplayedScreenTime;
         chain->display_count += 1;
     }
 
@@ -500,143 +512,254 @@ void UpdateChain(
 }
 
 // Copied from: PresentMon/OutputThread.cpp
-void ReportMetrics(
+static void ReportMetricsHelper(
     FakePMTraceSession const& pmSession,
     fpsSwapChainData* chain,
     PmNsmPresentEvent* p,
-    PmNsmPresentEvent* nextPresent,
     PmNsmPresentEvent const* nextDisplayedPresent)
 {
-    // Ignore repeated frames
-    if (p->FrameType == FrameType::Repeated) {
-        if (p->FrameId == chain->mLastPresent.FrameId) {
-            return;
-        }
-
-        if (p->FrameId == nextPresent->FrameId &&
-            nextPresent->ScreenTime != 0) {
-            nextPresent->ScreenTime = p->ScreenTime;
-            return;
-        }
-
-        p->FrameType = FrameType::Application;
-    }
-
-    // PB = PresentStartTime
-    // PE = PresentEndTime
-    // D  = ScreenTime
+    // Figure out what display index to start processing.
     //
-    // chain->mLastPresent:    PB--PE----D
-    // p:                          |        PB--PE----D
-    // nextPresent:                |        |   |   PB--PE
-    // ...                         |        |   |     |     PB--PE
-    // nextDisplayedPresent:       |        |   |     |             PB--PE----D
-    //                             |        |   |     |                       |
-    // mCPUStart/mCPUBusy:         |------->|   |     |                       |
-    // mCPUWait:                            |-->|     |                       |
-    // mDisplayLatency:            |----------------->|                       |
-    // mDisplayedTime:                                |---------------------->|
+    // The following cases are expected:
+    // p.Displayed empty and nextDisplayedPresent == nullptr:       process p as not displayed
+    // p.Displayed with size N and nextDisplayedPresent == nullptr: process p.Displayed[0..N-2] as displayed, postponing N-1
+    // p.Displayed with size N and nextDisplayedPresent != nullptr: process p.Displayed[N-1]    as displayed
+    auto displayCount = p->DisplayedCount;
+    bool displayed = p->FinalState == PresentResult::Presented && displayCount > 0;
+    size_t displayIndex = displayed && nextDisplayedPresent != nullptr ? displayCount - 1 : 0;
 
-    bool includeFrameData = chain->mIncludeFrameData && (p->FrameId != nextPresent->FrameId || p->FrameType == FrameType::Application);
-
-    bool displayed = p->FinalState == PresentResult::Presented;
-    double msGPUDuration = 0.0;
-
-    FrameMetrics metrics;
-    metrics.mCPUStart = chain->mLastPresent.PresentStartTime + chain->mLastPresent.TimeInPresent;
-
-    if (includeFrameData) {
-        msGPUDuration       = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->GPUStartTime, p->ReadyTime);
-        metrics.mCPUBusy    = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->PresentStartTime);
-        metrics.mCPUWait    = pmSession.TimestampDeltaToMilliSeconds(p->TimeInPresent);
-        metrics.mGPULatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->GPUStartTime);
-        metrics.mGPUBusy    = pmSession.TimestampDeltaToMilliSeconds(p->GPUDuration);
-        metrics.mVideoBusy  = pmSession.TimestampDeltaToMilliSeconds(p->GPUVideoDuration);
-        metrics.mGPUWait    = std::max(0.0, msGPUDuration - metrics.mGPUBusy);
-    } else {
-        metrics.mCPUBusy    = 0.0;
-        metrics.mCPUWait    = 0.0;
-        metrics.mGPULatency = 0.0;
-        metrics.mGPUBusy    = 0.0;
-        metrics.mVideoBusy  = 0.0;
-        metrics.mGPUWait    = 0.0;
-    }
-
-    if (displayed) {
-        metrics.mDisplayLatency       = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->ScreenTime);
-        metrics.mDisplayedTime        = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ScreenTime, nextDisplayedPresent->ScreenTime);
-        metrics.mAnimationError       = chain->mLastDisplayedCPUStart == 0 ? 0 : pmSession.TimestampDeltaToMilliSeconds(p->ScreenTime - chain->display_n_screen_time,
-                                                                                                                        metrics.mCPUStart - chain->mLastDisplayedCPUStart);
-        // If we have an input time that was associated with a dropped frame calculate the latency
-        // based on this Presents screen time.
-        auto updatedInputTime = chain->mLastReceivedNotDisplayedAllInputTime == 0 ? 0 :
-            pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedAllInputTime, p->ScreenTime);
-        // If this present doesn't have an input associated with it use the time from the latest input time calculated
-        // above. If there is an input associated with the Present use it.
-        metrics.mAllInputPhotonLatency = p->InputTime == 0 ? updatedInputTime :
-            pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, p->ScreenTime);
-        // Do the same for the mouse click input
-        updatedInputTime = chain->mLastReceivedNotDisplayedMouseClickTime == 0 ? 0 :
-            pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedMouseClickTime, p->ScreenTime);
-        metrics.mClickToPhotonLatency = p->MouseClickTime == 0 ? updatedInputTime :
-            pmSession.TimestampDeltaToUnsignedMilliSeconds(p->MouseClickTime, p->ScreenTime);
-
-        chain->mLastReceivedNotDisplayedAllInputTime = 0;
-        chain->mLastReceivedNotDisplayedMouseClickTime = 0;
-    } else {
-        metrics.mDisplayLatency       = 0.0;
-        metrics.mDisplayedTime        = 0.0;
-        metrics.mAnimationError       = 0.0;
-        metrics.mClickToPhotonLatency = 0.0;
-        metrics.mAllInputPhotonLatency = 0.0;
-        if (p->InputTime != 0) {
-            chain->mLastReceivedNotDisplayedAllInputTime = p->InputTime;
-        }
-        if (p->MouseClickTime != 0) {
-            chain->mLastReceivedNotDisplayedMouseClickTime = p->MouseClickTime;
+    // Figure out what display index to attribute cpu work, gpu work, animation error, and input
+    // latency to. Start looking from the current display index.
+    size_t appIndex = 0;
+    for (size_t i = displayIndex; i < displayCount; ++i) {
+        if (p->Displayed_FrameType[i] == FrameType::NotSet ||
+            p->Displayed_FrameType[i] == FrameType::Application) {
+            appIndex = i;
+            break;
         }
     }
 
-    if (p->FrameId == nextPresent->FrameId) {
-        if (includeFrameData) {
-            chain->mIncludeFrameData = false;
+    do {
+        // PB = PresentStartTime
+        // PE = PresentEndTime
+        // D  = ScreenTime
+        //
+        // chain->mLastPresent:    PB--PE----D
+        // p:                          |        PB--PE----D
+        // ...                         |        |   |     |     PB--PE
+        // nextDisplayedPresent:       |        |   |     |             PB--PE----D
+        //                             |        |   |     |                       |
+        // mCPUStart/mCPUBusy:         |------->|   |     |                       |
+        // mCPUWait:                            |-->|     |                       |
+        // mDisplayLatency:            |----------------->|                       |
+        // mDisplayedTime:                                |---------------------->|
+
+        // Lookup the ScreenTime and next ScreenTime
+        uint64_t screenTime = 0;
+        uint64_t nextScreenTime = 0;
+        if (displayed) {
+            screenTime = p->Displayed_ScreenTime[displayIndex];
+
+            if (displayIndex + 1 < displayCount) {
+                nextScreenTime = p->Displayed_ScreenTime[displayIndex + 1];
+            } else if (nextDisplayedPresent != nullptr) {
+                nextScreenTime = nextDisplayedPresent->Displayed_ScreenTime[0];
+            } else {
+                return;
+            }
         }
-    } else {
-        UpdateChain(chain, *p);
-    }
 
-    // IntelPresentMon specifics:
+        double msGPUDuration = 0.0;
 
-    if (includeFrameData) {
-        chain->mCPUBusy       .push_back(metrics.mCPUBusy);
-        chain->mCPUWait       .push_back(metrics.mCPUWait);
-        chain->mGPULatency    .push_back(metrics.mGPULatency);
-        chain->mGPUBusy       .push_back(metrics.mGPUBusy);
-        chain->mVideoBusy     .push_back(metrics.mVideoBusy);
-        chain->mGPUWait       .push_back(metrics.mGPUWait);
-        chain->mAnimationError.push_back(std::abs(metrics.mAnimationError));
-    }
+        FrameMetrics metrics;
 
-    if (displayed) {
-        if (chain->mAppDisplayedTime.empty() || p->FrameType == FrameType::NotSet || p->FrameType == FrameType::Application) {
-            chain->mAppDisplayedTime.push_back(metrics.mDisplayedTime);
+        metrics.mCPUStart = chain->mLastPresent.PresentStartTime + chain->mLastPresent.TimeInPresent;
+
+        if (displayIndex == appIndex) {
+            msGPUDuration       = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->GPUStartTime, p->ReadyTime);
+            metrics.mCPUBusy    = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->PresentStartTime);
+            metrics.mCPUWait    = pmSession.TimestampDeltaToMilliSeconds(p->TimeInPresent);
+            metrics.mGPULatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->GPUStartTime);
+            metrics.mGPUBusy    = pmSession.TimestampDeltaToMilliSeconds(p->GPUDuration);
+            metrics.mVideoBusy  = pmSession.TimestampDeltaToMilliSeconds(p->GPUVideoDuration);
+            metrics.mGPUWait    = std::max(0.0, msGPUDuration - metrics.mGPUBusy);
+            // Need both AppSleepStart and AppSleepEnd to calculate XellSleep
+            metrics.mInstrumentedSleep  = (p->AppSleepEndTime == 0 || p->AppSleepStartTime == 0) ? 0 :
+                pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppSleepStartTime, p->AppSleepEndTime);
+            // If there isn't a valid sleep end time use the sim start time
+            auto instrumentedStartTime  = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : p->AppSimStartTime;
+            // If neither the sleep end time or sim start time is valid, there is no
+            // way to calculate the Xell Gpu latency
+            metrics.mInstrumentedGpuLatency = instrumentedStartTime == 0 ? 0 :
+                                      pmSession.TimestampDeltaToUnsignedMilliSeconds(instrumentedStartTime, p->GPUStartTime);
         } else {
-            chain->mAppDisplayedTime.back() += metrics.mDisplayedTime;
+            metrics.mCPUBusy                = 0;
+            metrics.mCPUWait                = 0;
+            metrics.mGPULatency             = 0;
+            metrics.mGPUBusy                = 0;
+            metrics.mVideoBusy              = 0;
+            metrics.mGPUWait                = 0;
+            metrics.mInstrumentedSleep      = 0;
+            metrics.mInstrumentedGpuLatency = 0;
         }
 
-        if (p->MouseClickTime) {
-            chain->mClickToPhotonLatency.push_back(metrics.mClickToPhotonLatency);
+        if (displayed) {
+            metrics.mDisplayLatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, screenTime);
+            metrics.mDisplayedTime  = pmSession.TimestampDeltaToUnsignedMilliSeconds(screenTime, nextScreenTime);
+            // If AppRenderSubmitStart is valid calculate the render latency
+            metrics.mInstrumentedRenderLatency = p->AppRenderSubmitStartTime == 0 ? 0 :
+                pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppRenderSubmitStartTime, screenTime);
+            metrics.mInstrumentedReadyTimeToDisplayLatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ReadyTime, screenTime);
+            // If there isn't a valid sleep end time use the sim start time
+            auto xellStartTime = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : p->AppSimStartTime;
+            // If neither the sleep end time or sim start time is valid, there is no
+            // way to calculate the Xell Gpu latency
+            metrics.mInstrumentedDisplayLatency = xellStartTime == 0 ? 0 :
+                pmSession.TimestampDeltaToUnsignedMilliSeconds(xellStartTime, screenTime);
+        } else {
+            metrics.mDisplayLatency                         = 0;
+            metrics.mDisplayedTime                          = 0;
+            metrics.mInstrumentedRenderLatency              = 0;
+            metrics.mInstrumentedReadyTimeToDisplayLatency  = 0;
+            metrics.mInstrumentedDisplayLatency             = 0;
         }
 
-        if (p->InputTime) {
-            chain->mAllInputToPhotonLatency.push_back(metrics.mAllInputPhotonLatency);
+        if (displayIndex == appIndex) {
+            if (displayed) {
+                auto updatedInputTime = chain->mLastReceivedNotDisplayedAllInputTime == 0 ? 0 :
+                    pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedAllInputTime, screenTime);
+                metrics.mAllInputPhotonLatency = p->InputTime == 0 ? updatedInputTime :
+                    pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, screenTime);
+
+                updatedInputTime = chain->mLastReceivedNotDisplayedMouseClickTime == 0 ? 0 :
+                    pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedMouseClickTime, screenTime);
+                metrics.mClickToPhotonLatency = p->MouseClickTime == 0 ? updatedInputTime :
+                    pmSession.TimestampDeltaToUnsignedMilliSeconds(p->MouseClickTime, screenTime);
+
+                chain->mLastReceivedNotDisplayedAllInputTime = 0;
+                chain->mLastReceivedNotDisplayedMouseClickTime = 0;
+            }
+            else {
+                metrics.mClickToPhotonLatency = 0;
+                metrics.mAllInputPhotonLatency = 0;
+                if (p->InputTime != 0) {
+                    chain->mLastReceivedNotDisplayedAllInputTime = p->InputTime;
+                }
+                if (p->MouseClickTime != 0) {
+                    chain->mLastReceivedNotDisplayedMouseClickTime = p->MouseClickTime;
+                }
+            }
+        } else {
+            metrics.mClickToPhotonLatency = 0;
+            metrics.mAllInputPhotonLatency = 0;
         }
 
-        chain->mDisplayLatency.push_back(metrics.mDisplayLatency);
-        chain->mDisplayedTime .push_back(metrics.mDisplayedTime);
-        chain->mDropped       .push_back(0.0);
+        if (displayed && displayIndex == appIndex && chain->mLastDisplayedSimStart != 0) {
+            // Calculate the sim start time based on if AppSimStartTime is non-zero
+            auto simStartTime            = p->AppSimStartTime != 0 ? p->AppSimStartTime : metrics.mCPUStart;
+            metrics.mAnimationError      = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
+                                                                                  simStartTime - chain->mLastDisplayedSimStart);
+            chain->mAnimationError.push_back(std::abs(metrics.mAnimationError));
+        } else {
+            metrics.mAnimationError      = 0;
+        }
+
+        if (p->DisplayedCount == 0) {
+            metrics.mFrameType = FrameType::NotSet;
+        } else {
+            metrics.mFrameType = p->Displayed_FrameType[displayIndex];
+        }
+
+        if (displayIndex == appIndex) {
+            chain->mCPUBusy               .push_back(metrics.mCPUBusy);
+            chain->mCPUWait               .push_back(metrics.mCPUWait);
+            chain->mGPULatency            .push_back(metrics.mGPULatency);
+            chain->mGPUBusy               .push_back(metrics.mGPUBusy);
+            chain->mVideoBusy             .push_back(metrics.mVideoBusy);
+            chain->mGPUWait               .push_back(metrics.mGPUWait);
+            chain->mInstrumentedSleep     .push_back(metrics.mInstrumentedSleep);
+            chain->mInstrumentedGpuLatency.push_back(metrics.mInstrumentedGpuLatency);
+        }
+
+        if (displayed) {
+            chain->mDisplayLatency                       .push_back(metrics.mDisplayLatency);
+            chain->mDisplayedTime                        .push_back(metrics.mDisplayedTime);
+            chain->mDropped                              .push_back(0.0);
+        } else {
+            chain->mDropped       .push_back(1.0);
+        }
+
+        if (displayed) {
+            if (chain->mAppDisplayedTime.empty() || displayIndex == appIndex) {
+                chain->mAppDisplayedTime.push_back(metrics.mDisplayedTime);
+            } else {
+                chain->mAppDisplayedTime.back() += metrics.mDisplayedTime;
+            }
+        }
+
+        if (displayed && displayIndex == appIndex) {
+            if (metrics.mAllInputPhotonLatency != 0) {
+                chain->mAllInputToPhotonLatency.push_back(metrics.mAllInputPhotonLatency);
+            }
+            if (metrics.mClickToPhotonLatency != 0) {
+                chain->mClickToPhotonLatency.push_back(metrics.mClickToPhotonLatency);
+            }
+        }
+
+        if (displayed && displayIndex == appIndex) {
+            if (metrics.mInstrumentedRenderLatency != 0) {
+                chain->mInstrumentedRenderLatency.push_back(metrics.mInstrumentedRenderLatency);
+            }
+            if (metrics.mInstrumentedDisplayLatency != 0) {
+                chain->mInstrumentedDisplayLatency.push_back(metrics.mInstrumentedDisplayLatency);
+            }
+            if (metrics.mInstrumentedReadyTimeToDisplayLatency != 0) {
+                chain->mInstrumentedReadyTimeToDisplayLatency.push_back(metrics.mInstrumentedReadyTimeToDisplayLatency);
+            }
+        }
+
+        displayIndex += 1;
+    } while (displayIndex < displayCount);
+
+    UpdateChain(chain, *p);
+}
+
+static void ReportMetrics(
+    FakePMTraceSession const& pmSession,
+    fpsSwapChainData* chain,
+    PmNsmPresentEvent* p)
+{
+    // For the chain's first present, we just initialize mLastPresent to give a baseline for the
+    // first frame.
+    if (!chain->mLastPresentIsValid) {
+        UpdateChain(chain, *p);
+        return;
+    }
+
+    // If chain->mPendingPresents is non-empty, then it contains a displayed present followed by
+    // some number of discarded presents.  If the displayed present has multiple Displayed entries,
+    // all but the last have already been handled.
+    //
+    // If p is displayed, then we can complete all pending presents, and complete any flips in p
+    // except for the last one, but then we have to add p to the pending list to wait for the next
+    // displayed frame.
+    //
+    // If p is not displayed, we can process it now unless it is blocked behind an earlier present
+    // waiting for the next displayed one, in which case we need to add it to the pending list as
+    // well.
+    if (p->FinalState == PresentResult::Presented) {
+        for (auto& p2 : chain->mPendingPresents) {
+            ReportMetricsHelper(pmSession, chain, &p2, p);
+        }
+        ReportMetricsHelper(pmSession, chain, p, nullptr);
+        chain->mPendingPresents.clear();
+        chain->mPendingPresents.push_back(*p);
     } else {
-        chain->mDropped       .push_back(1.0);
+        if (chain->mPendingPresents.empty()) {
+            ReportMetricsHelper(pmSession, chain, p, nullptr);
+        } else {
+            chain->mPendingPresents.push_back(*p);
+        }
     }
 }
 
@@ -733,24 +856,7 @@ void ReportMetrics(
 
                 // The following code block copied from: PresentMon/OutputThread.cpp
                 if (chain->mLastPresentIsValid) {
-                    auto numPendingPresents = chain->mPendingPresents.size();
-                    if (numPendingPresents > 0) {
-                        if (presentEvent->FinalState == PresentResult::Presented) {
-                            size_t i = 1;
-                            for ( ; i < numPendingPresents; ++i) {
-                                ReportMetrics(pmSession, chain, &chain->mPendingPresents[i - 1], &chain->mPendingPresents[i], presentEvent);
-                            }
-                            ReportMetrics(pmSession, chain, &chain->mPendingPresents[i - 1], presentEvent, presentEvent);
-                            chain->mPendingPresents.clear();
-                        } else {
-                            if (chain->mPendingPresents[0].FinalState != PresentResult::Presented) {
-                                ReportMetrics(pmSession, chain, &chain->mPendingPresents[0], presentEvent, nullptr);
-                                chain->mPendingPresents.clear();
-                            }
-                        }
-                    }
-
-                    chain->mPendingPresents.push_back(*presentEvent);
+                    ReportMetrics(pmSession, chain, presentEvent);
                 } else {
                     UpdateChain(chain, *presentEvent);
                 }
@@ -952,16 +1058,23 @@ void ReportMetrics(
             SetActiveGraphicsAdapter(*devId);
         }
 
-        // context transmits various data that applies to each gather command in the query
-        PM_FRAME_QUERY::Context ctx{ nsm_hdr->start_qpc, pShmClient->GetQpcFrequency().QuadPart };
+        uint64_t simStartTime = 0;
+        auto iter = appSimStartTime.find(processId);
+        if (iter != appSimStartTime.end()) {
+            simStartTime = iter->second;
+        }
 
-        for (uint32_t i = 0; i < frames_to_copy; i++) {
+        // context transmits various data that applies to each gather command in the query
+        PM_FRAME_QUERY::Context ctx{ nsm_hdr->start_qpc, pShmClient->GetQpcFrequency().QuadPart, simStartTime };
+
+        while (frames_copied < frames_to_copy) {
             const PmNsmFrameData* pCurrentFrameData = nullptr;
+            const PmNsmFrameData* pNextFrameData = nullptr;
             const PmNsmFrameData* pFrameDataOfLastPresented = nullptr;
             const PmNsmFrameData* pFrameDataOfNextDisplayed = nullptr;
             const PmNsmFrameData* pFrameDataOfLastDisplayed = nullptr;
             const PmNsmFrameData* pPreviousFrameDataOfLastDisplayed = nullptr;
-            const auto status = pShmClient->ConsumePtrToNextNsmFrameData(&pCurrentFrameData, 
+            const auto status = pShmClient->ConsumePtrToNextNsmFrameData(&pCurrentFrameData, &pNextFrameData,
                 &pFrameDataOfNextDisplayed, &pFrameDataOfLastPresented, &pFrameDataOfLastDisplayed, &pPreviousFrameDataOfLastDisplayed);
             if (status != PM_STATUS::PM_STATUS_SUCCESS) {
                 pmlog_error("Error while trying to get frame data from shared memory").diag();
@@ -976,14 +1089,35 @@ void ReportMetrics(
                     pFrameDataOfLastPresented,
                     pFrameDataOfLastDisplayed,
                     pPreviousFrameDataOfLastDisplayed);
-                pQuery->GatherToBlob(ctx, pBlob);
-                pBlob += pQuery->GetBlobSize();
-                frames_copied++;
-            }
 
+                if (simStartTime == 0 && ctx.firstAppSimStartTime != 0) {
+                    simStartTime = ctx.firstAppSimStartTime;
+                }
+
+                if (ctx.dropped) {
+                    pQuery->GatherToBlob(ctx, pBlob);
+                    pBlob += pQuery->GetBlobSize();
+                    frames_copied++;
+                } else {
+                    while (ctx.sourceFrameDisplayIndex < ctx.pSourceFrameData->present_event.DisplayedCount) {
+                        pQuery->GatherToBlob(ctx, pBlob);
+                        pBlob += pQuery->GetBlobSize();
+                        frames_copied++;
+                        ctx.sourceFrameDisplayIndex++;
+                    }
+                }
+            }
+            // Check to see if the next frame produces more frames than we can store in the
+            // the blob.
+            if (frames_copied + pNextFrameData->present_event.DisplayedCount >= frames_to_copy) {
+                break;
+            }
         }
         // Set to the actual number of frames copied
         numFrames = frames_copied;
+        if (simStartTime != 0) {
+            appSimStartTime[processId] = simStartTime;
+        }
     }
 
     void ConcreteMiddleware::CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
@@ -1011,7 +1145,7 @@ void ReportMetrics(
             reinterpret_cast<bool&>(pBlob[element.dataOffset]) = swapChain.mLastPresent.SupportsTearing;
             break;
         case PM_METRIC_FRAME_TYPE:
-            reinterpret_cast<PM_FRAME_TYPE&>(pBlob[element.dataOffset]) = (PM_FRAME_TYPE)swapChain.mLastPresent.FrameType;
+            reinterpret_cast<PM_FRAME_TYPE&>(pBlob[element.dataOffset]) = (PM_FRAME_TYPE)(swapChain.mLastPresent.DisplayedCount == 0 ? FrameType::NotSet : swapChain.mLastPresent.Displayed_FrameType[0]);
             break;
         case PM_METRIC_CPU_BUSY:
             output = CalculateStatistic(swapChain.mCPUBusy, element.stat);
@@ -1057,29 +1191,24 @@ void ReportMetrics(
             break;
         case PM_METRIC_PRESENTED_FPS:
         {
-            std::vector<double> presented_fps(swapChain.mCPUBusy.size());
+            std::vector<double> presented_fts(swapChain.mCPUBusy.size());
             for (size_t i = 0; i < swapChain.mCPUBusy.size(); ++i) {
-                presented_fps[i] = 1000.0 / (swapChain.mCPUBusy[i] + swapChain.mCPUWait[i]);
+                presented_fts[i] = swapChain.mCPUBusy[i] + swapChain.mCPUWait[i];
             }
-            output = CalculateStatistic(presented_fps, element.stat);
+            output = CalculateStatistic(presented_fts, element.stat, true);
+            output = output == 0 ? 0 : 1000.0 / output;
             break;
         }
         case PM_METRIC_APPLICATION_FPS:
         {
-            std::vector<double> application_fps(swapChain.mAppDisplayedTime.size());
-            for (size_t i = 0; i < swapChain.mAppDisplayedTime.size(); ++i) {
-                application_fps[i] = 1000.0 / swapChain.mAppDisplayedTime[i];
-            }
-            output = CalculateStatistic(application_fps, element.stat);
+            output = CalculateStatistic(swapChain.mAppDisplayedTime, element.stat, true);
+            output = output == 0 ? 0 : 1000.0 / output;
             break;
         }
         case PM_METRIC_DISPLAYED_FPS:
         {
-            std::vector<double> displayed_fps(swapChain.mDisplayedTime.size());
-            for (size_t i = 0; i < swapChain.mDisplayedTime.size(); ++i) {
-                displayed_fps[i] = 1000.0 / swapChain.mDisplayedTime[i];
-            }
-            output = CalculateStatistic(displayed_fps, element.stat);
+            output = CalculateStatistic(swapChain.mDisplayedTime, element.stat, true);
+            output = output == 0 ? 0 : 1000.0 / output;
             break;
         }
         case PM_METRIC_DROPPED_FRAMES:
@@ -1090,6 +1219,9 @@ void ReportMetrics(
             break;
         case PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY:
             output = CalculateStatistic(swapChain.mAllInputToPhotonLatency, element.stat);
+            break;
+        case PM_METRIC_INSTRUMENTED_LATENCY:
+            output = CalculateStatistic(swapChain.mInstrumentedDisplayLatency, element.stat);
             break;
         default:
             output = 0.;
@@ -1114,8 +1246,8 @@ void ReportMetrics(
         }
         return;
     }
-
-    double ConcreteMiddleware::CalculateStatistic(std::vector<double>& inData, PM_STAT stat) const
+    
+    double ConcreteMiddleware::CalculateStatistic(std::vector<double>& inData, PM_STAT stat, bool invert) const
     {
         if (inData.size() == 1) {
             return inData[0];
@@ -1133,17 +1265,21 @@ void ReportMetrics(
                 }
                 return sum / inData.size();
             }
-            case PM_STAT_PERCENTILE_99: return CalculatePercentile(inData, 0.99);
-            case PM_STAT_PERCENTILE_95: return CalculatePercentile(inData, 0.95);
-            case PM_STAT_PERCENTILE_90: return CalculatePercentile(inData, 0.90);
-            case PM_STAT_PERCENTILE_01: return CalculatePercentile(inData, 0.01);
-            case PM_STAT_PERCENTILE_05: return CalculatePercentile(inData, 0.05);
-            case PM_STAT_PERCENTILE_10: return CalculatePercentile(inData, 0.10);
+            case PM_STAT_PERCENTILE_99: return CalculatePercentile(inData, 0.99, invert);
+            case PM_STAT_PERCENTILE_95: return CalculatePercentile(inData, 0.95, invert);
+            case PM_STAT_PERCENTILE_90: return CalculatePercentile(inData, 0.90, invert);
+            case PM_STAT_PERCENTILE_01: return CalculatePercentile(inData, 0.01, invert);
+            case PM_STAT_PERCENTILE_05: return CalculatePercentile(inData, 0.05, invert);
+            case PM_STAT_PERCENTILE_10: return CalculatePercentile(inData, 0.10, invert);
             case PM_STAT_MAX:
             {
                 double max = inData[0];
                 for (size_t i = 1; i < inData.size(); ++i) {
-                    max = std::max(max, inData[i]);
+                    if (invert) {
+                        max = std::min(max, inData[i]);
+                    } else {
+                        max = std::max(max, inData[i]);
+                    }
                 }
                 return max;
             }
@@ -1151,7 +1287,12 @@ void ReportMetrics(
             {
                 double min = inData[0];
                 for (size_t i = 1; i < inData.size(); ++i) {
-                    min = std::min(min, inData[i]);
+                    if (invert) {
+                        min = std::max(min, inData[i]);
+                    }
+                    else {
+                        min = std::min(min, inData[i]);
+                    }
                 }
                 return min;
             }
@@ -1189,8 +1330,11 @@ void ReportMetrics(
     }
 
     // Calculate percentile using linear interpolation between the closet ranks
-    double ConcreteMiddleware::CalculatePercentile(std::vector<double>& inData, double percentile) const
+    double ConcreteMiddleware::CalculatePercentile(std::vector<double>& inData, double percentile, bool invert) const
     {
+        if (invert) {
+            percentile = 1.0 - percentile;
+        }
         percentile = std::min(std::max(percentile, 0.), 1.);
 
         double integral_part_as_double;
@@ -1589,6 +1733,7 @@ void ReportMetrics(
                 case PM_METRIC_DISPLAYED_TIME:
                 case PM_METRIC_ANIMATION_ERROR:
                 case PM_METRIC_APPLICATION:
+                case PM_METRIC_INSTRUMENTED_LATENCY:
                     CalculateFpsMetric(swapChain, qe, pBlob, qpcFrequency);
                     break;
                 case PM_METRIC_CPU_VENDOR:

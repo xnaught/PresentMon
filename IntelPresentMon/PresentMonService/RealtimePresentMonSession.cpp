@@ -130,6 +130,7 @@ PM_STATUS RealtimePresentMonSession::StartTraceSession() {
     pm_consumer_->mTrackGPUVideo = false;
     pm_consumer_->mTrackInput = true;
     pm_consumer_->mTrackFrameType = true;
+    pm_consumer_->mTrackAppTiming = true;
 
     auto& opt = clio::Options::Get();
     if (opt.etwSessionName.AsOptional().has_value()) {
@@ -231,7 +232,9 @@ void RealtimePresentMonSession::AddPresents(
             if (p->FinalState == PresentResult::Presented) {
                 const auto per = util::GetTimestampPeriodSeconds();
                 const auto now = util::GetCurrentTimestamp();
-                const auto lag = util::TimestampDeltaToSeconds(p->ScreenTime, now, per);
+                // TODO: Presents can now have multiple displayed frames if we are tracking
+                // frame types. For now take the first displayed frame for logging stats
+                const auto lag = util::TimestampDeltaToSeconds(p->Displayed[0].second, now, per);
                 pmlog_verb(svc::v::etwq)(std::format("Frame [{}] lag: {} ms", p->FrameId, lag * 1000.));
             }
         }
@@ -295,6 +298,23 @@ void RealtimePresentMonSession::AddPresents(
             chain->mLastDisplayedPresentQPC = 0;
         }
 
+        // Remove Repeated flips if they are in Application->Repeated or Repeated->Application sequences.
+        for (size_t i = 0, n = presentEvent->Displayed.size(); i + 1 < n; ) {
+            if (presentEvent->Displayed[i].first == FrameType::Application &&
+                presentEvent->Displayed[i + 1].first == FrameType::Repeated) {
+                presentEvent->Displayed.erase(presentEvent->Displayed.begin() + i + 1);
+                n -= 1;
+            }
+            else if (presentEvent->Displayed[i].first == FrameType::Repeated &&
+                presentEvent->Displayed[i + 1].first == FrameType::Application) {
+                presentEvent->Displayed.erase(presentEvent->Displayed.begin() + i);
+                n -= 1;
+            }
+            else {
+                i += 1;
+            }
+        }
+
         if (chain->mPresentHistoryCount > 0) {
             // Last producer and last consumer are internal fields
             // Remove for public build
@@ -308,7 +328,7 @@ void RealtimePresentMonSession::AddPresents(
 
         chain->mLastPresentQPC = presentEvent->PresentStartTime;
         if (presentEvent->FinalState == PresentResult::Presented) {
-            chain->mLastDisplayedPresentQPC = presentEvent->ScreenTime;
+            chain->mLastDisplayedPresentQPC = presentEvent->Displayed.empty() ? 0 : presentEvent->Displayed[0].second;
         }
         else if (chain->mLastDisplayedPresentQPC == chain->mLastPresentQPC) {
             chain->mLastDisplayedPresentQPC = 0;

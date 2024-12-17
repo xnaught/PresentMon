@@ -1,6 +1,6 @@
 #pragma once
 
-namespace pmon::util
+namespace pmon::bid
 {
 	const char* BuildIdShortHash() noexcept;
 	const char* BuildIdLongHash() noexcept;

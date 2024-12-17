@@ -34,10 +34,16 @@ const char* RuntimeToString(Runtime rt)
     }
 }
 
+// If frame type debug is necessary uncomment
+// the following line. If we want to have
+// this based on _DEBUG we will need to double
+// the number of ULT cases.
+// #define DEBUG_FRAME_TYPE
+
 const char* FrameTypeToString(FrameType ft)
 {
     switch (ft) {
-    #ifdef _DEBUG
+    #ifdef DEBUG_FRAME_TYPE
     case FrameType::NotSet:      return "NotSet";
     case FrameType::Repeated:    return "Repeated";
     #else
@@ -45,7 +51,8 @@ const char* FrameTypeToString(FrameType ft)
     case FrameType::Repeated:
     #endif
     case FrameType::Application: return "Application";
-    case FrameType::AMD_AFMF:    return "AMD_AFMF";
+    case FrameType::Intel_XEFG:  return "Intel XeSS-FG";
+    case FrameType::AMD_AFMF:    return "AMD AFMF";
     }
 
     return "Unknown";
@@ -239,11 +246,11 @@ void WriteCsvRow<FrameMetrics1>(
         break;
     }
     if (args.mWriteDisplayTime) {
-        if (p.ScreenTime == 0) {
+        if (metrics.qpcScreenTime == 0) {
             fwprintf(fp, L",NA");
         }
         else {
-            fwprintf(fp, L",%.*lf", DBL_DIG - 1, 0.001 * pmSession.TimestampToMilliSeconds(p.ScreenTime));
+            fwprintf(fp, L",%.*lf", DBL_DIG - 1, 0.001 * pmSession.TimestampToMilliSeconds(metrics.qpcScreenTime));
         }
     }
     if (args.mWriteFrameId) {
@@ -295,17 +302,24 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     if (args.mTrackDisplay) {
         fwprintf(fp, L",DisplayLatency"
                      L",DisplayedTime"
-                     L",AnimationError");
+                     L",AnimationError"
+                     L",AnimationTime");
     }
     if (args.mTrackInput) {
         fwprintf(fp, L",AllInputToPhotonLatency");
         fwprintf(fp, L",ClickToPhotonLatency");
+    }
+    if (args.mTrackAppTiming) {
+        fwprintf(fp, L",InstrumentedLatency");
     }
     if (args.mWriteDisplayTime) {
         fwprintf(fp, L",DisplayTimeAbs");
     }
     if (args.mWriteFrameId) {
         fwprintf(fp, L",FrameId");
+        if (args.mTrackAppTiming) {
+            fwprintf(fp, L",AppFrameId");
+        }
     }
     fwprintf(fp, L"\n");
 
@@ -335,7 +349,7 @@ void WriteCsvRow<FrameMetrics>(
                                  PresentModeToString(p.PresentMode));
     }
     if (args.mTrackFrameType) {
-        fwprintf(fp, L",%hs", FrameTypeToString(p.FrameType));
+        fwprintf(fp, L",%hs", FrameTypeToString(metrics.mFrameType));
     }
     switch (args.mTimeUnit) {
     case TimeUnit::MilliSeconds:
@@ -360,9 +374,11 @@ void WriteCsvRow<FrameMetrics>(
                                                        ns);
     }   break;
     }
+
     fwprintf(fp, L",%.4lf,%.4lf,%.4lf", metrics.mCPUBusy + metrics.mCPUWait,
-                                        metrics.mCPUBusy,
-                                        metrics.mCPUWait);
+        metrics.mCPUBusy,
+        metrics.mCPUWait);
+
     if (args.mTrackGPU) {
         fwprintf(fp, L",%.4lf,%.4lf,%.4lf,%.4lf", metrics.mGPULatency,
                                                   metrics.mGPUBusy + metrics.mGPUWait,
@@ -374,11 +390,12 @@ void WriteCsvRow<FrameMetrics>(
     }
     if (args.mTrackDisplay) {
         if (metrics.mDisplayedTime == 0.0) {
-            fwprintf(fp, L",NA,NA,NA");
+            fwprintf(fp, L",NA,NA,NA,NA");
         } else {
-            fwprintf(fp, L",%.4lf,%.4lf,%.4lf", metrics.mDisplayLatency,
-                                                metrics.mDisplayedTime,
-                                                metrics.mAnimationError);
+            fwprintf(fp, L",%.4lf,%.4lf,%.4lf,%.4lf", metrics.mDisplayLatency,
+                                                      metrics.mDisplayedTime,
+                                                      metrics.mAnimationError,
+                                                      metrics.mAnimationTime);
         }
     }
     if (args.mTrackInput) {
@@ -394,16 +411,29 @@ void WriteCsvRow<FrameMetrics>(
             fwprintf(fp, L",%.4lf", metrics.mClickToPhotonLatency);
         }
     }
-    if (args.mWriteDisplayTime) {
-        if (p.ScreenTime == 0) {
+    if (args.mTrackAppTiming) {
+        if (metrics.mInstrumentedLatency == 0.0) {
             fwprintf(fp, L",NA");
         }
         else {
-            fwprintf(fp, L",%.4lf", pmSession.TimestampToMilliSeconds(p.ScreenTime));
+            fwprintf(fp, L",%.4lf", metrics.mInstrumentedLatency);
+        }
+    }
+
+    if (args.mWriteDisplayTime) {
+        if (metrics.mScreenTime == 0) {
+            fwprintf(fp, L",NA");
+        }
+        else {
+            fwprintf(fp, L",%.4lf", pmSession.TimestampToMilliSeconds(metrics.mScreenTime));
         }
     }
     if (args.mWriteFrameId) {
         fwprintf(fp, L",%u", p.FrameId);
+        if (args.mTrackAppTiming) {
+            fwprintf(fp, L",%u", p.AppFrameId);
+        }
+        
     }
     fwprintf(fp, L"\n");
 

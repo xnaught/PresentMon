@@ -53,6 +53,12 @@ namespace pmon::mid
         std::vector<double> mClickToPhotonLatency;
 		std::vector<double> mAllInputToPhotonLatency;
         std::vector<double> mDropped;
+		std::vector<double> mInstrumentedDisplayLatency;
+
+		std::vector<double> mInstrumentedSleep;
+		std::vector<double> mInstrumentedRenderLatency;
+		std::vector<double> mInstrumentedGpuLatency;
+		std::vector<double> mInstrumentedReadyTimeToDisplayLatency;
 
 		// QPC of last received input data that did not make it to the screen due 
 		// to the Present() being dropped
@@ -60,9 +66,9 @@ namespace pmon::mid
 		uint64_t mLastReceivedNotDisplayedMouseClickTime;
 
         // begin/end screen times to optimize average calculation:
-		uint64_t display_n_screen_time = 0;       // The last presented frame's ScreenTime (qpc)
+		uint64_t mLastDisplayedScreenTime = 0;    // The last presented frame's ScreenTime (qpc)
 		uint64_t display_0_screen_time = 0;       // The first presented frame's ScreenTime (qpc)
-		uint64_t mLastDisplayedCPUStart = 0;      // The CPU start of the last presented frame
+		uint64_t mLastDisplayedSimStart = 0;      // The simulation start of the last presented frame
 		uint32_t display_count = 0;               // The number of presented frames
 	};
 
@@ -112,8 +118,8 @@ namespace pmon::mid
 
 		void CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency);
 		void CalculateGpuCpuMetric(std::unordered_map<PM_METRIC, MetricInfo>& metricInfo, const PM_QUERY_ELEMENT& element, uint8_t* pBlob);
-		double CalculateStatistic(std::vector<double>& inData, PM_STAT stat) const;
-		double CalculatePercentile(std::vector<double>& inData, double percentile) const;
+		double CalculateStatistic(std::vector<double>& inData, PM_STAT stat, bool invert = false) const;
+		double CalculatePercentile(std::vector<double>& inData, double percentile, bool invert) const;
 		bool GetGpuMetricData(size_t telemetry_item_bit, PresentMonPowerTelemetryInfo& power_telemetry_info, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo);
 		bool GetCpuMetricData(size_t telemetryBit, CpuTelemetryInfo& cpuTelemetry, std::unordered_map<PM_METRIC, MetricInfo>& metricInfo);
 		void GetStaticCpuMetrics();
@@ -132,6 +138,8 @@ namespace pmon::mid
 		uint32_t clientProcessId = 0;
 		// Stream clients mapping to process id
 		std::map<uint32_t, std::unique_ptr<StreamClient>> presentMonStreamClients;
+		// App sim start time for each process id
+		std::map<uint32_t, uint64_t> appSimStartTime;
 		std::unique_ptr<ipc::MiddlewareComms> pComms;
 		// Dynamic query handle to frame data delta
 		std::unordered_map<std::pair<const PM_DYNAMIC_QUERY*, uint32_t>, uint64_t> queryFrameDataDeltas;

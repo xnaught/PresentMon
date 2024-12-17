@@ -63,23 +63,37 @@ struct PmNsmPresentEvent
 	uint32_t ProcessId;         // ID of the process that presented
 	uint32_t ThreadId;          // ID of the thread that presented
 	uint64_t TimeInPresent;     // QPC duration between runtime present start and end
-	uint64_t GPUStartTime;  // QPC value when the frame's first DMA packet started
-	uint64_t ReadyTime;    // QPC value when the frame's last DMA packet completed
+	uint64_t GPUStartTime;		// QPC value when the frame's first DMA packet started
+	uint64_t ReadyTime;			// QPC value when the frame's last DMA packet completed
 
-	uint64_t GPUDuration;  // QPC duration during which a frame's DMA packet was
-	// running on any node
+	uint64_t GPUDuration;		// QPC duration during which a frame's DMA packet was
+								// running on any node
 	uint64_t
-		GPUVideoDuration;  // QPC duration during which a frame's DMA packet was
-	// running on a video node (if mTrackGPUVideo==true)
-	uint64_t ScreenTime;   // QPC value when the present was displayed on screen
-
+		GPUVideoDuration;		// QPC duration during which a frame's DMA packet was
+								// running on a video node (if mTrackGPUVideo==true)
 	uint64_t InputTime;			// Earliest QPC value for all keyboard/mouse input used by this frame
 	uint64_t MouseClickTime;	// Earliest QPC value when the mouse was clicked and used by this frame
+
+	uint64_t AppSleepStartTime;         // QPC value of app sleep start time provided by Intel App Provider
+	uint64_t AppSleepEndTime;           // QPC value of app sleep end time provided by Intel App Provider
+	uint64_t AppSimStartTime;           // QPC value of app sim start time provided by Intel App Provider
+	uint64_t AppSimEndTime;             // QPC value of app sim end time provided by Intel App Provider
+	uint64_t AppRenderSubmitStartTime;  // QPC value of app render submit start time provided by Intel App Provider
+	uint64_t AppRenderSubmitEndTime;    // QPC value of app render submit end time provided by Intel App Provider
+	uint64_t AppPresentStartTime;       // QPC value of app present start time provided by Intel App Provider
+	uint64_t AppPresentEndTime;         // QPC value of app present end time provided by Intel App Provider
+	uint64_t AppInputTime;              // QPC value of app input time provided by Intel App Provider
+	InputDeviceType AppInputType;		// Input type provided by Intel App Provider
 
 	// Extra present parameters obtained through DXGI or D3D9 present
 	uint64_t SwapChainAddress;
 	int32_t SyncInterval;
 	uint32_t PresentFlags;
+
+	// (FrameType, DisplayedQPC) for each time the frame was displayed
+	uint64_t Displayed_ScreenTime[16];
+	FrameType Displayed_FrameType[16];
+	uint32_t DisplayedCount;
 
 	// Keys used to index into PMTraceConsumer's tracking data structures:
 	uint64_t CompositionSurfaceLuid;   // mPresentByWin32KPresentHistoryToken

@@ -17,7 +17,6 @@ namespace EtlTests
 		switch (present_mode) {
 		case PM_PRESENT_MODE::PM_PRESENT_MODE_HARDWARE_LEGACY_FLIP:
 			return "Hardware: Legacy Flip";
-
 		case PM_PRESENT_MODE::PM_PRESENT_MODE_HARDWARE_LEGACY_COPY_TO_FRONT_BUFFER:
 			return "Hardware: Legacy Copy to front buffer";
 		case PM_PRESENT_MODE::PM_PRESENT_MODE_HARDWARE_INDEPENDENT_FLIP:
@@ -31,7 +30,7 @@ namespace EtlTests
 		case PM_PRESENT_MODE::PM_PRESENT_MODE_COMPOSED_COPY_WITH_CPU_GDI:
 			return "Composed: Copy with CPU GDI";
 		default:
-			return("Present Mode: Unknown");
+			return("Other");
 		}
 	}
 
@@ -138,7 +137,7 @@ namespace EtlTests
 		const uint32_t& processId, const std::string& processName, CsvParser& goldCsvFile) {
 		using namespace std::chrono_literals;
 		pmapi::ProcessTracker processTracker;
-		static constexpr uint32_t numberOfBlobs = 150u;
+		static constexpr uint32_t numberOfBlobs = 4000u;
 
 		PM_QUERY_ELEMENT queryElements[]{
 			//{ PM_METRIC_APPLICATION, PM_STAT_NONE, 0, 0 },
@@ -148,6 +147,7 @@ namespace EtlTests
 			{ PM_METRIC_PRESENT_FLAGS, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_ALLOWS_TEARING, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_PRESENT_MODE, PM_STAT_NONE, 0, 0 },
+			{ PM_METRIC_FRAME_TYPE, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_CPU_START_QPC, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_CPU_FRAME_TIME, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_CPU_BUSY, PM_STAT_NONE, 0, 0 },
@@ -159,8 +159,10 @@ namespace EtlTests
 			{ PM_METRIC_DISPLAY_LATENCY, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_DISPLAYED_TIME, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_ANIMATION_ERROR, PM_STAT_NONE, 0, 0 },
+			{ PM_METRIC_ANIMATION_TIME, PM_STAT_NONE, 0, 0 },
 			{ PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY, PM_STAT_NONE, 0, 0},
-			{ PM_METRIC_CLICK_TO_PHOTON_LATENCY, PM_STAT_NONE, 0, 0}
+			{ PM_METRIC_CLICK_TO_PHOTON_LATENCY, PM_STAT_NONE, 0, 0},
+			{ PM_METRIC_INSTRUMENTED_LATENCY, PM_STAT_NONE, 0, 0 }
 		};
 
 		auto frameQuery = pSession->RegisterFrameQuery(queryElements);
@@ -1632,6 +1634,150 @@ namespace EtlTests
 
 			oChild.emplace("PresentMonService.exe"s,
 				"--timed-stop"s, "10000"s,
+				"--control-pipe"s, pipeName,
+				"--nsm-prefix"s, "pmon_nsm_utest_"s,
+				"--intro-nsm"s, introName,
+				"--etl-test-file"s, etlName,
+				bp::std_out > out, bp::std_in < in);
+
+			std::this_thread::sleep_for(1000ms);
+
+			std::unique_ptr<pmapi::Session> pSession;
+			{
+				try
+				{
+					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+				}
+				catch (const std::exception& e) {
+					std::cout << "Error: " << e.what() << std::endl;
+					Assert::AreEqual(false, true, L"*** Connecting to service via named pipe");
+					return;
+				}
+			}
+
+			RunTestCaseV2(std::move(pSession), processId, processName, goldCsvFile);
+			goldCsvFile.Close();
+		}
+		TEST_METHOD(Tc6v2CPXellOn10796Ext)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+			using namespace std::chrono_literals;
+
+			const uint32_t processId = 10796;
+			const std::string processName = "cpLauncher.exe";
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
+			const auto introName = "PM_intro_test_nsm_2"s;
+			const auto etlName = "F:\\EtlTesting\\test_case_6.etl";
+			const auto goldCsvName = L"F:\\EtlTesting\\test_case_6.csv";
+
+			CsvParser goldCsvFile;
+			if (!goldCsvFile.Open(goldCsvName, processId)) {
+				return;
+			}
+
+			oChild.emplace("PresentMonService.exe"s,
+				"--timed-stop"s, "60000"s,
+				"--control-pipe"s, pipeName,
+				"--nsm-prefix"s, "pmon_nsm_utest_"s,
+				"--intro-nsm"s, introName,
+				"--etl-test-file"s, etlName,
+				bp::std_out > out, bp::std_in < in);
+
+			std::this_thread::sleep_for(1000ms);
+
+			std::unique_ptr<pmapi::Session> pSession;
+			{
+				try
+				{
+					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+				}
+				catch (const std::exception& e) {
+					std::cout << "Error: " << e.what() << std::endl;
+					Assert::AreEqual(false, true, L"*** Connecting to service via named pipe");
+					return;
+				}
+			}
+
+			RunTestCaseV2(std::move(pSession), processId, processName, goldCsvFile);
+			goldCsvFile.Close();
+		}
+		TEST_METHOD(Tc7v2CPXellOnFgOn11320Ext)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+			using namespace std::chrono_literals;
+
+			const uint32_t processId = 11320;
+			const std::string processName = "cpLauncher.exe";
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
+			const auto introName = "PM_intro_test_nsm_2"s;
+			const auto etlName = "F:\\EtlTesting\\test_case_7.etl";
+			const auto goldCsvName = L"F:\\EtlTesting\\test_case_7.csv";
+
+			CsvParser goldCsvFile;
+			if (!goldCsvFile.Open(goldCsvName, processId)) {
+				return;
+			}
+
+			oChild.emplace("PresentMonService.exe"s,
+				"--timed-stop"s, "60000"s,
+				"--control-pipe"s, pipeName,
+				"--nsm-prefix"s, "pmon_nsm_utest_"s,
+				"--intro-nsm"s, introName,
+				"--etl-test-file"s, etlName,
+				bp::std_out > out, bp::std_in < in);
+
+			std::this_thread::sleep_for(1000ms);
+
+			std::unique_ptr<pmapi::Session> pSession;
+			{
+				try
+				{
+					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+				}
+				catch (const std::exception& e) {
+					std::cout << "Error: " << e.what() << std::endl;
+					Assert::AreEqual(false, true, L"*** Connecting to service via named pipe");
+					return;
+				}
+			}
+
+			RunTestCaseV2(std::move(pSession), processId, processName, goldCsvFile);
+			goldCsvFile.Close();
+		}
+		TEST_METHOD(Tc8v2ACSXellOnFgOn6920Ext)
+		{
+			namespace bp = boost::process;
+			using namespace std::string_literals;
+			using namespace std::chrono_literals;
+
+			const uint32_t processId = 6920;
+			const std::string processName = "scimitar_engine_win64_vs2022_llvm_fusion_dx12_px.exe";
+
+			bp::ipstream out; // Stream for reading the process's output
+			bp::opstream in;  // Stream for writing to the process's input
+
+			const auto pipeName = R"(\\.\pipe\test-pipe-pmsvc-2)"s;
+			const auto introName = "PM_intro_test_nsm_2"s;
+			const auto etlName = "F:\\EtlTesting\\test_case_7.etl";
+			const auto goldCsvName = L"F:\\EtlTesting\\test_case_7.csv";
+
+			CsvParser goldCsvFile;
+			if (!goldCsvFile.Open(goldCsvName, processId)) {
+				return;
+			}
+
+			oChild.emplace("PresentMonService.exe"s,
+				"--timed-stop"s, "60000"s,
 				"--control-pipe"s, pipeName,
 				"--nsm-prefix"s, "pmon_nsm_utest_"s,
 				"--intro-nsm"s, introName,

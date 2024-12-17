@@ -155,29 +155,33 @@ PM_STATUS StreamClient::RecordFrame(PM_FRAME_DATA** out_frame_data) {
   }
 }
 
-const PmNsmFrameData* StreamClient::PeekNextDisplayedFrame()
+void StreamClient::PeekNextFrames(const PmNsmFrameData** pNextFrame,
+                                  const PmNsmFrameData** pNextDisplayedFrame)
 {
-    uint64_t peekIndex = next_dequeue_idx_;
+    *pNextFrame          = nullptr;
+    *pNextDisplayedFrame = nullptr;
     if (recording_frame_data_) {
         auto nsm_view = GetNamedSharedMemView();
         auto nsm_hdr = nsm_view->GetHeader();
         if (!nsm_hdr->process_active) {
             // Service destroyed the named shared memory.
-            return nullptr;
+            return;
         }
 
-        const PmNsmFrameData* pNsmData = nullptr;
-        pNsmData = ReadFrameByIdx(peekIndex);
-        while (pNsmData) {
-            if (pNsmData->present_event.ScreenTime != 0) {
-                return pNsmData;
+        uint64_t peekIndex{ next_dequeue_idx_ };
+        auto pTempFrameData = ReadFrameByIdx(peekIndex);
+        *pNextFrame = pTempFrameData;
+        while (pTempFrameData) {
+            if (pTempFrameData->present_event.DisplayedCount != 0) {
+                *pNextDisplayedFrame = pTempFrameData;
+                return;
             }
             // advance to next frame with circular buffer wrapping behavior
             peekIndex = (peekIndex + 1) % nsm_view->GetHeader()->max_entries;
-            pNsmData = ReadFrameByIdx(peekIndex);
+            pTempFrameData = ReadFrameByIdx(peekIndex);
         }
     }
-    return nullptr;
+    return;
 }
 
 void StreamClient::PeekPreviousFrames(const PmNsmFrameData** pFrameDataOfLastPresented,
@@ -254,6 +258,7 @@ void StreamClient::PeekPreviousFrames(const PmNsmFrameData** pFrameDataOfLastPre
 }
 
 PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData,
+                                                     const PmNsmFrameData** pNextFrame,
                                                      const PmNsmFrameData** pFrameDataOfNextDisplayed,
                                                      const PmNsmFrameData** pFrameDataOfLastPresented,
                                                      const PmNsmFrameData** pFrameDataOfLastDisplayed,
@@ -318,6 +323,7 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
     // Set the rest of the incoming frame pointers in
     // preparation for the various frame data peeks and
     // reads
+    *pNextFrame                        = nullptr;
     *pFrameDataOfNextDisplayed         = nullptr;
     *pFrameDataOfLastPresented         = nullptr;
     *pFrameDataOfLastDisplayed         = nullptr;
@@ -334,13 +340,14 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         // the frame to be incremented. Can change this when done debugging so we don't have to
         // reset the dequeue index.
         next_dequeue_idx_ = (next_dequeue_idx_ + 1) % nsm_hdr->max_entries;
-        *pFrameDataOfNextDisplayed = PeekNextDisplayedFrame();
+        PeekNextFrames(pNextFrame, pFrameDataOfNextDisplayed);
         if (*pFrameDataOfNextDisplayed == nullptr) {
             // We were unable to get the next displayed frame. It might not have been displayed
             // yet. Reset the next_dequeue_idx back to where we first started.
             next_dequeue_idx_ = previous_dequeue_idx;
-            // Also reset the current frame data pointer
+            // Also reset the current and next frame data pointers
             *pNsmData = nullptr;
+            *pNextFrame = nullptr;
             return PM_STATUS::PM_STATUS_SUCCESS;
         }
         PeekPreviousFrames(pFrameDataOfLastPresented, pFrameDataOfLastDisplayed, pPreviousFrameDataOfLastDisplayed);
@@ -380,11 +387,11 @@ void StreamClient::CopyFrameData(uint64_t start_qpc,
     // displayed frame. 
     if (src_frame->present_event.last_displayed_qpc > 0) {
       dst_frame->ms_between_display_change =
-          QpcDeltaToMs(src_frame->present_event.ScreenTime -
+          QpcDeltaToMs(src_frame->present_event.Displayed_ScreenTime[0] -
                            src_frame->present_event.last_displayed_qpc,
                        GetQpcFrequency());
     }
-    dst_frame->ms_until_displayed = QpcDeltaToMs(src_frame->present_event.ScreenTime -
+    dst_frame->ms_until_displayed = QpcDeltaToMs(src_frame->present_event.Displayed_ScreenTime[0] -
                          src_frame->present_event.PresentStartTime,
         GetQpcFrequency());
   } else {

@@ -78,13 +78,29 @@ void Streamer::CopyFromPresentMonPresentEvent(
     nsm_present_event->TimeInPresent = present_event->TimeInPresent;
     nsm_present_event->GPUStartTime = present_event->GPUStartTime;
     nsm_present_event->ReadyTime = present_event->ReadyTime;
-    nsm_present_event->ScreenTime = present_event->ScreenTime;
     nsm_present_event->InputTime = present_event->InputTime;
     nsm_present_event->MouseClickTime = present_event->MouseClickTime;
+
+    nsm_present_event->AppSleepStartTime = present_event->AppSleepStartTime;
+    nsm_present_event->AppSleepEndTime = present_event->AppSleepEndTime;
+    nsm_present_event->AppSimStartTime = present_event->AppSimStartTime;
+    nsm_present_event->AppSimEndTime = present_event->AppSimEndTime;
+    nsm_present_event->AppRenderSubmitStartTime = present_event->AppRenderSubmitStartTime;
+    nsm_present_event->AppRenderSubmitEndTime = present_event->AppRenderSubmitEndTime;
+    nsm_present_event->AppPresentStartTime = present_event->AppPresentStartTime;
+    nsm_present_event->AppPresentEndTime = present_event->AppPresentEndTime;
+    nsm_present_event->AppInputTime = present_event->AppInputSample.first;
+    nsm_present_event->AppInputType = present_event->AppInputSample.second;
 
     nsm_present_event->SwapChainAddress = present_event->SwapChainAddress;
     nsm_present_event->SyncInterval = present_event->SyncInterval;
     nsm_present_event->PresentFlags = present_event->PresentFlags;
+
+    nsm_present_event->DisplayedCount = (uint32_t) min(present_event->Displayed.size(), _countof(nsm_present_event->Displayed_ScreenTime));
+    for (uint32_t i = 0; i < nsm_present_event->DisplayedCount; ++i) {
+        nsm_present_event->Displayed_ScreenTime[i] = present_event->Displayed[i].second;
+        nsm_present_event->Displayed_FrameType[i] = present_event->Displayed[i].first;
+    }
 
     nsm_present_event->CompositionSurfaceLuid =
         present_event->CompositionSurfaceLuid;
@@ -110,7 +126,6 @@ void Streamer::CopyFromPresentMonPresentEvent(
     nsm_present_event->PresentMode = present_event->PresentMode;
     nsm_present_event->FinalState = present_event->FinalState;
     nsm_present_event->InputType = present_event->InputType;
-    nsm_present_event->FrameType = present_event->FrameType;
 
     nsm_present_event->SupportsTearing = present_event->SupportsTearing;
     nsm_present_event->WaitForFlipEvent = present_event->WaitForFlipEvent;
@@ -186,6 +201,10 @@ void Streamer::ProcessPresentEvent(
     }
 
     PmNsmFrameData data = {};
+    if (present_event->PresentStartTime == 2694939860393)
+    {
+        auto i = 20;
+    }
     // Copy the passed in PresentEvent data into the PmNsmFrameData
     // structure.
     CopyFromPresentMonPresentEvent(present_event, &data.present_event);

@@ -11,49 +11,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ActionClient.h" />
-    <ClInclude Include="ConcreteMiddleware.h" />
-    <ClInclude Include="DynamicQuery.h" />
-    <ClInclude Include="FrameEventQuery.h" />
-    <ClInclude Include="LogSetup.h" />
-    <ClInclude Include="Middleware.h" />
-    <ClInclude Include="MockCommon.h" />
-    <ClInclude Include="MockMiddleware.h" />
+    <ClInclude Include="BuildId.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ConcreteMiddleware.cpp" />
-    <ClCompile Include="FrameEventQuery.cpp" />
-    <ClCompile Include="LogSetup.cpp" />
-    <ClCompile Include="MockMiddleware.cpp" />
+    <ClCompile Include="BuildId.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">
-      <Project>{08a704d8-ca1c-45e9-8ede-542a1a43b53e}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Interprocess\Interprocess.vcxproj">
-      <Project>{ca23d648-daef-4f06-81d5-fe619bd31f0b}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\PresentMonAPIWrapperCommon\PresentMonAPIWrapperCommon.vcxproj">
-      <Project>{2b343210-86ab-4153-9a6c-945e4af54c7c}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\PresentMonService\PresentMonService.vcxproj">
-      <Project>{3a848e5b-a376-4a22-bbac-e9b3c01bd385}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\PresentMonUtils\PresentMonUtils.vcxproj">
-      <Project>{66e9f6c5-28db-4218-81b9-31e0e146ecc0}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Streamer\Streamer.vcxproj">
-      <Project>{bf43064b-01f0-4c69-91fb-c2122baf621d}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\Versioning\Versioning.vcxproj">
-      <Project>{c73aa532-e532-4d93-9279-905444653c08}</Project>
-    </ProjectReference>
+    <None Include="generated\.gitignore" />
+    <None Include="scripts\pre-build.bat" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{34b60aac-4646-4aa8-a267-9a5dd7c097d5}</ProjectGuid>
-    <RootNamespace>PresentMonMiddleware</RootNamespace>
+    <ProjectGuid>{c73aa532-e532-4d93-9279-905444653c08}</ProjectGuid>
+    <RootNamespace>Versioning</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -77,39 +48,46 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\vcpkg.props" />
+    <Import Project="..\Common.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\vcpkg.props" />
+    <Import Project="..\Common.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>..\..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</OutDir>
-    <IntDir>..\..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
+    <CustomBuildBeforeTargets>BuildGenerateSources</CustomBuildBeforeTargets>
+    <CustomBuildAfterTargets>BuildGenerateSources</CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>..\..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</OutDir>
-    <IntDir>..\..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
+    <CustomBuildBeforeTargets>BuildGenerateSources</CustomBuildBeforeTargets>
+    <CustomBuildAfterTargets>BuildGenerateSources</CustomBuildAfterTargets>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnabled>false</VcpkgEnabled>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;_CRTDBG_MAP_ALLOC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalOptions>/we4062 %(AdditionalOptions)</AdditionalOptions>
-      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>
       </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <CustomBuildStep>
+      <Command>scripts\pre-build.bat</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Generating Build IDs</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>force-run-nonexist.fake</Outputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -119,12 +97,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalOptions>/we4062 %(AdditionalOptions)</AdditionalOptions>
-      <ExceptionHandling>Async</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -133,6 +106,15 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <CustomBuildStep>
+      <Command>scripts\pre-build.bat</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Generating Build IDs</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>force-run-nonexist.fake</Outputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

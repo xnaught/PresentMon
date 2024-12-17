@@ -73,6 +73,8 @@ struct CommandLineArgs {
     bool mTrackGPU;
     bool mTrackGPUVideo;
     bool mTrackFrameType;
+    bool mTrackPMMeasurements;
+    bool mTrackAppTiming;
     bool mScrollLockIndicator;
     bool mExcludeDropped;
     bool mTerminateExistingSession;
@@ -101,8 +103,19 @@ struct FrameMetrics {
     double mDisplayLatency;
     double mDisplayedTime;
     double mAnimationError;
+    double mAnimationTime;
     double mClickToPhotonLatency;
     double mAllInputPhotonLatency;
+    uint64_t mScreenTime;
+    FrameType mFrameType;
+    double mInstrumentedLatency;
+
+    // Internal Intel Metrics
+    double mInstrumentedRenderLatency;
+    double mInstrumentedSleep;
+    double mInstrumentedGpuLatency;
+    double mReadyTimeToDisplayLatency;
+    double mInstrumentedInputTime;
 };
 
 struct FrameMetrics1 {
@@ -115,6 +128,7 @@ struct FrameMetrics1 {
     double msGPUDuration;
     double msVideoDuration;
     double msSinceInput;
+    uint64_t qpcScreenTime;
 };
 
 // We store SwapChainData per process and per swapchain, where we maintain:
@@ -131,16 +145,16 @@ struct SwapChainData {
     std::shared_ptr<PresentEvent> mLastPresent;
 
     // The CPU start and screen time for the most recent frame that was displayed
-    uint64_t mLastDisplayedCPUStart = 0;
+    uint64_t mLastDisplayedSimStartTime = 0;
     uint64_t mLastDisplayedScreenTime = 0;
+    // QPC of first received simulation start time from the application provider
+    uint64_t mFirstAppSimStartTime = 0;
 
     // QPC of last received input data that did not make it to the screen due 
     // to the Present() being dropped
     uint64_t mLastReceivedNotDisplayedAllInputTime;
     uint64_t mLastReceivedNotDisplayedMouseClickTime;
-
-    // Whether to include frame data in the next PresentEvent's FrameMetrics.
-    bool mIncludeFrameData = true;
+    uint64_t mLastReceivedNotDisplayedAppProviderInputTime;
 
     // Frame statistics
     float mAvgCPUDuration = 0.f;

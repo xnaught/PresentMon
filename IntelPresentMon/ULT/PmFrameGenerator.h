@@ -207,7 +207,7 @@ class PmFrameGenerator {
     std::vector<double> frame_times_ms;
     std::vector<double> gpu_sum_ms;
     std::vector<double> dropped;
-    double display_n_screen_time = 0.;
+    double mLastDisplayedScreenTime = 0.;
     double display_0_screen_time = 0.;
     double cpu_n_time = 0.;
     double cpu_0_time = 0.;

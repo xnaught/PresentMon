@@ -41,5 +41,3 @@ PresentData/PresentData.args.json
 IntelPresentMon/SampleClient/log.txt
 
 IntelPresentMon/PresentMonAPI2/Internal.h
-
-IntelPresentMon/CommonUtilities/git_hash.h

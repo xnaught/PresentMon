@@ -1,7 +1,10 @@
 // Copyright (C) 2017-2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif // WIN32_LEAN_AND_MEAN
+
 #include <windows.h>
 
 #include <assert.h>
@@ -17,17 +20,41 @@ namespace {
 static GUID const ProviderGUID = { 0xecaa4712, 0x4644, 0x442f, { 0xb9, 0x4c, 0xa3, 0x2f, 0x6c, 0xf8, 0xa4, 0x99 }};
 
 enum {
-    ID_PresentFrameType = 1,
-    ID_FlipFrameType    = 2,
+    ID_PresentFrameType         = 1,
+    ID_FlipFrameType            = 2,
+    ID_MeasuredInput            = 10,
+    ID_MeasuredScreenChange     = 11,
+    ID_AppSleepStart            = 50,
+    ID_AppSleepEnd              = 51,
+    ID_AppSimulationStart       = 52,
+    ID_AppSimulationEnd         = 53,
+    ID_AppRenderSubmitStart     = 54,
+    ID_AppRenderSubmitEnd       = 55,
+    ID_AppPresentStart          = 56,
+    ID_AppPresentEnd            = 57,
+    ID_AppInputSample           = 58,
 };
 
 enum {
-    Keyword_FrameTypes = 1 << 0,
+    Keyword_FrameTypes      = 1 << 0,
+    Keyword_Measurements    = 1 << 1,
+    Keyword_Application     = 1 << 5,
 };
 
 enum Event {
     Event_PresentFrameType,
     Event_FlipFrameType,
+    Event_MeasuredInput,
+    Event_MeasuredScreenChange,
+    Event_AppSleepStart,
+    Event_AppSleepEnd,
+    Event_AppSimulationStart,
+    Event_AppSimulationEnd,
+    Event_AppRenderSubmitStart,
+    Event_AppRenderSubmitEnd,
+    Event_AppPresentStart,
+    Event_AppPresentEnd,
+    Event_AppInputSample,
     Event_Count
 };
 
@@ -35,8 +62,19 @@ enum Event {
 // and would need to be updated if you extend this to use other levels.
 static EVENT_DESCRIPTOR const EventDescriptor[] = {
     // ID, Version, Channel, Level, Opcode, Task, Keyword
-    { ID_PresentFrameType, 0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_PresentFrameType, Keyword_FrameTypes },
-    { ID_FlipFrameType,    0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_FlipFrameType,    Keyword_FrameTypes },
+    { ID_PresentFrameType,       0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_PresentFrameType,       Keyword_FrameTypes },
+    { ID_FlipFrameType,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_FlipFrameType,          Keyword_FrameTypes },
+    { ID_MeasuredInput,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_MeasuredInput,          Keyword_Measurements },
+    { ID_MeasuredScreenChange,   0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_MeasuredScreenChange,   Keyword_Measurements },
+    { ID_AppSleepStart,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSleepStart,          Keyword_Application },
+    { ID_AppSleepEnd,            0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSleepEnd,            Keyword_Application },
+    { ID_AppSimulationStart,     0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSimulationStart,     Keyword_Application },
+    { ID_AppSimulationEnd,       0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppSimulationEnd,       Keyword_Application },
+    { ID_AppRenderSubmitStart,   0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppRenderSubmitStart,   Keyword_Application },
+    { ID_AppRenderSubmitEnd,     0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppRenderSubmitEnd,     Keyword_Application },
+    { ID_AppPresentStart,        0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppPresentStart,        Keyword_Application },
+    { ID_AppPresentEnd,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppPresentEnd,          Keyword_Application },
+    { ID_AppInputSample,         0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_AppInputSample,         Keyword_Application },
 };
 
 static_assert(Event_Count == _countof(EventDescriptor), "Event enum and EventDescriptor size mismatch");
@@ -143,9 +181,16 @@ bool IsValid(
     return frameType == PresentMonProvider_FrameType_Unspecified ||
            frameType == PresentMonProvider_FrameType_Original ||
            frameType == PresentMonProvider_FrameType_Repeated ||
+           frameType == PresentMonProvider_FrameType_Intel_XEFG ||
            frameType == PresentMonProvider_FrameType_AMD_AFMF;
 }
 
+bool IsValid(
+    PresentMonProvider_InputType inputType)
+{
+    return (inputType & ~(PresentMonProvider_Input_MouseClick |
+        PresentMonProvider_Input_KeyboardClick)) == 0;
+}
 }
 
 PresentMonProvider* PresentMonProvider_Initialize()
@@ -229,3 +274,106 @@ ULONG PresentMonProvider_FlipFrameType(
                                                  (uint8_t) frameType);
 }
 
+ULONG PresentMonProvider_MeasuredInput(
+    PresentMonProvider* ctxt,
+    PresentMonProvider_InputType inputType,
+    uint64_t inputQPCTime)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+    PRESENTMONPROVIDER_ASSERT(IsValid(inputType));
+
+    return WriteEvent(ctxt, Event_MeasuredInput, inputQPCTime,
+                                                 (uint8_t) inputType);
+}
+
+ULONG PresentMonProvider_MeasuredScreenChange(
+    PresentMonProvider* ctxt,
+    uint64_t screenQPCTime)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_MeasuredScreenChange, screenQPCTime);
+}
+
+ULONG PresentMonProvider_Application_SleepStart(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppSleepStart, frame_id);
+}
+
+ULONG PresentMonProvider_Application_SleepEnd(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppSleepEnd, frame_id);
+}
+
+ULONG PresentMonProvider_Application_SimulationStart(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppSimulationStart, frame_id);
+}
+
+ULONG PresentMonProvider_Application_SimulationEnd(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppSimulationEnd, frame_id);
+}
+
+ULONG PresentMonProvider_Application_RenderSubmitStart(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppRenderSubmitStart, frame_id);
+}
+
+ULONG PresentMonProvider_Application_RenderSubmitEnd(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppRenderSubmitEnd, frame_id);
+}
+
+ULONG PresentMonProvider_Application_PresentStart(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppPresentStart, frame_id);
+}
+
+ULONG PresentMonProvider_Application_PresentEnd(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+
+    return WriteEvent(ctxt, Event_AppPresentEnd, frame_id);
+}
+
+ULONG PresentMonProvider_Application_InputSample(
+    PresentMonProvider* ctxt,
+    uint32_t frame_id,
+    PresentMonProvider_InputType inputType)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+    PRESENTMONPROVIDER_ASSERT(IsValid(inputType));
+
+    return WriteEvent(ctxt, Event_AppInputSample, frame_id, inputType);
+}

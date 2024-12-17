@@ -19,7 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BuildId.h" />
     <ClInclude Include="cli\CliFramework.h" />
     <ClInclude Include="Exception.h" />
     <ClInclude Include="IntervalWaiter.h" />
@@ -92,7 +91,6 @@
     <ClInclude Include="pipe\WrapAsio.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BuildId.cpp" />
     <ClCompile Include="cli\CliFramework.cpp" />
     <ClCompile Include="Exception.cpp" />
     <ClCompile Include="IntervalWaiter.cpp" />
@@ -137,8 +135,6 @@
     <ClCompile Include="win\Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="build-scripts\pre-build.bat" />
-    <None Include="generated\.gitignore" />
     <None Include="vcpkg.json" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -271,10 +267,7 @@
       </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
-    <PreBuildEvent>
-      <Command>build-scripts\pre-build.bat</Command>
-      <Message>Generating build ID</Message>
-    </PreBuildEvent>
+    <PreBuildEvent />
     <CustomBuildStep>
       <Command>
       </Command>
@@ -304,10 +297,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
-    <PreBuildEvent>
-      <Command>build-scripts\pre-build.bat</Command>
-      <Message>Generating build ID</Message>
-    </PreBuildEvent>
+    <PreBuildEvent />
     <CustomBuildStep>
       <Command>
       </Command>

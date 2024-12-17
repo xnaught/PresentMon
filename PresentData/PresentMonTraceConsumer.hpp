@@ -123,6 +123,7 @@ enum class FrameType {
     Unspecified = 1,
     Application = 2,
     Repeated = 3,
+    Intel_XEFG = 50,
     AMD_AFMF = 100,
 };
 
@@ -153,6 +154,19 @@ struct FlipFrameTypeEvent {
     FrameType FrameType;
 };
 
+struct AppTimingData {
+    uint32_t AppProcessId = 0;
+    uint64_t AppSleepStartTime = 0;
+    uint64_t AppSleepEndTime = 0;
+    uint64_t AppSimStartTime = 0;
+    uint64_t AppSimEndTime = 0;
+    uint64_t AppRenderSubmitStartTime = 0;
+    uint64_t AppRenderSubmitEndTime = 0;
+    uint64_t AppPresentStartTime = 0;
+    uint64_t AppPresentEndTime = 0;
+    std::pair<uint64_t, InputDeviceType> AppInputSample = { 0, InputDeviceType::None };
+};
+
 // A ProcessEvent occurs whenever a Process starts or stops.
 struct ProcessEvent {
     std::wstring ImageFileName; // The name of the process exe file.  This is only available on process start events.
@@ -171,14 +185,27 @@ struct PresentEvent {
     uint64_t GPUDuration;       // QPC duration during which a frame's DMA packet was running on
                                 // ... any node (if mTrackGPUVideo==false) or non-video nodes (if mTrackGPUVideo==true)
     uint64_t GPUVideoDuration;  // QPC duration during which a frame's DMA packet was running on a video node (if mTrackGPUVideo==true)
-    uint64_t ScreenTime;        // QPC value when the present was displayed on screen
     uint64_t InputTime;         // Earliest QPC value when the keyboard/mouse were tapped/moved and used by this frame
     uint64_t MouseClickTime;    // Earliest QPC value when the mouse was clicked and used by this frame
+
+    uint32_t AppFrameId;
+    uint64_t AppSleepStartTime;         // QPC value of app sleep start time provided by Intel App Provider
+    uint64_t AppSleepEndTime;           // QPC value of app sleep end time provided by Intel App Provider
+    uint64_t AppSimStartTime;           // QPC value of app sim start time provided by Intel App Provider
+    uint64_t AppSimEndTime;             // QPC value of app sim end time provided by Intel App Provider
+    uint64_t AppRenderSubmitStartTime;  // QPC value of app render submit start time provided by Intel App Provider
+    uint64_t AppRenderSubmitEndTime;    // QPC value of app render submit end time provided by Intel App Provider
+    uint64_t AppPresentStartTime;       // QPC value of app present start time provided by Intel App Provider
+    uint64_t AppPresentEndTime;         // QPC value of app present end time provided by Intel App Provider
+    std::pair<uint64_t, InputDeviceType> AppInputSample;    // QPC value of app input data provided by Intel App Provider
 
     // Extra present parameters obtained through DXGI or D3D9 present
     uint64_t SwapChainAddress;
     int32_t SyncInterval;
     uint32_t PresentFlags;
+
+    // (FrameType, DisplayedQPC) for each time the frame was displayed
+    std::vector<std::pair<FrameType, uint64_t>> Displayed;
 
     // Keys used to index into PMTraceConsumer's tracking data structures:
     uint64_t CompositionSurfaceLuid;      // mPresentByWin32KPresentHistoryToken
@@ -211,7 +238,6 @@ struct PresentEvent {
     PresentMode PresentMode;
     PresentResult FinalState;
     InputDeviceType InputType;
-    FrameType FrameType;
     bool SupportsTearing;
     bool WaitForFlipEvent;
     bool WaitForMPOFlipEvent;
@@ -233,8 +259,16 @@ struct PresentEvent {
     bool WaitingForPresentStop;
 
     // If WaitingForFlipFrameType, the present is waiting for a FlipFrameType event (or, until an
-    // MMIOFlipMultiPlaneOverlay3_Info event signals a higher present id).
+    // MMIOFlipMultiPlaneOverlay3_Info event signals a higher present id). If
+    // DoneWaitingForFlipFrameType, then the present did WaitingForFlipFrameType but is no longer
+    // waiting.
     bool WaitingForFlipFrameType;
+    bool DoneWaitingForFlipFrameType;
+
+    // If WaitingForFrameId, the present is waiting for another present with the same FrameId (or,
+    // until a PresentFrameType_Info event with a different FrameId).
+    bool WaitingForFrameId;
+
 
     PresentEvent();
 private:
@@ -251,11 +285,13 @@ struct PMTraceConsumer
     bool mFilteredProcessIds = false;   // Whether to filter presents to specific processes
 
     // Whether the analysis should track...
-    bool mTrackDisplay = true;    // ... presents to the display.
-    bool mTrackGPU = false;       // ... GPU work.
-    bool mTrackGPUVideo = false;  // ... GPU video work (separately from non-video GPU work).
-    bool mTrackInput = false;     // ... keyboard/mouse latency.
-    bool mTrackFrameType = false; // ... the frame type communicated through the Intel-PresentMon provider.
+    bool mTrackDisplay = true;         // ... presents to the display.
+    bool mTrackGPU = false;            // ... GPU work.
+    bool mTrackGPUVideo = false;       // ... GPU video work (separately from non-video GPU work).
+    bool mTrackInput = false;          // ... keyboard/mouse latency.
+    bool mTrackFrameType = false;      // ... the frame type communicated through the Intel-PresentMon provider.
+    bool mTrackPMMeasurements = false; // ... external measurements provided through the Intel-PresentMon provider
+    bool mTrackAppTiming = false;      // ... app timing data communicated through the Intel-PresentMon provider.
 
     // When PresentEvents are missing data that may still arrive later, they get put into a deferred
     // state until the data arrives.  This time limit specifies how long a PresentEvent can be
@@ -299,6 +335,7 @@ struct PMTraceConsumer
     uint32_t mCompletedIndex = 0;       // The index of mCompletedPresents of the oldest completed present.
     uint32_t mCompletedCount = 0;       // The total number of presents in mCompletedPresents.
     uint32_t mReadyCount = 0;           // The number of presents in mCompletedPresents, starting at mCompletedIndex, that are ready to be dequeued.
+    uint32_t mNextAppFrameId = 0;       // If not zero, the application frame id when creating the next present
 
     // Mutexs to protect consumer/dequeue access from different threads:
     std::mutex mProcessEventMutex;
@@ -397,8 +434,9 @@ struct PMTraceConsumer
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByDxgkContext;                  // DxgkContex -> PresentEvent
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByVidPnLayerId;                 // VidPnLayerId -> PresentEvent
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mLastPresentByWindow;                   // HWND -> PresentEvent
-
     std::unordered_map<uint64_t, MouseClickData> mReceivedMouseClickByHwnd;                             // HWND -> MouseClickData
+    std::unordered_map<uint32_t, std::shared_ptr<PresentEvent>> mPresentByAppFrameId;                   // Intel provider app frame id -> PresentEvent
+    std::unordered_map<uint32_t, AppTimingData> mPendingAppTimingDataByAppFrameId;                      // Intel provider app frame id -> AppTimingData
 
     // mGpuTrace tracks work executed on the GPU.
     GpuTrace mGpuTrace;
@@ -442,7 +480,7 @@ struct PMTraceConsumer
     PMTraceConsumer& operator=(PMTraceConsumer&&) = delete;
 
     void HandleDxgkBlt(EVENT_HEADER const& hdr, uint64_t hwnd, bool redirectedPresent);
-    void HandleDxgkFlip(EVENT_HEADER const& hdr, int32_t flipInterval, bool isMMIOFlip, bool isMPOFlip);
+    std::shared_ptr<PresentEvent> HandleDxgkFlip(EVENT_HEADER const& hdr);
     void HandleDxgkQueueSubmit(EVENT_HEADER const& hdr, uint64_t hContext, uint32_t submitSequence, uint32_t packetType, bool isPresentPacket, bool isWin7);
     void HandleDxgkQueueComplete(uint64_t timestamp, uint64_t hContext, uint32_t submitSequence);
     void HandleDxgkMMIOFlip(uint64_t timestamp, uint32_t submitSequence, uint32_t flags);
@@ -481,12 +519,13 @@ struct PMTraceConsumer
     void CompletePresent(std::shared_ptr<PresentEvent> const& present);
     void RemoveLostPresent(std::shared_ptr<PresentEvent> present);
 
-    void AddPresentToCompletedList(std::shared_ptr<PresentEvent> const& present);
-    void UpdateReadyCount(std::shared_ptr<PresentEvent> const& present, bool useLock);
+    void UpdateReadyCount(bool useLock);
 
     void DeferFlipFrameType(uint64_t vidPnLayerId, uint64_t presentId, uint64_t timestamp, FrameType frameType);
     void ApplyFlipFrameType(std::shared_ptr<PresentEvent> const& present, uint64_t timestamp, FrameType frameType);
     void ApplyPresentFrameType(std::shared_ptr<PresentEvent> const& present);
+    void UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecord);
+    bool UpdateAppTimingPresent(const EVENT_RECORD* pEventRecord);
 
     void SignalEventsReady();
 };
