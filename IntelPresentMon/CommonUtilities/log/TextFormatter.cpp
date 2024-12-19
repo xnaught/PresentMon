@@ -54,7 +54,7 @@ namespace pmon::util::log
 				auto& ec = e.errorCode_;
 				if (ec.IsResolvedNontrivial()) {
 					auto pStrings = ec.GetStrings();
-					oss << std::format("\n  !{} [{}]:{} => {}", pStrings->type, ec.AsHex(), pStrings->name, pStrings->description);
+					oss << std::format("\n  !{} [{}] ({}): {} => {}", pStrings->type, ec.AsHex(), pStrings->symbol, pStrings->name, pStrings->description);
 				}
 				else {
 					oss << std::format("\n  !UNKNOWN [{}]", ec.AsHex());

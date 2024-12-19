@@ -58,7 +58,6 @@
     <ClInclude Include="log\StackTrace.h" />
     <ClInclude Include="log\StackTraceCereal.h" />
     <ClInclude Include="log\StdioDriver.h" />
-    <ClInclude Include="log\StructDump.h" />
     <ClInclude Include="log\Subsystem.h" />
     <ClInclude Include="log\TextFormatter.h" />
     <ClInclude Include="log\MarshallDriver.h" />
@@ -78,6 +77,11 @@
     <ClInclude Include="pipe\SecurityMode.h" />
     <ClInclude Include="PrecisionWaiter.h" />
     <ClInclude Include="Qpc.h" />
+    <ClInclude Include="ref\GeneratedReflection.h" />
+    <ClInclude Include="ref\GeneratedReflectionHelpers.h" />
+    <ClInclude Include="ref\gen\GeneratedReflection.h" />
+    <ClInclude Include="ref\StaticReflection.h" />
+    <ClInclude Include="ref\WrapReflect.h" />
     <ClInclude Include="reg\Registry.h" />
     <ClInclude Include="rng\PairToRange.h" />
     <ClInclude Include="str\String.h" />
@@ -128,6 +132,7 @@
     <ClCompile Include="pipe\Pipe.cpp" />
     <ClCompile Include="PrecisionWaiter.cpp" />
     <ClCompile Include="Qpc.cpp" />
+    <ClCompile Include="ref\GeneratedReflection.cpp" />
     <ClCompile Include="str\String.cpp" />
     <ClCompile Include="win\Event.cpp" />
     <ClCompile Include="win\Handle.cpp" />

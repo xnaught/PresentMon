@@ -4,6 +4,10 @@
 #include "IntelPowerTelemetryAdapter.h"
 #include "Logging.h"
 #include "Exceptions.h"
+#include "../CommonUtilities/ref/GeneratedReflection.h"
+
+using namespace pmon;
+using namespace util;
 
 namespace pwr::intel
 {
@@ -24,6 +28,7 @@ namespace pwr::intel
             }
             throw Except<TelemetrySubsystemAbsent>("Unable to initialize Intel Graphics Control Library");
         }
+        pmlog_verb(v::gpu)("Initializing IGCL").pmwatch(ref::DumpGenerated(ctl_init_args));
 
         pmlog_info(std::format("Initialized IGCL with version={}.{}",
             CTL_MAJOR_VERSION(ctl_init_args.SupportedVersion),
@@ -38,6 +43,7 @@ namespace pwr::intel
                 IGCL_ERR(result);
                 throw std::runtime_error{ "failed igcl device enumeration (get count)" };
             }
+            pmlog_verb(v::gpu)("Getting device count").pmwatch(count);
 
             handles.resize(count);
             if (const auto result = ctlEnumerateDevices(apiHandle, &count, handles.data()); result != CTL_RESULT_SUCCESS) {

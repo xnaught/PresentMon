@@ -36,7 +36,7 @@ namespace pwr::intel
 		bool GatherSampleData(T& currentSample,
 			ctl_mem_state_t& memory_state,
 			ctl_mem_bandwidth_t& memory_bandwidth,
-			double gpu_sustained_power_limit_mw,
+			std::optional<double> gpu_sustained_power_limit_mw,
 			uint64_t qpc);
 
 		ctl_result_t EnumerateMemoryModules();
@@ -97,6 +97,7 @@ namespace pwr::intel
 		LUID deviceId; // pointed to by a device_adapter_properties member, written to by igcl api
 		ctl_device_adapter_properties_t properties{};
 		std::vector<ctl_mem_handle_t> memoryModules;
+		std::vector<ctl_pwr_handle_t> powerDomains;
 		mutable std::mutex historyMutex;
 		TelemetryHistory<PresentMonPowerTelemetryInfo> history{ PowerTelemetryAdapter::defaultHistorySize };
 		SampleVariantType previousSampleVariant;
@@ -111,5 +112,8 @@ namespace pwr::intel
 		// less than the previous sample. Working with IGCL to determine the correct behavior for roll
 		// over occasions
 		double gpu_mem_power_cache_value_w_ = 0;
+		// we have special handling for GPU current perf limitation on Alchemist
+		// workaround for lack of discoverablity of perf limitation availability
+		bool isAlchemist = false;
 	};
 }
