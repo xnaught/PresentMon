@@ -15,6 +15,7 @@ namespace p2c::cli
 
 	private: Group gs_{ this, "Standard", "Useful to end users in production"}; public:
 		Flag allowTearing{ this, "--p2c-allow-tearing", "Allow tearing presents for overlay (optional, might affect VRR)" };
+		Flag disableAlpha{ this, "--p2c-disable-alpha", "Disable alpha blend composition of overlay" };
 
 	private: Group gd_{ this, "Debugging", "Aids in debugging this tool" }; public:
 		Option<std::string> url{ this, "--p2c-url", "", "URL to load instead of app files" };
