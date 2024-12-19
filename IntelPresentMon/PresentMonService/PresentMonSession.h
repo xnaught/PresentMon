@@ -35,7 +35,7 @@ struct HandleDeleter {
 
 class PresentMonSession {
 public:
-
+    virtual ~PresentMonSession() = default;
     virtual bool IsTraceSessionActive() = 0;
     virtual PM_STATUS StartStreaming(uint32_t client_process_id, uint32_t target_process_id, std::string& nsmFileName) = 0;
     virtual void StopStreaming(uint32_t client_process_id, uint32_t target_process_id) = 0;

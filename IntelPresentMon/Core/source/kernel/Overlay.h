@@ -6,6 +6,7 @@
 #include <Core/source/gfx/Graphics.h>
 #include <Core/source/win/KernelWindow.h>
 #include <CommonUtilities/IntervalWaiter.h>
+#include <CommonUtilities/win/Handle.h>
 #include <memory>
 #include <vector>
 #include <atomic>
@@ -101,7 +102,7 @@ namespace p2c::kern
         pmon::PresentMon* pm;
         pmon::MetricFetcherFactory fetcherFactory;
         std::unique_ptr<MetricPackMapper> pPackMapper;
-        HANDLE hProcess;
+        ::pmon::util::win::Handle hProcess;
         win::EventHookManager::Token moveHandlerToken;
         win::EventHookManager::Token activateHandlerToken;
         OverlaySpec::OverlayPosition position;
