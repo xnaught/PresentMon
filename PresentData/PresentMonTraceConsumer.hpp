@@ -271,6 +271,7 @@ struct PresentEvent {
 
 
     PresentEvent();
+    PresentEvent(uint32_t fid);
 private:
     PresentEvent(PresentEvent const& copy); // dne
 };
