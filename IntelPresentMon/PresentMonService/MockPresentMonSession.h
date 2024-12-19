@@ -10,6 +10,7 @@ public:
     MockPresentMonSession();
     MockPresentMonSession(const MockPresentMonSession& t) = delete;
     MockPresentMonSession& operator=(const MockPresentMonSession& t) = delete;
+    ~MockPresentMonSession() override = default;
 
     bool IsTraceSessionActive() override;
     PM_STATUS StartStreaming(uint32_t client_process_id, uint32_t target_process_id, std::string& nsmFileName) override;
