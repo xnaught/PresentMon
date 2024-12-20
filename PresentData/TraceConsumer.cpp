@@ -49,6 +49,8 @@ void GetStringPropertyInfo(TRACE_EVENT_INFO const& tei, EVENT_RECORD const& even
         for (uint32_t size = 0;; size += sizeof(T)) {
             if (offset + size > eventRecord.UserDataLength) {
                 // string ends at end of block, possibly ok (see note above)
+                // paranoia check addressing coverity issue, likely not relevant
+                assert(size >= sizeof(T));
                 info->size_ = size - sizeof(T);
                 break;
             }
