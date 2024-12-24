@@ -45,3 +45,7 @@ Reflector/obj/**
 
 # Misc ephermeral files
 IntelPresentMon/SampleClient/log.txt
+
+ETLTrimmer/Release/ETLTrimmer.Build.CppClean.log
+
+ETLTrimmer/Release/ETLTrimmer.vcxproj.FileListAbsolute.txt
