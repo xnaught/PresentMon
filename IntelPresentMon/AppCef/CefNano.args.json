@@ -29,12 +29,12 @@
       "Command": "--p2c-log-level debug"
     },
     {
-      "Id": "8634f48b-7ed1-45af-8b73-5973c7b4b3c7",
-      "Command": "--p2c-log-svc-pipe-enable"
-    },
-    {
       "Id": "8244ec79-0c35-4e62-b3b0-36b5efffa371",
       "Command": "--p2c-log-level verbose"
+    },
+    {
+      "Id": "8634f48b-7ed1-45af-8b73-5973c7b4b3c7",
+      "Command": "--p2c-log-svc-pipe-enable"
     },
     {
       "Id": "613c6ffc-013b-41c6-84db-eb54d1a0c3df",
