@@ -135,6 +135,7 @@ import { Preferences } from '@/store/preferences'
 import { Adapter } from '@/core/adapter'
 import { Adapters } from '@/store/adapters'
 import { Api } from '@/core/api'
+import { IsDevelopment } from '@/core/env-vars'
 
 
 export default Vue.extend({
@@ -146,7 +147,7 @@ export default Vue.extend({
   },  
   computed: {
     isDevelopment(): boolean {
-      return process?.env?.NODE_ENV === 'development';
+      return IsDevelopment();
     },
     // v-model enablers
     metricPollRate: {

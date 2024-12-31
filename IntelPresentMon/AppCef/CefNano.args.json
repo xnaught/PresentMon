@@ -37,6 +37,14 @@
       "Command": "--p2c-log-svc-pipe-enable"
     },
     {
+      "Id": "bc2faf34-6d97-458c-8ff1-67f3102617da",
+      "Command": "--p2c-enable-ui-dev-options"
+    },
+    {
+      "Id": "3cfde9b7-02ee-4be8-b351-ea76191989a7",
+      "Command": "--p2c-enable-timestamp-column"
+    },
+    {
       "Id": "613c6ffc-013b-41c6-84db-eb54d1a0c3df",
       "Command": "--p2c-url \"http://localhost:8080\""
     },
