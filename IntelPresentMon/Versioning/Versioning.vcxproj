@@ -18,7 +18,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="generated\.gitignore" />
-    <None Include="scripts\pre-build.bat" />
+    <None Include="scripts\pre-build.ps1" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -81,7 +81,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <CustomBuildStep>
-      <Command>scripts\pre-build.bat</Command>
+      <Command>powershell.exe -ExecutionPolicy Bypass -File "scripts\pre-build.ps1"</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Generating Build IDs</Message>
@@ -109,7 +109,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <CustomBuildStep>
-      <Command>scripts\pre-build.bat</Command>
+      <Command>powershell.exe -ExecutionPolicy Bypass -File "scripts\pre-build.ps1"</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Message>Generating Build IDs</Message>
