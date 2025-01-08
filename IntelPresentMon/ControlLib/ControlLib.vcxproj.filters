@@ -80,6 +80,9 @@
       <Filter>Intel</Filter>
     </ClInclude>
     <ClInclude Include="LoggingVerbose.h" />
+    <ClInclude Include="IgclErrorCodeProvider.h">
+      <Filter>Intel</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="NvapiWrapper.cpp">
@@ -121,6 +124,10 @@
     <ClCompile Include="PowerTelemetryProviderFactory.cpp" />
     <ClCompile Include="CpuTelemetry.cpp" />
     <ClCompile Include="ctlpvttempWrapper.cpp">
+      <Filter>Intel</Filter>
+    </ClCompile>
+    <ClCompile Include="PowerTelemetryAdapter.cpp" />
+    <ClCompile Include="IgclErrorCodeProvider.cpp">
       <Filter>Intel</Filter>
     </ClCompile>
   </ItemGroup>

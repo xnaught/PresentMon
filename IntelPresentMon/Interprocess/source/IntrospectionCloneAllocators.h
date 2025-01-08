@@ -52,7 +52,6 @@ namespace pmon::ipc::intro
 			*pTotalSize += sizeof(T) * count;
 			return pStart;
 		}
-		void deallocate(T*);
 	private:
 		std::shared_ptr<size_t> pTotalSize = std::make_shared<size_t>();
 		char* pBytes = nullptr;

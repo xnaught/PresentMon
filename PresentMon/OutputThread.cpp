@@ -586,6 +586,13 @@ static void PruneOldSwapChainData(
     PMTraceSession const& pmSession,
     uint64_t latestTimestamp)
 {
+    // sometimes we arrive here after skipping all frame events in the processing loop,
+    // in which case we don't have a valid timestamp for the latest frame and should not
+    // attempt to do any pruning during this pass
+    if (latestTimestamp == 0) {
+        return;
+    }
+
     auto minTimestamp = latestTimestamp - pmSession.MilliSecondsDeltaToTimestamp(4000.0);
 
     for (auto& pair : gProcesses) {

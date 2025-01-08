@@ -32,12 +32,20 @@ ipch/
 *.vspx
 *.sap
 
+
 # Commandline extension args
-IntelPresentMon/AppCef/CefNano.args.json
-IntelPresentMon/PresentMonService/PresentMonService.args.json
-PresentMon/PresentMon.args.json
 PresentData/PresentData.args.json
 
+# Make sure internal source isn't unintentionally committed to public repositories
+IntelPresentMon/PresentMonAPI2/Internal.h
+
+# Reflector Tool
+Reflector/bin/**
+Reflector/obj/**
+
+# Misc ephermeral files
 IntelPresentMon/SampleClient/log.txt
 
-IntelPresentMon/PresentMonAPI2/Internal.h
+ETLTrimmer/Release/ETLTrimmer.Build.CppClean.log
+
+ETLTrimmer/Release/ETLTrimmer.vcxproj.FileListAbsolute.txt

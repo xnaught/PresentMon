@@ -28,7 +28,7 @@ namespace p2c::gfx
     {
         friend prim::RetainedPrimitive;
     public:
-        Graphics(HWND hWnd, DimensionsI dimensions, float upscaleFactor, bool enableTearing);
+        Graphics(HWND hWnd, DimensionsI dimensions, float upscaleFactor, bool enableTearing, bool enableAlpha);
         Graphics(const Graphics&) = delete;
         Graphics& operator=(const Graphics&) = delete;
         ~Graphics();
@@ -56,6 +56,7 @@ namespace p2c::gfx
         void CreateBackbufferDependentResources_();
         // data
         bool tearingActive = false;
+        bool enableAlpha;
         DimensionsI dims;
         ComPtr<ID3D11Device> pDevice;
         ComPtr<ID3D11DeviceContext> pContext3d;

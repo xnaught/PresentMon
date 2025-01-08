@@ -3,6 +3,7 @@
 #pragma once
 #include <cstdint>
 #include <bitset>
+#include <array>
 
 enum class PresentMonPsuType
 {
@@ -38,8 +39,8 @@ struct PresentMonPowerTelemetryInfo {
     double vram_effective_frequency_gbps;
     double vram_temperature_c;
 
-    double fan_speed_rpm[5];
-    PresentMonPsuPowerTelemetryInfo psu[5];
+    std::array<double, 5> fan_speed_rpm;
+    std::array<PresentMonPsuPowerTelemetryInfo, 5> psu;
 
     // GPU memory state
     uint64_t gpu_mem_total_size_b;

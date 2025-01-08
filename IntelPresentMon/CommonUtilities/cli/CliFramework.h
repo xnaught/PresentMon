@@ -301,4 +301,12 @@ namespace pmon::util::cli
 			AddGroup_(*pCon, {});
 		}
 	};
+
+	inline auto RemoveCommas = CLI::Validator(
+		[](std::string& input) {
+			std::erase(input, ',');
+			return "";
+		}, "Removes all commas from the input string, meant to aid parsing numbers with commas as digit group separators",
+		"Remove Digit Group Commas"
+	);
 }

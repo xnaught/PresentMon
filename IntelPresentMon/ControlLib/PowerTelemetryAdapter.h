@@ -14,6 +14,9 @@ namespace pwr
     class PowerTelemetryAdapter
     {
     public:
+        // types
+        using SetTelemetryCapBitset = std::bitset<static_cast<size_t>(GpuTelemetryCapBits::gpu_telemetry_count)>;
+        // functions
         virtual ~PowerTelemetryAdapter() = default;
         virtual bool Sample() noexcept = 0;
         virtual std::optional<PresentMonPowerTelemetryInfo> GetClosest(uint64_t qpc) const noexcept = 0;
@@ -21,27 +24,15 @@ namespace pwr
         virtual std::string GetName() const noexcept = 0;
         virtual uint64_t GetDedicatedVideoMemory() const noexcept = 0;
         virtual uint64_t GetVideoMemoryMaxBandwidth() const noexcept = 0;
-        virtual double GetSustainedPowerLimit() const noexcept = 0;
-        
-        void SetTelemetryCapBit(GpuTelemetryCapBits telemetryCapBit) noexcept
-        {
-            gpuTelemetryCapBits_.set(static_cast<size_t>(telemetryCapBit));
-        }
-        std::bitset<static_cast<size_t>(GpuTelemetryCapBits::gpu_telemetry_count)>
-        GetPowerTelemetryCapBits()
-        {
-            return gpuTelemetryCapBits_;
-        }
-        bool HasTelemetryCapBit(GpuTelemetryCapBits bit) const
-        {
-            return gpuTelemetryCapBits_.test(size_t(bit));
-        }
+        virtual double GetSustainedPowerLimit() const noexcept = 0;        
+        void SetTelemetryCapBit(GpuTelemetryCapBits telemetryCapBit) noexcept;
+        SetTelemetryCapBitset GetPowerTelemetryCapBits();
+        bool HasTelemetryCapBit(GpuTelemetryCapBits bit) const;
         // constants
         static constexpr size_t defaultHistorySize = 300;
 
        private:
         // data
-        std::bitset<static_cast<size_t>(GpuTelemetryCapBits::gpu_telemetry_count)>
-            gpuTelemetryCapBits_{};
+        SetTelemetryCapBitset gpuTelemetryCapBits_{};
     };
 }

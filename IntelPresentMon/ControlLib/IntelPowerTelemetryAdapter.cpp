@@ -3,6 +3,12 @@
 #include "IntelPowerTelemetryAdapter.h"
 #include "Logging.h"
 #include "../CommonUtilities/Math.h"
+#include "../CommonUtilities/ref/GeneratedReflection.h"
+#include "../CommonUtilities/ref/StaticReflection.h"
+#include <regex>
+
+using namespace pmon;
+using namespace util;
 
 namespace pwr::intel
 {
@@ -22,19 +28,43 @@ namespace pwr::intel
             result != CTL_RESULT_SUCCESS) {
             throw std::runtime_error{ "Failure to get device properties" };
         }
+        pmlog_verb(v::gpu)("Device properties").pmwatch(ref::DumpGenerated(properties));
 
         if (properties.device_type != CTL_DEVICE_TYPE_GRAPHICS) {
             throw NonGraphicsDeviceException{};
         }
 
-        if (auto result = EnumerateMemoryModules(); result != CTL_RESULT_SUCCESS) {
-            throw std::runtime_error{ "Failed to enumerate memory modules" };
+        // check for alchemist (used to enable features whose support not reported by IGCL)
+        // use device name that match Arc followed by A### part number pattern
+        isAlchemist = std::regex_search(GetName(), std::regex{ R"(Arc.*A\d{3})" });
+        pmlog_verb(v::gpu)("Detecting Alchemist").pmwatch(GetName()).pmwatch(isAlchemist);
+
+        // errors are reported inside this function
+        // do not hard-fail on memory module issues, so no need to check error return code
+        EnumerateMemoryModules();
+
+        // get count of power domains
+        uint32_t powerDomainCount = 0;
+        if (auto result = ctlEnumPowerDomains(deviceHandle, &powerDomainCount, nullptr);
+            result == CTL_RESULT_SUCCESS) {
+            powerDomains.resize(powerDomainCount);
+            // get power domain handles
+            if (auto result = ctlEnumPowerDomains(deviceHandle, &powerDomainCount, powerDomains.data());
+                result == CTL_RESULT_SUCCESS) {
+                pmlog_verb(v::gpu)("Power domains enumerated").pmwatch(GetName()).pmwatch(ref::DumpGenerated(powerDomains));
+            }
+            else {
+                pmlog_error("ctlEnumPowerDomains failed enumeration").code(result).pmwatch(GetName());
+            }
+        }
+        else {
+            pmlog_error("ctlEnumPowerDomains failed to get count").code(result).pmwatch(GetName());
         }
     }
 
     bool IntelPowerTelemetryAdapter::Sample() noexcept
     {
-        pmlog_verb(v::gpu)("Sample called");
+        pmlog_verb(v::gpu)("Sample called").pmwatch(GetName());
 
         LARGE_INTEGER qpc;
         QueryPerformanceCounter(&qpc);
@@ -62,6 +92,7 @@ namespace pwr::intel
                 success = false;
                 pmlog_warn("Failed to access ctlPowerTelemetryGet.v1, falling back to .v0");
             }
+            pmlog_verb(v::gpu)("get power telemetry V1").pmwatch(GetName()).pmwatch(ref::DumpGenerated(*currentSample));
         }
         if (!useV1PowerTelemetry) {
             currentSampleVariant = ctl_power_telemetry_t{
@@ -79,6 +110,7 @@ namespace pwr::intel
                 success = false;
                 IGCL_ERR(result);
             }
+            pmlog_verb(v::gpu)("get power telemetry V0").pmwatch(GetName()).pmwatch(ref::DumpGenerated(*currentSample));
         }
 
         // Query memory state and bandwidth if supported
@@ -87,25 +119,37 @@ namespace pwr::intel
             .Size = sizeof(ctl_mem_bandwidth_t),
             .Version = 1,
         };
+        // Question: why are we only using the first element of memoryModules here?
         if (memoryModules.size() > 0) {
             if (const auto result = ctlMemoryGetState(memoryModules[0], &memory_state);
                 result != CTL_RESULT_SUCCESS) {
-              success = false;
-              IGCL_ERR(result);
+                success = false;
+                IGCL_ERR(result);
             }
+            pmlog_verb(v::gpu)("get memory state").pmwatch(GetName()).pmwatch(ref::DumpGenerated(memory_state));
             if (const auto result = ctlMemoryGetBandwidth(memoryModules[0], &memory_bandwidth);
                 result != CTL_RESULT_SUCCESS) {
-              success = false;
-              IGCL_ERR(result);
+                success = false;
+                IGCL_ERR(result);
             }
+            pmlog_verb(v::gpu)("get memory bandwidth").pmwatch(GetName()).pmwatch(ref::DumpGenerated(memory_bandwidth));
         }
 
-        double gpu_sustained_power_limit_mw = 0.;
-        if (const auto result = ctlOverclockPowerLimitGet(
-            deviceHandle, &gpu_sustained_power_limit_mw);
-            result != CTL_RESULT_SUCCESS && result != CTL_RESULT_ERROR_CORE_OVERCLOCK_DEPRECATED_API) {
-            success = false;
-            IGCL_ERR(result);
+        std::optional<double> gpu_sustained_power_limit_mw;
+        if (!powerDomains.empty()) {
+            ctl_power_limits_t limits{
+                .Size = sizeof(ctl_power_limits_t),
+            };
+            if (const auto result = ctlPowerGetLimits(powerDomains[0], &limits);
+                result == CTL_RESULT_SUCCESS) {
+                gpu_sustained_power_limit_mw = (double)limits.sustainedPowerLimit.power;
+                pmlog_verb(v::gpu)(std::format("ctlPowerGetLimits output")).pmwatch(GetName())
+                    .pmwatch(ref::DumpGenerated(limits));
+            }
+            else {
+                success = false;
+                IGCL_ERR(result);
+            }
         }
 
         if (useV1PowerTelemetry) {
@@ -142,12 +186,10 @@ namespace pwr::intel
         const auto nearest = history.GetNearest(qpc);
         if constexpr (PMLOG_BUILD_LEVEL_ >= pmon::util::log::Level::Verbose) {
             if (!nearest) {
-                pmlog_verb(v::gpu)("Empty telemetry info sample returned");
+                pmlog_verb(v::gpu)("Empty telemetry info sample returned").pmwatch(GetName()).pmwatch(qpc);
             }
             else {
-                pmlog_verb(v::gpu)(std::format("Nearest telemetry info sampled; read bw [{}] write bw [{}]",
-                    nearest->gpu_mem_read_bandwidth_bps, nearest->gpu_mem_write_bandwidth_bps
-                ));
+                pmlog_verb(v::gpu)("Nearest telemetry info sampled").pmwatch(GetName()).pmwatch(qpc).pmwatch(ref::DumpStatic(*nearest));
             }
         }
         return nearest;
@@ -168,11 +210,14 @@ namespace pwr::intel
         ctl_mem_state_t memory_state = {.Size = sizeof(ctl_mem_state_t)};
         uint64_t video_mem_size = 0;
         if (memoryModules.size() > 0) {
-            if (const auto result =
-                    ctlMemoryGetState(memoryModules[0], &memory_state);
+            if (const auto result = ctlMemoryGetState(memoryModules[0], &memory_state);
                 result == CTL_RESULT_SUCCESS) {
                 video_mem_size = memory_state.size;
             }
+            else {
+                IGCL_ERR(result);
+            }
+            pmlog_verb(v::gpu)("get memory state").pmwatch(GetName()).pmwatch(ref::DumpGenerated(memory_state));
         }
         return video_mem_size;
     }
@@ -185,12 +230,14 @@ namespace pwr::intel
         };
         uint64_t videoMemMaxBandwidth = 0;
         if (memoryModules.size() > 0) {
-            if (const auto result =
-                ctlMemoryGetBandwidth(memoryModules[0], &memoryBandwidth);
+            if (const auto result = ctlMemoryGetBandwidth(memoryModules[0], &memoryBandwidth);
                 result == CTL_RESULT_SUCCESS) {
                 videoMemMaxBandwidth = memoryBandwidth.maxBandwidth;
             }
-
+            else {
+                IGCL_ERR(result);
+            }
+            pmlog_verb(v::gpu)("get memory bandwidth").pmwatch(GetName()).pmwatch(ref::DumpGenerated(memoryBandwidth));
         }
         return videoMemMaxBandwidth;
     }
@@ -198,15 +245,22 @@ namespace pwr::intel
     double IntelPowerTelemetryAdapter::GetSustainedPowerLimit() const noexcept
     {
         double gpuSustainedPowerLimit = 0.;
-        if (const auto result = ctlOverclockPowerLimitGet(
-            deviceHandle, &gpuSustainedPowerLimit);
-            result == CTL_RESULT_SUCCESS) {
-            // Control lib returns back in milliwatts
-            gpuSustainedPowerLimit =
-                gpuSustainedPowerLimit / 1000.;
+        if (!powerDomains.empty()) {
+            ctl_power_limits_t limits{
+                .Size = sizeof(ctl_power_limits_t),
+            };
+            if (const auto result = ctlPowerGetLimits(powerDomains[0], &limits);
+                result == CTL_RESULT_SUCCESS) {
+                gpuSustainedPowerLimit = (double)limits.sustainedPowerLimit.power;
+                pmlog_verb(v::gpu)(std::format("ctlPowerGetLimits output")).pmwatch(GetName())
+                    .pmwatch(ref::DumpGenerated(limits));
+            }
+            else {
+                IGCL_ERR(result);
+            }
         }
-
-        return gpuSustainedPowerLimit;
+        // Control lib returns back in milliwatts
+        return gpuSustainedPowerLimit / 1000.;
     }
 
     // private implementation functions
@@ -216,20 +270,22 @@ namespace pwr::intel
         // first call ctlEnumMemoryModules with nullptr to get number of modules
         // and resize vector to accomodate
         uint32_t memory_module_count = 0;
+        if (auto result = ctlEnumMemoryModules(deviceHandle, &memory_module_count,
+            nullptr); result != CTL_RESULT_SUCCESS)
         {
-            if (auto result = ctlEnumMemoryModules(deviceHandle, &memory_module_count,
-                nullptr); result != CTL_RESULT_SUCCESS)
-            {
-                return result;
-            }
-            memoryModules.resize(size_t(memory_module_count));
+            pmlog_error("ctlEnumMemoryModules getting count").code(result).pmwatch(GetName());
+            return result;
         }
-
+        memoryModules.resize(size_t(memory_module_count));
+        // call ctlEnumMemoryModules to get the actual module data now
         if (auto result = ctlEnumMemoryModules(deviceHandle, &memory_module_count,
             memoryModules.data()); result != CTL_RESULT_SUCCESS)
         {
+            pmlog_error("ctlEnumMemoryModules getting module data").code(result).pmwatch(GetName());
+            memoryModules.clear();
             return result;
         }
+        pmlog_verb(v::gpu)("Memory modules enumerated").pmwatch(GetName()).pmwatch(ref::DumpGenerated(memoryModules));
 
         return CTL_RESULT_SUCCESS;
     }
@@ -238,7 +294,7 @@ namespace pwr::intel
     bool IntelPowerTelemetryAdapter::GatherSampleData(T& currentSample,
         ctl_mem_state_t& memory_state,
         ctl_mem_bandwidth_t& memory_bandwidth,
-        double gpu_sustained_power_limit_mw,
+        std::optional<double> gpu_sustained_power_limit_mw,
         uint64_t qpc)
     {
         bool success = true;
@@ -292,8 +348,10 @@ namespace pwr::intel
 
             // Save and convert the gpu sustained power limit
             pm_gpu_power_telemetry_info.gpu_sustained_power_limit_w =
-                gpu_sustained_power_limit_mw / 1000.;
-            SetTelemetryCapBit(GpuTelemetryCapBits::gpu_sustained_power_limit);
+                gpu_sustained_power_limit_mw.value_or(0.) / 1000.;
+            if (gpu_sustained_power_limit_mw) {
+                SetTelemetryCapBit(GpuTelemetryCapBits::gpu_sustained_power_limit);                
+            }
 
             // Save off the calculated PresentMon power telemetry values. These are
             // saved off for clients to extrace out timing information based on QPC
@@ -427,12 +485,18 @@ namespace pwr::intel
         pm_gpu_power_telemetry_info.gpu_utilization_limited =
             currentSample.gpuUtilizationLimited;
 
-        // On Intel all GPU limitation indicators are active
+        // On Intel all GPU limitation indicators are active except...
         SetTelemetryCapBit(GpuTelemetryCapBits::gpu_power_limited);
         SetTelemetryCapBit(GpuTelemetryCapBits::gpu_temperature_limited);
-        SetTelemetryCapBit(GpuTelemetryCapBits::gpu_current_limited);
         SetTelemetryCapBit(GpuTelemetryCapBits::gpu_voltage_limited);
         SetTelemetryCapBit(GpuTelemetryCapBits::gpu_utilization_limited);
+
+        // gpu_current_limited perf limit reason seems not supported on BMG
+        // because there is no bSupported flags for the perf limit reasons
+        // we detect alchemist and use this as a proxy for support
+        if (isAlchemist) {
+            SetTelemetryCapBit(GpuTelemetryCapBits::gpu_current_limited);
+        }
 
         return result;
     }
@@ -484,6 +548,7 @@ namespace pwr::intel
         if constexpr (std::same_as<T, ctl_power_telemetry2_t>) {
             using namespace pmon::util;
             if (useNewBandwidthTelemetry) {
+                pmlog_verb(v::gpu)("Processing VRAM BW V1").pmwatch(GetName());
                 double gpuMemReadBandwidthMegabytesPerSecond = 0;
                 result = GetInstantaneousPowerTelemetryItem(
                     currentSample.vramReadBandwidth,
@@ -494,10 +559,6 @@ namespace pwr::intel
                     gpuMemReadBandwidthMegabytesPerSecond * 8.,
                     MagnitudePrefix::Mega,
                     MagnitudePrefix::Base);
-                pmlog_verb(v::gpu)(std::format("VRAM read BW V1: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
-                    currentSample.vramReadBandwidth.bSupported, (int)currentSample.vramReadBandwidth.type,
-                    (int)currentSample.vramReadBandwidth.units, currentSample.vramReadBandwidth.value.datau64,
-                    currentSample.vramReadBandwidth.value.datadouble, pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps));
                 if (result != CTL_RESULT_SUCCESS ||
                     !(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_read_bandwidth))) {
                     useNewBandwidthTelemetry = false;
@@ -516,10 +577,6 @@ namespace pwr::intel
                     gpuMemWriteBandwidthMegabytesPerSecond * 8.,
                     MagnitudePrefix::Mega,
                     MagnitudePrefix::Base);
-                pmlog_verb(v::gpu)(std::format("VRAM write BW V1: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
-                    currentSample.vramWriteBandwidth.bSupported, (int)currentSample.vramWriteBandwidth.type,
-                    (int)currentSample.vramWriteBandwidth.units, currentSample.vramWriteBandwidth.value.datau64,
-                    currentSample.vramWriteBandwidth.value.datadouble, pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps));
                 if (result != CTL_RESULT_SUCCESS ||
                     !(HasTelemetryCapBit(GpuTelemetryCapBits::gpu_mem_write_bandwidth))) {
                     useNewBandwidthTelemetry = false;
@@ -529,15 +586,12 @@ namespace pwr::intel
             }
         }
         if (!useNewBandwidthTelemetry) {
+            pmlog_verb(v::gpu)("Processing VRAM BW V0").pmwatch(GetName());
             result = GetPowerTelemetryItemUsage(
                 currentSample.vramReadBandwidthCounter,
                 previousSample->vramReadBandwidthCounter,
                 pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps,
                 GpuTelemetryCapBits::gpu_mem_read_bandwidth);
-            pmlog_verb(v::gpu)(std::format("VRAM read BW V0: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
-                currentSample.vramReadBandwidthCounter.bSupported, (int)currentSample.vramReadBandwidthCounter.type,
-                (int)currentSample.vramReadBandwidthCounter.units, currentSample.vramReadBandwidthCounter.value.datau64,
-                currentSample.vramReadBandwidthCounter.value.datadouble, pm_gpu_power_telemetry_info.gpu_mem_read_bandwidth_bps));
             if (result != CTL_RESULT_SUCCESS) {
                 return result;
             }
@@ -546,10 +600,6 @@ namespace pwr::intel
                 previousSample->vramWriteBandwidthCounter,
                 pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps,
                 GpuTelemetryCapBits::gpu_mem_write_bandwidth);
-            pmlog_verb(v::gpu)(std::format("VRAM write BW V0: bSupported [{}] type [{}] units [{}] data_64 [{}] data_double [{}] info []{}",
-                currentSample.vramWriteBandwidthCounter.bSupported, (int)currentSample.vramWriteBandwidthCounter.type,
-                (int)currentSample.vramWriteBandwidthCounter.units, currentSample.vramWriteBandwidthCounter.value.datau64,
-                currentSample.vramWriteBandwidthCounter.value.datadouble, pm_gpu_power_telemetry_info.gpu_mem_write_bandwidth_bps));
             if (result != CTL_RESULT_SUCCESS) {
                 return result;
             }
@@ -563,23 +613,12 @@ namespace pwr::intel
             return result;
         }
 
-        pm_gpu_power_telemetry_info.vram_power_limited =
-            currentSample.vramPowerLimited;
-        pm_gpu_power_telemetry_info.vram_temperature_limited =
-            currentSample.vramTemperatureLimited;
-        pm_gpu_power_telemetry_info.vram_current_limited =
-            currentSample.vramCurrentLimited;
-        pm_gpu_power_telemetry_info.vram_voltage_limited =
-            currentSample.vramVoltageLimited;
-        pm_gpu_power_telemetry_info.vram_utilization_limited =
-            currentSample.vramUtilizationLimited;
-
-        // On Intel all GPU limitation indicators are active
-        SetTelemetryCapBit(GpuTelemetryCapBits::vram_power_limited);
-        SetTelemetryCapBit(GpuTelemetryCapBits::vram_temperature_limited);
-        SetTelemetryCapBit(GpuTelemetryCapBits::vram_current_limited);
-        SetTelemetryCapBit(GpuTelemetryCapBits::vram_voltage_limited);
-        SetTelemetryCapBit(GpuTelemetryCapBits::vram_utilization_limited);
+        // On Intel all VRAM limitation indicators are deprecated / return false
+        // GpuTelemetryCapBits::vram_power_limited
+        // GpuTelemetryCapBits::vram_temperature_limited
+        // GpuTelemetryCapBits::vram_current_limited
+        // GpuTelemetryCapBits::vram_voltage_limited
+        // GpuTelemetryCapBits::vram_utilization_limited
 
         return result;
     }
@@ -787,9 +826,7 @@ namespace pwr::intel
 
     void IntelPowerTelemetryAdapter::SavePmPowerTelemetryData(PresentMonPowerTelemetryInfo& info)
     {
-        pmlog_verb(v::gpu)(std::format("Saving gathered telemetry info to history; read bw [{}] write bw [{}]",
-            info.gpu_mem_read_bandwidth_bps, info.gpu_mem_write_bandwidth_bps
-        ));
+        pmlog_verb(v::gpu)("Saving gathered telemetry info to history").pmwatch(GetName()).pmwatch(ref::DumpStatic(info));
         std::lock_guard<std::mutex> lock(historyMutex);
         history.Push(info);
     }

@@ -84,11 +84,14 @@ struct FilteredProvider {
     uint64_t allKeywordMask_;
     uint8_t maxLevel_;
     bool isWin11OrGreater_;
+    bool isDryRun_;
+    std::shared_ptr<IFilterBuildListener> pListener_;
 
     FilteredProvider(
-        GUID const& sessionGuid,
+        const GUID* pSessionGuid,
         bool filterEventIds,
-        bool isWin11OrGreater)
+        bool isWin11OrGreater,
+        std::shared_ptr<IFilterBuildListener> pListener)
     {
         memset(&filterDesc_, 0, sizeof(filterDesc_));
         memset(&params_,     0, sizeof(params_));
@@ -97,8 +100,10 @@ struct FilteredProvider {
         allKeywordMask_ = 0;
         maxLevel_ = 0;
         isWin11OrGreater_ = isWin11OrGreater;
+        isDryRun_ = pSessionGuid == nullptr;
+        pListener_ = std::move(pListener);
 
-        if (filterEventIds) {
+        if (filterEventIds && !isDryRun_) {
             static_assert(MAX_EVENT_FILTER_EVENT_ID_COUNT >= ANYSIZE_ARRAY, "Unexpected MAX_EVENT_FILTER_EVENT_ID_COUNT");
             auto memorySize = sizeof(EVENT_FILTER_EVENT_ID) + sizeof(USHORT) * (MAX_EVENT_FILTER_EVENT_ID_COUNT - ANYSIZE_ARRAY);
             void* memory = _aligned_malloc(memorySize, alignof(USHORT));
@@ -114,15 +119,12 @@ struct FilteredProvider {
 
                 params_.Version = ENABLE_TRACE_PARAMETERS_VERSION_2;
                 params_.EnableProperty = EVENT_ENABLE_PROPERTY_IGNORE_KEYWORD_0;
-                params_.SourceId = sessionGuid;
+                params_.SourceId = *pSessionGuid;
                 params_.EnableFilterDesc = &filterDesc_;
                 params_.FilterDescCount = 1;
             }
         }
     }
-
-    FilteredProvider(FilteredProvider const&);
-    FilteredProvider& operator=(FilteredProvider const&);
 
     ~FilteredProvider()
     {
@@ -158,13 +160,11 @@ struct FilteredProvider {
     template<typename T>
     void AddEvent()
     {
-        if (filterDesc_.Ptr != 0) {
-            auto filteredEventIds = (EVENT_FILTER_EVENT_ID*) filterDesc_.Ptr;
-            assert(filteredEventIds->Count < MAX_EVENT_FILTER_EVENT_ID_COUNT);
-            filteredEventIds->Events[filteredEventIds->Count++] = T::Id;
+        if (pListener_) {
+            pListener_->EventAdded(T::Id);
         }
 
-        uint64_t keyword = (uint64_t) T::Keyword;
+        uint64_t keyword = (uint64_t)T::Keyword;
         PatchKeyword<T>(&keyword);
         if (!isWin11OrGreater_) {
             PatchPreWin11Keyword<T>(&keyword);
@@ -172,6 +172,12 @@ struct FilteredProvider {
         AddKeyword(keyword);
 
         maxLevel_ = std::max(maxLevel_, T::Level);
+
+        if (filterDesc_.Ptr != 0 && !isDryRun_) {
+            auto filteredEventIds = (EVENT_FILTER_EVENT_ID*) filterDesc_.Ptr;
+            assert(filteredEventIds->Count < MAX_EVENT_FILTER_EVENT_ID_COUNT);
+            filteredEventIds->Events[filteredEventIds->Count++] = T::Id;
+        }
     }
 
     ULONG Enable(
@@ -179,21 +185,50 @@ struct FilteredProvider {
         GUID const& providerGuid,
         ULONG controlCode = EVENT_CONTROL_CODE_ENABLE_PROVIDER)
     {
-        ENABLE_TRACE_PARAMETERS* pparams = nullptr;
-        if (filterDesc_.Ptr != 0) {
-            pparams = &params_;
-
-            // EnableTraceEx2() failes unless Size agrees with Count.
-            auto filterEventIds = (EVENT_FILTER_EVENT_ID*) filterDesc_.Ptr;
-            filterDesc_.Size = sizeof(EVENT_FILTER_EVENT_ID) + sizeof(USHORT) * (filterEventIds->Count - ANYSIZE_ARRAY);
+        if (pListener_) {
+            if (controlCode == EVENT_CONTROL_CODE_ENABLE_PROVIDER) {
+                pListener_->ProviderEnabled(providerGuid, anyKeywordMask_, allKeywordMask_, maxLevel_);
+            }
+            else {
+                pListener_->ClearEvents();
+            }
         }
 
-        ULONG timeout = 0;
-        return EnableTraceEx2(sessionHandle, &providerGuid, controlCode,
-                              maxLevel_, anyKeywordMask_, allKeywordMask_, timeout, pparams);
+        if (!isDryRun_) {
+            ENABLE_TRACE_PARAMETERS* pparams = nullptr;
+            if (filterDesc_.Ptr != 0) {
+                pparams = &params_;
+
+                // EnableTraceEx2() fails unless Size agrees with Count.
+                auto filterEventIds = (EVENT_FILTER_EVENT_ID*)filterDesc_.Ptr;
+                filterDesc_.Size = sizeof(EVENT_FILTER_EVENT_ID) + sizeof(USHORT) * (filterEventIds->Count - ANYSIZE_ARRAY);
+            }
+
+            ULONG timeout = 0;
+            return EnableTraceEx2(sessionHandle, &providerGuid, controlCode,
+                maxLevel_, anyKeywordMask_, allKeywordMask_, timeout, pparams);
+        }
+        return ERROR_SUCCESS;
+    }
+
+    ULONG EnableWithoutFiltering(
+        TRACEHANDLE sessionHandle,
+        GUID const& providerGuid,
+        UCHAR maxLevel)
+    {
+        if (pListener_) {
+            pListener_->ProviderEnabled(providerGuid, 0, 0, maxLevel);
+        }
+
+        if (!isDryRun_) {
+            return EnableTraceEx2(sessionHandle, &providerGuid, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
+                maxLevel, 0, 0, 0, nullptr);
+        }
+        return ERROR_SUCCESS;
     }
 };
 
+// detects windows version, enables providers, sets event filters in realtime mode
 ULONG EnableProviders(
     TRACEHANDLE sessionHandle,
     GUID const& sessionGuid,
@@ -230,149 +265,7 @@ ULONG EnableProviders(
     bool filterEventIds = isWin81OrGreater;
     pmConsumer->mFilteredEvents = filterEventIds;
 
-    // Start backend providers first to reduce Presents being queued up before
-    // we can track them.
-    FilteredProvider provider(sessionGuid, filterEventIds, isWin11OrGreater);
-
-    // Microsoft_Windows_DxgKrnl
-    //
-    // WARNING: When adding a DxgKrnl event, make sure to patch it's Performance keyword (see
-    // above).
-    provider.ClearFilter();
-    provider.AddEvent<Microsoft_Windows_DxgKrnl::PresentHistory_Start>();
-    if (pmConsumer->mTrackDisplay) {
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::Blit_Info>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::BlitCancel_Info>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::Flip_Info>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::IndependentFlip_Info>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::FlipMultiPlaneOverlay_Info>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::HSyncDPCMultiPlane_Info>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::MMIOFlip_Info>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay_Info>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::Present_Info>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::PresentHistory_Info>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::PresentHistoryDetailed_Start>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::QueuePacket_Start>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::QueuePacket_Start_2>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::QueuePacket_Stop>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::VSyncDPC_Info>();
-    }
-    if (pmConsumer->mTrackGPU) {
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::Context_DCStart>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::Context_Start>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::Context_Stop>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::Device_DCStart>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::Device_Start>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::Device_Stop>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::HwQueue_DCStart>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::HwQueue_Start>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::DmaPacket_Info>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::DmaPacket_Start>();
-    }
-    if (pmConsumer->mTrackGPUVideo) {
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::NodeMetadata_Info>();
-    }
-    if (pmConsumer->mTrackFrameType) {
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay3_Info>();
-    }
-    status = provider.Enable(sessionHandle, Microsoft_Windows_DxgKrnl::GUID);
-    if (status != ERROR_SUCCESS) return status;
-
-    if (pmConsumer->mTrackGPU) {
-        provider.ClearFilter();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::Context_DCStart>();
-        provider.AddEvent<Microsoft_Windows_DxgKrnl::Device_DCStart>();
-        status = provider.Enable(sessionHandle, Microsoft_Windows_DxgKrnl::GUID, EVENT_CONTROL_CODE_CAPTURE_STATE);
-        if (status != ERROR_SUCCESS) return status;
-    }
-
-    status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_DxgKrnl::Win7::GUID, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
-                            TRACE_LEVEL_INFORMATION, 0, 0, 0, nullptr);
-    if (status != ERROR_SUCCESS) return status;
-
-    if (pmConsumer->mTrackDisplay || pmConsumer->mTrackInput) {
-        // Microsoft_Windows_Win32k
-        provider.ClearFilter();
-        if (pmConsumer->mTrackDisplay) {
-            provider.AddEvent<Microsoft_Windows_Win32k::TokenCompositionSurfaceObject_Info>();
-            provider.AddEvent<Microsoft_Windows_Win32k::TokenStateChanged_Info>();
-        }
-        if (pmConsumer->mTrackInput) {
-            provider.AddEvent<Microsoft_Windows_Win32k::InputDeviceRead_Stop>();
-            provider.AddEvent<Microsoft_Windows_Win32k::RetrieveInputMessage_Info>();
-            provider.AddEvent<Microsoft_Windows_Win32k::OnInputXformUpdate_Info>();
-        }
-        status = provider.Enable(sessionHandle, Microsoft_Windows_Win32k::GUID);
-        if (status != ERROR_SUCCESS) return status;
-    }
-
-    // Microsoft_Windows_Dwm_Core
-    if (pmConsumer->mTrackDisplay) {
-        provider.ClearFilter();
-        provider.AddEvent<Microsoft_Windows_Dwm_Core::MILEVENT_MEDIA_UCE_PROCESSPRESENTHISTORY_GetPresentHistory_Info>();
-        provider.AddEvent<Microsoft_Windows_Dwm_Core::SCHEDULE_PRESENT_Start>();
-        provider.AddEvent<Microsoft_Windows_Dwm_Core::SCHEDULE_SURFACEUPDATE_Info>();
-        provider.AddEvent<Microsoft_Windows_Dwm_Core::FlipChain_Pending>();
-        provider.AddEvent<Microsoft_Windows_Dwm_Core::FlipChain_Complete>();
-        provider.AddEvent<Microsoft_Windows_Dwm_Core::FlipChain_Dirty>();
-        status = provider.Enable(sessionHandle, Microsoft_Windows_Dwm_Core::GUID);
-        if (status != ERROR_SUCCESS) return status;
-
-        status = EnableTraceEx2(sessionHandle, &Microsoft_Windows_Dwm_Core::Win7::GUID, EVENT_CONTROL_CODE_ENABLE_PROVIDER,
-                                TRACE_LEVEL_VERBOSE, 0, 0, 0, nullptr);
-        if (status != ERROR_SUCCESS) return status;
-    }
-
-    // Microsoft_Windows_DXGI
-    provider.ClearFilter();
-    provider.AddEvent<Microsoft_Windows_DXGI::Present_Start>();
-    provider.AddEvent<Microsoft_Windows_DXGI::Present_Stop>();
-    provider.AddEvent<Microsoft_Windows_DXGI::PresentMultiplaneOverlay_Start>();
-    provider.AddEvent<Microsoft_Windows_DXGI::PresentMultiplaneOverlay_Stop>();
-    status = provider.Enable(sessionHandle, Microsoft_Windows_DXGI::GUID);
-    if (status != ERROR_SUCCESS) return status;
-
-    // Microsoft_Windows_Kernel_Process
-    provider.ClearFilter();
-    provider.AddEvent<Microsoft_Windows_Kernel_Process::ProcessStart_Start>();
-    provider.AddEvent<Microsoft_Windows_Kernel_Process::ProcessStop_Stop>();
-    status = provider.Enable(sessionHandle, Microsoft_Windows_Kernel_Process::GUID);
-    if (status != ERROR_SUCCESS && status != ERROR_ACCESS_DENIED) return status;
-
-    // Microsoft_Windows_D3D9
-    provider.ClearFilter();
-    provider.AddEvent<Microsoft_Windows_D3D9::Present_Start>();
-    provider.AddEvent<Microsoft_Windows_D3D9::Present_Stop>();
-    status = provider.Enable(sessionHandle, Microsoft_Windows_D3D9::GUID);
-    if (status != ERROR_SUCCESS) return status;
-
-    // Intel_PresentMon
-    if (pmConsumer->mTrackFrameType || pmConsumer->mTrackPMMeasurements || pmConsumer->mTrackAppTiming) {
-        provider.ClearFilter();
-        if (pmConsumer->mTrackFrameType) {
-            provider.AddEvent<Intel_PresentMon::PresentFrameType_Info>();
-            provider.AddEvent<Intel_PresentMon::FlipFrameType_Info>();
-        }
-        if (pmConsumer->mTrackPMMeasurements) {
-            provider.AddEvent<Intel_PresentMon::MeasuredInput_Info>();
-            provider.AddEvent<Intel_PresentMon::MeasuredScreenChange_Info>();
-        }
-        if (pmConsumer->mTrackAppTiming) {
-            provider.AddEvent<Intel_PresentMon::AppInputSample_Info>();
-            provider.AddEvent<Intel_PresentMon::AppPresentStart_Info>();
-            provider.AddEvent<Intel_PresentMon::AppPresentEnd_Info>();
-            provider.AddEvent<Intel_PresentMon::AppSimulationStart_Info>();
-            provider.AddEvent<Intel_PresentMon::AppSimulationEnd_Info>();
-            provider.AddEvent<Intel_PresentMon::AppRenderSubmitStart_Info>();
-            provider.AddEvent<Intel_PresentMon::AppRenderSubmitEnd_Info>();
-            provider.AddEvent<Intel_PresentMon::AppSleepStart_Info>();
-            provider.AddEvent<Intel_PresentMon::AppSleepEnd_Info>();
-        }
-        status = provider.Enable(sessionHandle, Intel_PresentMon::GUID);
-        if (status != ERROR_SUCCESS) return status;
-    }
-    return ERROR_SUCCESS;
+    return EnableProvidersListing(sessionHandle, &sessionGuid, pmConsumer, filterEventIds, isWin11OrGreater);
 }
 
 void DisableProviders(TRACEHANDLE sessionHandle)
@@ -719,3 +612,172 @@ void PMTraceSession::TimestampToLocalSystemTime(uint64_t timestamp, SYSTEMTIME* 
     FileTimeToSystemTime(&lft, st);
     *ns = (timestamp % 10000000) * 100;
 }
+
+ULONG EnableProvidersListing(
+    TRACEHANDLE sessionHandle,
+    const GUID* pSessionGuid,
+    const PMTraceConsumer* pmConsumer,
+    bool filterEventIds,
+    bool isWin11OrGreater,
+    std::shared_ptr<IFilterBuildListener> pListener)
+{
+    // Start backend providers first to reduce Presents being queued up before
+    // we can track them.
+    FilteredProvider provider(pSessionGuid, filterEventIds, isWin11OrGreater, std::move(pListener));
+
+
+    // Microsoft_Windows_DxgKrnl
+    //
+    // WARNING: When adding a DxgKrnl event, make sure to patch it's Performance keyword (see
+    // above).
+    provider.ClearFilter();
+    provider.AddEvent<Microsoft_Windows_DxgKrnl::PresentHistory_Start>();
+    if (pmConsumer->mTrackDisplay) {
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Blit_Info>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::BlitCancel_Info>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Flip_Info>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::IndependentFlip_Info>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::FlipMultiPlaneOverlay_Info>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::HSyncDPCMultiPlane_Info>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::VSyncDPCMultiPlane_Info>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::MMIOFlip_Info>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay_Info>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Present_Info>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::PresentHistory_Info>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::PresentHistoryDetailed_Start>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::QueuePacket_Start>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::QueuePacket_Start_2>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::QueuePacket_Stop>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::VSyncDPC_Info>();
+    }
+    if (pmConsumer->mTrackGPU) {
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Context_DCStart>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Context_Start>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Context_Stop>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Device_DCStart>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Device_Start>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Device_Stop>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::HwQueue_DCStart>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::HwQueue_Start>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::DmaPacket_Info>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::DmaPacket_Start>();
+    }
+    if (pmConsumer->mTrackGPUVideo) {
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::NodeMetadata_Info>();
+    }
+    if (pmConsumer->mTrackFrameType) {
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::MMIOFlipMultiPlaneOverlay3_Info>();
+    }
+    auto status = provider.Enable(sessionHandle, Microsoft_Windows_DxgKrnl::GUID);
+    if (status != ERROR_SUCCESS) return status;
+
+    // we call Enable here once more to capture initial state of the device contexts
+    if (pmConsumer->mTrackGPU) {
+        provider.ClearFilter();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Context_DCStart>();
+        provider.AddEvent<Microsoft_Windows_DxgKrnl::Device_DCStart>();
+        status = provider.Enable(sessionHandle, Microsoft_Windows_DxgKrnl::GUID, EVENT_CONTROL_CODE_CAPTURE_STATE);
+        if (status != ERROR_SUCCESS) return status;
+    }
+
+    // enable dxgkrnl win7 provider directly (no filtering because win7 doesn't support it anyways)
+    status = provider.EnableWithoutFiltering(sessionHandle, Microsoft_Windows_DxgKrnl::Win7::GUID, TRACE_LEVEL_INFORMATION);
+    if (status != ERROR_SUCCESS) return status;
+
+
+    // Microsoft_Windows_Win32k
+    //
+    if (pmConsumer->mTrackDisplay || pmConsumer->mTrackInput) {
+        provider.ClearFilter();
+        if (pmConsumer->mTrackDisplay) {
+            provider.AddEvent<Microsoft_Windows_Win32k::TokenCompositionSurfaceObject_Info>();
+            provider.AddEvent<Microsoft_Windows_Win32k::TokenStateChanged_Info>();
+        }
+        if (pmConsumer->mTrackInput) {
+            provider.AddEvent<Microsoft_Windows_Win32k::InputDeviceRead_Stop>();
+            provider.AddEvent<Microsoft_Windows_Win32k::RetrieveInputMessage_Info>();
+            provider.AddEvent<Microsoft_Windows_Win32k::OnInputXformUpdate_Info>();
+        }
+        status = provider.Enable(sessionHandle, Microsoft_Windows_Win32k::GUID);
+        if (status != ERROR_SUCCESS) return status;
+    }
+
+
+    // Microsoft_Windows_Dwm_Core
+    //
+    if (pmConsumer->mTrackDisplay) {
+        provider.ClearFilter();
+        provider.AddEvent<Microsoft_Windows_Dwm_Core::MILEVENT_MEDIA_UCE_PROCESSPRESENTHISTORY_GetPresentHistory_Info>();
+        provider.AddEvent<Microsoft_Windows_Dwm_Core::SCHEDULE_PRESENT_Start>();
+        provider.AddEvent<Microsoft_Windows_Dwm_Core::SCHEDULE_SURFACEUPDATE_Info>();
+        provider.AddEvent<Microsoft_Windows_Dwm_Core::FlipChain_Pending>();
+        provider.AddEvent<Microsoft_Windows_Dwm_Core::FlipChain_Complete>();
+        provider.AddEvent<Microsoft_Windows_Dwm_Core::FlipChain_Dirty>();
+        status = provider.Enable(sessionHandle, Microsoft_Windows_Dwm_Core::GUID);
+        if (status != ERROR_SUCCESS) return status;
+
+        // enable dwm_core win7 provider directly (no filtering because win7 doesn't support it anyways)
+        status = provider.EnableWithoutFiltering(sessionHandle, Microsoft_Windows_Dwm_Core::Win7::GUID, TRACE_LEVEL_VERBOSE);
+        if (status != ERROR_SUCCESS) return status;
+    }
+
+
+    // Microsoft_Windows_DXGI
+    //
+    provider.ClearFilter();
+    provider.AddEvent<Microsoft_Windows_DXGI::Present_Start>();
+    provider.AddEvent<Microsoft_Windows_DXGI::Present_Stop>();
+    provider.AddEvent<Microsoft_Windows_DXGI::PresentMultiplaneOverlay_Start>();
+    provider.AddEvent<Microsoft_Windows_DXGI::PresentMultiplaneOverlay_Stop>();
+    status = provider.Enable(sessionHandle, Microsoft_Windows_DXGI::GUID);
+    if (status != ERROR_SUCCESS) return status;
+
+
+    // Microsoft_Windows_Kernel_Process
+    //
+    provider.ClearFilter();
+    provider.AddEvent<Microsoft_Windows_Kernel_Process::ProcessStart_Start>();
+    provider.AddEvent<Microsoft_Windows_Kernel_Process::ProcessStop_Stop>();
+    status = provider.Enable(sessionHandle, Microsoft_Windows_Kernel_Process::GUID);
+    if (status != ERROR_SUCCESS && status != ERROR_ACCESS_DENIED) return status;
+
+
+    // Microsoft_Windows_D3D9
+    //
+    provider.ClearFilter();
+    provider.AddEvent<Microsoft_Windows_D3D9::Present_Start>();
+    provider.AddEvent<Microsoft_Windows_D3D9::Present_Stop>();
+    status = provider.Enable(sessionHandle, Microsoft_Windows_D3D9::GUID);
+    if (status != ERROR_SUCCESS) return status;
+
+
+    // Intel_PresentMon
+    //
+    if (pmConsumer->mTrackFrameType || pmConsumer->mTrackPMMeasurements || pmConsumer->mTrackAppTiming) {
+        provider.ClearFilter();
+        if (pmConsumer->mTrackFrameType) {
+            provider.AddEvent<Intel_PresentMon::PresentFrameType_Info>();
+            provider.AddEvent<Intel_PresentMon::FlipFrameType_Info>();
+        }
+        if (pmConsumer->mTrackPMMeasurements) {
+            provider.AddEvent<Intel_PresentMon::MeasuredInput_Info>();
+            provider.AddEvent<Intel_PresentMon::MeasuredScreenChange_Info>();
+        }
+        if (pmConsumer->mTrackAppTiming) {
+            provider.AddEvent<Intel_PresentMon::AppInputSample_Info>();
+            provider.AddEvent<Intel_PresentMon::AppPresentStart_Info>();
+            provider.AddEvent<Intel_PresentMon::AppPresentEnd_Info>();
+            provider.AddEvent<Intel_PresentMon::AppSimulationStart_Info>();
+            provider.AddEvent<Intel_PresentMon::AppSimulationEnd_Info>();
+            provider.AddEvent<Intel_PresentMon::AppRenderSubmitStart_Info>();
+            provider.AddEvent<Intel_PresentMon::AppRenderSubmitEnd_Info>();
+            provider.AddEvent<Intel_PresentMon::AppSleepStart_Info>();
+            provider.AddEvent<Intel_PresentMon::AppSleepEnd_Info>();
+        }
+        status = provider.Enable(sessionHandle, Intel_PresentMon::GUID);
+        if (status != ERROR_SUCCESS) return status;
+    }
+
+    return ERROR_SUCCESS;
+}
+

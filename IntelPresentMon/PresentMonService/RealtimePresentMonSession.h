@@ -10,6 +10,7 @@ public:
     RealtimePresentMonSession();
     RealtimePresentMonSession(const RealtimePresentMonSession& t) = delete;
     RealtimePresentMonSession& operator=(const RealtimePresentMonSession& t) = delete;
+    ~RealtimePresentMonSession() override = default;
 
     bool IsTraceSessionActive() override;
     PM_STATUS StartStreaming(uint32_t client_process_id, uint32_t target_process_id, std::string& nsmFileName) override;
