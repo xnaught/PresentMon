@@ -16,6 +16,8 @@
 #include "ETW/Microsoft_Windows_Win32k.h"
 #include "ETW/NT_Process.h"
 
+#include "../IntelPresentMon/CommonUtilities/Meta.h"
+
 #include <assert.h>
 #include <dxgi.h>
 
@@ -224,21 +226,8 @@ void PrintEventHeaderHelper_(EVENT_RECORD* eventRecord, EventMetadata* metadata,
 {
     wprintf(L" %s=", propName);
 
-    const auto propFuncVoid = reinterpret_cast<const void*>(propFunc);
-         if (propFuncVoid == reinterpret_cast<const void*>(PrintBool))                PrintBool(metadata->GetEventData<uint32_t>(eventRecord, propName) != 0);
-    else if (propFuncVoid == reinterpret_cast<const void*>(PrintU32))                 PrintU32(metadata->GetEventData<uint32_t>(eventRecord, propName));
-    else if (propFuncVoid == reinterpret_cast<const void*>(PrintU64))                 PrintU64(metadata->GetEventData<uint64_t>(eventRecord, propName));
-    else if (propFuncVoid == reinterpret_cast<const void*>(PrintU64x))                PrintU64x(metadata->GetEventData<uint64_t>(eventRecord, propName));
-    else if (propFuncVoid == reinterpret_cast<const void*>(PrintString))              PrintString(metadata->GetEventData<std::string>(eventRecord, propName));
-    else if (propFuncVoid == reinterpret_cast<const void*>(PrintWString))             PrintWString(metadata->GetEventData<std::wstring>(eventRecord, propName));
-    else if (propFuncVoid == reinterpret_cast<const void*>(PrintTime))                PrintTime(metadata->GetEventData<uint64_t>(eventRecord, propName));
-    else if (propFuncVoid == reinterpret_cast<const void*>(PrintTimeDelta))           PrintTimeDelta(metadata->GetEventData<uint64_t>(eventRecord, propName));
-    else if (propFuncVoid == reinterpret_cast<const void*>(PrintQueuePacketType))     PrintQueuePacketType(metadata->GetEventData<uint32_t>(eventRecord, propName));
-    else if (propFuncVoid == reinterpret_cast<const void*>(PrintDmaPacketType))       PrintDmaPacketType(metadata->GetEventData<uint32_t>(eventRecord, propName));
-    else if (propFuncVoid == reinterpret_cast<const void*>(PrintPresentFlags))        PrintPresentFlags(metadata->GetEventData<uint32_t>(eventRecord, propName));
-    else if (propFuncVoid == reinterpret_cast<const void*>(PrintPresentHistoryModel)) PrintPresentHistoryModel(metadata->GetEventData<uint32_t>(eventRecord, propName));
-    else if (propFuncVoid == reinterpret_cast<const void*>(PrintInputType))           PrintInputType(metadata->GetEventData<uint8_t>(eventRecord, propName));
-    else assert(false && "unknown prop function for verbose PrintEventHeader");
+    using ParamType = pmon::util::FunctionPtrTraits<F>::template ParameterType<0>;
+    propFunc(metadata->GetEventData<std::remove_cvref_t<ParamType>>(eventRecord, propName));
 
     if constexpr (sizeof...(T)) {
         PrintEventHeaderHelper_(eventRecord, metadata, rest...);
