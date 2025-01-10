@@ -84,9 +84,9 @@ static_assert(Event_Count <= 32,                        "Too many events for cur
 
 struct PresentMonProvider {
     HMODULE   Advapi32Module;
-    ULONG     (*pEventRegister)(LPCGUID, PENABLECALLBACK, PVOID, PREGHANDLE);
-    ULONG     (*pEventUnregister)(REGHANDLE);
-    ULONG     (*pEventWrite)(REGHANDLE, PCEVENT_DESCRIPTOR, ULONG, PEVENT_DATA_DESCRIPTOR);
+    ULONG     (__stdcall* pEventRegister)(LPCGUID, PENABLECALLBACK, PVOID, PREGHANDLE);
+    ULONG     (__stdcall* pEventUnregister)(REGHANDLE);
+    ULONG     (__stdcall* pEventWrite)(REGHANDLE, PCEVENT_DESCRIPTOR, ULONG, PEVENT_DATA_DESCRIPTOR);
 
     REGHANDLE ProviderHandle;
     ULONG     EnableBits;
@@ -206,9 +206,9 @@ PresentMonProvider* PresentMonProvider_Initialize()
         return nullptr;
     }
 
-    ctxt->pEventRegister   = (decltype(ctxt->pEventRegister))   GetProcAddress(ctxt->Advapi32Module, "EventRegister");
-    ctxt->pEventUnregister = (decltype(ctxt->pEventUnregister)) GetProcAddress(ctxt->Advapi32Module, "EventUnregister");
-    ctxt->pEventWrite      = (decltype(ctxt->pEventWrite))      GetProcAddress(ctxt->Advapi32Module, "EventWrite");
+    ctxt->pEventRegister   = reinterpret_cast<decltype(ctxt->pEventRegister)>(GetProcAddress(ctxt->Advapi32Module, "EventRegister"));
+    ctxt->pEventUnregister = reinterpret_cast<decltype(ctxt->pEventUnregister)>(GetProcAddress(ctxt->Advapi32Module, "EventUnregister"));
+    ctxt->pEventWrite      = reinterpret_cast<decltype(ctxt->pEventWrite)>(GetProcAddress(ctxt->Advapi32Module, "EventWrite"));
     if (ctxt->pEventRegister == nullptr ||
         ctxt->pEventUnregister == nullptr ||
         ctxt->pEventWrite == nullptr) {

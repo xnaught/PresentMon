@@ -1943,7 +1943,8 @@ void PMTraceConsumer::StopTrackingPresent(std::shared_ptr<PresentEvent> const& p
     }
 
     if (p->AppFrameId != 0) {
-        auto eventIter = mPresentByAppFrameId.find(p->AppFrameId);
+        auto key = std::make_pair(p->AppFrameId, p->ProcessId);
+        auto eventIter = mPresentByAppFrameId.find(key);
         if (eventIter != mPresentByAppFrameId.end()) {
             mPresentByAppFrameId.erase(eventIter);
         }
@@ -2364,26 +2365,33 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
     }
     auto present = eventIter->second;
 
-    if (mNextAppFrameId != 0) {
-        auto ii = mPendingAppTimingDataByAppFrameId.find(mNextAppFrameId);
-        if (ii != mPendingAppTimingDataByAppFrameId.end()) {
-            if (present->ProcessId == ii->second.AppProcessId) {
-                present->AppFrameId = mNextAppFrameId;
-                present->AppSimStartTime = ii->second.AppSimStartTime;
-                present->AppSimEndTime = ii->second.AppSimEndTime;
-                present->AppSleepStartTime = ii->second.AppSleepStartTime;
-                present->AppSleepEndTime = ii->second.AppSleepEndTime;
-                present->AppRenderSubmitStartTime = ii->second.AppRenderSubmitStartTime;
-                present->AppRenderSubmitEndTime = ii->second.AppRenderSubmitEndTime;
-                present->AppPresentStartTime = ii->second.AppPresentStartTime;
-                present->AppPresentEndTime = ii->second.AppPresentEndTime;
-                present->AppInputSample.first = ii->second.AppInputSample.first;
-                present->AppInputSample.second = ii->second.AppInputSample.second;
-                // Will no longer track the pending timing data as now we have
-                // a present event for tracking the app provider data
-                mPendingAppTimingDataByAppFrameId.erase(ii);
-                // Start tracking using the app frame id to this present
-                mPresentByAppFrameId.emplace(mNextAppFrameId, present);
+    if (mTrackAppTiming) {
+        auto appFrameIdIter = mNextAppFrameIdByProcessid.find(present->ProcessId);
+        if (appFrameIdIter != mNextAppFrameIdByProcessid.end()) {
+            auto appFrameId = appFrameIdIter->second;
+            if (appFrameId != 0) {
+                auto key = std::make_pair(appFrameId, present->ProcessId);
+                auto ii = mPendingAppTimingDataByAppFrameId.find(key);
+                if (ii != mPendingAppTimingDataByAppFrameId.end()) {
+                    if (present->ProcessId == ii->second.AppProcessId) {
+                        present->AppFrameId = appFrameId;
+                        present->AppSimStartTime = ii->second.AppSimStartTime;
+                        present->AppSimEndTime = ii->second.AppSimEndTime;
+                        present->AppSleepStartTime = ii->second.AppSleepStartTime;
+                        present->AppSleepEndTime = ii->second.AppSleepEndTime;
+                        present->AppRenderSubmitStartTime = ii->second.AppRenderSubmitStartTime;
+                        present->AppRenderSubmitEndTime = ii->second.AppRenderSubmitEndTime;
+                        present->AppPresentStartTime = ii->second.AppPresentStartTime;
+                        present->AppPresentEndTime = ii->second.AppPresentEndTime;
+                        present->AppInputSample.first = ii->second.AppInputSample.first;
+                        present->AppInputSample.second = ii->second.AppInputSample.second;
+                        // Will no longer track the pending timing data as now we have
+                        // a present event for tracking the app provider data
+                        mPendingAppTimingDataByAppFrameId.erase(ii);
+                        // Start tracking using the app frame id to this present
+                        mPresentByAppFrameId.emplace(std::make_pair(appFrameId, present->ProcessId), present);
+                    }
+                }
             }
         }
     }
@@ -2486,6 +2494,14 @@ void PMTraceConsumer::HandleProcessEvent(EVENT_RECORD* pEventRecord)
             mMetadata.GetEventData(pEventRecord, desc, _countof(desc));
             event.ProcessId    = desc[0].GetData<uint32_t>();
             event.IsStartEvent = false;
+
+            if (mTrackAppTiming) {
+                auto appFrameIdIter = mNextAppFrameIdByProcessid.find(event.ProcessId);
+                if (appFrameIdIter != mNextAppFrameIdByProcessid.end()) {
+                    mNextAppFrameIdByProcessid.erase(appFrameIdIter);
+                }
+            }
+
             break;
         }
         default:
@@ -2540,7 +2556,8 @@ bool PMTraceConsumer::UpdateAppTimingPresent(const EVENT_RECORD* pEventRecord) {
         DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSleepStart_Info_Props));
         auto props = (Intel_PresentMon::AppSleepStart_Info_Props*)pEventRecord->UserData;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPresentByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, pEventRecord->EventHeader.ProcessId);
+        auto ii = mPresentByAppFrameId.find(key);
         if (ii != mPresentByAppFrameId.end()) {
             DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
             ii->second->AppSleepStartTime = timestamp;
@@ -2552,7 +2569,8 @@ bool PMTraceConsumer::UpdateAppTimingPresent(const EVENT_RECORD* pEventRecord) {
         DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSleepEnd_Info_Props));
         auto props = (Intel_PresentMon::AppSleepEnd_Info_Props*)pEventRecord->UserData;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPresentByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, pEventRecord->EventHeader.ProcessId);
+        auto ii = mPresentByAppFrameId.find(key);
         if (ii != mPresentByAppFrameId.end()) {
             DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
             ii->second->AppSleepEndTime = timestamp;
@@ -2564,7 +2582,8 @@ bool PMTraceConsumer::UpdateAppTimingPresent(const EVENT_RECORD* pEventRecord) {
         DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSimulationStart_Info_Props));
         auto props = (Intel_PresentMon::AppSimulationStart_Info_Props*)pEventRecord->UserData;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPresentByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, pEventRecord->EventHeader.ProcessId);
+        auto ii = mPresentByAppFrameId.find(key);
         if (ii != mPresentByAppFrameId.end()) {
             DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
             ii->second->AppSimStartTime = timestamp;
@@ -2576,7 +2595,8 @@ bool PMTraceConsumer::UpdateAppTimingPresent(const EVENT_RECORD* pEventRecord) {
         DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppSimulationEnd_Info_Props));
         auto props = (Intel_PresentMon::AppSimulationEnd_Info_Props*)pEventRecord->UserData;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPresentByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, pEventRecord->EventHeader.ProcessId);
+        auto ii = mPresentByAppFrameId.find(key);
         if (ii != mPresentByAppFrameId.end()) {
             DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
             ii->second->AppSimEndTime = timestamp;
@@ -2588,7 +2608,8 @@ bool PMTraceConsumer::UpdateAppTimingPresent(const EVENT_RECORD* pEventRecord) {
         DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppRenderSubmitStart_Info_Props));
         auto props = (Intel_PresentMon::AppRenderSubmitStart_Info_Props*)pEventRecord->UserData;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPresentByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, pEventRecord->EventHeader.ProcessId);
+        auto ii = mPresentByAppFrameId.find(key);
         if (ii != mPresentByAppFrameId.end()) {
             DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
             ii->second->AppRenderSubmitStartTime = timestamp;
@@ -2600,7 +2621,8 @@ bool PMTraceConsumer::UpdateAppTimingPresent(const EVENT_RECORD* pEventRecord) {
         DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppRenderSubmitEnd_Info_Props));
         auto props = (Intel_PresentMon::AppRenderSubmitStart_Info_Props*)pEventRecord->UserData;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPresentByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, pEventRecord->EventHeader.ProcessId);
+        auto ii = mPresentByAppFrameId.find(key);
         if (ii != mPresentByAppFrameId.end()) {
             DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
             ii->second->AppRenderSubmitEndTime = timestamp;
@@ -2617,7 +2639,8 @@ bool PMTraceConsumer::UpdateAppTimingPresent(const EVENT_RECORD* pEventRecord) {
         DebugAssert(pEventRecord->UserDataLength == sizeof(Intel_PresentMon::AppPresentEnd_Info_Props));
         auto props = (Intel_PresentMon::AppPresentEnd_Info_Props*)pEventRecord->UserData;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPresentByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, pEventRecord->EventHeader.ProcessId);
+        auto ii = mPresentByAppFrameId.find(key);
         if (ii != mPresentByAppFrameId.end()) {
             DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
             ii->second->AppPresentEndTime = timestamp;
@@ -2633,7 +2656,8 @@ bool PMTraceConsumer::UpdateAppTimingPresent(const EVENT_RECORD* pEventRecord) {
         }
         auto props = (Intel_PresentMon::AppInputSample_Info_Props*)pEventRecord->UserData;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPresentByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, pEventRecord->EventHeader.ProcessId);
+        auto ii = mPresentByAppFrameId.find(key);
         if (ii != mPresentByAppFrameId.end()) {
             DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
             ii->second->AppInputSample.first = timestamp;
@@ -2654,7 +2678,8 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
         auto props = (Intel_PresentMon::AppSleepStart_Info_Props*)pEventRecord->UserData;
         auto processId = pEventRecord->EventHeader.ProcessId;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, processId);
+        auto ii = mPendingAppTimingDataByAppFrameId.find(key);
         if (ii != mPendingAppTimingDataByAppFrameId.end()) {
             DebugAssert(ii->second.AppProcessId == processId);
             ii->second.AppSleepStartTime = timestamp;
@@ -2663,7 +2688,7 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
             AppTimingData data;
             data.AppSleepStartTime = timestamp;
             data.AppProcessId = processId;
-            mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            mPendingAppTimingDataByAppFrameId.emplace(std::make_pair(props->FrameId, processId), data);
         }
     }
     return;
@@ -2672,7 +2697,8 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
         auto props = (Intel_PresentMon::AppSleepEnd_Info_Props*)pEventRecord->UserData;
         auto processId = pEventRecord->EventHeader.ProcessId;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, processId);
+        auto ii = mPendingAppTimingDataByAppFrameId.find(key);
         if (ii != mPendingAppTimingDataByAppFrameId.end()) {
             DebugAssert(ii->second.AppProcessId == processId);
             ii->second.AppSleepEndTime = timestamp;
@@ -2681,7 +2707,7 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
             AppTimingData data;
             data.AppSleepEndTime = timestamp;
             data.AppProcessId = processId;
-            mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            mPendingAppTimingDataByAppFrameId.emplace(std::make_pair(props->FrameId, processId), data);
         }
     }
     return;
@@ -2690,7 +2716,8 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
         auto props = (Intel_PresentMon::AppSimulationStart_Info_Props*)pEventRecord->UserData;
         auto processId = pEventRecord->EventHeader.ProcessId;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, processId);
+        auto ii = mPendingAppTimingDataByAppFrameId.find(key);
         if (ii != mPendingAppTimingDataByAppFrameId.end()) {
             DebugAssert(ii->second.AppProcessId == processId);
             ii->second.AppSimStartTime = timestamp;
@@ -2699,7 +2726,7 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
             AppTimingData data;
             data.AppSimStartTime = timestamp;
             data.AppProcessId = processId;
-            mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            mPendingAppTimingDataByAppFrameId.emplace(std::make_pair(props->FrameId, processId), data);
         }
     }
     return;
@@ -2708,7 +2735,8 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
         auto props = (Intel_PresentMon::AppSimulationEnd_Info_Props*)pEventRecord->UserData;
         auto processId = pEventRecord->EventHeader.ProcessId;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, processId);
+        auto ii = mPendingAppTimingDataByAppFrameId.find(key);
         if (ii != mPendingAppTimingDataByAppFrameId.end()) {
             DebugAssert(ii->second.AppProcessId == processId);
             ii->second.AppSimEndTime = timestamp;
@@ -2717,7 +2745,7 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
             AppTimingData data;
             data.AppSimEndTime = timestamp;
             data.AppProcessId = processId;
-            mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            mPendingAppTimingDataByAppFrameId.emplace(std::make_pair(props->FrameId, processId), data);
         }
     }
     return;
@@ -2726,7 +2754,8 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
         auto props = (Intel_PresentMon::AppRenderSubmitStart_Info_Props*)pEventRecord->UserData;
         auto processId = pEventRecord->EventHeader.ProcessId;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, processId);
+        auto ii = mPendingAppTimingDataByAppFrameId.find(key);
         if (ii != mPendingAppTimingDataByAppFrameId.end()) {
             DebugAssert(ii->second.AppProcessId == processId);
             ii->second.AppRenderSubmitStartTime = timestamp;
@@ -2735,7 +2764,7 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
             AppTimingData data;
             data.AppRenderSubmitStartTime = timestamp;
             data.AppProcessId = processId;
-            mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            mPendingAppTimingDataByAppFrameId.emplace(std::make_pair(props->FrameId, processId), data);
         }
     }
     return;
@@ -2744,7 +2773,8 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
         auto props = (Intel_PresentMon::AppRenderSubmitStart_Info_Props*)pEventRecord->UserData;
         auto processId = pEventRecord->EventHeader.ProcessId;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, processId);
+        auto ii = mPendingAppTimingDataByAppFrameId.find(key);
         if (ii != mPendingAppTimingDataByAppFrameId.end()) {
             DebugAssert(ii->second.AppProcessId == processId);
             ii->second.AppRenderSubmitEndTime = timestamp;
@@ -2753,7 +2783,7 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
             AppTimingData data;
             data.AppRenderSubmitEndTime = timestamp;
             data.AppProcessId = processId;
-            mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            mPendingAppTimingDataByAppFrameId.emplace(std::make_pair(props->FrameId, processId), data);
         }
     }
     return;
@@ -2763,9 +2793,10 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
         auto processId = pEventRecord->EventHeader.ProcessId;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
         // Save off the application frame id for next created present event
-        mNextAppFrameId = props->FrameId;
+        mNextAppFrameIdByProcessid[processId] = props->FrameId;
         // Add the application frame id to the save application timing data
-        auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, processId);
+        auto ii = mPendingAppTimingDataByAppFrameId.find(key);
         if (ii != mPendingAppTimingDataByAppFrameId.end()) {
             DebugAssert(ii->second.AppProcessId == processId);
             ii->second.AppPresentStartTime = timestamp;
@@ -2774,7 +2805,7 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
             AppTimingData data;
             data.AppPresentStartTime = timestamp;
             data.AppProcessId = processId;
-            mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            mPendingAppTimingDataByAppFrameId.emplace(std::make_pair(props->FrameId, processId), data);
         }
     }
     return;
@@ -2783,7 +2814,8 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
         auto props = (Intel_PresentMon::AppPresentEnd_Info_Props*)pEventRecord->UserData;
         auto processId = pEventRecord->EventHeader.ProcessId;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, processId);
+        auto ii = mPendingAppTimingDataByAppFrameId.find(key);
         if (ii != mPendingAppTimingDataByAppFrameId.end()) {
             DebugAssert(ii->second.AppProcessId == processId);
             ii->second.AppPresentEndTime = timestamp;
@@ -2792,7 +2824,7 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
             AppTimingData data;
             data.AppPresentEndTime = timestamp;
             data.AppProcessId = processId;
-            mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
+            mPendingAppTimingDataByAppFrameId.emplace(std::make_pair(props->FrameId, processId), data);
         }
     }
     return;
@@ -2801,7 +2833,8 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
         auto props = (Intel_PresentMon::AppInputSample_Info_Props*)pEventRecord->UserData;
         auto processId = pEventRecord->EventHeader.ProcessId;
         auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
-        auto ii = mPendingAppTimingDataByAppFrameId.find(props->FrameId);
+        auto key = std::make_pair(props->FrameId, processId);
+        auto ii = mPendingAppTimingDataByAppFrameId.find(key);
         if (ii != mPendingAppTimingDataByAppFrameId.end()) {
             DebugAssert(ii->second.AppProcessId == processId);
             ii->second.AppInputSample.first = timestamp;
@@ -2815,7 +2848,7 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
             //mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
             // These are coming in backwards for xell 0.9.1
             data.AppInputSample.second = ConvertIntelProviderInputTypes((Intel_PresentMon::InputType)props->FrameId);
-            mPendingAppTimingDataByAppFrameId.emplace((uint32_t)props->InputType, data);
+            mPendingAppTimingDataByAppFrameId.emplace(std::make_pair((uint32_t)props->InputType, processId), data);
         }
     }
     return;

@@ -315,16 +315,11 @@ void RealtimePresentMonSession::AddPresents(
             }
         }
 
-        if (chain->mPresentHistoryCount > 0) {
-            // Last producer and last consumer are internal fields
-            // Remove for public build
-            // Send data to streamer if we have more than single present event
-            streamer_.ProcessPresentEvent(
-                presentEvent.get(), &power_telemetry, &cpu_telemetry,
-                chain->mLastPresentQPC, chain->mLastDisplayedPresentQPC,
-                processInfo->mModuleName, gpu_telemetry_cap_bits,
-                cpu_telemetry_cap_bits);
-        }
+        streamer_.ProcessPresentEvent(
+            presentEvent.get(), &power_telemetry, &cpu_telemetry,
+            chain->mLastPresentQPC, chain->mLastDisplayedPresentQPC,
+            processInfo->mModuleName, gpu_telemetry_cap_bits,
+            cpu_telemetry_cap_bits);
 
         chain->mLastPresentQPC = presentEvent->PresentStartTime;
         if (presentEvent->FinalState == PresentResult::Presented) {

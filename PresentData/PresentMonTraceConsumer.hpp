@@ -336,7 +336,6 @@ struct PMTraceConsumer
     uint32_t mCompletedIndex = 0;       // The index of mCompletedPresents of the oldest completed present.
     uint32_t mCompletedCount = 0;       // The total number of presents in mCompletedPresents.
     uint32_t mReadyCount = 0;           // The number of presents in mCompletedPresents, starting at mCompletedIndex, that are ready to be dequeued.
-    uint32_t mNextAppFrameId = 0;       // If not zero, the application frame id when creating the next present
 
     // Mutexs to protect consumer/dequeue access from different threads:
     std::mutex mProcessEventMutex;
@@ -423,7 +422,13 @@ struct PMTraceConsumer
     struct Win32KPresentHistoryTokenHash : private std::hash<uint64_t> {
         std::size_t operator()(Win32KPresentHistoryToken const& v) const noexcept;
     };
-
+    
+    // Custom hash function for std::pair<uint32_t, uint32_t>
+    struct PairHash {
+        std::size_t operator()(const std::pair<uint32_t, uint32_t>& p) const noexcept {
+            return std::hash<uint32_t>{}(p.first) ^ (std::hash<uint32_t>{}(p.second) << 1);
+        }
+    };
     std::unordered_map<uint32_t, std::shared_ptr<PresentEvent>> mPresentByThreadId;                     // ThreadId -> PresentEvent
     std::unordered_map<uint32_t, OrderedPresents>               mOrderedPresentsByProcessId;            // ProcessId -> ordered PresentStartTime -> PresentEvent
     std::unordered_map<uint32_t, std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>>>
@@ -435,9 +440,12 @@ struct PMTraceConsumer
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByDxgkContext;                  // DxgkContex -> PresentEvent
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mPresentByVidPnLayerId;                 // VidPnLayerId -> PresentEvent
     std::unordered_map<uint64_t, std::shared_ptr<PresentEvent>> mLastPresentByWindow;                   // HWND -> PresentEvent
-    std::unordered_map<uint64_t, MouseClickData> mReceivedMouseClickByHwnd;                             // HWND -> MouseClickData
-    std::unordered_map<uint32_t, std::shared_ptr<PresentEvent>> mPresentByAppFrameId;                   // Intel provider app frame id -> PresentEvent
-    std::unordered_map<uint32_t, AppTimingData> mPendingAppTimingDataByAppFrameId;                      // Intel provider app frame id -> AppTimingData
+    std::unordered_map<uint64_t, MouseClickData>                mReceivedMouseClickByHwnd;              // HWND -> MouseClickData
+    std::unordered_map<std::pair<uint32_t, uint32_t>, 
+                       std::shared_ptr<PresentEvent>, PairHash> mPresentByAppFrameId;                   // Intel provider app frame id -> PresentEvent
+    std::unordered_map<uint32_t, uint32_t>                      mNextAppFrameIdByProcessid;             // ProcessId -> Next Intel provider app frame id
+    std::unordered_map<std::pair<uint32_t, uint32_t>,
+                       AppTimingData, PairHash>                 mPendingAppTimingDataByAppFrameId;      // Intel provider app frame id -> AppTimingData
 
     // mGpuTrace tracks work executed on the GPU.
     GpuTrace mGpuTrace;
