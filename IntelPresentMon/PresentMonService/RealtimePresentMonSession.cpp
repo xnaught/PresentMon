@@ -171,6 +171,11 @@ PM_STATUS RealtimePresentMonSession::StartTraceSession() {
         }
     }
 
+    // Set deferral time limit to 2 seconds
+    if (trace_session_.mPMConsumer->mDeferralTimeLimit == 0) {
+        trace_session_.mPMConsumer->mDeferralTimeLimit = trace_session_.mTimestampFrequency.QuadPart * 2;
+    }
+
     // Start the consumer and output threads
     StartConsumerThread(trace_session_.mTraceHandle);
     StartOutputThread();
