@@ -7,10 +7,6 @@
       "Command": "--help"
     },
     {
-      "Id": "e1d8b7c1-a9a4-4e3e-94ad-9ed216f6d5f3",
-      "Command": "--log-level info"
-    },
-    {
       "Id": "46830a22-a458-47b3-8cd4-fac8922d0536",
       "Command": "--log-level debug"
     },

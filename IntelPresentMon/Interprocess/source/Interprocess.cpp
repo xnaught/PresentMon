@@ -6,15 +6,10 @@
 #include <boost/interprocess/sync/interprocess_sharable_mutex.hpp>
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
 #include <boost/interprocess/sync/sharable_lock.hpp>
-#include <boost/circular_buffer.hpp>
 #include <chrono>
 #include "../../PresentMonService/GlobalIdentifiers.h"
 #include <windows.h>
 #include <sddl.h>
-
-#include "../../CommonUtilities/log/Log.h"
-#include "../../CommonUtilities/Qpc.h"
-#include <array>
 
 namespace pmon::ipc
 {
@@ -37,7 +32,7 @@ namespace pmon::ipc
 			ServiceComms_(std::optional<std::string> sharedMemoryName)
 				:
 				shm_{ bip::create_only, sharedMemoryName.value_or(defaultSegmentName_).c_str(),
-					0x60'0000, nullptr, Permissions_{} },
+					0x10'0000, nullptr, Permissions_{} },
 				pIntroMutex_{ ShmMakeNamedUnique<bip::interprocess_sharable_mutex>(
 					introspectionMutexName_, shm_.get_segment_manager()) },
 				pIntroSemaphore_{ ShmMakeNamedUnique<bip::interprocess_semaphore>(
@@ -45,41 +40,7 @@ namespace pmon::ipc
 				pRoot_{ ShmMakeNamedUnique<intro::IntrospectionRoot>(introspectionRootName_,
 					shm_.get_segment_manager(), shm_.get_segment_manager()) }
 			{
-
 				PreInitializeIntrospection_();
-				auto man = shm_.get_segment_manager();
-				bool multi = false;
-				constexpr size_t N = 120;
-				constexpr size_t M = 30;
-				if (multi) {
-					using Ring = boost::circular_buffer<double, ShmAllocator<double>>;
-					ShmAllocator<double> alloc{ man };
-					std::vector<Ring*> ringPtrs;
-					for (size_t i = 0; i < N; i++) {
-						ringPtrs.push_back(man->construct<Ring>(bip::anonymous_instance)(1000, alloc));
-					}
-					util::QpcTimer timer;
-					for (size_t i = 0; i < M; i++) {
-						for (auto p : ringPtrs) {
-							p->push_back(double(i));
-						}
-						pmlog_info("Update time multi").pmwatch(timer.Mark());
-					}
-				}
-				else {
-					using T = std::array<double, N>;
-					ShmAllocator<T> alloc{ man };
-					using Ring = boost::circular_buffer<T, decltype(alloc)>;
-					auto pRing = man->construct<Ring>(bip::anonymous_instance)(1000, alloc);
-					util::QpcTimer timer;
-					for (size_t i = 0; i < M; i++) {
-						pRing->push_back({});
-						for (auto& e : pRing->back()) {
-							e = double(i);
-						}
-						pmlog_info("Update time single").pmwatch(timer.Mark());
-					}
-				}
 			}
 			intro::IntrospectionRoot& GetIntrospectionRoot() override
 			{
