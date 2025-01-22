@@ -6,6 +6,8 @@
 #include <vector>
 #include <cassert>
 #include <type_traits>
+#include "Registry.h"
+#include "Loader.h"
 
 
 // pointers to runtime-resolved functions
@@ -45,7 +47,11 @@ LoggingSingletons(*pFunc_pmLinkLogging__)(std::shared_ptr<pmon::util::log::IChan
 	std::function<pmon::util::log::IdentificationTable&()>) = nullptr;
 void(*pFunc_pmFlushEntryPoint__)() = nullptr;
 
+// internal loader state globals
+std::string middlewareDllPath_;
 
+
+// implementation functions
 void* GetCppProcAddress_Impl_(HMODULE h,const char* name, const char* mangledEmbeddedSignature)
 {
 	// don't bother including receiving template function name
@@ -53,23 +59,30 @@ void* GetCppProcAddress_Impl_(HMODULE h,const char* name, const char* mangledEmb
 	// The signature of F appears twice (return type and template parameter type)
 	size_t len = Signature.find("@@YA");
 	std::string templateParam = Signature.substr(0, len);
-	std::string returnType = Signature.substr(len + 4);
-	returnType.resize(templateParam.size()); // Strip off our own arguments (HMODULE and const char*)
-	// templateParam and returnType are _pointers_ to functions (P6), so adjust to function type (Y)
+	// templateParam is a _pointer_ to a function (P6), so adjust to function type (Y)
 	std::string funName = "?" + std::string(name) + "@@Y" + templateParam.substr(2);
 	return ::GetProcAddress(h, funName.c_str());
 }
-
 template<typename F>
 F GetCppProcAddress_(HMODULE h, const char* name)
 {
 	return reinterpret_cast<F>(GetCppProcAddress_Impl_(h, name, __FUNCDNAME__));
 }
 
-
 PRESENTMON_API2_EXPORT PM_STATUS LoadLibrary_()
 {
-	HMODULE hMod = LoadLibraryA("PresentMonAPI2.dll");
+	if (middlewareDllPath_.empty()) {
+		// discover the full path of the middleware dll
+		Reg::SetReadonly();
+		try {
+			middlewareDllPath_ = Reg::Get().middlewarePath;
+		}
+		catch (...) {
+			return PM_STATUS_FAILURE;
+		}
+	}
+
+	HMODULE hMod = LoadLibraryA(middlewareDllPath_.c_str());
 	if (!hMod) {
 		return PM_STATUS_FAILURE;
 	}
@@ -115,6 +128,8 @@ PRESENTMON_API2_EXPORT PM_STATUS LoadLibrary_()
 	return PM_STATUS_SUCCESS;
 }
 
+
+// satisfying exports from middleware by proxying them
 PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession(PM_SESSION_HANDLE* pHandle)
 {
 	if (!pFunc_pmOpenSession_) {
@@ -292,4 +307,21 @@ PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticUnblockWaitingThread()
 {
 	assert(pFunc_pmDiagnosticUnblockWaitingThread_);
 	return pFunc_pmDiagnosticUnblockWaitingThread_();
+}
+
+// exports unique to loader
+PRESENTMON_API2_EXPORT void pmLoaderSetPathToMiddlewareDll_(const char* path)
+{
+	middlewareDllPath_ = path;
+}
+PRESENTMON_API2_EXPORT void pmLoaderSetPathToMiddlewareDll_(const char*);
+
+
+// null logger implementation to satisfy linker (logging from loader not currently supported)
+namespace pmon::util::log
+{
+	std::shared_ptr<class IChannel> GetDefaultChannel() noexcept
+	{
+		return {};
+	}
 }

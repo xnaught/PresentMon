@@ -11,6 +11,7 @@
 #include <Versioning/BuildId.h>
 #include <CommonUtilities/win/Utilities.h>
 #include <PresentMonAPIWrapper/DiagnosticHandler.h>
+#include <PresentMonAPI2Loader/Loader.h>
 #include <dwmapi.h>
 
 #pragma warning(push)
@@ -187,8 +188,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 #else
     constexpr bool is_debug = true;
 #endif
-    // create logging system and ensure cleanup before main ext
-    LogChannelManager zLogMan_;
     // parse the command line arguments and make them globally available
     if (auto err = Options::Init(__argc, __argv, true)) {
         if (*err == 0) {
@@ -202,6 +201,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         return *err;
     }
     const auto& opt = Options::Get();
+    // optionally override the middleware dll path (typically when running from IDE in dev cycle)
+    if (auto path = opt.middlewareDllPath.AsOptional()) {
+        pmLoaderSetPathToMiddlewareDll_(path->c_str());
+    }
+    // create logging system and ensure cleanup before main ext
+    LogChannelManager zLogMan_;
     // wait for debugger connection
     if ((opt.cefType && *opt.cefType == "renderer" && opt.debugWaitRender) ||
         (!opt.cefType && opt.debugWaitClient)) {
