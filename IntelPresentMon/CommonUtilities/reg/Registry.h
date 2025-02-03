@@ -166,6 +166,7 @@ namespace pmon::util::reg
 			catch (const winreg::RegException& e) {
 				if (e.code().value() == 2) {
 					pmlog_warn(std::format("Registry key [{}] does not exist, creating...", str::ToNarrow(keyPath)));
+					// note the lack of return here, allowing us to continue on to the creation routine below
 				}
 				else {
 					pmlog_error(ReportException(std::format("Failed to open registry key [{}]", str::ToNarrow(keyPath))));

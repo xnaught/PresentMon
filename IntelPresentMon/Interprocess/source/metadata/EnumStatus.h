@@ -16,4 +16,9 @@
 		X_(STATUS, INVALID_ADAPTER_ID, "Invalid Adapter ID", "", "Graphics adapter ID provided does not match any ID in service") \
 		X_(STATUS, OUT_OF_RANGE, "Out of Range", "", "Value falls outside of the acceptable range") \
 		X_(STATUS, INSUFFICIENT_BUFFER, "Insufficient Buffer", "", "Buffer is not large enough to hold all output data") \
-		X_(STATUS, PIPE_ERROR, "Pipe Error", "", "An error occurred in connecting to or communicating over named pipes")
+		X_(STATUS, PIPE_ERROR, "Pipe Error", "", "An error occurred in connecting to or communicating over named pipes") \
+		X_(STATUS, MIDDLEWARE_MISSING_PATH, "Middleware Missing Path", "", "The path to the Middleware DLL was not found in the registry") \
+		X_(STATUS, MIDDLEWARE_MISSING_DLL, "Middleware Missing DLL", "", "The Middleware DLL was not found at the specified path") \
+		X_(STATUS, MIDDLEWARE_INVALID_SIGNATURE, "Middleware Invalid Signature", "", "The DLL was not properly signed or was tampered with") \
+		X_(STATUS, MIDDLEWARE_VERSION_INCOMPATIBLE, "Middleware Version Incompatible", "", "The Middleware DLL version is not compatible") \
+		X_(STATUS, MIDDLEWARE_MISSING_ENDPOINT, "Middleware Missing Endpoint", "", "A requried endpoint function was not found in the Middleware DLL")
