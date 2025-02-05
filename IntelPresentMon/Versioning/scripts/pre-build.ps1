@@ -14,8 +14,11 @@ if (Test-Path 'generated\build_id.h') {
     # ------------------------------------------------------------------------------
     Write-Host "[build_id_gen] Gathering diff info (Signature A)..."
 
-    # 1A) Normal 'numstat' lines for tracked changes
-    $signatureA_current_lines = git diff --numstat
+    # 1A1) Sig A always starts with the git commit hash
+    $signatureA_current_lines = ((git rev-parse HEAD) | Out-String).Trim()
+
+    # 1A2) Normal 'numstat' lines for tracked changes
+    $signatureA_current_lines += git diff --numstat
 
     # 1B) Collect untracked files so we can treat them like "newly added"
     #     (i.e., lines = total lines, removed = 0)
