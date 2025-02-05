@@ -16,10 +16,7 @@ extern "C" {
 #endif
 
 // testing support functions
-PRESENTMON_API2_EXPORT void pmSetMiddlewareAsMock_(bool mocked, bool useCrtHeapDebug = false, bool useLocalShmServer = true);
 PRESENTMON_API2_EXPORT _CrtMemState pmCreateHeapCheckpoint_();
-PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareSpeak_(PM_SESSION_HANDLE handle, char* buffer);
-PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(PM_SESSION_HANDLE handle, uint32_t milliseconds);
 
 // log configuration support functions
 struct LoggingSingletons
@@ -36,3 +33,5 @@ PRESENTMON_API2_EXPORT LoggingSingletons pmLinkLogging_(
 	std::function<pmon::util::log::IdentificationTable&()> getIdTable);
 // function to flush the dll's log channel worker queue when before exiting
 PRESENTMON_API2_EXPORT void pmFlushEntryPoint_() noexcept;
+// configure middleware dll's logging to work in standalone mode
+PRESENTMON_API2_EXPORT void pmConfigureStandaloneLogging_();

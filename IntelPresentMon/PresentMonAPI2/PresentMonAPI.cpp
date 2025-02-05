@@ -1,7 +1,6 @@
 #include <memory>
 #include <crtdbg.h>
 #include <unordered_map>
-#include "../PresentMonMiddleware/MockMiddleware.h"
 #include "../PresentMonMiddleware/ConcreteMiddleware.h"
 #include "../Interprocess/source/PmStatusError.h"
 #include "Internal.h"
@@ -13,9 +12,7 @@ using namespace pmon;
 using namespace pmon::mid;
 
 // global state
-bool useMockedMiddleware_ = false;
 bool useCrtHeapDebug_ = false;
-bool useLocalShmServer_ = false;
 // map handles (session, query, introspection) to middleware instances
 std::unordered_map<const void*, std::shared_ptr<Middleware>> handleMap_;
 
@@ -54,52 +51,11 @@ void RemoveHandleMapping_(const void* dependentHandle)
 	}
 }
 
-// private endpoints
-PRESENTMON_API2_EXPORT void pmSetMiddlewareAsMock_(bool mocked, bool activateCrtHeapDebug, bool useLocalShmServer)
-{
-	useMockedMiddleware_ = mocked;
-	useCrtHeapDebug_ = activateCrtHeapDebug;
-	useLocalShmServer_ = useLocalShmServer;
-	if (useCrtHeapDebug_) {
-		_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF);
-	}
-	else {
-		_CrtSetDbgFlag(0);
-	}
-}
-
 PRESENTMON_API2_EXPORT _CrtMemState pmCreateHeapCheckpoint_()
 {
 	_CrtMemState s;
 	_CrtMemCheckpoint(&s);
 	return s;
-}
-
-PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareSpeak_(PM_SESSION_HANDLE handle, char* buffer)
-{
-	try {
-		LookupMiddleware_(handle).Speak(buffer);
-		return PM_STATUS_SUCCESS;
-	}
-	catch (...) {
-		const auto code = util::GeneratePmStatus();
-		pmlog_error(util::ReportException()).code(code);
-		return code;
-	}
-}
-
-PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(PM_SESSION_HANDLE handle, uint32_t milliseconds)
-{
-	try {
-		Middleware& mid = LookupMiddleware_(handle);
-		dynamic_cast<MockMiddleware&>(mid).AdvanceTime(milliseconds);
-		return PM_STATUS_SUCCESS;
-	}
-	catch (...) {
-		const auto code = util::GeneratePmStatus();
-		pmlog_error(util::ReportException()).code(code);
-		return code;
-	}
 }
 
 PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, const char* pipeNameOverride, const char* introNsmOverride)
@@ -110,20 +66,15 @@ PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, cons
 			return PM_STATUS_FAILURE;
 		}
 		std::shared_ptr<Middleware> pMiddleware;
-		if (useMockedMiddleware_) {
-			pMiddleware = std::make_shared<MockMiddleware>(useLocalShmServer_);
+		std::optional<std::string> pipeName;
+		std::optional<std::string> introNsm;
+		if (pipeNameOverride) {
+			pipeName = std::string(pipeNameOverride);
 		}
-		else {
-			std::optional<std::string> pipeName;
-			std::optional<std::string> introNsm;
-			if (pipeNameOverride) {
-				pipeName = std::string(pipeNameOverride);
-			}
-			if (introNsmOverride) {
-				introNsm = std::string(introNsmOverride);
-			}
- 			pMiddleware = std::make_shared<ConcreteMiddleware>(std::move(pipeName), std::move(introNsm));
+		if (introNsmOverride) {
+			introNsm = std::string(introNsmOverride);
 		}
+ 		pMiddleware = std::make_shared<ConcreteMiddleware>(std::move(pipeName), std::move(introNsm));
 		*pHandle = pMiddleware.get();
 		handleMap_[*pHandle] = std::move(pMiddleware);
 		return PM_STATUS_SUCCESS;
@@ -183,6 +134,11 @@ PRESENTMON_API2_EXPORT LoggingSingletons pmLinkLogging_(
 PRESENTMON_API2_EXPORT void pmFlushEntryPoint_() noexcept
 {
 	pmon::util::log::FlushEntryPoint();
+}
+
+PRESENTMON_API2_EXPORT void pmConfigureStandaloneLogging_()
+{
+	pmon::util::log::InjectStandaloneChannel();
 }
 
 // public endpoints

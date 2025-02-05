@@ -18,13 +18,11 @@
     <ClInclude Include="LogSetup.h" />
     <ClInclude Include="Middleware.h" />
     <ClInclude Include="MockCommon.h" />
-    <ClInclude Include="MockMiddleware.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConcreteMiddleware.cpp" />
     <ClCompile Include="FrameEventQuery.cpp" />
     <ClCompile Include="LogSetup.cpp" />
-    <ClCompile Include="MockMiddleware.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CommonUtilities\CommonUtilities.vcxproj">

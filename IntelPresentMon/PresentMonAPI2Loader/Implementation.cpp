@@ -41,13 +41,11 @@ PM_DIAGNOSTIC_WAKE_REASON(*pFunc_pmDiagnosticWaitForMessage_)(uint32_t) = nullpt
 PM_STATUS(*pFunc_pmDiagnosticUnblockWaitingThread_)() = nullptr;
 // pointers to runtime-resolved internal functions
 PM_STATUS(*pFunc_pmOpenSession__)(PM_SESSION_HANDLE* pHandle, const char*, const char*) = nullptr;
-void(*pFunc_pmSetMiddlewareAsMock__)(bool, bool, bool) = nullptr;
 _CrtMemState(*pFunc_pmCreateHeapCheckpoint__)() = nullptr;
-PM_STATUS(*pFunc_pmMiddlewareSpeak__)(PM_SESSION_HANDLE, char*) = nullptr;
-PM_STATUS(*pFunc_pmMiddlewareAdvanceTime__)(PM_SESSION_HANDLE, uint32_t) = nullptr;
 LoggingSingletons(*pFunc_pmLinkLogging__)(std::shared_ptr<pmon::util::log::IChannel>,
 	std::function<pmon::util::log::IdentificationTable&()>) = nullptr;
 void(*pFunc_pmFlushEntryPoint__)() = nullptr;
+void(*pFunc_pmConfigureStandaloneLogging__)() = nullptr;
 
 
 // internal loader state globals
@@ -154,12 +152,10 @@ PRESENTMON_API2_EXPORT PM_STATUS LoadLibrary_()
 		RESOLVE(pmDiagnosticUnblockWaitingThread);
 		// internal
 		RESOLVE(pmOpenSession_); // !!
-		RESOLVE_CPP(pmSetMiddlewareAsMock_); //
 		RESOLVE_CPP(pmCreateHeapCheckpoint_); // ??
-		RESOLVE_CPP(pmMiddlewareSpeak_); //
-		RESOLVE_CPP(pmMiddlewareAdvanceTime_); //
 		RESOLVE_CPP(pmLinkLogging_);
 		RESOLVE_CPP(pmFlushEntryPoint_);
+		RESOLVE_CPP(pmConfigureStandaloneLogging_);
 		// if we make it here then we have succeeded
 		middlewareLoadResult_ = PM_STATUS_SUCCESS;
 	}
@@ -261,11 +257,6 @@ PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, cons
 	LoadEndpointIfEmpty_(pFunc_pmOpenSession__);
 	return pFunc_pmOpenSession__(pHandle, pipeNameOverride, introNsmOverride);
 }
-// deprecate
-PRESENTMON_API2_EXPORT void pmSetMiddlewareAsMock_(bool mocked, bool useCrtHeapDebug, bool useLocalShmServer)
-{
-	pFunc_pmSetMiddlewareAsMock__(mocked, useCrtHeapDebug, useLocalShmServer);
-}
 // deprecate?
 PRESENTMON_API2_EXPORT _CrtMemState pmCreateHeapCheckpoint_()
 {
@@ -276,22 +267,10 @@ PRESENTMON_API2_EXPORT _CrtMemState pmCreateHeapCheckpoint_()
 	}
 	return pFunc_pmCreateHeapCheckpoint__();
 }
-// deprecate
-PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareSpeak_(PM_SESSION_HANDLE handle, char* buffer)
-{
-	LoadEndpointIfEmpty_(pFunc_pmMiddlewareSpeak__);
-	return pFunc_pmMiddlewareSpeak__(handle, buffer);
-}
-// deprecate
-PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(PM_SESSION_HANDLE handle, uint32_t milliseconds)
-{
-	LoadEndpointIfEmpty_(pFunc_pmMiddlewareAdvanceTime__);
-	return pFunc_pmMiddlewareAdvanceTime__(handle, milliseconds);
-}
 PRESENTMON_API2_EXPORT LoggingSingletons pmLinkLogging_(std::shared_ptr<pmon::util::log::IChannel> pChannel,
 	std::function<pmon::util::log::IdentificationTable& ()> getIdTable)
 {
-	if (!pFunc_pmOpenSession__) {
+	if (!pFunc_pmLinkLogging__) {
 		if (auto status = LoadLibrary_(); status != PM_STATUS_SUCCESS) {
 			throw LoadException_{ status };
 		}
@@ -308,6 +287,15 @@ PRESENTMON_API2_EXPORT void pmFlushEntryPoint_() noexcept
 	if (pFunc_pmFlushEntryPoint__) {
 		pFunc_pmFlushEntryPoint__();
 	}
+}
+PRESENTMON_API2_EXPORT void pmConfigureStandaloneLogging_()
+{
+	if (!pFunc_pmConfigureStandaloneLogging__) {
+		if (auto status = LoadLibrary_(); status != PM_STATUS_SUCCESS) {
+			throw LoadException_{ status };
+		}
+	}
+	pFunc_pmConfigureStandaloneLogging__();
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticSetup(const PM_DIAGNOSTIC_CONFIGURATION* pConfig)
 {

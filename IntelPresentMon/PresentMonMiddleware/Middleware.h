@@ -10,7 +10,6 @@ namespace pmon::mid
 	class Middleware : public PM_SESSION
 	{
 	public:
-		virtual void Speak(char* buffer) const = 0;
 		virtual const PM_INTROSPECTION_ROOT* GetIntrospectionData() = 0;
 		virtual void FreeIntrospectionData(const PM_INTROSPECTION_ROOT* pRoot) = 0;
 		virtual PM_STATUS StartStreaming(uint32_t processId) = 0;

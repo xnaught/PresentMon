@@ -99,11 +99,6 @@ namespace pmon::mid
         free(const_cast<PM_INTROSPECTION_ROOT*>(pRoot));
     }
 
-	void ConcreteMiddleware::Speak(char* buffer) const
-	{
-		strcpy_s(buffer, 256, "concrete-middle");
-	}
-
     PM_STATUS ConcreteMiddleware::StartStreaming(uint32_t targetPid)
     {
         try {

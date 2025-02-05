@@ -15,31 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CAPIIntrospectionTests.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CAPISessionTests.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CAPIDynamicQueryTests.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CAPIStaticQueryTests.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="WrapperSessionTests.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="WrapperDatasetTests.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="InterprocessTests.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="EndToEndTests.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MiddlewareTests.cpp">
+    <ClCompile Include="WrapperIntrospectionTests.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Logging.cpp">
