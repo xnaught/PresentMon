@@ -40,7 +40,7 @@ namespace EndToEndTests
 		TEST_METHOD_INITIALIZE(Init)
 		{
 			oChild.emplace("PresentMonService.exe"s,
-				//"--timed-stop"s, "4000"s,
+				"--timed-stop"s, "4000"s,
 				"--control-pipe"s, ctlPipeName.c_str(),
 				"--nsm-prefix"s, "pmon_nsm_utest_"s,
 				"--intro-nsm"s, introName);
@@ -99,30 +99,29 @@ namespace EndToEndTests
 				&intro::MetricView::Introspect);
 			Assert::AreEqual((int)PM_METRIC_GPU_NAME, (int)gpuName->GetId());
 		}
-		//TEST_METHOD(IntrospectMetricStatsWithLookup)
-		//{
-		//	using namespace std::string_literals;
-		//	Assert::AreEqual("avg"s, data->GetMetrics().begin()[1].GetStatInfo().begin()->IntrospectStat()->GetShortName());
-		//}
-		//TEST_METHOD(IntrospectMetricDataTypeEnum)
-		//{
-		//	using namespace std::string_literals;
-		//	auto metric = data->FindMetric(PM_METRIC_PRESENT_MODE);
-		//	auto type = metric.GetDataTypeInfo();
-		//	Assert::AreEqual("Present Mode"s, metric.Introspect().GetName());
-		//	Assert::AreEqual((int)PM_DATA_TYPE_ENUM, (int)type.GetPolledType());
-		//	Assert::AreEqual((int)PM_DATA_TYPE_ENUM, (int)type.GetFrameType());
-		//	Assert::AreEqual("PM_PRESENT_MODE"s, type.IntrospectEnum().GetSymbol());
-		//}
-		//TEST_METHOD(IntrospectMetricDataTypeDivergent)
-		//{
-		//	using namespace std::string_literals;
-		//	auto metric = data->FindMetric(PM_METRIC_GPU_POWER_LIMITED);
-		//	auto type = metric.GetDataTypeInfo();
-		//	Assert::AreEqual("GPU Power Limited"s, metric.Introspect().GetName());
-		//	Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)type.GetPolledType());
-		//	Assert::AreEqual((int)PM_DATA_TYPE_BOOL, (int)type.GetFrameType());
-		//}
+		TEST_METHOD(IntrospectMetricStats)
+		{
+			auto swap = rn::find(pData->GetMetrics(), PM_METRIC_SWAP_CHAIN_ADDRESS, &intro::MetricView::GetId);
+			Assert::IsFalse(swap == pData->GetMetrics().end());
+			Assert::AreEqual("PM_STAT_MID_POINT"s, swap->GetStatInfo().begin()->IntrospectStat()->GetSymbol());
+		}
+		TEST_METHOD(IntrospectMetricDataTypeEnum)
+		{
+			auto metric = rn::find(pData->GetMetrics(), PM_METRIC_PRESENT_MODE, &intro::MetricView::GetId);
+			auto type = metric->GetDataTypeInfo();
+			Assert::AreEqual("Present Mode"s, metric->Introspect().GetName());
+			Assert::AreEqual((int)PM_DATA_TYPE_ENUM, (int)type.GetPolledType());
+			Assert::AreEqual((int)PM_DATA_TYPE_ENUM, (int)type.GetFrameType());
+			Assert::AreEqual("PM_PRESENT_MODE"s, type.IntrospectEnum().GetSymbol());
+		}
+		TEST_METHOD(IntrospectMetricDataTypeDivergent)
+		{
+			auto metric = rn::find(pData->GetMetrics(), PM_METRIC_GPU_POWER_LIMITED, &intro::MetricView::GetId);
+			auto type = metric->GetDataTypeInfo();
+			Assert::AreEqual("GPU Power Limited"s, metric->Introspect().GetName());
+			Assert::AreEqual((int)PM_DATA_TYPE_DOUBLE, (int)type.GetPolledType());
+			Assert::AreEqual((int)PM_DATA_TYPE_BOOL, (int)type.GetFrameType());
+		}
 		//TEST_METHOD(IntrospectMetricDeviceMetricInfo)
 		//{
 		//	using namespace std::string_literals;
@@ -192,41 +191,29 @@ namespace EndToEndTests
 		//		Assert::AreEqual("NVIDIA"s, deviceInfo.GetDevice().IntrospectVendor().GetName());
 		//	}
 		//}
-		//TEST_METHOD(IntrospectMetricLookupError)
-		//{
-		//	using namespace std::string_literals;
-		//	Assert::ExpectException<pmapi::LookupException>([this] {
-		//		data->FindMetric((PM_METRIC)420);
-		//		});
-		//}
-		//TEST_METHOD(IntrospectMetricType)
-		//{
-		//	using namespace std::string_literals;
-
-		//	Assert::AreEqual("Dynamic and Frame Event Metric"s, data->FindMetric(PM_METRIC_CPU_UTILIZATION).IntrospectType().GetName());
-		//	Assert::AreEqual("Static Metric"s, data->FindMetric(PM_METRIC_APPLICATION).IntrospectType().GetName());
-		//}
-		//TEST_METHOD(IntrospectStat)
-		//{
-		//	using namespace std::string_literals;
-
-		//	auto shortName = data->FindEnumKey(PM_ENUM_STAT, PM_STAT_AVG).GetShortName();
-
-		//	Assert::AreEqual("avg"s, shortName);
-		//}
-		//TEST_METHOD(IntrospectPreferredUnit)
-		//{
-		//	using namespace std::string_literals;
-
-		//	auto metric = data->FindMetric(PM_METRIC_GPU_MEM_SIZE);
-		//	Assert::AreEqual((int)PM_UNIT_BYTES, (int)metric.GetUnit());
-		//	Assert::AreEqual((int)PM_UNIT_GIGABYTES, (int)metric.GetPreferredUnitHint());
-		//}
-		//TEST_METHOD(IntrospectUnitUpConversion)
-		//{
-		//	using namespace std::string_literals;
-
-		//	Assert::AreEqual(0.000'001, data->FindUnit(PM_UNIT_HERTZ).MakeConversionFactor(PM_UNIT_MEGAHERTZ));
-		//}
+		TEST_METHOD(IntrospectMetricType)
+		{
+			auto cpuUtilMetric = rn::find(pData->GetMetrics(), PM_METRIC_CPU_UTILIZATION, &intro::MetricView::GetId);
+			Assert::AreEqual("Dynamic and Frame Event Metric"s, cpuUtilMetric->IntrospectType().GetName());
+			auto appMetric = rn::find(pData->GetMetrics(), PM_METRIC_APPLICATION, &intro::MetricView::GetId);
+			Assert::AreEqual("Static Metric"s, appMetric->IntrospectType().GetName());
+		}
+		TEST_METHOD(IntrospectStat)
+		{
+			auto statEnum = rn::find(pData->GetEnums(), PM_ENUM_STAT, &intro::EnumView::GetId);
+			auto avg = rn::find(statEnum->GetKeys(), PM_STAT_AVG, &intro::EnumKeyView::GetId);
+			Assert::AreEqual("avg"s, avg->GetShortName());
+		}
+		TEST_METHOD(IntrospectPreferredUnit)
+		{
+			auto metric = rn::find(pData->GetMetrics(), PM_METRIC_GPU_MEM_SIZE, &intro::MetricView::GetId);
+			Assert::AreEqual((int)PM_UNIT_BYTES, (int)metric->GetUnit());
+			Assert::AreEqual((int)PM_UNIT_GIGABYTES, (int)metric->GetPreferredUnitHint());
+		}
+		TEST_METHOD(IntrospectUnitUpConversion)
+		{
+			auto unit = rn::find(pData->GetUnits(), PM_UNIT_HERTZ, &intro::UnitView::GetId);
+			Assert::AreEqual(0.000'001, unit->MakeConversionFactor(PM_UNIT_MEGAHERTZ));
+		}
 	};
 }

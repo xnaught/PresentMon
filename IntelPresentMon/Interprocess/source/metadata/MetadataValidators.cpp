@@ -36,6 +36,13 @@ namespace pmon::ipc::intro
 			}
 #undef X_REG_METRICS
 
+			// validate the list of units against the units enum
+#define X_REG_UNITS(unit, ...) case unit: return false;
+			switch (PM_UNIT(0)) {
+				UNIT_LIST(X_REG_UNITS)
+			}
+#undef X_REG_METRICS
+
 			return true;
 		}
 	}
