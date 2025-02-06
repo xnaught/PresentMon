@@ -101,60 +101,6 @@ PmNsmFrameData* StreamClient::ReadFrameByIdx(uint64_t frame_id) {
   return data;
 }
 
-// Record frames for online process monitoring. Reading from tail and copy data
-// out. This function also keep track of drop frames in case client doesn't read frames fast enough.
-PM_STATUS StreamClient::RecordFrame(PM_FRAME_DATA** out_frame_data) {
-  if (is_etl_stream_client_) {
-    LOG(INFO) << "ETL Client should be using DequeueFrame instead.";
-    *out_frame_data = nullptr;
-    return PM_STATUS::PM_STATUS_SERVICE_ERROR;
-  }
-
-  PmNsmFrameData* data = nullptr;
-  auto nsm_view = GetNamedSharedMemView();
-  auto nsm_hdr = nsm_view->GetHeader();
-  if (!nsm_hdr->process_active) {
-    // Service destroyed the named shared memory.
-    *out_frame_data = nullptr;
-    return PM_STATUS::PM_STATUS_INVALID_PID;
-  }
-
-  if (recording_frame_data_ == false) {
-    // Get the current number of frames written and set it as the current
-    // dequeue frame number. This will be used to track data overruns if
-    // the client does not read data fast enough.
-    recording_frame_data_ = true;
-    current_dequeue_frame_num_ = nsm_hdr->num_frames_written;
-    next_dequeue_idx_ = GetLatestFrameIndex();
-  }
-
-  // Check to see if the number of pending read frames is greater
-  // than the maximum number of entries. If so we have lost frame
-  // data
-  uint64_t num_pending_frames = CheckPendingReadFrames();
-  if (num_pending_frames > nsm_hdr->max_entries) {
-    recording_frame_data_ = false;
-    *out_frame_data = nullptr;
-    return PM_STATUS::PM_STATUS_DATA_LOSS;
-  } else if (num_pending_frames == 0) {
-    *out_frame_data = nullptr;
-    return PM_STATUS::PM_STATUS_NO_DATA;
-  }
-
-  data = ReadFrameByIdx(next_dequeue_idx_);
-  if (data) {
-    uint64_t max_entries = nsm_view->GetHeader()->max_entries;
-    next_dequeue_idx_ = (next_dequeue_idx_ + 1) % max_entries;
-    current_dequeue_frame_num_++;
-    CopyFrameData(nsm_hdr->start_qpc, data, nsm_hdr->gpuTelemetryCapBits,
-                  nsm_hdr->cpuTelemetryCapBits, *out_frame_data);
-
-    return PM_STATUS::PM_STATUS_SUCCESS;
-  } else {
-    return PM_STATUS::PM_STATUS_FAILURE;
-  }
-}
-
 void StreamClient::PeekNextFrames(const PmNsmFrameData** pNextFrame,
                                   const PmNsmFrameData** pNextDisplayedFrame)
 {
@@ -667,32 +613,6 @@ void StreamClient::CopyFrameData(uint64_t start_qpc,
   dst_frame->cpu_frequency.valid =
       cpu_telemetry_cap_bits[static_cast<size_t>(
           CpuTelemetryCapBits::cpu_frequency)];
-}
-
-// Dequeue frames from head of the named shared memory. Pop the data and 
-// decrement the head_idx after read.
-PM_STATUS StreamClient::DequeueFrame(PM_FRAME_DATA** out_frame_data) {
-  auto nsm_view = GetNamedSharedMemView();
-  auto nsm_hdr = nsm_view->GetHeader();
-  if (!nsm_hdr->process_active) {
-    // Service destroyed the named shared memory.
-    *out_frame_data = nullptr;
-    return PM_STATUS::PM_STATUS_INVALID_PID;
-  }
-
-  if ((nsm_view->GetBuffer() == nullptr) || (nsm_view->IsEmpty())) {
-    return PM_STATUS::PM_STATUS_NO_DATA;
-  }
-
-   uint64_t read_offset = nsm_hdr->head_idx * sizeof(PmNsmFrameData) + nsm_view->GetBaseOffset();
-
-   PmNsmFrameData* data = reinterpret_cast<PmNsmFrameData*>(
-       static_cast<char*>((nsm_view->GetBuffer())) + read_offset);
-
-  CopyFrameData(nsm_hdr->start_qpc, data, nsm_hdr->gpuTelemetryCapBits,
-                 nsm_hdr->cpuTelemetryCapBits, *out_frame_data);
-  nsm_view->DequeueFrameData();
-  return PM_STATUS::PM_STATUS_SUCCESS;
 }
 
 uint64_t StreamClient::GetLatestFrameIndex() {

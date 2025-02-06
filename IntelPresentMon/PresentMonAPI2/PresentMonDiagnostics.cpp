@@ -64,11 +64,11 @@ PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticDequeueMessage(PM_DIAGNOSTIC_MESSAG
 			if (auto pDiag = log::GetDiagnostics()) {
 				if (auto pMessage = pDiag->DequeueMessage()) {
 					*ppMessage = pMessage.release();
-					return PM_STATUS_SUCCESS;
 				}
 				else {
-					return PM_STATUS_NO_DATA;
+					*ppMessage = nullptr;
 				}
+				return PM_STATUS_SUCCESS;
 			}
 		}
 	} pmcatch_report;
