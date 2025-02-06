@@ -6,6 +6,7 @@
 #include "Internal.h"
 #include "PresentMonAPI.h"
 #include "../PresentMonMiddleware/LogSetup.h"
+#include "../Versioning/PresentMonAPIVersion.h"
 
 
 using namespace pmon;
@@ -377,4 +378,13 @@ PRESENTMON_API2_EXPORT PM_STATUS pmFreeFrameQuery(PM_FRAME_QUERY_HANDLE handle)
 		pmlog_error(util::ReportException()).code(code);
 		return code;
 	}
+}
+
+PRESENTMON_API2_EXPORT PM_STATUS pmGetApiVersion(PM_VERSION* pVersion)
+{
+	if (!pVersion) {
+		return PM_STATUS_FAILURE;
+	}
+	*pVersion = pmon::bid::GetApiVersion();
+	return PM_STATUS_SUCCESS;
 }

@@ -20,9 +20,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BuildId.h" />
+    <ClInclude Include="PresentMonAPIVersion.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BuildId.cpp" />
+    <ClCompile Include="PresentMonAPIVersion.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="generated\.gitignore" />

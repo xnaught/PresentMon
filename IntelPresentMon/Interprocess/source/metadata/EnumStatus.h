@@ -21,4 +21,6 @@
 		X_(STATUS, MIDDLEWARE_MISSING_DLL, "Middleware Missing DLL", "", "The Middleware DLL was not found at the specified path") \
 		X_(STATUS, MIDDLEWARE_INVALID_SIGNATURE, "Middleware Invalid Signature", "", "The DLL was not properly signed or was tampered with") \
 		X_(STATUS, MIDDLEWARE_VERSION_INCOMPATIBLE, "Middleware Version Incompatible", "", "The Middleware DLL version is not compatible") \
-		X_(STATUS, MIDDLEWARE_MISSING_ENDPOINT, "Middleware Missing Endpoint", "", "A requried endpoint function was not found in the Middleware DLL")
+		X_(STATUS, MIDDLEWARE_MISSING_ENDPOINT, "Middleware Missing Endpoint", "", "A required endpoint function was not found in the Middleware DLL") \
+		X_(STATUS, MIDDLEWARE_VERSION_LOW, "Middleware Version Low", "", "Middleware DLL version was found to be too low for compatibility") \
+		X_(STATUS, MIDDLEWARE_VERSION_HIGH, "Middleware Version High", "", "Middleware DLL version was found to be too high for compatibility")

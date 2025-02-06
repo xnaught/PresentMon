@@ -4,6 +4,7 @@
 #include "../PresentMonAPI2/Internal.h"
 #include "../PresentMonAPIWrapper/PresentMonAPIWrapper.h"
 #include "../PresentMonAPI2Loader/Loader.h"
+#include "../Versioning/BuildId.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace bp = boost::process;
@@ -214,6 +215,16 @@ namespace EndToEndTests
 		{
 			auto unit = rn::find(pData->GetUnits(), PM_UNIT_HERTZ, &intro::UnitView::GetId);
 			Assert::AreEqual(0.000'001, unit->MakeConversionFactor(PM_UNIT_MEGAHERTZ));
+		}
+		TEST_METHOD(CApiVersion)
+		{
+			PM_VERSION ver;
+			Assert::AreEqual(PM_STATUS_SUCCESS, pmGetApiVersion(&ver));
+			Assert::AreEqual(3, (int)ver.major);
+			Assert::AreEqual(0, (int)ver.minor);
+			Assert::AreEqual(0, (int)ver.patch);
+			Assert::AreEqual("beta", ver.tag);
+			Assert::AreEqual(pmon::bid::BuildIdShortHash(), ver.hash);
 		}
 	};
 }

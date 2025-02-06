@@ -34,6 +34,8 @@ extern "C" {
 		PM_STATUS_MIDDLEWARE_INVALID_SIGNATURE,
 		PM_STATUS_MIDDLEWARE_VERSION_INCOMPATIBLE,
 		PM_STATUS_MIDDLEWARE_MISSING_ENDPOINT,
+		PM_STATUS_MIDDLEWARE_VERSION_LOW,
+		PM_STATUS_MIDDLEWARE_VERSION_HIGH,
 	};
 
 	enum PM_METRIC
@@ -361,6 +363,15 @@ extern "C" {
 		uint64_t dataSize;
 	};
 
+	struct PM_VERSION
+	{
+		uint16_t major;
+		uint16_t minor;
+		uint16_t patch;
+		char tag[32];
+		char hash[8];
+	};
+
 	typedef struct PM_DYNAMIC_QUERY* PM_DYNAMIC_QUERY_HANDLE;
 	typedef struct PM_FRAME_QUERY* PM_FRAME_QUERY_HANDLE;
 	typedef struct PM_SESSION* PM_SESSION_HANDLE;
@@ -380,6 +391,7 @@ extern "C" {
 	PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameQuery(PM_SESSION_HANDLE sessionHandle, PM_FRAME_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint32_t* pBlobSize);
 	PRESENTMON_API2_EXPORT PM_STATUS pmConsumeFrames(PM_FRAME_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlobs, uint32_t* pNumFramesToRead);
 	PRESENTMON_API2_EXPORT PM_STATUS pmFreeFrameQuery(PM_FRAME_QUERY_HANDLE handle);
+	PRESENTMON_API2_EXPORT PM_STATUS pmGetApiVersion(PM_VERSION* pVersion);
 
 #ifdef __cplusplus
 } // extern "C"

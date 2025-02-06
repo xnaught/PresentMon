@@ -2,6 +2,7 @@
 #include "../PresentMonAPI2/Internal.h"
 #include "../PresentMonAPI2/PresentMonDiagnostics.h"
 #include "../CommonUtilities/win/WinAPI.h"
+#include "../Versioning/PresentMonAPIVersion.h"
 #include <functional>
 #include <vector>
 #include <cassert>
@@ -28,6 +29,7 @@ PM_STATUS(*pFunc_pmPollStaticQuery_)(PM_SESSION_HANDLE, const PM_QUERY_ELEMENT*,
 PM_STATUS(*pFunc_pmRegisterFrameQuery_)(PM_SESSION_HANDLE, PM_FRAME_QUERY_HANDLE*, PM_QUERY_ELEMENT*, uint64_t, uint32_t*) = nullptr;
 PM_STATUS(*pFunc_pmConsumeFrames_)(PM_FRAME_QUERY_HANDLE, uint32_t, uint8_t*, uint32_t*) = nullptr;
 PM_STATUS(*pFunc_pmFreeFrameQuery_)(PM_FRAME_QUERY_HANDLE) = nullptr;
+PM_STATUS(*pFunc_pmGetApiVersion_)(PM_VERSION*) = nullptr;
 // pointers to runtime-resolved diagnostic functions
 PM_STATUS(*pFunc_pmDiagnosticSetup_)(const PM_DIAGNOSTIC_CONFIGURATION*) = nullptr;
 uint32_t(*pFunc_pmDiagnosticGetQueuedMessageCount_)() = nullptr;
@@ -123,6 +125,21 @@ PRESENTMON_API2_EXPORT PM_STATUS LoadLibrary_()
 
 #define RESOLVE(f) pFunc_##f##_ = reinterpret_cast<decltype(pFunc_##f##_)>(GetProcAddress_(hMod, #f))
 #define RESOLVE_CPP(f) pFunc_##f##_ = GetCppProcAddress_<decltype(pFunc_##f##_)>(hMod, #f)
+		// first check version before attempting to resolve all endpoints
+		RESOLVE(pmGetApiVersion);
+		{
+			PM_VERSION dllVersion{};
+			if (pmGetApiVersion(&dllVersion) != PM_STATUS_SUCCESS) {
+				throw LoadException_{ PM_STATUS_FAILURE };
+			}
+			const auto buildVersion = pmon::bid::GetApiVersion();
+			if (dllVersion.major > buildVersion.major) {
+				throw LoadException_{ PM_STATUS_MIDDLEWARE_VERSION_HIGH };
+			}
+			if (dllVersion.major < buildVersion.major) {
+				throw LoadException_{ PM_STATUS_MIDDLEWARE_VERSION_LOW };
+			}
+		}
 		// core
 		RESOLVE(pmOpenSession);
 		RESOLVE(pmCloseSession);
@@ -250,6 +267,11 @@ PRESENTMON_API2_EXPORT PM_STATUS pmFreeFrameQuery(PM_FRAME_QUERY_HANDLE handle)
 {
 	LoadEndpointIfEmpty_(pFunc_pmFreeFrameQuery_);
 	return pFunc_pmFreeFrameQuery_(handle);
+}
+PRESENTMON_API2_EXPORT PM_STATUS pmGetApiVersion(PM_VERSION* pVersion)
+{
+	LoadEndpointIfEmpty_(pFunc_pmGetApiVersion_);
+	return pFunc_pmGetApiVersion_(pVersion);
 }
 // expose
 PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, const char* pipeNameOverride, const char* introNsmOverride)
