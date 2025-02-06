@@ -5,6 +5,8 @@
 #define ENUM_KEY_LIST_STATUS(X_) \
 		X_(STATUS, SUCCESS, "Success", "", "Operation succeeded") \
 		X_(STATUS, FAILURE, "Failure", "", "Operation failed") \
+		X_(STATUS, BAD_ARGUMENT, "Bad Argument", "", "API function was called with invalid argument(s)") \
+		X_(STATUS, BAD_HANDLE, "Bad Handle", "", "API function was called with an invalid handle") \
 		X_(STATUS, SESSION_NOT_OPEN, "Session Not Open", "", "Operation requires an open session") \
 		X_(STATUS, SERVICE_ERROR, "Service Error", "", "An error occurred within the service") \
 		X_(STATUS, INVALID_ETL_FILE, "Invalid ETL File", "", "") \
@@ -20,7 +22,6 @@
 		X_(STATUS, MIDDLEWARE_MISSING_PATH, "Middleware Missing Path", "", "The path to the Middleware DLL was not found in the registry") \
 		X_(STATUS, MIDDLEWARE_MISSING_DLL, "Middleware Missing DLL", "", "The Middleware DLL was not found at the specified path") \
 		X_(STATUS, MIDDLEWARE_INVALID_SIGNATURE, "Middleware Invalid Signature", "", "The DLL was not properly signed or was tampered with") \
-		X_(STATUS, MIDDLEWARE_VERSION_INCOMPATIBLE, "Middleware Version Incompatible", "", "The Middleware DLL version is not compatible") \
 		X_(STATUS, MIDDLEWARE_MISSING_ENDPOINT, "Middleware Missing Endpoint", "", "A required endpoint function was not found in the Middleware DLL") \
 		X_(STATUS, MIDDLEWARE_VERSION_LOW, "Middleware Version Low", "", "Middleware DLL version was found to be too low for compatibility") \
 		X_(STATUS, MIDDLEWARE_VERSION_HIGH, "Middleware Version High", "", "Middleware DLL version was found to be too high for compatibility")

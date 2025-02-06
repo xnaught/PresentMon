@@ -25,7 +25,7 @@ Middleware& LookupMiddleware_(const void* handle)
 		return *handleMap_.at(handle);
 	}
 	catch (...) {
-		pmlog_error();
+		pmlog_error("session handle not found during lookup").diag();
 		throw util::Except<ipc::PmStatusError>(PM_STATUS_SESSION_NOT_OPEN);
 	}
 }
@@ -33,7 +33,7 @@ Middleware& LookupMiddleware_(const void* handle)
 void DestroyMiddleware_(PM_SESSION_HANDLE handle)
 {
 	if (!handleMap_.erase(handle)) {
-		pmlog_error();
+		pmlog_error("session handle not found during destruction").diag();
 		throw util::Except<ipc::PmStatusError>(PM_STATUS_SESSION_NOT_OPEN);
 	}
 }
@@ -46,9 +46,8 @@ void AddHandleMapping_(PM_SESSION_HANDLE sessionHandle, const void* dependentHan
 void RemoveHandleMapping_(const void* dependentHandle)
 {
 	if (!handleMap_.erase(dependentHandle)) {
-		// TODO: add error code to indicate a bad / missing handle (other than session handle)
-		pmlog_error();
-		throw util::Except<ipc::PmStatusError>(PM_STATUS_FAILURE);
+		pmlog_error("handle not found").diag();
+		throw util::Except<ipc::PmStatusError>(PM_STATUS_BAD_HANDLE);
 	}
 }
 
@@ -63,8 +62,8 @@ PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, cons
 {
 	try {
 		if (!pHandle) {
-			// TODO: add error code to indicate bad argument
-			return PM_STATUS_FAILURE;
+			pmlog_error("null session handle outptr").diag();
+			return PM_STATUS_BAD_ARGUMENT;
 		}
 		std::shared_ptr<Middleware> pMiddleware;
 		std::optional<std::string> pipeName;
@@ -165,7 +164,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmStartTrackingProcess(PM_SESSION_HANDLE handle
 {
 	try {
 		// TODO: consider tracking resource usage for process tracking to validate Start/Stop pairing
-		// TODO: middleware should not return status codes
+		// TODO: middleware (StartStreaming) should not return status codes
 		return LookupMiddleware_(handle).StartStreaming(processId);
 	}
 	catch (...) {
@@ -193,8 +192,8 @@ PRESENTMON_API2_EXPORT PM_STATUS pmGetIntrospectionRoot(PM_SESSION_HANDLE handle
 {
 	try {
 		if (!ppInterface) {
-			// TODO: error code to signal bad argument
-			return PM_STATUS_FAILURE;
+			pmlog_error("null outptr for introspection interface").diag();
+			return PM_STATUS_BAD_ARGUMENT;
 		}
 		const auto pIntro = LookupMiddleware_(handle).GetIntrospectionData();
 		AddHandleMapping_(handle, pIntro);
@@ -212,6 +211,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmFreeIntrospectionRoot(const PM_INTROSPECTION_
 {
 	try {
 		if (!pInterface) {
+			// freeing nullptr is a no-op
 			return PM_STATUS_SUCCESS;
 		}
 		auto& mid = LookupMiddleware_(pInterface);
@@ -258,11 +258,11 @@ PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_SESSION_HANDLE sessio
 	try {
 		if (!pElements) {
 			pmlog_error("null pointer to query element array argument").diag();
-			return PM_STATUS_FAILURE;
+			return PM_STATUS_BAD_ARGUMENT;
 		}
 		if (!numElements) {
 			pmlog_error("zero length query element array").diag();
-			return PM_STATUS_FAILURE;
+			return PM_STATUS_BAD_ARGUMENT;
 		}
 		const auto queryHandle = LookupMiddleware_(sessionHandle).RegisterDynamicQuery(
 			{pElements, numElements}, windowSizeMs, metricOffsetMs);
@@ -281,6 +281,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE hand
 {
 	try {
 		if (!handle) {
+			// freeing nullptr is a no-op
 			return PM_STATUS_SUCCESS;
 		}
 		auto& mid = LookupMiddleware_(handle);
@@ -298,9 +299,17 @@ PRESENTMON_API2_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE hand
 PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains)
 {
 	try {
-		if (!pBlob || !numSwapChains || !*numSwapChains) {
-			// TODO: error code for bad args
-			return PM_STATUS_FAILURE;
+		if (!pBlob) {
+			pmlog_error("null blob ptr").diag();
+			return PM_STATUS_BAD_ARGUMENT;
+		}
+		if (!numSwapChains) {
+			pmlog_error("null swap chain inoutptr").diag();
+			return PM_STATUS_BAD_ARGUMENT;
+		}
+		if (!*numSwapChains) {
+			pmlog_error("swap chain in count is zero").diag();
+			return PM_STATUS_BAD_ARGUMENT;
 		}
 		LookupMiddleware_(handle).PollDynamicQuery(handle, processId, pBlob, numSwapChains);
 		return PM_STATUS_SUCCESS;
@@ -315,9 +324,13 @@ PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE hand
 PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(PM_SESSION_HANDLE sessionHandle, const PM_QUERY_ELEMENT* pElement, uint32_t processId, uint8_t* pBlob)
 {
 	try {
-		if (!pElement || !pBlob) {
-			// TODO: error code for bad args
-			return PM_STATUS_FAILURE;
+		if (!pElement) {
+			pmlog_error("null ptr to query element").diag();
+			return PM_STATUS_BAD_ARGUMENT;
+		}
+		if (!pBlob) {
+			pmlog_error("null ptr to blob").diag();
+			return PM_STATUS_BAD_ARGUMENT;
 		}
 		LookupMiddleware_(sessionHandle).PollStaticQuery(*pElement, processId, pBlob);
 		return PM_STATUS_SUCCESS;
@@ -332,9 +345,21 @@ PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(PM_SESSION_HANDLE sessionHand
 PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameQuery(PM_SESSION_HANDLE sessionHandle, PM_FRAME_QUERY_HANDLE* pQueryHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint32_t* pBlobSize)
 {
 	try {
-		if (!pElements || !numElements || !pBlobSize) {
-			// TODO: error code for bad args
-			return PM_STATUS_FAILURE;
+		if (!pQueryHandle) {
+			pmlog_error("null query handle outptr").diag();
+			return PM_STATUS_BAD_ARGUMENT;
+		}
+		if (!pElements) {
+			pmlog_error("null ptr to blob").diag();
+			return PM_STATUS_BAD_ARGUMENT;
+		}
+		if (!numElements) {
+			pmlog_error("zero query elements").diag();
+			return PM_STATUS_BAD_ARGUMENT;
+		}
+		if (!pBlobSize) {
+			pmlog_error("zero blob size").diag();
+			return PM_STATUS_BAD_ARGUMENT;
 		}
 		const auto queryHandle = LookupMiddleware_(sessionHandle).RegisterFrameEventQuery({ pElements, numElements }, *pBlobSize);
 		AddHandleMapping_(sessionHandle, queryHandle);
@@ -351,9 +376,13 @@ PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameQuery(PM_SESSION_HANDLE sessionH
 PRESENTMON_API2_EXPORT PM_STATUS pmConsumeFrames(PM_FRAME_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlob, uint32_t* pNumFramesToRead)
 {
 	try {
-		if (!handle || !pBlob) {
-			// TODO: error code for bad args
-			return PM_STATUS_FAILURE;
+		if (!pBlob) {
+			pmlog_error("null blob outptr").diag();
+			return PM_STATUS_BAD_ARGUMENT;
+		}
+		if (!pNumFramesToRead) {
+			pmlog_error("null frame count in-out ptr").diag();
+			return PM_STATUS_BAD_ARGUMENT;
 		}
 		LookupMiddleware_(handle).ConsumeFrameEvents(handle, processId, pBlob, *pNumFramesToRead);
 		return PM_STATUS_SUCCESS;
@@ -383,7 +412,8 @@ PRESENTMON_API2_EXPORT PM_STATUS pmFreeFrameQuery(PM_FRAME_QUERY_HANDLE handle)
 PRESENTMON_API2_EXPORT PM_STATUS pmGetApiVersion(PM_VERSION* pVersion)
 {
 	if (!pVersion) {
-		return PM_STATUS_FAILURE;
+		pmlog_error("null outptr for api version get").diag();
+		return PM_STATUS_BAD_ARGUMENT;
 	}
 	*pVersion = pmon::bid::GetApiVersion();
 	return PM_STATUS_SUCCESS;
