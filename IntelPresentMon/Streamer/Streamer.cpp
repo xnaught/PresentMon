@@ -270,7 +270,7 @@ void Streamer::ProcessPresentEvent(
                                return target_process_id == client_entry.second;
                              });
     if (found) {
-      return PM_STATUS::PM_STATUS_STREAM_ALREADY_EXISTS;
+      return PM_STATUS::PM_STATUS_ALREADY_TRACKING_PROCESS;
     }
 
     uint64_t mem_size = kBufSize;      

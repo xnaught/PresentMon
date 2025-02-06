@@ -11,7 +11,7 @@
 		X_(STATUS, SERVICE_ERROR, "Service Error", "", "An error occurred within the service") \
 		X_(STATUS, INVALID_ETL_FILE, "Invalid ETL File", "", "") \
 		X_(STATUS, INVALID_PID, "Invalid PID", "", "PID does not exist or does not match a process being tracked") \
-		X_(STATUS, STREAM_ALREADY_EXISTS, "Stream Already Exists", "", "Tried to open stream for a process already being tracked") \
+		X_(STATUS, ALREADY_TRACKING_PROCESS, "Already Tracking Process", "", "Tried to track a process already being tracked") \
 		X_(STATUS, UNABLE_TO_CREATE_NSM, "Unable to Create NSM", "", "Service failed to create shrared memory for data transfer") \
 		X_(STATUS, INVALID_ADAPTER_ID, "Invalid Adapter ID", "", "Graphics adapter ID provided does not match any ID in service") \
 		X_(STATUS, OUT_OF_RANGE, "Out of Range", "", "Value falls outside of the acceptable range") \
