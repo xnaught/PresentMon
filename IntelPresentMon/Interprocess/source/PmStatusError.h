@@ -12,6 +12,7 @@ namespace pmon::ipc
 		std::string ComposeWhatString_() const noexcept override;
 		PM_STATUS GetCode() const noexcept;
 		PM_STATUS GeneratePmStatus() const noexcept override;
+		bool HasPmStatus() const noexcept override;
 	private:
 		PM_STATUS code_;
 	};

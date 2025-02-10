@@ -49,7 +49,7 @@ namespace EndToEndTests
 			std::this_thread::sleep_for(100ms);
 
 			pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
-			pmConfigureStandaloneLogging_();
+			pmSetupODSLogging_();
 			oSession.emplace(ctlPipeName, introName);
 
 			pData = oSession->GetIntrospectionRoot();

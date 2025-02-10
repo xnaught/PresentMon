@@ -41,6 +41,7 @@ namespace p2c::cli
 		Option<std::string> logFolder{ this, "--p2c-log-folder", "", "Path to directory in which to store log files", CLI::ExistingDirectory };
 		Option<std::string> logSvcPipe{ this, "--p2c-log-svc-pipe", ::pmon::gid::defaultLogPipeBaseName, "Base name of pipe to use when connecting to service IPC log" };
 		Flag logSvcPipeEnable{ this, "--p2c-log-svc-pipe-enable", "Enable pipe connection to service IPC log stream" };
+		Flag logMiddlewareCopy{ this, "--p2c-log-middleware-copy", "Copy log entries from middleware channel to this client" };
 
 	private: Group gi_{ this, "Internal", "Internal options, do not supply manually"}; public:
 		Option<std::string> cefType{ this, "--type", "", "Type of the current chromium process" };

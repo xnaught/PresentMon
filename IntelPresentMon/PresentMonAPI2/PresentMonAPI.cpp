@@ -92,7 +92,7 @@ PRESENTMON_API2_EXPORT LoggingSingletons pmLinkLogging_(
 {
 	using namespace util::log;
 	// set api dll default logging channel to copy to exe logging channel
-	InjectCopyChannel(std::move(pChannel));
+	SetupCopyChannel(std::move(pChannel));
 	// connecting id tables (dll => exe)
 	if (getIdTable) {
 		// hooking exe table up so that it receives updates
@@ -136,9 +136,9 @@ PRESENTMON_API2_EXPORT void pmFlushEntryPoint_() noexcept
 	pmon::util::log::FlushEntryPoint();
 }
 
-PRESENTMON_API2_EXPORT void pmConfigureStandaloneLogging_()
+PRESENTMON_API2_EXPORT void pmSetupODSLogging_() noexcept
 {
-	pmon::util::log::InjectStandaloneChannel();
+	pmon::util::log::SetupODSChannel();
 }
 
 // public endpoints

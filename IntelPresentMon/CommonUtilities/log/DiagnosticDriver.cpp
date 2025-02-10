@@ -26,7 +26,8 @@ namespace pmon::util::log
 	void DiagnosticDriver::Submit(const Entry& e)
 	{
 		// ignore non-diagnostic entries and low-priority levels
-		if (!e.diagnosticLayer_ || int(e.level_) > int(config_.filterLevel)) {
+		if ((!e.diagnosticLayer_ && !config_.disableDiagnosticFilter)
+			|| int(e.level_) > int(config_.filterLevel)) {
 			return;
 		}
 		// filtering by subsystem

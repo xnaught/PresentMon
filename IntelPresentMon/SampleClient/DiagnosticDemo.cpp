@@ -55,7 +55,7 @@ void RunDiagnosticDemo(int mode)
 			pmapi::PollStatic(sesh, proc, PM_METRIC_APPLICATION_FPS);
 		}
 		catch (...) {
-			std::cout << std::format("ERROR) {}\n", ReportException());
+			std::cout << std::format("ERROR) {}\n", ReportException().first);
 		}
 		// silently fail to register dynamic query properly
 		{
@@ -73,7 +73,7 @@ void RunDiagnosticDemo(int mode)
 			sesh.RegisterDyanamicQuery(elements);
 		}
 		catch (...) {
-			std::cout << std::format("ERROR) {}\n", ReportException());
+			std::cout << std::format("ERROR) {}\n", ReportException().first);
 		}
 	}
 	else {

@@ -18,7 +18,7 @@
 		X_(STATUS, INSUFFICIENT_BUFFER, "Insufficient Buffer", "", "Buffer is not large enough to hold all output data") \
 		X_(STATUS, PIPE_ERROR, "Pipe Error", "", "An error occurred in connecting to or communicating over named pipes") \
 		X_(STATUS, MIDDLEWARE_MISSING_PATH, "Middleware Missing Path", "", "The path to the Middleware DLL was not found in the registry") \
-		X_(STATUS, MIDDLEWARE_MISSING_DLL, "Middleware Missing DLL", "", "The Middleware DLL was not found at the specified path") \
+		X_(STATUS, NONEXISTENT_FILE_PATH, "Nonexistent File Path", "", "The provided path does not point to a file or directory that exists") \
 		X_(STATUS, MIDDLEWARE_INVALID_SIGNATURE, "Middleware Invalid Signature", "", "The DLL was not properly signed or was tampered with") \
 		X_(STATUS, MIDDLEWARE_MISSING_ENDPOINT, "Middleware Missing Endpoint", "", "A required endpoint function was not found in the Middleware DLL") \
 		X_(STATUS, MIDDLEWARE_VERSION_LOW, "Middleware Version Low", "", "Middleware DLL version was found to be too low for compatibility") \

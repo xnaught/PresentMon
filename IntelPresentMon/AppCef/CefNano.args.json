@@ -41,6 +41,10 @@
       "Command": "--p2c-middleware-dll-path .\\PresentMonAPI2.dll"
     },
     {
+      "Id": "0fb8cd38-1cf3-417f-a81c-894f60801ce8",
+      "Command": "--p2c-log-middleware-copy"
+    },
+    {
       "Id": "bc2faf34-6d97-458c-8ff1-67f3102617da",
       "Command": "--p2c-enable-ui-dev-options"
     },

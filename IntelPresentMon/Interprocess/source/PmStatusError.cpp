@@ -15,7 +15,7 @@ namespace pmon::ipc
 	{
 		try {
 			std::ostringstream oss;
-			oss << GetNote() << " CODE:[ " << code_ << "]";
+			oss << GetNote() << " CODE:[" << code_ << "]";
 			if (HasTrace()) {
 				oss << "\n" << GetTraceString();
 			}
@@ -30,5 +30,10 @@ namespace pmon::ipc
 	PM_STATUS PmStatusError::GeneratePmStatus() const noexcept
 	{
 		return GetCode();
+	}
+
+	bool PmStatusError::HasPmStatus() const noexcept
+	{
+		return true;
 	}
 }

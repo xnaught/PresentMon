@@ -116,7 +116,7 @@ void RunLogDemo(int mode)
 			g1();
 		}
 		catch (...) {
-			std::cout << ReportException();
+			std::cout << ReportException().first;
 		}
 	}
 	// throw exception with trace (nested)
@@ -126,7 +126,7 @@ void RunLogDemo(int mode)
 			g1();
 		}
 		catch (...) {
-			std::cout << ReportException();
+			std::cout << ReportException().first;
 		}
 	}
 	// throw std exception
@@ -135,7 +135,7 @@ void RunLogDemo(int mode)
 			auto x = std::map<int, int>{}.at(0);
 		}
 		catch (...) {
-			std::cout << ReportException();
+			std::cout << ReportException().first;
 		}
 	}
 	// throw unknown exception
@@ -144,7 +144,7 @@ void RunLogDemo(int mode)
 			throw std::vector<int>{};
 		}
 		catch (...) {
-			std::cout << ReportException();
+			std::cout << ReportException().first;
 		}
 	}
 	// Seh exception catching with trace (nested)
@@ -156,7 +156,7 @@ void RunLogDemo(int mode)
 			CloseHandle(h);
 		}
 		catch (...) {
-			std::cout << ReportException();
+			std::cout << ReportException().first;
 		}
 	}
 	// named process / thread

@@ -68,6 +68,11 @@ namespace pmon::util
 		return PM_STATUS_FAILURE;
 	}
 
+	bool Exception::HasPmStatus() const noexcept
+	{
+		return false;
+	}
+
 	void DoCapture_(Exception& e)
 	{
 		if (log::GlobalPolicy::Get().GetExceptionTrace()) {
@@ -75,7 +80,7 @@ namespace pmon::util
 		}
 	}
 
-	std::string ReportException(std::string note, std::exception_ptr pEx) noexcept
+	std::pair<std::string, std::optional<PM_STATUS>> ReportException(std::string note, std::exception_ptr pEx) noexcept
 	{
 		if (!pEx) {
 			pEx = std::current_exception();
@@ -92,15 +97,26 @@ namespace pmon::util
 			try {
 				std::rethrow_exception(pEx);
 			}
+			catch (const pmon::util::Exception& e) {
+				try {
+					if (e.HasPmStatus()) {
+						return { concat(std::format("[{}] {}", typeid(e).name(), e.what())), e.GeneratePmStatus() };
+					}
+					else {
+						return { concat(std::format("[{}] {}", typeid(e).name(), e.what())), std::nullopt };
+					}
+				}
+				catch (...) { return {}; }
+			}
 			catch (const std::exception& e) {
-				try { return concat(std::format("[{}] {}", typeid(e).name(), e.what())); }
+				try { return { concat(std::format("[{}] {}", typeid(e).name(), e.what())), std::nullopt }; }
 				catch (...) { return {}; }
 			}
 			catch (...) {
-				return concat("Unrecognized exception");
+				return { concat("Unrecognized exception"), std::nullopt };
 			}
 		}
-		return concat("No exception in flight");
+		return { concat("No exception in flight"), std::nullopt };
 	}
 
 	PM_STATUS GeneratePmStatus(std::exception_ptr pEx) noexcept

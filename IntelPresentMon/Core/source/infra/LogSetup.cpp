@@ -18,6 +18,7 @@
 #include <CommonUtilities/log/PanicLogger.h>
 #include <PresentMonAPIWrapperCommon/PmErrorCodeProvider.h>
 #include <PresentMonAPI2/Internal.h>
+#include <PresentMonAPI2/PresentMonDiagnostics.h>
 #include <Core/source/infra/util/FolderResolver.h>
 #include "../cli/CliOptions.h"
 #include "LogSetup.h"
@@ -81,57 +82,68 @@ namespace p2c
 			const auto render = opt.cefType && *opt.cefType == "renderer";
 			// connect dll channel and id table to exe, get access to global settings in dll
 			LoggingSingletons getters;
-			if (render) {
+			if (render && opt.logMiddlewareCopy) {
 				getters = pmLinkLogging_(pChan, []() -> IdentificationTable& {
 					return IdentificationTable::Get_(); });
 			}
 
-			// configure logging based on command line
-			{
-				auto logfileName = bool(opt.cefType) ? std::format(L"log-{}-{}.txt", 
-					str::ToWide(*opt.cefType), GetCurrentProcessId()) : L"log.txt"s;
-				std::wstring path;
-				if (opt.logFolder) {
-					path = std::format(L"{}\\{}", str::ToWide(*opt.logFolder), logfileName);
-				}
-				else {
-					path = infra::util::FolderResolver::Get().Resolve(
-						infra::util::FolderResolver::Folder::App,
-						std::format(L"logs\\{}", logfileName));
-				}
-				pChan->AttachComponent(std::make_shared<BasicFileDriver>(std::make_shared<TextFormatter>(),
-					std::make_shared<SimpleFileStrategy>(path)), "drv:file");
+			// determine log folder path
+			std::filesystem::path logFolder;
+			if (opt.logFolder) {
+				logFolder = *opt.logFolder;
 			}
+			else {
+				logFolder = infra::util::FolderResolver::Get().Resolve(
+					infra::util::FolderResolver::Folder::App, L"logs\\");
+			}
+			// always enable the logfile for client
+			const auto logfileNameClient = bool(opt.cefType) ? std::format(L"log-{}-{}.txt",
+				str::ToWide(*opt.cefType), GetCurrentProcessId()) : L"log.txt"s;
+			const auto logfilePathClient = std::filesystem::path{ logFolder } / logfileNameClient;
+			pChan->AttachComponent(std::make_shared<BasicFileDriver>(std::make_shared<TextFormatter>(),
+				std::make_shared<SimpleFileStrategy>(logfilePathClient)), "drv:file");
+			auto&& pol = GlobalPolicy::Get();
+			// set the global policy settings
 			if (opt.logLevel) {
-				GlobalPolicy::Get().SetLogLevel(*opt.logLevel);
-				if (render) {
+				pol.SetLogLevel(*opt.logLevel);
+				if (render && getters) {
 					getters.getGlobalPolicy().SetLogLevel(*opt.logLevel);
 				}
 			}
 			if (opt.logTraceLevel) {
-				GlobalPolicy::Get().SetTraceLevel(*opt.logTraceLevel);
-				if (render) {
+				pol.SetTraceLevel(*opt.logTraceLevel);
+				if (render && getters) {
 					getters.getGlobalPolicy().SetTraceLevel(*opt.logTraceLevel);
 				}
 			}
 			if (opt.traceExceptions) {
-				GlobalPolicy::Get().SetExceptionTrace(*opt.traceExceptions);
-				GlobalPolicy::Get().SetSehTracing(*opt.traceExceptions);
-				if (render) {
+				pol.SetExceptionTrace(*opt.traceExceptions);
+				pol.SetSehTracing(*opt.traceExceptions);
+				if (render && getters) {
 					getters.getGlobalPolicy().SetExceptionTrace(*opt.traceExceptions);
 					getters.getGlobalPolicy().SetSehTracing(*opt.traceExceptions);
 				}
 			}
 			if (opt.logDenyList) {
 				pmquell(LineTable::IngestList(*opt.logDenyList, true));
-				if (render) {
+				if (render && getters) {
 					pmquell(getters.getLineTable().IngestList_(*opt.logDenyList, true));
 				}
 			}
 			else if (opt.logAllowList) {
 				pmquell(LineTable::IngestList(*opt.logAllowList, false));
-				if (render) {
+				if (render && getters) {
 					pmquell(getters.getLineTable().IngestList_(*opt.logAllowList, false));
+				}
+			}
+			// enable logfile for middleware if we're not doing the copy connection
+			if (!opt.logMiddlewareCopy) {
+				if (auto sta = pmSetupFileLogging(logFolder.string().c_str(),
+					(PM_DIAGNOSTIC_LEVEL)pol.GetLogLevel(),
+					(PM_DIAGNOSTIC_LEVEL)pol.GetTraceLevel(),
+					pol.GetExceptionTrace()
+				); sta != PM_STATUS_SUCCESS) {
+					pmlog_error("configuring middleware file logging").code(sta).no_trace();
 				}
 			}
 			// setup server to ipc logging connection for child processes (renderer)
@@ -152,12 +164,12 @@ namespace p2c
 					}
 				}
 				catch (...) {
-					pmlog_panic_(ReportException());
+					pmlog_error(ReportException());
 				}
 			}
 		}
 		catch (...) {
-			pmlog_panic_(ReportException());
+			pmlog_error(ReportException());
 		}
 	}
 
