@@ -1,6 +1,7 @@
 #pragma once
 #include <cmath>
 #include <limits>
+#include <algorithm>
 
 namespace pmon::util
 {
@@ -53,4 +54,5 @@ namespace pmon::util
 		const auto conversionFactor = srcFactor / dstFactor;
 		return To(fromExtended * conversionFactor);
 	}
+	void CalculateEma(double* ema, double newValue, double alpha);
 }

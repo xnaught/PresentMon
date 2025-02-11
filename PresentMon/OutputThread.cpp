@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "PresentMon.hpp"
+#include "../IntelPresentMon/CommonUtilities/Math.h"
 
 #include <algorithm>
 #include <shlwapi.h>
@@ -9,6 +10,56 @@
 
 static std::thread gThread;
 static bool gQuit = false;
+
+#include <iostream>
+#include <set>
+#include <deque>
+
+class SlidingWindowMedian {
+public:
+    SlidingWindowMedian(size_t windowSize) : windowSize(windowSize) {}
+
+    void addValue(double value) {
+        // Insert new value and record it in the window queue.
+        data.insert(value);
+        window.push_back(value);
+        // If we've exceeded the window size, remove the oldest element.
+        if (window.size() > windowSize) {
+            double oldest = window.front();
+            window.pop_front();
+            // Erase one occurrence of the oldest value.
+            auto it = data.find(oldest);
+            if (it != data.end()) {
+                data.erase(it);
+            }
+        }
+    }
+
+    double getMedian() const {
+        if (data.empty()) {
+            throw std::runtime_error("No data available");
+        }
+        auto it = data.begin();
+        std::advance(it, data.size() / 2);
+        if (data.size() % 2 == 1) {
+            return *it;
+        }
+        else {
+            auto it2 = it;
+            --it2;
+            return (*it + *it2) / 2.0;
+        }
+    }
+
+private:
+    size_t windowSize;
+    std::deque<double> window;  // To track insertion order.
+    std::multiset<double> data; // To compute the median.
+};
+
+static SlidingWindowMedian gSwm(25);  // For example, a sliding window of 50 values.
+
+
 
 // When we collect realtime ETW events, we don't receive the events in real
 // time but rather sometime after they occur.  Since the user might be toggling
@@ -393,6 +444,7 @@ static void ReportMetricsHelper(
             // way to calculate the Xell Gpu latency
             metrics.mInstrumentedGpuLatency = InstrumentedStartTime == 0 ? 0 :
                                            pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, p->GPUStartTime);
+            metrics.msBetweenSimStarts = chain->mLastPresent == nullptr ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastPresent->PclSimStartTime, p->PresentStartTime);
         } else {
             metrics.mCPUBusy                = 0;
             metrics.mCPUWait                = 0;
@@ -418,6 +470,11 @@ static void ReportMetricsHelper(
             // way to calculate the Xell Gpu latency
             metrics.mInstrumentedLatency = InstrumentedStartTime == 0 ? 0 :
                 pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, screenTime);
+
+            metrics.mRawI2Fp = pmSession.TimestampDeltaToMilliSeconds(p->PclInputPingTime, p->PclSimStartTime);
+            metrics.mAvgI2FpMethod1 = chain->mAvgInputToFrameStartTime;
+            metrics.mAvgI2FpMethod2 = chain->mEmaI2FsTime;
+            metrics.mPcl = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->PclInputPingTime, screenTime);
         } else {
             metrics.mDisplayLatency            = 0;
             metrics.mDisplayedTime             = 0;
@@ -519,6 +576,16 @@ static void ReportMetricsHelper(
                 UpdateAverage(&chain->mAvgDisplayLatency, metrics.mDisplayLatency);
                 UpdateAverage(&chain->mAvgDisplayedTime, metrics.mDisplayedTime);
             }
+        }
+
+        // Update the average input to 
+        if (p->PclInputPingTime != 0) {
+            gSwm.addValue(pmSession.TimestampDeltaToUnsignedMilliSeconds(p->PclInputPingTime, p->PclSimStartTime));
+            chain->mAvgInputToFrameStartTime = (float)gSwm.getMedian();
+            pmon::util::CalculateEma(
+                &chain->mEmaI2FsTime,
+                pmSession.TimestampDeltaToUnsignedMilliSeconds(p->PclInputPingTime, p->PclSimStartTime),
+                0.1);
         }
 
         displayIndex += 1;

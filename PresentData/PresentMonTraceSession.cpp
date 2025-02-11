@@ -16,6 +16,7 @@
 #include "ETW/Microsoft_Windows_Win32k.h"
 #include "ETW/NT_Process.h"
 #include "ETW/Intel_PresentMon.h"
+#include "ETW/Nvidia_PCL.h"
 
 namespace {
 
@@ -286,7 +287,8 @@ template<
     bool IS_REALTIME_SESSION,
     bool TRACK_DISPLAY,
     bool TRACK_INPUT,
-    bool TRACK_PRESENTMON>
+    bool TRACK_PRESENTMON,
+    bool TRACK_PCL>
 void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
 {
     auto session = (PMTraceSession*) pEventRecord->UserContext;
@@ -375,6 +377,13 @@ void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
         }
     }
 
+    if constexpr (TRACK_PCL) {
+        if (hdr.ProviderId == Nvidia_PCL::GUID) {
+            session->mPMConsumer->HandlePclEvent(pEventRecord);
+            return;
+        }
+    }
+
     #pragma warning(pop)
 }
 
@@ -404,6 +413,13 @@ PEVENT_RECORD_CALLBACK GetEventRecordCallback(bool t1, bool t2, bool t3, bool t4
 {
     return t1 ? GetEventRecordCallback<Ts..., true>(t2, t3, t4)
               : GetEventRecordCallback<Ts..., false>(t2, t3, t4);
+}
+
+template<bool... Ts>
+PEVENT_RECORD_CALLBACK GetEventRecordCallback(bool t1, bool t2, bool t3, bool t4, bool t5)
+{
+    return t1 ? GetEventRecordCallback<Ts..., true>(t2, t3, t4, t5)
+        : GetEventRecordCallback<Ts..., false>(t2, t3, t4, t5);
 }
 
 ULONG CALLBACK BufferCallback(EVENT_TRACE_LOGFILE* pLogFile)
@@ -470,7 +486,8 @@ ULONG PMTraceSession::Start(
         mIsRealtimeSession,            // IS_REALTIME_SESSION
         mPMConsumer->mTrackDisplay,    // TRACK_DISPLAY
         mPMConsumer->mTrackInput,      // TRACK_INPUT
-        mPMConsumer->mTrackFrameType || mPMConsumer->mTrackPMMeasurements || mPMConsumer->mTrackAppTiming); // TRACK_PRESENTMON
+        mPMConsumer->mTrackFrameType || mPMConsumer->mTrackPMMeasurements || mPMConsumer->mTrackAppTiming, // TRACK_PRESENTMON
+        mPMConsumer->mTrackPCL);       // TRACK_PCL
 
     mTraceHandle = OpenTraceW(&traceProps);
     if (mTraceHandle == INVALID_PROCESSTRACE_HANDLE) {
@@ -775,6 +792,12 @@ ULONG EnableProvidersListing(
             provider.AddEvent<Intel_PresentMon::AppSleepEnd_Info>();
         }
         status = provider.Enable(sessionHandle, Intel_PresentMon::GUID);
+        if (status != ERROR_SUCCESS) return status;
+    }
+
+    if (pmConsumer->mTrackPCL) {
+        provider.ClearFilter();
+        status = provider.EnableWithoutFiltering(sessionHandle, Nvidia_PCL::GUID, TRACE_LEVEL_VERBOSE);
         if (status != ERROR_SUCCESS) return status;
     }
 

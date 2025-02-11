@@ -312,6 +312,17 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     if (args.mTrackAppTiming) {
         fwprintf(fp, L",InstrumentedLatency");
     }
+    if (args.mTrackPCL) {
+        fwprintf(fp, L",msBetweenSimStarts");
+        fwprintf(fp, L",Raw-I2FS");
+        fwprintf(fp, L",Avg-I2FS-1");
+        fwprintf(fp, L",Avg-I2FS-2");
+        fwprintf(fp, L",FS2P");
+        fwprintf(fp, L",P2D");
+        fwprintf(fp, L",PCLatency-RawI2FS");
+        fwprintf(fp, L",PCLatency-AvgI2FS-1");
+        fwprintf(fp, L",PCLatency-AvgI2FS-2");
+    }
     if (args.mWriteDisplayTime) {
         fwprintf(fp, L",DisplayTimeAbs");
     }
@@ -319,6 +330,7 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
         fwprintf(fp, L",FrameId");
         if (args.mTrackAppTiming) {
             fwprintf(fp, L",AppFrameId");
+            fwprintf(fp, L",PclFrameId");
         }
     }
     fwprintf(fp, L"\n");
@@ -419,7 +431,24 @@ void WriteCsvRow<FrameMetrics>(
             fwprintf(fp, L",%.4lf", metrics.mInstrumentedLatency);
         }
     }
-
+    if (args.mTrackPCL) {
+        auto Fs2P = pmSession.TimestampDeltaToMilliSeconds(p.PclSimStartTime, p.PresentStartTime);
+        auto P2D = pmSession.TimestampDeltaToMilliSeconds(p.PresentStartTime, metrics.mScreenTime);
+        fwprintf(fp, L",%.4lf", metrics.msBetweenSimStarts);
+        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToMilliSeconds(p.PclInputPingTime,p.PclSimStartTime));
+        fwprintf(fp, L",%.4lf", metrics.mAvgI2FpMethod1);
+        fwprintf(fp, L",%.4lf", metrics.mAvgI2FpMethod2);
+        fwprintf(fp, L",%.4lf", Fs2P);
+        fwprintf(fp, L",%.4lf", P2D);
+        if (metrics.mPcl == 0.0) {
+            fwprintf(fp, L",NA");
+        }
+        else {
+            fwprintf(fp, L",%.4lf", metrics.mPcl);
+        }
+        fwprintf(fp, L",%.4lf", metrics.mAvgI2FpMethod1 + Fs2P + P2D);
+        fwprintf(fp, L",%.4lf", metrics.mAvgI2FpMethod2 + Fs2P + P2D);
+    }
     if (args.mWriteDisplayTime) {
         if (metrics.mScreenTime == 0) {
             fwprintf(fp, L",NA");
@@ -432,6 +461,7 @@ void WriteCsvRow<FrameMetrics>(
         fwprintf(fp, L",%u", p.FrameId);
         if (args.mTrackAppTiming) {
             fwprintf(fp, L",%u", p.AppFrameId);
+            fwprintf(fp, L",%u", p.PclFrameId);
         }
         
     }

@@ -297,6 +297,7 @@ void PrintUsage()
         LR"(--track_frame_type)",      LR"(Track the type of each displayed frame; requires application and/or driver instrumentation using Intel-PresentMon provider.)",
         LR"(--track_hw_measurements)", LR"(Tracks HW-measured latency and/or power data coming from a LMT and/or PCAT device.)",
         LR"(--track_app_timing)", LR"(Track app timines for each displayed frame; requires application and/or driver instrumentation using Intel-PresentMon provider.)",
+        LR"(--track_pcl)", LR"(Track app timines for each displayed frame; requires application and/or driver instrumentation using Intel-PresentMon provider.)",
     };
 
     // Layout
@@ -460,6 +461,7 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         else if (ParseArg(argv[i], L"track_frame_type"))      { args->mTrackFrameType      = true; continue; }
         else if (ParseArg(argv[i], L"track_hw_measurements")) { args->mTrackPMMeasurements = true; continue; }
         else if (ParseArg(argv[i], L"track_app_timing")) { args->mTrackAppTiming = true; continue; }
+        else if (ParseArg(argv[i], L"track_pcl")) { args->mTrackPCL = true; continue; }
 
         // Hidden options:
         #if PRESENTMON_ENABLE_DEBUG_TRACE

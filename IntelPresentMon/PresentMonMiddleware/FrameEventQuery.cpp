@@ -820,6 +820,75 @@ namespace
 		uint32_t outputOffset_;
 		uint16_t outputPaddingSize_;
 	};
+	template<bool doDroppedCheck>
+	class PcLatencyGatherCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		PcLatencyGatherCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
+		{
+			if constexpr (doDroppedCheck) {
+				if (ctx.dropped) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
+					return;
+				}
+			}
+
+			// double updatedInputTime = 0.;
+			double val = 0.;
+			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
+				// Keep this around as we will need to handle this case for when a pc latency
+				// tag framed is dropped. But for now, ignore.
+				//updatedInputTime = ctx.lastReceivedNotDisplayedAllInputTime == 0 ? 0. :
+				//	TimestampDeltaToUnsignedMilliSeconds(ctx.lastReceivedNotDisplayedAllInputTime,
+				//		ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
+				//		ctx.performanceCounterPeriodMs);
+				//val = ctx.pSourceFrameData->present_event.*pStart == 0 ? updatedInputTime :
+				//	TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pStart,
+				//		ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
+				//		ctx.performanceCounterPeriodMs);
+				//ctx.lastReceivedNotDisplayedAllInputTime = 0;
+
+				if (ctx.avgInput2Fs == 0. || ctx.pSourceFrameData->present_event.PclSimStartTime == 0) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
+					return;
+				}
+
+				val = ctx.avgInput2Fs +
+					TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.PclSimStartTime, ctx.pSourceFrameData->present_event.PresentStartTime, ctx.performanceCounterPeriodMs) +
+					TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.PresentStartTime, ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex], ctx.performanceCounterPeriodMs);
+			}
+
+			if (val == 0.) {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
+			}
+			else {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			}
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + alignof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
 }
 
 PM_FRAME_QUERY::PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements)
@@ -1004,6 +1073,8 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 		return std::make_unique<InputLatencyGatherCommand_<&Pre::InputTime, 1, 0>>(pos);
 	case PM_METRIC_INSTRUMENTED_LATENCY:
 		return std::make_unique<DisplayLatencyGatherCommand_<0, 0, 1>>(pos);
+	case PM_METRIC_PC_LATENCY:
+		return std::make_unique<PcLatencyGatherCommand_<1>>(pos);
 	default:
 		pmlog_error("unknown metric id").pmwatch((int)q.metric).diag();
 		return {};

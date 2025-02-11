@@ -7,6 +7,7 @@
 #include <string>
 #include <queue>
 #include "../CommonUtilities/Hash.h"
+#include "../CommonUtilities/Math.h"
 
 namespace pmapi::intro
 {
@@ -21,6 +22,50 @@ namespace pmon::mid
 		uint64_t metricOffset = 0;
 	};
 
+	class InputToFsManager {
+	public:
+		void AddI2FsValueForProcess(uint32_t processId, uint64_t timeStamp, double value) {
+			auto it = mProcessIdToI2FsValue.find(processId);
+			if (it == mProcessIdToI2FsValue.end()) {
+				
+				it = mProcessIdToI2FsValue.emplace(processId, I2FsValueContainer{ value, timeStamp }).first;
+				return;
+			}
+			if (timeStamp > it->second.timestamp) {
+				pmon::util::CalculateEma(
+					&it->second.i2FsValue,
+					value,
+					mEmaAlpha);
+				it->second.timestamp = timeStamp;
+			}
+		}
+
+		// Retrieve the current input to frame start for a given process id.
+		double GetI2FsForProcess(uint32_t processId) const {
+			auto it = mProcessIdToI2FsValue.find(processId);
+			if (it == mProcessIdToI2FsValue.end()) {
+				return 0.f;
+			}
+			return it->second.i2FsValue;
+		}
+
+		// Remove a process from the map if it’s no longer needed.
+		void RemoveProcess(uint32_t processId) {
+			mProcessIdToI2FsValue.erase(processId);
+		}
+
+	private:
+		struct I2FsValueContainer {
+			double i2FsValue = 0.f;
+			uint64_t timestamp = 0;
+		};
+
+		double const mEmaAlpha = 0.1;
+
+		std::map<uint32_t, I2FsValueContainer> mProcessIdToI2FsValue; // Map from a process id to the current input to frame start value.
+	};
+
+
     // Copied from: PresentMon/PresentMon.hpp
     // We store SwapChainData per process and per swapchain, where we maintain:
     // - information on previous presents needed for console output or to compute metrics for upcoming
@@ -33,7 +78,7 @@ namespace pmon::mid
 
         // The most recent present that has been processed (e.g., output into CSV and/or used for frame
         // statistics).
-        PmNsmPresentEvent mLastPresent;
+		PmNsmPresentEvent mLastPresent = {};
         bool mLastPresentIsValid = false;
 
         // Whether to include frame data in the next PresentEvent's FrameMetrics.
@@ -54,6 +99,7 @@ namespace pmon::mid
 		std::vector<double> mAllInputToPhotonLatency;
         std::vector<double> mDropped;
 		std::vector<double> mInstrumentedDisplayLatency;
+		std::vector<double> mPcLatency;
 
 		std::vector<double> mInstrumentedSleep;
 		std::vector<double> mInstrumentedRenderLatency;
@@ -62,8 +108,8 @@ namespace pmon::mid
 
 		// QPC of last received input data that did not make it to the screen due 
 		// to the Present() being dropped
-		uint64_t mLastReceivedNotDisplayedAllInputTime;
-		uint64_t mLastReceivedNotDisplayedMouseClickTime;
+		uint64_t mLastReceivedNotDisplayedAllInputTime = 0;
+		uint64_t mLastReceivedNotDisplayedMouseClickTime = 0;
 
         // begin/end screen times to optimize average calculation:
 		uint64_t mLastDisplayedScreenTime = 0;    // The last presented frame's ScreenTime (qpc)
@@ -150,5 +196,6 @@ namespace pmon::mid
 		uint32_t currentGpuInfoIndex = UINT32_MAX;
 		std::optional<uint32_t> activeDevice;
 		std::unique_ptr<pmapi::intro::Root> pIntroRoot;
+		InputToFsManager mPclI2FsManager;
 	};
 }

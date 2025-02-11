@@ -54,6 +54,7 @@ A binary of the console application is provided in the release, e.g.:
 | `--track_frame_type`           | Track the type of each displayed frame; requires application and/or driver instrumentation using Intel-PresentMon provider. |
 | `--track_hw_measurements`      | Tracks HW-measured latency and/or power data coming from a LMT and/or PCAT device. |
 | `--track_app_timing`           | Track app timines for each displayed frame; requires application and/or driver instrumentation using Intel-PresentMon provider. |
+| `--track_pcl`                  | Track app timines for each displayed frame; requires application and/or driver instrumentation using Intel-PresentMon provider. |
 
 ## Comma-separated value (CSV) file output
 
@@ -104,6 +105,7 @@ Default metrics include:
 | *ClickToPhotonLatency* | How long it took from the earliest mouse click that contributed to this frame until this frame was displayed.  When supported HW measuring devices are not available, this is the software-visible subset of the full click-to-photon latency and doesn't include:<br>&bull; time spent processing input in the keyboard/controller hardware or drivers (typically a fixed additional overhead),<br>&bull; time spent processing the output in the display hardware or drivers (typically a fixed additional overhead), and<br>&bull; a combination of display blanking interval and scan time (which varies, depending on timing and tearing). |
 | *AllInputToPhotonLatency* | How long it took from the earliest keyboard or mouse interaction that contributed to this frame until this frame was displayed. |
 | *InstrumentedLatency*  | Instrumented Frame Start To Display Latency |
+| *PCLatency*            | Summation of average input to instrumented frame start latency |
 
 Some metrics are enabled or disabled depending on the command line options:
 

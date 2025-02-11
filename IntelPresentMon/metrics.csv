@@ -83,3 +83,5 @@ PM_METRIC_CPU_FREQUENCY,1,CPU Frequency,Clock speed of the CPU.
 PM_METRIC_CPU_CORE_UTILITY,1,CPU Core Utility,Amount of CPU processing utility being used per core.
 ,,,
 PM_METRIC_INSTRUMENTED_LATENCY,,Instrumented Latency,Instrumented Frame Start To Display Latency,How long it took from the instrumented start of this frame until the frame was displayed on the screen.
+,,,
+PM_METRIC_PC_LATENCY,,PC Latency,Summation of average input to instrumented frame start latency, frame start to Present() call latency, and Present() call to displayed latency.
