@@ -136,6 +136,7 @@
     <ClCompile Include="PrecisionWaiter.cpp" />
     <ClCompile Include="Qpc.cpp" />
     <ClCompile Include="ref\GeneratedReflection.cpp" />
+    <ClCompile Include="Math.cpp" />
     <ClCompile Include="str\String.cpp" />
     <ClCompile Include="win\Event.cpp" />
     <ClCompile Include="win\Handle.cpp" />

@@ -133,6 +133,8 @@ namespace pmon::mid
             if (iter != presentMonStreamClients.end()) {
                 presentMonStreamClients.erase(std::move(iter));
             }
+            // Remove the input to frame start data for this process.
+            mPclI2FsManager.RemoveProcess(targetPid);
         }
         catch (...) {
             const auto code = util::GeneratePmStatus();
@@ -532,6 +534,7 @@ struct FrameMetrics {
     double mAllInputPhotonLatency;
     FrameType mFrameType;
     double mInstrumentedDisplayLatency;
+    double mPcLatency;
 
     double mInstrumentedRenderLatency;
     double mInstrumentedSleep;
@@ -591,6 +594,7 @@ void UpdateChain(
 // Copied from: PresentMon/OutputThread.cpp
 static void ReportMetricsHelper(
     FakePMTraceSession const& pmSession,
+    InputToFsManager& pclI2FsManager,
     fpsSwapChainData* chain,
     PmNsmPresentEvent* p,
     PmNsmPresentEvent const* nextDisplayedPresent)
@@ -728,6 +732,23 @@ static void ReportMetricsHelper(
             // way to calculate the Xell Gpu latency
             metrics.mInstrumentedDisplayLatency = xellStartTime == 0 ? 0 :
                 pmSession.TimestampDeltaToUnsignedMilliSeconds(xellStartTime, screenTime);
+
+            if (p->PclInputPingTime != 0) {
+                pclI2FsManager.AddI2FsValueForProcess(
+                    p->ProcessId,
+                    p->PclInputPingTime,
+                    pmSession.TimestampDeltaToUnsignedMilliSeconds(p->PclInputPingTime, p->PclSimStartTime));
+            }
+
+            auto i2Fs = pclI2FsManager.GetI2FsForProcess(p->ProcessId);
+            if (i2Fs != 0.f) {
+                metrics.mPcLatency = i2Fs +
+                    pmSession.TimestampDeltaToMilliSeconds(p->PclSimStartTime, p->PresentStartTime) +
+                    pmSession.TimestampDeltaToMilliSeconds(p->PresentStartTime, screenTime);
+            } else {
+                metrics.mPcLatency = 0;
+            }
+
         } else {
             metrics.mDisplayLatency                         = 0;
             metrics.mDisplayedTime                          = 0;
@@ -736,6 +757,7 @@ static void ReportMetricsHelper(
             metrics.mInstrumentedRenderLatency              = 0;
             metrics.mInstrumentedReadyTimeToDisplayLatency  = 0;
             metrics.mInstrumentedDisplayLatency             = 0;
+            metrics.mPcLatency                              = 0;
         }
 
         if (displayIndex == appIndex) {
@@ -842,6 +864,9 @@ static void ReportMetricsHelper(
             if (metrics.mInstrumentedReadyTimeToDisplayLatency != 0) {
                 chain->mInstrumentedReadyTimeToDisplayLatency.push_back(metrics.mInstrumentedReadyTimeToDisplayLatency);
             }
+            if (metrics.mPcLatency != 0) {
+                chain->mPcLatency.push_back(metrics.mPcLatency);
+            }
         }
 
         displayIndex += 1;
@@ -852,6 +877,7 @@ static void ReportMetricsHelper(
 
 static void ReportMetrics(
     FakePMTraceSession const& pmSession,
+    InputToFsManager& pclI2FsManager,
     fpsSwapChainData* chain,
     PmNsmPresentEvent* p)
 {
@@ -875,14 +901,14 @@ static void ReportMetrics(
     // well.
     if (p->FinalState == PresentResult::Presented) {
         for (auto& p2 : chain->mPendingPresents) {
-            ReportMetricsHelper(pmSession, chain, &p2, p);
+            ReportMetricsHelper(pmSession, pclI2FsManager, chain, &p2, p);
         }
-        ReportMetricsHelper(pmSession, chain, p, nullptr);
+        ReportMetricsHelper(pmSession, pclI2FsManager, chain, p, nullptr);
         chain->mPendingPresents.clear();
         chain->mPendingPresents.push_back(*p);
     } else {
         if (chain->mPendingPresents.empty()) {
-            ReportMetricsHelper(pmSession, chain, p, nullptr);
+            ReportMetricsHelper(pmSession, pclI2FsManager, chain, p, nullptr);
         } else {
             chain->mPendingPresents.push_back(*p);
         }
@@ -982,7 +1008,7 @@ static void ReportMetrics(
 
                 // The following code block copied from: PresentMon/OutputThread.cpp
                 if (chain->mLastPresentIsValid) {
-                    ReportMetrics(pmSession, chain, presentEvent);
+                    ReportMetrics(pmSession, mPclI2FsManager, chain, presentEvent);
                 } else {
                     UpdateChain(chain, *presentEvent);
                 }
@@ -1190,8 +1216,14 @@ static void ReportMetrics(
             simStartTime = iter->second;
         }
 
+        FakePMTraceSession pmSession;
+        pmSession.mMilliSecondsPerTimestamp = 1000.0 / pShmClient->GetQpcFrequency().QuadPart;
+
         // context transmits various data that applies to each gather command in the query
-        PM_FRAME_QUERY::Context ctx{ nsm_hdr->start_qpc, pShmClient->GetQpcFrequency().QuadPart, simStartTime };
+        PM_FRAME_QUERY::Context ctx{ 
+            nsm_hdr->start_qpc,
+            pShmClient->GetQpcFrequency().QuadPart,
+            simStartTime};
 
         while (frames_copied < frames_to_copy) {
             const PmNsmFrameData* pCurrentFrameData = nullptr;
@@ -1231,6 +1263,13 @@ static void ReportMetrics(
                         frames_copied++;
                 } else {
                     while (ctx.sourceFrameDisplayIndex < ctx.pSourceFrameData->present_event.DisplayedCount) {
+                        if (ctx.pSourceFrameData->present_event.PclInputPingTime != 0) {
+                            mPclI2FsManager.AddI2FsValueForProcess(
+                                ctx.pSourceFrameData->present_event.ProcessId,
+                                ctx.pSourceFrameData->present_event.PclInputPingTime,
+                                pmSession.TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.PclInputPingTime, ctx.pSourceFrameData->present_event.PclSimStartTime));
+                        }
+                        ctx.avgInput2Fs = mPclI2FsManager.GetI2FsForProcess(ctx.pSourceFrameData->present_event.ProcessId);
                         pQuery->GatherToBlob(ctx, pBlob);
                         pBlob += pQuery->GetBlobSize();
                         frames_copied++;

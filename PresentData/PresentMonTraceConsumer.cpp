@@ -14,6 +14,7 @@
 #include "ETW/Microsoft_Windows_EventMetadata.h"
 #include "ETW/Microsoft_Windows_Kernel_Process.h"
 #include "ETW/Microsoft_Windows_Win32k.h"
+#include "ETW/Nvidia_PCL.h"
 
 #include <algorithm>
 #include <assert.h>
@@ -2010,7 +2011,14 @@ void PMTraceConsumer::StopTrackingPresent(std::shared_ptr<PresentEvent> const& p
     if (p->AppFrameId != 0) {
         SetAppTimingDataAsComplete(p->ProcessId, p->AppFrameId);
     }
-    
+
+    if (p->PclFrameId != 0) {
+        auto PclKey = std::make_pair(p->PclFrameId, p->ProcessId);
+        auto pclFrameIter = mPresentByPclFrameId.find(PclKey);
+        if (pclFrameIter != mPresentByPclFrameId.end()) {
+            mPresentByPclFrameId.erase(pclFrameIter);
+        }
+    }
 }
 
 void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
@@ -2513,6 +2521,36 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
         }
     }
 
+    if (mTrackPCL) {
+        auto PclFrameIdIter = mNextPclFrameIdByProcessId.find(present->ProcessId);
+        if (PclFrameIdIter != mNextPclFrameIdByProcessId.end()) {
+            auto pclFrameId = PclFrameIdIter->second;
+            if (pclFrameId != 0) {
+                auto key = std::make_pair(pclFrameId, present->ProcessId);
+                auto ii = mPendingAppTimingDataByPclFrameId.find(key);
+                if (ii != mPendingAppTimingDataByPclFrameId.end()) {
+                    if (present->ProcessId == ii->second.AppProcessId) {
+                        present->PclFrameId = pclFrameId;
+                        present->PclSimStartTime = ii->second.PclSimStartTime;
+                        present->PclSimEndTime = ii->second.PclSimEndTime;
+                        present->PclRenderSubmitStartTime = ii->second.PclRenderSubmitStartTime;
+                        present->PclRenderSubmitEndTime = ii->second.PclRenderSubmitEndTime;
+                        present->PclPresentStartTime = ii->second.PclPresentStartTime;
+                        present->PclPresentEndTime = ii->second.PclPresentEndTime;
+                        present->PclInputPingTime = ii->second.PclInputPingTime;
+                        present->PclInputReceivedTime = ii->second.PclInputReceivedTime;
+
+                        // Will no longer track the pending timing data as now we have
+                        // a present event for tracking the app provider data
+                        mPendingAppTimingDataByPclFrameId.erase(ii);
+                        // Start tracking using the app frame id to this present
+                        mPresentByPclFrameId.emplace(std::make_pair(pclFrameId, present->ProcessId), present);
+                    }
+                }
+            }
+        }
+    }
+
     // Set the runtime and Present_Stop time.
     VerboseTraceBeforeModifyingPresent(present.get());
     present->Runtime = runtime;
@@ -2968,6 +3006,266 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
     }
 
     assert(!mFilteredEvents); // Assert that filtering is working if expected
+}
+
+void PMTraceConsumer::HandleTraceLoggingEvent(EVENT_RECORD* pEventRecord)
+{
+    if (mTrackPCL) {
+        HandlePclEvent(pEventRecord);
+    }
+}
+
+void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
+{
+    try {
+        if (!mTraceLoggingDecoder.DecodeTraceLoggingEventRecord(pEventRecord)) {
+            // TODO: Maybe log here if we are unable to decode the event? Might
+            // be too agressive?
+            return;
+        }
+
+        auto eventName = mTraceLoggingDecoder.GetEventName();
+        if (!eventName.has_value()) {
+            // TODO: Maybe log here as for this event is expected to have an event name.
+            return;
+        }
+
+        if (eventName.has_value()) {
+            if (eventName.value() == L"PCLStatsInit") {
+                // TODO: Not sure what to do here. Maybe best is simply log that
+                // stats generation is going to start?
+            }
+            else if (eventName.value() == L"PCLStatsEvent") {
+                auto marker = (Nvidia_PCL::PCLMarker)mTraceLoggingDecoder.GetNumericPropertyValue<uint32_t>(L"Marker");
+                auto frameId = (uint32_t)mTraceLoggingDecoder.GetNumericPropertyValue<uint64_t>(L"FrameID");
+                switch (marker) {
+                case Nvidia_PCL::PCLMarker::SimulationStart: {
+                    auto processId = pEventRecord->EventHeader.ProcessId;
+                    auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+                    auto key = std::make_pair(frameId, processId);
+
+                    auto ii = mPresentByPclFrameId.find(key);
+                    if (ii != mPresentByPclFrameId.end()) {
+                        DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
+                        ii->second->PclSimStartTime = timestamp;
+                        return;
+                    }
+                    else {
+                        auto ij = mPendingAppTimingDataByPclFrameId.find(key);
+                        if (ij != mPendingAppTimingDataByPclFrameId.end()) {
+                            DebugAssert(ij->second.AppProcessId == processId);
+                            ij->second.PclSimStartTime = timestamp;
+                        }
+                        else {
+                            AppTimingData data;
+                            data.PclSimStartTime = timestamp;
+                            data.AppProcessId = processId;
+                            mPendingAppTimingDataByPclFrameId.emplace(key, data);
+                        }
+                    }
+                    return;
+                }
+                case Nvidia_PCL::PCLMarker::SimulationEnd: {
+                    auto processId = pEventRecord->EventHeader.ProcessId;
+                    auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+                    auto key = std::make_pair(frameId, processId);
+                    auto ii = mPresentByPclFrameId.find(key);
+                    if (ii != mPresentByPclFrameId.end()) {
+                        DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
+                        ii->second->PclSimEndTime = timestamp;
+                        return;
+                    }
+                    else {
+                        auto ij = mPendingAppTimingDataByPclFrameId.find(key);
+                        if (ij != mPendingAppTimingDataByPclFrameId.end()) {
+                            DebugAssert(ij->second.AppProcessId == processId);
+                            ij->second.PclSimEndTime = timestamp;
+                        }
+                        else {
+                            AppTimingData data;
+                            data.PclSimEndTime = timestamp;
+                            data.AppProcessId = processId;
+                            mPendingAppTimingDataByPclFrameId.emplace(key, data);
+                        }
+                    }
+                    return;
+                }
+                case Nvidia_PCL::PCLMarker::RenderSubmitStart: {
+                    auto processId = pEventRecord->EventHeader.ProcessId;
+                    auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+                    auto key = std::make_pair(frameId, processId);
+                    auto ii = mPresentByPclFrameId.find(key);
+                    if (ii != mPresentByPclFrameId.end()) {
+                        DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
+                        ii->second->PclRenderSubmitStartTime = timestamp;
+                        return;
+                    }
+                    else {
+                        auto ij = mPendingAppTimingDataByPclFrameId.find(key);
+                        if (ij != mPendingAppTimingDataByPclFrameId.end()) {
+                            DebugAssert(ij->second.AppProcessId == processId);
+                            ij->second.PclRenderSubmitStartTime = timestamp;
+                        }
+                        else {
+                            AppTimingData data;
+                            data.PclRenderSubmitStartTime = timestamp;
+                            data.AppProcessId = processId;
+                            mPendingAppTimingDataByPclFrameId.emplace(key, data);
+                        }
+                    }
+                    return;
+                }
+                case Nvidia_PCL::PCLMarker::RenderSubmitEnd: {
+                    auto processId = pEventRecord->EventHeader.ProcessId;
+                    auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+                    auto key = std::make_pair(frameId, processId);
+                    auto ii = mPresentByPclFrameId.find(key);
+                    if (ii != mPresentByPclFrameId.end()) {
+                        DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
+                        ii->second->PclRenderSubmitEndTime = timestamp;
+                        return;
+                    }
+                    else {
+                        auto ij = mPendingAppTimingDataByPclFrameId.find(key);
+                        if (ij != mPendingAppTimingDataByPclFrameId.end()) {
+                            DebugAssert(ij->second.AppProcessId == processId);
+                            ij->second.PclRenderSubmitEndTime = timestamp;
+                        }
+                        else {
+                            AppTimingData data;
+                            data.PclRenderSubmitEndTime = timestamp;
+                            data.AppProcessId = processId;
+                            mPendingAppTimingDataByPclFrameId.emplace(key, data);
+                        }
+                    }
+                    return;
+                }
+                case Nvidia_PCL::PCLMarker::PresentStart: {
+                    auto processId = pEventRecord->EventHeader.ProcessId;
+                    auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+                    auto key = std::make_pair(frameId, processId);
+                    auto ii = mPresentByPclFrameId.find(key);
+                    if (ii != mPresentByPclFrameId.end()) {
+                        DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
+                        DebugAssert(ii->second->AppFrameId == frameId);
+                        // TODO - I don't believe that we should be getting this event
+                        DebugAssert(0);
+                        // ii->second->AppPresentStartTime = timestamp;
+                        return;
+                    }
+                    else {
+                        // Save off the PCL frame id for next created present event
+                        mNextPclFrameIdByProcessId[processId] = frameId;
+                        auto ij = mPendingAppTimingDataByPclFrameId.find(key);
+                        if (ij != mPendingAppTimingDataByPclFrameId.end()) {
+                            DebugAssert(ij->second.AppProcessId == processId);
+                            ij->second.PclPresentStartTime = timestamp;
+                        }
+                        else {
+                            AppTimingData data;
+                            data.PclPresentStartTime = timestamp;
+                            data.AppProcessId = processId;
+                            mPendingAppTimingDataByPclFrameId.emplace(key, data);
+                        }
+                    }
+                    return;
+                }
+                case Nvidia_PCL::PCLMarker::PresentEnd: {
+                    auto processId = pEventRecord->EventHeader.ProcessId;
+                    auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+                    auto key = std::make_pair(frameId, processId);
+                    auto ii = mPresentByPclFrameId.find(key);
+                    if (ii != mPresentByPclFrameId.end()) {
+                        DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
+                        ii->second->PclPresentEndTime = timestamp;
+                        return;
+                    }
+                    else {
+                        auto ij = mPendingAppTimingDataByPclFrameId.find(key);
+                        if (ij != mPendingAppTimingDataByPclFrameId.end()) {
+                            DebugAssert(ij->second.AppProcessId == processId);
+                            ij->second.PclPresentEndTime = timestamp;
+                        }
+                        else {
+                            AppTimingData data;
+                            data.PclPresentEndTime = timestamp;
+                            data.AppProcessId = processId;
+                            mPendingAppTimingDataByPclFrameId.emplace(key, data);
+                        }
+                    }
+                    return;
+                }
+                case Nvidia_PCL::PCLMarker::PCLLatencyPing: {
+                    auto processId = pEventRecord->EventHeader.ProcessId;
+                    auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+                    auto key = std::make_pair(frameId, processId);
+                    auto ii = mPresentByPclFrameId.find(key);
+                    if (ii != mPresentByPclFrameId.end()) {
+                        DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
+                        ii->second->PclInputReceivedTime = timestamp;
+                        if (mLatestPingTimestampByProcessId[processId] != 0) {
+                            // Save off the latest PCL input timestamp
+                            ii->second->PclInputPingTime = mLatestPingTimestampByProcessId[processId];
+                            mLatestPingTimestampByProcessId[processId] = 0;
+                        }
+                        return;
+                    }
+                    else {
+                        auto ij = mPendingAppTimingDataByPclFrameId.find(key);
+                        if (ij != mPendingAppTimingDataByPclFrameId.end()) {
+                            DebugAssert(ij->second.AppProcessId == processId);
+                            ij->second.PclInputReceivedTime = timestamp;
+                            ij->second.PclInputPingTime = mLatestPingTimestampByProcessId[processId];
+                            if (mLatestPingTimestampByProcessId[processId] != 0) {
+                                ij->second.PclInputPingTime = mLatestPingTimestampByProcessId[processId];
+                                mLatestPingTimestampByProcessId[processId] = 0;
+                            }
+                        }
+                        else {
+                            AppTimingData data;
+                            data.PclInputReceivedTime = timestamp;
+                            if (mLatestPingTimestampByProcessId[processId] != 0) {
+                                data.PclInputPingTime = mLatestPingTimestampByProcessId[processId];
+                                mLatestPingTimestampByProcessId[processId] = 0;
+                            }
+                            data.AppProcessId = processId;
+                            mPendingAppTimingDataByPclFrameId.emplace(key, data);
+                        }
+                    }
+                    return;
+                }
+                default:
+                {
+                    return;
+                }
+                }
+            } else if (eventName.value() == L"PCLStatsInput") {
+                auto processId = pEventRecord->EventHeader.ProcessId;
+                auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+                mLatestPingTimestampByProcessId[processId] = timestamp;
+
+            } else if (eventName.value() == L"PCLStatsShutdown") {
+                // PCL stats is shutting down for this process. Remove
+                // all PCL tracking structure for this process id. 
+                // TODO: log that PCL tracking is turning off
+                auto processId = pEventRecord->EventHeader.ProcessId;
+                std::erase_if(mPendingAppTimingDataByPclFrameId, [processId](const auto& p) {
+                    return p.first.second == processId; });
+                std::erase_if(mPresentByPclFrameId, [processId](const auto& p) {
+                    return p.first.second == processId; });
+                std::erase_if(mLatestPingTimestampByProcessId, [processId](const auto& p) {
+                    return p.first == processId; });
+
+            } else {
+                return;
+            }
+        }
+    }
+    catch (...) {
+        return;
+    }
+    return;
+
 }
 
 void PMTraceConsumer::DeferFlipFrameType(

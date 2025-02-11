@@ -61,6 +61,8 @@ public:
 		uint64_t lastReceivedNotDisplayedAllInputTime = 0;
 		// The first app sim start time
 		uint64_t firstAppSimStartTime = 0;
+		// Current input to frame start average
+		double avgInput2Fs{};
 	};
 	// functions
 	PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements);

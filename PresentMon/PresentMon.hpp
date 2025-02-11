@@ -78,6 +78,7 @@ struct CommandLineArgs {
     bool mTrackPMMeasurements;
     bool mTrackAppTiming;
     bool mTrackHybridPresent;
+    bool mTrackPCL;
     bool mScrollLockIndicator;
     bool mExcludeDropped;
     bool mTerminateExistingSession;
@@ -119,6 +120,11 @@ struct FrameMetrics {
     uint64_t mScreenTime = 0;
     FrameType mFrameType = FrameType::NotSet;
     double mMsInstrumentedLatency = 0;
+    double mPcl;
+    double mRawI2Fp;
+    double mAvgI2FpMethod1;
+    double mAvgI2FpMethod2;
+    double msBetweenSimStarts;
 
     // Internal Intel Metrics
     double mMsInstrumentedRenderLatency = 0;
@@ -196,6 +202,8 @@ struct SwapChainData {
     float mAvgDisplayedTime = 0.f;
     float mAvgMsUntilDisplayed = 0.f;
     float mAvgMsBetweenDisplayChange = 0.f;
+    float mAvgInputToFrameStartTime = 0.f;
+    double mEmaI2FsTime = 0.f;
 };
 
 struct ProcessInfo {

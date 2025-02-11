@@ -267,6 +267,7 @@ int wmain(int argc, wchar_t** argv)
     pmConsumer.mTrackAppTiming             = args.mTrackAppTiming;
     pmConsumer.mTrackHybridPresent         = args.mTrackHybridPresent;
     pmConsumer.mDisableOfflineBackpressure = args.mDisableOfflineBackpressure;
+    pmConsumer.mTrackPCL                   = args.mTrackPCL;
     if (args.mTargetPid != 0) {
         pmConsumer.mFilteredProcessIds = true;
         pmConsumer.AddTrackedProcessForFiltering(args.mTargetPid);
