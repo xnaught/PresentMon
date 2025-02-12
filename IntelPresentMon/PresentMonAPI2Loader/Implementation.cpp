@@ -194,92 +194,92 @@ PRESENTMON_API2_EXPORT PM_STATUS LoadLibrary_()
 
 
 // helper macro to lazy-load DLL on-demand; exits function returning error code on failure
-#define LoadEndpointIfEmpty_() if (!middlewareLoadedSuccessfully_) if (auto sta = LoadLibrary_()) return sta;
+#define LoadEndpointsIfEmpty_() if (!middlewareLoadedSuccessfully_) if (auto sta = LoadLibrary_()) return sta;
 // satisfying exports from middleware by proxying them
 PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession(PM_SESSION_HANDLE* pHandle)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmOpenSession_(pHandle);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmCloseSession(PM_SESSION_HANDLE handle)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmCloseSession_(handle);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmStartTrackingProcess(PM_SESSION_HANDLE handle, uint32_t process_id)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmStartTrackingProcess_(handle, process_id);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmStopTrackingProcess(PM_SESSION_HANDLE handle, uint32_t process_id)
 {
-	LoadEndpointIfEmpty_();
-	return pFunc_pmStartTrackingProcess_(handle, process_id);
+	LoadEndpointsIfEmpty_();
+	return pFunc_pmStopTrackingProcess_(handle, process_id);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmGetIntrospectionRoot(PM_SESSION_HANDLE handle, const PM_INTROSPECTION_ROOT** ppRoot)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmGetIntrospectionRoot_(handle, ppRoot);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmFreeIntrospectionRoot(const PM_INTROSPECTION_ROOT* pRoot)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmFreeIntrospectionRoot_(pRoot);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmSetTelemetryPollingPeriod(PM_SESSION_HANDLE handle, uint32_t deviceId, uint32_t timeMs)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmSetTelemetryPollingPeriod_(handle, deviceId, timeMs);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmSetEtwFlushPeriod(PM_SESSION_HANDLE handle, uint32_t periodMs)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmSetEtwFlushPeriod_(handle, periodMs);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_SESSION_HANDLE sessionHandle, PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, double windowSizeMs, double metricOffsetMs)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmRegisterDynamicQuery_(sessionHandle, pHandle, pElements, numElements, windowSizeMs, metricOffsetMs);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmFreeDynamicQuery_(handle);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmPollDynamicQuery_(handle, processId, pBlob, numSwapChains);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(PM_SESSION_HANDLE sessionHandle, const PM_QUERY_ELEMENT* pElement, uint32_t processId, uint8_t* pBlob)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmPollStaticQuery_(sessionHandle, pElement, processId, pBlob);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameQuery(PM_SESSION_HANDLE sessionHandle, PM_FRAME_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint32_t* pBlobSize)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmRegisterFrameQuery_(sessionHandle, pHandle, pElements, numElements, pBlobSize);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmConsumeFrames(PM_FRAME_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlobs, uint32_t* pNumFramesToRead)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmConsumeFrames_(handle, processId, pBlobs, pNumFramesToRead);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmFreeFrameQuery(PM_FRAME_QUERY_HANDLE handle)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmFreeFrameQuery_(handle);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmGetApiVersion(PM_VERSION* pVersion)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmGetApiVersion_(pVersion);
 }
 // expose
 PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, const char* pipeNameOverride, const char* introNsmOverride)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmOpenSession__(pHandle, pipeNameOverride, introNsmOverride);
 }
 // deprecate?
@@ -312,7 +312,7 @@ PRESENTMON_API2_EXPORT void pmFlushEntryPoint_() noexcept
 		pFunc_pmFlushEntryPoint__();
 	}
 }
-PRESENTMON_API2_EXPORT void pmSetupODSLogging_() noexcept
+PRESENTMON_API2_EXPORT void pmSetupODSLogging_()
 {
 	if (!middlewareLoadedSuccessfully_) {
 		if (auto status = LoadLibrary_(); status != PM_STATUS_SUCCESS) {
@@ -323,42 +323,42 @@ PRESENTMON_API2_EXPORT void pmSetupODSLogging_() noexcept
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticSetup(const PM_DIAGNOSTIC_CONFIGURATION* pConfig)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmDiagnosticSetup_(pConfig);
 }
 PRESENTMON_API2_EXPORT uint32_t pmDiagnosticGetQueuedMessageCount()
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmDiagnosticGetQueuedMessageCount_();
 }
 PRESENTMON_API2_EXPORT uint32_t pmDiagnosticGetMaxQueuedMessages()
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmDiagnosticGetMaxQueuedMessages_();
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticSetMaxQueuedMessages(uint32_t max)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmDiagnosticSetMaxQueuedMessages_(max);
 }
 PRESENTMON_API2_EXPORT uint32_t pmDiagnosticGetDiscardedMessageCount()
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmDiagnosticGetDiscardedMessageCount_();
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticDequeueMessage(PM_DIAGNOSTIC_MESSAGE** ppMessage)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmDiagnosticDequeueMessage_(ppMessage);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticEnqueueMessage(const PM_DIAGNOSTIC_MESSAGE* pMessage)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmDiagnosticEnqueueMessage_(pMessage);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticFreeMessage(PM_DIAGNOSTIC_MESSAGE* pMessage)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmDiagnosticFreeMessage_(pMessage);
 }
 PRESENTMON_API2_EXPORT PM_DIAGNOSTIC_WAKE_REASON pmDiagnosticWaitForMessage(uint32_t timeoutMs)
@@ -373,13 +373,13 @@ PRESENTMON_API2_EXPORT PM_DIAGNOSTIC_WAKE_REASON pmDiagnosticWaitForMessage(uint
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticUnblockWaitingThread()
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmDiagnosticUnblockWaitingThread_();
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmSetupFileLogging(const char* path, PM_DIAGNOSTIC_LEVEL logLevel,
 	PM_DIAGNOSTIC_LEVEL stackTraceLevel, bool exceptionTrace)
 {
-	LoadEndpointIfEmpty_();
+	LoadEndpointsIfEmpty_();
 	return pFunc_pmSetupFileLogging_(path, logLevel, stackTraceLevel, exceptionTrace);
 }
 

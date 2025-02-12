@@ -38,4 +38,4 @@ PRESENTMON_API2_EXPORT LoggingSingletons pmLinkLogging_(
 // function to flush the dll's log channel worker queue when before exiting
 PRESENTMON_API2_EXPORT void pmFlushEntryPoint_() noexcept;
 // set middleware to log using OutputDebugString
-PRESENTMON_API2_EXPORT void pmSetupODSLogging_() noexcept;
+PRESENTMON_API2_EXPORT void pmSetupODSLogging_();

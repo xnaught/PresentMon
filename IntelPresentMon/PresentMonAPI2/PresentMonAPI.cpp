@@ -136,7 +136,7 @@ PRESENTMON_API2_EXPORT void pmFlushEntryPoint_() noexcept
 	pmon::util::log::FlushEntryPoint();
 }
 
-PRESENTMON_API2_EXPORT void pmSetupODSLogging_() noexcept
+PRESENTMON_API2_EXPORT void pmSetupODSLogging_()
 {
 	pmon::util::log::SetupODSChannel();
 }
