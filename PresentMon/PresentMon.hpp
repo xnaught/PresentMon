@@ -110,11 +110,7 @@ struct FrameMetrics {
     uint64_t mScreenTime;
     FrameType mFrameType;
     double mInstrumentedLatency;
-    double mPcl;
-    double mRawI2Fp;
-    double mAvgI2FpMethod1;
-    double mAvgI2FpMethod2;
-    double msBetweenSimStarts;
+    double mAvgInput2FrameStart;
 
     // Internal Intel Metrics
     double mInstrumentedRenderLatency;

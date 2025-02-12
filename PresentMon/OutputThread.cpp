@@ -444,7 +444,6 @@ static void ReportMetricsHelper(
             // way to calculate the Xell Gpu latency
             metrics.mInstrumentedGpuLatency = InstrumentedStartTime == 0 ? 0 :
                                            pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, p->GPUStartTime);
-            metrics.msBetweenSimStarts = chain->mLastPresent == nullptr ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastPresent->PclSimStartTime, p->PresentStartTime);
         } else {
             metrics.mCPUBusy                = 0;
             metrics.mCPUWait                = 0;
@@ -470,11 +469,7 @@ static void ReportMetricsHelper(
             // way to calculate the Xell Gpu latency
             metrics.mInstrumentedLatency = InstrumentedStartTime == 0 ? 0 :
                 pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, screenTime);
-
-            metrics.mRawI2Fp = pmSession.TimestampDeltaToMilliSeconds(p->PclInputPingTime, p->PclSimStartTime);
-            metrics.mAvgI2FpMethod1 = chain->mAvgInputToFrameStartTime;
-            metrics.mAvgI2FpMethod2 = chain->mEmaI2FsTime;
-            metrics.mPcl = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->PclInputPingTime, screenTime);
+            metrics.mAvgInput2FrameStart = chain->mEmaI2FsTime;
         } else {
             metrics.mDisplayLatency            = 0;
             metrics.mDisplayedTime             = 0;
