@@ -122,8 +122,7 @@ struct FrameMetrics {
     double mMsInstrumentedLatency = 0;
     double mPcl;
     double mRawI2Fp;
-    double mAvgI2FpMethod1;
-    double mAvgI2FpMethod2;
+    double mAvgInput2FrameStart;
     double msBetweenSimStarts;
 
     // Internal Intel Metrics

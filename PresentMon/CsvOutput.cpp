@@ -375,15 +375,7 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
         }
     }
     if (args.mTrackPCL) {
-        fwprintf(fp, L",msBetweenSimStarts");
-        fwprintf(fp, L",Raw-I2FS");
-        fwprintf(fp, L",Avg-I2FS-1");
-        fwprintf(fp, L",Avg-I2FS-2");
-        fwprintf(fp, L",FS2P");
-        fwprintf(fp, L",P2D");
-        fwprintf(fp, L",PCLatency-RawI2FS");
-        fwprintf(fp, L",PCLatency-AvgI2FS-1");
-        fwprintf(fp, L",PCLatency-AvgI2FS-2");
+        fwprintf(fp, L",PCLatency");
     }
     if (args.mWriteDisplayTime) {
         fwprintf(fp, L",DisplayTimeAbs");
@@ -579,20 +571,7 @@ void WriteCsvRow<FrameMetrics>(
     if (args.mTrackPCL) {
         auto Fs2P = pmSession.TimestampDeltaToMilliSeconds(p.PclSimStartTime, p.PresentStartTime);
         auto P2D = pmSession.TimestampDeltaToMilliSeconds(p.PresentStartTime, metrics.mScreenTime);
-        fwprintf(fp, L",%.4lf", metrics.msBetweenSimStarts);
-        fwprintf(fp, L",%.4lf", pmSession.TimestampDeltaToMilliSeconds(p.PclInputPingTime,p.PclSimStartTime));
-        fwprintf(fp, L",%.4lf", metrics.mAvgI2FpMethod1);
-        fwprintf(fp, L",%.4lf", metrics.mAvgI2FpMethod2);
-        fwprintf(fp, L",%.4lf", Fs2P);
-        fwprintf(fp, L",%.4lf", P2D);
-        if (metrics.mPcl == 0.0) {
-            fwprintf(fp, L",NA");
-        }
-        else {
-            fwprintf(fp, L",%.4lf", metrics.mPcl);
-        }
-        fwprintf(fp, L",%.4lf", metrics.mAvgI2FpMethod1 + Fs2P + P2D);
-        fwprintf(fp, L",%.4lf", metrics.mAvgI2FpMethod2 + Fs2P + P2D);
+        fwprintf(fp, L",%.4lf", metrics.mAvgInput2FrameStart + Fs2P + P2D);
     }
     if (args.mWriteDisplayTime) {
         if (metrics.mScreenTime == 0) {

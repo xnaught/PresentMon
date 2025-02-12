@@ -532,11 +532,7 @@ static void ReportMetricsHelper(
             // way to calculate the Xell Gpu latency
             metrics.mMsInstrumentedLatency = InstrumentedStartTime == 0 ? 0 : 
                 pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, screenTime);
-
-            metrics.mRawI2Fp = pmSession.TimestampDeltaToMilliSeconds(p->PclInputPingTime, p->PclSimStartTime);
-            metrics.mAvgI2FpMethod1 = chain->mAvgInputToFrameStartTime;
-            metrics.mAvgI2FpMethod2 = chain->mEmaI2FsTime;
-            metrics.mPcl = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->PclInputPingTime, screenTime);
+            metrics.mAvgInput2FrameStart = chain->mEmaI2FsTime;
         } else {
             metrics.mMsDisplayLatency               = 0;
             metrics.mMsDisplayedTime                = 0;
