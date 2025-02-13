@@ -145,6 +145,10 @@ typedef struct _ctl_temp_handle_t *ctl_temp_handle_t;
 typedef struct _ctl_freq_handle_t *ctl_freq_handle_t;
 
 ///////////////////////////////////////////////////////////////////////////////
+/// @brief Handle for a device led
+typedef struct _ctl_led_handle_t *ctl_led_handle_t;
+
+///////////////////////////////////////////////////////////////////////////////
 /// @brief Handle of a power device.
 typedef struct _ctl_pwr_handle_t *ctl_pwr_handle_t;
 
@@ -476,8 +480,9 @@ typedef enum _ctl_units_t
     CTL_UNITS_ANGULAR_SPEED_RPM = 9,                ///< Type is Angular Speed with units in Revolutions per Minute.
     CTL_UNITS_POWER_MILLIWATTS = 10,                ///< Type is Power with units in MilliWatts.
     CTL_UNITS_PERCENT = 11,                         ///< Type is Percentage.
-    CTL_UNITS_MEM_SPEED_GBPS = 12,                  ///< Type is Memory Speed in Gigabyte per Seconds (Gbps)
+    CTL_UNITS_MEM_SPEED_GBPS = 12,                  ///< Type is Memory Speed in Gigabytes per second (GBps).
     CTL_UNITS_VOLTAGE_MILLIVOLTS = 13,              ///< Type is Voltage with units in milliVolts.
+    CTL_UNITS_BANDWIDTH_MBPS = 14,                  ///< Type is Bandwidth in Megabytes per second (MBps).
     CTL_UNITS_UNKNOWN = 0x4800FFFF,                 ///< Type of units unknown.
     CTL_UNITS_MAX
 
@@ -739,7 +744,9 @@ typedef struct _ctl_device_adapter_properties_t
     uint32_t num_slices;                            ///< [out] Number of slices
     char name[CTL_MAX_DEVICE_NAME_LEN];             ///< [out] Device name
     ctl_adapter_properties_flags_t graphics_adapter_properties; ///< [out] Graphics Adapter Properties
-    uint32_t Frequency;                             ///< [out] Clock frequency for this device. Supported only for Version > 0
+    uint32_t Frequency;                             ///< [out] This represents the average frequency an end user may see in the
+                                                    ///< typical gaming workload. Also referred as Graphics Clock. Supported
+                                                    ///< only for Version > 0
     uint16_t pci_subsys_id;                         ///< [out] PCI SubSys ID, Supported only for Version > 1
     uint16_t pci_subsys_vendor_id;                  ///< [out] PCI SubSys Vendor ID, Supported only for Version > 1
     ctl_adapter_bdf_t adapter_bdf;                  ///< [out] Pci Bus, Device, Function. Supported only for Version > 1
@@ -1287,6 +1294,18 @@ typedef struct _ctl_freq_state_t ctl_freq_state_t;
 typedef struct _ctl_freq_throttle_time_t ctl_freq_throttle_time_t;
 
 ///////////////////////////////////////////////////////////////////////////////
+/// @brief Forward-declare ctl_led_properties_t
+typedef struct _ctl_led_properties_t ctl_led_properties_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Forward-declare ctl_led_color_t
+typedef struct _ctl_led_color_t ctl_led_color_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Forward-declare ctl_led_state_t
+typedef struct _ctl_led_state_t ctl_led_state_t;
+
+///////////////////////////////////////////////////////////////////////////////
 /// @brief Forward-declare ctl_video_processing_super_resolution_info_t
 typedef struct _ctl_video_processing_super_resolution_info_t ctl_video_processing_super_resolution_info_t;
 
@@ -1468,10 +1487,11 @@ typedef enum _ctl_3d_feature_t
 typedef uint32_t ctl_3d_feature_misc_flags_t;
 typedef enum _ctl_3d_feature_misc_flag_t
 {
-    CTL_3D_FEATURE_MISC_FLAG_DX11 = CTL_BIT(0),     ///< Feature supported on DX11
-    CTL_3D_FEATURE_MISC_FLAG_DX12 = CTL_BIT(1),     ///< Feature supported on DX12
-    CTL_3D_FEATURE_MISC_FLAG_VULKAN = CTL_BIT(2),   ///< Feature supported on VULKAN
-    CTL_3D_FEATURE_MISC_FLAG_LIVE_CHANGE = CTL_BIT(3),  ///< User can change feature live without restarting the game
+    CTL_3D_FEATURE_MISC_FLAG_DX9 = CTL_BIT(0),      ///< Feature supported on DX9
+    CTL_3D_FEATURE_MISC_FLAG_DX11 = CTL_BIT(1),     ///< Feature supported on DX11
+    CTL_3D_FEATURE_MISC_FLAG_DX12 = CTL_BIT(2),     ///< Feature supported on DX12
+    CTL_3D_FEATURE_MISC_FLAG_VULKAN = CTL_BIT(3),   ///< Feature supported on VULKAN
+    CTL_3D_FEATURE_MISC_FLAG_LIVE_CHANGE = CTL_BIT(4),  ///< User can change feature live without restarting the game
     CTL_3D_FEATURE_MISC_FLAG_MAX = 0x80000000
 
 } ctl_3d_feature_misc_flag_t;
@@ -5369,6 +5389,164 @@ ctlFrequencyGetThrottleTime(
 #if !defined(__GNUC__)
 #pragma endregion // frequency
 #endif
+// Intel 'ctlApi' for Device Adapter - Led Control
+#if !defined(__GNUC__)
+#pragma region led
+#endif
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Led properties
+typedef struct _ctl_led_properties_t
+{
+    uint32_t Size;                                  ///< [in] size of this structure
+    uint8_t Version;                                ///< [in] version of this structure
+    bool canControl;                                ///< [out] Indicates if software can control the Led assuming the user has
+                                                    ///< permissions.
+    bool isI2C;                                     ///< [out] Indicates support for control via I2C interface.
+    bool isPWM;                                     ///< [out] Returns a valid value if canControl is true and isI2C is false.
+                                                    ///< Indicates if the Led is PWM capable. If isPWM is false, only turn Led
+                                                    ///< on/off is supported.
+    bool haveRGB;                                   ///< [out] Returns a valid value if canControl is true and isI2C is false.
+                                                    ///< Indicates if the Led is RGB capable.
+
+} ctl_led_properties_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Led color
+typedef struct _ctl_led_color_t
+{
+    uint32_t Size;                                  ///< [in] size of this structure
+    uint8_t Version;                                ///< [in] version of this structure
+    double red;                                     ///< [in,out][range(0.0, 1.0)] The Led red value. On output, a value less
+                                                    ///< than 0.0 indicates that the color is not known.
+    double green;                                   ///< [in,out][range(0.0, 1.0)] The Led green value. On output, a value less
+                                                    ///< than 0.0 indicates that the color is not known.
+    double blue;                                    ///< [in,out][range(0.0, 1.0)] The Led blue value. On output, a value less
+                                                    ///< than 0.0 indicates that the color is not known.
+
+} ctl_led_color_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Led state
+typedef struct _ctl_led_state_t
+{
+    uint32_t Size;                                  ///< [in] size of this structure
+    uint8_t Version;                                ///< [in] version of this structure
+    bool isOn;                                      ///< [in,out] Indicates if the Led is on or off.
+    double pwm;                                     ///< [in,out] Led On/Off Ratio, PWM range(0.0, 1.0). A value greater than
+                                                    ///< 1.0 is capped at 1.0.
+    ctl_led_color_t color;                          ///< [in,out] Color of the Led.
+
+} ctl_led_state_t;
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Get handle of Leds
+/// 
+/// @details
+///     - The application may call this function from simultaneous threads.
+///     - The implementation of this function should be lock-free.
+/// 
+/// @returns
+///     - CTL_RESULT_SUCCESS
+///     - CTL_RESULT_ERROR_UNINITIALIZED
+///     - CTL_RESULT_ERROR_DEVICE_LOST
+///     - CTL_RESULT_ERROR_INVALID_NULL_HANDLE
+///         + `nullptr == hDAhandle`
+///     - CTL_RESULT_ERROR_INVALID_NULL_POINTER
+///         + `nullptr == pCount`
+CTL_APIEXPORT ctl_result_t CTL_APICALL
+ctlEnumLeds(
+    ctl_device_adapter_handle_t hDAhandle,          ///< [in][release] Handle to display adapter
+    uint32_t* pCount,                               ///< [in,out] pointer to the number of components of this type.
+                                                    ///< If count is zero, then the driver shall update the value with the
+                                                    ///< total number of components of this type that are available.
+                                                    ///< If count is greater than the number of components of this type that
+                                                    ///< are available, then the driver shall update the value with the correct
+                                                    ///< number of components.
+    ctl_led_handle_t* phLed                         ///< [in,out][optional][range(0, *pCount)] array of handle of components of
+                                                    ///< this type.
+                                                    ///< If count is less than the number of components of this type that are
+                                                    ///< available, then the driver shall only retrieve that number of
+                                                    ///< component handles.
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Get Led properties
+/// 
+/// @details
+///     - The application may call this function from simultaneous threads.
+///     - The implementation of this function should be lock-free.
+/// 
+/// @returns
+///     - CTL_RESULT_SUCCESS
+///     - CTL_RESULT_ERROR_UNINITIALIZED
+///     - CTL_RESULT_ERROR_DEVICE_LOST
+///     - CTL_RESULT_ERROR_INVALID_NULL_HANDLE
+///         + `nullptr == hLed`
+///     - CTL_RESULT_ERROR_INVALID_NULL_POINTER
+///         + `nullptr == pProperties`
+CTL_APIEXPORT ctl_result_t CTL_APICALL
+ctlLedGetProperties(
+    ctl_led_handle_t hLed,                          ///< [in] Handle for the component.
+    ctl_led_properties_t* pProperties               ///< [in,out] Will contain Led properties.
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Get Led state
+/// 
+/// @details
+///     - The application may call this function from simultaneous threads.
+///     - The implementation of this function should be lock-free.
+/// 
+/// @returns
+///     - CTL_RESULT_SUCCESS
+///     - CTL_RESULT_ERROR_UNINITIALIZED
+///     - CTL_RESULT_ERROR_DEVICE_LOST
+///     - CTL_RESULT_ERROR_INVALID_NULL_HANDLE
+///         + `nullptr == hLed`
+///     - CTL_RESULT_ERROR_INVALID_NULL_POINTER
+///         + `nullptr == pState`
+CTL_APIEXPORT ctl_result_t CTL_APICALL
+ctlLedGetState(
+    ctl_led_handle_t hLed,                          ///< [in] Handle for the component.
+    ctl_led_state_t* pState                         ///< [in,out] Will contain the current Led state.
+                                                    ///< Returns Led state if canControl is true and isI2C is false.
+                                                    ///< pwm and color structure members of ::ctl_led_state_t will be returned
+                                                    ///< only if supported by Led, else they will be returned as 0.
+    );
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Set Led state
+/// 
+/// @details
+///     - The application may call this function from simultaneous threads.
+///     - The implementation of this function should be lock-free.
+/// 
+/// @returns
+///     - CTL_RESULT_SUCCESS
+///     - CTL_RESULT_ERROR_UNINITIALIZED
+///     - CTL_RESULT_ERROR_DEVICE_LOST
+///     - CTL_RESULT_ERROR_INVALID_NULL_HANDLE
+///         + `nullptr == hLed`
+///     - CTL_RESULT_ERROR_INVALID_NULL_POINTER
+///         + `nullptr == pBuffer`
+CTL_APIEXPORT ctl_result_t CTL_APICALL
+ctlLedSetState(
+    ctl_led_handle_t hLed,                          ///< [in] Handle for the component.
+    void* pBuffer,                                  ///< [in] Led State buffer.
+                                                    ///< If isI2C is true, the pBuffer and bufferSize will be passed to the I2C
+                                                    ///< Interface. pBuffer format in this case is OEM defined.
+                                                    ///< If isI2C is false, the pBuffer will be typecasted to
+                                                    ///< ::ctl_led_state_t* and bufferSize needs to be sizeof
+                                                    ///< ::ctl_led_state_t. pwm and color structure members of
+                                                    ///< ::ctl_led_state_t will be set only if supported by Led, else they will
+                                                    ///< be ignored.
+    uint32_t bufferSize                             ///< [in] Led State buffer size.
+    );
+
+
+#if !defined(__GNUC__)
+#pragma endregion // led
+#endif
 // Intel 'ctlApi' for Device Adapter
 #if !defined(__GNUC__)
 #pragma region media
@@ -6092,24 +6270,33 @@ typedef struct _ctl_power_telemetry_t
                                                     ///< the write traffic to the memory modules. By taking the delta between
                                                     ///< two snapshots and dividing by the delta time in seconds, an
                                                     ///< application can compute the average write bandwidth.
-    ctl_oc_telemetry_item_t vramCurrentTemperature; ///< [out] Instantaneous snapshot of the GPU chip temperature, read from
-                                                    ///< the sensor reporting the highest value.
-    bool vramPowerLimited;                          ///< [out] Instantaneous indication that the memory frequency is being
-                                                    ///< throttled because the memory modules are exceeding the maximum power
-                                                    ///< limits.
-    bool vramTemperatureLimited;                    ///< [out] Instantaneous indication that the memory frequency is being
-                                                    ///< throttled because the memory modules are exceeding the temperature
-                                                    ///< limits.
-    bool vramCurrentLimited;                        ///< [out] Instantaneous indication that the memory frequency is being
-                                                    ///< throttled because the memory modules have exceeded the power supply
-                                                    ///< current limits.
-    bool vramVoltageLimited;                        ///< [out] Instantaneous indication that the memory frequency cannot be
-                                                    ///< increased because the voltage limits have been reached.
-    bool vramUtilizationLimited;                    ///< [out] Instantaneous indication that due to lower memory traffic, the
-                                                    ///< hardware has lowered the memory frequency.
+    ctl_oc_telemetry_item_t vramCurrentTemperature; ///< [out] Instantaneous snapshot of the memory modules temperature, read
+                                                    ///< from the sensor reporting the highest value.
+    bool vramPowerLimited;                          ///< [out] Deprecated / Not-supported, will always returns false
+    bool vramTemperatureLimited;                    ///< [out] Deprecated / Not-supported, will always returns false
+    bool vramCurrentLimited;                        ///< [out] Deprecated / Not-supported, will always returns false
+    bool vramVoltageLimited;                        ///< [out] Deprecated / Not-supported, will always returns false
+    bool vramUtilizationLimited;                    ///< [out] Deprecated / Not-supported, will always returns false
     ctl_oc_telemetry_item_t totalCardEnergyCounter; ///< [out] Total Card Energy Counter.
     ctl_psu_info_t psu[CTL_PSU_COUNT];              ///< [out] PSU voltage and power.
     ctl_oc_telemetry_item_t fanSpeed[CTL_FAN_COUNT];///< [out] Fan speed.
+    ctl_oc_telemetry_item_t gpuVrTemp;              ///< [out] GPU VR temperature. Supported for Version > 0.
+    ctl_oc_telemetry_item_t vramVrTemp;             ///< [out] VRAM VR temperature. Supported for Version > 0.
+    ctl_oc_telemetry_item_t saVrTemp;               ///< [out] SA VR temperature. Supported for Version > 0.
+    ctl_oc_telemetry_item_t gpuEffectiveClock;      ///< [out] Effective frequency of the GPU. Supported for Version > 0.
+    ctl_oc_telemetry_item_t gpuOverVoltagePercent;  ///< [out] OverVoltage as a percent between 0 and 100. Positive values
+                                                    ///< represent fraction of the maximum over-voltage increment being
+                                                    ///< currently applied. Zero indicates operation at or below default
+                                                    ///< maximum frequency.  Supported for Version > 0.
+    ctl_oc_telemetry_item_t gpuPowerPercent;        ///< [out] GPUPower expressed as a percent representing the fraction of the
+                                                    ///< default maximum power being drawn currently. Values greater than 100
+                                                    ///< indicate power draw beyond default limits. Values above OC Power limit
+                                                    ///< imply throttling due to power. Supported for Version > 0.
+    ctl_oc_telemetry_item_t gpuTemperaturePercent;  ///< [out] GPUTemperature expressed as a percent of the thermal margin.
+                                                    ///< Values of 100 or greater indicate thermal throttling and 0 indicates
+                                                    ///< device at 0 degree Celcius. Supported for Version > 0.
+    ctl_oc_telemetry_item_t vramReadBandwidth;      ///< [out] VRAM Read Bandwidth. Supported for Version > 0.
+    ctl_oc_telemetry_item_t vramWriteBandwidth;     ///< [out] VRAM Write Bandwidth. Supported for Version > 0.
 
 } ctl_power_telemetry_t;
 
@@ -7647,6 +7834,40 @@ typedef ctl_result_t (CTL_APICALL *ctl_pfnFrequencyGetState_t)(
 typedef ctl_result_t (CTL_APICALL *ctl_pfnFrequencyGetThrottleTime_t)(
     ctl_freq_handle_t,
     ctl_freq_throttle_time_t*
+    );
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Function-pointer for ctlEnumLeds 
+typedef ctl_result_t (CTL_APICALL *ctl_pfnEnumLeds_t)(
+    ctl_device_adapter_handle_t,
+    uint32_t*,
+    ctl_led_handle_t*
+    );
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Function-pointer for ctlLedGetProperties 
+typedef ctl_result_t (CTL_APICALL *ctl_pfnLedGetProperties_t)(
+    ctl_led_handle_t,
+    ctl_led_properties_t*
+    );
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Function-pointer for ctlLedGetState 
+typedef ctl_result_t (CTL_APICALL *ctl_pfnLedGetState_t)(
+    ctl_led_handle_t,
+    ctl_led_state_t*
+    );
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// @brief Function-pointer for ctlLedSetState 
+typedef ctl_result_t (CTL_APICALL *ctl_pfnLedSetState_t)(
+    ctl_led_handle_t,
+    void*,
+    uint32_t
     );
 
 
