@@ -3031,11 +3031,13 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
         }
 
         if (eventName.has_value()) {
-            if (eventName.value() == L"PCLStatsInit") {
+            if (eventName.value() == L"PCLStatsInit" ||
+                eventName.value() == L"ReflexStatsInit") {
                 // TODO: Not sure what to do here. Maybe best is simply log that
                 // stats generation is going to start?
             }
-            else if (eventName.value() == L"PCLStatsEvent") {
+            else if (eventName.value() == L"PCLStatsEvent" || 
+                     eventName.value() == L"ReflexStatsEvent") {
                 auto marker = (Nvidia_PCL::PCLMarker)mTraceLoggingDecoder.GetNumericPropertyValue<uint32_t>(L"Marker");
                 auto frameId = (uint32_t)mTraceLoggingDecoder.GetNumericPropertyValue<uint64_t>(L"FrameID");
                 switch (marker) {
@@ -3239,12 +3241,14 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                     return;
                 }
                 }
-            } else if (eventName.value() == L"PCLStatsInput") {
+            } else if (eventName.value() == L"PCLStatsInput" ||
+                       eventName.value() == L"ReflexStatsInput") {
                 auto processId = pEventRecord->EventHeader.ProcessId;
                 auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
                 mLatestPingTimestampByProcessId[processId] = timestamp;
 
-            } else if (eventName.value() == L"PCLStatsShutdown") {
+            } else if (eventName.value() == L"PCLStatsShutdown" ||
+                       eventName.value() == L"ReflexStatsShutdown") {
                 // PCL stats is shutting down for this process. Remove
                 // all PCL tracking structure for this process id. 
                 // TODO: log that PCL tracking is turning off
