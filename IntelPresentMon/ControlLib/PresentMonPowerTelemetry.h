@@ -28,6 +28,7 @@ struct PresentMonPowerTelemetryInfo {
     double gpu_sustained_power_limit_w;
     double gpu_voltage_v;
     double gpu_frequency_mhz;
+    double gpu_effective_frequency_mhz;
     double gpu_temperature_c;
     double gpu_utilization;
     double gpu_render_compute_utilization;
@@ -105,7 +106,8 @@ enum class GpuTelemetryCapBits {
   vram_current_limited,
   vram_voltage_limited,
   vram_utilization_limited,
-  gpu_telemetry_count
+  gpu_effective_frequency,
+  gpu_telemetry_count,
 };
 
 using GpuTelemetryBitset = std::bitset<static_cast<size_t>(GpuTelemetryCapBits::gpu_telemetry_count)>;

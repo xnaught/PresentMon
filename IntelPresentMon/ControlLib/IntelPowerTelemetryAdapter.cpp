@@ -498,6 +498,17 @@ namespace pwr::intel
             SetTelemetryCapBit(GpuTelemetryCapBits::gpu_current_limited);
         }
 
+        // these metrics only enabled with V1
+        if constexpr (std::same_as<T, ctl_power_telemetry2_t>) {
+            result = GetInstantaneousPowerTelemetryItem(
+                currentSample.gpuEffectiveClock,
+                pm_gpu_power_telemetry_info.gpu_effective_frequency_mhz,
+                GpuTelemetryCapBits::gpu_effective_frequency);
+            if (result != CTL_RESULT_SUCCESS) {
+                return result;
+            }
+        }
+
         return result;
     }
 
