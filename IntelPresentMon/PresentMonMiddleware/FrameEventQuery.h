@@ -53,8 +53,14 @@ public:
 		uint64_t lastReceivedNotDisplayedClickQpc = 0;
 		// All other input time qpc of non displayed frame
 		uint64_t lastReceivedNotDisplayedAllInputTime = 0;
+		// QPC of the last PC Latency simulation start
+		uint64_t mLastReceivedNotDisplayedPclSimStart = 0;
+		// QPC of the last PC Latency pc input
+		uint64_t mLastReceivedNotDisplayedPclInputTime = 0;
 		// The first app sim start time
 		uint64_t firstAppSimStartTime = 0;
+		// Accumlated input to frame start time
+		double mAccumulatedInput2FrameStartTime = 0.f;
 		// Current input to frame start average
 		double avgInput2Fs{};
 	};

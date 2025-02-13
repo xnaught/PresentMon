@@ -424,9 +424,7 @@ void WriteCsvRow<FrameMetrics>(
         }
     }
     if (args.mTrackPCL) {
-        auto Fs2P = pmSession.TimestampDeltaToMilliSeconds(p.PclSimStartTime, p.PresentStartTime);
-        auto P2D = pmSession.TimestampDeltaToMilliSeconds(p.PresentStartTime, metrics.mScreenTime);
-        fwprintf(fp, L",%.4lf", metrics.mAvgInput2FrameStart + Fs2P + P2D);
+        fwprintf(fp, L",%.4lf", metrics.mPcLatency);
     }
     if (args.mWriteDisplayTime) {
         if (metrics.mScreenTime == 0) {
