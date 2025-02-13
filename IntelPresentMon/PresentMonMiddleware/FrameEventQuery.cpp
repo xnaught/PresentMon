@@ -1052,29 +1052,27 @@ namespace
 
 			// double updatedInputTime = 0.;
 			double val = 0.;
-			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
-				// Keep this around as we will need to handle this case for when a pc latency
-				// tag framed is dropped. But for now, ignore.
-				//updatedInputTime = ctx.lastReceivedNotDisplayedAllInputTime == 0 ? 0. :
-				//	TimestampDeltaToUnsignedMilliSeconds(ctx.lastReceivedNotDisplayedAllInputTime,
-				//		ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
-				//		ctx.performanceCounterPeriodMs);
-				//val = ctx.pSourceFrameData->present_event.*pStart == 0 ? updatedInputTime :
-				//	TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pStart,
-				//		ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
-				//		ctx.performanceCounterPeriodMs);
-				//ctx.lastReceivedNotDisplayedAllInputTime = 0;
+			// Keep this around as we will need to handle this case for when a pc latency
+			// tag framed is dropped. But for now, ignore.
+			//updatedInputTime = ctx.lastReceivedNotDisplayedAllInputTime == 0 ? 0. :
+			//	TimestampDeltaToUnsignedMilliSeconds(ctx.lastReceivedNotDisplayedAllInputTime,
+			//		ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
+			//		ctx.performanceCounterPeriodMs);
+			//val = ctx.pSourceFrameData->present_event.*pStart == 0 ? updatedInputTime :
+			//	TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pStart,
+			//		ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
+			//		ctx.performanceCounterPeriodMs);
+			//ctx.lastReceivedNotDisplayedAllInputTime = 0;
 
-				if (ctx.avgInput2Fs == 0. || ctx.pSourceFrameData->present_event.PclSimStartTime == 0) {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
-						std::numeric_limits<double>::quiet_NaN();
-					return;
-				}
-
-				val = ctx.avgInput2Fs +
-					TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.PclSimStartTime, ctx.pSourceFrameData->present_event.PresentStartTime, ctx.performanceCounterPeriodMs) +
-					TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.PresentStartTime, ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex], ctx.performanceCounterPeriodMs);
+			if (ctx.avgInput2Fs == 0. || ctx.pSourceFrameData->present_event.PclSimStartTime == 0) {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
+				return;
 			}
+
+			val = ctx.avgInput2Fs +
+				TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.PclSimStartTime, ctx.pSourceFrameData->present_event.PresentStartTime, ctx.performanceCounterPeriodMs) +
+				TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.PresentStartTime, ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex], ctx.performanceCounterPeriodMs);
 
 			if (val == 0.) {
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
@@ -1326,6 +1324,30 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 		}
 		if (pSourceFrameData->present_event.InputTime != 0) {
 			lastReceivedNotDisplayedAllInputTime = pSourceFrameData->present_event.InputTime;
+		}
+		if (pSourceFrameData->present_event.PclSimStartTime != 0) {
+			if (pSourceFrameData->present_event.PclInputPingTime != 0) {
+				// This frame was dropped but we have valid pc latency input and simulation start
+				// times. Calculate the initial input to sim start time.
+				mAccumulatedInput2FrameStartTime =
+					TimestampDeltaToUnsignedMilliSeconds(
+						pSourceFrameData->present_event.PclInputPingTime,
+						pSourceFrameData->present_event.PclSimStartTime,
+						performanceCounterPeriodMs);
+				mLastReceivedNotDisplayedPclInputTime = pSourceFrameData->present_event.PclInputPingTime;
+			}
+			else if (mAccumulatedInput2FrameStartTime != 0.f) {
+				// This frame was also dropped and there is no pc latency input time. However, since we have
+				// accumulated time this means we have a pending input that has had multiple dropped frames
+				// and has not yet hit the screen. Calculate the time between the last not displayed sim start and
+				// this sim start and add it to our accumulated total
+				mAccumulatedInput2FrameStartTime +=
+					TimestampDeltaToUnsignedMilliSeconds(
+						mLastReceivedNotDisplayedPclSimStart,
+						pSourceFrameData->present_event.PclSimStartTime,
+						performanceCounterPeriodMs);
+			}
+			mLastReceivedNotDisplayedPclSimStart = pSourceFrameData->present_event.PclSimStartTime;
 		}
 	}
 

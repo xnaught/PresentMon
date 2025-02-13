@@ -121,6 +121,13 @@ namespace pmon::mid
 		// to the Present() being dropped
 		uint64_t mLastReceivedNotDisplayedAllInputTime = 0;
 		uint64_t mLastReceivedNotDisplayedMouseClickTime = 0;
+		// QPC of the last PC Latency simulation start
+		uint64_t mLastReceivedNotDisplayedPclSimStart = 0;
+		uint64_t mLastReceivedNotDisplayedPclInputTime = 0;
+
+		// Accumulated PC latency input to frame start time due to the 
+		// Present() being dropped
+		double mAccumulatedInput2FrameStartTime = 0.f;
 
         // begin/end screen times to optimize average calculation:
 		uint64_t mLastDisplayedScreenTime = 0;    // The last presented frame's ScreenTime (qpc)

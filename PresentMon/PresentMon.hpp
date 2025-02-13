@@ -120,10 +120,7 @@ struct FrameMetrics {
     uint64_t mScreenTime = 0;
     FrameType mFrameType = FrameType::NotSet;
     double mMsInstrumentedLatency = 0;
-    double mPcl;
-    double mRawI2Fp;
-    double mAvgInput2FrameStart;
-    double msBetweenSimStarts;
+    double mPcLatency;
 
     // Internal Intel Metrics
     double mMsInstrumentedRenderLatency = 0;
@@ -190,9 +187,11 @@ struct SwapChainData {
 
     // QPC of last received input data that did not make it to the screen due 
     // to the Present() being dropped
-    uint64_t mLastReceivedNotDisplayedAllInputTime;
-    uint64_t mLastReceivedNotDisplayedMouseClickTime;
-    uint64_t mLastReceivedNotDisplayedAppProviderInputTime;
+    uint64_t mLastReceivedNotDisplayedAllInputTime = 0;
+    uint64_t mLastReceivedNotDisplayedMouseClickTime = 0;
+    uint64_t mLastReceivedNotDisplayedAppProviderInputTime = 0;
+    // QPC of the last PC Latency simulation start
+    uint64_t mLastReceivedNotDisplayedPclSimStart = 0;
 
     // Frame statistics
     float mAvgCPUDuration = 0.f;
@@ -201,8 +200,8 @@ struct SwapChainData {
     float mAvgDisplayedTime = 0.f;
     float mAvgMsUntilDisplayed = 0.f;
     float mAvgMsBetweenDisplayChange = 0.f;
-    float mAvgInputToFrameStartTime = 0.f;
-    double mEmaI2FsTime = 0.f;
+    double mEmaInput2FrameStartTime = 0.f;
+    double mAccumulatedInput2FrameStartTime = 0.f;
 };
 
 struct ProcessInfo {

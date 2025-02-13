@@ -15,52 +15,6 @@ static bool gQuit = false;
 #include <set>
 #include <deque>
 
-class SlidingWindowMedian {
-public:
-    SlidingWindowMedian(size_t windowSize) : windowSize(windowSize) {}
-
-    void addValue(double value) {
-        // Insert new value and record it in the window queue.
-        data.insert(value);
-        window.push_back(value);
-        // If we've exceeded the window size, remove the oldest element.
-        if (window.size() > windowSize) {
-            double oldest = window.front();
-            window.pop_front();
-            // Erase one occurrence of the oldest value.
-            auto it = data.find(oldest);
-            if (it != data.end()) {
-                data.erase(it);
-            }
-        }
-    }
-
-    double getMedian() const {
-        if (data.empty()) {
-            throw std::runtime_error("No data available");
-        }
-        auto it = data.begin();
-        std::advance(it, data.size() / 2);
-        if (data.size() % 2 == 1) {
-            return *it;
-        }
-        else {
-            auto it2 = it;
-            --it2;
-            return (*it + *it2) / 2.0;
-        }
-    }
-
-private:
-    size_t windowSize;
-    std::deque<double> window;  // To track insertion order.
-    std::multiset<double> data; // To compute the median.
-};
-
-static SlidingWindowMedian gSwm(25);  // For example, a sliding window of 50 values.
-
-
-
 // When we collect realtime ETW events, we don't receive the events in real
 // time but rather sometime after they occur.  Since the user might be toggling
 // recording based on realtime cues (e.g., watching the target application) we
@@ -513,6 +467,8 @@ static void ReportMetricsHelper(
             metrics.mMsInstrumentedGpuLatency = 0;
         }
 
+        // If the frame was displayed regardless of how it was produced, calculate the following
+        // metrics
         if (displayed) {
             // Calculate the various display metrics
             metrics.mMsDisplayLatency       = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, screenTime);
@@ -532,7 +488,42 @@ static void ReportMetricsHelper(
             // way to calculate the Xell Gpu latency
             metrics.mMsInstrumentedLatency = InstrumentedStartTime == 0 ? 0 : 
                 pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, screenTime);
-            metrics.mAvgInput2FrameStart = chain->mEmaI2FsTime;
+
+            metrics.mPcLatency = 0.f;
+            // Check to see if we have a valid pc latency sim start time. If not we will be unable
+            // to produce the pc latency metric
+            if (p->PclSimStartTime != 0) {
+                if (p->PclInputPingTime == 0) {
+                    if (chain->mAccumulatedInput2FrameStartTime != 0) {
+                        // This frame was displayed but we don't have a pc latency input time. However, there is accumulated time
+                        // so there is a pending input that will now hit the screen. Add in the time from the last not
+                        // displayed pc simulation start to this frame's pc simulation start.
+                        chain->mAccumulatedInput2FrameStartTime +=
+                            pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedPclSimStart, p->PclSimStartTime);
+                        // Add all of the accumlated time to the average input to frame start time.
+                        pmon::util::CalculateEma(
+                            &chain->mEmaInput2FrameStartTime,
+                            chain->mAccumulatedInput2FrameStartTime,
+                            0.1);
+                        // Reset the tracking variables for when we have a dropped frame with a pc latency input
+                        chain->mAccumulatedInput2FrameStartTime = 0.f;
+                        chain->mLastReceivedNotDisplayedPclSimStart = 0;
+                    }
+                } else {
+                    pmon::util::CalculateEma(
+                        &chain->mEmaInput2FrameStartTime,
+                        pmSession.TimestampDeltaToUnsignedMilliSeconds(p->PclInputPingTime, p->PclSimStartTime),
+                        0.1);
+                }
+
+                // If we have a non-zero average input to frame start time and PC Latency simulation
+                // start time calculate the PC Latency
+                if (chain->mEmaInput2FrameStartTime != 0.f) {
+                    metrics.mPcLatency = chain->mEmaInput2FrameStartTime +
+                        pmSession.TimestampDeltaToMilliSeconds(p->PclSimStartTime, p->PresentStartTime) +
+                        pmSession.TimestampDeltaToMilliSeconds(p->PresentStartTime, screenTime);
+                }
+            }
         } else {
             metrics.mMsDisplayLatency               = 0;
             metrics.mMsDisplayedTime                = 0;
@@ -542,10 +533,37 @@ static void ReportMetricsHelper(
             metrics.mMsInstrumentedLatency          = 0;
             metrics.mMsInstrumentedRenderLatency    = 0;
             metrics.mMsReadyTimeToDisplayLatency    = 0;
+            metrics.mPcLatency                 = 0;
+            if (p->PclSimStartTime != 0) {
+                if (p->PclInputPingTime != 0) {
+                    // This frame was dropped but we have valid pc latency input and simulation start
+                    // times. Calculate the initial input to sim start time.
+                    chain->mAccumulatedInput2FrameStartTime =
+                        pmSession.TimestampDeltaToUnsignedMilliSeconds(p->PclInputPingTime, p->PclSimStartTime);
+                } else if (chain->mAccumulatedInput2FrameStartTime != 0.f) {
+                    // This frame was also dropped and there is no pc latency input time. However, since we have
+                    // accumulated time this means we have a pending input that has had multiple dropped frames
+                    // and has not yet hit the screen. Calculate the time between the last not displayed sim start and
+                    // this sim start and add it to our accumulated total
+                    chain->mAccumulatedInput2FrameStartTime +=
+                        pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedPclSimStart, p->PclSimStartTime);
+                }
+                chain->mLastReceivedNotDisplayedPclSimStart = p->PclSimStartTime;
+            }
         }
+
+        // The following metrics use both the frame's displayed and origin information.
+        metrics.mClickToPhotonLatency   = 0;
+        metrics.mAllInputPhotonLatency  = 0;
+        metrics.mInstrumentedInputTime  = 0;
+        metrics.mAnimationError         = 0;
+        metrics.mAnimationTime          = 0;
 
         if (displayIndex == appIndex) {
             if (displayed) {
+                // For all input device metrics check to see if there were any previous device input times 
+                // that were attached to a dropped frame and if so use the last received times for the
+                // metric calculations
                 auto updatedInputTime = chain->mLastReceivedNotDisplayedAllInputTime == 0 ? 0 :
                     pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedAllInputTime, screenTime);
                 metrics.mMsAllInputPhotonLatency = p->InputTime == 0 ? updatedInputTime : 
@@ -561,9 +579,34 @@ static void ReportMetricsHelper(
                 metrics.mMsInstrumentedInputTime = p->AppInputSample.first == 0 ? updatedInputTime :
                     pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppInputSample.first, screenTime);
 
+                // Reset all last received device times
                 chain->mLastReceivedNotDisplayedAllInputTime = 0;
                 chain->mLastReceivedNotDisplayedMouseClickTime = 0;
                 chain->mLastReceivedNotDisplayedAppProviderInputTime = 0;
+
+                // Next calculate the animation error and animation time. First calculate the simulation
+                // start time. Simulation start can be either the app provided sim start time or, if not present,
+                // the cpu start
+                auto simStartTime = p->AppSimStartTime != 0 ? p->AppSimStartTime : metrics.mCPUStart;
+
+                if (chain->mLastDisplayedSimStartTime != 0) {
+                    // If the simulation start time is less than the last displayed simulation start time it means
+                    // we are transitioning to app provider events.
+                    if (simStartTime > chain->mLastDisplayedSimStartTime) {
+                        metrics.mAnimationError = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
+                            simStartTime - chain->mLastDisplayedSimStartTime);
+                    }
+                }
+                // If we have a value in app sim start and we haven't set the first
+                // sim start time then we are transitioning from using cpu start to
+                // an application provided timestamp. Set the animation time to zero
+                // for the first frame.
+                if (p->AppSimStartTime != 0 && chain->mFirstAppSimStartTime == 0) {
+                    metrics.mAnimationTime = 0.;
+                }
+                else {
+                    CalculateAnimationTime(pmSession, chain->mFirstAppSimStartTime, simStartTime, metrics.mAnimationTime);
+                }
             } else {
                 metrics.mMsClickToPhotonLatency = 0;
                 metrics.mMsAllInputPhotonLatency = 0;
@@ -640,16 +683,6 @@ static void ReportMetricsHelper(
                 UpdateAverage(&chain->mAvgMsUntilDisplayed, metrics.mMsUntilDisplayed);
                 UpdateAverage(&chain->mAvgMsBetweenDisplayChange, metrics.mMsBetweenDisplayChange);
             }
-        }
-
-        // Update the average input to 
-        if (p->PclInputPingTime != 0) {
-            gSwm.addValue(pmSession.TimestampDeltaToUnsignedMilliSeconds(p->PclInputPingTime, p->PclSimStartTime));
-            chain->mAvgInputToFrameStartTime = (float)gSwm.getMedian();
-            pmon::util::CalculateEma(
-                &chain->mEmaI2FsTime,
-                pmSession.TimestampDeltaToUnsignedMilliSeconds(p->PclInputPingTime, p->PclSimStartTime),
-                0.1);
         }
 
         displayIndex += 1;
