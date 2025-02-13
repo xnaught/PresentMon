@@ -126,7 +126,7 @@
       <Message>Generating Build IDs</Message>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>force-run-nonexist.fake</Outputs>
+      <Outputs>force-run-nonexist.fake;generated\build_id.h;generated\signature_a_prev.txt;generated\signature_b_prev.txt</Outputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -178,7 +178,7 @@
       <Message>Generating Build IDs</Message>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>force-run-nonexist.fake</Outputs>
+      <Outputs>force-run-nonexist.fake;generated\build_id.h;generated\signature_a_prev.txt;generated\signature_b_prev.txt</Outputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
