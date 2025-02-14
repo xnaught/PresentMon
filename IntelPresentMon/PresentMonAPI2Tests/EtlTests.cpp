@@ -1939,5 +1939,4 @@ namespace EtlTests
 			}
 		}
 	};
-
 }

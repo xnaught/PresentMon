@@ -484,7 +484,7 @@ ULONG PMTraceSession::Start(
         mPMConsumer->mTrackDisplay,    // TRACK_DISPLAY
         mPMConsumer->mTrackInput,      // TRACK_INPUT
         mPMConsumer->mTrackFrameType || mPMConsumer->mTrackPMMeasurements || mPMConsumer->mTrackAppTiming, // TRACK_PRESENTMON
-        mPMConsumer->mTrackPCL);       // TRACK_PCL
+        mPMConsumer->mTrackPcLatency); // TRACK_PC_LATENCY
 
     mTraceHandle = OpenTraceW(&traceProps);
     if (mTraceHandle == INVALID_PROCESSTRACE_HANDLE) {
@@ -796,7 +796,7 @@ ULONG EnableProvidersListing(
         if (status != ERROR_SUCCESS) return status;
     }
 
-    if (pmConsumer->mTrackPCL) {
+    if (pmConsumer->mTrackPcLatency) {
         provider.ClearFilter();
         status = provider.EnableWithoutFiltering(sessionHandle, Nvidia_PCL::GUID, TRACE_LEVEL_VERBOSE);
         if (status != ERROR_SUCCESS) return status;

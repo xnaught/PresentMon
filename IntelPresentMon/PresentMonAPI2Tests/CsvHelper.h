@@ -776,6 +776,21 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                     }
                 }
                 break;
+            case Header_PcLatency:
+                if (v2MetricRow_.pcLatency.has_value()) {
+                    columnsMatch = Validate(v2MetricRow_.pcLatency.value(), pcLatency);
+                }
+                else
+                {
+                    if (std::isnan(pcLatency)) {
+                        columnsMatch = true;
+                    }
+                    else
+                    {
+                        columnsMatch = false;
+                    }
+                }
+                break;
             default:
                 columnsMatch = true;
                 break;
@@ -1185,7 +1200,20 @@ void CsvParser::ConvertToMetricDataType(const char* data, Header columnId)
         }
     }
     break;
-
+    case Header_PcLatency:
+    {
+        if (strncmp(data, "NA", 2) != 0) {
+            double convertedData = 0.;
+            CharConvert<double> converter;
+            converter.Convert(data, convertedData, columnId, line_);
+            v2MetricRow_.pcLatency = convertedData;
+        }
+        else
+        {
+            v2MetricRow_.pcLatency.reset();
+        }
+    }
+    break;
     default:
         Assert::Fail(CreateErrorString(UnknownHeader, line_).c_str());
     }

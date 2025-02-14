@@ -2509,6 +2509,8 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
         }
     }
 
+    if (mTrackPcLatency) {
+    if (mTrackPcLatency) {
     if (mTrackHybridPresent) {
         // Determine if this is a hybrid present
         auto key = std::make_pair(present->ProcessId, present->SwapChainAddress);
@@ -2521,7 +2523,7 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
         }
     }
 
-    if (mTrackPCL) {
+    if (mTrackPcLatency) {
         auto PclFrameIdIter = mNextPclFrameIdByProcessId.find(present->ProcessId);
         if (PclFrameIdIter != mNextPclFrameIdByProcessId.end()) {
             auto pclFrameId = PclFrameIdIter->second;
@@ -3010,7 +3012,7 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
 
 void PMTraceConsumer::HandleTraceLoggingEvent(EVENT_RECORD* pEventRecord)
 {
-    if (mTrackPCL) {
+    if (mTrackPcLatency) {
         HandlePclEvent(pEventRecord);
     }
 }

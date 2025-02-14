@@ -470,7 +470,7 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         else if (ParseArg(argv[i], L"track_hw_measurements")) { args->mTrackPMMeasurements = true; continue; }
         else if (ParseArg(argv[i], L"track_app_timing"))      { args->mTrackAppTiming      = true; continue; }
         else if (ParseArg(argv[i], L"track_hybrid_present"))  { args->mTrackHybridPresent  = true; continue; }
-        else if (ParseArg(argv[i], L"track_pcl")) { args->mTrackPCL = true; continue; }
+        else if (ParseArg(argv[i], L"track_pc_latency")) { args->mTrackPcLatency = true; continue; }
 
         // Hidden options:
         #if PRESENTMON_ENABLE_DEBUG_TRACE

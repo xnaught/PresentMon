@@ -92,11 +92,11 @@
     },
     {
       "Id": "8f014852-6512-466b-99cb-0a8724c36862",
-      "Command": "--output_file F:\\DataAnalysis\\NewLatency\\test.csv"
+      "Command": "--output_file \"D:\\source\\repos\\drivers.gpu.tools.presentmon\\Tests\\Gold\\test_case_0-temp.csv\""
     },
     {
       "Id": "1606ee3e-ac1c-4fea-9a87-736864dd1f00",
-      "Command": "--etl_file \"F:\\DataAnalysis\\NewLatency\\ETLs\\MarvelRivals\\trace.etl\""
+      "Command": "--etl_file \"D:\\source\\repos\\drivers.gpu.tools.presentmon\\Tests\\Gold\\test_case_0.etl\""
     },
     {
       "Id": "ac45209f-6799-44f5-88d9-b35b6f9015fb",

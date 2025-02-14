@@ -273,6 +273,7 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
         if (!track_input)     params_.emplace_back(L"--no_track_input");
         if (track_frame_type) params_.emplace_back(L"--track_frame_type");
         if (track_app_timing) params_.emplace_back(L"--track_app_timing");
+        if (track_pc_latency) params_.emplace_back(L"--track_pc_latency");
     }
 
     if (!columnsOK) {
