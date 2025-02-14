@@ -46,6 +46,7 @@ enum Header {
 
     // App Provided Metrics
     Header_InstrumentedLatency,
+    Header_PcLatency,
 
     // --v1_metrics
     Header_Runtime,
@@ -97,6 +98,7 @@ struct v2Metrics {
     std::optional<double> clickToPhotonLatency;
     std::optional<double> AllInputToPhotonLatency;
     std::optional<double> InstrumentedLatency;
+    std::optional<double> pcLatency;
 };
 
 constexpr char const* GetHeaderString(Header h)
@@ -148,6 +150,7 @@ constexpr char const* GetHeaderString(Header h)
     case Header_DwmNotified:                return "DwmNotified";
 
     case Header_InstrumentedLatency:        return "InstrumentedLatency";
+    case Header_PcLatency:                  return "PCLatency";
 
     default:                                return "<unknown>";
     }
@@ -331,7 +334,7 @@ public:
     bool Open(std::wstring const& path, uint32_t processId);
     void Close();
     bool VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-        PM_QUERY_ELEMENT(&queryElements)[22], pmapi::BlobContainer& blobs);
+        PM_QUERY_ELEMENT(&queryElements)[23], pmapi::BlobContainer& blobs);
     bool ResetCsv();
 
 private:
@@ -360,7 +363,7 @@ CsvParser::CsvParser()
 {}
 
 bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-    PM_QUERY_ELEMENT(&queryElements)[22], pmapi::BlobContainer& blobs)
+    PM_QUERY_ELEMENT(&queryElements)[23], pmapi::BlobContainer& blobs)
 {
 
     for (auto pBlob : blobs) {
@@ -388,8 +391,7 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
         const auto allInputToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[19].dataOffset]);
         const auto clickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[20].dataOffset]);
         const auto instrumentedLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[21].dataOffset]);
-
-
+        const auto pcLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[22].dataOffset]);
         
         // Read rows until we find one with the process we are interested in
         // or we are out of data.
@@ -570,6 +572,21 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
                     }
                 }
                 break;
+            case Header_PcLatency:
+                if (v2MetricRow_.pcLatency.has_value()) {
+                    columnsMatch = Validate(v2MetricRow_.pcLatency.value(), pcLatency);
+                }
+                else
+                {
+                    if (std::isnan(pcLatency)) {
+                        columnsMatch = true;
+                    }
+                    else
+                    {
+                        columnsMatch = false;
+                    }
+                }
+                break;
             default:
                 columnsMatch = true;
                 break;
@@ -685,7 +702,8 @@ bool CsvParser::Open(std::wstring const& path, uint32_t processId) {
                                                Header_AnimationTime,
                                                Header_ClickToPhotonLatency,
                                                Header_AllInputToPhotonLatency,
-                                               Header_InstrumentedLatency });
+                                               Header_InstrumentedLatency,
+                                               Header_PcLatency});
 
     if (!columnsOK) {
         Assert::Fail(L"Missing required columns");
@@ -925,7 +943,20 @@ void CsvParser::ConvertToMetricDataType(const char* data, Header columnId)
         }
     }
     break;
-
+    case Header_PcLatency:
+    {
+        if (strncmp(data, "NA", 2) != 0) {
+            double convertedData = 0.;
+            CharConvert<double> converter;
+            converter.Convert(data, convertedData, columnId, line_);
+            v2MetricRow_.pcLatency = convertedData;
+        }
+        else
+        {
+            v2MetricRow_.pcLatency.reset();
+        }
+    }
+    break;
     default:
         Assert::Fail(CreateErrorString(UnknownHeader, line_).c_str());
     }

@@ -154,6 +154,9 @@ struct FlipFrameTypeEvent {
     FrameType FrameType;
 };
 
+// Structure used to track application provided timing information 
+// using ETW events provided by either the PresentMon provider or 
+// PC Latency stats.
 struct AppTimingData {
     uint32_t AppProcessId = 0;
     uint64_t AppSleepStartTime = 0;
@@ -310,7 +313,7 @@ struct PMTraceConsumer
     bool mTrackFrameType = false;      // ... the frame type communicated through the Intel-PresentMon provider.
     bool mTrackPMMeasurements = false; // ... external measurements provided through the Intel-PresentMon provider
     bool mTrackAppTiming = false;      // ... app timing data communicated through the Intel-PresentMon provider.
-    bool mTrackPCL = false;            // ... Nvidia PCL stats.
+    bool mTrackPcLatency = false;      // ... Nvidia PC Latency stats.
 
     // When PresentEvents are missing data that may still arrive later, they get put into a deferred
     // state until the data arrives.  This time limit specifies how long a PresentEvent can be

@@ -2404,7 +2404,7 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
         }
     }
 
-    if (mTrackPCL) {
+    if (mTrackPcLatency) {
         auto PclFrameIdIter = mNextPclFrameIdByProcessId.find(present->ProcessId);
         if (PclFrameIdIter != mNextPclFrameIdByProcessId.end()) {
             auto pclFrameId = PclFrameIdIter->second;
@@ -2539,7 +2539,7 @@ void PMTraceConsumer::HandleProcessEvent(EVENT_RECORD* pEventRecord)
                     mNextAppFrameIdByProcessid.erase(appFrameIdIter);
                 }
             }
-            if (mTrackPCL) {
+            if (mTrackPcLatency) {
                 auto nvFrameIdIter = mNextPclFrameIdByProcessId.find(event.ProcessId);
                 if (nvFrameIdIter != mNextPclFrameIdByProcessId.end()) {
                     mNextPclFrameIdByProcessId.erase(nvFrameIdIter);
@@ -2887,11 +2887,8 @@ void PMTraceConsumer::UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecor
             AppTimingData data;
             data.AppInputSample.first = timestamp;
             data.AppProcessId = processId;
-            //data.AppInputSample.second = ConvertIntelProviderInputTypes(props->InputType);
-            //mPendingAppTimingDataByAppFrameId.emplace(props->FrameId, data);
-            // These are coming in backwards for xell 0.9.1
-            data.AppInputSample.second = ConvertIntelProviderInputTypes((Intel_PresentMon::InputType)props->FrameId);
-            mPendingAppTimingDataByAppFrameId.emplace(std::make_pair((uint32_t)props->InputType, processId), data);
+            data.AppInputSample.second = ConvertIntelProviderInputTypes(props->InputType);
+            mPendingAppTimingDataByAppFrameId.emplace(std::make_pair(props->FrameId, processId), data);
         }
     }
     return;
@@ -2986,7 +2983,7 @@ void PMTraceConsumer::HandleIntelPresentMonEvent(EVENT_RECORD* pEventRecord)
 
 void PMTraceConsumer::HandleTraceLoggingEvent(EVENT_RECORD* pEventRecord)
 {
-    if (mTrackPCL) {
+    if (mTrackPcLatency) {
         HandlePclEvent(pEventRecord);
     }
 }

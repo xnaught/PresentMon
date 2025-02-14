@@ -43,6 +43,7 @@ struct PresentMonCsv
 
         // App Provided Metrics
         Header_InstrumentedLatency,
+        Header_PcLatency,
 
         // --v1_metrics
         Header_Runtime,
@@ -116,6 +117,7 @@ struct PresentMonCsv
         case Header_DwmNotified:                return "DwmNotified";
 
         case Header_InstrumentedLatency:        return "InstrumentedLatency";
+        case Header_PcLatency:                  return "PCLatency";
         }
         return "<unknown>";
     }

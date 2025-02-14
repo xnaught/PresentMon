@@ -312,7 +312,7 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     if (args.mTrackAppTiming) {
         fwprintf(fp, L",InstrumentedLatency");
     }
-    if (args.mTrackPCL) {
+    if (args.mTrackPcLatency) {
         fwprintf(fp, L",PCLatency");
     }
     if (args.mWriteDisplayTime) {
@@ -423,8 +423,13 @@ void WriteCsvRow<FrameMetrics>(
             fwprintf(fp, L",%.4lf", metrics.mInstrumentedLatency);
         }
     }
-    if (args.mTrackPCL) {
-        fwprintf(fp, L",%.4lf", metrics.mPcLatency);
+    if (args.mTrackPcLatency) {
+        if (metrics.mPcLatency == 0.0) {
+            fwprintf(fp, L",NA");
+        }
+        else {
+            fwprintf(fp, L",%.4lf", metrics.mPcLatency);
+        }
     }
     if (args.mWriteDisplayTime) {
         if (metrics.mScreenTime == 0) {
