@@ -297,7 +297,7 @@ void PrintUsage()
         LR"(--track_frame_type)",      LR"(Track the type of each displayed frame; requires application and/or driver instrumentation using Intel-PresentMon provider.)",
         LR"(--track_hw_measurements)", LR"(Tracks HW-measured latency and/or power data coming from a LMT and/or PCAT device.)",
         LR"(--track_app_timing)", LR"(Track app timines for each displayed frame; requires application and/or driver instrumentation using Intel-PresentMon provider.)",
-        LR"(--track_pcl)", LR"(Track app timines for each displayed frame; requires application and/or driver instrumentation using Intel-PresentMon provider.)",
+        LR"(--track_pc_latency)", LR"(Track app timines for each displayed frame; requires application instrumentation using PC Latency events.)",
     };
 
     // Layout

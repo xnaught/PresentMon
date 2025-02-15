@@ -322,6 +322,8 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
         fwprintf(fp, L",FrameId");
         if (args.mTrackAppTiming) {
             fwprintf(fp, L",AppFrameId");
+        }
+        if (args.mTrackPcLatency) {
             fwprintf(fp, L",PclFrameId");
         }
     }
@@ -443,6 +445,8 @@ void WriteCsvRow<FrameMetrics>(
         fwprintf(fp, L",%u", p.FrameId);
         if (args.mTrackAppTiming) {
             fwprintf(fp, L",%u", p.AppFrameId);
+        }
+        if (args.mTrackPcLatency) {
             fwprintf(fp, L",%u", p.PclFrameId);
         }
         
