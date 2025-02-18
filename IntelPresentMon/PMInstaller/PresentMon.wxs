@@ -54,6 +54,14 @@
                 Absent="allow">
                 <ComponentGroupRef Id="provider_group" />
             </Feature>
+			<Feature
+                Id="presentmon_sdk_install"
+                Title="PresentMon SDK"
+                Description="Libraries for interfacing with the PresentMon service via API"
+                Level="1"
+                Absent="allow">
+				<ComponentGroupRef Id="sdk_group" />
+			</Feature>
             <?if $(var.has_console_app) = "true" ?>
             <Feature
                 Id="presentmon_console_install"
@@ -274,6 +282,16 @@
                     Remove="uninstall"
                     Wait="yes" />
             </Component>
+			<Component
+                Id="pm_service_present_mon_api_2_dll"
+                Guid="B78C51BB-81AC-4AAB-871F-85D2D0EA37C3">
+				<File
+                    Id="pm_service_present_mon_api_2_dll"
+                    Name="$(var.PresentMonAPI2.TargetFileName)"
+                    Source="$(var.PresentMonAPI2.TargetPath)"
+                    KeyPath="yes">
+				</File>
+			</Component>
         </ComponentGroup>
         <ComponentGroup
             Id="pm_app"
@@ -419,15 +437,20 @@
                 </File>
             </Component>
             <Component
-                Id="pm_app_present_mon_api_2_dll"
-                Guid="0DC4A1F0-2802-4FC0-B21D-094B78287DC8">
-                <File
-                    Id="pm_app_present_mon_api_2_dll"
-                    Name="$(var.PresentMonAPI2.TargetFileName)"
-                    Source="$(var.PresentMonAPI2.TargetPath)"
-                    KeyPath="yes">
-                </File>
+                Id="pm_app_remove_middleware"
+                Guid="C980319A-1DC0-4F9C-9E93-9775B71CD1A5">
+				<RemoveFile Id="remove_app_middleware" Name="$(var.PresentMonAPI2.TargetFileName)" On="both"/>
             </Component>
+			<Component
+                Id="pm_app_present_mon_api_2_loader_dll"
+                Guid="046B72A8-25CD-4185-AE7D-AFE7C5ADC24D">
+				<File
+                    Id="pm_app_present_mon_api_2_loader_dll"
+                    Name="$(var.PresentMonAPI2Loader.TargetFileName)"
+                    Source="$(var.PresentMonAPI2Loader.TargetPath)"
+                    KeyPath="yes">
+				</File>
+			</Component>
         </ComponentGroup>
         <ComponentGroup
             Id="pm_app_locales"
@@ -739,6 +762,40 @@
             </Component>
         </ComponentGroup>
         <?endif?>
+		<ComponentGroup
+            Id="sdk_group"
+            Directory="sdk_folder">
+			<Component
+                Id="loader_import_lib"
+                Guid="5746C4B9-7D3D-47AE-AEC5-9EB8CEFDAAEB">
+				<File
+                    Id="loader_import_lib"
+                    Name="PresentMonAPI2Loader.lib"
+                    Source="$(var.PresentMonAPI2Loader.TargetDir)"
+                    KeyPath="yes">
+				</File>
+			</Component>
+			<Component
+                Id="loader_dll"
+                Guid="FB49F469-944D-4772-AA68-759BC3264430">
+				<File
+                    Id="loader_dll"
+                    Name="$(var.PresentMonAPI2Loader.TargetFileName)"
+                    Source="$(var.PresentMonAPI2Loader.TargetDir)"
+                    KeyPath="yes">
+				</File>
+			</Component>
+			<Component
+                Id="api_header"
+                Guid="482AD952-40FB-4278-BF41-EF9F61F709BC">
+				<File
+                    Id="api_header"
+                    Name="PresentMonAPI.h"
+                    Source="$(var.PresentMonAPI2.ProjectDir)"
+                    KeyPath="yes">
+				</File>
+			</Component>
+		</ComponentGroup>
         <ComponentGroup
             Id="shortcuts"
             Directory="shortcuts_folder">

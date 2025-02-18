@@ -74,12 +74,22 @@ namespace pmon::util::log
 		EntryBuilder& diag() noexcept;
 		EntryBuilder& subsys(Subsystem sys) noexcept;
 		EntryStream stream() noexcept;
-		template<typename T>
-		EntryBuilder& code(const T& code) noexcept
+		template<typename C>
+		EntryBuilder& code(const C& code) noexcept
 		{
 			errorCode_ = { code };
 			return *this;
-		} 
+		}
+		template<typename C>
+		EntryBuilder& note(std::pair<std::string, std::optional<C>> noteWithCode) noexcept
+		{
+			auto&& [msg_, code_] = noteWithCode;
+			note(std::move(msg_));
+			if (code_) {
+				code(*code_);
+			}
+			return *this;
+		}
 	private:
 		// functions
 		void commit_() noexcept;

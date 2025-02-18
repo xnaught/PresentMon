@@ -1,4 +1,4 @@
-#include <Windows.h>
+#include "../CommonUtilities/win/WinAPI.h"
 #include "../CommonUtilities/log/GlobalPolicy.h"
 
 using namespace pmon::util;

@@ -23,9 +23,20 @@ int CommonEntry(DWORD argc, LPTSTR* argv, bool asApp)
 		return *e;
 	}
 	// configure windows registry access
-	Reg::SetPrivileged(!asApp);
+	Reg::SetReadonly(asApp);
 	// configure logging based on CLI arguments and registry settings
 	logsetup::ConfigureLogging(asApp);
+	// place middleware dll discovery path into registry
+	if (!asApp) {
+		char path[MAX_PATH];
+		if (GetModuleFileNameA(nullptr, path, std::size(path)) == 0) {
+			pmlog_error("Failure to get path to service executable").no_trace().hr();
+		}
+		else {
+			const auto middlewarePath = std::filesystem::path{ path }.parent_path() / "PresentMonAPI2.dll";
+			Reg::Get().middlewarePath = middlewarePath.string();
+		}
+	}
 
 	// annouce versioning etc.
 	pmlog_info(std::format("Starting service, build #{} ({}) [{}], logging @{} (log build @{})",

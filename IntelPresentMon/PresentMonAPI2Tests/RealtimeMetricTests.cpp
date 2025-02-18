@@ -11,6 +11,7 @@
 #include "../PresentMonAPI2/Internal.h"
 #include "../PresentMonAPIWrapper/PresentMonAPIWrapper.h"
 #include "../PresentMonAPIWrapper/FixedQuery.h"
+#include "../PresentMonAPI2Loader/Loader.h"
 #include "tlhelp32.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -126,6 +127,8 @@ namespace RealtimeMetricTests
 			{
 				try
 				{
+					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
+					pmSetupODSLogging_();
 					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
 				}
 				catch (const std::exception& e) {
@@ -171,6 +174,8 @@ namespace RealtimeMetricTests
 			{
 				try
 				{
+					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
+					pmSetupODSLogging_();
 					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
 				}
 				catch (const std::exception& e) {
@@ -230,6 +235,8 @@ namespace RealtimeMetricTests
 			{
 				try
 				{
+					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
+					pmSetupODSLogging_();
 					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
 				}
 				catch (const std::exception& e) {

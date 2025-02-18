@@ -3,14 +3,20 @@
 #include "../CommonUtilities/log/Log.h"
 #include "../CommonUtilities/Exception.h"
 #include "../PresentMonMiddleware/LogSetup.h"
+#include <filesystem>
 
 using namespace pmon;
 using namespace pmon::util;
 
+log::Level GetLogLevel_(PM_DIAGNOSTIC_LEVEL dl) noexcept
+{
+	return log::Level(dl);
+}
+
 PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticSetup(const PM_DIAGNOSTIC_CONFIGURATION* pConfig)
 {
 	try {
-		log::SetupDiagnosticLayer(pConfig);
+		log::SetupDiagnosticChannel(pConfig);
 		return PM_STATUS_SUCCESS;
 	} pmcatch_report;
 	return PM_STATUS_FAILURE;
@@ -64,11 +70,11 @@ PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticDequeueMessage(PM_DIAGNOSTIC_MESSAG
 			if (auto pDiag = log::GetDiagnostics()) {
 				if (auto pMessage = pDiag->DequeueMessage()) {
 					*ppMessage = pMessage.release();
-					return PM_STATUS_SUCCESS;
 				}
 				else {
-					return PM_STATUS_NO_DATA;
+					*ppMessage = nullptr;
 				}
+				return PM_STATUS_SUCCESS;
 			}
 		}
 	} pmcatch_report;
@@ -118,4 +124,16 @@ PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticUnblockWaitingThread()
 		}
 	} pmcatch_report;
 	return PM_STATUS_FAILURE;
+}
+
+PRESENTMON_API2_EXPORT PM_STATUS pmSetupFileLogging(const char* path, PM_DIAGNOSTIC_LEVEL logLevel,
+	PM_DIAGNOSTIC_LEVEL stackTraceLevel, bool exceptionTrace)
+{
+	auto fsPath = std::filesystem::path(path);
+	if (!std::filesystem::is_directory(fsPath)) {
+		return PM_STATUS_NONEXISTENT_FILE_PATH;
+	}
+	log::SetupFileChannel(std::move(fsPath), GetLogLevel_(logLevel),
+		GetLogLevel_(stackTraceLevel), exceptionTrace);
+	return PM_STATUS_SUCCESS;
 }

@@ -16,16 +16,17 @@ extern "C" {
 #endif
 
 // testing support functions
-PRESENTMON_API2_EXPORT void pmSetMiddlewareAsMock_(bool mocked, bool useCrtHeapDebug = false, bool useLocalShmServer = true);
 PRESENTMON_API2_EXPORT _CrtMemState pmCreateHeapCheckpoint_();
-PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareSpeak_(PM_SESSION_HANDLE handle, char* buffer);
-PRESENTMON_API2_EXPORT PM_STATUS pmMiddlewareAdvanceTime_(PM_SESSION_HANDLE handle, uint32_t milliseconds);
 
 // log configuration support functions
 struct LoggingSingletons
 {
 	std::function<pmon::util::log::GlobalPolicy& ()> getGlobalPolicy;
 	std::function<pmon::util::log::LineTable& ()> getLineTable;
+	operator bool() const noexcept
+	{
+		return getGlobalPolicy || getLineTable;
+	}
 };
 // function to connect (subordinate) the dll logging system to the exe one
 // replace default channel (nullptr) with a channel that copies entries to pChannel
@@ -36,3 +37,5 @@ PRESENTMON_API2_EXPORT LoggingSingletons pmLinkLogging_(
 	std::function<pmon::util::log::IdentificationTable&()> getIdTable);
 // function to flush the dll's log channel worker queue when before exiting
 PRESENTMON_API2_EXPORT void pmFlushEntryPoint_() noexcept;
+// set middleware to log using OutputDebugString
+PRESENTMON_API2_EXPORT void pmSetupODSLogging_();

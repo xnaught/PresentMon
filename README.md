@@ -14,7 +14,9 @@ This repository contains several components:
 
 - The PresentMon/ directory contains the **PresentMon Console Application**: a standalone console application that can be used to collect CSV data from target applications.  See [README-ConsoleApplication.md](README-ConsoleApplication.md) for more information.
 
-- The IntelPresentMon/ directory contains the **PresentMon Service** and **PresentMon Capture Application**: an easy-to-use GUI that can be used to collect and analyze target applications.  See [README-Service.md](README-Service.md) and [README-CaptureApplication.md](README-CaptureApplication.md) for more information.
+- The IntelPresentMon/ directory contains the **PresentMon Service**: A service that combines the ETW frame event analysis of the PresentMon Analysis library with hardware telemetry such as GPU power, temperature, and utilization collected from various vendor APIs such as NVAPI.  Applications can interact with this service to access data via the **PresentMon API**.  See [README-Service.md](README-Service.md) for more information.
+
+- The IntelPresentMon/ directory also contains the **PresentMon Capture Application**: a user-friendly GUI application that interfaces with the PresentMon Service.  This application can display an overlay containing realtime graphs and readouts of any metrics exposed by the PresentMon Service, as well as capture per-frame CSV data.  See [README-CaptureApplication.md](README-CaptureApplication.md) for more information.
 
 There are also several other programs that build on this functionality and/or help visualize the resulting data.  For example, see:
 

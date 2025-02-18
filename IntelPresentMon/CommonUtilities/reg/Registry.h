@@ -153,19 +153,20 @@ namespace pmon::util::reg
 			return key_.IsValid();
 		}
 	protected:
-		Registry(HKEY hive, std::wstring keyPath) noexcept
+		Registry(HKEY hive, std::wstring keyPath, bool readOnly) noexcept
 			:
 			hive_{ hive },
 			keyPath_{ keyPath }
 		{
 			// opening existing key
 			try {
-				key_.Open(hive_, keyPath_);
+				key_.Open(hive_, keyPath_, readOnly ? (KEY_READ) : (KEY_READ | KEY_WRITE));
 				return;
 			}
 			catch (const winreg::RegException& e) {
 				if (e.code().value() == 2) {
 					pmlog_warn(std::format("Registry key [{}] does not exist, creating...", str::ToNarrow(keyPath)));
+					// note the lack of return here, allowing us to continue on to the creation routine below
 				}
 				else {
 					pmlog_error(ReportException(std::format("Failed to open registry key [{}]", str::ToNarrow(keyPath))));
@@ -190,7 +191,7 @@ namespace pmon::util::reg
 		winreg::RegKey key_;
 	};
 
-	template<class T>
+	template<class T, HKEY Hive>
 	class RegistryBase : public Registry
 	{
 	public:
@@ -199,13 +200,13 @@ namespace pmon::util::reg
 			static T reg;
 			return reg;
 		}
-		static void SetPrivileged(bool privileged) noexcept
+		static void SetReadonly(bool readonly = true) noexcept
 		{
-			privileged_ = privileged;
+			readonly_ = readonly;
 		}
 	protected:
-		RegistryBase() : Registry{ privileged_ ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER, T::keyPath_ } {}
+		RegistryBase() : Registry{ Hive, T::keyPath_, readonly_ } {}
 	private:
-		inline static bool privileged_ = true;
+		inline static bool readonly_ = false;
 	};
 }

@@ -18,9 +18,15 @@
     <ClInclude Include="BuildId.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PresentMonAPIVersion.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BuildId.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PresentMonAPIVersion.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
