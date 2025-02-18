@@ -85,7 +85,7 @@ namespace
 				if constexpr (std::is_same_v<std::remove_extent_t<Type>, char>) {
 					const auto val = (ctx.pSourceFrameData->*pSubstruct.*pMember)[inputIndex_];
 					// TODO: only getting first character of application name. Hmmm.
-					strcpy_s(reinterpret_cast<char*>(&pDestBlob[outputOffset_]), 260, &val);
+					strncpy_s(reinterpret_cast<char*>(&pDestBlob[outputOffset_]), 260, &val, _TRUNCATE);
 				}
 				else {
 					const auto val = (ctx.pSourceFrameData->*pSubstruct.*pMember)[inputIndex_];

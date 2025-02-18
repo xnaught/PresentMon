@@ -899,7 +899,7 @@ static void ReportMetrics(
         {
         case PM_METRIC_CPU_NAME:
         {
-            strcpy_s(reinterpret_cast<char*>(&pBlob[blobOffset]), sizeInBytes, cachedCpuInfo[0].deviceName.c_str());
+            strncpy_s(reinterpret_cast<char*>(&pBlob[blobOffset]), sizeInBytes, cachedCpuInfo[0].deviceName.c_str(), _TRUNCATE);
         }
             break;
         case PM_METRIC_CPU_VENDOR:
@@ -919,7 +919,7 @@ static void ReportMetrics(
             auto index = GetCachedGpuInfoIndex(deviceId);
             if (index.has_value())
             {
-                strcpy_s(reinterpret_cast<char*>(&pBlob[blobOffset]), sizeInBytes, cachedGpuInfo[index.value()].deviceName.c_str());
+                strncpy_s(reinterpret_cast<char*>(&pBlob[blobOffset]), sizeInBytes, cachedGpuInfo[index.value()].deviceName.c_str(), _TRUNCATE);
             }
         }
             break;
@@ -1122,7 +1122,7 @@ static void ReportMetrics(
         switch (element.metric)
         {
         case PM_METRIC_APPLICATION:
-            strcpy_s(reinterpret_cast<char*>(&pBlob[element.dataOffset]), 260, swapChain.mLastPresent.application);
+            strncpy_s(reinterpret_cast<char*>(&pBlob[element.dataOffset]), 260, swapChain.mLastPresent.application, _TRUNCATE);
             break;
         case PM_METRIC_PRESENT_MODE:
             reinterpret_cast<PM_PRESENT_MODE&>(pBlob[element.dataOffset]) = (PM_PRESENT_MODE)swapChain.mLastPresent.PresentMode;

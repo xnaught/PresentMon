@@ -51,7 +51,7 @@ namespace pmon::ipc::intro
 			const auto bufferSize = buffer_.size() + 1;
 			content.pData = charAlloc.allocate(bufferSize);
 			if (content.pData) {
-				strcpy_s(const_cast<char*>(content.pData), bufferSize, buffer_.c_str());
+				strncpy_s(const_cast<char*>(content.pData), bufferSize, buffer_.c_str(), _TRUNCATE);
 			}
 			// emplace to allocated self
 			if (pSelf) {

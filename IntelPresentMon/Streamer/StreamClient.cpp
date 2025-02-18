@@ -318,12 +318,12 @@ void StreamClient::CopyFrameData(uint64_t start_qpc,
                        src_frame->present_event.last_present_qpc,
                    GetQpcFrequency());
 
-  strcpy_s(dst_frame->application, src_frame->present_event.application);
+  strncpy_s(dst_frame->application, src_frame->present_event.application, _TRUNCATE);
 
   dst_frame->process_id = src_frame->present_event.ProcessId;
   dst_frame->swap_chain_address = src_frame->present_event.SwapChainAddress;
-  strcpy_s(dst_frame->runtime,
-           RuntimeToString(src_frame->present_event.Runtime));
+  strncpy_s(dst_frame->runtime,
+           RuntimeToString(src_frame->present_event.Runtime), _TRUNCATE);
   dst_frame->sync_interval = src_frame->present_event.SyncInterval;
   dst_frame->present_flags = src_frame->present_event.PresentFlags;
 

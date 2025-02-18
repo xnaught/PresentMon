@@ -12,7 +12,7 @@ namespace pmon::bid
 			.patch = 0,
 			.tag = "beta",
 		};
-		strcpy_s(ver.hash, BuildIdShortHash());
+		strncpy_s(ver.hash, BuildIdShortHash(), _TRUNCATE);
 		return ver;
 	}
 }

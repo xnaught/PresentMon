@@ -56,7 +56,7 @@ namespace pmon::util::cli
 		for (auto pWideStr : std::span{ wargv, size_t(argc) }) {
 			const auto narrow = str::ToNarrow(pWideStr);
 			auto pNarrowStr = new char[narrow.size() + 1];
-			strcpy_s(pNarrowStr, narrow.size() + 1, narrow.c_str());
+			strncpy_s(pNarrowStr, narrow.size() + 1, narrow.c_str(), _TRUNCATE);
 			stringPointerArray.push_back(pNarrowStr);
 		}
 	}
