@@ -277,7 +277,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
         // code from here on is only executed by the root process (browser window process)
 
-        pmlog_info(std::format("== client section starting build#{} clean:{} ==", BuildIdShortHash(), BuildIdDirtyFlag()));
+        pmlog_info(std::format("== client section starting build#{} clean:{} ==", BuildIdShortHash(), !BuildIdDirtyFlag()));
 
         {
             auto& folderResolver = infra::util::FolderResolver::Get();

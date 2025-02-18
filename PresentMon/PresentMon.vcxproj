@@ -93,9 +93,7 @@
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
-  <PropertyGroup>
-    <CustomBuildAfterTargets>Build</CustomBuildAfterTargets>
-  </PropertyGroup>
+  <PropertyGroup />
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnabled>false</VcpkgEnabled>
   </PropertyGroup>
@@ -114,20 +112,14 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <CustomBuildStep>
-      <Message>Generating README-ConsoleApplication.md</Message>
-      <Command>call ..\Tools\generate\readme\generate.cmd</Command>
+      <Message>
+      </Message>
+      <Command>
+      </Command>
       <Inputs>
-          ..\IntelPresentMon\metrics.csv;
-          ..\PresentMon.props;
-          ..\Tools\generate\readme\generate.cmd;
-          ..\Tools\generate\readme\CSVIntro.md;
-          ..\Tools\generate\readme\CSVOutro.md;
-          ..\Tools\generate\readme\ConsoleIntro.md;
-          ..\Tools\generate\readme\metrics.awk;
-          ..\Tools\generate\readme\version.awk;
-          CommandLine.cpp;
       </Inputs>
-      <Outputs>..\README-ConsoleApplication.md</Outputs>
+      <Outputs>
+      </Outputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
