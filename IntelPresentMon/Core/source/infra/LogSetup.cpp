@@ -73,19 +73,41 @@ namespace p2c
 	using namespace pmon::util;
 	using namespace pmon::util::log;
 
+	_invalid_parameter_handler pOriginalInvalidParameterHandler_ = nullptr;
+
+	namespace {
+		void InvalidParameterHandler_(
+			const wchar_t* expression,
+			const wchar_t* function,
+			const wchar_t* file,
+			unsigned int line,
+			uintptr_t pReserved)
+		{
+			// convert to narrow and log the assertion content
+			const auto narrowFunction = str::ToNarrow(function);
+			const auto narrowFile = str::ToNarrow(file);
+			pmlog_from_(Level::Fatal, narrowFile.c_str(), narrowFunction.c_str(), (int)line)
+				.note(std::format("CRT assertion: {}", str::ToNarrow(expression)));
+			// flush the default channel
+			if (auto pChan = GetDefaultChannel()) {
+				pChan->Flush();
+			}
+			// invoke the original handler
+			if (pOriginalInvalidParameterHandler_) {
+				pOriginalInvalidParameterHandler_(expression, function, file, line, pReserved);
+			}
+		}
+	}
+
 	void ConfigureLogging() noexcept
 	{
 		try {
 			auto pChan = GetDefaultChannel();
+			// setup CRT assert handler
+			pOriginalInvalidParameterHandler_ = _set_invalid_parameter_handler(InvalidParameterHandler_);
 			// shortcut for command line
 			const auto& opt = cli::Options::Get();
 			const auto render = opt.cefType && *opt.cefType == "renderer";
-			// connect dll channel and id table to exe, get access to global settings in dll
-			LoggingSingletons getters;
-			if (render && opt.logMiddlewareCopy) {
-				getters = pmLinkLogging_(pChan, []() -> IdentificationTable& {
-					return IdentificationTable::Get_(); });
-			}
 
 			// determine log folder path
 			std::filesystem::path logFolder;
@@ -103,6 +125,12 @@ namespace p2c
 			pChan->AttachComponent(std::make_shared<BasicFileDriver>(std::make_shared<TextFormatter>(),
 				std::make_shared<SimpleFileStrategy>(logfilePathClient)), "drv:file");
 			auto&& pol = GlobalPolicy::Get();
+			// connect dll channel and id table to exe, get access to global settings in dll
+			LoggingSingletons getters;
+			if (render && opt.logMiddlewareCopy) {
+				getters = pmLinkLogging_(pChan, []() -> IdentificationTable& {
+					return IdentificationTable::Get_(); });
+			}
 			// set the global policy settings
 			if (opt.logLevel) {
 				pol.SetLogLevel(*opt.logLevel);

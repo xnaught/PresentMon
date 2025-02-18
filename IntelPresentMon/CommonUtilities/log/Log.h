@@ -34,10 +34,11 @@ namespace pmon::util::log
 #endif
 #endif
 
-#define pmlog_(lvl) ((PMLOG_BUILD_LEVEL_ < lvl) || (::pmon::util::log::GlobalPolicy::Get().GetLogLevel() < lvl)) \
-	? (void)0 : ::pmon::util::log::Voidifier_{} & ::pmon::util::log::EntryBuilder{ lvl, __FILE__, __FUNCTION__, __LINE__ } \
+#define pmlog_from_(lvl, file, function, line) ((PMLOG_BUILD_LEVEL_ < lvl) || (::pmon::util::log::GlobalPolicy::Get().GetLogLevel() < lvl)) \
+	? (void)0 : ::pmon::util::log::Voidifier_{} & ::pmon::util::log::EntryBuilder{ lvl, file, function, line } \
 	.subsys(::pmon::util::log::GlobalPolicy::Get().GetSubsystem()) \
 	.to(::pmon::util::log::GetDefaultChannel())
+#define pmlog_(lvl) pmlog_from_(lvl, __FILE__, __FUNCTION__, __LINE__)
 #define pmlog_fatal	pmlog_(::pmon::util::log::Level::Fatal).note
 #define pmlog_error	pmlog_(::pmon::util::log::Level::Error).note
 #define pmlog_warn	pmlog_(::pmon::util::log::Level::Warning).note

@@ -117,9 +117,8 @@ Write-Host "[build_id_gen] Generating new build_id.h..."
 
 # Get the current git commit hash
 $gitHash       = (git rev-parse HEAD)        | Out-String
-$gitHashShort  = (git rev-parse --short HEAD)| Out-String
 $gitHash       = $gitHash.Trim()
-$gitHashShort  = $gitHashShort.Trim()
+$gitHashShort  = $gitHash.Substring(0, 7)
 
 # Format: yyyy.M.d.HH:mm:ss (e.g., 2025.1.8.12:20:11)
 $dateTime = Get-Date -Format 'yyyy.M.d.HH:mm:ss'
