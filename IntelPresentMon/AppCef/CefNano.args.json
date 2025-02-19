@@ -89,6 +89,10 @@
       "Command": "--p2c-debug-wait-render"
     },
     {
+      "Id": "f556bf27-cb7e-4a17-a7cb-3c0400aeb7d1",
+      "Command": "--p2c-debug-wait-client"
+    },
+    {
       "Id": "92d25458-0b38-4e99-a582-49f0c90979c2",
       "Command": "--help"
     },

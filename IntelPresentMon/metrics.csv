@@ -84,3 +84,8 @@ PM_METRIC_CPU_CORE_UTILITY,1,CPU Core Utility,Amount of CPU processing utility b
 ,,,
 PM_METRIC_INSTRUMENTED_LATENCY,,Instrumented Latency,Instrumented Frame Start To Display Latency,How long it took from the instrumented start of this frame until the frame was displayed on the screen.
 PM_METRIC_GPU_EFFECTIVE_FREQUENCY,1,GPU Effective Frequency,Effective clock speed of the GPU cores.
+PM_METRIC_GPU_VOLTAGE_REGULATOR_TEMPERATURE,1,GPU Voltage Regulator Temperature,Effective clock speed of the GPU cores.
+PM_METRIC_GPU_MEM_EFFECTIVE_BANDWIDTH,1,GPU Memory Effective Bandwidth,Data transfer rate that the memory modules can sustain based on current clock frequency.
+PM_METRIC_GPU_OVERVOLTAGE_PERCENT,1,GPU Overvoltage Percent,GPU overvoltage increment as a ratio of the maximum increment.
+PM_METRIC_GPU_TEMPERATURE_PERCENT,1,GPU Temperature Percent,GPU temperature as a ratio of the thermal margin.
+PM_METRIC_GPU_POWER_PERCENT,1,GPU Power Percent,GPU power draw as a ratio of default maximum power.

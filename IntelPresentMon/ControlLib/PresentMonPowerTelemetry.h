@@ -107,6 +107,11 @@ enum class GpuTelemetryCapBits {
   vram_voltage_limited,
   vram_utilization_limited,
   gpu_effective_frequency,
+  gpu_voltage_regulator_temperature,
+  gpu_mem_effective_bandwidth,
+  gpu_overvoltage_percent,
+  gpu_temperature_percent,
+  gpu_power_percent,
   gpu_telemetry_count,
 };
 
