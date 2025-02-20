@@ -127,6 +127,7 @@ namespace pwr::intel
                 IGCL_ERR(result);
             }
             pmlog_verb(v::gpu)("get memory state").pmwatch(GetName()).pmwatch(ref::DumpGenerated(memory_state));
+            
             if (const auto result = ctlMemoryGetBandwidth(memoryModules[0], &memory_bandwidth);
                 result != CTL_RESULT_SUCCESS) {
                 success = false;
@@ -498,12 +499,52 @@ namespace pwr::intel
             SetTelemetryCapBit(GpuTelemetryCapBits::gpu_current_limited);
         }
 
-        // these metrics only enabled with V1
+        // these metrics only available with V1 struct
         if constexpr (std::same_as<T, ctl_power_telemetry2_t>) {
             result = GetInstantaneousPowerTelemetryItem(
                 currentSample.gpuEffectiveClock,
                 pm_gpu_power_telemetry_info.gpu_effective_frequency_mhz,
                 GpuTelemetryCapBits::gpu_effective_frequency);
+            if (result != CTL_RESULT_SUCCESS) {
+                return result;
+            }
+
+            result = GetInstantaneousPowerTelemetryItem(
+                currentSample.gpuVrTemp,
+                pm_gpu_power_telemetry_info.gpu_voltage_regulator_temperature_c,
+                GpuTelemetryCapBits::gpu_voltage_regulator_temperature);
+            if (result != CTL_RESULT_SUCCESS) {
+                return result;
+            }
+
+            result = GetInstantaneousPowerTelemetryItem(
+                currentSample.vramCurrentEffectiveFrequency,
+                pm_gpu_power_telemetry_info.gpu_mem_effective_bandwidth_gbps,
+                GpuTelemetryCapBits::gpu_mem_effective_bandwidth);
+            if (result != CTL_RESULT_SUCCESS) {
+                return result;
+            }
+
+            result = GetInstantaneousPowerTelemetryItem(
+                currentSample.gpuOverVoltagePercent,
+                pm_gpu_power_telemetry_info.gpu_overvoltage_percent,
+                GpuTelemetryCapBits::gpu_overvoltage_percent);
+            if (result != CTL_RESULT_SUCCESS) {
+                return result;
+            }
+
+            result = GetInstantaneousPowerTelemetryItem(
+                currentSample.gpuTemperaturePercent,
+                pm_gpu_power_telemetry_info.gpu_temperature_percent,
+                GpuTelemetryCapBits::gpu_temperature_percent);
+            if (result != CTL_RESULT_SUCCESS) {
+                return result;
+            }
+
+            result = GetInstantaneousPowerTelemetryItem(
+                currentSample.gpuPowerPercent,
+                pm_gpu_power_telemetry_info.gpu_power_percent,
+                GpuTelemetryCapBits::gpu_power_percent);
             if (result != CTL_RESULT_SUCCESS) {
                 return result;
             }
