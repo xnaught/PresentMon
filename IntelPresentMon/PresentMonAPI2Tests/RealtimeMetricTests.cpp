@@ -128,7 +128,7 @@ namespace RealtimeMetricTests
 				try
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
-					pmSetupODSLogging_();
+					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
 					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
 				}
 				catch (const std::exception& e) {
@@ -175,7 +175,7 @@ namespace RealtimeMetricTests
 				try
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
-					pmSetupODSLogging_();
+					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
 					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
 				}
 				catch (const std::exception& e) {
@@ -236,7 +236,7 @@ namespace RealtimeMetricTests
 				try
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
-					pmSetupODSLogging_();
+					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
 					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
 				}
 				catch (const std::exception& e) {

@@ -1,5 +1,6 @@
 #pragma once
 #include "PresentMonAPI.h"
+#include "PresentMonDiagnostics.h"
 #include "../CommonUtilities/log/Log.h"
 #include "../CommonUtilities/log/LineTable.h"
 #include "../CommonUtilities/log/GlobalPolicy.h"
@@ -38,4 +39,5 @@ PRESENTMON_API2_EXPORT LoggingSingletons pmLinkLogging_(
 // function to flush the dll's log channel worker queue when before exiting
 PRESENTMON_API2_EXPORT void pmFlushEntryPoint_() noexcept;
 // set middleware to log using OutputDebugString
-PRESENTMON_API2_EXPORT void pmSetupODSLogging_();
+PRESENTMON_API2_EXPORT void pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL logLevel,
+	PM_DIAGNOSTIC_LEVEL stackTraceLevel, bool exceptionTrace);

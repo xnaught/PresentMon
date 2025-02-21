@@ -5,8 +5,10 @@
 #include "../Interprocess/source/PmStatusError.h"
 #include "Internal.h"
 #include "PresentMonAPI.h"
+#include "PresentMonDiagnostics.h"
 #include "../PresentMonMiddleware/LogSetup.h"
 #include "../Versioning/PresentMonAPIVersion.h"
+
 
 
 using namespace pmon;
@@ -77,6 +79,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, cons
  		pMiddleware = std::make_shared<ConcreteMiddleware>(std::move(pipeName), std::move(introNsm));
 		*pHandle = pMiddleware.get();
 		handleMap_[*pHandle] = std::move(pMiddleware);
+		pmlog_info("Middleware successfully opened session with service");
 		return PM_STATUS_SUCCESS;
 	}
 	catch (...) {
@@ -136,9 +139,11 @@ PRESENTMON_API2_EXPORT void pmFlushEntryPoint_() noexcept
 	pmon::util::log::FlushEntryPoint();
 }
 
-PRESENTMON_API2_EXPORT void pmSetupODSLogging_()
+PRESENTMON_API2_EXPORT void pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL logLevel,
+	PM_DIAGNOSTIC_LEVEL stackTraceLevel, bool exceptionTrace)
 {
-	pmon::util::log::SetupODSChannel();
+	pmon::util::log::SetupODSChannel((pmon::util::log::Level)logLevel,
+		(pmon::util::log::Level)stackTraceLevel, exceptionTrace);
 }
 
 // public endpoints
