@@ -391,6 +391,26 @@ namespace pmon::mid
                     break;
                 }
                 break;
+            case PM_METRIC_GPU_FAN_SPEED_PERCENT:
+                switch (qe.arrayIndex)
+                {
+                case 0:
+                    pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::max_fan_speed_0));
+                    break;
+                case 1:
+                    pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::max_fan_speed_1));
+                    break;
+                case 2:
+                    pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::max_fan_speed_2));
+                    break;
+                case 3:
+                    pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::max_fan_speed_3));
+                    break;
+                case 4:
+                    pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::max_fan_speed_4));
+                    break;
+                }
+                break;
             case PM_METRIC_GPU_EFFECTIVE_FREQUENCY:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_effective_frequency));
                 break;
@@ -1534,6 +1554,26 @@ static void ReportMetrics(
         case GpuTelemetryCapBits::fan_speed_4:
             metricInfo[PM_METRIC_GPU_FAN_SPEED].data[4].emplace_back(power_telemetry_info.fan_speed_rpm[4]);
             break;
+        case GpuTelemetryCapBits::max_fan_speed_0:
+            metricInfo[PM_METRIC_GPU_FAN_SPEED_PERCENT].data[0].emplace_back(
+                power_telemetry_info.fan_speed_rpm[0] / double(power_telemetry_info.max_fan_speed_rpm[0]));
+            break;
+        case GpuTelemetryCapBits::max_fan_speed_1:
+            metricInfo[PM_METRIC_GPU_FAN_SPEED_PERCENT].data[1].emplace_back(
+                power_telemetry_info.fan_speed_rpm[0] / double(power_telemetry_info.max_fan_speed_rpm[1]));
+            break;
+        case GpuTelemetryCapBits::max_fan_speed_2:
+            metricInfo[PM_METRIC_GPU_FAN_SPEED_PERCENT].data[2].emplace_back(
+                power_telemetry_info.fan_speed_rpm[0] / double(power_telemetry_info.max_fan_speed_rpm[2]));
+            break;
+        case GpuTelemetryCapBits::max_fan_speed_3:
+            metricInfo[PM_METRIC_GPU_FAN_SPEED_PERCENT].data[3].emplace_back(
+                power_telemetry_info.fan_speed_rpm[0] / double(power_telemetry_info.max_fan_speed_rpm[3]));
+            break;
+        case GpuTelemetryCapBits::max_fan_speed_4:
+            metricInfo[PM_METRIC_GPU_FAN_SPEED_PERCENT].data[4].emplace_back(
+                power_telemetry_info.fan_speed_rpm[0] / double(power_telemetry_info.max_fan_speed_rpm[4]));
+            break;
         case GpuTelemetryCapBits::gpu_mem_used:
             metricInfo[PM_METRIC_GPU_MEM_USED].data[0].emplace_back(static_cast<double>(power_telemetry_info.gpu_mem_used_b));
             break;
@@ -1810,6 +1850,7 @@ static void ReportMetrics(
                 {
                 case PM_METRIC_GPU_POWER:
                 case PM_METRIC_GPU_FAN_SPEED:
+                case PM_METRIC_GPU_FAN_SPEED_PERCENT:
                 case PM_METRIC_GPU_VOLTAGE:
                 case PM_METRIC_GPU_FREQUENCY:
                 case PM_METRIC_GPU_TEMPERATURE:

@@ -46,6 +46,7 @@ struct PresentMonPowerTelemetryInfo {
     double vram_temperature_c;
 
     std::array<double, 5> fan_speed_rpm;
+    std::array<int32_t, 5> max_fan_speed_rpm;
     std::array<PresentMonPsuPowerTelemetryInfo, 5> psu;
 
     // GPU memory state
@@ -117,6 +118,11 @@ enum class GpuTelemetryCapBits {
     gpu_overvoltage_percent,
     gpu_temperature_percent,
     gpu_power_percent,
+    max_fan_speed_0,
+    max_fan_speed_1,
+    max_fan_speed_2,
+    max_fan_speed_3,
+    max_fan_speed_4,
     gpu_telemetry_count,
 };
 

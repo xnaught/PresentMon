@@ -33,6 +33,10 @@ namespace pmon::ipc::intro
 		static constexpr auto gpuCapBitArray = std::array{ GpuTelemetryCapBits::fan_speed_0, GpuTelemetryCapBits::fan_speed_1,
 			GpuTelemetryCapBits::fan_speed_2, GpuTelemetryCapBits::fan_speed_3, GpuTelemetryCapBits::fan_speed_4, };
 	};
+	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_FAN_SPEED_PERCENT> {
+		static constexpr auto gpuCapBitArray = std::array{ GpuTelemetryCapBits::max_fan_speed_0, GpuTelemetryCapBits::max_fan_speed_1,
+			GpuTelemetryCapBits::max_fan_speed_2, GpuTelemetryCapBits::max_fan_speed_3, GpuTelemetryCapBits::max_fan_speed_4, };
+	};
 	//template<> struct IntrospectionCapsLookup<PM_METRIC_PSU_METRIC_NAME_HERE> { static constexpr auto gpuCapBitArray = std::array{
 	//	GpuTelemetryCapBits::psu_info_0, GpuTelemetryCapBits::psu_info_1, GpuTelemetryCapBits::psu_info_2, GpuTelemetryCapBits::psu_info_3, GpuTelemetryCapBits::psu_info_4, }; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_MEM_SIZE> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_mem_size; };

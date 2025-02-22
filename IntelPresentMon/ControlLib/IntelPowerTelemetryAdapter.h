@@ -90,8 +90,6 @@ namespace pwr::intel
 			const ctl_oc_telemetry_item_t& previous_telemetry_item,
 			double& pm_telemetry_value,
 			GpuTelemetryCapBits telemetry_cap_bit);
-        GpuTelemetryCapBits GetFlagTelemetryCapBit(uint32_t fan_index);
-		GpuTelemetryCapBits GetPsuTelemetryCapBit(uint32_t psu_index);
 		// data
 		ctl_device_adapter_handle_t deviceHandle = nullptr;
 		LUID deviceId; // pointed to by a device_adapter_properties member, written to by igcl api

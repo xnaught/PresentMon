@@ -14,6 +14,60 @@ namespace vi = std::views;
 
 namespace pwr::intel
 {
+    namespace {
+        GpuTelemetryCapBits GetFanSpeedTelemetryCapBit_(
+            uint32_t fan_index) {
+            switch (fan_index) {
+            case 0:
+                return GpuTelemetryCapBits::fan_speed_0;
+            case 1:
+                return GpuTelemetryCapBits::fan_speed_1;
+            case 2:
+                return GpuTelemetryCapBits::fan_speed_2;
+            case 3:
+                return GpuTelemetryCapBits::fan_speed_3;
+            case 4:
+                return GpuTelemetryCapBits::fan_speed_4;
+            default:
+                throw std::runtime_error{ "Invalid fan speed index" };
+            }
+        }
+        GpuTelemetryCapBits GetPsuTelemetryCapBit_(
+            uint32_t psu_index) {
+            switch (psu_index) {
+            case 0:
+                return GpuTelemetryCapBits::psu_info_0;
+            case 1:
+                return GpuTelemetryCapBits::psu_info_1;
+            case 2:
+                return GpuTelemetryCapBits::psu_info_2;
+            case 3:
+                return GpuTelemetryCapBits::psu_info_3;
+            case 4:
+                return GpuTelemetryCapBits::psu_info_4;
+            default:
+                throw std::runtime_error{ "Invalid PSU index" };
+            }
+        }
+        GpuTelemetryCapBits GetMaxFanSpeedTelemetryCapBit_(
+            uint32_t index) {
+            switch (index) {
+            case 0:
+                return GpuTelemetryCapBits::max_fan_speed_0;
+            case 1:
+                return GpuTelemetryCapBits::max_fan_speed_1;
+            case 2:
+                return GpuTelemetryCapBits::max_fan_speed_2;
+            case 3:
+                return GpuTelemetryCapBits::max_fan_speed_3;
+            case 4:
+                return GpuTelemetryCapBits::max_fan_speed_4;
+            default:
+                throw std::runtime_error{ "Invalid max fan speed index" };
+            }
+        }
+    }
+
     // public interface functions
 
     IntelPowerTelemetryAdapter::IntelPowerTelemetryAdapter(ctl_device_adapter_handle_t handle)
@@ -717,15 +771,18 @@ namespace pwr::intel
         ctl_result_t result = CTL_RESULT_SUCCESS;
 
         for (uint32_t i = 0; i < CTL_FAN_COUNT; i++) {
-            GpuTelemetryCapBits fan_telemetry_bit;
             try {
-                fan_telemetry_bit = GetFlagTelemetryCapBit(i);
+                const auto fanSpeedCapBit = GetFanSpeedTelemetryCapBit_(i);
                 result = GetInstantaneousPowerTelemetryItem(
                     currentSample.fanSpeed[i],
                     pm_gpu_power_telemetry_info.fan_speed_rpm[i],
-                    fan_telemetry_bit);
+                    fanSpeedCapBit);
                 if (result != CTL_RESULT_SUCCESS) {
-                  break;
+                    break;
+                }
+                if (HasTelemetryCapBit(fanSpeedCapBit) && maxFanSpeedsRpm_[i] > 0) {
+                    SetTelemetryCapBit(GetMaxFanSpeedTelemetryCapBit_(i));
+                    pm_gpu_power_telemetry_info.max_fan_speed_rpm[i] = maxFanSpeedsRpm_[i];
                 }
             } catch (...) {
                 result = CTL_RESULT_ERROR_INVALID_ARGUMENT;
@@ -751,7 +808,7 @@ namespace pwr::intel
             if (currentSample.psu[i].bSupported) {
                 GpuTelemetryCapBits psu_telemetry_bit;
                 try {
-                  psu_telemetry_bit = GetPsuTelemetryCapBit(i);
+                  psu_telemetry_bit = GetPsuTelemetryCapBit_(i);
                   pm_gpu_power_telemetry_info.psu[i].psu_type =
                       PresentMonPsuType(currentSample.psu[i].psuType);
                   result = GetInstantaneousPowerTelemetryItem(
@@ -915,42 +972,6 @@ namespace pwr::intel
         pmlog_verb(v::gpu)("Saving gathered telemetry info to history").pmwatch(GetName()).pmwatch(ref::DumpStatic(info));
         std::lock_guard<std::mutex> lock(historyMutex);
         history.Push(info);
-    }
-
-    GpuTelemetryCapBits IntelPowerTelemetryAdapter::GetFlagTelemetryCapBit(
-        uint32_t fan_index) {
-        switch (fan_index) {
-            case 0:
-                return GpuTelemetryCapBits::fan_speed_0;
-            case 1:
-                return GpuTelemetryCapBits::fan_speed_1;
-            case 2:
-                return GpuTelemetryCapBits::fan_speed_2;
-            case 3:
-                return GpuTelemetryCapBits::fan_speed_3;
-            case 4:
-                return GpuTelemetryCapBits::fan_speed_4;
-            default:
-                throw std::runtime_error{"Invalid fan index"};
-        }
-    }
-
-    GpuTelemetryCapBits IntelPowerTelemetryAdapter::GetPsuTelemetryCapBit(
-        uint32_t psu_index) {
-        switch (psu_index) {
-            case 0:
-                return GpuTelemetryCapBits::psu_info_0;
-            case 1:
-                return GpuTelemetryCapBits::psu_info_1;
-            case 2:
-                return GpuTelemetryCapBits::psu_info_2;
-            case 3:
-                return GpuTelemetryCapBits::psu_info_3;
-            case 4:
-                return GpuTelemetryCapBits::psu_info_4;
-            default:
-                throw std::runtime_error{"Invalid PSU index"};
-        }
     }
 
     }
