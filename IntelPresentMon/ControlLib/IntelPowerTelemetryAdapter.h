@@ -115,5 +115,7 @@ namespace pwr::intel
 		// we have special handling for GPU current perf limitation on Alchemist
 		// workaround for lack of discoverablity of perf limitation availability
 		bool isAlchemist = false;
+		// populated on init, used to calculate fan %
+		std::vector<int32_t> maxFanSpeedsRpm_;
 	};
 }

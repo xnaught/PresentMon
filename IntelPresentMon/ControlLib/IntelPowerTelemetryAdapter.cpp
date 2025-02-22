@@ -6,9 +6,11 @@
 #include "../CommonUtilities/ref/GeneratedReflection.h"
 #include "../CommonUtilities/ref/StaticReflection.h"
 #include <regex>
+#include <ranges>
 
 using namespace pmon;
 using namespace util;
+namespace vi = std::views;
 
 namespace pwr::intel
 {
@@ -59,6 +61,38 @@ namespace pwr::intel
         }
         else {
             pmlog_error("ctlEnumPowerDomains failed to get count").code(result).pmwatch(GetName());
+        }
+
+        // enumerate fans
+        uint32_t fanCount = 0;
+        if (auto res = ctlEnumFans(deviceHandle, &fanCount, nullptr); res == CTL_RESULT_SUCCESS) {
+            if (fanCount > 0) {
+                std::vector<ctl_fan_handle_t> fanHandles(fanCount);
+                if (auto res = ctlEnumFans(deviceHandle, &fanCount, fanHandles.data()); res == CTL_RESULT_SUCCESS) {
+                    for (auto&&[iFan, hFan] : vi::enumerate(fanHandles)) {
+                        if (hFan) {
+                            ctl_fan_properties_t props{ .Size = sizeof(ctl_fan_properties_t) };
+                            if (auto res = ctlFanGetProperties(hFan, &props); res != CTL_RESULT_SUCCESS) {
+                                pmlog_error(std::format("failed to get properties for fan #{}", iFan)).code(res);
+                                maxFanSpeedsRpm_.push_back(0);
+                            }
+                            pmlog_verb(v::gpu)("Got fan properties").pmwatch(GetName()).pmwatch(iFan)
+                                .pmwatch(ref::DumpGenerated(props));
+                            maxFanSpeedsRpm_.push_back(props.maxRPM);
+                        }
+                        else {
+                            pmlog_warn("null handle received from ctlEnumFans");
+                            maxFanSpeedsRpm_.push_back(0);
+                        }
+                    }
+                }
+                else {
+                    pmlog_error("failed getting fan handles").code(res);
+                }
+            }
+        }
+        else {
+            pmlog_error("failed getting fan count").code(res);
         }
     }
 
