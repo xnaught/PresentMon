@@ -392,22 +392,22 @@ namespace pmon::mid
                 }
                 break;
             case PM_METRIC_GPU_EFFECTIVE_FREQUENCY:
-                pQuery->accumCpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_effective_frequency));
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_effective_frequency));
                 break;
             case PM_METRIC_GPU_VOLTAGE_REGULATOR_TEMPERATURE:
-                pQuery->accumCpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_voltage_regulator_temperature));
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_voltage_regulator_temperature));
                 break;
             case PM_METRIC_GPU_MEM_EFFECTIVE_BANDWIDTH:
-                pQuery->accumCpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_mem_effective_bandwidth));
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_mem_effective_bandwidth));
                 break;
             case PM_METRIC_GPU_OVERVOLTAGE_PERCENT:
-                pQuery->accumCpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_overvoltage_percent));
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_overvoltage_percent));
                 break;
             case PM_METRIC_GPU_TEMPERATURE_PERCENT:
-                pQuery->accumCpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_temperature_percent));
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_temperature_percent));
                 break;
             case PM_METRIC_GPU_POWER_PERCENT:
-                pQuery->accumCpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_power_percent));
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_power_percent));
                 break;
             case PM_METRIC_CPU_UTILIZATION:
                 pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_utilization));
