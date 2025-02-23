@@ -38,6 +38,7 @@ struct PresentMonPowerTelemetryInfo {
     double gpu_overvoltage_percent;
     double gpu_temperature_percent;
     double gpu_power_percent;
+    double gpu_card_power_w;
 
     double vram_power_w;
     double vram_voltage_v;
@@ -123,6 +124,7 @@ enum class GpuTelemetryCapBits {
     max_fan_speed_2,
     max_fan_speed_3,
     max_fan_speed_4,
+    gpu_card_power,
     gpu_telemetry_count,
 };
 

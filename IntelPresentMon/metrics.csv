@@ -41,7 +41,7 @@ PM_METRIC_CPU_VENDOR,1,CPU Vendor,Vendor name of the CPU.
 PM_METRIC_CPU_NAME,1,CPU Name,Device name of the CPU.
 ,,,
 PM_METRIC_GPU_SUSTAINED_POWER_LIMIT,1,GPU Sustained Power Limit,Sustained power limit of the GPU.
-PM_METRIC_GPU_POWER,1,GPU Power,Power consumed by the graphics adapter.
+PM_METRIC_GPU_POWER,1,GPU Power,Power consumed by the graphics processing unit.
 PM_METRIC_GPU_VOLTAGE,1,GPU Voltage,Voltage consumed by the graphics adapter.
 PM_METRIC_GPU_FREQUENCY,1,GPU Frequency,Clock speed of the GPU cores.
 PM_METRIC_GPU_TEMPERATURE,1,GPU Temperature,Temperature of the GPU.
@@ -90,3 +90,4 @@ PM_METRIC_GPU_OVERVOLTAGE_PERCENT,1,GPU Overvoltage Percent,GPU overvoltage incr
 PM_METRIC_GPU_TEMPERATURE_PERCENT,1,GPU Temperature Percent,GPU temperature as a ratio of the thermal margin.
 PM_METRIC_GPU_POWER_PERCENT,1,GPU Power Percent,GPU power draw as a ratio of default maximum power.
 PM_METRIC_GPU_FAN_SPEED_PERCENT,1,GPU Fan Speed Percent,GPU fan speed as a ratio of the max speed for that fan.
+PM_METRIC_GPU_CARD_POWER,1,GPU Card Power,Total power consumption of the graphics adapter board.

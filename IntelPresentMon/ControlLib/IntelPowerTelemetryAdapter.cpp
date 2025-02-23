@@ -536,6 +536,15 @@ namespace pwr::intel
             return result;
         }
 
+        result = GetPowerTelemetryItemUsage(
+            currentSample.totalCardEnergyCounter,
+            previousSample->totalCardEnergyCounter,
+            pm_gpu_power_telemetry_info.gpu_card_power_w,
+            GpuTelemetryCapBits::gpu_card_power);
+        if (result != CTL_RESULT_SUCCESS) {
+            return result;
+        }
+
         result = GetPowerTelemetryItemUsagePercent(
             currentSample.globalActivityCounter,
             previousSample->globalActivityCounter,

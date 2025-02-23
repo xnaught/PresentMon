@@ -429,6 +429,9 @@ namespace pmon::mid
             case PM_METRIC_GPU_POWER_PERCENT:
                 pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_power_percent));
                 break;
+            case PM_METRIC_GPU_CARD_POWER:
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_card_power));
+                break;
             case PM_METRIC_CPU_UTILIZATION:
                 pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_utilization));
                 break;
@@ -1631,6 +1634,9 @@ static void ReportMetrics(
         case GpuTelemetryCapBits::gpu_power_percent:
             metricInfo[PM_METRIC_GPU_POWER_PERCENT].data[0].emplace_back(power_telemetry_info.gpu_power_percent);
             break;
+        case GpuTelemetryCapBits::gpu_card_power:
+            metricInfo[PM_METRIC_GPU_CARD_POWER].data[0].emplace_back(power_telemetry_info.gpu_card_power_w);
+            break;
         default:
             validGpuMetric = false;
             break;
@@ -1886,6 +1892,7 @@ static void ReportMetrics(
                 case PM_METRIC_GPU_OVERVOLTAGE_PERCENT:
                 case PM_METRIC_GPU_TEMPERATURE_PERCENT:
                 case PM_METRIC_GPU_POWER_PERCENT:
+                case PM_METRIC_GPU_CARD_POWER:
                     CalculateGpuCpuMetric(metricInfo, qe, pBlob);
                     break;
                 case PM_METRIC_CPU_VENDOR:

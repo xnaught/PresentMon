@@ -29,6 +29,7 @@ namespace pmon::ipc::intro
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_OVERVOLTAGE_PERCENT> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_overvoltage_percent; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_TEMPERATURE_PERCENT> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_temperature_percent; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_POWER_PERCENT> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_power_percent; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_CARD_POWER> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_card_power; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_FAN_SPEED> {
 		static constexpr auto gpuCapBitArray = std::array{ GpuTelemetryCapBits::fan_speed_0, GpuTelemetryCapBits::fan_speed_1,
 			GpuTelemetryCapBits::fan_speed_2, GpuTelemetryCapBits::fan_speed_3, GpuTelemetryCapBits::fan_speed_4, };
