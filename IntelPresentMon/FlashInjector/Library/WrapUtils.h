@@ -1,4 +1,7 @@
 #pragma once
+#include "../../CommonUtilities/win/WinAPI.h"
+#include <wrl.h>
+using Microsoft::WRL::ComPtr;
 
 #include "Context.h"
 #include "Custom/IUnknown_Wrapper.h"

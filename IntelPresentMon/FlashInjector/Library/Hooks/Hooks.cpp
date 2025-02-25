@@ -1,6 +1,8 @@
-#include "Hooks/Hooks.h"
+#include "../Hooks/Hooks.h"
+#include "../../../CommonUtilities/win/WinAPI.h"
+#include "../../Logging.h"
 
-#include <detours.h>
+#include <detours/detours.h>
 
 namespace GfxLayer::Hooks
 {

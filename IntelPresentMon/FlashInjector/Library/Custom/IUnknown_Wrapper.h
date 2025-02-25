@@ -1,5 +1,5 @@
 #pragma once
-
+#include "../../../CommonUtilities/win/WinAPI.h"
 #include <comdef.h>
 #include <memory>
 #include <unordered_map>

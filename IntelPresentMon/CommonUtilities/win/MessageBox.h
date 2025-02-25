@@ -15,11 +15,12 @@ namespace pmon::util::win
 		MsgBox& AsError();
 		MsgBox& AsModal(const void* hWnd = nullptr);
 	private:
-		enum class Type
+		enum class Type_
 		{
 			Notification,
 			Error,
 		};
+		Type_ type_ = Type_::Notification;
 		bool modal_ = false;
 		const void* hWndModal_ = nullptr;
 		std::string message_;

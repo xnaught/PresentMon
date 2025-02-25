@@ -1,4 +1,6 @@
 #include "OverlayRenderer.h"
+#include <cassert>
+#include "../../Logging.h"
 
 namespace GfxLayer::Extension
 {

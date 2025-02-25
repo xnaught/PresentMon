@@ -1,4 +1,7 @@
 #pragma once
+#include "../../CommonUtilities/win/WinAPI.h"
+#include <comdef.h>
+
 
 #include <memory>
 #include <mutex>
@@ -10,7 +13,7 @@
 namespace GfxLayer
 {
 	struct ThreadData;
-	class  IUnknown_Wrapper;
+	struct  IUnknown_Wrapper;
 
 	using WrapperMap = std::unordered_map<IUnknown*, IUnknown_Wrapper*>;
 

@@ -1,5 +1,8 @@
 #pragma once
-
+#include "../../../CommonUtilities/win/WinAPI.h"
+#include <d3d11.h>
+#include <wrl.h>
+using Microsoft::WRL::ComPtr;
 #include "OverlayRenderer.h"
 
 #include <d3dcompiler.h>

@@ -1,6 +1,8 @@
 #pragma once
+#include "../../../CommonUtilities/win/WinAPI.h"
+#include <d3d11.h>
 
-#include "Context.h"
+#include "../Context.h"
 
 namespace GfxLayer::Extension::Quad
 {

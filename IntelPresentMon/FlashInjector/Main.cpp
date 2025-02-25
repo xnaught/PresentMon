@@ -10,13 +10,20 @@
 #include <thread>
 
 #include "LibraryInject.h"
+#include "Logging.h"
 
 namespace stdfs = std::filesystem;
-namespace utl = pmon::util;
+using namespace pmon::util;
 using namespace std::literals;
 
-#define LOGE std::cerr
-#define LOGI std::cout
+// null logger factory to satisfy linking requirements for CommonUtilities
+namespace pmon::util::log
+{
+    std::shared_ptr<class IChannel> GetDefaultChannel() noexcept
+    {
+        return {};
+    }
+}
 
 int main (int argc, char **argv)
 {
@@ -102,10 +109,10 @@ int main (int argc, char **argv)
     std::unordered_set<DWORD> processesAttached;
     while (true) {
         auto processes = LibraryInject::GetProcessNames();
-        auto executableNameLower = utl::str::ToLower(executableName);
+        auto executableNameLower = str::ToLower(executableName);
 
         for (auto&& [processId, processName] : processes) {
-            const auto processNameLower = utl::str::ToLower(processName);
+            const auto processNameLower = str::ToLower(processName);
             if (processNameLower == executableNameLower && !processesAttached.contains(processId)) {
                 LOGI << "    Injecting DLL to process with PID: " << processId;
                 LibraryInject::Attach(processId, libraryPath);

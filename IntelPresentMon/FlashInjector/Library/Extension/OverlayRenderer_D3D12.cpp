@@ -1,4 +1,5 @@
 #include "OverlayRenderer_D3D12.h"
+#include <dxgi1_6.h>
 
 namespace GfxLayer::Extension
 {

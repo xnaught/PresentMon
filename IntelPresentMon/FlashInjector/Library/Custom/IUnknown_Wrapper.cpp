@@ -1,6 +1,6 @@
-#include "WrapUtils.h"
-#include "Context.h"
-#include "Custom/IUnknown_Wrapper.h"
+#include "../WrapUtils.h"
+#include "../Context.h"
+#include "IUnknown_Wrapper.h"
 
 namespace GfxLayer
 {

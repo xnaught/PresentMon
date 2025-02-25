@@ -42,7 +42,7 @@ namespace pmon::util::win
 		type_ = Type_::Error;
 		return *this;
 	}
-	MsgBox& MsgBox::AsModal(const void* hWnd = nullptr)
+	MsgBox& MsgBox::AsModal(const void* hWnd)
 	{
 		modal_ = true;
 		hWndModal_ = hWnd;

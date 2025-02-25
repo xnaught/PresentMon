@@ -1,4 +1,5 @@
 #include "OverlayRenderer_D3D11.h"
+#include <dxgi1_6.h>
 #include "Quad.h"
 
 namespace GfxLayer::Extension

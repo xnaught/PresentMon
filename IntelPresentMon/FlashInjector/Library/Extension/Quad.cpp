@@ -1,6 +1,10 @@
 #include "Quad.h"
+#include "../../../CommonUtilities/win/WinAPI.h"
+#include <wrl.h>
+#include "../../Logging.h"
 
 #include <d3dcompiler.h>
+
 
 namespace GfxLayer::Extension::Quad
 {
@@ -56,7 +60,7 @@ namespace GfxLayer::Extension::Quad
 
 	void CompileShader(const char* pShaderSource, const char* pEntryPoint, const char* pTarget, ID3DBlob** ppBlob)
 	{
-		ComPtr<ID3DBlob> pErrorBlob = nullptr;
+		Microsoft::WRL::ComPtr<ID3DBlob> pErrorBlob = nullptr;
 		HRESULT hr = D3DCompile(pShaderSource, strlen(pShaderSource), NULL, NULL, NULL, pEntryPoint, pTarget, 0, 0, ppBlob, &pErrorBlob);
 		if (FAILED(hr) && pErrorBlob)
 		{

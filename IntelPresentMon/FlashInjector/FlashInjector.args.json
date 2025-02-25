@@ -1,0 +1,14 @@
+{
+  "FileVersion": 2,
+  "Id": "14903b1e-26a7-4b57-b67c-5ab5bb4c1598",
+  "Items": [
+    {
+      "Id": "9b785dfb-0ce2-4816-ba03-aa5f681bd28b",
+      "Command": "--help"
+    },
+    {
+      "Id": "47880a2f-520e-473f-842e-6594517dcace",
+      "Command": "--exe-name heaven.exe"
+    }
+  ]
+}

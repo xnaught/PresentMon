@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Custom/PrePostCalls.h"
+#include "PrePostCalls.h"
 
 // List of extensions to enable
-#include "Extension/DXGIOverlay.h"
+#include "../Extension/DXGIOverlay.h"
 
 namespace GfxLayer
 {

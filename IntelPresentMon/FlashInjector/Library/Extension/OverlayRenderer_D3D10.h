@@ -1,10 +1,12 @@
 #pragma once
-
+#include <d3d10_1.h>
+#include <wrl.h>
+using Microsoft::WRL::ComPtr;
 #include "OverlayRenderer.h"
 
 #include <d3dcompiler.h>
 #include <d3d10_1.h>
-#include <d3d10.h>
+#include <d3d10_1.h>
 
 namespace GfxLayer::Extension
 {

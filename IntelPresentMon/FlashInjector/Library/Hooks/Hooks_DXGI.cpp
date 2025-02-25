@@ -1,8 +1,15 @@
 #include "../Hooks/Hooks.h"
+#include "../../../CommonUtilities/win/WinAPI.h"
+#include "../../../CommonUtilities/str/String.h"
 #include "../WrapUtils.h"
+#include "../../Logging.h"
 
 #include "../Custom/Extensions.h"
 #include "../Generated/API_DXGI.h"
+
+#include <dxgi1_6.h>
+
+using namespace pmon::util;
 
 namespace GfxLayer::Hooks::DXGI
 {
@@ -36,13 +43,13 @@ namespace GfxLayer::Hooks::DXGI
     {
         std::wstring systemDir;
         systemDir.resize(MAX_PATH);
-        GetSystemDirectoryW(systemDir.data(), systemDir.size());
+        GetSystemDirectoryW(systemDir.data(), (UINT)systemDir.size());
 
         auto dllPath = systemDir.c_str() + std::wstring(L"\\dxgi.dll");
         auto hModule = LoadLibraryW(dllPath.c_str());
         if (!hModule)
         {
-            LOGE << "Failed to load DXGI DLL from " << dllPath;
+            LOGE << "Failed to load DXGI DLL from " << str::ToNarrow(dllPath);
             exit(1);
         }
 

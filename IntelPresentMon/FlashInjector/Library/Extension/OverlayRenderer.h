@@ -1,7 +1,10 @@
 #pragma once
-
-#include "Context.h"
-#include "NonCopyable.h"
+#include "../../../CommonUtilities/win/WinAPI.h"
+#include <dxgi1_6.h>
+#include <wrl.h>
+using Microsoft::WRL::ComPtr;
+#include "../Context.h"
+#include "../NonCopyable.h"
 
 namespace GfxLayer::Extension
 {

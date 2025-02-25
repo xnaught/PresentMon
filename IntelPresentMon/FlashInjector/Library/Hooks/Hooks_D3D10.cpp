@@ -1,8 +1,16 @@
 #include "../Hooks/Hooks.h"
+#include "../../../CommonUtilities/win/WinAPI.h"
+#include "../../../CommonUtilities/str/String.h"
 #include "../WrapUtils.h"
+#include "../../Logging.h"
 
 #include "../Custom/Extensions.h"
 #include "../Generated/API_DXGI.h"
+
+#include <dxgi1_6.h>
+#include <d3d11.h>
+
+using namespace pmon::util;
 
 namespace GfxLayer::Hooks::D3D10
 {
@@ -27,7 +35,7 @@ namespace GfxLayer::Hooks::D3D10
         auto hModule = LoadLibraryW(dllPath.c_str());
         if (!hModule)
         {
-            LOGE << "Failed to load DXGI DLL from " << dllPath;
+            LOGE << "Failed to load DXGI DLL from " << str::ToNarrow(dllPath);
             exit(1);
         }
 
