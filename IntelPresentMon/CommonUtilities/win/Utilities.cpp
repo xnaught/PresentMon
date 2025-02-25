@@ -121,4 +121,13 @@ namespace pmon::util::win
 		}
 		return true;
 	}
+
+	std::filesystem::path GetExecutableModulePath()
+	{
+		char pathString[MAX_PATH];
+		if (!GetModuleFileNameA(nullptr, pathString, MAX_PATH)) {
+			throw std::runtime_error{ "failed to get module file name" };
+		}
+		return { pathString };
+	}
 }
