@@ -1,5 +1,5 @@
 #pragma once
-#include "../../CommonUtilities/win/WinAPI.h"
+#include "../CommonUtilities/win/WinAPI.h"
 #include <wrl.h>
 using Microsoft::WRL::ComPtr;
 
@@ -71,7 +71,7 @@ namespace GfxLayer
 
         auto*  pUnwrappedObjectsData = memoryPool.NewBuffer(len * sizeof(Object*));
         auto** ppUnwrappedObjects = reinterpret_cast<Object**>(pUnwrappedObjectsData);
-        for (int i = 0; i < len; ++i)
+        for (uint32_t i = 0; i < len; ++i)
         {
             ppUnwrappedObjects[i] = UnwrapObject<Object>(ppObjects[i]);
         }

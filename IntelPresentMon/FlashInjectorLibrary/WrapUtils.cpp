@@ -1,5 +1,5 @@
 #include "WrapUtils.h"
-#include "../../CommonUtilities/win/WinAPI.h"
+#include "../CommonUtilities/win/WinAPI.h"
 
 #include "Custom/API_D3D11.h"
 #include "Generated/API_DXGI_Create_Wrappers.h"
@@ -76,7 +76,7 @@ namespace GfxLayer
 
     void WrapObjectArray(UINT nObjects, REFIID riid, void** ppObjects)
     {
-        for (int i = 0; i < nObjects; i++)
+        for (UINT i = 0; i < nObjects; i++)
         {
             WrapObject(riid, &ppObjects[i]);
         }

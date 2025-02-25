@@ -1,6 +1,6 @@
 #include "../Hooks/Hooks.h"
-#include "../../../CommonUtilities/win/WinAPI.h"
-#include "../../Logging.h"
+#include "../../CommonUtilities/win/WinAPI.h"
+#include "../Logging.h"
 
 #include <detours/detours.h>
 

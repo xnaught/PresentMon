@@ -1,6 +1,6 @@
 #include "OverlayRenderer.h"
 #include <cassert>
-#include "../../Logging.h"
+#include "../Logging.h"
 
 namespace GfxLayer::Extension
 {
@@ -36,9 +36,9 @@ namespace GfxLayer::Extension
 	void OverlayRenderer::Resize(unsigned bufferCount, unsigned width, unsigned height)
 	{
 		float rectWidth = width * m_Config.BarSize;
-		m_ScissorRect.left = (width - rectWidth) * m_Config.BarRightShift;
+		m_ScissorRect.left = LONG((width - rectWidth) * m_Config.BarRightShift);
 		m_ScissorRect.top = 0;
-		m_ScissorRect.right = m_ScissorRect.left + rectWidth;
+		m_ScissorRect.right = LONG(m_ScissorRect.left + rectWidth);
 		m_ScissorRect.bottom = height;
 	}
 

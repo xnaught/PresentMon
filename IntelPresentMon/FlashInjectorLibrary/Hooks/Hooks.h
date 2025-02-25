@@ -1,5 +1,5 @@
 #pragma once
-#include "../../../CommonUtilities/win/WinAPI.h"
+#include "../../CommonUtilities/win/WinAPI.h"
 #include <string>
 
 #define HOOK_API_CALL(PFN, NAME)                                \

@@ -1,12 +1,12 @@
 #pragma once
-#include "../../../CommonUtilities/win/WinAPI.h"
+#include "../../CommonUtilities/win/WinAPI.h"
 #include <comdef.h>
 #include <memory>
 #include <unordered_map>
 
 namespace GfxLayer
 {
-    class IUnknown_Wrapper;
+    struct IUnknown_Wrapper;
 
     using IUnknownWrapperMap = std::unordered_map<size_t, std::unique_ptr<IUnknown_Wrapper>>;
     using IUnknownPtr = _com_ptr_t<_com_IIID<IUnknown, &__uuidof(IUnknown)>>;

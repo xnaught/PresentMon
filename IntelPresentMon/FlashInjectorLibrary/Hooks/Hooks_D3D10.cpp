@@ -1,8 +1,8 @@
 #include "../Hooks/Hooks.h"
-#include "../../../CommonUtilities/win/WinAPI.h"
-#include "../../../CommonUtilities/str/String.h"
+#include "../../CommonUtilities/win/WinAPI.h"
+#include "../../CommonUtilities/str/String.h"
 #include "../WrapUtils.h"
-#include "../../Logging.h"
+#include "../Logging.h"
 
 #include "../Custom/Extensions.h"
 #include "../Generated/API_DXGI.h"
@@ -29,7 +29,7 @@ namespace GfxLayer::Hooks::D3D10
     {
         std::wstring systemDir;
         systemDir.resize(MAX_PATH);
-        GetSystemDirectoryW(systemDir.data(), systemDir.size());
+        GetSystemDirectoryW(systemDir.data(), (UINT)systemDir.size());
 
         auto dllPath = systemDir.c_str() + std::wstring(L"\\d3d10.dll");
         auto hModule = LoadLibraryW(dllPath.c_str());

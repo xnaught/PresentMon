@@ -1,5 +1,5 @@
-#include "../../CommonUtilities/win/MessageBox.h"
-#include "../../CommonUtilities/win/Utilities.h"
+#include "../CommonUtilities/win/MessageBox.h"
+#include "../CommonUtilities/win/Utilities.h"
 #include <memory>
 #include <string>
 #include <format>
@@ -7,10 +7,19 @@
 #include "Context.h"
 #include "Hooks/Hooks.h"
 #include "Custom/Extensions.h"
-#include "../Logging.h"
+#include "../FlashInjector/Logging.h"
 
 using namespace pmon::util;
 using namespace std::literals;
+
+// null logger factory to satisfy linking requirements for CommonUtilities
+namespace pmon::util::log
+{
+    std::shared_ptr<class IChannel> GetDefaultChannel() noexcept
+    {
+        return {};
+    }
+}
 
 namespace GfxLayer
 {

@@ -1,5 +1,5 @@
 #pragma once
-#include "../../../CommonUtilities/win/WinAPI.h"
+#include "../../CommonUtilities/win/WinAPI.h"
 #include <dxgi1_6.h>
 #include <wrl.h>
 using Microsoft::WRL::ComPtr;

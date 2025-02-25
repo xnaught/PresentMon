@@ -1,7 +1,7 @@
 #include "Quad.h"
-#include "../../../CommonUtilities/win/WinAPI.h"
+#include "../../CommonUtilities/win/WinAPI.h"
 #include <wrl.h>
-#include "../../Logging.h"
+#include "../Logging.h"
 
 #include <d3dcompiler.h>
 

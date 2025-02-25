@@ -1,8 +1,8 @@
 #include "../Hooks/Hooks.h"
-#include "../../../CommonUtilities/win/WinAPI.h"
-#include "../../../CommonUtilities/str/String.h"
+#include "../../CommonUtilities/win/WinAPI.h"
+#include "../../CommonUtilities/str/String.h"
 #include "../WrapUtils.h"
-#include "../../Logging.h"
+#include "../Logging.h"
 
 #include "../Custom/Extensions.h"
 #include "../Generated/API_DXGI.h"

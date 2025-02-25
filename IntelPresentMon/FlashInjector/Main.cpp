@@ -48,7 +48,7 @@ int main (int argc, char **argv)
     }
  
     // DLL to inject
-    libraryPath = dxgiOverlayPath / "DXGIOverlay_Library.dll";
+    libraryPath = dxgiOverlayPath / "FlashInjectorLibrary.dll";
 
     // Configuration file
     auto cfgFilePath = stdfs::temp_directory_path()/"GfxLayer.cfg";

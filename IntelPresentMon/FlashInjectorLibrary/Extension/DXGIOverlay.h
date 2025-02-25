@@ -1,6 +1,6 @@
 #pragma once
-#include "../../../CommonUtilities/win/WinAPI.h"
-#include "../../../CommonUtilities/str/String.h"
+#include "../../CommonUtilities/win/WinAPI.h"
+#include "../../CommonUtilities/str/String.h"
 #include <d3d10_1.h>
 #include <d3d11.h>
 #include <d3d12.h>
@@ -11,7 +11,7 @@
 #include "../Custom/PrePostCalls.h"
 
 #include "OverlayRenderer.h"
-#include "../../Logging.h"
+#include "../Logging.h"
 
 namespace GfxLayer
 {

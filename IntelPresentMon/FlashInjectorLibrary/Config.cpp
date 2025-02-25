@@ -1,6 +1,6 @@
 #include "Config.h"
-#include "../Logging.h"
-#include "../../CommonUtilities/win/WinAPI.h"
+#include "../FlashInjector/Logging.h"
+#include "../CommonUtilities/win/WinAPI.h"
 
 #include <filesystem>
 #include <fstream>
