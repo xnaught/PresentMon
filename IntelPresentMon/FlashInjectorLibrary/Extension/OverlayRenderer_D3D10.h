@@ -1,4 +1,5 @@
 #pragma once
+#include "../../CommonUtilities/win/WinAPI.h"
 #include <d3d10_1.h>
 #include <wrl.h>
 using Microsoft::WRL::ComPtr;

@@ -130,9 +130,9 @@ namespace GfxLayer::Extension
 		m_Rtvs.resize(bufferCount);
 
 		auto rect = GetScissorRect();
-		m_Viewport.TopLeftX = rect.left;
-		m_Viewport.TopLeftY = rect.top;
-		m_Viewport.Width = rect.right - rect.left;
-		m_Viewport.Height = rect.bottom - rect.top;
+		m_Viewport.TopLeftX = FLOAT(rect.left);
+		m_Viewport.TopLeftY = FLOAT(rect.top);
+		m_Viewport.Width = FLOAT(rect.right - rect.left);
+		m_Viewport.Height = FLOAT(rect.bottom - rect.top);
 	}
 }

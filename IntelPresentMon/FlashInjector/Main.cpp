@@ -8,6 +8,7 @@
 #include <iostream>
 #include <filesystem>
 #include <thread>
+#include <format>
 
 #include "LibraryInject.h"
 #include "Logging.h"
@@ -34,7 +35,6 @@ int main (int argc, char **argv)
     auto& opts = clio::Options::Get();
 
     auto executableName = *opts.exeName;
-    stdfs::path libraryPath;
 
     stdfs::path dxgiOverlayPath;
     {
@@ -48,7 +48,7 @@ int main (int argc, char **argv)
     }
  
     // DLL to inject
-    libraryPath = dxgiOverlayPath / "FlashInjectorLibrary.dll";
+    const stdfs::path libraryPath = dxgiOverlayPath / std::format("FlashInjectorLibrary-{}.dll", PM_BUILD_PLATFORM);
 
     // Configuration file
     auto cfgFilePath = stdfs::temp_directory_path()/"GfxLayer.cfg";

@@ -58,9 +58,9 @@ namespace GfxLayer
 	{
 		if (m_Map.count(name))
 		{
-			return std::atof(m_Map.at(name).c_str());
+			return (float)std::atof(m_Map.at(name).c_str());
 		}
-		return std::numeric_limits<double>::quiet_NaN();
+		return std::numeric_limits<float>::quiet_NaN();
 	}
 
 	void Options::Print() const
