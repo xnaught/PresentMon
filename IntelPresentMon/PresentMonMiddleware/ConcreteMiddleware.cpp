@@ -391,6 +391,47 @@ namespace pmon::mid
                     break;
                 }
                 break;
+            case PM_METRIC_GPU_FAN_SPEED_PERCENT:
+                switch (qe.arrayIndex)
+                {
+                case 0:
+                    pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::max_fan_speed_0));
+                    break;
+                case 1:
+                    pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::max_fan_speed_1));
+                    break;
+                case 2:
+                    pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::max_fan_speed_2));
+                    break;
+                case 3:
+                    pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::max_fan_speed_3));
+                    break;
+                case 4:
+                    pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::max_fan_speed_4));
+                    break;
+                }
+                break;
+            case PM_METRIC_GPU_EFFECTIVE_FREQUENCY:
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_effective_frequency));
+                break;
+            case PM_METRIC_GPU_VOLTAGE_REGULATOR_TEMPERATURE:
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_voltage_regulator_temperature));
+                break;
+            case PM_METRIC_GPU_MEM_EFFECTIVE_BANDWIDTH:
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_mem_effective_bandwidth));
+                break;
+            case PM_METRIC_GPU_OVERVOLTAGE_PERCENT:
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_overvoltage_percent));
+                break;
+            case PM_METRIC_GPU_TEMPERATURE_PERCENT:
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_temperature_percent));
+                break;
+            case PM_METRIC_GPU_POWER_PERCENT:
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_power_percent));
+                break;
+            case PM_METRIC_GPU_CARD_POWER:
+                pQuery->accumGpuBits.set(static_cast<size_t>(GpuTelemetryCapBits::gpu_card_power));
+                break;
             case PM_METRIC_CPU_UTILIZATION:
                 pQuery->accumCpuBits.set(static_cast<size_t>(CpuTelemetryCapBits::cpu_utilization));
                 break;
@@ -1516,6 +1557,26 @@ static void ReportMetrics(
         case GpuTelemetryCapBits::fan_speed_4:
             metricInfo[PM_METRIC_GPU_FAN_SPEED].data[4].emplace_back(power_telemetry_info.fan_speed_rpm[4]);
             break;
+        case GpuTelemetryCapBits::max_fan_speed_0:
+            metricInfo[PM_METRIC_GPU_FAN_SPEED_PERCENT].data[0].emplace_back(
+                power_telemetry_info.fan_speed_rpm[0] / double(power_telemetry_info.max_fan_speed_rpm[0]));
+            break;
+        case GpuTelemetryCapBits::max_fan_speed_1:
+            metricInfo[PM_METRIC_GPU_FAN_SPEED_PERCENT].data[1].emplace_back(
+                power_telemetry_info.fan_speed_rpm[0] / double(power_telemetry_info.max_fan_speed_rpm[1]));
+            break;
+        case GpuTelemetryCapBits::max_fan_speed_2:
+            metricInfo[PM_METRIC_GPU_FAN_SPEED_PERCENT].data[2].emplace_back(
+                power_telemetry_info.fan_speed_rpm[0] / double(power_telemetry_info.max_fan_speed_rpm[2]));
+            break;
+        case GpuTelemetryCapBits::max_fan_speed_3:
+            metricInfo[PM_METRIC_GPU_FAN_SPEED_PERCENT].data[3].emplace_back(
+                power_telemetry_info.fan_speed_rpm[0] / double(power_telemetry_info.max_fan_speed_rpm[3]));
+            break;
+        case GpuTelemetryCapBits::max_fan_speed_4:
+            metricInfo[PM_METRIC_GPU_FAN_SPEED_PERCENT].data[4].emplace_back(
+                power_telemetry_info.fan_speed_rpm[0] / double(power_telemetry_info.max_fan_speed_rpm[4]));
+            break;
         case GpuTelemetryCapBits::gpu_mem_used:
             metricInfo[PM_METRIC_GPU_MEM_USED].data[0].emplace_back(static_cast<double>(power_telemetry_info.gpu_mem_used_b));
             break;
@@ -1554,6 +1615,27 @@ static void ReportMetrics(
             break;
         case GpuTelemetryCapBits::vram_utilization_limited:
             metricInfo[PM_METRIC_GPU_MEM_UTILIZATION_LIMITED].data[0].emplace_back(power_telemetry_info.vram_utilization_limited);
+            break;
+        case GpuTelemetryCapBits::gpu_effective_frequency:
+            metricInfo[PM_METRIC_GPU_EFFECTIVE_FREQUENCY].data[0].emplace_back(power_telemetry_info.gpu_effective_frequency_mhz);
+            break;
+        case GpuTelemetryCapBits::gpu_voltage_regulator_temperature:
+            metricInfo[PM_METRIC_GPU_VOLTAGE_REGULATOR_TEMPERATURE].data[0].emplace_back(power_telemetry_info.gpu_voltage_regulator_temperature_c);
+            break;
+        case GpuTelemetryCapBits::gpu_mem_effective_bandwidth:
+            metricInfo[PM_METRIC_GPU_MEM_EFFECTIVE_BANDWIDTH].data[0].emplace_back(power_telemetry_info.gpu_mem_effective_bandwidth_gbps);
+            break;
+        case GpuTelemetryCapBits::gpu_overvoltage_percent:
+            metricInfo[PM_METRIC_GPU_OVERVOLTAGE_PERCENT].data[0].emplace_back(power_telemetry_info.gpu_overvoltage_percent);
+            break;
+        case GpuTelemetryCapBits::gpu_temperature_percent:
+            metricInfo[PM_METRIC_GPU_TEMPERATURE_PERCENT].data[0].emplace_back(power_telemetry_info.gpu_temperature_percent);
+            break;
+        case GpuTelemetryCapBits::gpu_power_percent:
+            metricInfo[PM_METRIC_GPU_POWER_PERCENT].data[0].emplace_back(power_telemetry_info.gpu_power_percent);
+            break;
+        case GpuTelemetryCapBits::gpu_card_power:
+            metricInfo[PM_METRIC_GPU_CARD_POWER].data[0].emplace_back(power_telemetry_info.gpu_card_power_w);
             break;
         default:
             validGpuMetric = false;
@@ -1774,6 +1856,7 @@ static void ReportMetrics(
                 {
                 case PM_METRIC_GPU_POWER:
                 case PM_METRIC_GPU_FAN_SPEED:
+                case PM_METRIC_GPU_FAN_SPEED_PERCENT:
                 case PM_METRIC_GPU_VOLTAGE:
                 case PM_METRIC_GPU_FREQUENCY:
                 case PM_METRIC_GPU_TEMPERATURE:
@@ -1803,6 +1886,13 @@ static void ReportMetrics(
                 case PM_METRIC_CPU_TEMPERATURE:
                 case PM_METRIC_CPU_FREQUENCY:
                 case PM_METRIC_CPU_CORE_UTILITY:
+                case PM_METRIC_GPU_EFFECTIVE_FREQUENCY:
+                case PM_METRIC_GPU_VOLTAGE_REGULATOR_TEMPERATURE:
+                case PM_METRIC_GPU_MEM_EFFECTIVE_BANDWIDTH:
+                case PM_METRIC_GPU_OVERVOLTAGE_PERCENT:
+                case PM_METRIC_GPU_TEMPERATURE_PERCENT:
+                case PM_METRIC_GPU_POWER_PERCENT:
+                case PM_METRIC_GPU_CARD_POWER:
                     CalculateGpuCpuMetric(metricInfo, qe, pBlob);
                     break;
                 case PM_METRIC_CPU_VENDOR:
@@ -1821,8 +1911,8 @@ static void ReportMetrics(
                 {
                     auto& output = reinterpret_cast<double&>(pBlob[qe.dataOffset]);
                     output = CalcGpuMemUtilization(qe.stat);
+                    break;
                 }
-                break;
                 default:
                     break;
                 }

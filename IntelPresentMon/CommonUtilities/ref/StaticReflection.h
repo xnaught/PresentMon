@@ -6,6 +6,7 @@
 #include <optional>
 #include "WrapReflect.h"
 #include "../Meta.h"
+#include <bitset>
 
 
 namespace pmon::util::ref
@@ -36,7 +37,7 @@ namespace pmon::util::ref
 			oss << "{unknown}";
 		}
 		else if constexpr (std::is_enum_v<S>) {
-			oss << reflect::enum_name(s);
+			oss << reflect::type_name<S>() << "::" << reflect::enum_name(s);
 		}
 		else if constexpr (std::is_class_v<S>) {
 			oss << "struct " << reflect::type_name(s) << " { ";
@@ -63,5 +64,52 @@ namespace pmon::util::ref
 		oss << std::boolalpha;
 		DumpStaticImpl_(s, oss);
 		return oss.str();
+	}
+
+	template<typename E, size_t N>
+	std::string DumpEnumBitset(const std::bitset<N>& set)
+	{
+		std::ostringstream oss;
+		oss << "| ";
+		for (size_t n = 0; n < N; n++) {
+			if (!set.test(n)) {
+				continue;
+			}
+			const auto name = reflect::enum_name(E(n));
+			if (!name.length()) {
+				continue;
+			}
+			oss << name << ", ";
+		}
+		oss << "|";
+		return oss.str();
+	}
+
+	template<typename E>
+	std::string DumpEnumFlagSet(uint64_t bits)
+	{
+		// simple hacky impl assumes 32-bit ints, logically unsigned for flags
+		// unless underlying type is 8-bytes, then assume 64-bit
+		size_t nBits;
+		if constexpr (sizeof(std::underlying_type_t<E>) == 8) {
+			nBits = 64;
+		}
+		else {
+			nBits = 32;
+		}
+		std::ostringstream oss;
+		oss << "| ";
+		// loop over n-bits, shifting a 1-hot bit value to test all positions
+		for (size_t n = 0, b = 1; n < nBits; n++, b<<1) {
+			if (!(bits & b)) {
+				continue;
+			}
+			const auto name = reflect::enum_name(E(b));
+			if (!name.length()) {
+				continue;
+			}
+			oss << name << ", ";
+		}
+		oss << "|";
 	}
 }

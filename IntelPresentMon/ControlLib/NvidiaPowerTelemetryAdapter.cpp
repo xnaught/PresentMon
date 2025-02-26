@@ -188,9 +188,7 @@ namespace pwr::nv
                     // TODO: consider logging failure (lower logging level perhaps)
                 }
             }
-
         }
-
 
         // insert telemetry into history
         std::lock_guard lock{ historyMutex };

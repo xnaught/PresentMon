@@ -1364,6 +1364,43 @@ namespace pmon::util::ref::gen
 				<< " }";
 			return oss.str();
 		};
+		dumpers[typeid(_ctl_led_properties_t)] = [](const void* pStruct) {
+			const auto& s = *static_cast<const _ctl_led_properties_t*>(pStruct);
+			std::ostringstream oss;
+			oss << std::boolalpha << "struct _ctl_led_properties_t {"
+				<< " .Size = " << s.Size
+				<< " .Version = " << (int)s.Version
+				<< " .canControl = " << s.canControl
+				<< " .isI2C = " << s.isI2C
+				<< " .isPWM = " << s.isPWM
+				<< " .haveRGB = " << s.haveRGB
+				<< " }";
+			return oss.str();
+		};
+		dumpers[typeid(_ctl_led_color_t)] = [](const void* pStruct) {
+			const auto& s = *static_cast<const _ctl_led_color_t*>(pStruct);
+			std::ostringstream oss;
+			oss << std::boolalpha << "struct _ctl_led_color_t {"
+				<< " .Size = " << s.Size
+				<< " .Version = " << (int)s.Version
+				<< " .red = " << s.red
+				<< " .green = " << s.green
+				<< " .blue = " << s.blue
+				<< " }";
+			return oss.str();
+		};
+		dumpers[typeid(_ctl_led_state_t)] = [](const void* pStruct) {
+			const auto& s = *static_cast<const _ctl_led_state_t*>(pStruct);
+			std::ostringstream oss;
+			oss << std::boolalpha << "struct _ctl_led_state_t {"
+				<< " .Size = " << s.Size
+				<< " .Version = " << (int)s.Version
+				<< " .isOn = " << s.isOn
+				<< " .pwm = " << s.pwm
+				<< " .color = " << DumpGenerated(s.color)
+				<< " }";
+			return oss.str();
+		};
 		dumpers[typeid(_ctl_video_processing_super_resolution_info_t)] = [](const void* pStruct) {
 			const auto& s = *static_cast<const _ctl_video_processing_super_resolution_info_t*>(pStruct);
 			std::ostringstream oss;
@@ -1689,6 +1726,15 @@ namespace pmon::util::ref::gen
 				<< " .totalCardEnergyCounter = " << DumpGenerated(s.totalCardEnergyCounter)
 				<< " .psu = " << DumpArray_<ctl_psu_info_t, 5, false>(s.psu)
 				<< " .fanSpeed = " << DumpArray_<ctl_oc_telemetry_item_t, 5, false>(s.fanSpeed)
+				<< " .gpuVrTemp = " << DumpGenerated(s.gpuVrTemp)
+				<< " .vramVrTemp = " << DumpGenerated(s.vramVrTemp)
+				<< " .saVrTemp = " << DumpGenerated(s.saVrTemp)
+				<< " .gpuEffectiveClock = " << DumpGenerated(s.gpuEffectiveClock)
+				<< " .gpuOverVoltagePercent = " << DumpGenerated(s.gpuOverVoltagePercent)
+				<< " .gpuPowerPercent = " << DumpGenerated(s.gpuPowerPercent)
+				<< " .gpuTemperaturePercent = " << DumpGenerated(s.gpuTemperaturePercent)
+				<< " .vramReadBandwidth = " << DumpGenerated(s.vramReadBandwidth)
+				<< " .vramWriteBandwidth = " << DumpGenerated(s.vramWriteBandwidth)
 				<< " }";
 			return oss.str();
 		};
@@ -2041,6 +2087,7 @@ namespace pmon::util::ref::gen
 			case _ctl_units_t::CTL_UNITS_PERCENT: return "CTL_UNITS_PERCENT"s;
 			case _ctl_units_t::CTL_UNITS_MEM_SPEED_GBPS: return "CTL_UNITS_MEM_SPEED_GBPS"s;
 			case _ctl_units_t::CTL_UNITS_VOLTAGE_MILLIVOLTS: return "CTL_UNITS_VOLTAGE_MILLIVOLTS"s;
+			case _ctl_units_t::CTL_UNITS_BANDWIDTH_MBPS: return "CTL_UNITS_BANDWIDTH_MBPS"s;
 			case _ctl_units_t::CTL_UNITS_UNKNOWN: return "CTL_UNITS_UNKNOWN"s;
 			case _ctl_units_t::CTL_UNITS_MAX: return "CTL_UNITS_MAX"s;
 			default: return "{ unknown }"s;
@@ -2602,6 +2649,7 @@ namespace pmon::util::ref::gen
 		dumpers[typeid(_ctl_3d_feature_misc_flag_t)] = [](const void* pEnum) {
 			const auto& e = *static_cast<const _ctl_3d_feature_misc_flag_t*>(pEnum);
 			switch (e) {
+			case _ctl_3d_feature_misc_flag_t::CTL_3D_FEATURE_MISC_FLAG_DX9: return "CTL_3D_FEATURE_MISC_FLAG_DX9"s;
 			case _ctl_3d_feature_misc_flag_t::CTL_3D_FEATURE_MISC_FLAG_DX11: return "CTL_3D_FEATURE_MISC_FLAG_DX11"s;
 			case _ctl_3d_feature_misc_flag_t::CTL_3D_FEATURE_MISC_FLAG_DX12: return "CTL_3D_FEATURE_MISC_FLAG_DX12"s;
 			case _ctl_3d_feature_misc_flag_t::CTL_3D_FEATURE_MISC_FLAG_VULKAN: return "CTL_3D_FEATURE_MISC_FLAG_VULKAN"s;

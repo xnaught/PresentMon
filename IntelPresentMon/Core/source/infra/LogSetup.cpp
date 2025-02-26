@@ -119,8 +119,8 @@ namespace p2c
 					infra::util::FolderResolver::Folder::App, L"logs\\");
 			}
 			// always enable the logfile for client
-			const auto logfileNameClient = bool(opt.cefType) ? std::format(L"log-{}-{}.txt",
-				str::ToWide(*opt.cefType), GetCurrentProcessId()) : L"log.txt"s;
+			const auto logfileNameClient = bool(opt.cefType) ? std::format(L"pmlog-{}-{}.txt",
+				str::ToWide(*opt.cefType), GetCurrentProcessId()) : L"pmlog.txt"s;
 			const auto logfilePathClient = std::filesystem::path{ logFolder } / logfileNameClient;
 			pChan->AttachComponent(std::make_shared<BasicFileDriver>(std::make_shared<TextFormatter>(),
 				std::make_shared<SimpleFileStrategy>(logfilePathClient)), "drv:file");
@@ -165,7 +165,7 @@ namespace p2c
 				}
 			}
 			// enable logfile for middleware if we're not doing the copy connection
-			if (!opt.logMiddlewareCopy) {
+			if (!opt.logMiddlewareCopy && *opt.cefType == "renderer") {
 				if (auto sta = pmSetupFileLogging(logFolder.string().c_str(),
 					(PM_DIAGNOSTIC_LEVEL)pol.GetLogLevel(),
 					(PM_DIAGNOSTIC_LEVEL)pol.GetTraceLevel(),

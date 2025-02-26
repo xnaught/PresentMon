@@ -58,7 +58,7 @@ _CrtMemState(*pFunc_pmCreateHeapCheckpoint__)() = nullptr;
 LoggingSingletons(*pFunc_pmLinkLogging__)(std::shared_ptr<pmon::util::log::IChannel>,
 	std::function<pmon::util::log::IdentificationTable&()>) = nullptr;
 void(*pFunc_pmFlushEntryPoint__)() = nullptr;
-void(*pFunc_pmSetupODSLogging__)() = nullptr;
+void(*pFunc_pmSetupODSLogging__)(PM_DIAGNOSTIC_LEVEL, PM_DIAGNOSTIC_LEVEL, bool) = nullptr;
 
 
 // internal loader state globals
@@ -312,14 +312,15 @@ PRESENTMON_API2_EXPORT void pmFlushEntryPoint_() noexcept
 		pFunc_pmFlushEntryPoint__();
 	}
 }
-PRESENTMON_API2_EXPORT void pmSetupODSLogging_()
+PRESENTMON_API2_EXPORT void pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL logLevel,
+	PM_DIAGNOSTIC_LEVEL stackTraceLevel, bool exceptionTrace)
 {
 	if (!middlewareLoadedSuccessfully_) {
 		if (auto status = LoadLibrary_(); status != PM_STATUS_SUCCESS) {
 			throw LoaderExcept_(status);
 		}
 	}
-	pFunc_pmSetupODSLogging__();
+	pFunc_pmSetupODSLogging__(logLevel, stackTraceLevel, exceptionTrace);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticSetup(const PM_DIAGNOSTIC_CONFIGURATION* pConfig)
 {

@@ -84,13 +84,15 @@ namespace pmon::util::log
 				const auto pFormatter = std::make_shared<TextFormatter>();
 				const auto pFileStrategy = std::make_shared<SimpleFileStrategy>(std::move(path));
 				pChannel->AttachComponent(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy), "drv:file");
+				// also add debugger output, just in case (it's low overhead)
+				pChannel->AttachComponent(std::make_shared<MsvcDebugDriver>(pFormatter), "drv:dbg");
 				return pChannel;
 			}
 			catch (...) {
 				return {};
 			}
 		}
-		// create a channel that via the diagnostic layer
+		// create a channel that outputs via the diagnostic layer
 		std::shared_ptr<IChannel> MakeDiagnosticChannel_(std::shared_ptr<DiagnosticDriver> pDiag) noexcept
 		{
 			try {
@@ -128,11 +130,11 @@ namespace pmon::util::log
 		InjectDefaultChannel(MakeCopyChannel_(std::move(pCopyTargetChannel)));
 	}
 
-	void SetupODSChannel() noexcept
+	void SetupODSChannel(Level logLevel, Level stackTraceLevel, bool exceptionTrace) noexcept
 	{
-		// reset logging level when channel is explicitly requested
-		GlobalPolicy::Get().SetLogLevelDefault();
-		GlobalPolicy::Get().SetTraceLevelDefault();
+		GlobalPolicy::Get().SetLogLevel(logLevel);
+		GlobalPolicy::Get().SetTraceLevel(stackTraceLevel);
+		GlobalPolicy::Get().SetExceptionTrace(exceptionTrace);
 		InjectDefaultChannel(MakeODSChannel_());
 	}
 

@@ -1,4 +1,5 @@
 #include "PresentMonDiagnostics.h"
+#include "../CommonUtilities/win/WinAPI.h"
 #include "../CommonUtilities/log/DiagnosticDriver.h"
 #include "../CommonUtilities/log/Log.h"
 #include "../CommonUtilities/Exception.h"
@@ -129,11 +130,12 @@ PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticUnblockWaitingThread()
 PRESENTMON_API2_EXPORT PM_STATUS pmSetupFileLogging(const char* path, PM_DIAGNOSTIC_LEVEL logLevel,
 	PM_DIAGNOSTIC_LEVEL stackTraceLevel, bool exceptionTrace)
 {
-	auto fsPath = std::filesystem::path(path);
+	const auto fsPath = std::filesystem::path(path);
 	if (!std::filesystem::is_directory(fsPath)) {
 		return PM_STATUS_NONEXISTENT_FILE_PATH;
 	}
-	log::SetupFileChannel(std::move(fsPath), GetLogLevel_(logLevel),
+	auto file = fsPath / std::format("pmlog-mid-{}.txt", GetCurrentProcessId());
+	log::SetupFileChannel(std::move(file), GetLogLevel_(logLevel),
 		GetLogLevel_(stackTraceLevel), exceptionTrace);
 	return PM_STATUS_SUCCESS;
 }

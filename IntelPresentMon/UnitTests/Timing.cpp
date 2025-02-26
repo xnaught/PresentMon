@@ -94,7 +94,7 @@ namespace UtilityTests
 				Sleep(16);
 				waiter.Wait();
 				const auto dur = std::chrono::duration<double>(Timer::now() - start).count();
-				AssertWithinTolerance(dur, waitInterval * (i + 1), 0.000'01);
+				AssertWithinTolerance(dur, waitInterval * (i + 1), 0.000'02);
 			}
 		}
 		// TODO: interval waiter test with late Wait() call

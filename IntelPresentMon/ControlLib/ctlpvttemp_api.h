@@ -594,21 +594,13 @@ typedef struct _ctl_power_telemetry2_t
                                                     ///< the write traffic to the memory modules. By taking the delta between
                                                     ///< two snapshots and dividing by the delta time in seconds, an
                                                     ///< application can compute the average write bandwidth.
-    ctl_oc_telemetry_item_t vramCurrentTemperature; ///< [out] Instantaneous snapshot of the GPU chip temperature, read from
-                                                    ///< the sensor reporting the highest value.
-    bool vramPowerLimited;                          ///< [out] Instantaneous indication that the memory frequency is being
-                                                    ///< throttled because the memory modules are exceeding the maximum power
-                                                    ///< limits.
-    bool vramTemperatureLimited;                    ///< [out] Instantaneous indication that the memory frequency is being
-                                                    ///< throttled because the memory modules are exceeding the temperature
-                                                    ///< limits.
-    bool vramCurrentLimited;                        ///< [out] Instantaneous indication that the memory frequency is being
-                                                    ///< throttled because the memory modules have exceeded the power supply
-                                                    ///< current limits.
-    bool vramVoltageLimited;                        ///< [out] Instantaneous indication that the memory frequency cannot be
-                                                    ///< increased because the voltage limits have been reached.
-    bool vramUtilizationLimited;                    ///< [out] Instantaneous indication that due to lower memory traffic, the
-                                                    ///< hardware has lowered the memory frequency.
+    ctl_oc_telemetry_item_t vramCurrentTemperature; ///< [out] Instantaneous snapshot of the memory modules temperature, read
+                                                    ///< from the sensor reporting the highest value.
+    bool vramPowerLimited;                          ///< [out] Deprecated / Not-supported, will always returns false
+    bool vramTemperatureLimited;                    ///< [out] Deprecated / Not-supported, will always returns false
+    bool vramCurrentLimited;                        ///< [out] Deprecated / Not-supported, will always returns false
+    bool vramVoltageLimited;                        ///< [out] Deprecated / Not-supported, will always returns false
+    bool vramUtilizationLimited;                    ///< [out] Deprecated / Not-supported, will always returns false
     ctl_oc_telemetry_item_t totalCardEnergyCounter; ///< [out] Total Card Energy Counter.
     ctl_psu_info_t psu[CTL_PSU_COUNT];              ///< [out] PSU voltage and power.
     ctl_oc_telemetry_item_t fanSpeed[CTL_FAN_COUNT];///< [out] Fan speed.

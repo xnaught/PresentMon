@@ -16,6 +16,7 @@ namespace pmon::ipc::intro
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_VOLTAGE> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_voltage; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_TEMPERATURE> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_temperature; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_FREQUENCY> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_frequency; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_EFFECTIVE_FREQUENCY> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_effective_frequency; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_UTILIZATION> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_utilization; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_RENDER_COMPUTE_UTILIZATION> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_render_compute_utilization; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_MEDIA_UTILIZATION> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_media_utilization; };
@@ -23,10 +24,19 @@ namespace pmon::ipc::intro
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_MEM_VOLTAGE> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_voltage; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_MEM_FREQUENCY> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_frequency; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_MEM_EFFECTIVE_FREQUENCY> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_effective_frequency; };
-	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_MEM_TEMPERATURE> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::vram_temperature; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_VOLTAGE_REGULATOR_TEMPERATURE> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_voltage_regulator_temperature; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_MEM_EFFECTIVE_BANDWIDTH> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_mem_effective_bandwidth; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_OVERVOLTAGE_PERCENT> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_overvoltage_percent; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_TEMPERATURE_PERCENT> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_temperature_percent; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_POWER_PERCENT> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_power_percent; };
+	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_CARD_POWER> { static constexpr auto gpuCapBit = GpuTelemetryCapBits::gpu_card_power; };
 	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_FAN_SPEED> {
 		static constexpr auto gpuCapBitArray = std::array{ GpuTelemetryCapBits::fan_speed_0, GpuTelemetryCapBits::fan_speed_1,
 			GpuTelemetryCapBits::fan_speed_2, GpuTelemetryCapBits::fan_speed_3, GpuTelemetryCapBits::fan_speed_4, };
+	};
+	template<> struct IntrospectionCapsLookup<PM_METRIC_GPU_FAN_SPEED_PERCENT> {
+		static constexpr auto gpuCapBitArray = std::array{ GpuTelemetryCapBits::max_fan_speed_0, GpuTelemetryCapBits::max_fan_speed_1,
+			GpuTelemetryCapBits::max_fan_speed_2, GpuTelemetryCapBits::max_fan_speed_3, GpuTelemetryCapBits::max_fan_speed_4, };
 	};
 	//template<> struct IntrospectionCapsLookup<PM_METRIC_PSU_METRIC_NAME_HERE> { static constexpr auto gpuCapBitArray = std::array{
 	//	GpuTelemetryCapBits::psu_info_0, GpuTelemetryCapBits::psu_info_1, GpuTelemetryCapBits::psu_info_2, GpuTelemetryCapBits::psu_info_3, GpuTelemetryCapBits::psu_info_4, }; };
