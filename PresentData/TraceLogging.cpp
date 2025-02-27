@@ -1,10 +1,13 @@
 #include "TraceLogging.h"
 #include "ETW\Nvidia_PCL.h"
 
+using pmon::util::Except;
+
 
 bool TraceLoggingContext::DecodeTraceLoggingEventRecord(EVENT_RECORD* pEventRecord)
 {
     if (pEventRecord == nullptr) {
+        pmlog_warn("null event record pointer");
         return false;
     }
 
@@ -73,8 +76,7 @@ bool TraceLoggingContext::SetupTraceLoggingInfoBuffer()
 
     if (status != ERROR_SUCCESS)
     {
-        // TdhGetEventInformation failed so there isn't a lot we can do.
-        // TODO Add Ray logging code!!
+        pmlog_warn("Failure when calling TdhGetEventInformation").hr(status);
         return false;
     }
 
@@ -83,7 +85,7 @@ bool TraceLoggingContext::SetupTraceLoggingInfoBuffer()
     // Check to see if either the event name or the task name are available. If
     // not then we are unable to continue processing the event
     if (mpTraceEventInfo->EventNameOffset == 0 && mpTraceEventInfo->TaskNameOffset == 0) {
-        // TODO Add Ray logging code!!
+        pmlog_warn("Missing event or task name");
         return false;
     }
 
@@ -92,6 +94,7 @@ bool TraceLoggingContext::SetupTraceLoggingInfoBuffer()
 
 std::optional<std::wstring> TraceLoggingContext::GetTraceEventInfoString(unsigned offset) const {
     if (mTraceEventInfoBuffer.empty()) {
+        pmlog_warn("mTraceEventInfoBuffer is empty");
         return std::nullopt;
     }
     return std::wstring(reinterpret_cast<const wchar_t*>(mTraceEventInfoBuffer.data() + offset));
@@ -100,8 +103,7 @@ std::optional<std::wstring> TraceLoggingContext::GetTraceEventInfoString(unsigne
 std::optional<std::wstring> TraceLoggingContext::GetEventName()
 {
     if (mpTraceEventInfo == nullptr) {
-        // TODO: Add Ray logging code here.
-        // mTraceEventInfoBuffer not setup
+        pmlog_warn("mTraceEventInfoBuffer not setup");
         return std::nullopt;
     }
 
@@ -131,6 +133,6 @@ size_t TraceLoggingContext::GetSkipSize(unsigned tdhType) const
     case TDH_INTYPE_DOUBLE:
         return sizeof(double);
     default:
-        throw std::runtime_error("Unknown TDH Type");
+        throw Except<TraceLoggingError>("Unknown TDH Type");
     }
 }
