@@ -3021,22 +3021,20 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
 {
     try {
         if (!mTraceLoggingDecoder.DecodeTraceLoggingEventRecord(pEventRecord)) {
-            // TODO: Maybe log here if we are unable to decode the event? Might
-            // be too agressive?
+            pmlog_dbg("Failed to decode trace logging event"); // too spammy?
             return;
         }
 
         auto eventName = mTraceLoggingDecoder.GetEventName();
         if (!eventName.has_value()) {
-            // TODO: Maybe log here as for this event is expected to have an event name.
+            pmlog_warn("Could not get trace logging event name");
             return;
         }
 
         if (eventName.has_value()) {
             if (eventName.value() == L"PCLStatsInit" ||
                 eventName.value() == L"ReflexStatsInit") {
-                // TODO: Not sure what to do here. Maybe best is simply log that
-                // stats generation is going to start?
+                pmlog_info("Received init event: " + pmon::util::str::ToNarrow(*eventName));
             }
             else if (eventName.value() == L"PCLStatsEvent" || 
                      eventName.value() == L"ReflexStatsEvent") {
@@ -3253,7 +3251,7 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                        eventName.value() == L"ReflexStatsShutdown") {
                 // PCL stats is shutting down for this process. Remove
                 // all PCL tracking structure for this process id. 
-                // TODO: log that PCL tracking is turning off
+                pmlog_info("Shutting down PCL stats tracking");
                 auto processId = pEventRecord->EventHeader.ProcessId;
                 std::erase_if(mPendingAppTimingDataByPclFrameId, [processId](const auto& p) {
                     return p.first.second == processId; });
@@ -3262,16 +3260,15 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                 std::erase_if(mLatestPingTimestampByProcessId, [processId](const auto& p) {
                     return p.first == processId; });
 
-            } else {
-                return;
+            }
+            else {
+                // unhandled trace event => ignore
             }
         }
     }
     catch (...) {
-        return;
+        pmlog_error(pmon::util::ReportException());
     }
-    return;
-
 }
 
 void PMTraceConsumer::DeferFlipFrameType(
