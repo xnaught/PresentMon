@@ -441,8 +441,8 @@ static void ReportMetricsHelper(
                         chain->mAccumulatedInput2FrameStartTime +=
                             pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedPclSimStart, p->PclSimStartTime);
                         // Add all of the accumlated time to the average input to frame start time.
-                        pmon::util::CalculateEma(
-                            &chain->mEmaInput2FrameStartTime,
+                        chain->mEmaInput2FrameStartTime = pmon::util::CalculateEma(
+                            chain->mEmaInput2FrameStartTime,
                             chain->mAccumulatedInput2FrameStartTime,
                             0.1);
                         // Reset the tracking variables for when we have a dropped frame with a pc latency input
@@ -450,8 +450,8 @@ static void ReportMetricsHelper(
                         chain->mLastReceivedNotDisplayedPclSimStart = 0;
                     }
                 } else {
-                    pmon::util::CalculateEma(
-                        &chain->mEmaInput2FrameStartTime,
+                    chain->mEmaInput2FrameStartTime = pmon::util::CalculateEma(
+                        chain->mEmaInput2FrameStartTime,
                         pmSession.TimestampDeltaToUnsignedMilliSeconds(p->PclInputPingTime, p->PclSimStartTime),
                         0.1);
                 }

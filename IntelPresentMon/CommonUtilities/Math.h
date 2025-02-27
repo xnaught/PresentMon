@@ -54,5 +54,19 @@ namespace pmon::util
 		const auto conversionFactor = srcFactor / dstFactor;
 		return To(fromExtended * conversionFactor);
 	}
-	void CalculateEma(double* ema, double newValue, double alpha);
+	template<typename T>
+	T CalculateEma(T prevEma, T newSample, T alpha)
+	{
+		if (newSample == (T)0) {
+			// TODO:reconsider; it is not normal for ema to drop to zero if one zero sample is encountered
+			return (T)0;
+		}
+		else if (prevEma == (T)0) {
+			// TODO:reconsider; ema of zero doesn't necessarily mean a "blank slate"
+			return newSample;
+		}
+		else {
+			return prevEma + alpha * (newSample - prevEma);
+		}
+	}
 }
