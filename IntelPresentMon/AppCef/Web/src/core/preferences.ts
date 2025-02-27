@@ -52,6 +52,7 @@ export interface Preferences {
         readonly axisSize: 10.0;
     };    
     adapterId:number|null;
+    enableFlashInjection:boolean;
 };
 
 export function makeDefaultPreferences(): Preferences {
@@ -103,12 +104,13 @@ export function makeDefaultPreferences(): Preferences {
         enableAutotargetting: true,
         upscaleFactor: 2,        
         adapterId: null,
+        enableFlashInjection: false,
     };
 }
 
 export const signature: Signature = {
     code: "p2c-cap-pref",
-    version: "0.18.0",
+    version: "0.19.0",
 };
 
 export interface PreferenceFile {
@@ -150,6 +152,14 @@ const migrations: Migration[] = [
             prefs.manualEtwFlush = def.manualEtwFlush;
             prefs.etwFlushPeriod = def.etwFlushPeriod;
             prefs.metricsOffset = def.metricsOffset;
+        }
+    },
+    {
+        version: '0.19.0',
+        migrate: (prefs: Preferences) => {
+            console.info('Migrating preferences to 0.19.0 (flash injection)');
+            const def = makeDefaultPreferences();
+            prefs.enableFlashInjection = def.enableFlashInjection;
         }
     },
 ];

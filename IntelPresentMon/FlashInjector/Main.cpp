@@ -120,7 +120,7 @@ int main (int argc, char **argv)
             }
         }
         // check for new matching processes every n milliseconds
-        std::this_thread::sleep_for(250ms);
+        std::this_thread::sleep_for(*opts.pollRate * 1ms);
     }
 
     return 0;

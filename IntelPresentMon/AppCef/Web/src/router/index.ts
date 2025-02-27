@@ -10,6 +10,7 @@ import LoadoutConfigView from '@/views/LoadoutConfigView.vue'
 import SimpleView from '@/views/SimpleView.vue'
 import CaptureConfigView from '@/views/CaptureConfigView.vue'
 import OtherConfigView from '@/views/OtherConfigView.vue'
+import FlashInjectorView from '@/views/FlashInjectorConfig.vue'
 
 Vue.use(VueRouter);
 
@@ -59,6 +60,11 @@ const routes: RouteConfig[] = [
     path: '/other',
     name: 'other-config',
     component: OtherConfigView,
+  },
+  {
+    path: '/flash',
+    name: 'flash-config',
+    component: FlashInjectorView,
   },
 ];
 

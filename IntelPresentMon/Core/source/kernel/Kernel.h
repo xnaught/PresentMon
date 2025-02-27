@@ -11,6 +11,7 @@
 #include <Core/source/win/Process.h>
 #include <Core/source/pmon/PresentMon.h>
 #include <CommonUtilities/mt/Thread.h>
+#include <boost/process.hpp>
 #include "OverlaySpec.h"
 #include "KernelHandler.h"
 
@@ -35,6 +36,7 @@ namespace p2c::kern
     {
         Process(win::Process base) : win::Process{ std::move(base) } {}
         std::optional<std::wstring> windowName;
+        bool is32bit = false;
     };
 
     class Kernel
@@ -64,12 +66,16 @@ namespace p2c::kern
         // data
         KernelHandler* pHandler = nullptr;
         std::optional<pmon::PresentMon> pm; // optional to defer creation to when the thread is run
+        std::optional<Process> lastProcessTargetted;
         bool dying = false;
         bool clearRequested = false;
         bool inhibitTargetLostSignal = false;
+        bool enableFlashInjection = false;
         std::optional<bool> pushedCaptureActive;
         std::unique_ptr<OverlaySpec> pPushedSpec;
         std::unique_ptr<OverlayContainer> pOverlayContainer;
+        std::optional<boost::process::child> flashInjectorProcess;
+        std::vector<Process> processListCache;
         mutable std::condition_variable cv;
         mutable std::mutex mtx;
         std::binary_semaphore constructionSemaphore;

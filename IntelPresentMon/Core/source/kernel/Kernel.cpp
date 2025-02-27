@@ -13,6 +13,7 @@
 #include <Core/source/cli/CliOptions.h>
 #include <CommonUtilities/str/String.h>
 #include <CommonUtilities/Exception.h>
+#include <boost/process/windows.hpp>
 
 
 using namespace std::literals;
@@ -74,14 +75,29 @@ namespace p2c::kern
 
         std::vector<Process> list;
         list.reserve(pmap.size());
-        for (auto& entry : pmap)
-        {
+        for (auto& entry : pmap) {
+            using Win32Handle = ::pmon::util::win::Handle;
             Process proc = std::move(entry.second);
             if (proc.hWnd) {
                 proc.windowName = win::GetWindowTitle(proc.hWnd);
+                // determine whether each process is 32 or 64-bit
+                ::pmon::util::win::Handle hProcess;
+                if (auto hProcess = (Win32Handle)OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, proc.pid)) {
+                    BOOL isWow64 = false;
+                    if (IsWow64Process(hProcess, &isWow64)) {
+                        proc.is32bit = isWow64;
+                    }
+                    else {
+                        pmlog_error("Failed to query process WOW64 status").hr();
+                    }
+                }
+                else {
+                    pmlog_error("Failed to open process").hr();
+                }
             }
             list.push_back(std::move(proc));
         }
+        processListCache = list;
         return list;
     }
 
@@ -184,6 +200,20 @@ namespace p2c::kern
                 {
                     {
                         std::unique_lock u{ mtx };
+                        if (enableFlashInjection && lastProcessTargetted) {
+                            namespace bp = boost::process;
+                            const auto path = std::filesystem::current_path() / 
+                                (lastProcessTargetted->is32bit ?
+                                "FlashInjector-Win32.exe"s : "FlashInjector-x64.exe"s);
+                            pmlog_dbg("launching injector child").pmwatch(path.string());
+                            flashInjectorProcess.emplace(path.string(),
+                                "--exe-name", lastProcessTargetted->name,
+                                bp::windows::hide);
+                        }
+                        else if (flashInjectorProcess) {
+                            pmlog_dbg("terminating injector child");
+                            flashInjectorProcess.reset();
+                        }
                         cv.wait(u, [this] {return !IsIdle_(); });
                     }
                     if (pPushedSpec && !dying)
@@ -317,5 +347,9 @@ namespace p2c::kern
             pm->SetEtwFlushPeriod(newSpec.manualEtwFlush ?
                 std::optional{ uint32_t(newSpec.etwFlushPeriod) } : std::nullopt);
         }
+        if (auto i = rn::find(processListCache, newSpec.pid, &Process::pid); i != processListCache.end()) {
+            lastProcessTargetted = *i;
+        }
+        enableFlashInjection = newSpec.enableFlashInjection;
     }
 }
