@@ -3050,7 +3050,6 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                     if (ii != mPresentByPclFrameId.end()) {
                         DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
                         ii->second->PclSimStartTime = timestamp;
-                        return;
                     }
                     else {
                         auto ij = mPendingAppTimingDataByPclFrameId.find(key);
@@ -3065,7 +3064,6 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                             mPendingAppTimingDataByPclFrameId.emplace(key, data);
                         }
                     }
-                    return;
                 }
                 case Nvidia_PCL::PCLMarker::SimulationEnd: {
                     auto processId = pEventRecord->EventHeader.ProcessId;
@@ -3075,7 +3073,6 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                     if (ii != mPresentByPclFrameId.end()) {
                         DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
                         ii->second->PclSimEndTime = timestamp;
-                        return;
                     }
                     else {
                         auto ij = mPendingAppTimingDataByPclFrameId.find(key);
@@ -3090,7 +3087,6 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                             mPendingAppTimingDataByPclFrameId.emplace(key, data);
                         }
                     }
-                    return;
                 }
                 case Nvidia_PCL::PCLMarker::RenderSubmitStart: {
                     auto processId = pEventRecord->EventHeader.ProcessId;
@@ -3100,7 +3096,6 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                     if (ii != mPresentByPclFrameId.end()) {
                         DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
                         ii->second->PclRenderSubmitStartTime = timestamp;
-                        return;
                     }
                     else {
                         auto ij = mPendingAppTimingDataByPclFrameId.find(key);
@@ -3115,7 +3110,6 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                             mPendingAppTimingDataByPclFrameId.emplace(key, data);
                         }
                     }
-                    return;
                 }
                 case Nvidia_PCL::PCLMarker::RenderSubmitEnd: {
                     auto processId = pEventRecord->EventHeader.ProcessId;
@@ -3125,7 +3119,6 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                     if (ii != mPresentByPclFrameId.end()) {
                         DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
                         ii->second->PclRenderSubmitEndTime = timestamp;
-                        return;
                     }
                     else {
                         auto ij = mPendingAppTimingDataByPclFrameId.find(key);
@@ -3140,7 +3133,6 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                             mPendingAppTimingDataByPclFrameId.emplace(key, data);
                         }
                     }
-                    return;
                 }
                 case Nvidia_PCL::PCLMarker::PresentStart: {
                     auto processId = pEventRecord->EventHeader.ProcessId;
@@ -3151,9 +3143,8 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                         DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
                         DebugAssert(ii->second->AppFrameId == frameId);
                         // TODO - I don't believe that we should be getting this event
-                        DebugAssert(0);
+                        DebugAssert(0 && "Should never get this event");
                         // ii->second->AppPresentStartTime = timestamp;
-                        return;
                     }
                     else {
                         // Save off the PCL frame id for next created present event
@@ -3170,7 +3161,6 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                             mPendingAppTimingDataByPclFrameId.emplace(key, data);
                         }
                     }
-                    return;
                 }
                 case Nvidia_PCL::PCLMarker::PresentEnd: {
                     auto processId = pEventRecord->EventHeader.ProcessId;
@@ -3180,7 +3170,6 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                     if (ii != mPresentByPclFrameId.end()) {
                         DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
                         ii->second->PclPresentEndTime = timestamp;
-                        return;
                     }
                     else {
                         auto ij = mPendingAppTimingDataByPclFrameId.find(key);
@@ -3195,7 +3184,6 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                             mPendingAppTimingDataByPclFrameId.emplace(key, data);
                         }
                     }
-                    return;
                 }
                 case Nvidia_PCL::PCLMarker::PCLLatencyPing: {
                     auto processId = pEventRecord->EventHeader.ProcessId;
@@ -3210,7 +3198,6 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                             ii->second->PclInputPingTime = mLatestPingTimestampByProcessId[processId];
                             mLatestPingTimestampByProcessId[processId] = 0;
                         }
-                        return;
                     }
                     else {
                         auto ij = mPendingAppTimingDataByPclFrameId.find(key);
@@ -3234,11 +3221,6 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                             mPendingAppTimingDataByPclFrameId.emplace(key, data);
                         }
                     }
-                    return;
-                }
-                default:
-                {
-                    return;
                 }
                 }
             } else if (eventName.value() == L"PCLStatsInput" ||
