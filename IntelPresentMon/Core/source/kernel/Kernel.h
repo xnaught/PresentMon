@@ -45,6 +45,10 @@ namespace p2c::kern
         std::string trackedName;
         bool is32Bit = false;
         bool enableBackground = false;
+        float width = 0.f;
+        float rightShift = 0.f;
+        gfx::Color flashColor;
+        gfx::Color backgroundColor;
     };
 
     class Kernel
@@ -55,7 +59,8 @@ namespace p2c::kern
         Kernel& operator=(const Kernel&) = delete;
         ~Kernel();
         void PushSpec(std::unique_ptr<OverlaySpec> pSpec);
-        void UpdateInjection(bool enableInjection, std::optional<uint32_t> pid, bool enableBackground);
+        void UpdateInjection(bool enableInjection, std::optional<uint32_t> pid, bool enableBackground,
+            const gfx::Color& flashColor, const gfx::Color& backgroundColor, float width, float rightShift);
         void ClearOverlay();
         std::vector<Process> ListProcesses();
         void SetAdapter(uint32_t id);

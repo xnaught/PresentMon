@@ -38,10 +38,59 @@
       </v-col>
     </v-row>
 
+    <v-row class="mt-8">       
+      <v-col cols="3">
+        Colors
+        <p class="text--secondary text-sm-caption mb-0">Colors of various elements of the graph</p>
+      </v-col>
+      <v-col cols="9">
+        <v-row dense>
+          <v-col cols="6">
+            <color-picker v-model="flashInjectionColor" class="color-picker" label="Flash"></color-picker>
+          </v-col>
+          <v-col cols="6">
+            <color-picker v-model="flashInjectionBackgroundColor" class="color-picker" label="Background"></color-picker>
+          </v-col>
+        </v-row>
+      </v-col>
+    </v-row>
+    
+    <v-row class="mt-8">       
+      <v-col cols="3">
+        Flash Width
+        <p class="text--secondary text-sm-caption mb-0">Width of the flash rectangle and background</p>
+      </v-col>
+      <v-col cols="9">
+        <v-slider
+          v-model="flashInjectionSize"
+          :min="0.01"
+          :max="1"
+          :step="0.01"
+          thumb-label="always"
+        ></v-slider>
+      </v-col>
+    </v-row>
+    
+    <v-row class="mt-8">       
+      <v-col cols="3">
+        Flash Offset
+        <p class="text--secondary text-sm-caption mb-0">How far to offset the flash rectangle from the left of the screen</p>
+      </v-col>
+      <v-col cols="9">
+        <v-slider
+          v-model="flashInjectionRightShift"
+          :min="0"
+          :max="1"
+          :step="0.01"
+          thumb-label="always"
+        ></v-slider>
+      </v-col>
+    </v-row>
+
     <v-row class="mt-4">
     <v-col>
         <h3>Notes</h3>
-        <p class="text--secondary text-sm-caption">To perform injection, target an app with the overlay and then restart that same application. Also, any changes to the above settings will only take effect after the target app has been restarted.</p>
+        <p class="text--secondary text-sm-caption">To perform injection, target an app with the overlay and then restart the app. Any changes to the above settings will similarly only take effect after the target app has been restarted.</p>
     </v-col>
     </v-row>
 
@@ -54,11 +103,14 @@
 import Vue from 'vue'
 import { Preferences } from '@/store/preferences'
 import { Hotkey } from '@/store/hotkey'
+import { RgbaColor } from '@/core/color'
+import ColorPicker from '@/components/ColorPicker.vue'
 
 export default Vue.extend({
   name: 'FlashInjectorConfig',
 
   components: {
+    ColorPicker,
   },
   data: () => ({
     dialog: false,
@@ -77,10 +129,34 @@ export default Vue.extend({
         Preferences.writeAttribute({ attr: 'enableFlashInjection', val });
       },
     },
+    flashInjectionSize: {
+      get(): number { return Preferences.preferences.flashInjectionSize; },
+      set(val: number) {
+        Preferences.writeAttribute({ attr: 'flashInjectionSize', val });
+      },
+    },
+    flashInjectionColor: {
+      get(): RgbaColor { return Preferences.preferences.flashInjectionColor; },
+      set(val: RgbaColor) {
+        Preferences.writeAttribute({ attr: 'flashInjectionColor', val });
+      },
+    },
     flashInjectionBackgroundEnable: {
       get(): boolean { return Preferences.preferences.flashInjectionBackgroundEnable; },
       set(val: boolean) {
         Preferences.writeAttribute({ attr: 'flashInjectionBackgroundEnable', val });
+      },
+    },
+    flashInjectionBackgroundColor: {
+      get(): RgbaColor { return Preferences.preferences.flashInjectionBackgroundColor; },
+      set(val: RgbaColor) {
+        Preferences.writeAttribute({ attr: 'flashInjectionBackgroundColor', val });
+      },
+    },
+    flashInjectionRightShift: {
+      get(): number { return Preferences.preferences.flashInjectionRightShift; },
+      set(val: number) {
+        Preferences.writeAttribute({ attr: 'flashInjectionRightShift', val });
       },
     },
   },
@@ -94,6 +170,9 @@ export default Vue.extend({
     margin: 0;
     padding: 0;
     height: auto;
+}
+.color-picker {
+  max-width: 150px;
 }
 .link-head {
   color: white;

@@ -8,6 +8,18 @@
 
 namespace p2c::client::util::async
 {
+    namespace
+    {
+        gfx::Color ColorFromV8(const CefRefPtr<CefValue>& rgba)
+        {
+            return gfx::Color::FromBytes(
+                Traverse(rgba)["r"],
+                Traverse(rgba)["g"],
+                Traverse(rgba)["b"]
+            ).WithAlpha(Traverse(rgba)["a"]);
+        }
+    }
+
     class PushSpecification : public AsyncEndpoint
     {
     public:
@@ -20,7 +32,11 @@ namespace p2c::client::util::async
             kernel.UpdateInjection(
                 args["preferences"]["enableFlashInjection"],
                 args["pid"].AsOptional<uint32_t>(),
-                args["preferences"]["flashInjectionBackgroundEnable"]);
+                args["preferences"]["flashInjectionBackgroundEnable"],
+                ColorFromV8(args["preferences"]["flashInjectionColor"]),
+                ColorFromV8(args["preferences"]["flashInjectionBackgroundColor"]),
+                args["preferences"]["flashInjectionSize"],
+                args["preferences"]["flashInjectionRightShift"]);
             if (args["pid"].IsNull()) {
                 kernel.ClearOverlay();
             }

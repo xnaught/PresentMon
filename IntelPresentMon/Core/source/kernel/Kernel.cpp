@@ -54,7 +54,8 @@ namespace p2c::kern
         cv.notify_one();
     }
 
-    void Kernel::UpdateInjection(bool enableInjection, std::optional<uint32_t> pid, bool enableBackground)
+    void Kernel::UpdateInjection(bool enableInjection, std::optional<uint32_t> pid, bool enableBackground, 
+        const gfx::Color& flashColor, const gfx::Color& backgroundColor, float width, float rightShift)
     {
         HandleMarshalledException_();
         std::lock_guard lk{ mtx };
@@ -68,7 +69,11 @@ namespace p2c::kern
             // routine to compare settings
             const auto SettingsMatch = [&]() {
                 return
-                    injectorProcess->enableBackground == enableBackground;
+                    injectorProcess->enableBackground == enableBackground &&
+                    injectorProcess->flashColor == flashColor &&
+                    injectorProcess->backgroundColor == backgroundColor &&
+                    injectorProcess->width == width &&
+                    injectorProcess->rightShift == rightShift;
             };
 
             // cases where we have no pid
@@ -135,23 +140,32 @@ namespace p2c::kern
             }
 
             namespace bp = boost::process;
+            const auto MakeColorString24 = [](const gfx::Color& c) {
+                return std::format("{},{},{}",
+                    int(c.r * 255.f), int(c.g * 255.f), int(c.b * 255.f));
+            };
             const auto path = std::filesystem::current_path() / (is32BitCache ?
                     "FlashInjector-Win32.exe"s : "FlashInjector-x64.exe"s);
             std::vector<std::string> args;
             args.push_back("--exe-name"s); args.push_back(*nameCache);
+            args.push_back("--bar-color"s); args.push_back(MakeColorString24(flashColor));
+            args.push_back("--background-color"s); args.push_back(MakeColorString24(backgroundColor));
+            args.push_back("--bar-size"s); args.push_back(std::to_string(width));
+            args.push_back("--bar-right-shift"s); args.push_back(std::to_string(rightShift));
             if (enableBackground) {
                 args.push_back("--render-background"s);
             }
             pmlog_dbg("launching injector child"s)
                 .pmwatch(path.string())
                 .pmwatch(*nameCache)
-                .pmwatch(enableBackground);
+                .pmwatch(enableBackground)
+                .pmwatch(MakeColorString24(flashColor))
+                .pmwatch(MakeColorString24(backgroundColor))
+                .pmwatch(width)
+                .pmwatch(rightShift);
             injectorProcess.emplace(
                 bp::child{ path.string(),
                     bp::args(std::move(args)),
-                    "--render-background",
-                    "--bar-color"s, "255,0,0"s,
-                    "--background-color"s, "0,255,0"s,
                     bp::windows::hide
                 }
             );
@@ -159,6 +173,10 @@ namespace p2c::kern
             injectorProcess->lastTrackedPid = pidCache;
             injectorProcess->is32Bit = is32BitCache;
             injectorProcess->enableBackground = enableBackground;
+            injectorProcess->flashColor = flashColor;
+            injectorProcess->backgroundColor = backgroundColor;
+            injectorProcess->width = width;
+            injectorProcess->rightShift = rightShift;
         }
     }
 
