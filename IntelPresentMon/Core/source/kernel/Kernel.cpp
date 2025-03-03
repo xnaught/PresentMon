@@ -13,11 +13,13 @@
 #include <Core/source/cli/CliOptions.h>
 #include <CommonUtilities/str/String.h>
 #include <CommonUtilities/Exception.h>
+#include <CommonUtilities/win/Utilities.h>
 #include <boost/process/windows.hpp>
 
 
 using namespace std::literals;
 using namespace ::pmon::util;
+namespace cwin = ::pmon::util::win;
 
 namespace p2c::kern
 {
@@ -52,6 +54,111 @@ namespace p2c::kern
         cv.notify_one();
     }
 
+    void Kernel::UpdateInjection(bool enableInjection, std::optional<uint32_t> pid, bool enableBackground)
+    {
+        HandleMarshalledException_();
+        std::lock_guard lk{ mtx };
+        if (!enableInjection) {
+            if (injectorProcess) {
+                pmlog_dbg("terminating injector child");
+                injectorProcess.reset();
+            }
+        }
+        else {
+            // routine to compare settings
+            const auto SettingsMatch = [&]() {
+                return
+                    injectorProcess->enableBackground == enableBackground;
+            };
+
+            // cases where we have no pid
+            if (!pid) {
+                // no injector => nothing to do, so skip relaunching
+                // yes injectr => if settings are the same skip relaunching
+                if (!injectorProcess || SettingsMatch()) {
+                    return;
+                }
+            }
+
+            std::optional<std::string> nameCache;
+            bool is32BitCache = false;
+            uint32_t pidCache = 0;
+            const auto LookupProcessInfo = [&](uint32_t pid) -> bool {
+                try {
+                    auto hProc = cwin::OpenProcess(pid);
+                    is32BitCache = cwin::ProcessIs32Bit(hProc);
+                    nameCache = cwin::GetExecutableModulePath(hProc).filename().string();
+                    pidCache = pid;
+                    return true;
+                }
+                catch (...) {
+                    pmlog_warn("Failed target process lookup").pmwatch(pid);
+                    return false;
+                }
+            };
+            // case where we have pid AND injector, deep compare all the things
+            if (pid && injectorProcess && SettingsMatch()) {
+                // pid still matches means we don't even need to check the name
+                if (*pid == injectorProcess->lastTrackedPid) {
+                    return;
+                }
+                // lookup pid so we can compare name
+                if (!LookupProcessInfo(*pid)) {
+                    // pid changed but name was not in the cache
+                    // we won't handle this case for now
+                    pmlog_warn("pid not found in Process info cache, aborting injection").pmwatch(*pid);
+                    injectorProcess.reset();
+                    return;
+                }
+                // if name still matches, skip re-launch
+                if (*nameCache == injectorProcess->trackedName) {
+                    return;
+                }
+            }
+
+            // if we made it this far, we need to (re-)launch the injector child process
+            // if we have a new pid, make sure the name and bit-ness is populated
+            if (pid && !nameCache) {
+                if (!LookupProcessInfo(*pid)) {
+                    pmlog_warn("pid not found in Process info cache, aborting injection").pmwatch(*pid);
+                    injectorProcess.reset();
+                    return;
+                }
+            }
+
+            // if we make it here without a pid, then we must at least have injector
+            // use its target info
+            if (!pid) {
+                is32BitCache = injectorProcess->is32Bit;
+                nameCache = injectorProcess->trackedName;
+                pidCache = injectorProcess->lastTrackedPid;
+            }
+
+            namespace bp = boost::process;
+            const auto path = std::filesystem::current_path() / (is32BitCache ?
+                    "FlashInjector-Win32.exe"s : "FlashInjector-x64.exe"s);
+            std::vector<std::string> args;
+            args.push_back("--exe-name"); args.push_back(*nameCache);
+            if (enableBackground) {
+                args.push_back("--render-background");
+            }
+            pmlog_dbg("launching injector child")
+                .pmwatch(path.string())
+                .pmwatch(*nameCache)
+                .pmwatch(enableBackground);
+            injectorProcess.emplace(
+                bp::child{ path.string(),
+                    bp::args(std::move(args)),
+                    bp::windows::hide
+                }
+            );
+            injectorProcess->trackedName = std::move(*nameCache);
+            injectorProcess->lastTrackedPid = pidCache;
+            injectorProcess->is32Bit = is32BitCache;
+            injectorProcess->enableBackground = enableBackground;
+        }
+    }
+
     void Kernel::ClearOverlay()
     {
         HandleMarshalledException_();
@@ -80,24 +187,9 @@ namespace p2c::kern
             Process proc = std::move(entry.second);
             if (proc.hWnd) {
                 proc.windowName = win::GetWindowTitle(proc.hWnd);
-                // determine whether each process is 32 or 64-bit
-                ::pmon::util::win::Handle hProcess;
-                if (auto hProcess = (Win32Handle)OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, proc.pid)) {
-                    BOOL isWow64 = false;
-                    if (IsWow64Process(hProcess, &isWow64)) {
-                        proc.is32bit = isWow64;
-                    }
-                    else {
-                        pmlog_error("Failed to query process WOW64 status").hr();
-                    }
-                }
-                else {
-                    pmlog_error("Failed to open process").hr();
-                }
             }
             list.push_back(std::move(proc));
         }
-        processListCache = list;
         return list;
     }
 
@@ -200,20 +292,6 @@ namespace p2c::kern
                 {
                     {
                         std::unique_lock u{ mtx };
-                        if (enableFlashInjection && lastProcessTargetted) {
-                            namespace bp = boost::process;
-                            const auto path = std::filesystem::current_path() / 
-                                (lastProcessTargetted->is32bit ?
-                                "FlashInjector-Win32.exe"s : "FlashInjector-x64.exe"s);
-                            pmlog_dbg("launching injector child").pmwatch(path.string());
-                            flashInjectorProcess.emplace(path.string(),
-                                "--exe-name", lastProcessTargetted->name,
-                                bp::windows::hide);
-                        }
-                        else if (flashInjectorProcess) {
-                            pmlog_dbg("terminating injector child");
-                            flashInjectorProcess.reset();
-                        }
                         cv.wait(u, [this] {return !IsIdle_(); });
                     }
                     if (pPushedSpec && !dying)
@@ -347,9 +425,5 @@ namespace p2c::kern
             pm->SetEtwFlushPeriod(newSpec.manualEtwFlush ?
                 std::optional{ uint32_t(newSpec.etwFlushPeriod) } : std::nullopt);
         }
-        if (auto i = rn::find(processListCache, newSpec.pid, &Process::pid); i != processListCache.end()) {
-            lastProcessTargetted = *i;
-        }
-        enableFlashInjection = newSpec.enableFlashInjection;
     }
 }

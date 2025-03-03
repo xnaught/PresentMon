@@ -36,7 +36,15 @@ namespace p2c::kern
     {
         Process(win::Process base) : win::Process{ std::move(base) } {}
         std::optional<std::wstring> windowName;
-        bool is32bit = false;
+    };
+
+    struct InjectorProcess
+    {
+        boost::process::child injectorProcess;
+        uint32_t lastTrackedPid;
+        std::string trackedName;
+        bool is32Bit = false;
+        bool enableBackground = false;
     };
 
     class Kernel
@@ -47,6 +55,7 @@ namespace p2c::kern
         Kernel& operator=(const Kernel&) = delete;
         ~Kernel();
         void PushSpec(std::unique_ptr<OverlaySpec> pSpec);
+        void UpdateInjection(bool enableInjection, std::optional<uint32_t> pid, bool enableBackground);
         void ClearOverlay();
         std::vector<Process> ListProcesses();
         void SetAdapter(uint32_t id);
@@ -66,16 +75,13 @@ namespace p2c::kern
         // data
         KernelHandler* pHandler = nullptr;
         std::optional<pmon::PresentMon> pm; // optional to defer creation to when the thread is run
-        std::optional<Process> lastProcessTargetted;
         bool dying = false;
         bool clearRequested = false;
         bool inhibitTargetLostSignal = false;
-        bool enableFlashInjection = false;
         std::optional<bool> pushedCaptureActive;
         std::unique_ptr<OverlaySpec> pPushedSpec;
         std::unique_ptr<OverlayContainer> pOverlayContainer;
-        std::optional<boost::process::child> flashInjectorProcess;
-        std::vector<Process> processListCache;
+        std::optional<InjectorProcess> injectorProcess;
         mutable std::condition_variable cv;
         mutable std::mutex mtx;
         std::binary_semaphore constructionSemaphore;

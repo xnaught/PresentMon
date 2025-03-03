@@ -55,14 +55,14 @@ int main (int argc, char **argv)
     LOGI << "    Writing configuration to " << cfgFilePath;
 
     std::ofstream cfgFile(cfgFilePath);
-    if (opts.logFile) {
-        auto logFile = stdfs::absolute(*opts.logFile);
-        stdfs::remove(logFile);
+    //if (opts.logFile) {
+    //    auto logFile = stdfs::absolute(*opts.logFile);
+    //    stdfs::remove(logFile);
 
-        auto opt = "LogFile=" + logFile.string();
-        LOGI << "        " << opt;
-        cfgFile << opt << std::endl;
-    }
+    //    auto opt = "LogFile=" + logFile.string();
+    //    LOGI << "        " << opt;
+    //    cfgFile << opt << std::endl;
+    //}
     if (opts.waitForUserInput) {
         auto opt = "WaitForUserInput=1";
         LOGI << "        " << opt;
@@ -120,7 +120,7 @@ int main (int argc, char **argv)
             }
         }
         // check for new matching processes every n milliseconds
-        std::this_thread::sleep_for(*opts.pollRate * 1ms);
+        std::this_thread::sleep_for(*opts.pollPeriod * 1ms);
     }
 
     return 0;

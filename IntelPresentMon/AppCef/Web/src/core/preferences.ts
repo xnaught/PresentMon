@@ -53,6 +53,11 @@ export interface Preferences {
     };    
     adapterId:number|null;
     enableFlashInjection:boolean;
+    flashInjectionSize:number;
+    flashInjectionColor:RgbaColor;
+    flashInjectionBackgroundEnable:boolean;
+    flashInjectionBackgroundColor:RgbaColor;
+    flashInjectionRightShift:number;
 };
 
 export function makeDefaultPreferences(): Preferences {
@@ -105,6 +110,21 @@ export function makeDefaultPreferences(): Preferences {
         upscaleFactor: 2,        
         adapterId: null,
         enableFlashInjection: false,
+        flashInjectionSize: 0.25,
+        flashInjectionColor: {
+            r: 255, 
+            g: 255, 
+            b: 255, 
+            a: 255, 
+        },
+        flashInjectionBackgroundEnable: false,
+        flashInjectionBackgroundColor: {
+            r: 0, 
+            g: 0, 
+            b: 0, 
+            a: 255, 
+        },
+        flashInjectionRightShift: 0.5,
     };
 }
 
@@ -160,6 +180,11 @@ const migrations: Migration[] = [
             console.info('Migrating preferences to 0.19.0 (flash injection)');
             const def = makeDefaultPreferences();
             prefs.enableFlashInjection = def.enableFlashInjection;
+            prefs.flashInjectionSize = def.flashInjectionSize;
+            prefs.flashInjectionColor = def.flashInjectionColor;
+            prefs.flashInjectionBackgroundEnable = def.flashInjectionBackgroundEnable;
+            prefs.flashInjectionBackgroundColor = def.flashInjectionBackgroundColor;
+            prefs.flashInjectionRightShift = def.flashInjectionRightShift;
         }
     },
 ];

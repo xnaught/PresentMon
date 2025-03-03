@@ -122,12 +122,45 @@ namespace pmon::util::win
 		return true;
 	}
 
+	win::Handle OpenProcess(uint32_t pid, UINT permissions)
+	{
+		auto hProc = (Handle)::OpenProcess(permissions, FALSE, pid);
+		if (!hProc) {
+			throw std::runtime_error{ "failed to open process" };
+		}
+		return hProc;
+	}
+
 	std::filesystem::path GetExecutableModulePath()
 	{
 		char pathString[MAX_PATH];
 		if (!GetModuleFileNameA(nullptr, pathString, MAX_PATH)) {
+			throw std::runtime_error{ "failed to get this module file name" };
+		}
+		return { pathString };
+	}
+
+	std::filesystem::path GetExecutableModulePath(HANDLE hProc)
+	{
+		char pathString[MAX_PATH];
+		DWORD size = std::size(pathString);
+		if (!QueryFullProcessImageNameA(hProc, 0, pathString, &size)) {
 			throw std::runtime_error{ "failed to get module file name" };
 		}
 		return { pathString };
+	}
+
+	std::filesystem::path GetExecutableModulePathFromPid(uint32_t pid)
+	{
+		return GetExecutableModulePath(OpenProcess(pid));
+	}
+
+	bool ProcessIs32Bit(HANDLE hProc)
+	{
+		BOOL isWow64 = false;
+		if (IsWow64Process(hProc, &isWow64)) {
+			return isWow64;
+		}
+		throw std::runtime_error{ "failed to check WOW64 status" };
 	}
 }

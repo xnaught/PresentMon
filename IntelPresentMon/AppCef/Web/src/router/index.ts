@@ -10,7 +10,7 @@ import LoadoutConfigView from '@/views/LoadoutConfigView.vue'
 import SimpleView from '@/views/SimpleView.vue'
 import CaptureConfigView from '@/views/CaptureConfigView.vue'
 import OtherConfigView from '@/views/OtherConfigView.vue'
-import FlashInjectorView from '@/views/FlashInjectorConfig.vue'
+import FlashInjectorView from '@/views/FlashInjectorConfigView.vue'
 
 Vue.use(VueRouter);
 

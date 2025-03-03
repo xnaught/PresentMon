@@ -16,7 +16,12 @@ namespace p2c::client::util::async
         // {very-complicated-spec-object} => null
         Result ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const override
         {
-            if (Traverse(pArgObj)["pid"].IsNull()) {
+            auto args = Traverse(pArgObj);
+            kernel.UpdateInjection(
+                args["preferences"]["enableFlashInjection"],
+                args["pid"].AsOptional<uint32_t>(),
+                args["preferences"]["flashInjectionBackgroundEnable"]);
+            if (args["pid"].IsNull()) {
                 kernel.ClearOverlay();
             }
             else {
