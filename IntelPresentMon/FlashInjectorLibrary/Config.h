@@ -4,6 +4,7 @@
 
 #include <unordered_map>
 #include <string>
+#include <optional>
 
 #define GFXL_OPT_LOG_FILE				"LogFile"
 #define GFXL_OPT_WAIT_FOR_USER_INPUT	"WaitForUserInput"
@@ -12,6 +13,14 @@
 
 namespace GfxLayer
 {
+	struct Color
+	{
+		float r;
+		float g;
+		float b;
+		float a;
+	};
+
 	using OptionMap = std::unordered_map<std::string, std::string>;
 	class Options
 	{
@@ -24,6 +33,7 @@ namespace GfxLayer
 		bool		GetFlag(const std::string& name) const;
 		std::string GetString(const std::string& name) const;
 		float		GetFloat(const std::string& name) const;
+		std::optional<Color> GetRgb24Color(const std::string& name) const;
 
 		void		Print() const;
 

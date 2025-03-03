@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <ranges>
 
 namespace GfxLayer
 {
@@ -61,6 +62,29 @@ namespace GfxLayer
 			return (float)std::atof(m_Map.at(name).c_str());
 		}
 		return std::numeric_limits<float>::quiet_NaN();
+	}
+
+	std::optional<Color> Options::GetRgb24Color(const std::string& name) const
+	{
+		try {
+			if (m_Map.contains(name)) {
+				const auto components = m_Map.at(name) | std::views::split(',') |
+					std::views::transform([](auto&& subrange) {
+					auto val = std::ranges::to<std::basic_string>(subrange);
+					return std::stol(val);
+				}) | std::ranges::to<std::vector>();
+				if (components.size() == 3) {
+					Color c;
+					c.r = float(components[0]) / 255.f;
+					c.g = float(components[1]) / 255.f;
+					c.b = float(components[2]) / 255.f;
+					c.a = 1.f;
+					return c;
+				}
+			}
+		}
+		catch (...) {}
+		return std::nullopt;
 	}
 
 	void Options::Print() const

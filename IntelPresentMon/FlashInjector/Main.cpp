@@ -85,6 +85,12 @@ int main (int argc, char **argv)
         LOGI << "        " << opt;
         cfgFile << opt << std::endl;
     }
+    if (opts.backgroundColor)
+    {
+        auto opt = "BackgroundColor=" + *opts.backgroundColor;
+        LOGI << "        " << opt;
+        cfgFile << opt << std::endl;
+    }
     if (opts.renderBackground)
     {
         auto opt = "RenderBackground=1";

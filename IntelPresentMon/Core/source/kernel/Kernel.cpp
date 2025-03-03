@@ -138,17 +138,20 @@ namespace p2c::kern
             const auto path = std::filesystem::current_path() / (is32BitCache ?
                     "FlashInjector-Win32.exe"s : "FlashInjector-x64.exe"s);
             std::vector<std::string> args;
-            args.push_back("--exe-name"); args.push_back(*nameCache);
+            args.push_back("--exe-name"s); args.push_back(*nameCache);
             if (enableBackground) {
-                args.push_back("--render-background");
+                args.push_back("--render-background"s);
             }
-            pmlog_dbg("launching injector child")
+            pmlog_dbg("launching injector child"s)
                 .pmwatch(path.string())
                 .pmwatch(*nameCache)
                 .pmwatch(enableBackground);
             injectorProcess.emplace(
                 bp::child{ path.string(),
                     bp::args(std::move(args)),
+                    "--render-background",
+                    "--bar-color"s, "255,0,0"s,
+                    "--background-color"s, "0,255,0"s,
                     bp::windows::hide
                 }
             );
