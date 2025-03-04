@@ -240,6 +240,9 @@
     <ClInclude Include="win\MessageBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="win\HrError.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">
@@ -372,6 +375,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="win\MessageBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="win\HrError.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

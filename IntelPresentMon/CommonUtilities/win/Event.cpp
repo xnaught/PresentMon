@@ -1,5 +1,6 @@
 #include "Event.h"
 #include "WinAPI.h"
+#include "HrError.h"
 #include <stdexcept>
 #include <cassert>
 
@@ -12,28 +13,28 @@ namespace pmon::util::win
 		Handle{ CreateEventA(nullptr, (BOOL)manualReset, (BOOL)initialState, nullptr) }
 	{
 		if (!*this) {
-			throw std::runtime_error("Failed to create event");
+			throw Except<HrError>("Failed to create event");
 		}
 	}
 
 	void Event::Set()
 	{
 		if (!SetEvent(*this)) {
-			throw std::runtime_error("Failed to set event");
+			throw Except<HrError>("Failed to set event");
 		}
 	}
 
 	void Event::Pulse()
 	{
 		if (!PulseEvent(*this)) {
-			throw std::runtime_error("Failed to pulse event");
+			throw Except<HrError>("Failed to pulse event");
 		}
 	}
 
 	void Event::Reset()
 	{
-		if (!::ResetEvent(*this)) {
-			throw std::runtime_error("Failed to reset event");
+		if (!ResetEvent(*this)) {
+			throw Except<HrError>("Failed to reset event");
 		}
 	}
 
@@ -51,6 +52,6 @@ namespace pmon::util::win
 			return {};
 		}
 		// failed, bailed
-		throw std::runtime_error{ "Failed waiting on multiple objects" };
+		throw Except<HrError>("Failed waiting on multiple objects");
 	}
 }

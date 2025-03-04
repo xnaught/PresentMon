@@ -1,6 +1,7 @@
 #pragma once 
 #include "Utilities.h"
 #include "../log/Log.h"
+#include "HrError.h"
 #include <chrono>
 #include <thread>
 
@@ -32,7 +33,7 @@ namespace pmon::util::win
 			return description;
 		}
 		catch (...) {
-			pmlog_warn("Exception thrown in windows error GetErrorDescription");
+			pmlog_warn(ReportException("Exception in win::GetErrorDescription"));
 			return {};
 		}
 	}
@@ -126,7 +127,7 @@ namespace pmon::util::win
 	{
 		auto hProc = (Handle)::OpenProcess(permissions, FALSE, pid);
 		if (!hProc) {
-			throw std::runtime_error{ "failed to open process" };
+			throw Except<HrError>("failed to open process");
 		}
 		return hProc;
 	}
@@ -135,7 +136,7 @@ namespace pmon::util::win
 	{
 		char pathString[MAX_PATH];
 		if (!GetModuleFileNameA(nullptr, pathString, MAX_PATH)) {
-			throw std::runtime_error{ "failed to get this module file name" };
+			throw Except<HrError>("failed to get this module file name");
 		}
 		return { pathString };
 	}
@@ -145,7 +146,7 @@ namespace pmon::util::win
 		char pathString[MAX_PATH];
 		DWORD size = std::size(pathString);
 		if (!QueryFullProcessImageNameA(hProc, 0, pathString, &size)) {
-			throw std::runtime_error{ "failed to get module file name" };
+			throw Except<HrError>("failed to get module file name");
 		}
 		return { pathString };
 	}
@@ -161,6 +162,6 @@ namespace pmon::util::win
 		if (IsWow64Process(hProc, &isWow64)) {
 			return isWow64;
 		}
-		throw std::runtime_error{ "failed to check WOW64 status" };
+		throw Except<HrError>("failed to check WOW64 status");
 	}
 }
