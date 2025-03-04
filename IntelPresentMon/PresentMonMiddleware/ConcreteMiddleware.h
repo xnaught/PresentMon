@@ -32,8 +32,8 @@ namespace pmon::mid
 				return;
 			}
 			if (timeStamp > it->second.timestamp) {
-				pmon::util::CalculateEma(
-					&it->second.i2FsValue,
+				it->second.i2FsValue = pmon::util::CalculateEma(
+					it->second.i2FsValue,
 					value,
 					mEmaAlpha);
 				it->second.timestamp = timeStamp;

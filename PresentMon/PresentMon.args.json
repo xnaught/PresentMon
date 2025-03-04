@@ -3,26 +3,6 @@
   "Id": "4eb9794b-1f12-48ce-adc1-917e9810f29e",
   "Items": [
     {
-      "Id": "a17f5f0b-c341-4193-8882-946e3d506992",
-      "Command": "--timed 10"
-    },
-    {
-      "Id": "79ce7090-a7e1-4b5f-825c-5248fb55a336",
-      "Command": "--process_name \"D3D12ExecuteIndirect.exe\""
-    },
-    {
-      "Id": "c53f7539-5dac-4478-9064-1c868cf27583",
-      "Command": "--track_app_timing"
-    },
-    {
-      "Id": "54a3cf2a-45a1-40a2-90b7-ee08c77b45dd",
-      "Command": "--hotkey SCROLLLOCK"
-    },
-    {
-      "Id": "e5496c61-9320-4e08-b822-1012102bb71b",
-      "Command": "--track_pcl"
-    },
-    {
       "Id": "87896970-fc2f-44e1-8336-e0ed41901412",
       "Command": "original",
       "Items": [
@@ -39,10 +19,6 @@
           "Command": "--output_file original.csv"
         }
       ]
-    },
-    {
-      "Id": "8c8efb89-dc85-4478-9737-dfb7beb928f1",
-      "Command": "--session_name \"pcl\""
     },
     {
       "Id": "4ba7ca86-744f-474d-9f70-023c8321047a",
@@ -92,11 +68,15 @@
     },
     {
       "Id": "8f014852-6512-466b-99cb-0a8724c36862",
-      "Command": "--output_file \"D:\\source\\repos\\drivers.gpu.tools.presentmon\\Tests\\Gold\\test_case_0-temp.csv\""
+      "Command": "--output_file \"F:\\DataAnalysis\\NewLatency\\ETLs\\cs2\\debug.csv\""
+    },
+    {
+      "Id": "8e6c71bd-dbf4-4889-ae15-33ae4a1b6381",
+      "Command": "--track_pc_latency"
     },
     {
       "Id": "1606ee3e-ac1c-4fea-9a87-736864dd1f00",
-      "Command": "--etl_file \"D:\\source\\repos\\drivers.gpu.tools.presentmon\\Tests\\Gold\\test_case_0.etl\""
+      "Command": "--etl_file \"F:\\DataAnalysis\\NewLatency\\ETLs\\cs2\\trace.etl\""
     },
     {
       "Id": "ac45209f-6799-44f5-88d9-b35b6f9015fb",
