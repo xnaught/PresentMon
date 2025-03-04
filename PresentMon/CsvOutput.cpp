@@ -324,7 +324,7 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
             fwprintf(fp, L",AppFrameId");
         }
         if (args.mTrackPcLatency) {
-            fwprintf(fp, L",PclFrameId");
+            fwprintf(fp, L",PCLFrameId");
         }
     }
     fwprintf(fp, L"\n");
@@ -447,7 +447,12 @@ void WriteCsvRow<FrameMetrics>(
             fwprintf(fp, L",%u", p.AppFrameId);
         }
         if (args.mTrackPcLatency) {
-            fwprintf(fp, L",%u", p.PclFrameId);
+            if (metrics.mPcLatency == 0.0) {
+                fwprintf(fp, L",NA");
+            }
+            else {
+                fwprintf(fp, L",%u", p.PclFrameId);
+            }
         }
         
     }
