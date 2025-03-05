@@ -1,6 +1,7 @@
 #include "../WrapUtils.h"
 #include "../Context.h"
 #include "IUnknown_Wrapper.h"
+#include <cassert>
 
 namespace GfxLayer
 {

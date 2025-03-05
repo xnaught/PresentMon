@@ -5,7 +5,7 @@
   <div class="page-wrap">
     
   <h2 class="mt-5 ml-5 link-head">
-      Flash Injection
+      Flash Injection <span style="color:red">*Experimental*</span>
   </h2>
 
   <v-card class="page-card">
@@ -90,7 +90,10 @@
     <v-row class="mt-4">
     <v-col>
         <h3>Notes</h3>
-        <p class="text--secondary text-sm-caption">To perform injection, target an app with the overlay and then restart the app. Any changes to the above settings will similarly only take effect after the target app has been restarted.</p>
+        <p class="text--secondary text-sm-caption mb-1">The flash injector injects code into a target process, causing it to draw a rectangle on top of its normal output whenever it detects a mouse click.</p>
+        <p class="text--secondary text-sm-caption mb-1">It can be used to measure latency between a click input and a corresponding visual response of the target app.</p>
+        <p class="text--secondary text-sm-caption mb-1">To perform injection, target an app with the overlay and then restart the app. Any changes to the above settings will similarly only take effect after the target app has been restarted.</p>
+        <p class="orange--text text-sm-caption mb-1">Using this feature with certain titles (in particular, competitive online games protected by anticheat services) may result in a permanent ban.</p>
     </v-col>
     </v-row>
 

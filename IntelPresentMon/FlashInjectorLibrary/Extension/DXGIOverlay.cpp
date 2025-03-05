@@ -11,6 +11,7 @@
 #define GFXL_OPT_RENDER_BACKGROUND "RenderBackground"
 
 #include <array>
+#include <cassert>
 
 namespace GfxLayer
 {
