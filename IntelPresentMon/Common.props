@@ -8,6 +8,9 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile />
+    <ClCompile>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>
