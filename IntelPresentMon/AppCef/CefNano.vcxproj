@@ -162,8 +162,8 @@
     <EmbedManifest>true</EmbedManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-EDSS|x64'">
-    <IntDir>..\..\build\obj\$(ProjectName)-$(Platform)-$(Configuration)\</IntDir>
-    <OutDir>..\..\build\$(Configuration)\</OutDir>
+    <IntDir>..\..\build\obj\$(ProjectName)-$(Platform)-Release\</IntDir>
+    <OutDir>..\..\build\Release\</OutDir>
     <TargetName>PresentMon</TargetName>
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>true</GenerateManifest>
@@ -226,7 +226,7 @@
     </Link>
     <PostBuildEvent>
       <Message>Executing Post Build</Message>
-      <Command>Batch\post-build.bat "$(Configuration)" "$(OutDir)" "$(TargetFileName)" uiAccessOn</Command>
+      <Command>Batch\post-build.bat "$(Configuration)" "$(OutDir)" "$(TargetFileName)" --enable-test-sign</Command>
     </PostBuildEvent>
     <Manifest>
       <AdditionalManifestFiles>compatibility.manifest %(AdditionalManifestFiles)</AdditionalManifestFiles>
@@ -259,8 +259,7 @@
     <PostBuildEvent>
       <Message>
       </Message>
-      <Command>
-      </Command>
+      <Command>Batch\post-build.bat "Release" "$(OutDir)" "$(TargetFileName)"</Command>
     </PostBuildEvent>
     <Manifest>
       <AdditionalManifestFiles>compatibility.manifest %(AdditionalManifestFiles)</AdditionalManifestFiles>
