@@ -1050,20 +1050,7 @@ namespace
 				}
 			}
 
-			// double updatedInputTime = 0.;
 			double val = 0.;
-			// Keep this around as we will need to handle this case for when a pc latency
-			// tag framed is dropped. But for now, ignore.
-			//updatedInputTime = ctx.lastReceivedNotDisplayedAllInputTime == 0 ? 0. :
-			//	TimestampDeltaToUnsignedMilliSeconds(ctx.lastReceivedNotDisplayedAllInputTime,
-			//		ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
-			//		ctx.performanceCounterPeriodMs);
-			//val = ctx.pSourceFrameData->present_event.*pStart == 0 ? updatedInputTime :
-			//	TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pStart,
-			//		ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
-			//		ctx.performanceCounterPeriodMs);
-			//ctx.lastReceivedNotDisplayedAllInputTime = 0;
-
 			if (ctx.avgInput2Fs == 0. || ctx.pSourceFrameData->present_event.PclSimStartTime == 0) {
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
 					std::numeric_limits<double>::quiet_NaN();
@@ -1081,6 +1068,58 @@ namespace
 			else {
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 			}
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + alignof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
+	template<bool doDroppedCheck>
+	class AnimationTimeGatherCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		AnimationTimeGatherCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
+		{
+			if constexpr (doDroppedCheck) {
+				if (ctx.dropped) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
+					return;
+				}
+			}
+			if (ctx.sourceFrameDisplayIndex != ctx.appIndex) {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+				return;
+			}
+			auto firstSimStartTime = ctx.firstAppSimStartTime != 0 ? ctx.firstAppSimStartTime :
+				ctx.qpcStart;
+			uint64_t currentSimTime = 0;
+			if (ctx.pSourceFrameData->present_event.AppSimStartTime != 0 || ctx.pSourceFrameData->present_event.PclSimStartTime != 0) {
+				currentSimTime = ctx.pSourceFrameData->present_event.AppSimStartTime != 0 ?
+					ctx.pSourceFrameData->present_event.AppSimStartTime :
+					ctx.pSourceFrameData->present_event.PclSimStartTime;
+			}
+			else {
+				currentSimTime = ctx.cpuStart;
+			}
+			auto val = TimestampDeltaToUnsignedMilliSeconds(firstSimStartTime, currentSimTime, ctx.performanceCounterPeriodMs);
+			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 		}
 		uint32_t GetBeginOffset() const override
 		{
