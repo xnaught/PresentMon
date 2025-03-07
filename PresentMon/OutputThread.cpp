@@ -243,13 +243,13 @@ static void UpdateChain(
     std::shared_ptr<PresentEvent> const& p)
 {
     if (p->FinalState == PresentResult::Presented) {
-        if (p->AppSimStartTime != 0) {
-            chain->mLastDisplayedSimStartTime = p->AppSimStartTime;
+        if (p->AppSimStartTime != 0 || p->PclSimStartTime != 0) {
+            auto simStartTime = p->AppSimStartTime != 0 ? p->AppSimStartTime : p->PclSimStartTime;
+            chain->mLastDisplayedSimStartTime = simStartTime;
             if (chain->mFirstAppSimStartTime == 0) {
                 // Received the first app sim start time.
-                chain->mFirstAppSimStartTime = p->AppSimStartTime;
+                chain->mFirstAppSimStartTime = simStartTime;
             }
-            
         } else if (chain->mLastPresent != nullptr) {
             chain->mLastDisplayedSimStartTime = chain->mLastPresent->PresentStartTime +
                                                 chain->mLastPresent->TimeInPresent;
@@ -523,9 +523,14 @@ static void ReportMetricsHelper(
                 chain->mLastReceivedNotDisplayedAppProviderInputTime = 0;
 
                 // Next calculate the animation error and animation time. First calculate the simulation
-                // start time. Simulation start can be either the app provided sim start time or, if not present,
-                // the cpu start
-                auto simStartTime = p->AppSimStartTime != 0 ? p->AppSimStartTime : metrics.mCPUStart;
+                // start time. Simulation start can be either an app provided sim start time via the provider or
+                // PCL stats or, if not present,the cpu start.
+                uint64_t simStartTime = 0;
+                if (p->AppSimStartTime != 0 || p->PclSimStartTime != 0) {
+                    simStartTime = p->AppSimStartTime != 0 ? p->AppSimStartTime : p->PclSimStartTime;
+                } else {
+                    simStartTime = metrics.mCPUStart;
+                }
 
                 if (chain->mLastDisplayedSimStartTime != 0) {
                     // If the simulation start time is less than the last displayed simulation start time it means
@@ -535,11 +540,11 @@ static void ReportMetricsHelper(
                             simStartTime - chain->mLastDisplayedSimStartTime);
                     }
                 }
-                // If we have a value in app sim start and we haven't set the first
+                // If we have a value in app sim start or pcl sim start and we haven't set the first
                 // sim start time then we are transitioning from using cpu start to
                 // an application provided timestamp. Set the animation time to zero
                 // for the first frame.
-                if (p->AppSimStartTime != 0 && chain->mFirstAppSimStartTime == 0) {
+                if ((p->AppSimStartTime != 0 || p->PclSimStartTime != 0) && chain->mFirstAppSimStartTime == 0) {
                     metrics.mAnimationTime = 0.;
                 }
                 else {

@@ -710,9 +710,15 @@ static void ReportMetricsHelper(
                 chain->mLastReceivedNotDisplayedMouseClickTime = 0;
 
                 // Next calculate the animation error and animation time. First calculate the simulation
-                // start time. Simulation start can be either the app provided sim start time or, if not present,
-                // the cpu start
-                auto simStartTime = p->AppSimStartTime != 0 ? p->AppSimStartTime : metrics.mCPUStart;
+                // start time. Simulation start can be either an app provided sim start time via the provider or
+                // PCL stats or, if not present,the cpu start.
+                uint64_t simStartTime = 0;
+                if (p->AppSimStartTime != 0 || p->PclSimStartTime != 0) {
+                    simStartTime = p->AppSimStartTime != 0 ? p->AppSimStartTime : p->PclSimStartTime;
+                }
+                else {
+                    simStartTime = metrics.mCPUStart;
+                }
                 
                 if (chain->mLastDisplayedSimStart != 0) {
                     // If the simulation start time is less than the last displayed simulation start time it means
@@ -1176,6 +1182,8 @@ static void ReportMetrics(
                 } else {
                     while (ctx.sourceFrameDisplayIndex < ctx.pSourceFrameData->present_event.DisplayedCount) {
                         if (ctx.pSourceFrameData->present_event.PclSimStartTime != 0) {
+                            // If we are calculating PC Latency then we need to update the input to frame start
+                            // time.
                             if (ctx.pSourceFrameData->present_event.PclInputPingTime == 0) {
                                 if (ctx.mAccumulatedInput2FrameStartTime != 0) {
                                     // This frame was displayed but we don't have a pc latency input time. However, there is accumulated time
