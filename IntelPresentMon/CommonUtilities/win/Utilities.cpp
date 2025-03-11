@@ -144,7 +144,7 @@ namespace pmon::util::win
 	std::filesystem::path GetExecutableModulePath(HANDLE hProc)
 	{
 		char pathString[MAX_PATH];
-		DWORD size = std::size(pathString);
+		auto size = (DWORD)std::size(pathString);
 		if (!QueryFullProcessImageNameA(hProc, 0, pathString, &size)) {
 			throw Except<HrError>("failed to get module file name");
 		}
