@@ -216,9 +216,6 @@
     <ClInclude Include="pipe\SecurityMode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="pipe\WrapAsio.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="reg\Registry.h">
       <Filter>Header Files</Filter>
     </ClInclude>

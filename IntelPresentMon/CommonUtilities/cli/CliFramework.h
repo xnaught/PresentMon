@@ -1,10 +1,6 @@
 #pragma once
 
-#pragma warning(push)
-#pragma warning(disable : 26827)
-#define CLI11_COMPILE 0
 #include <CLI/CLI.hpp>
-#pragma warning(pop)
 
 #include <optional>
 #include <cassert>
