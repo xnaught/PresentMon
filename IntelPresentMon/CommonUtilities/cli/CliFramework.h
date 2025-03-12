@@ -170,6 +170,10 @@ namespace pmon::util::cli
 		{
 			return !bool(*this);
 		}
+		const T* operator->() const
+		{
+			return &data_;
+		}
 		std::optional<T> AsOptional() const
 		{
 			if (*this) {
