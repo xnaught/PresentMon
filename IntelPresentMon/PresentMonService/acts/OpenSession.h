@@ -17,16 +17,18 @@ namespace pmon::svc::acts
 		{
 			uint32_t clientPid;
 			std::string clientBuildId;
+			std::string clientBuildConfig;
 
 			template<class A> void serialize(A& ar) {
-				ar(clientPid, clientBuildId);
+				ar(clientPid, clientBuildId, clientBuildConfig);
 			}
 		};
 		struct Response {
 			std::string serviceBuildId;
+			std::string serviceBuildConfig;
 
 			template<class A> void serialize(A& ar) {
-				ar(serviceBuildId);
+				ar(serviceBuildId, serviceBuildConfig);
 			}
 		};
 	private:
@@ -36,9 +38,10 @@ namespace pmon::svc::acts
 			stx.clientPid = in.clientPid;
 			stx.clientBuildId = in.clientBuildId;
 			ctx.pSvc->SignalClientSessionOpened();
-			pmlog_info(std::format("Open action for session #{} pid={}; [BID] cli={} svc={}",
-				stx.pPipe->GetId(), in.clientPid, in.clientBuildId, bid::BuildIdShortHash()));
-			return Response{ .serviceBuildId = bid::BuildIdShortHash() };
+			pmlog_info(std::format("Open action for session #{} pid={}; [BID] cli={} svc={} [CFG] cli={} svc={}",
+				stx.pPipe->GetId(), in.clientPid, in.clientBuildId, bid::BuildIdShortHash(),
+				in.clientBuildConfig, bid::BuildIdConfig()));
+			return Response{ .serviceBuildId = bid::BuildIdShortHash(), .serviceBuildConfig = bid::BuildIdConfig()};
 		}
 	};
 

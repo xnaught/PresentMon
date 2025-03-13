@@ -8,6 +8,11 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile />
+    <ClCompile>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
+      <DisableAnalyzeExternal>true</DisableAnalyzeExternal>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>

@@ -10,9 +10,10 @@ namespace pmon::bid
 			.major = 3,
 			.minor = 0,
 			.patch = 0,
-			.tag = "beta",
+			.tag = "",
 		};
 		strncpy_s(ver.hash, BuildIdShortHash(), _TRUNCATE);
+		strncpy_s(ver.config, BuildIdConfig(), _TRUNCATE);
 		return ver;
 	}
 }

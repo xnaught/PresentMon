@@ -45,6 +45,7 @@ namespace p2c::client::util
             .hideAlways = traversedPref["hideAlways"],
             .independentKernelWindow = traversedPref["independentWindow"],
             .generateStats = traversedPref["generateStats"],
+            .enableFlashInjection = traversedPref["enableFlashInjection"],
         });
 
         // style sheets

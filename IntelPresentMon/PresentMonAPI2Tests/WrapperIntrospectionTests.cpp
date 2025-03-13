@@ -1,6 +1,6 @@
 #include "CppUnitTest.h"
 #include "StatusComparison.h"
-#include "BoostProcess.h"
+#include <boost/process.hpp>
 #include "../PresentMonAPI2/Internal.h"
 #include "../PresentMonAPIWrapper/PresentMonAPIWrapper.h"
 #include "../PresentMonAPI2Loader/Loader.h"

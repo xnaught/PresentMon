@@ -11,6 +11,7 @@
 #include <Core/source/win/Process.h>
 #include <Core/source/pmon/PresentMon.h>
 #include <CommonUtilities/mt/Thread.h>
+#include <boost/process.hpp>
 #include "OverlaySpec.h"
 #include "KernelHandler.h"
 
@@ -37,6 +38,19 @@ namespace p2c::kern
         std::optional<std::wstring> windowName;
     };
 
+    struct InjectorProcess
+    {
+        boost::process::child injectorProcess;
+        uint32_t lastTrackedPid;
+        std::string trackedName;
+        bool is32Bit = false;
+        bool enableBackground = false;
+        float width = 0.f;
+        float rightShift = 0.f;
+        gfx::Color flashColor;
+        gfx::Color backgroundColor;
+    };
+
     class Kernel
     {
     public:
@@ -45,6 +59,8 @@ namespace p2c::kern
         Kernel& operator=(const Kernel&) = delete;
         ~Kernel();
         void PushSpec(std::unique_ptr<OverlaySpec> pSpec);
+        void UpdateInjection(bool enableInjection, std::optional<uint32_t> pid, bool enableBackground,
+            const gfx::Color& flashColor, const gfx::Color& backgroundColor, float width, float rightShift);
         void ClearOverlay();
         std::vector<Process> ListProcesses();
         void SetAdapter(uint32_t id);
@@ -70,6 +86,7 @@ namespace p2c::kern
         std::optional<bool> pushedCaptureActive;
         std::unique_ptr<OverlaySpec> pPushedSpec;
         std::unique_ptr<OverlayContainer> pOverlayContainer;
+        std::optional<InjectorProcess> injectorProcess;
         mutable std::condition_variable cv;
         mutable std::mutex mtx;
         std::binary_semaphore constructionSemaphore;

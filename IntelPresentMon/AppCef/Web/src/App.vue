@@ -48,6 +48,12 @@
           </v-list-item-content>
         </v-list-item>
 
+        <v-list-item color="primary" :to="{name: 'flash-config'}">
+          <v-list-item-content>
+            <v-list-item-title>Flash Injection</v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+
         <v-list-item color="primary" :to="{name: 'other-config'}">
           <v-list-item-content>
             <v-list-item-title>Other</v-list-item-title>
@@ -264,7 +270,7 @@ export default Vue.extend({
       return Loadout.widgets;
     },
     inSettings(): boolean {
-      return ['capture-config', 'overlay-config', 'metric-processing', 'other-config']
+      return ['capture-config', 'overlay-config', 'metric-processing', 'other-config', 'flash-config']
         .includes(this.$route.name ?? '');
     },
     fatalErrorTitle(): string {

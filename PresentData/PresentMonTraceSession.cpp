@@ -292,9 +292,6 @@ void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
     auto session = (PMTraceSession*) pEventRecord->UserContext;
     auto const& hdr = pEventRecord->EventHeader;
 
-    #pragma warning(push)
-    #pragma warning(disable: 4984) // c++17 extension
-
     if constexpr (!IS_REALTIME_SESSION) {
         if (session->mStartTimestamp.QuadPart == 0) {
             session->mStartTimestamp = hdr.TimeStamp;
@@ -374,8 +371,6 @@ void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
             return;
         }
     }
-
-    #pragma warning(pop)
 }
 
 template<bool... Ts>

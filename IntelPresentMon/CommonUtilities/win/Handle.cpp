@@ -1,5 +1,6 @@
 #include "Handle.h"
 #include "WinAPI.h"
+#include "HrError.h"
 #include <stdexcept>
 
 
@@ -39,8 +40,7 @@ namespace pmon::util::win
     {
         if (*this) {
             if (!CloseHandle(std::exchange(handle_, nullptr))) {
-                // TODO: throw custom exception, perhaps with more context / error code / formatted error
-                throw std::runtime_error{ "Failed closing handle in Handle wrapper" };
+                throw Except<HrError>("Failed closing handle in Handle wrapper");
             }
         }
     }
@@ -66,7 +66,7 @@ namespace pmon::util::win
         const auto processHandle = GetCurrentProcess();
         HANDLE clonedHandle = NULL;
         if (!DuplicateHandle(processHandle, handle, processHandle, &clonedHandle, 0, FALSE, DUPLICATE_SAME_ACCESS)) {
-            throw std::runtime_error{ "Failed cloning handle" };
+            throw Except<HrError>("Failed cloning handle");
         }
         return Handle{ clonedHandle };
     }

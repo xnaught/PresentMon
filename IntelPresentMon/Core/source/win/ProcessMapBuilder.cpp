@@ -3,6 +3,8 @@
 #include "ProcessMapBuilder.h"
 #include <Core/source/infra/Logging.h>
 #include <CommonUtilities/Exception.h>
+#include <CommonUtilities/win/Handle.h>
+#include <CommonUtilities/win/HrError.h>
 #include <unordered_set>
 #include <ranges>
 #include <cwctype>
@@ -13,6 +15,7 @@ namespace p2c::win
     namespace rn = std::ranges;
     namespace vi = rn::views;
     using namespace ::pmon::util;
+    namespace cwin = ::pmon::util::win;
 
     ProcessMapBuilder::ProcessMapBuilder()
     {
@@ -112,11 +115,10 @@ namespace p2c::win
         PROCESSENTRY32 process_info{};
         process_info.dwSize = sizeof(process_info);
 
-        HANDLE processes_snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        auto processes_snapshot = (cwin::Handle)CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
         if (processes_snapshot == INVALID_HANDLE_VALUE)
         {
-            pmlog_error("Failed to get process snapshot").hr();
-            throw Except<Exception>();
+            pmlog_error("Failed to get process snapshot").hr().raise<cwin::HrError>();
         }
 
         Process32FirstW(processes_snapshot, &process_info);
@@ -130,8 +132,6 @@ namespace p2c::win
                 .name =     process_info.szExeFile,
             });
         }
-
-        CloseHandle(processes_snapshot);
     }
 
     bool ProcessMapBuilder::WindowIsMain_(HWND hWnd)

@@ -174,6 +174,14 @@ namespace p2c::client::util
 		std::wstring AsWString() const;
 		std::string AsString() const;
 		template<typename T>
+		std::optional<T> AsOptional() const
+		{
+			if (IsNull()) {
+				return std::nullopt;
+			}
+			return T(*this);
+		}
+		template<typename T>
 		operator T() const
 		{
 			using str::ToWide;

@@ -13,11 +13,7 @@
 #include <PresentMonAPIWrapper/DiagnosticHandler.h>
 #include <PresentMonAPI2Loader/Loader.h>
 #include <dwmapi.h>
-
-#pragma warning(push)
-#pragma warning(disable : 4297)
 #include <boost/process.hpp>
-#pragma warning(pop)
 
 #pragma comment(lib, "Dwmapi.lib")
 
