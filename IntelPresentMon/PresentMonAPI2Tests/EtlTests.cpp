@@ -276,7 +276,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -316,7 +316,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName.c_str());
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -362,7 +362,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -458,7 +458,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -506,7 +506,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -554,7 +554,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -602,7 +602,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -650,7 +650,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -698,7 +698,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -746,7 +746,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -794,7 +794,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -842,7 +842,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -890,7 +890,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -939,7 +939,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -987,7 +987,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1035,7 +1035,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1083,7 +1083,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1131,7 +1131,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1179,7 +1179,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1227,7 +1227,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1275,7 +1275,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1323,7 +1323,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1371,7 +1371,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1419,7 +1419,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1467,7 +1467,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1515,7 +1515,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1563,7 +1563,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1611,7 +1611,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1659,7 +1659,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1707,7 +1707,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1757,7 +1757,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1807,7 +1807,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;
@@ -1857,7 +1857,7 @@ namespace EtlTests
 				{
 					pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 					pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-					pSession = std::make_unique<pmapi::Session>(pipeName.c_str(), introName.c_str());
+					pSession = std::make_unique<pmapi::Session>(pipeName);
 				}
 				catch (const std::exception& e) {
 					std::cout << "Error: " << e.what() << std::endl;

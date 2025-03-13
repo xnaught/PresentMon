@@ -8,13 +8,6 @@
 #include <memory>
 #include <functional>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-	PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, const char* pipeNameOverride, const char* introNsmOverride);
-#ifdef __cplusplus
-}
-#endif
 
 // testing support functions
 PRESENTMON_API2_EXPORT _CrtMemState pmCreateHeapCheckpoint_();

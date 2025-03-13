@@ -23,6 +23,12 @@ using namespace pmon;
 using namespace svc;
 using namespace util;
 
+
+std::string GetIntrospectionShmName()
+{
+    return clio::Options::Get().introNsm.AsOptional().value_or(gid::defaultIntrospectionNsmName);
+}
+
 void EventFlushThreadEntry_(Service* const srv, PresentMon* const pm)
 {
     if (srv == nullptr || pm == nullptr) {
@@ -233,7 +239,7 @@ void PresentMonMainThread(Service* const pSvc)
         // create service-side comms object for transmitting introspection data to clients
         std::unique_ptr<ipc::ServiceComms> pComms;
         try {
-            auto introNsmName = opt.introNsm.AsOptional().value_or(gid::defaultIntrospectionNsmName);
+            const auto introNsmName = GetIntrospectionShmName();
             LOG(INFO) << "Creating comms with NSM name: " << introNsmName;
             pComms = ipc::MakeServiceComms(std::move(introNsmName));
         }

@@ -32,7 +32,7 @@ namespace pmapi
         Session(EmptyTag) noexcept;
         // connect to service with custom connection endpoints
         // NOTE: interface of this constructor will change in a future release, requiring a small code change
-        Session(std::string controlPipe, std::string introspectionNsm);
+        Session(std::string controlPipe);
         // move ctor to accept connection resource from another Session
         Session(Session&& rhs) noexcept;
         // assignment operator to accept connection resource from another Session

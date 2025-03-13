@@ -42,7 +42,7 @@ namespace pmon::mid
 
     static const uint32_t kMaxRespBufferSize = 4096;
 	static const uint64_t kClientFrameDeltaQPCThreshold = 50000000;
-	ConcreteMiddleware::ConcreteMiddleware(std::optional<std::string> pipeNameOverride, std::optional<std::string> introNsmOverride)
+	ConcreteMiddleware::ConcreteMiddleware(std::optional<std::string> pipeNameOverride)
 	{
         const auto pipeName = pipeNameOverride.transform(&std::string::c_str)
             .value_or(pmon::gid::defaultControlPipeName);
@@ -60,8 +60,12 @@ namespace pmon::mid
         }
 
         clientProcessId = GetCurrentProcessId();
+
+        // discover introspection shm name
+        auto res = pActionClient->DispatchSync(GetIntrospectionShmName::Params{});
+
         // connect to the introspection nsm
-        pComms = ipc::MakeMiddlewareComms(std::move(introNsmOverride));
+        pComms = ipc::MakeMiddlewareComms(std::move(res.name));
 
         // Get the introspection data
         try {

@@ -30,7 +30,7 @@ namespace p2c::pmon
 		BlobContainer blobs_;
 	};
 
-	PresentMon::PresentMon(std::optional<std::string> namedPipeName, std::optional<std::string> sharedMemoryName, double window_in, double offset_in, uint32_t telemetrySamplePeriodMs_in)
+	PresentMon::PresentMon(std::optional<std::string> namedPipeName, double window_in, double offset_in, uint32_t telemetrySamplePeriodMs_in)
 	{
 		const auto RemoveDoubleQuotes = [](std::string s) {
 			if (s.front() == '"' && s.back() == '"' && s.size() >= 2) {
@@ -38,11 +38,10 @@ namespace p2c::pmon
 			}
 			return s;
 		};
-		if (namedPipeName && sharedMemoryName) {
+		if (namedPipeName) {
 			auto pipeName = RemoveDoubleQuotes(*namedPipeName);
-			auto shmName = RemoveDoubleQuotes(*sharedMemoryName);
-			pmlog_info(std::format("Connecting to service with custom pipe [{}] and nsm [{}]", pipeName, shmName));
-			pSession = std::make_unique<pmapi::Session>(std::move(pipeName), std::move(shmName));
+			pmlog_info(std::format("Connecting to service with custom pipe [{}]", pipeName));
+			pSession = std::make_unique<pmapi::Session>(std::move(pipeName));
 		}
 		else {
 			pmlog_info("Connecting to service with default pipe name");

@@ -40,6 +40,7 @@
     <ClInclude Include="Logging.h" />
     <ClInclude Include="acts\SetEtwFlushPeriod.h" />
     <ClInclude Include="Registry.h" />
+    <ClInclude Include="acts\GetIntrospectionShmName.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="PresentMonService.rc" />

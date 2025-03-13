@@ -24,6 +24,7 @@ public:
 
 // pointers to runtime-resolved core API functions
 PM_STATUS(*pFunc_pmOpenSession_)(PM_SESSION_HANDLE*) = nullptr;
+PM_STATUS(*pFunc_pmOpenSessionWithPipe_)(PM_SESSION_HANDLE* pHandle, const char*) = nullptr;
 PM_STATUS(*pFunc_pmCloseSession_)(PM_SESSION_HANDLE) = nullptr;
 PM_STATUS(*pFunc_pmStartTrackingProcess_)(PM_SESSION_HANDLE, uint32_t) = nullptr;
 PM_STATUS(*pFunc_pmStopTrackingProcess_)(PM_SESSION_HANDLE, uint32_t) = nullptr;
@@ -53,7 +54,6 @@ PM_STATUS(*pFunc_pmDiagnosticUnblockWaitingThread_)() = nullptr;
 PM_STATUS(*pFunc_pmSetupFileLogging_)(const char*, PM_DIAGNOSTIC_LEVEL,
 	PM_DIAGNOSTIC_LEVEL, bool) = nullptr;
 // pointers to runtime-resolved internal functions
-PM_STATUS(*pFunc_pmOpenSession__)(PM_SESSION_HANDLE* pHandle, const char*, const char*) = nullptr;
 _CrtMemState(*pFunc_pmCreateHeapCheckpoint__)() = nullptr;
 LoggingSingletons(*pFunc_pmLinkLogging__)(std::shared_ptr<pmon::util::log::IChannel>,
 	std::function<pmon::util::log::IdentificationTable&()>) = nullptr;
@@ -143,6 +143,7 @@ PRESENTMON_API2_EXPORT PM_STATUS LoadLibrary_()
 			}
 			// core
 			RESOLVE(pmOpenSession);
+			RESOLVE(pmOpenSessionWithPipe);
 			RESOLVE(pmCloseSession);
 			RESOLVE(pmStartTrackingProcess);
 			RESOLVE(pmStopTrackingProcess);
@@ -170,8 +171,7 @@ PRESENTMON_API2_EXPORT PM_STATUS LoadLibrary_()
 			RESOLVE(pmDiagnosticUnblockWaitingThread);
 			RESOLVE(pmSetupFileLogging);
 			// internal
-			RESOLVE(pmOpenSession_); // !!
-			RESOLVE_CPP(pmCreateHeapCheckpoint_); // ??
+			RESOLVE_CPP(pmCreateHeapCheckpoint_);
 			RESOLVE_CPP(pmLinkLogging_);
 			RESOLVE_CPP(pmFlushEntryPoint_);
 			RESOLVE_CPP(pmSetupODSLogging_);
@@ -200,6 +200,11 @@ PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession(PM_SESSION_HANDLE* pHandle)
 {
 	LoadEndpointsIfEmpty_();
 	return pFunc_pmOpenSession_(pHandle);
+}
+PRESENTMON_API2_EXPORT PM_STATUS pmOpenSessionWithPipe(PM_SESSION_HANDLE* pHandle, const char* pipeNameOverride)
+{
+	LoadEndpointsIfEmpty_();
+	return pFunc_pmOpenSessionWithPipe_(pHandle, pipeNameOverride);
 }
 PRESENTMON_API2_EXPORT PM_STATUS pmCloseSession(PM_SESSION_HANDLE handle)
 {
@@ -275,12 +280,6 @@ PRESENTMON_API2_EXPORT PM_STATUS pmGetApiVersion(PM_VERSION* pVersion)
 {
 	LoadEndpointsIfEmpty_();
 	return pFunc_pmGetApiVersion_(pVersion);
-}
-// expose
-PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, const char* pipeNameOverride, const char* introNsmOverride)
-{
-	LoadEndpointsIfEmpty_();
-	return pFunc_pmOpenSession__(pHandle, pipeNameOverride, introNsmOverride);
 }
 // deprecate?
 PRESENTMON_API2_EXPORT _CrtMemState pmCreateHeapCheckpoint_()

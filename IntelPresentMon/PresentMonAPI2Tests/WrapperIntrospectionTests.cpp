@@ -50,7 +50,7 @@ namespace EndToEndTests
 
 			pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 			pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
-			oSession.emplace(ctlPipeName, introName);
+			oSession.emplace(ctlPipeName);
 
 			pData = oSession->GetIntrospectionRoot();
 		}

@@ -49,17 +49,11 @@ int main(int argc, char* argv[])
             return 0;
         }
 
-        // validate options, better to do this with CLI11 validation but framework needs upgrade...
-        if (bool(opt.controlPipe) != bool(opt.introNsm)) {
-            std::cout << "Must set both control pipe and intro NSM, or neither.\n";
-            return -1;
-        }
-
         // determine requested activity
         if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample ^ opt.checkMetricSample ^ opt.wrapperStaticQuerySample ^ opt.metricListSample) {
             std::unique_ptr<pmapi::Session> pSession;
             if (opt.controlPipe) {
-                pSession = std::make_unique<pmapi::Session>(*opt.controlPipe, *opt.introNsm);
+                pSession = std::make_unique<pmapi::Session>(*opt.controlPipe);
             }
             else {
                 pSession = std::make_unique<pmapi::Session>();

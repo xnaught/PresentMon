@@ -21,9 +21,9 @@ namespace p2c::cli
 	private: Group gd_{ this, "Debugging", "Aids in debugging this tool" }; public:
 		Option<std::string> url{ this, "--p2c-url", "", "URL to load instead of app files" };
 		Option<std::string> controlPipe{ this, "--p2c-control-pipe", R"(\\.\pipe\pm-ctrl)", "Named pipe to connect to the service with" };
-		Option<std::string> shmName{ this, "--p2c-shm-name", "pm-intro-shm", "Shared memory to connect to the service with" };
 		Option<std::string> etwSessionName{ this, "--p2c-etw-session-name", "pm-child-etw-session", "ETW session name when lauching service as child" };
 		Flag svcAsChild{ this, "--p2c-svc-as-child", "Launch service as child console app" };
+		Option<std::string> shmName{ this, "--p2c-shm-name", "pm-intro-shm", "Shared memory to use when launching service as child" };
 		Flag noNetFail{ this, "--p2c-no-net-fail", "Disable error modal for bad url accesses" };
 		Flag debugWaitRender{ this, "--p2c-debug-wait-render", "Force all render child processes to wait for debugger connection" };
 		Flag debugWaitClient{ this, "--p2c-debug-wait-client", "Force main client process to wait for debugger connection" };
