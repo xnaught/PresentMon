@@ -47,7 +47,7 @@ namespace p2c::client::util
 		unsigned long threadId_{};
 		void* messageWindowHandle_ = nullptr;
 		std::bitset<win::Key::virtualKeyTableSize> pressedKeys_;
-		// control access to shared memory for key map / handler
+		// control access to concurrent memory for key map / handler
 		mutable std::mutex mtx_;
 		std::function<void(Action)> Handler_;
 		std::map<Hotkey, Action> registeredHotkeys_;

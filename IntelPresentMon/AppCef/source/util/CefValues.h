@@ -9,9 +9,11 @@
 #include <iterator>
 #include <Core/source/infra/Logging.h>
 #include <CommonUtilities/str/String.h>
-#include <Core/source/infra/util/Meta.h>
 #include <CommonUtilities/Exception.h>
+#include <CommonUtilities/Meta.h>
 #include <string_view>
+#include <concepts>
+#include <optional>
 
 namespace p2c::client::util
 {
@@ -120,7 +122,7 @@ namespace p2c::client::util
 		{
 			v = std::forward<T1>(val);
 		}
-		else if constexpr (infra::util::is_optional<T>)
+		else if constexpr (IsContainer<std::optional, T>)
 		{
 			if (val) {
 				v = MakeCefValue(*val);

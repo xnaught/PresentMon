@@ -20,6 +20,6 @@ namespace p2c::client::util
         util::AsyncEndpointManager asyncEndpoints;
         std::unique_ptr<kern::Kernel> pKernel;
         std::unique_ptr<kern::KernelHandler> pKernelHandler;
-        std::unique_ptr<util::Hotkeys> pHotkeys;
+        std::unique_ptr<Hotkeys> pHotkeys;
 	};
 }

@@ -57,7 +57,6 @@
     <ClInclude Include="source\infra\LogSetup.h" />
     <ClInclude Include="source\infra\util\CooldownTimer.h" />
     <ClInclude Include="source\infra\util\FolderResolver.h" />
-    <ClInclude Include="source\infra\util\Meta.h" />
     <ClInclude Include="source\kernel\DataFetchPack.h" />
     <ClInclude Include="source\kernel\MetricPackMapper.h" />
     <ClInclude Include="source\pmon\AdapterInfo.h" />
