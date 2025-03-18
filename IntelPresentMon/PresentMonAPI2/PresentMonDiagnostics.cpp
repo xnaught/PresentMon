@@ -127,15 +127,14 @@ PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticUnblockWaitingThread()
 	return PM_STATUS_FAILURE;
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmSetupFileLogging(const char* path, PM_DIAGNOSTIC_LEVEL logLevel,
+PRESENTMON_API2_EXPORT PM_STATUS pmSetupFileLogging_(const char* filename, PM_DIAGNOSTIC_LEVEL logLevel,
 	PM_DIAGNOSTIC_LEVEL stackTraceLevel, bool exceptionTrace)
 {
-	const auto fsPath = std::filesystem::path(path);
-	if (!std::filesystem::is_directory(fsPath)) {
+	auto filePath = std::filesystem::path(filename);
+	if (!std::filesystem::is_directory(filePath.parent_path())) {
 		return PM_STATUS_NONEXISTENT_FILE_PATH;
 	}
-	auto file = fsPath / std::format("pmlog-mid-{}.txt", GetCurrentProcessId());
-	log::SetupFileChannel(std::move(file), GetLogLevel_(logLevel),
+	log::SetupFileChannel(std::move(filePath), GetLogLevel_(logLevel),
 		GetLogLevel_(stackTraceLevel), exceptionTrace);
 	return PM_STATUS_SUCCESS;
 }

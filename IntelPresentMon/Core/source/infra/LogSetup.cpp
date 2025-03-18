@@ -166,7 +166,7 @@ namespace p2c
 			}
 			// enable logfile for middleware if we're not doing the copy connection
 			if (!opt.logMiddlewareCopy && *opt.cefType == "renderer") {
-				if (auto sta = pmSetupFileLogging(logFolder.string().c_str(),
+				if (auto sta = pmSetupFileLogging_((logFolder / "pmlog-mid.txt").string().c_str(),
 					(PM_DIAGNOSTIC_LEVEL)pol.GetLogLevel(),
 					(PM_DIAGNOSTIC_LEVEL)pol.GetTraceLevel(),
 					pol.GetExceptionTrace()

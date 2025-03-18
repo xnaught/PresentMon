@@ -51,14 +51,14 @@ PM_STATUS(*pFunc_pmDiagnosticEnqueueMessage_)(const PM_DIAGNOSTIC_MESSAGE*) = nu
 PM_STATUS(*pFunc_pmDiagnosticFreeMessage_)(PM_DIAGNOSTIC_MESSAGE*) = nullptr;
 PM_DIAGNOSTIC_WAKE_REASON(*pFunc_pmDiagnosticWaitForMessage_)(uint32_t) = nullptr;
 PM_STATUS(*pFunc_pmDiagnosticUnblockWaitingThread_)() = nullptr;
-PM_STATUS(*pFunc_pmSetupFileLogging_)(const char*, PM_DIAGNOSTIC_LEVEL,
-	PM_DIAGNOSTIC_LEVEL, bool) = nullptr;
 // pointers to runtime-resolved internal functions
 _CrtMemState(*pFunc_pmCreateHeapCheckpoint__)() = nullptr;
 LoggingSingletons(*pFunc_pmLinkLogging__)(std::shared_ptr<pmon::util::log::IChannel>,
 	std::function<pmon::util::log::IdentificationTable&()>) = nullptr;
 void(*pFunc_pmFlushEntryPoint__)() = nullptr;
 void(*pFunc_pmSetupODSLogging__)(PM_DIAGNOSTIC_LEVEL, PM_DIAGNOSTIC_LEVEL, bool) = nullptr;
+PM_STATUS(*pFunc_pmSetupFileLogging__)(const char*, PM_DIAGNOSTIC_LEVEL,
+	PM_DIAGNOSTIC_LEVEL, bool) = nullptr;
 
 
 // internal loader state globals
@@ -169,12 +169,12 @@ PRESENTMON_API2_EXPORT PM_STATUS LoadLibrary_()
 			RESOLVE(pmDiagnosticFreeMessage);
 			RESOLVE(pmDiagnosticWaitForMessage);
 			RESOLVE(pmDiagnosticUnblockWaitingThread);
-			RESOLVE(pmSetupFileLogging);
 			// internal
 			RESOLVE_CPP(pmCreateHeapCheckpoint_);
 			RESOLVE_CPP(pmLinkLogging_);
 			RESOLVE_CPP(pmFlushEntryPoint_);
 			RESOLVE_CPP(pmSetupODSLogging_);
+			RESOLVE_CPP(pmSetupFileLogging_);
 			// if we make it here then we have succeeded
 			middlewareLoadResult_ = PM_STATUS_SUCCESS;
 		}
@@ -376,11 +376,12 @@ PRESENTMON_API2_EXPORT PM_STATUS pmDiagnosticUnblockWaitingThread()
 	LoadEndpointsIfEmpty_();
 	return pFunc_pmDiagnosticUnblockWaitingThread_();
 }
-PRESENTMON_API2_EXPORT PM_STATUS pmSetupFileLogging(const char* path, PM_DIAGNOSTIC_LEVEL logLevel,
+
+PRESENTMON_API2_EXPORT PM_STATUS pmSetupFileLogging_(const char* file, PM_DIAGNOSTIC_LEVEL logLevel,
 	PM_DIAGNOSTIC_LEVEL stackTraceLevel, bool exceptionTrace)
 {
 	LoadEndpointsIfEmpty_();
-	return pFunc_pmSetupFileLogging_(path, logLevel, stackTraceLevel, exceptionTrace);
+	return pFunc_pmSetupFileLogging__(file, logLevel, stackTraceLevel, exceptionTrace);
 }
 
 
