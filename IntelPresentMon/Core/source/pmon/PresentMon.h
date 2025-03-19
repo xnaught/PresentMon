@@ -25,7 +25,7 @@ namespace p2c::pmon
 	{
 	public:
 		// functions
-		PresentMon(std::optional<std::string> namedPipeName, std::optional<std::string> sharedMemoryName, double window = 1000., double offset = 1000., uint32_t telemetrySampleRateMs = 16);
+		PresentMon(std::optional<std::string> namedPipeName, double window = 1000., double offset = 1000., uint32_t telemetrySampleRateMs = 16);
 		~PresentMon();
 		void StartTracking(uint32_t pid_);
 		void StopTracking();

@@ -8,13 +8,6 @@
 #include <memory>
 #include <functional>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-	PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, const char* pipeNameOverride, const char* introNsmOverride);
-#ifdef __cplusplus
-}
-#endif
 
 // testing support functions
 PRESENTMON_API2_EXPORT _CrtMemState pmCreateHeapCheckpoint_();
@@ -40,4 +33,12 @@ PRESENTMON_API2_EXPORT LoggingSingletons pmLinkLogging_(
 PRESENTMON_API2_EXPORT void pmFlushEntryPoint_() noexcept;
 // set middleware to log using OutputDebugString
 PRESENTMON_API2_EXPORT void pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL logLevel,
+	PM_DIAGNOSTIC_LEVEL stackTraceLevel, bool exceptionTrace);
+
+// configure the middleware to log to a file (independent of and exclusive to diagnostic system)
+// path: path to the folder to where the logfile will be written (set NULL to disable file logging)
+// logLevel: only log entries at or above this severity
+// stackTraceLevel: only add stacktraces to entries at or above this level 
+// exceptionTrace: capture additional stacktrace at point of throwing of exceptions
+PRESENTMON_API2_EXPORT PM_STATUS pmSetupFileLogging_(const char* filename, PM_DIAGNOSTIC_LEVEL logLevel,
 	PM_DIAGNOSTIC_LEVEL stackTraceLevel, bool exceptionTrace);

@@ -93,7 +93,7 @@ namespace pmon::mid
 	class ConcreteMiddleware : public Middleware
 	{
 	public:
-		ConcreteMiddleware(std::optional<std::string> pipeNameOverride = {}, std::optional<std::string> introNsmOverride = {});
+		ConcreteMiddleware(std::optional<std::string> pipeNameOverride = {});
 		~ConcreteMiddleware() override;
 		const PM_INTROSPECTION_ROOT* GetIntrospectionData() override;
 		void FreeIntrospectionData(const PM_INTROSPECTION_ROOT* pRoot) override;

@@ -18,12 +18,11 @@ namespace pmapi
 
     Session::Session(EmptyTag) noexcept {}
 
-    Session::Session(std::string controlPipe, std::string introspectionNsm)
+    Session::Session(std::string controlPipe)
     {
-        if (auto sta = pmOpenSession_(&handle_, controlPipe.c_str(), introspectionNsm.c_str());
+        if (auto sta = pmOpenSessionWithPipe(&handle_, controlPipe.c_str());
             sta != PM_STATUS_SUCCESS) {
-            throw ApiErrorException{ sta, std::format("error opening session ctrl={} intro={}",
-                controlPipe, introspectionNsm) };
+            throw ApiErrorException{ sta, std::format("error opening session ctrl={}", controlPipe) };
         }
         Initialize_();
     }

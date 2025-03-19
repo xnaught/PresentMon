@@ -60,35 +60,6 @@ PRESENTMON_API2_EXPORT _CrtMemState pmCreateHeapCheckpoint_()
 	return s;
 }
 
-PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession_(PM_SESSION_HANDLE* pHandle, const char* pipeNameOverride, const char* introNsmOverride)
-{
-	try {
-		if (!pHandle) {
-			pmlog_error("null session handle outptr").diag();
-			return PM_STATUS_BAD_ARGUMENT;
-		}
-		std::shared_ptr<Middleware> pMiddleware;
-		std::optional<std::string> pipeName;
-		std::optional<std::string> introNsm;
-		if (pipeNameOverride) {
-			pipeName = std::string(pipeNameOverride);
-		}
-		if (introNsmOverride) {
-			introNsm = std::string(introNsmOverride);
-		}
- 		pMiddleware = std::make_shared<ConcreteMiddleware>(std::move(pipeName), std::move(introNsm));
-		*pHandle = pMiddleware.get();
-		handleMap_[*pHandle] = std::move(pMiddleware);
-		pmlog_info("Middleware successfully opened session with service");
-		return PM_STATUS_SUCCESS;
-	}
-	catch (...) {
-		const auto code = util::GeneratePmStatus();
-		pmlog_error(util::ReportException()).code(code);
-		return code;
-	}
-}
-
 PRESENTMON_API2_EXPORT LoggingSingletons pmLinkLogging_(
 	std::shared_ptr<pmon::util::log::IChannel> pChannel,
 	std::function<pmon::util::log::IdentificationTable&()> getIdTable)
@@ -146,10 +117,31 @@ PRESENTMON_API2_EXPORT void pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL logLevel,
 		(pmon::util::log::Level)stackTraceLevel, exceptionTrace);
 }
 
+PRESENTMON_API2_EXPORT PM_STATUS pmOpenSessionWithPipe(PM_SESSION_HANDLE* pHandle, const char* pipe)
+{
+	try {
+		if (!pHandle) {
+			pmlog_error("null session handle outptr").diag();
+			return PM_STATUS_BAD_ARGUMENT;
+		}
+		std::shared_ptr<Middleware> pMiddleware;
+		pMiddleware = std::make_shared<ConcreteMiddleware>(pipe ? std::optional<std::string>{ pipe } : std::nullopt);
+		*pHandle = pMiddleware.get();
+		handleMap_[*pHandle] = std::move(pMiddleware);
+		pmlog_info("Middleware successfully opened session with service");
+		return PM_STATUS_SUCCESS;
+	}
+	catch (...) {
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
+	}
+}
+
 // public endpoints
 PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession(PM_SESSION_HANDLE* pHandle)
 {
-	return pmOpenSession_(pHandle, nullptr, nullptr);
+	return pmOpenSessionWithPipe(pHandle, nullptr);
 }
 
 PRESENTMON_API2_EXPORT PM_STATUS pmCloseSession(PM_SESSION_HANDLE handle)

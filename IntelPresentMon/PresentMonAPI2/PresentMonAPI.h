@@ -368,21 +368,39 @@ extern "C" {
 	typedef struct PM_FRAME_QUERY* PM_FRAME_QUERY_HANDLE;
 	typedef struct PM_SESSION* PM_SESSION_HANDLE;
 
+	// open a session (connection) to the PresentMon service, outputting a session handle required for most other API calls
 	PRESENTMON_API2_EXPORT PM_STATUS pmOpenSession(PM_SESSION_HANDLE* pHandle);
+	// open a session (connection) to the PresentMon service using a pipe name other than the default one
+	PRESENTMON_API2_EXPORT PM_STATUS pmOpenSessionWithPipe(PM_SESSION_HANDLE* pHandle, const char* controlPipeName);
+	// close an existing session by handle, deallocating all associated resources
 	PRESENTMON_API2_EXPORT PM_STATUS pmCloseSession(PM_SESSION_HANDLE handle);
+	// command the service to process and make available frame/metric data for the specified process id
 	PRESENTMON_API2_EXPORT PM_STATUS pmStartTrackingProcess(PM_SESSION_HANDLE handle, uint32_t process_id);
+	// command the service to cease processing and exporting frame/metric data for the specified process id
 	PRESENTMON_API2_EXPORT PM_STATUS pmStopTrackingProcess(PM_SESSION_HANDLE handle, uint32_t process_id);
+	// allocate and populate a tree data structure describing the available metrics, devices, etc.
 	PRESENTMON_API2_EXPORT PM_STATUS pmGetIntrospectionRoot(PM_SESSION_HANDLE handle, const PM_INTROSPECTION_ROOT** ppRoot);
+	// free the introspection tree structure
 	PRESENTMON_API2_EXPORT PM_STATUS pmFreeIntrospectionRoot(const PM_INTROSPECTION_ROOT* pRoot);
+	// sets the rate at which hardware telemetry (including CPU) is polled on a per-device basis
 	PRESENTMON_API2_EXPORT PM_STATUS pmSetTelemetryPollingPeriod(PM_SESSION_HANDLE handle, uint32_t deviceId, uint32_t timeMs);
+	// sets the rate at which ETW event buffers are flushed, affecting the delay of frame data reported by PresentMon
 	PRESENTMON_API2_EXPORT PM_STATUS pmSetEtwFlushPeriod(PM_SESSION_HANDLE handle, uint32_t periodMs);
-	PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_SESSION_HANDLE sessionHandle, PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, double windowSizeMs, double metricOffsetMs = 0.f);
+	// register a dynamic query used for polling metric data with (optional) statistic processing such as average or percentile
+	PRESENTMON_API2_EXPORT PM_STATUS pmRegisterDynamicQuery(PM_SESSION_HANDLE sessionHandle, PM_DYNAMIC_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, double windowSizeMs, double metricOffsetMs);
+	// free the resources associated with a registered dynamic query
 	PRESENTMON_API2_EXPORT PM_STATUS pmFreeDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle);
+	// poll a dynamic query, writing the query poll results into the specified memory blob (byte buffer)
 	PRESENTMON_API2_EXPORT PM_STATUS pmPollDynamicQuery(PM_DYNAMIC_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlob, uint32_t* numSwapChains);
+	// query a static metric immediately, writing the result into the specified memory blob (byte buffer)
 	PRESENTMON_API2_EXPORT PM_STATUS pmPollStaticQuery(PM_SESSION_HANDLE sessionHandle, const PM_QUERY_ELEMENT* pElement, uint32_t processId, uint8_t* pBlob);
+	// register a frame query used for consuming desired metrics from a queue of frame events
 	PRESENTMON_API2_EXPORT PM_STATUS pmRegisterFrameQuery(PM_SESSION_HANDLE sessionHandle, PM_FRAME_QUERY_HANDLE* pHandle, PM_QUERY_ELEMENT* pElements, uint64_t numElements, uint32_t* pBlobSize);
+	// consume frame event metric data based on the filter registered with pmRegisterFrameQuery
 	PRESENTMON_API2_EXPORT PM_STATUS pmConsumeFrames(PM_FRAME_QUERY_HANDLE handle, uint32_t processId, uint8_t* pBlobs, uint32_t* pNumFramesToRead);
+	// free the resources associated with a frame event query
 	PRESENTMON_API2_EXPORT PM_STATUS pmFreeFrameQuery(PM_FRAME_QUERY_HANDLE handle);
+	// retrieve the API version of the PresentMon service / middleware DLL
 	PRESENTMON_API2_EXPORT PM_STATUS pmGetApiVersion(PM_VERSION* pVersion);
 
 #ifdef __cplusplus

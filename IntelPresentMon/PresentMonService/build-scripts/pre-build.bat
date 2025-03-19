@@ -9,8 +9,9 @@ set outputFile=AllActions.h
 REM Generate a temporary file for comparison
 set tempFile=%TEMP%\AllActions_tmp.h
 
-REM Create or overwrite the temporary file and write the #pragma once directive
-echo #pragma once > %tempFile%
+REM Create or overwrite the temporary file and write the preamble
+echo // GENERATED HEADER > %tempFile%
+echo #pragma once >> %tempFile%
 
 REM Iterate over all .h files in the .\acts directory
 for %%f in (.\acts\*.h) do (

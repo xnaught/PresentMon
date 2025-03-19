@@ -289,15 +289,13 @@ namespace p2c::kern
 
             // connection names control from cli override / svc-as-child
             auto controlPipe = opt.controlPipe.AsOptional();
-            auto shmName = opt.shmName.AsOptional();
             // force optionals filled with default values if not specified when launching service as child
             if (opt.svcAsChild) {
                 controlPipe = *opt.controlPipe;
-                shmName = *opt.shmName;
             }
 
             // create the PresentMon object
-            try { pm.emplace(controlPipe, shmName); }
+            try { pm.emplace(controlPipe); }
             catch (...) {
                 pHandler->OnPresentmonInitFailed();
                 pmlog_error("Failed to init presentmon api").no_trace();

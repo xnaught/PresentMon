@@ -193,6 +193,7 @@ namespace pmon::util::log
 	{}
 	DiagnosticMessage::DiagnosticMessage(const PM_DIAGNOSTIC_MESSAGE& msg)
 		:
+		// copies value-based fields, pointers will be set in subsequent SyncBuffers_() call
 		PM_DIAGNOSTIC_MESSAGE{ msg }
 	{
 		if (!msg.pText) {
