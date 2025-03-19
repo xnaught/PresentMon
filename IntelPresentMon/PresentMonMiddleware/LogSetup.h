@@ -1,5 +1,6 @@
 #pragma once
 #include <Memory>
+#include <filesystem>
 #include "../CommonUtilities/log/IChannel.h"
 #include "../PresentMonAPI2/PresentMonDiagnostics.h"
 
