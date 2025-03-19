@@ -52,6 +52,12 @@ export interface Preferences {
         readonly axisSize: 10.0;
     };    
     adapterId:number|null;
+    enableFlashInjection:boolean;
+    flashInjectionSize:number;
+    flashInjectionColor:RgbaColor;
+    flashInjectionBackgroundEnable:boolean;
+    flashInjectionBackgroundColor:RgbaColor;
+    flashInjectionRightShift:number;
 };
 
 export function makeDefaultPreferences(): Preferences {
@@ -103,12 +109,28 @@ export function makeDefaultPreferences(): Preferences {
         enableAutotargetting: true,
         upscaleFactor: 2,        
         adapterId: null,
+        enableFlashInjection: false,
+        flashInjectionSize: 0.25,
+        flashInjectionColor: {
+            r: 255, 
+            g: 255, 
+            b: 255, 
+            a: 255, 
+        },
+        flashInjectionBackgroundEnable: false,
+        flashInjectionBackgroundColor: {
+            r: 0, 
+            g: 0, 
+            b: 0, 
+            a: 255, 
+        },
+        flashInjectionRightShift: 0.5,
     };
 }
 
 export const signature: Signature = {
     code: "p2c-cap-pref",
-    version: "0.18.0",
+    version: "0.19.0",
 };
 
 export interface PreferenceFile {
@@ -150,6 +172,19 @@ const migrations: Migration[] = [
             prefs.manualEtwFlush = def.manualEtwFlush;
             prefs.etwFlushPeriod = def.etwFlushPeriod;
             prefs.metricsOffset = def.metricsOffset;
+        }
+    },
+    {
+        version: '0.19.0',
+        migrate: (prefs: Preferences) => {
+            console.info('Migrating preferences to 0.19.0 (flash injection)');
+            const def = makeDefaultPreferences();
+            prefs.enableFlashInjection = def.enableFlashInjection;
+            prefs.flashInjectionSize = def.flashInjectionSize;
+            prefs.flashInjectionColor = def.flashInjectionColor;
+            prefs.flashInjectionBackgroundEnable = def.flashInjectionBackgroundEnable;
+            prefs.flashInjectionBackgroundColor = def.flashInjectionBackgroundColor;
+            prefs.flashInjectionRightShift = def.flashInjectionRightShift;
         }
     },
 ];

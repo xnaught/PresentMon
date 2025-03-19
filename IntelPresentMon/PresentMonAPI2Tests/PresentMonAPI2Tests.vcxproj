@@ -114,7 +114,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BoostProcess.h" />
     <ClInclude Include="CsvHelper.h" />
     <ClInclude Include="StatusComparison.h" />
     <ClInclude Include="Utilities.h" />

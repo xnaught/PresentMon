@@ -21,6 +21,7 @@
 
 #include "../PresentMonAPIWrapper/PresentMonAPIWrapper.h"
 #include "../PresentMonAPIWrapper/FixedQuery.h"
+#include "../PresentMonAPI2Loader/Loader.h"
 #include "Utils.h"
 #include "DynamicQuerySample.h"
 #include "FrameQuerySample.h"
@@ -47,6 +48,10 @@ int main(int argc, char* argv[])
         if (opt.diagDemo) {
             RunDiagnosticDemo(*opt.diagDemo);
             return 0;
+        }
+
+        if (opt.middlewareDllPath) {
+            pmLoaderSetPathToMiddlewareDll_(opt.middlewareDllPath->c_str());
         }
 
         // determine requested activity
@@ -79,12 +84,13 @@ int main(int argc, char* argv[])
             }
         }
         else {
-            std::cout << "SampleClient supports one action at a time. Select one of:\n";
+            std::cout << "SampleClient supports one action at a time. For example:\n";
             std::cout << "--introspection-sample\n";
             std::cout << "--wrapper-static-query-sample\n";
             std::cout << "--dynamic-query-sample [--process-id id | --process-name name.exe] [--add-gpu-metric]\n";
             std::cout << "--frame-query-sample [--process-id id | --process-name name.exe]  [--gen-csv]\n";
             std::cout << "--check-metric-sample --metric PM_METRIC_*\n";
+            std::cout << "Use --help to see the full list of commands and configuration options available\n";
             return -1;
         }
     }

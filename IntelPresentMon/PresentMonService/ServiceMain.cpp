@@ -29,7 +29,7 @@ int CommonEntry(DWORD argc, LPTSTR* argv, bool asApp)
 	// place middleware dll discovery path into registry
 	if (!asApp) {
 		char path[MAX_PATH];
-		if (GetModuleFileNameA(nullptr, path, std::size(path)) == 0) {
+		if (GetModuleFileNameA(nullptr, path, (DWORD)std::size(path)) == 0) {
 			pmlog_error("Failure to get path to service executable").no_trace().hr();
 		}
 		else {

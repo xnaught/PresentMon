@@ -156,9 +156,9 @@ namespace pmon::util::pipe
 		// create the named pipe and retain the handle in a wrapper object
 		win::Handle handle(CreateNamedPipeA(
 			name.c_str(),
-			PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,	// open mode
-			PIPE_TYPE_BYTE | PIPE_READMODE_BYTE,		// pipe mode
-			PIPE_UNLIMITED_INSTANCES,					// max instances
+			PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,							// open mode
+			PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_REJECT_REMOTE_CLIENTS,	// pipe mode
+			PIPE_UNLIMITED_INSTANCES,											// max instances
 			4096,					// out buffer
 			4096,					// in buffer
 			0,						// timeout

@@ -1,6 +1,7 @@
 #pragma once 
 #include "Utilities.h"
 #include "../log/Log.h"
+#include "HrError.h"
 #include <chrono>
 #include <thread>
 
@@ -32,7 +33,7 @@ namespace pmon::util::win
 			return description;
 		}
 		catch (...) {
-			pmlog_warn("Exception thrown in windows error GetErrorDescription");
+			pmlog_warn(ReportException("Exception in win::GetErrorDescription"));
 			return {};
 		}
 	}
@@ -120,5 +121,47 @@ namespace pmon::util::win
 			std::this_thread::sleep_for(10ms);
 		}
 		return true;
+	}
+
+	win::Handle OpenProcess(uint32_t pid, UINT permissions)
+	{
+		auto hProc = (Handle)::OpenProcess(permissions, FALSE, pid);
+		if (!hProc) {
+			throw Except<HrError>("failed to open process");
+		}
+		return hProc;
+	}
+
+	std::filesystem::path GetExecutableModulePath()
+	{
+		char pathString[MAX_PATH];
+		if (!GetModuleFileNameA(nullptr, pathString, MAX_PATH)) {
+			throw Except<HrError>("failed to get this module file name");
+		}
+		return { pathString };
+	}
+
+	std::filesystem::path GetExecutableModulePath(HANDLE hProc)
+	{
+		char pathString[MAX_PATH];
+		auto size = (DWORD)std::size(pathString);
+		if (!QueryFullProcessImageNameA(hProc, 0, pathString, &size)) {
+			throw Except<HrError>("failed to get module file name");
+		}
+		return { pathString };
+	}
+
+	std::filesystem::path GetExecutableModulePathFromPid(uint32_t pid)
+	{
+		return GetExecutableModulePath(OpenProcess(pid));
+	}
+
+	bool ProcessIs32Bit(HANDLE hProc)
+	{
+		BOOL isWow64 = false;
+		if (IsWow64Process(hProc, &isWow64)) {
+			return isWow64;
+		}
+		throw Except<HrError>("failed to check WOW64 status");
 	}
 }

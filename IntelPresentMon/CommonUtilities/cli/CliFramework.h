@@ -1,10 +1,6 @@
 #pragma once
 
-#pragma warning(push)
-#pragma warning(disable : 26827)
-#define CLI11_COMPILE 0
 #include <CLI/CLI.hpp>
-#pragma warning(pop)
 
 #include <optional>
 #include <cassert>
@@ -169,6 +165,10 @@ namespace pmon::util::cli
 		bool operator!() const
 		{
 			return !bool(*this);
+		}
+		const T* operator->() const
+		{
+			return &data_;
 		}
 		std::optional<T> AsOptional() const
 		{

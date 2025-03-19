@@ -89,10 +89,11 @@
     <ClInclude Include="win\Event.h" />
     <ClInclude Include="win\Handle.h" />
     <ClInclude Include="win\HrErrorCodeProvider.h" />
+    <ClInclude Include="win\HrError.h" />
+    <ClInclude Include="win\MessageBox.h" />
     <ClInclude Include="win\Overlapped.h" />
     <ClInclude Include="win\Utilities.h" />
     <ClInclude Include="win\WinAPI.h" />
-    <ClInclude Include="pipe\WrapAsio.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp" />
@@ -137,6 +138,8 @@
     <ClCompile Include="win\Event.cpp" />
     <ClCompile Include="win\Handle.cpp" />
     <ClCompile Include="win\HrErrorCodeProvider.cpp" />
+    <ClCompile Include="win\HrError.cpp" />
+    <ClCompile Include="win\MessageBox.cpp" />
     <ClCompile Include="win\Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>

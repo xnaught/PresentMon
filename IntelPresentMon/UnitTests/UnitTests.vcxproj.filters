@@ -5,7 +5,4 @@
     <ClCompile Include="ExtremeQueue.cpp" />
     <ClCompile Include="Timing.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="BoostProcess.h" />
-  </ItemGroup>
 </Project>

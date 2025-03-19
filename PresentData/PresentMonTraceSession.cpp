@@ -292,9 +292,6 @@ void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
     auto session = (PMTraceSession*) pEventRecord->UserContext;
     auto const& hdr = pEventRecord->EventHeader;
 
-    #pragma warning(push)
-    #pragma warning(disable: 4984) // c++17 extension
-
     if constexpr (!IS_REALTIME_SESSION) {
         if (session->mStartTimestamp.QuadPart == 0) {
             session->mStartTimestamp = hdr.TimeStamp;
@@ -374,8 +371,6 @@ void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
             return;
         }
     }
-
-    #pragma warning(pop)
 }
 
 template<bool... Ts>
@@ -729,6 +724,10 @@ ULONG EnableProvidersListing(
     provider.AddEvent<Microsoft_Windows_DXGI::Present_Stop>();
     provider.AddEvent<Microsoft_Windows_DXGI::PresentMultiplaneOverlay_Start>();
     provider.AddEvent<Microsoft_Windows_DXGI::PresentMultiplaneOverlay_Stop>();
+    if (pmConsumer->mTrackHybridPresent) {
+        provider.AddEvent<Microsoft_Windows_DXGI::SwapChain_Start>();
+        provider.AddEvent<Microsoft_Windows_DXGI::ResizeBuffers_Start>();
+    }
     status = provider.Enable(sessionHandle, Microsoft_Windows_DXGI::GUID);
     if (status != ERROR_SUCCESS) return status;
 

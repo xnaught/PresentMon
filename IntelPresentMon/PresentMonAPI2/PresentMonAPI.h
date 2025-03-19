@@ -35,6 +35,7 @@ extern "C" {
 		PM_STATUS_MIDDLEWARE_MISSING_ENDPOINT,
 		PM_STATUS_MIDDLEWARE_VERSION_LOW,
 		PM_STATUS_MIDDLEWARE_VERSION_HIGH,
+		PM_STATUS_MIDDLEWARE_SERVICE_MISMATCH,
 	};
 
 	enum PM_METRIC
@@ -358,8 +359,9 @@ extern "C" {
 		uint16_t major;
 		uint16_t minor;
 		uint16_t patch;
-		char tag[26];
+		char tag[22];
 		char hash[8];
+		char config[4];
 	};
 
 	typedef struct PM_DYNAMIC_QUERY* PM_DYNAMIC_QUERY_HANDLE;

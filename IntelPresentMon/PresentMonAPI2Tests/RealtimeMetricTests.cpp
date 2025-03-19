@@ -3,7 +3,7 @@
 #include <fstream>
 #include "CppUnitTest.h"
 #include "StatusComparison.h"
-#include "BoostProcess.h"
+#include <boost/process.hpp>
 #include <string>
 #include <iostream>
 #include <windows.h>

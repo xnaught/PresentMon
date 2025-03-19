@@ -2,6 +2,7 @@
 #include "../CommonUtilities/win/WinAPI.h"
 #include "../CommonUtilities/ref/StaticReflection.h"
 #include "../Interprocess/source/act/AsyncActionManager.h"
+#include "../Interprocess/source/PmStatusError.h"
 #include "../CommonUtilities/pipe/Pipe.h"
 #include "../PresentMonService/AllActions.h"
 #include "../Versioning/BuildId.h"
@@ -22,8 +23,19 @@ namespace pmon::mid
             pipe_{ pipe::DuplexPipe::Connect(pipeName_, ioctx_) }
         {
             auto res = DispatchSync(OpenSession::Params{
-                .clientPid = thisPid_, .clientBuildId = bid::BuildIdShortHash()
+                .clientPid = thisPid_, .clientBuildId = bid::BuildIdShortHash(),
+                .clientBuildConfig = bid::BuildIdConfig(),
             });
+            if (res.serviceBuildId != bid::BuildIdShortHash()) {
+                pmlog_error("build id mismatch between middleware and service")
+                    .pmwatch(res.serviceBuildId).pmwatch(bid::BuildIdShortHash());
+                throw Except<ipc::PmStatusError>(PM_STATUS_MIDDLEWARE_SERVICE_MISMATCH);
+            }
+            if (res.serviceBuildConfig != bid::BuildIdConfig()) {
+                pmlog_error("build config mismatch between middleware and service")
+                    .pmwatch(res.serviceBuildConfig).pmwatch(bid::BuildIdConfig());
+                throw Except<ipc::PmStatusError>(PM_STATUS_MIDDLEWARE_SERVICE_MISMATCH);
+            }
             pmlog_info(std::format("Opened session with server, build id = [{}]", res.serviceBuildId));
         }
 
