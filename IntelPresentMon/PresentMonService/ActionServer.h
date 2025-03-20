@@ -3,7 +3,6 @@
 #pragma once
 #include <string>
 #include <optional>
-#include <memory>
 #include "PresentMon.h"
 #include "Service.h"
 

@@ -128,7 +128,7 @@ namespace pmon::util::pipe
 			FILE_FLAG_OVERLAPPED,			// Use overlapped (asynchronous) mode
 			NULL));							// No template file 
 		if (!handle) {
-			pmlog_error("Client failed to connect to named pipe instance").hr().raise<PipeError>();
+			pmlog_error("Client failed to connect to named pipe instance").pmwatch(name).hr().raise<PipeError>();
 		}
 		return handle.Release();
 	}

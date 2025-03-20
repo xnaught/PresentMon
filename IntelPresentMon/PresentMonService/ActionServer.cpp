@@ -16,9 +16,10 @@ namespace pmon::svc
 
     ActionServer::ActionServer(Service* pSvc, PresentMon* pPmon, std::optional<std::string> pipeName)
     {
-        // if we have a pipe name override
-        auto sec = pipe::DuplexPipe::GetSecurityString(!pipeName ?
-            pipe::SecurityMode::Service : pipe::SecurityMode::Child);
+        // if we have a pipe name override, that indicates we don't need special permissions
+        auto sec = pipe::DuplexPipe::GetSecurityString(pipeName ?
+            pipe::SecurityMode::Child : pipe::SecurityMode::Service);
+        // launch and detach a thread to run the action server
         act::ActionServerImpl_<ServiceExecutionContext>::LaunchThread(
             ServiceExecutionContext{ .pSvc = pSvc, .pPmon = pPmon },
             pipeName.value_or(gid::defaultControlPipeName), 2, std::move(sec)
