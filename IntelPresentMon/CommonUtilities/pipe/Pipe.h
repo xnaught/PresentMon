@@ -11,6 +11,7 @@
 #include "../Exception.h"
 #include "../log/Log.h"
 #include "SecurityMode.h"
+#include "CoroMutex.h"
 #include <ranges>
 
 namespace pmon::util::pipe
@@ -37,6 +38,9 @@ namespace pmon::util::pipe
 		template<class H, class P>
 		as::awaitable<void> WritePacket(const H& header, const P& payload, std::optional<uint32_t> timeoutMs = {})
 		{
+			// lock while this coro is running to prevent other coros from causing an overlapped operation fault
+			auto lk = co_await CoroLock(writeMtx_);
+			// some sanity checks
 			assert(writeBuf_.size() == 0);
 			assert(asioPipeHandle_.is_open());
 			// first we directly write bytes for the size of the body as a placeholder until we know how many are serialized
@@ -59,6 +63,10 @@ namespace pmon::util::pipe
 		template<class H>
 		as::awaitable<H> ReadPacketConsumeHeader(std::optional<uint32_t> timeoutMs = {})
 		{
+			// lock while this coro is running to prevent other coros from interrupting stream sequence
+			// and/or causing an overlapped operation fault
+			auto lk = co_await CoroLock(readMtx_);
+			// some sanity checks
 			assert(readBuf_.size() == 0);
 			assert(asioPipeHandle_.is_open());
 			// read in request
@@ -73,6 +81,9 @@ namespace pmon::util::pipe
 			readArchive_(header);
 			co_return header;
 		}
+		// NOTE: it might be necessary to pull the read lock up into the transfer layer to make sure nothing
+		// interposes between header and payload consumption
+		// alternatively
 		template<class P>
 		P ConsumePacketPayload()
 		{
@@ -111,8 +122,10 @@ namespace pmon::util::pipe
 		as::streambuf readBuf_;
 		std::istream readStream_;
 		cereal::BinaryInputArchive readArchive_;
+		CoroMutex readMtx_;
 		as::streambuf writeBuf_;
 		std::ostream writeStream_;
 		cereal::BinaryOutputArchive writeArchive_;
+		CoroMutex writeMtx_;
 	};
 }

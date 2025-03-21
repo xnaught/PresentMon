@@ -29,7 +29,7 @@ namespace p2c::client::kact
         using SessionContextType = ActionSession;
 
         // data
-        uint32_t responseWriteTimeoutMs = 0;
+        std::optional<uint32_t> responseWriteTimeoutMs;
         // maps session uid => session (uid is same as session pipe id)
         std::unordered_map<uint32_t, SessionContextType> sessions;
 
@@ -221,11 +221,11 @@ namespace p2c::client::kact
         std::thread{ [] {
             ActionClient ac{ yaboi };
             std::vector<std::jthread> threads;
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 32; i++) {
                 threads.push_back(std::jthread{ [&, tid = i] {
                     std::minstd_rand0 rne{ std::random_device{}() };
                     std::uniform_int_distribution<uint32_t> dist{ 1, 1000 };
-                    for (int i = 0; i < 1000; i++) {
+                    for (int i = 0; i < 250; i++) {
                         const auto in = dist(rne);
                         const auto [out] = ac.DispatchSync(TestAct::Params{ in });
                         pmlog_info("action run").pmwatch(tid).pmwatch(i).pmwatch(in).pmwatch(out);

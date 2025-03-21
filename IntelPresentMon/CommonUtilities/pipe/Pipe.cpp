@@ -102,6 +102,7 @@ namespace pmon::util::pipe
 		case SecurityMode::Child: return "D:(A;OICI;GA;;;WD)"s;
 		}
 	}
+
 	DuplexPipe::DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle, std::string name, bool asClient)
 		:
 		name_{ std::move(name) },
@@ -109,8 +110,10 @@ namespace pmon::util::pipe
 		asioPipeHandle_{ ioctx },
 		readStream_{ &readBuf_ },
 		readArchive_{ readStream_ },
+		readMtx_{ ioctx },
 		writeStream_{ &writeBuf_ },
-		writeArchive_{ writeStream_ }
+		writeArchive_{ writeStream_ },
+		writeMtx_{ ioctx }
 	{
 		if (asClient) {
 			// client is automatically connected upon creation, so immediatly transfer pipe to asio

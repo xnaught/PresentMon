@@ -40,7 +40,7 @@ namespace pmon::svc
         // data
         Service* pSvc;
         PresentMon* pPmon;
-        uint32_t responseWriteTimeoutMs = 0;
+        std::optional<uint32_t> responseWriteTimeoutMs;
         // maps session uid => session (uid is same as session pipe id)
         std::unordered_map<uint32_t, SessionContextType> sessions;
 
