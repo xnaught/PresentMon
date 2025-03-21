@@ -1,5 +1,6 @@
 #include "../CommonUtilities/pipe/Pipe.h"
 #include "../Interprocess/source/act/ActionServer.h"
+#include "../CommonUtilities/pipe/CoroMutex.h"
 #include <memory>
 #include <set>
 #include <unordered_map>
@@ -7,6 +8,7 @@
 #include <optional>
 #include <cstdint>
 #include <chrono>
+#include <random>
 
 
 namespace p2c::client::kact
@@ -50,7 +52,7 @@ namespace p2c::client::kact
     {
         // launch and detach a thread to run the action server
         ::pmon::ipc::act::ActionServerImpl_<KernelExecutionContext>::LaunchThread(
-            KernelExecutionContext{}, yaboi, 2, ""
+            KernelExecutionContext{}, yaboi, 1, ""
         ).detach();
     }
 
@@ -124,6 +126,48 @@ ACTION_TRAITS_DEF(ACTNAME);
 
 namespace p2c::client::kact
 {
+
+#define ACTNAME TestAct
+    class ACTNAME : public AsyncActionBase_<ACTNAME, KernelExecutionContext>
+    {
+    public:
+        static constexpr const char* Identifier = STRINGIFY(ACTNAME);
+        struct Params
+        {
+            uint32_t in;
+
+            template<class A> void serialize(A& ar) {
+                ar(in);
+            }
+        };
+        struct Response {
+            uint32_t out;
+
+            template<class A> void serialize(A& ar) {
+                ar(out);
+            }
+        };
+    private:
+        friend class AsyncActionBase_<ACTNAME, KernelExecutionContext>;
+        static Response Execute_(const KernelExecutionContext& ctx, SessionContext& stx, Params&& in)
+        {
+            pmlog_info("got a thing").pmwatch(in.in);
+            return Response{ .out = in.in * 2 };
+        }
+    };
+
+#ifdef P2C_KERNEL_ASYNC_ACTION_REGISTRATION_
+    ACTION_REG(ACTNAME);
+#endif
+}
+
+ACTION_TRAITS_DEF(ACTNAME);
+#undef ACTNAME
+
+
+
+namespace p2c::client::kact
+{
     class ActionClient
     {
     public:
@@ -131,8 +175,10 @@ namespace p2c::client::kact
             :
             thisPid_{ GetCurrentProcessId() },
             pipeName_{ std::move(pipeName) },
-            pipe_{ pipe::DuplexPipe::Connect(pipeName_, ioctx_) }
+            pipe_{ pipe::DuplexPipe::Connect(pipeName_, ioctx_) },
+            workGuard_{ as::make_work_guard(ioctx_) }
         {
+            std::thread{ &ActionClient::Run, this }.detach();
             auto res = DispatchSync(OpenSession::Params{
                 .clientPid = thisPid_,
             });
@@ -150,21 +196,16 @@ namespace p2c::client::kact
         {
             using Action = typename ipc::act::ActionParamsTraits<std::decay_t<Params>>::Action;
             using Response = Action::Response;
-            return ExecuteSynchronous_([this](Params&& params) -> pipe::as::awaitable<Response> {
-                co_return co_await ipc::act::SyncRequest<Action>(std::forward<Params>(params), token_++, pipe_, timeoutMs_);
-            }(std::forward<Params>(params)));
+            return as::co_spawn(ioctx_,
+                ipc::act::SyncRequest<Action>(std::forward<Params>(params), token_++, pipe_),
+                as::use_future).get();
+        }
+        void Run()
+        {
+            ioctx_.run();
         }
 
     private:
-        // functions
-        template<class C>
-        auto ExecuteSynchronous_(C&& coro)
-        {
-            auto fut = pipe::as::co_spawn(ioctx_, std::forward<C>(coro), pipe::as::use_future);
-            ioctx_.run();
-            ioctx_.restart();
-            return fut.get();
-        }
         // data
         uint32_t timeoutMs_ = 1000;
         uint32_t token_ = 0;
@@ -172,13 +213,29 @@ namespace p2c::client::kact
         std::string pipeName_;
         pipe::as::io_context ioctx_;
         pipe::DuplexPipe pipe_;
+        as::executor_work_guard<as::io_context::executor_type> workGuard_;
     };
 
-    void LaunchClient()
+    void LaunchClientWork()
     {
         std::thread{ [] {
             ActionClient ac{ yaboi };
-            std::this_thread::sleep_for(5s);
+            std::vector<std::jthread> threads;
+            for (int i = 0; i < 4; i++) {
+                threads.push_back(std::jthread{ [&, tid = i] {
+                    std::minstd_rand0 rne{ std::random_device{}() };
+                    std::uniform_int_distribution<uint32_t> dist{ 1, 1000 };
+                    for (int i = 0; i < 1000; i++) {
+                        const auto in = dist(rne);
+                        const auto [out] = ac.DispatchSync(TestAct::Params{ in });
+                        pmlog_info("action run").pmwatch(tid).pmwatch(i).pmwatch(in).pmwatch(out);
+                        if (out != in * 2) {
+                            DebugBreak();
+                        }
+                        std::this_thread::sleep_for(1ms);
+                    }
+                } });
+            }
         } }.detach();
     }
 }

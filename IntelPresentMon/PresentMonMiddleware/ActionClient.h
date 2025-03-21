@@ -1,9 +1,9 @@
 #pragma once
 #include "../CommonUtilities/win/WinAPI.h"
 #include "../CommonUtilities/ref/StaticReflection.h"
-#include "../Interprocess/source/act/AsyncActionManager.h"
 #include "../Interprocess/source/PmStatusError.h"
 #include "../CommonUtilities/pipe/Pipe.h"
+#include "../Interprocess/source/act/Transfer.h"
 #include "../PresentMonService/AllActions.h"
 #include "../Versioning/BuildId.h"
 

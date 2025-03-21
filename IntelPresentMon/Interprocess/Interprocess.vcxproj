@@ -23,7 +23,6 @@
     <ClInclude Include="source\act\Packet.h" />
     <ClInclude Include="source\act\AsyncAction.h" />
     <ClInclude Include="source\act\AsyncActionCollection.h" />
-    <ClInclude Include="source\act\AsyncActionManager.h" />
     <ClInclude Include="source\act\Transfer.h" />
     <ClInclude Include="source\PmStatusError.h" />
     <ClInclude Include="source\IntrospectionCapsLookup.h" />

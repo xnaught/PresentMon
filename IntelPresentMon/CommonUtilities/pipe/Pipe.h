@@ -6,7 +6,6 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
-#include "CoroMutex.h"
 #include "../win/Handle.h"
 #include "../win/Event.h"
 #include "../Exception.h"

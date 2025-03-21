@@ -119,9 +119,6 @@
     <ClInclude Include="source\act\AsyncActionCollection.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="source\act\AsyncActionManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="source\act\Packet.h">
       <Filter>Header Files</Filter>
     </ClInclude>

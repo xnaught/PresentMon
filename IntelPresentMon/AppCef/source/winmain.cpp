@@ -237,7 +237,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     if (!opt.cefType) {
         client::kact::LaunchServer();
         std::this_thread::sleep_for(1s);
-        client::kact::LaunchClient();
+        client::kact::LaunchClientWork();
         std::this_thread::sleep_for(10s);
     }
 

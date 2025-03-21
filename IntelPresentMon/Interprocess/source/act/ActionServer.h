@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: MIT
 #include "../../../CommonUtilities/pipe/Pipe.h"
 #include "../../../CommonUtilities/str/String.h"
-#include "AsyncActionManager.h"
+#include "Transfer.h"
+#include "AsyncActionCollection.h"
 #include <thread>
 #include <sddl.h>
 
@@ -26,7 +27,7 @@ namespace pmon::ipc::act
             pipeName_{ std::move(pipeName) },
             security_{ std::move(securityString) },
             // stopEvent_{ ioctx_, win::Handle::CreateCloned(pSvc->GetServiceStopHandle()).Release() },
-            actionManager_{ std::move(context) }
+            ctx_{ std::move(context) }
         {
             assert(reservedPipeInstanceCount_ > 0);
         }
@@ -79,7 +80,7 @@ namespace pmon::ipc::act
         // functions
         as::awaitable<void> AcceptConnection_()
         {
-            auto& sessions = actionManager_.ctx_.sessions;
+            auto& sessions = ctx_.sessions;
             std::optional<uint32_t> sessionId;
             try {
                 // create pipe instance object
@@ -94,7 +95,7 @@ namespace pmon::ipc::act
                 as::co_spawn(ioctx_, AcceptConnection_(), as::detached);
                 // run the action handler until client session is terminated
                 while (true) {
-                    co_await actionManager_.SyncHandleRequest(*pPipe);
+                    co_await SyncHandleRequest_(*pPipe);
                 }
             }
             catch (...) {
@@ -104,12 +105,21 @@ namespace pmon::ipc::act
                     if (auto i = sessions.find(*sessionId); i != sessions.end()) {
                         clientPid = i->second.clientPid;
                     }
-                    actionManager_.ctx_.DisposeSession(*sessionId);
+                    ctx_.DisposeSession(*sessionId);
                     pmlog_info(std::format("Action pipe disconnected, session closed id:{} pid:{}", *sessionId, clientPid));
                     co_return;
                 }
                 pmlog_info("Sessionless pipe disconnected");
             }
+        }
+        as::awaitable<void> SyncHandleRequest_(pipe::DuplexPipe& pipe)
+        {
+            // read packet from the pipe into buffer, partially deserialize (header only)
+            const auto header = co_await pipe.ReadPacketConsumeHeader<PacketHeader>();
+            // lookup the command by identifier and execute it with remaining buffer contents
+            // response is then transmitted over the pipe to remote
+            co_await AsyncActionCollection<ExecCtx>::Get()
+                .Find(header.identifier).Execute(ctx_, header, pipe);
         }
         // data
         uint32_t reservedPipeInstanceCount_;
@@ -118,6 +128,6 @@ namespace pmon::ipc::act
         std::string security_;
         as::io_context ioctx_;
         // as::windows::object_handle stopEvent_;
-        act::AsyncActionManager<ExecCtx> actionManager_;
+        ExecCtx ctx_;
     };
 }
