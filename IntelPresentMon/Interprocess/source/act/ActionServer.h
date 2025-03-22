@@ -150,7 +150,7 @@ namespace pmon::ipc::act
             // lookup the command by identifier and execute it with remaining buffer contents
             // response is then transmitted over the pipe to remote
             // TODO: make this return result code (increment error count based on this)
-            co_await AsyncActionCollection<ExecCtx>::Get().Find(header.identifier).Execute(ctx_, stx, header);
+            co_await AsyncActionCollection<ExecCtx>::Get().Find(header.identifier).Execute(ctx_, stx, header, *stx.pPipe);
         }
         // data
         uint32_t reservedPipeInstanceCount_;

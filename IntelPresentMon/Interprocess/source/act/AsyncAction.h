@@ -18,16 +18,16 @@ namespace pmon::ipc::act
 	public:
 		virtual const char* GetIdentifier() const = 0;
 		virtual pipe::as::awaitable<void> Execute(ExecutionContext& ctx, SessionContext& stx,
-			const PacketHeader& header) const = 0;
+			const PacketHeader& header, pipe::DuplexPipe& pipe) const = 0;
 	};
 
 	template<class T, class ExecutionContext>
 	class AsyncActionBase_ : public AsyncAction<ExecutionContext>
 	{
 	public:
-		pipe::as::awaitable<void> Execute(ExecutionContext& ctx, AsyncAction<ExecutionContext>::SessionContext& stx, const PacketHeader& header) const final
+		pipe::as::awaitable<void> Execute(ExecutionContext& ctx, AsyncAction<ExecutionContext>::SessionContext& stx,
+			const PacketHeader& header, pipe::DuplexPipe& pipe) const final
 		{
-			auto& pipe = *stx.pPipe;
 			PacketHeader resHeader;
 			typename T::Response output;
 			try {
