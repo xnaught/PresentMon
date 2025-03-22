@@ -1,6 +1,6 @@
-#include "../CommonUtilities/pipe/Pipe.h"
-#include "../Interprocess/source/act/ActionServer.h"
-#include "../CommonUtilities/pipe/CoroMutex.h"
+#include "../Interprocess/source/act/SymmetricActionServer.h"
+#include "../Interprocess/source/act/SymmetricActionConnector.h"
+#include <boost/asio/experimental/awaitable_operators.hpp>
 #include <memory>
 #include <set>
 #include <unordered_map>
@@ -10,23 +10,28 @@
 #include <chrono>
 #include <random>
 
+using namespace ::pmon::ipc::act;
+using namespace as::experimental::awaitable_operators;
 
 namespace p2c::client::kact
 {
-    struct ActionSession
+    struct KernelExecutionContext;
+
+    struct KernelSessionContext
     {
-        std::shared_ptr<::pmon::util::pipe::DuplexPipe> pPipe;
+        std::unique_ptr<SymmetricActionConnector<KernelExecutionContext>> pConn;
         uint32_t clientPid = 0;
         std::optional<uint32_t> lastTokenSeen;
         std::chrono::high_resolution_clock::time_point lastReceived;
         uint32_t receiveCount = 0;
         uint32_t errorCount = 0;
+        uint32_t nextCommandToken = 0;
     };
 
     struct KernelExecutionContext
     {
         // types
-        using SessionContextType = ActionSession;
+        using SessionContextType = KernelSessionContext;
 
         // data
         std::optional<uint32_t> responseWriteTimeoutMs;
@@ -37,9 +42,10 @@ namespace p2c::client::kact
     void LaunchServer()
     {
         // launch and detach a thread to run the action server
-        ::pmon::ipc::act::ActionServerImpl_<KernelExecutionContext>::LaunchThread(
-            KernelExecutionContext{}, yaboi, 1, ""
-        ).detach();
+        std::thread{ [] {
+            SymmetricActionServer<KernelExecutionContext> server{ KernelExecutionContext{}, yaboi, 1, "" };
+            std::this_thread::sleep_for(100s);
+        } }.detach();
     }
 
 
@@ -161,14 +167,21 @@ namespace p2c::client::kact
     public:
         ActionClient(std::string pipeName)
             :
-            thisPid_{ GetCurrentProcessId() },
-            pipeName_{ std::move(pipeName) },
-            pipe_{ pipe::DuplexPipe::Connect(pipeName_, ioctx_) },
-            workGuard_{ as::make_work_guard(ioctx_) }
+            basePipeName_{ std::move(pipeName) },
+            asioCloseEvtView_{ ioctx_, winCloseEvt_.Clone().Release() }
         {
-            std::thread{ &ActionClient::Run, this }.detach();
+            stx_.pConn = SymmetricActionConnector<KernelExecutionContext>::ConnectToServer(basePipeName_, ioctx_);
+            as::co_spawn(ioctx_, [this]() -> as::awaitable<void> {
+                bool alive = true;
+                while (alive) {                    
+                    auto res = co_await (stx_.pConn->SyncHandleRequest(ctx_, stx_) ||
+                        asioCloseEvtView_.async_wait(as::use_awaitable));
+                    alive = res.index() == 0;
+                }
+            }, as::detached);
+            runner_ = std::jthread{ &ActionClient::Run_, this };
             auto res = DispatchSync(OpenSession::Params{
-                .clientPid = thisPid_,
+                .clientPid = GetCurrentProcessId(),
             });
             pmlog_info(std::format("Opened session with server, yikes = [{}]", res.yikes));
         }
@@ -177,50 +190,38 @@ namespace p2c::client::kact
         ActionClient& operator=(const ActionClient&) = delete;
         ActionClient(ActionClient&&) = delete;
         ActionClient& operator=(ActionClient&&) = delete;
-        ~ActionClient() = default;
+        ~ActionClient()
+        {
+            winCloseEvt_.Set();
+        }
 
         template<class Params>
         auto DispatchSync(Params&& params)
         {
-            using Action = typename ipc::act::ActionParamsTraits<std::decay_t<Params>>::Action;
-            using Response = Action::Response;
-            return as::co_spawn(ioctx_,
-                ipc::act::SyncRequest<Action>(std::forward<Params>(params), token_++, pipe_),
-                as::use_future).get();
-        }
-        void Run()
-        {
-            ioctx_.run();
+            return stx_.pConn->DispatchSync(std::forward<Params>(params), ioctx_, stx_);
         }
 
     private:
         // function
-        void DisposeSession_(uint32_t sessionId)
+        void Run_()
         {
-            pmlog_dbg(std::format("Disposing kact session id:{}", sessionId));
-            if (auto i = sessions_.find(sessionId); i != sessions_.end()) {
-                sessions_.erase(i);
-            }
-            else {
-                pmlog_warn("kact Session to be removed not found");
-            }
+            ioctx_.run();
         }
         // data
-        uint32_t timeoutMs_ = 1000;
-        uint32_t token_ = 0;
-        uint32_t thisPid_;
-        std::string pipeName_;
+        std::string basePipeName_;
         pipe::as::io_context ioctx_;
-        pipe::DuplexPipe pipe_;
-        as::executor_work_guard<as::io_context::executor_type> workGuard_;
-        // maps session uid => session (uid is same as session pipe id)
-        std::unordered_map<uint32_t, SessionContextType> sessions_;
+        SessionContextType stx_;
+        KernelExecutionContext ctx_;
+        ::pmon::util::win::Event winCloseEvt_;
+        as::windows::object_handle asioCloseEvtView_;
+        std::jthread runner_;
     };
 
     void LaunchClientWork()
     {
         std::thread{ [] {
             ActionClient ac{ yaboi };
+            std::this_thread::sleep_for(50ms);
             std::vector<std::jthread> threads;
             for (int i = 0; i < 32; i++) {
                 threads.push_back(std::jthread{ [&, tid = i] {
@@ -237,6 +238,7 @@ namespace p2c::client::kact
                     }
                 } });
             }
+            std::this_thread::sleep_for(10s);
         } }.detach();
     }
 }
