@@ -41,24 +41,12 @@ namespace pmon::svc
         Service* pSvc;
         PresentMon* pPmon;
         std::optional<uint32_t> responseWriteTimeoutMs;
-        // maps session uid => session (uid is same as session pipe id)
-        std::unordered_map<uint32_t, SessionContextType> sessions;
 
         // functions
-        void DisposeSession(uint32_t sessionId)
+        void Dispose(SessionContextType& stx)
         {
-            pmlog_dbg(std::format("Disposing session id:{}", sessionId));
-            if (auto i = sessions.find(sessionId); i != sessions.end()) {
-                auto& session = i->second;
-                if (session.clientPid) {
-                    for (auto& tracked : session.trackedPids) {
-                        pPmon->StopStreaming(session.clientPid, tracked);
-                    }
-                }
-                sessions.erase(i);
-            }
-            else {
-                pmlog_warn("Session to be removed not found");
+            for (auto& tracked : stx.trackedPids) {
+                pPmon->StopStreaming(stx.clientPid, tracked);
             }
         }
     };

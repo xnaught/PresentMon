@@ -5,6 +5,7 @@
 #include "../../../CommonUtilities/str/String.h"
 #include "Transfer.h"
 #include "AsyncActionCollection.h"
+#include "ActionContext.h"
 #include <thread>
 
 
@@ -19,6 +20,7 @@ namespace pmon::ipc::act
     template<class ExecCtx>
     class ActionServerImpl_
     {
+        using SessionContextType = typename ExecCtx::SessionContextType;
     public:
         ActionServerImpl_(ExecCtx context, std::string pipeName,
             uint32_t reservedPipeInstanceCount, std::string securityString)
@@ -80,7 +82,6 @@ namespace pmon::ipc::act
         // functions
         as::awaitable<void> AcceptConnection_()
         {
-            auto& sessions = ctx_.sessions;
             std::optional<uint32_t> sessionId;
             try {
                 // create pipe instance object
@@ -89,7 +90,7 @@ namespace pmon::ipc::act
                 co_await pPipe->Accept();
                 // insert a session context object for this connection, will be initialized properly upon OpenSession action
                 sessionId = pPipe->GetId();
-                sessions[*sessionId].pPipe = pPipe;
+                sessions_[*sessionId].pPipe = pPipe;
                 pmlog_info(std::format("Action pipe connected id:{}", *sessionId));
                 // fork this acceptor coroutine
                 as::co_spawn(ioctx_, AcceptConnection_(), as::detached);
@@ -101,25 +102,54 @@ namespace pmon::ipc::act
             catch (...) {
                 pmlog_dbg(util::ReportException());
                 if (sessionId) {
-                    uint32_t clientPid = 0;
-                    if (auto i = sessions.find(*sessionId); i != sessions.end()) {
-                        clientPid = i->second.clientPid;
-                    }
-                    ctx_.DisposeSession(*sessionId);
-                    pmlog_info(std::format("Action pipe disconnected, session closed id:{} pid:{}", *sessionId, clientPid));
-                    co_return;
+                    const auto clientPid = DisposeSession_(*sessionId);
+                    pmlog_info(std::format("Action pipe disconnected, session closed id:{} pid:{}", *sessionId, clientPid.value_or(0)));
                 }
-                pmlog_info("Sessionless pipe disconnected");
+                else {
+                    pmlog_info("Sessionless pipe disconnected");
+                }
             }
+        }
+        std::optional<uint32_t> DisposeSession_(uint32_t sid)
+        {
+            pmlog_dbg(std::format("Disposing session id:{}", sid));
+            std::optional<uint32_t> clientPid;
+            if (auto i = sessions_.find(sid); i != sessions_.end()) {
+                auto& session = i->second;
+                if (session.clientPid) {
+                    clientPid = session.clientPid;
+                    if constexpr (HasCustomSessionDispose<ExecCtx>) {
+                        ctx_.Dispose(session);
+                    }
+                }
+                sessions_.erase(i);
+            }
+            else {
+                pmlog_warn("Session to be removed not found");
+            }
+            return clientPid;
         }
         as::awaitable<void> SyncHandleRequest_(pipe::DuplexPipe& pipe)
         {
             // read packet from the pipe into buffer, partially deserialize (header only)
             const auto header = co_await pipe.ReadPacketConsumeHeader<PacketHeader>();
+            // -- do per-action processing based on received header --
+            // find the session via its uid, throw and blow up this connection if it isn't found (should never happen)
+            auto& stx = sessions_.at(pipe.GetId());
+            // any action other than OpenSession without having clientPid is an anomaly
+            if (header.identifier != "OpenSession") {
+                assert(bool(stx.clientPid));
+                if (!stx.clientPid) {
+                    pmlog_warn("Received action without a valid session opened");
+                }
+            }
+            // bookkeeping
+            stx.lastTokenSeen = header.commandToken;
+            stx.lastReceived = std::chrono::high_resolution_clock::now();
+            stx.receiveCount++;
             // lookup the command by identifier and execute it with remaining buffer contents
             // response is then transmitted over the pipe to remote
-            co_await AsyncActionCollection<ExecCtx>::Get()
-                .Find(header.identifier).Execute(ctx_, header, pipe);
+            co_await AsyncActionCollection<ExecCtx>::Get().Find(header.identifier).Execute(ctx_, stx, header);
         }
         // data
         uint32_t reservedPipeInstanceCount_;
@@ -127,6 +157,8 @@ namespace pmon::ipc::act
         std::string pipeName_;
         std::string security_;
         as::io_context ioctx_;
+        // maps session uid => session (uid is same as session pipe id)
+        std::unordered_map<uint32_t, SessionContextType> sessions_;
         // as::windows::object_handle stopEvent_;
         ExecCtx ctx_;
     };

@@ -137,5 +137,8 @@
     <ClInclude Include="source\act\InboundActionConnector.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\act\ActionContext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -30,20 +30,6 @@ namespace p2c::client::kact
 
         // data
         std::optional<uint32_t> responseWriteTimeoutMs;
-        // maps session uid => session (uid is same as session pipe id)
-        std::unordered_map<uint32_t, SessionContextType> sessions;
-
-        // functions
-        void DisposeSession(uint32_t sessionId)
-        {
-            pmlog_dbg(std::format("Disposing kact session id:{}", sessionId));
-            if (auto i = sessions.find(sessionId); i != sessions.end()) {
-                sessions.erase(i);
-            }
-            else {
-                pmlog_warn("kact Session to be removed not found");
-            }
-        }
     };
 
     inline std::string yaboi = R"(\\.\pipe\pipe-ya)";
@@ -170,6 +156,8 @@ namespace p2c::client::kact
 {
     class ActionClient
     {
+        using ExecCtx = KernelExecutionContext;
+        using SessionContextType = typename ExecCtx::SessionContextType;
     public:
         ActionClient(std::string pipeName)
             :
@@ -206,6 +194,17 @@ namespace p2c::client::kact
         }
 
     private:
+        // function
+        void DisposeSession_(uint32_t sessionId)
+        {
+            pmlog_dbg(std::format("Disposing kact session id:{}", sessionId));
+            if (auto i = sessions_.find(sessionId); i != sessions_.end()) {
+                sessions_.erase(i);
+            }
+            else {
+                pmlog_warn("kact Session to be removed not found");
+            }
+        }
         // data
         uint32_t timeoutMs_ = 1000;
         uint32_t token_ = 0;
@@ -214,6 +213,8 @@ namespace p2c::client::kact
         pipe::as::io_context ioctx_;
         pipe::DuplexPipe pipe_;
         as::executor_work_guard<as::io_context::executor_type> workGuard_;
+        // maps session uid => session (uid is same as session pipe id)
+        std::unordered_map<uint32_t, SessionContextType> sessions_;
     };
 
     void LaunchClientWork()

@@ -13,36 +13,24 @@ namespace pmon::ipc::act
 	template<class ExecutionContext>
 	class AsyncAction
 	{
+	protected:
+		using SessionContext = typename ExecutionContext::SessionContextType;
 	public:
 		virtual const char* GetIdentifier() const = 0;
-		virtual pipe::as::awaitable<void> Execute(ExecutionContext& ctx,
-			const PacketHeader& header, pipe::DuplexPipe& pipe) const = 0;
+		virtual pipe::as::awaitable<void> Execute(ExecutionContext& ctx, SessionContext& stx,
+			const PacketHeader& header) const = 0;
 	};
 
 	template<class T, class ExecutionContext>
 	class AsyncActionBase_ : public AsyncAction<ExecutionContext>
 	{
-	protected:
-		using SessionContext = typename ExecutionContext::SessionContextType;
 	public:
-		pipe::as::awaitable<void> Execute(ExecutionContext& ctx,
-			const PacketHeader& header, pipe::DuplexPipe& pipe) const final
+		pipe::as::awaitable<void> Execute(ExecutionContext& ctx, AsyncAction<ExecutionContext>::SessionContext& stx, const PacketHeader& header) const final
 		{
+			auto& pipe = *stx.pPipe;
 			PacketHeader resHeader;
 			typename T::Response output;
-			auto& stx = ctx.sessions.at(pipe.GetId());
 			try {
-				// session should be initialized except in the special case of the OpenSession action
-				// TODO: find a way of pushing this check down to the app-specific layer rather than hardcode identifier here
-				if (header.identifier != "OpenSession") {
-					assert(bool(stx.clientPid));
-					if (!stx.clientPid) {
-						pmlog_warn("Received action without a valid session opened");
-					}
-				}
-				stx.lastTokenSeen = header.commandToken;
-				stx.lastReceived = std::chrono::high_resolution_clock::now();
-				stx.receiveCount++;
 				output = T::Execute_(ctx, stx, pipe.ConsumePacketPayload<typename T::Params>());
 				resHeader = MakeResponseHeader_(header, TransportStatus::Success, PM_STATUS_SUCCESS);
 			}
@@ -63,7 +51,6 @@ namespace pmon::ipc::act
 				co_await pipe.WritePacket(resHeader, output, ctx.responseWriteTimeoutMs);
 			}
 			else {
-				stx.errorCount++;
 				// if there was an error, transmit header (configured with error status) and empty payload
 				co_await pipe.WritePacket(resHeader, EmptyPayload{}, ctx.responseWriteTimeoutMs);
 			}
