@@ -15,6 +15,29 @@ using namespace as::experimental::awaitable_operators;
 
 namespace p2c::client::kact
 {
+    struct CefExecutionContext;
+
+    struct CefSessionContext
+    {
+        std::unique_ptr<SymmetricActionConnector<CefExecutionContext>> pConn;
+        uint32_t clientPid = 0;
+        std::optional<uint32_t> lastTokenSeen;
+        std::chrono::high_resolution_clock::time_point lastReceived;
+        uint32_t receiveCount = 0;
+        uint32_t errorCount = 0;
+        uint32_t nextCommandToken = 0;
+    };
+
+    struct CefExecutionContext
+    {
+        // types
+        using SessionContextType = CefSessionContext;
+
+        // data
+        std::optional<uint32_t> responseWriteTimeoutMs;
+    };
+
+
     struct KernelExecutionContext;
 
     struct KernelSessionContext
@@ -43,7 +66,7 @@ namespace p2c::client::kact
     {
         // launch and detach a thread to run the action server
         std::thread{ [] {
-            SymmetricActionServer<KernelExecutionContext> server{ KernelExecutionContext{}, yaboi, 1, "" };
+            SymmetricActionServer<CefExecutionContext> server{ {}, yaboi, 1, "" };
             std::this_thread::sleep_for(100s);
         } }.detach();
     }
@@ -54,7 +77,6 @@ namespace p2c::client::kact
 #include "../Interprocess/source/act/AsyncAction.h"
 #include "../CommonUtilities/Macro.h"
 #include "../CommonUtilities/log/Log.h"
-//#include "ServiceExecutionContext.h"
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/utility.hpp>
@@ -64,23 +86,26 @@ namespace p2c::client::kact
 #define P2C_KERNEL_ASYNC_ACTION_REGISTRATION_
 #ifdef P2C_KERNEL_ASYNC_ACTION_REGISTRATION_
 #include "../Interprocess/source/act/AsyncActionCollection.h"
-#define ACTION_REG(name) ::pmon::ipc::act::AsyncActionRegistrator<::p2c::client::kact::name, ::p2c::client::kact::KernelExecutionContext> CONCATENATE(regSvcAct_, name)##_;
+#define ACTION_REG(name) ::pmon::ipc::act::AsyncActionRegistrator<ACT_NS::name, ACT_EXEC_CTX> CONCATENATE(regSvcAct_, name)##_;
 #endif
 
-#define ACTION_TRAITS_DEF(name) namespace pmon::ipc::act { template<> struct ActionParamsTraits<::p2c::client::kact::name::Params> { using Action = ::p2c::client::kact::name; }; }
-
+#define ACTION_TRAITS_DEF(name) namespace pmon::ipc::act { template<> struct ActionParamsTraits<ACT_NS::name::Params> { using Action = ACT_NS::name; }; }
 
 
     // actions
 
-#define ACTNAME OpenSession
+
+
+#define ACT_NAME OpenSession
+#define ACT_EXEC_CTX CefExecutionContext
+#define ACT_NS ::p2c::client::kact
 
         using namespace ::pmon::ipc::act;
 
-        class ACTNAME : public AsyncActionBase_<ACTNAME, KernelExecutionContext>
+        class ACT_NAME : public AsyncActionBase_<ACT_NAME, CefExecutionContext>
         {
         public:
-            static constexpr const char* Identifier = STRINGIFY(ACTNAME);
+            static constexpr const char* Identifier = STRINGIFY(ACT_NAME);
             struct Params
             {
                 uint32_t clientPid;
@@ -97,8 +122,8 @@ namespace p2c::client::kact
                 }
             };
         private:
-            friend class AsyncActionBase_<ACTNAME, KernelExecutionContext>;
-            static Response Execute_(const KernelExecutionContext& ctx, SessionContext& stx, Params&& in)
+            friend class AsyncActionBase_<ACT_NAME, CefExecutionContext>;
+            static Response Execute_(const CefExecutionContext& ctx, SessionContext& stx, Params&& in)
             {
                 stx.clientPid = in.clientPid;
                 pmlog_info("listen here you little");
@@ -107,23 +132,28 @@ namespace p2c::client::kact
         };
 
 #ifdef P2C_KERNEL_ASYNC_ACTION_REGISTRATION_
-        ACTION_REG(ACTNAME);
+        ACTION_REG(ACT_NAME);
 #endif
 
 }
 
-ACTION_TRAITS_DEF(ACTNAME);
-#undef ACTNAME
+ACTION_TRAITS_DEF(ACT_NAME);
+#undef ACT_NAME
+#undef ACT_EXEC_CTX
+#undef ACT_NS
 
 
 namespace p2c::client::kact
 {
 
-#define ACTNAME TestAct
-    class ACTNAME : public AsyncActionBase_<ACTNAME, KernelExecutionContext>
+#define ACT_NAME TestAct
+#define ACT_EXEC_CTX CefExecutionContext
+#define ACT_NS ::p2c::client::kact
+
+    class ACT_NAME : public AsyncActionBase_<ACT_NAME, CefExecutionContext>
     {
     public:
-        static constexpr const char* Identifier = STRINGIFY(ACTNAME);
+        static constexpr const char* Identifier = STRINGIFY(ACT_NAME);
         struct Params
         {
             uint32_t in;
@@ -140,8 +170,8 @@ namespace p2c::client::kact
             }
         };
     private:
-        friend class AsyncActionBase_<ACTNAME, KernelExecutionContext>;
-        static Response Execute_(const KernelExecutionContext& ctx, SessionContext& stx, Params&& in)
+        friend class AsyncActionBase_<ACT_NAME, CefExecutionContext>;
+        static Response Execute_(const CefExecutionContext& ctx, SessionContext& stx, Params&& in)
         {
             pmlog_info("got a thing").pmwatch(in.in);
             return Response{ .out = in.in * 2 };
@@ -149,12 +179,14 @@ namespace p2c::client::kact
     };
 
 #ifdef P2C_KERNEL_ASYNC_ACTION_REGISTRATION_
-    ACTION_REG(ACTNAME);
+    ACTION_REG(ACT_NAME);
 #endif
 }
 
-ACTION_TRAITS_DEF(ACTNAME);
-#undef ACTNAME
+ACTION_TRAITS_DEF(ACT_NAME);
+#undef ACT_NAME
+#undef ACT_EXEC_CTX
+#undef ACT_NS
 
 
 
