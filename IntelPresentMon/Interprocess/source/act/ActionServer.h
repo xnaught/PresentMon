@@ -90,13 +90,14 @@ namespace pmon::ipc::act
                 co_await pPipe->Accept();
                 // insert a session context object for this connection, will be initialized properly upon OpenSession action
                 sessionId = pPipe->GetId();
-                sessions_[*sessionId].pPipe = pPipe;
+                auto& stx = sessions_[*sessionId];
+                stx.pPipe = std::move(pPipe);
                 pmlog_info(std::format("Action pipe connected id:{}", *sessionId));
                 // fork this acceptor coroutine
                 as::co_spawn(ioctx_, AcceptConnection_(), as::detached);
                 // run the action handler until client session is terminated
                 while (true) {
-                    co_await SyncHandleRequest_(*pPipe);
+                    co_await SyncHandleRequest_(stx);
                 }
             }
             catch (...) {
@@ -129,14 +130,13 @@ namespace pmon::ipc::act
             }
             return clientPid;
         }
-        as::awaitable<void> SyncHandleRequest_(pipe::DuplexPipe& pipe)
+        as::awaitable<void> SyncHandleRequest_(SessionContextType& stx)
         {
             // read packet from the pipe into buffer, partially deserialize (header only)
-            const auto header = co_await pipe.ReadPacketConsumeHeader<PacketHeader>();
+            const auto header = co_await stx.pPipe->ReadPacketConsumeHeader<PacketHeader>();
             // -- do per-action processing based on received header --
-            // find the session via its uid, throw and blow up this connection if it isn't found (should never happen)
-            auto& stx = sessions_.at(pipe.GetId());
             // any action other than OpenSession without having clientPid is an anomaly
+            // TODO: make this processing a customization point in ExecutionContext
             if (header.identifier != "OpenSession") {
                 assert(bool(stx.clientPid));
                 if (!stx.clientPid) {
@@ -149,6 +149,7 @@ namespace pmon::ipc::act
             stx.receiveCount++;
             // lookup the command by identifier and execute it with remaining buffer contents
             // response is then transmitted over the pipe to remote
+            // TODO: make this return result code (increment error count based on this)
             co_await AsyncActionCollection<ExecCtx>::Get().Find(header.identifier).Execute(ctx_, stx, header);
         }
         // data
