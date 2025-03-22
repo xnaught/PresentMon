@@ -9,7 +9,7 @@ namespace pmon::svc::acts
 {
 	using namespace ipc::act;
 
-	class ACTNAME : public AsyncActionBase_<ACTNAME, ServiceExecutionContext>
+	class ACTNAME : public AsyncActionBase_<ACTNAME, ActionExecutionContext>
 	{
 	public:
 		static constexpr const char* Identifier = STRINGIFY(ACTNAME);
@@ -32,8 +32,8 @@ namespace pmon::svc::acts
 			}
 		};
 	private:
-		friend class AsyncActionBase_<ACTNAME, ServiceExecutionContext>;
-		static Response Execute_(const ServiceExecutionContext& ctx, SessionContext& stx, Params&& in)
+		friend class AsyncActionBase_<ACTNAME, ActionExecutionContext>;
+		static Response Execute_(const ActionExecutionContext& ctx, SessionContext& stx, Params&& in)
 		{
 			stx.clientPid = in.clientPid;
 			stx.clientBuildId = in.clientBuildId;

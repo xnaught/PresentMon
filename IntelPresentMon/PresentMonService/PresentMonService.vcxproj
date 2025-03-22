@@ -152,7 +152,7 @@
     <ClInclude Include="Registry.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Service.h" />
-    <ClInclude Include="ServiceExecutionContext.h" />
+    <ClInclude Include="ActionExecutionContext.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\PresentData\PresentData.vcxproj">

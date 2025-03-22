@@ -1,11 +1,11 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
+#pragma once
 #include "../../../CommonUtilities/pipe/Pipe.h"
 #include "../../../CommonUtilities/str/String.h"
 #include "Transfer.h"
 #include "AsyncActionCollection.h"
 #include <thread>
-#include <sddl.h>
 
 
 namespace pmon::ipc::act

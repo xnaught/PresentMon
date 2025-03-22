@@ -13,7 +13,7 @@
 
 namespace pmon::svc
 {
-    struct ActionSession
+    struct ActionSessionContext
     {
         std::shared_ptr<util::pipe::DuplexPipe> pPipe;
         uint32_t clientPid = 0;
@@ -32,10 +32,10 @@ namespace pmon::svc
         std::string clientBuildId;
     };
 
-    struct ServiceExecutionContext
+    struct ActionExecutionContext
     {
         // types
-        using SessionContextType = ActionSession;
+        using SessionContextType = ActionSessionContext;
 
         // data
         Service* pSvc;
