@@ -25,8 +25,8 @@ namespace pmon::ipc::act
                 // any action other than OpenSession without having clientPid is an anomaly
                 // TODO: make this processing a customization point in ExecutionContext and move it out of here
                 if (header.identifier != "OpenSession") {
-                    assert(bool(stx.clientPid));
-                    if (!stx.clientPid) {
+                    assert(bool(stx.remotePid));
+                    if (!stx.remotePid) {
                         pmlog_warn("Received action without a valid session opened");
                     }
                 }

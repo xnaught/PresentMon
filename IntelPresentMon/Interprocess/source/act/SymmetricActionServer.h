@@ -98,11 +98,11 @@ namespace pmon::ipc::act
         std::optional<uint32_t> DisposeSession_(uint32_t sid)
         {
             pmlog_dbg(std::format("Disposing session id:{}", sid));
-            std::optional<uint32_t> clientPid;
+            std::optional<uint32_t> remotePid;
             if (auto i = sessions_.find(sid); i != sessions_.end()) {
                 auto& session = i->second;
-                if (session.clientPid) {
-                    clientPid = session.clientPid;
+                if (session.remotePid) {
+                    remotePid = session.remotePid;
                     if constexpr (HasCustomSessionDispose<ExecCtx>) {
                         ctx_.Dispose(session);
                     }
@@ -112,7 +112,7 @@ namespace pmon::ipc::act
             else {
                 pmlog_warn("Session to be removed not found");
             }
-            return clientPid;
+            return remotePid;
         }
         // data
         uint32_t reservedPipeInstanceCount_;

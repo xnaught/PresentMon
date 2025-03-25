@@ -20,7 +20,7 @@ namespace p2c::client::kact
     struct CefSessionContext
     {
         std::unique_ptr<SymmetricActionConnector<CefExecutionContext>> pConn;
-        uint32_t clientPid = 0;
+        uint32_t remotePid = 0;
         std::optional<uint32_t> lastTokenSeen;
         std::chrono::high_resolution_clock::time_point lastReceived;
         uint32_t receiveCount = 0;
@@ -43,7 +43,7 @@ namespace p2c::client::kact
     struct KernelSessionContext
     {
         std::unique_ptr<SymmetricActionConnector<KernelExecutionContext>> pConn;
-        uint32_t clientPid = 23;
+        uint32_t remotePid = 0;
         std::optional<uint32_t> lastTokenSeen;
         std::chrono::high_resolution_clock::time_point lastReceived;
         uint32_t receiveCount = 0;
@@ -107,18 +107,19 @@ namespace p2c::client::kact
             };
             struct Response {
                 std::string yikes;
+                uint32_t serverPid;
 
                 template<class A> void serialize(A& ar) {
-                    ar(yikes);
+                    ar(yikes, serverPid);
                 }
             };
         private:
             friend class AsyncActionBase_<ACT_NAME, ACT_EXEC_CTX>;
             static Response Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
             {
-                stx.clientPid = in.clientPid;
+                stx.remotePid = in.clientPid;
                 pmlog_info("listen here you little");
-                return Response{ .yikes = "blah" };
+                return Response{ .yikes = "blah", .serverPid = GetCurrentProcessId() };
             }
         };
 
@@ -264,7 +265,8 @@ namespace p2c::client::kact
             auto res = DispatchSync(OpenSession::Params{
                 .clientPid = GetCurrentProcessId(),
             });
-            pmlog_info(std::format("Opened session with server, yikes = [{}]", res.yikes));
+            stx_.remotePid = res.serverPid;
+            pmlog_info(std::format("Opened session with server, yikes = [{}]", res.yikes)).pmwatch(res.serverPid);
         }
 
         ActionClient(const ActionClient&) = delete;
