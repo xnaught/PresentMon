@@ -3,6 +3,7 @@
 #pragma once
 #include "SymmetricActionConnector.h"
 #include "../../../CommonUtilities/str/String.h"
+#include "../../../CommonUtilities/pipe/ManualAsyncEvent.h"
 #include "AsyncActionCollection.h"
 #include "ActionContext.h"
 #include <thread>
@@ -27,7 +28,8 @@ namespace pmon::ipc::act
             reservedPipeInstanceCount_{ reservedPipeInstanceCount },
             basePipeName_{ std::move(basePipeName) },
             security_{ std::move(securityString) },
-            ctx_{ std::move(context) }
+            ctx_{ std::move(context) },
+            stopEvt_{ ioctx_ }
         {
             assert(reservedPipeInstanceCount_ > 0);
             // TODO: retain this as member data with dtor interlocking
@@ -81,7 +83,7 @@ namespace pmon::ipc::act
                 as::co_spawn(ioctx_, SessionStrand_(), as::detached);
                 // run the action handler until client session is terminated
                 while (true) {
-                    co_await stx.pConn->SyncHandleRequest(ctx_, stx);
+                    co_await (stx.pConn->SyncHandleRequest(ctx_, stx) || stopEvt_.AsyncWait());
                 }
             }
             catch (...) {
@@ -122,5 +124,6 @@ namespace pmon::ipc::act
         // maps session uid => session (uid is same as session recv (in) pipe id)
         std::unordered_map<uint32_t, SessionContextType> sessions_;
         ExecCtx ctx_;
+        ManualAsyncEvent stopEvt_;
     };
 }

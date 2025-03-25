@@ -11,22 +11,22 @@ namespace pmon::util::pipe
 
 	class ManualAsyncEvent
 	{
+		using Timer = as::steady_timer;
 	public:
 		ManualAsyncEvent(as::io_context& ctx)
 			:
-			asioEventView_{ ctx, winEventView_.Clone().Release() }
+			timer_{ ctx, Timer::duration::max() }
 		{}
 		as::awaitable<void> AsyncWait()
 		{
-			co_await asioEventView_.async_wait(as::use_awaitable);
-			winEventView_.Reset();
+			auto ec = boost::system::error_code{};
+			co_await timer_.async_wait(as::redirect_error(as::use_awaitable, ec));
 		}
 		void Signal()
 		{
-			winEventView_.Set();
+			timer_.cancel();
 		}
 	private:
-		win::Event winEventView_;
-		as::windows::object_handle asioEventView_;
+		Timer timer_;
 	};
 }
