@@ -233,22 +233,25 @@ namespace p2c::client::kact
     {
         // launch and detach a thread to run the action server
         std::thread{ [] {
+            log::IdentificationTable::AddThisThread("srv-act-test-master");
             SymmetricActionServer<CefExecutionContext> server{ {}, yaboi, 1, "" };
             std::this_thread::sleep_for(2s);
             auto out = server.DispatchSync(TestFromServer::Params{ .in = 420 });
             pmlog_info("henlo").pmwatch(out.out);
-            std::this_thread::sleep_for(100s);
+            std::this_thread::sleep_for(15s);
         } }.detach();
     }
 
     void LaunchClientWork()
     {
         std::thread{ [] {
+            log::IdentificationTable::AddThisThread("cli-act-test-master");
             SymmetricActionClient<KernelExecutionContext, OpenSession> ac{ yaboi };
             std::this_thread::sleep_for(50ms);
             std::vector<std::jthread> threads;
             for (int i = 0; i < 32; i++) {
                 threads.push_back(std::jthread{ [&, tid = i] {
+                log::IdentificationTable::AddThisThread(std::format("cli-act-test-{}", tid));
                     std::minstd_rand0 rne{ std::random_device{}() };
                     std::uniform_int_distribution<uint32_t> dist{ 1, 1000 };
                     for (int i = 0; i < 250; i++) {
@@ -262,7 +265,7 @@ namespace p2c::client::kact
                     }
                 } });
             }
-            std::this_thread::sleep_for(100s);
+            std::this_thread::sleep_for(20s);
         } }.detach();
     }
 }

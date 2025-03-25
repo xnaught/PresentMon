@@ -33,13 +33,16 @@ namespace pmon::ipc::act
         {
             assert(reservedPipeInstanceCount_ > 0);
             // TODO: retain this as member data with dtor interlocking
-            std::thread{ &SymmetricActionServer::Run_, this }.detach();
+            worker_ = std::jthread{ &SymmetricActionServer::Run_, this };
         }
         SymmetricActionServer(const SymmetricActionServer&) = delete;
         SymmetricActionServer& operator=(const SymmetricActionServer&) = delete;
         SymmetricActionServer(SymmetricActionServer&&) = delete;
         SymmetricActionServer& operator=(SymmetricActionServer&&) = delete;
-        ~SymmetricActionServer() = default;
+        ~SymmetricActionServer()
+        {
+            stopEvt_.Signal();
+        }
 
         template<class Params>
         auto DispatchSync(Params&& params)
@@ -52,6 +55,7 @@ namespace pmon::ipc::act
         // functions
         void Run_()
         {
+            log::IdentificationTable::AddThisThread("srv-act-worker");
             try {
                 // maintain N available connector instances at all times
                 for (uint32_t i = 0; i < reservedPipeInstanceCount_; i++) {
@@ -82,8 +86,10 @@ namespace pmon::ipc::act
                 // fork this acceptor coroutine
                 as::co_spawn(ioctx_, SessionStrand_(), as::detached);
                 // run the action handler until client session is terminated
-                while (true) {
-                    co_await (stx.pConn->SyncHandleRequest(ctx_, stx) || stopEvt_.AsyncWait());
+                bool alive = true;
+                while (alive) {
+                    auto sig = co_await (stx.pConn->SyncHandleRequest(ctx_, stx) || stopEvt_.AsyncWait());
+                    alive = sig.index() == 0;
                 }
             }
             catch (...) {
@@ -125,5 +131,6 @@ namespace pmon::ipc::act
         std::unordered_map<uint32_t, SessionContextType> sessions_;
         ExecCtx ctx_;
         ManualAsyncEvent stopEvt_;
+        std::jthread worker_;
     };
 }
