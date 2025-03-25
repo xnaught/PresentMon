@@ -40,12 +40,16 @@ namespace pmon::ipc::act
                 co_await AsyncActionCollection<ExecCtx>::Get().Find(header.identifier).Execute(ctx, stx, header, *pInPipe_);
                 co_return;
             }
+            catch (const pipe::PipeError& e) {
+                // we assume any pipe-transport related errors are not recoverable and proceed to terminate connection
+                throw;
+            }
             catch (...) {
                 pmlog_error(util::ReportException());
-                // if the output buffer is dirty, we're not sure what state we're in so just clear it
-                if (pInPipe_->GetWriteBufferPending()) {
-                    pInPipe_->ClearWriteBuffer();
-                }
+            }
+            // if the output buffer is dirty, we're not sure what state we're in so just clear it
+            if (pInPipe_->GetWriteBufferPending()) {
+                pInPipe_->ClearWriteBuffer();
             }
             auto resHeader = MakeResponseHeader(header, TransportStatus::TransportFailure, PM_STATUS_SUCCESS);
             co_await pInPipe_->WritePacket(std::move(resHeader), EmptyPayload{}, ctx.responseWriteTimeoutMs);

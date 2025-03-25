@@ -20,7 +20,12 @@ namespace pmon::util::pipe
 	using namespace std::literals;
 
 	PM_DEFINE_EX(PipeError);
+	// pipe errors that are often part of acceptable program flow
+	PM_DEFINE_EX(BenignPipeError);
+	// pipe was broken (closed by remote)
 	PM_DEFINE_EX_FROM(PipeError, PipeBroken);
+	// pipe operation was canceled (e.g. by operator ||)
+	PM_DEFINE_EX_FROM(PipeError, PipeOperationCanceled);
 
 	class DuplexPipe
 	{

@@ -29,11 +29,9 @@ namespace pmon::ipc::act
             basePipeName_{ std::move(basePipeName) },
             security_{ std::move(securityString) },
             ctx_{ std::move(context) },
-            stopEvt_{ ioctx_ }
+            worker_{ &SymmetricActionServer::Run_, this }
         {
             assert(reservedPipeInstanceCount_ > 0);
-            // TODO: retain this as member data with dtor interlocking
-            worker_ = std::jthread{ &SymmetricActionServer::Run_, this };
         }
         SymmetricActionServer(const SymmetricActionServer&) = delete;
         SymmetricActionServer& operator=(const SymmetricActionServer&) = delete;
@@ -41,9 +39,8 @@ namespace pmon::ipc::act
         SymmetricActionServer& operator=(SymmetricActionServer&&) = delete;
         ~SymmetricActionServer()
         {
-            stopEvt_.Signal();
+            as::co_spawn(ioctx_, SignalStop_(), as::detached);
         }
-
         template<class Params>
         auto DispatchSync(Params&& params)
         {
@@ -68,6 +65,7 @@ namespace pmon::ipc::act
             catch (...) {
                 pmlog_error(ReportException());
                 // if the action server crashes for any reason, the service should restart at this point
+                // TODO: don't make this mandatory for all uses of the server
                 log::GetDefaultChannel()->Flush();
                 std::terminate();
             }
@@ -80,27 +78,32 @@ namespace pmon::ipc::act
                 auto pConn = co_await SymmetricActionConnector<ExecCtx>::AcceptClientConnection(basePipeName_, ioctx_, security_);
                 // insert a session context object for this connection, will be initialized properly upon OpenSession action
                 sessionId = pConn->GetId();
-                auto& stx = sessions_[*sessionId];
-                stx.pConn = std::move(pConn);
+                auto&&[i, b] = sessions_.emplace(*sessionId, SessionContextType{
+                    .pConn = std::move(pConn), .stopEvt = {ioctx_}});
                 pmlog_info(std::format("Action pipe connected id:{}", *sessionId));
+                auto& stx = i->second;
                 // fork this acceptor coroutine
                 as::co_spawn(ioctx_, SessionStrand_(), as::detached);
                 // run the action handler until client session is terminated
                 bool alive = true;
                 while (alive) {
-                    auto sig = co_await (stx.pConn->SyncHandleRequest(ctx_, stx) || stopEvt_.AsyncWait());
+                    // TODO: consider a cancel flow that doesn't throw, and using cancel directly instead of stopEvt
+                    auto sig = co_await (stx.pConn->SyncHandleRequest(ctx_, stx) || stx.stopEvt.AsyncWait());
                     alive = sig.index() == 0;
                 }
             }
-            catch (...) {
+            catch (const pipe::BenignPipeError&) {
                 pmlog_dbg(util::ReportException());
-                if (sessionId) {
-                    const auto clientPid = DisposeSession_(*sessionId);
-                    pmlog_info(std::format("Action pipe disconnected, session closed id:{} pid:{}", *sessionId, clientPid.value_or(0)));
-                }
-                else {
-                    pmlog_info("Sessionless pipe disconnected");
-                }
+            }
+            catch (...) {
+                pmlog_error(util::ReportException());
+            }
+            if (sessionId) {
+                const auto clientPid = DisposeSession_(*sessionId);
+                pmlog_info(std::format("Action pipe disconnected, session closed id:{} pid:{}", *sessionId, clientPid.value_or(0)));
+            }
+            else {
+                pmlog_info("Sessionless pipe disconnected");
             }
         }
         std::optional<uint32_t> DisposeSession_(uint32_t sid)
@@ -122,6 +125,13 @@ namespace pmon::ipc::act
             }
             return remotePid;
         }
+        as::awaitable<void> SignalStop_()
+        {
+            for (auto&& [sid, stx] : sessions_) {
+                stx.stopEvt.Signal();
+            }
+            co_return;
+        }
         // data
         uint32_t reservedPipeInstanceCount_;
         std::string basePipeName_;
@@ -130,7 +140,6 @@ namespace pmon::ipc::act
         // maps session uid => session (uid is same as session recv (in) pipe id)
         std::unordered_map<uint32_t, SessionContextType> sessions_;
         ExecCtx ctx_;
-        ManualAsyncEvent stopEvt_;
         std::jthread worker_;
     };
 }

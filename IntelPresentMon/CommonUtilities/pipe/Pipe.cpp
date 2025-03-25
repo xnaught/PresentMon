@@ -228,6 +228,9 @@ namespace pmon::util::pipe
 			if (ec == as::error::broken_pipe || ec.value() == 232/* Pipe is being closed */) {
 				throw Except<PipeBroken>();
 			}
+			else if (ec.value() == 995) {
+				throw Except<PipeOperationCanceled>();
+			}
 			else {
 				throw Except<PipeError>(ec.what());
 			}

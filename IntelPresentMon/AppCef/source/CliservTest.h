@@ -19,6 +19,7 @@ namespace p2c::client::kact
     struct CefSessionContext
     {
         std::unique_ptr<SymmetricActionConnector<CefExecutionContext>> pConn;
+        pipe::ManualAsyncEvent stopEvt;
         uint32_t remotePid = 0;
         std::optional<uint32_t> lastTokenSeen;
         std::chrono::high_resolution_clock::time_point lastReceived;
