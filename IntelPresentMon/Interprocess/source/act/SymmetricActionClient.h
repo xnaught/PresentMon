@@ -32,7 +32,7 @@ namespace pmon::ipc::act
             as::co_spawn(ioctx_, [this]() -> as::awaitable<void> {
                 bool alive = true;
                 while (alive) {
-                    auto res = co_await(stx_.pConn->SyncHandleRequest(ctx_, stx_) || stopEvt_.AyncWait());
+                    auto res = co_await(stx_.pConn->SyncHandleRequest(ctx_, stx_) || stopEvt_.AsyncWait());
                     alive = res.index() == 0;
                 }
             }, as::detached);

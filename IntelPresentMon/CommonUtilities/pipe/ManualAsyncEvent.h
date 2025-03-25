@@ -16,7 +16,7 @@ namespace pmon::util::pipe
 			:
 			asioEventView_{ ctx, winEventView_.Clone().Release() }
 		{}
-		as::awaitable<void> AyncWait()
+		as::awaitable<void> AsyncWait()
 		{
 			co_await asioEventView_.async_wait(as::use_awaitable);
 			winEventView_.Reset();
