@@ -43,7 +43,7 @@ namespace p2c::client::kact
     struct KernelSessionContext
     {
         std::unique_ptr<SymmetricActionConnector<KernelExecutionContext>> pConn;
-        uint32_t clientPid = 0;
+        uint32_t clientPid = 23;
         std::optional<uint32_t> lastTokenSeen;
         std::chrono::high_resolution_clock::time_point lastReceived;
         uint32_t receiveCount = 0;
@@ -61,15 +61,6 @@ namespace p2c::client::kact
     };
 
     inline std::string yaboi = R"(\\.\pipe\pipe-ya)";
-
-    void LaunchServer()
-    {
-        // launch and detach a thread to run the action server
-        std::thread{ [] {
-            SymmetricActionServer<CefExecutionContext> server{ {}, yaboi, 1, "" };
-            std::this_thread::sleep_for(100s);
-        } }.detach();
-    }
 
 
 
@@ -102,7 +93,7 @@ namespace p2c::client::kact
 
         using namespace ::pmon::ipc::act;
 
-        class ACT_NAME : public AsyncActionBase_<ACT_NAME, CefExecutionContext>
+        class ACT_NAME : public AsyncActionBase_<ACT_NAME, ACT_EXEC_CTX>
         {
         public:
             static constexpr const char* Identifier = STRINGIFY(ACT_NAME);
@@ -122,8 +113,8 @@ namespace p2c::client::kact
                 }
             };
         private:
-            friend class AsyncActionBase_<ACT_NAME, CefExecutionContext>;
-            static Response Execute_(const CefExecutionContext& ctx, SessionContext& stx, Params&& in)
+            friend class AsyncActionBase_<ACT_NAME, ACT_EXEC_CTX>;
+            static Response Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
             {
                 stx.clientPid = in.clientPid;
                 pmlog_info("listen here you little");
@@ -150,7 +141,7 @@ namespace p2c::client::kact
 #define ACT_EXEC_CTX CefExecutionContext
 #define ACT_NS ::p2c::client::kact
 
-    class ACT_NAME : public AsyncActionBase_<ACT_NAME, CefExecutionContext>
+    class ACT_NAME : public AsyncActionBase_<ACT_NAME, ACT_EXEC_CTX>
     {
     public:
         static constexpr const char* Identifier = STRINGIFY(ACT_NAME);
@@ -170,10 +161,56 @@ namespace p2c::client::kact
             }
         };
     private:
-        friend class AsyncActionBase_<ACT_NAME, CefExecutionContext>;
-        static Response Execute_(const CefExecutionContext& ctx, SessionContext& stx, Params&& in)
+        friend class AsyncActionBase_<ACT_NAME, ACT_EXEC_CTX>;
+        static Response Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
         {
             pmlog_info("got a thing").pmwatch(in.in);
+            return Response{ .out = in.in * 2 };
+        }
+    };
+
+#ifdef P2C_KERNEL_ASYNC_ACTION_REGISTRATION_
+    ACTION_REG(ACT_NAME);
+#endif
+}
+
+ACTION_TRAITS_DEF(ACT_NAME);
+#undef ACT_NAME
+#undef ACT_EXEC_CTX
+#undef ACT_NS
+
+
+namespace p2c::client::kact
+{
+
+#define ACT_NAME TestFromServer
+#define ACT_EXEC_CTX KernelExecutionContext
+#define ACT_NS ::p2c::client::kact
+
+    class ACT_NAME : public AsyncActionBase_<ACT_NAME, ACT_EXEC_CTX>
+    {
+    public:
+        static constexpr const char* Identifier = STRINGIFY(ACT_NAME);
+        struct Params
+        {
+            uint32_t in;
+
+            template<class A> void serialize(A& ar) {
+                ar(in);
+            }
+        };
+        struct Response {
+            uint32_t out;
+
+            template<class A> void serialize(A& ar) {
+                ar(out);
+            }
+        };
+    private:
+        friend class AsyncActionBase_<ACT_NAME, ACT_EXEC_CTX>;
+        static Response Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
+        {
+            pmlog_info("got a thing qwerty").pmwatch(in.in);
             return Response{ .out = in.in * 2 };
         }
     };
@@ -192,6 +229,18 @@ ACTION_TRAITS_DEF(ACT_NAME);
 
 namespace p2c::client::kact
 {
+    void LaunchServer()
+    {
+        // launch and detach a thread to run the action server
+        std::thread{ [] {
+            SymmetricActionServer<CefExecutionContext> server{ {}, yaboi, 1, "" };
+            std::this_thread::sleep_for(2s);
+            auto out = server.DispatchSync(TestFromServer::Params{ .in = 420 });
+            pmlog_info("henlo").pmwatch(out.out);
+            std::this_thread::sleep_for(100s);
+        } }.detach();
+    }
+
     class ActionClient
     {
         using ExecCtx = KernelExecutionContext;
@@ -270,7 +319,7 @@ namespace p2c::client::kact
                     }
                 } });
             }
-            std::this_thread::sleep_for(10s);
+            std::this_thread::sleep_for(100s);
         } }.detach();
     }
 }

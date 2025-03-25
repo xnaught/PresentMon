@@ -35,4 +35,12 @@ namespace pmon::ipc::act
 	};
 
 	struct EmptyPayload {};
+
+	inline PacketHeader MakeResponseHeader(const PacketHeader& reqHeader, TransportStatus txs, int exs)
+	{
+		auto resHeader = reqHeader;
+		resHeader.transportStatus = txs;
+		resHeader.executionStatus = exs;
+		return resHeader;
+	}
 }

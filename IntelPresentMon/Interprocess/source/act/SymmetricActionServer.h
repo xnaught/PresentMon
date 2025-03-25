@@ -38,6 +38,14 @@ namespace pmon::ipc::act
         SymmetricActionServer(SymmetricActionServer&&) = delete;
         SymmetricActionServer& operator=(SymmetricActionServer&&) = delete;
         ~SymmetricActionServer() = default;
+
+        template<class Params>
+        auto DispatchSync(Params&& params)
+        {
+            auto& stx = sessions_.begin()->second;
+            return stx.pConn->DispatchSync(std::forward<Params>(params), ioctx_, stx);
+        }
+
     private:
         // functions
         void Run_()

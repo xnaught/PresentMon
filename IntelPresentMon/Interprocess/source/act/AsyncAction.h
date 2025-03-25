@@ -32,11 +32,11 @@ namespace pmon::ipc::act
 			typename T::Response output;
 			try {
 				output = T::Execute_(ctx, stx, pipe.ConsumePacketPayload<typename T::Params>());
-				resHeader = MakeResponseHeader_(header, TransportStatus::Success, PM_STATUS_SUCCESS);
+				resHeader = MakeResponseHeader(header, TransportStatus::Success, PM_STATUS_SUCCESS);
 			}
 			catch (const ActionExecutionError& e) {
 				pmlog_error(std::format("Error in action [{}] execution", GetIdentifier())).code(e.GetCode());
-				resHeader = MakeResponseHeader_(header, TransportStatus::ExecutionFailure, e.GetCode());
+				resHeader = MakeResponseHeader(header, TransportStatus::ExecutionFailure, e.GetCode());
 			}
 			catch (...) {
 				pmlog_error(util::ReportException());
@@ -44,7 +44,7 @@ namespace pmon::ipc::act
 				if (pipe.GetWriteBufferPending()) {
 					pipe.ClearWriteBuffer();
 				}
-				resHeader = MakeResponseHeader_(header, TransportStatus::TransportFailure, PM_STATUS_SUCCESS);
+				resHeader = MakeResponseHeader(header, TransportStatus::TransportFailure, PM_STATUS_SUCCESS);
 			}
 			if (resHeader.transportStatus == TransportStatus::Success) {
 				// if no errors occured transmit standard packet with header and action response payload
@@ -61,14 +61,6 @@ namespace pmon::ipc::act
 		}
 		// default version for all actions
 		static constexpr uint16_t Version = 1;
-	private:
-		static PacketHeader MakeResponseHeader_(const PacketHeader& reqHeader, TransportStatus txs, int exs)
-		{
-			auto resHeader = reqHeader;
-			resHeader.transportStatus = txs;
-			resHeader.executionStatus = exs;
-			return resHeader;
-		}
 	};
 
 	template<class P>

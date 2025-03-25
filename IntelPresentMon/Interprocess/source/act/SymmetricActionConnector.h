@@ -17,25 +17,38 @@ namespace pmon::ipc::act
 	public:
         as::awaitable<void> SyncHandleRequest(ExecCtx& ctx, SessionContextType& stx)
         {
-            // read packet from the pipe into buffer, partially deserialize (header only)
-            const auto header = co_await pInPipe_->ReadPacketConsumeHeader<PacketHeader>();
-            // -- do per-action processing based on received header --
-            // any action other than OpenSession without having clientPid is an anomaly
-            // TODO: make this processing a customization point in ExecutionContext and move it out of here
-            if (header.identifier != "OpenSession") {
-                assert(bool(stx.clientPid));
-                if (!stx.clientPid) {
-                    pmlog_warn("Received action without a valid session opened");
+            PacketHeader header;
+            try {
+                // read packet from the pipe into buffer, partially deserialize (header only)
+                header = co_await pInPipe_->ReadPacketConsumeHeader<PacketHeader>();
+                // -- do per-action processing based on received header --
+                // any action other than OpenSession without having clientPid is an anomaly
+                // TODO: make this processing a customization point in ExecutionContext and move it out of here
+                if (header.identifier != "OpenSession") {
+                    assert(bool(stx.clientPid));
+                    if (!stx.clientPid) {
+                        pmlog_warn("Received action without a valid session opened");
+                    }
+                }
+                // bookkeeping
+                stx.lastTokenSeen = header.commandToken;
+                stx.lastReceived = std::chrono::high_resolution_clock::now();
+                stx.receiveCount++;
+                // lookup the command by identifier and execute it with remaining buffer contents
+                // response is then transmitted over the pipe to remote
+                // TODO: make this return result code (increment error count based on this)
+                co_await AsyncActionCollection<ExecCtx>::Get().Find(header.identifier).Execute(ctx, stx, header, *pInPipe_);
+                co_return;
+            }
+            catch (...) {
+                pmlog_error(util::ReportException());
+                // if the output buffer is dirty, we're not sure what state we're in so just clear it
+                if (pInPipe_->GetWriteBufferPending()) {
+                    pInPipe_->ClearWriteBuffer();
                 }
             }
-            // bookkeeping
-            stx.lastTokenSeen = header.commandToken;
-            stx.lastReceived = std::chrono::high_resolution_clock::now();
-            stx.receiveCount++;
-            // lookup the command by identifier and execute it with remaining buffer contents
-            // response is then transmitted over the pipe to remote
-            // TODO: make this return result code (increment error count based on this)
-            co_await AsyncActionCollection<ExecCtx>::Get().Find(header.identifier).Execute(ctx, stx, header, *pInPipe_);
+            auto resHeader = MakeResponseHeader(header, TransportStatus::TransportFailure, PM_STATUS_SUCCESS);
+            co_await pInPipe_->WritePacket(std::move(resHeader), EmptyPayload{}, ctx.responseWriteTimeoutMs);
         }
         template<class Params>
         auto DispatchSync(Params&& params, as::io_context& ioctx, SessionContextType& stx)
