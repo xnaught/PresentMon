@@ -240,6 +240,9 @@
     <ClInclude Include="win\HrError.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="pipe\ManualAsyncEvent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">

@@ -146,5 +146,8 @@
     <ClInclude Include="source\act\SymmetricActionServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="source\act\SymmetricActionClient.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

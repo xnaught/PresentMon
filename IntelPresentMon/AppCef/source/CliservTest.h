@@ -1,6 +1,5 @@
 #include "../Interprocess/source/act/SymmetricActionServer.h"
-#include "../Interprocess/source/act/SymmetricActionConnector.h"
-#include <boost/asio/experimental/awaitable_operators.hpp>
+#include "../Interprocess/source/act/SymmetricActionClient.h"
 #include <memory>
 #include <set>
 #include <unordered_map>
@@ -242,68 +241,10 @@ namespace p2c::client::kact
         } }.detach();
     }
 
-    class ActionClient
-    {
-        using ExecCtx = KernelExecutionContext;
-        using SessionContextType = typename ExecCtx::SessionContextType;
-    public:
-        ActionClient(std::string pipeName)
-            :
-            basePipeName_{ std::move(pipeName) },
-            asioCloseEvtView_{ ioctx_, winCloseEvt_.Clone().Release() }
-        {
-            stx_.pConn = SymmetricActionConnector<KernelExecutionContext>::ConnectToServer(basePipeName_, ioctx_);
-            as::co_spawn(ioctx_, [this]() -> as::awaitable<void> {
-                bool alive = true;
-                while (alive) {                    
-                    auto res = co_await (stx_.pConn->SyncHandleRequest(ctx_, stx_) ||
-                        asioCloseEvtView_.async_wait(as::use_awaitable));
-                    alive = res.index() == 0;
-                }
-            }, as::detached);
-            runner_ = std::jthread{ &ActionClient::Run_, this };
-            auto res = DispatchSync(OpenSession::Params{
-                .clientPid = GetCurrentProcessId(),
-            });
-            stx_.remotePid = res.serverPid;
-            pmlog_info(std::format("Opened session with server, yikes = [{}]", res.yikes)).pmwatch(res.serverPid);
-        }
-
-        ActionClient(const ActionClient&) = delete;
-        ActionClient& operator=(const ActionClient&) = delete;
-        ActionClient(ActionClient&&) = delete;
-        ActionClient& operator=(ActionClient&&) = delete;
-        ~ActionClient()
-        {
-            winCloseEvt_.Set();
-        }
-
-        template<class Params>
-        auto DispatchSync(Params&& params)
-        {
-            return stx_.pConn->DispatchSync(std::forward<Params>(params), ioctx_, stx_);
-        }
-
-    private:
-        // function
-        void Run_()
-        {
-            ioctx_.run();
-        }
-        // data
-        std::string basePipeName_;
-        pipe::as::io_context ioctx_;
-        SessionContextType stx_;
-        KernelExecutionContext ctx_;
-        ::pmon::util::win::Event winCloseEvt_;
-        as::windows::object_handle asioCloseEvtView_;
-        std::jthread runner_;
-    };
-
     void LaunchClientWork()
     {
         std::thread{ [] {
-            ActionClient ac{ yaboi };
+            SymmetricActionClient<KernelExecutionContext, OpenSession> ac{ yaboi };
             std::this_thread::sleep_for(50ms);
             std::vector<std::jthread> threads;
             for (int i = 0; i < 32; i++) {

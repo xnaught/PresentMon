@@ -25,6 +25,7 @@
     <ClInclude Include="source\act\Packet.h" />
     <ClInclude Include="source\act\AsyncAction.h" />
     <ClInclude Include="source\act\AsyncActionCollection.h" />
+    <ClInclude Include="source\act\SymmetricActionClient.h" />
     <ClInclude Include="source\act\SymmetricActionConnector.h" />
     <ClInclude Include="source\act\SymmetricActionServer.h" />
     <ClInclude Include="source\act\Transfer.h" />
