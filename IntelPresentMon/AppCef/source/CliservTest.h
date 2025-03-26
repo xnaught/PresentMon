@@ -246,8 +246,17 @@ namespace p2c::client::kact
 
     void LaunchClientWork()
     {
+        class Client : public SymmetricActionClient<KernelExecutionContext>
+        {
+        public:
+            Client(const std::string& pipe) : SymmetricActionClient<KernelExecutionContext>{ pipe } {
+                auto res = DispatchSync(OpenSession::Params{ GetCurrentProcessId() });
+                EstablishSession_(res.serverPid);
+            }
+        };
+
         const auto work = [] {
-            SymmetricActionClient<KernelExecutionContext, OpenSession> ac{ yaboi };
+            Client ac{ yaboi };
             std::this_thread::sleep_for(50ms);
             std::vector<std::jthread> threads;
             for (int i = 0; i < 12; i++) {

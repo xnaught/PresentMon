@@ -18,7 +18,7 @@ namespace pmon::ipc::act
     namespace as = boost::asio;
 
 
-    template<class ExecCtx, class OpenSessionAction>
+    template<class ExecCtx>
     class SymmetricActionClient
     {
         using SessionContextType = typename ExecCtx::SessionContextType;
@@ -31,12 +31,6 @@ namespace pmon::ipc::act
             stx_.pConn = SymmetricActionConnector<ExecCtx>::ConnectToServer(basePipeName_, ioctx_);
             as::co_spawn(ioctx_, SessionStrand_(), as::detached);
             runner_ = std::jthread{ &SymmetricActionClient::Run_, this };
-            // open session to server using the template-designated action
-            auto res = DispatchSync(typename OpenSessionAction::Params{
-                .clientPid = GetCurrentProcessId(),
-            });
-            stx_.remotePid = res.serverPid;
-            pmlog_info("Opened session with server").pmwatch(res.serverPid);
         }
 
         SymmetricActionClient(const SymmetricActionClient&) = delete;
@@ -52,6 +46,12 @@ namespace pmon::ipc::act
         auto DispatchSync(Params&& params)
         {
             return stx_.pConn->DispatchSync(std::forward<Params>(params), ioctx_, stx_);
+        }
+
+    protected:
+        void EstablishSession_(uint32_t serverPid)
+        {
+            stx_.remotePid = serverPid;
         }
 
     private:

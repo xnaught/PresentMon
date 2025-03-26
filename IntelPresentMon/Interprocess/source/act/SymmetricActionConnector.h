@@ -40,7 +40,7 @@ namespace pmon::ipc::act
                 co_await AsyncActionCollection<ExecCtx>::Get().Find(header.identifier).Execute(ctx, stx, header, *pInPipe_);
                 co_return;
             }
-            catch (const pipe::PipeError& e) {
+            catch (const pipe::PipeError&) {
                 // we assume any pipe-transport related errors are not recoverable and proceed to terminate connection
                 throw;
             }
