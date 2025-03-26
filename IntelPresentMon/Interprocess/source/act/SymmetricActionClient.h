@@ -7,6 +7,7 @@
 #include "AsyncActionCollection.h"
 #include "ActionContext.h"
 #include <thread>
+#include <boost/asio/experimental/awaitable_operators.hpp>
 
 
 namespace pmon::ipc::act
@@ -16,7 +17,7 @@ namespace pmon::ipc::act
     using namespace util;
     using namespace ipc;
     namespace as = boost::asio;
-
+    using namespace as::experimental::awaitable_operators;
 
     template<class ExecCtx>
     class SymmetricActionClient

@@ -33,14 +33,14 @@ namespace pmon::svc::acts
 		static Response Execute_(const ActionExecutionContext& ctx, SessionContext& stx, Params&& in)
 		{
 			std::string nsmFileName;
-			if (auto sta = ctx.pPmon->StartStreaming(stx.clientPid, in.targetPid, nsmFileName); sta != PM_STATUS_SUCCESS) {
+			if (auto sta = ctx.pPmon->StartStreaming(stx.remotePid, in.targetPid, nsmFileName); sta != PM_STATUS_SUCCESS) {
 				pmlog_error("Start stream failed").code(sta);
 				throw util::Except<ActionExecutionError>(sta);
 			}
 			stx.trackedPids.insert(in.targetPid);
 			const Response out{ .nsmFileName = std::move(nsmFileName) };
 			pmlog_info(std::format("StartTracking action from [{}] targeting [{}] assigned nsm [{}]",
-				stx.clientPid, in.targetPid, out.nsmFileName));
+				stx.remotePid, in.targetPid, out.nsmFileName));
 			return out;
 		}
 	};

@@ -25,9 +25,9 @@ namespace pmon::svc::acts
 		friend class AsyncActionBase_<ACTNAME, ActionExecutionContext>;
 		static Response Execute_(const ActionExecutionContext& ctx, SessionContext& stx, Params&& in)
 		{
-			ctx.pPmon->StopStreaming(stx.clientPid, in.targetPid);
+			ctx.pPmon->StopStreaming(stx.remotePid, in.targetPid);
 			stx.trackedPids.erase(in.targetPid);
-			pmlog_info(std::format("StopTracking action from [{}] un-targeting [{}]", stx.clientPid, in.targetPid));
+			pmlog_info(std::format("StopTracking action from [{}] un-targeting [{}]", stx.remotePid, in.targetPid));
 			return {};
 		}
 	};

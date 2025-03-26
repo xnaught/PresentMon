@@ -3,6 +3,7 @@
 #pragma once
 #include <string>
 #include <optional>
+#include <memory>
 #include "PresentMon.h"
 #include "Service.h"
 
@@ -17,5 +18,7 @@ namespace pmon::svc
         ActionServer& operator=(const ActionServer&) = delete;
         ActionServer(ActionServer&&) = delete;
         ActionServer& operator=(ActionServer&&) = delete;
+    private:
+        std::shared_ptr<void> pImpl_;
     };
 }

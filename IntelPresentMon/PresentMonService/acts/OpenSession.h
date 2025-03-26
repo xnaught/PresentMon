@@ -24,6 +24,7 @@ namespace pmon::svc::acts
 			}
 		};
 		struct Response {
+			uint32_t servicePid;
 			std::string serviceBuildId;
 			std::string serviceBuildConfig;
 
@@ -35,13 +36,17 @@ namespace pmon::svc::acts
 		friend class AsyncActionBase_<ACTNAME, ActionExecutionContext>;
 		static Response Execute_(const ActionExecutionContext& ctx, SessionContext& stx, Params&& in)
 		{
-			stx.clientPid = in.clientPid;
+			stx.remotePid = in.clientPid;
 			stx.clientBuildId = in.clientBuildId;
 			ctx.pSvc->SignalClientSessionOpened();
 			pmlog_info(std::format("Open action for session #{} pid={}; [BID] cli={} svc={} [CFG] cli={} svc={}",
-				stx.pPipe->GetId(), in.clientPid, in.clientBuildId, bid::BuildIdShortHash(),
+				stx.pConn->GetId(), in.clientPid, in.clientBuildId, bid::BuildIdShortHash(),
 				in.clientBuildConfig, bid::BuildIdConfig()));
-			return Response{ .serviceBuildId = bid::BuildIdShortHash(), .serviceBuildConfig = bid::BuildIdConfig()};
+			return Response{
+				.servicePid = GetCurrentProcessId(),
+				.serviceBuildId = bid::BuildIdShortHash(),
+				.serviceBuildConfig = bid::BuildIdConfig()
+			};
 		}
 	};
 

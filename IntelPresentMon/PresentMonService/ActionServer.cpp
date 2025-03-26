@@ -1,8 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-#include "../CommonUtilities/pipe/Pipe.h"
 #include "../CommonUtilities/str/String.h"
-#include "../Interprocess/source/act/ActionServer.h"
+#include "../Interprocess/source/act/SymmetricActionServer.h"
 #include "ActionServer.h"
 #include "GlobalIdentifiers.h"
 #include "ActionExecutionContext.h"
@@ -19,10 +18,11 @@ namespace pmon::svc
         // if we have a pipe name override, that indicates we don't need special permissions
         auto sec = pipe::DuplexPipe::GetSecurityString(pipeName ?
             pipe::SecurityMode::Child : pipe::SecurityMode::Service);
-        // launch and detach a thread to run the action server
-        act::ActionServerImpl_<ActionExecutionContext>::LaunchThread(
+        // construct (and start) the server
+        pImpl_ = std::make_shared<act::SymmetricActionServer<ActionExecutionContext>>(
             ActionExecutionContext{ .pSvc = pSvc, .pPmon = pPmon },
-            pipeName.value_or(gid::defaultControlPipeName), 2, std::move(sec)
-        ).detach();
+            pipeName.value_or(gid::defaultControlPipeName),
+            2, std::move(sec)
+        );
     }
 }

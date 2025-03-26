@@ -259,7 +259,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
                 "--log-pipe-name"s, *logSvcPipe,
                 "--enable-stdio-log");
 
-            if (!pmon::util::win::WaitForNamedPipe(*opt.controlPipe, 1500)) {
+            if (!pmon::util::win::WaitForNamedPipe(*opt.controlPipe + "-in", 1500)) {
                 pmlog_error("timeout waiting for child service control pipe to go online");
                 return -1;
             }

@@ -1,5 +1,6 @@
 #pragma once
-#include "../CommonUtilities/pipe/Pipe.h"
+#include "../Interprocess/source/act/SymmetricActionConnector.h"
+#include "../CommonUtilities/pipe/ManualAsyncEvent.h"
 #include <memory>
 #include <set>
 #include <unordered_map>
@@ -13,10 +14,13 @@
 
 namespace pmon::svc
 {
+    struct ActionExecutionContext;
+
     struct ActionSessionContext
     {
-        std::shared_ptr<util::pipe::DuplexPipe> pPipe;
-        uint32_t clientPid = 0;
+        std::unique_ptr<ipc::act::SymmetricActionConnector<ActionExecutionContext>> pConn;
+        util::pipe::ManualAsyncEvent stopEvt;
+        uint32_t remotePid = 0;
         std::set<uint32_t> trackedPids;
         std::optional<uint32_t> requestedAdapterId;
         std::optional<uint32_t> requestedTelemetryPeriodMs;
@@ -46,7 +50,7 @@ namespace pmon::svc
         void Dispose(SessionContextType& stx)
         {
             for (auto& tracked : stx.trackedPids) {
-                pPmon->StopStreaming(stx.clientPid, tracked);
+                pPmon->StopStreaming(stx.remotePid, tracked);
             }
         }
     };
