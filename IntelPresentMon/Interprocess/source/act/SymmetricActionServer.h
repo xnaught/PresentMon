@@ -52,7 +52,7 @@ namespace pmon::ipc::act
         // functions
         void Run_()
         {
-            log::IdentificationTable::AddThisThread("srv-act-worker");
+            log::IdentificationTable::AddThisThread("act-srv-worker");
             try {
                 // maintain N available connector instances at all times
                 for (uint32_t i = 0; i < reservedPipeInstanceCount_; i++) {

@@ -26,17 +26,12 @@ namespace pmon::ipc::act
         SymmetricActionClient(std::string pipeName)
             :
             basePipeName_{ std::move(pipeName) },
-            stopEvt_{ ioctx_ }
+            stx_{ .stopEvt = { ioctx_ } }
         {
             stx_.pConn = SymmetricActionConnector<ExecCtx>::ConnectToServer(basePipeName_, ioctx_);
-            as::co_spawn(ioctx_, [this]() -> as::awaitable<void> {
-                bool alive = true;
-                while (alive) {
-                    auto res = co_await(stx_.pConn->SyncHandleRequest(ctx_, stx_) || stopEvt_.AsyncWait());
-                    alive = res.index() == 0;
-                }
-            }, as::detached);
+            as::co_spawn(ioctx_, SessionStrand_(), as::detached);
             runner_ = std::jthread{ &SymmetricActionClient::Run_, this };
+            // open session to server using the template-designated action
             auto res = DispatchSync(typename OpenSessionAction::Params{
                 .clientPid = GetCurrentProcessId(),
             });
@@ -50,7 +45,7 @@ namespace pmon::ipc::act
         SymmetricActionClient& operator=(SymmetricActionClient&&) = delete;
         ~SymmetricActionClient()
         {
-            stopEvt_.Signal();
+            stx_.stopEvt.Signal();
         }
 
         template<class Params>
@@ -63,14 +58,42 @@ namespace pmon::ipc::act
         // function
         void Run_()
         {
-            ioctx_.run();
+            log::IdentificationTable::AddThisThread("act-cli-worker");
+            try {
+                ioctx_.run();
+                pmlog_info("ActionClient exiting");
+            }
+            catch (...) {
+                pmlog_error(ReportException());
+                // if the action server crashes for any reason, the service should restart at this point
+                // TODO: don't make this mandatory for all uses of the server (client in this case)
+                log::GetDefaultChannel()->Flush();
+                std::terminate();
+            }
+        }
+        as::awaitable<void> SessionStrand_()
+        {
+            // TODO: work on propagation of server disconnection event errors
+            try {
+                bool alive = true;
+                while (alive) {
+                    auto res = co_await(stx_.pConn->SyncHandleRequest(ctx_, stx_) || stx_.stopEvt.AsyncWait());
+                    alive = res.index() == 0;
+                }
+            }
+            catch (const pipe::BenignPipeError&) {
+                pmlog_dbg(util::ReportException());
+            }
+            catch (...) {
+                pmlog_error(util::ReportException());
+            }
+            pmlog_info("Exiting action server session strand");
         }
         // data
         std::string basePipeName_;
         pipe::as::io_context ioctx_;
         SessionContextType stx_;
         ExecCtx ctx_;
-        pipe::ManualAsyncEvent stopEvt_;
         std::jthread runner_;
     };
 }

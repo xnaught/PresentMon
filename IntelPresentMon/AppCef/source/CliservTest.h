@@ -43,6 +43,7 @@ namespace p2c::client::kact
     struct KernelSessionContext
     {
         std::unique_ptr<SymmetricActionConnector<KernelExecutionContext>> pConn;
+        pipe::ManualAsyncEvent stopEvt;
         uint32_t remotePid = 0;
         std::optional<uint32_t> lastTokenSeen;
         std::chrono::high_resolution_clock::time_point lastReceived;
@@ -239,23 +240,21 @@ namespace p2c::client::kact
             std::this_thread::sleep_for(2s);
             auto out = server.DispatchSync(TestFromServer::Params{ .in = 420 });
             pmlog_info("henlo").pmwatch(out.out);
-            std::this_thread::sleep_for(15s);
+            std::this_thread::sleep_for(25s);
         } }.detach();
     }
 
     void LaunchClientWork()
     {
-        std::thread{ [] {
-            log::IdentificationTable::AddThisThread("cli-act-test-master");
+        const auto work = [] {
             SymmetricActionClient<KernelExecutionContext, OpenSession> ac{ yaboi };
             std::this_thread::sleep_for(50ms);
             std::vector<std::jthread> threads;
-            for (int i = 0; i < 32; i++) {
+            for (int i = 0; i < 12; i++) {
                 threads.push_back(std::jthread{ [&, tid = i] {
-                log::IdentificationTable::AddThisThread(std::format("cli-act-test-{}", tid));
                     std::minstd_rand0 rne{ std::random_device{}() };
                     std::uniform_int_distribution<uint32_t> dist{ 1, 1000 };
-                    for (int i = 0; i < 250; i++) {
+                    for (int i = 0; i < 120; i++) {
                         const auto in = dist(rne);
                         const auto [out] = ac.DispatchSync(TestAct::Params{ in });
                         pmlog_info("action run").pmwatch(tid).pmwatch(i).pmwatch(in).pmwatch(out);
@@ -267,6 +266,10 @@ namespace p2c::client::kact
                 } });
             }
             std::this_thread::sleep_for(20s);
-        } }.detach();
+        };
+
+        std::thread{ work }.detach();
+        std::this_thread::sleep_for(250ms);
+        std::thread{ work }.detach();
     }
 }
