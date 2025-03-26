@@ -20,8 +20,6 @@
   <ItemGroup>
     <ClInclude Include="source\act\ActionContext.h" />
     <ClInclude Include="source\act\ActionExecutionError.h" />
-    <ClInclude Include="source\act\ActionServer.h" />
-    <ClInclude Include="source\act\InboundActionConnector.h" />
     <ClInclude Include="source\act\Packet.h" />
     <ClInclude Include="source\act\AsyncAction.h" />
     <ClInclude Include="source\act\AsyncActionCollection.h" />
