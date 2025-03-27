@@ -60,10 +60,24 @@ namespace pmon::ipc::act
             using Action = typename ipc::act::ActionParamsTraits<std::decay_t<Params>>::Action;
             using Response = Action::Response;
             // wrap the SyncRequest in a coro so we can assure non-concurrent increment of the token
-            const auto coro = [this, &stx](auto&& params) -> as::awaitable<Response> {
-                co_return co_await SyncRequest<Action>(std::forward<Params>(params), stx.nextCommandToken++, *pOutPipe_);
+            // CAUTION: this coro has captures that will blow up if we try and exit this function before completion
+            // currently OK because we block on future, but any future refactor needs to take this into consideration
+            const auto coro = [](auto&& params, SessionContextType& stx, util::pipe::DuplexPipe& pipe) -> as::awaitable<Response> {
+                co_return co_await SyncRequest<Action>(std::forward<Params>(params), stx.nextCommandToken++, pipe);
             };
-            return as::co_spawn(ioctx, coro(std::forward<Params>(params)), as::use_future).get();
+            return as::co_spawn(ioctx, coro(std::forward<Params>(params), stx, *pOutPipe_), as::use_future).get();
+        }
+        // TODO: this should support both retained requests and unretained events
+        // need to figure out fully async request flow and how to implement the continuation API(s)
+        template<class Params>
+        auto DispatchAsync(Params&& params, as::io_context& ioctx, SessionContextType& stx)
+        {
+            using Action = typename ipc::act::ActionParamsTraits<std::decay_t<Params>>::Action;
+            // wrap the AsyncEmit in a coro so we can assure non-concurrent increment of the token
+            const auto coro = [](auto&& params, SessionContextType& stx, util::pipe::DuplexPipe& pipe) -> as::awaitable<void> {
+                co_await AsyncEmit<Action>(std::forward<Params>(params), stx.nextCommandToken++, pipe);
+            };
+            as::co_spawn(ioctx, coro(std::forward<Params>(params), stx, *pOutPipe_), as::detached);
         }
         uint32_t GetId() const
         {

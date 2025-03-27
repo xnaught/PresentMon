@@ -48,6 +48,11 @@ namespace pmon::ipc::act
         {
             return stx_.pConn->DispatchSync(std::forward<Params>(params), ioctx_, stx_);
         }
+        template<class Params>
+        auto DispatchAsync(Params&& params)
+        {
+            return stx_.pConn->DispatchAsync(std::forward<Params>(params), ioctx_, stx_);
+        }
 
     protected:
         void EstablishSession_(uint32_t serverPid)
@@ -59,7 +64,8 @@ namespace pmon::ipc::act
         // function
         void Run_()
         {
-            log::IdentificationTable::AddThisThread("act-cli-worker");
+            // TODO: investigate heap issue with this line
+            //log::IdentificationTable::AddThisThread("act-cli-worker");
             try {
                 ioctx_.run();
                 pmlog_info("ActionClient exiting");

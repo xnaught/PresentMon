@@ -46,8 +46,16 @@ namespace pmon::ipc::act
         template<class Params>
         auto DispatchSync(Params&& params)
         {
+            // TODO: server needs an actual way to specify which client endpoint to transmit to
             auto& stx = sessions_.begin()->second;
             return stx.pConn->DispatchSync(std::forward<Params>(params), ioctx_, stx);
+        }
+        template<class Params>
+        auto DispatchAsync(Params&& params)
+        {
+            // TODO: server needs an actual way to specify which client endpoint to transmit to
+            auto& stx = sessions_.begin()->second;
+            return stx.pConn->DispatchAsync(std::forward<Params>(params), ioctx_, stx);
         }
 
     private:

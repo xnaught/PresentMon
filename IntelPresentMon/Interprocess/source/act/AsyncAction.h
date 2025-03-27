@@ -10,12 +10,14 @@ namespace pmon::ipc::act
 {
 	using namespace util;
 
-	template<class ExecutionContext>
+	template<class ExecCtx>
 	class AsyncAction
 	{
-	protected:
-		using SessionContext = typename ExecutionContext::SessionContextType;
 	public:
+		// types
+		using ExecutionContext = ExecCtx;
+		using SessionContext = ExecutionContext::SessionContextType;
+		// functions
 		virtual const char* GetIdentifier() const = 0;
 		virtual pipe::as::awaitable<void> Execute(ExecutionContext& ctx, SessionContext& stx,
 			const PacketHeader& header, pipe::DuplexPipe& pipe) const = 0;
@@ -63,6 +65,44 @@ namespace pmon::ipc::act
 		static constexpr uint16_t Version = 1;
 	};
 
+	template<class T, class ExecutionContext>
+	class AsyncEventActionBase_ : public AsyncAction<ExecutionContext>
+	{
+	public:
+		pipe::as::awaitable<void> Execute(ExecutionContext& ctx, AsyncAction<ExecutionContext>::SessionContext& stx,
+			const PacketHeader& header, pipe::DuplexPipe& pipe) const final
+		{
+			PacketHeader resHeader;
+			try {
+				T::Execute_(ctx, stx, pipe.ConsumePacketPayload<typename T::Params>());
+			}
+			catch (const ActionExecutionError& e) {
+				pmlog_error(std::format("Error in action [{}] execution: {}", GetIdentifier(), e.what())).code(e.GetCode());
+			}
+			catch (...) {
+				pmlog_error(util::ReportException());
+			}
+			co_return;
+		}
+		const char* GetIdentifier() const final
+		{
+			return T::Identifier;
+		}
+		// default version for all actions
+		static constexpr uint16_t Version = 1;
+	};
+
 	template<class P>
 	struct ActionParamsTraits;
+
+	template<class A>
+	concept Request = std::is_base_of_v<AsyncActionBase_<A, typename A::ExecutionContext>, A> && requires {
+		typename A::Params;
+		typename A::Response;
+	};
+
+	template<class A>
+	concept Event = std::is_base_of_v<AsyncEventActionBase_<A, typename A::ExecutionContext>, A> && requires {
+		typename A::Params;
+	};
 }

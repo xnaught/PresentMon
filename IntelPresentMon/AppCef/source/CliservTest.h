@@ -185,6 +185,43 @@ ACTION_TRAITS_DEF(ACT_NAME);
 namespace p2c::client::kact
 {
 
+#define ACT_NAME TestEvent
+#define ACT_EXEC_CTX CefExecutionContext
+#define ACT_NS ::p2c::client::kact
+
+    class ACT_NAME : public AsyncEventActionBase_<ACT_NAME, ACT_EXEC_CTX>
+    {
+    public:
+        static constexpr const char* Identifier = STRINGIFY(ACT_NAME);
+        struct Params
+        {
+            uint32_t in;
+
+            template<class A> void serialize(A& ar) {
+                ar(in);
+            }
+        };
+    private:
+        friend class AsyncEventActionBase_<ACT_NAME, ACT_EXEC_CTX>;
+        static void Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
+        {
+            pmlog_info("eventing @at").pmwatch(in.in);
+        }
+    };
+
+#ifdef P2C_KERNEL_ASYNC_ACTION_REGISTRATION_
+    ACTION_REG(ACT_NAME);
+#endif
+}
+
+ACTION_TRAITS_DEF(ACT_NAME);
+#undef ACT_NAME
+#undef ACT_EXEC_CTX
+#undef ACT_NS
+
+namespace p2c::client::kact
+{
+
 #define ACT_NAME TestFromServer
 #define ACT_EXEC_CTX KernelExecutionContext
 #define ACT_NS ::p2c::client::kact
@@ -235,7 +272,6 @@ namespace p2c::client::kact
     {
         // launch and detach a thread to run the action server
         std::thread{ [] {
-            log::IdentificationTable::AddThisThread("srv-act-test-master");
             SymmetricActionServer<CefExecutionContext> server{ {}, yaboi, 1, "" };
             std::this_thread::sleep_for(2s);
             auto out = server.DispatchSync(TestFromServer::Params{ .in = 420 });
@@ -263,13 +299,15 @@ namespace p2c::client::kact
                 threads.push_back(std::jthread{ [&, tid = i] {
                     std::minstd_rand0 rne{ std::random_device{}() };
                     std::uniform_int_distribution<uint32_t> dist{ 1, 1000 };
-                    for (int i = 0; i < 120; i++) {
+                    for (int i = 0; i < 60; i++) {
                         const auto in = dist(rne);
                         const auto [out] = ac.DispatchSync(TestAct::Params{ in });
                         pmlog_info("action run").pmwatch(tid).pmwatch(i).pmwatch(in).pmwatch(out);
                         if (out != in * 2) {
                             DebugBreak();
                         }
+                        std::this_thread::sleep_for(1ms);
+                        ac.DispatchAsync(TestEvent::Params{ in + 1 });
                         std::this_thread::sleep_for(1ms);
                     }
                 } });
