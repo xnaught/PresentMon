@@ -24,6 +24,8 @@ namespace p2c::client::cef
         void LaunchKernel();
         void ClearKernelWrapper();
     private:
+        void HotkeyActionTask_(Action action);
+
         CefRefPtr<CefBrowser> pBrowser;
         std::shared_mutex kernelMtx;
         util::KernelWrapper* pKernelWrapper;

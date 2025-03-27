@@ -53,6 +53,12 @@ namespace p2c::client::cef
         util::SignalManager* pSignals;
     };
 
+
+    void DataBindAccessor::HotkeyActionTask_(Action action)
+    {
+        pKernelWrapper->signals.SignalHotkeyFired(uint32_t(action));
+    }
+
     DataBindAccessor::DataBindAccessor(CefRefPtr<CefBrowser> pBrowser, util::KernelWrapper* pKernelWrapper_)
         :
         pBrowser{ std::move(pBrowser) },
@@ -60,7 +66,8 @@ namespace p2c::client::cef
     {
         pKernelWrapper->pKernelHandler = std::make_unique<DBAKernelHandler>(&pKernelWrapper_->signals);
         pKernelWrapper->pHotkeys = std::make_unique<util::Hotkeys>();
-        pKernelWrapper->pHotkeys->SetHandler([pWrap = pKernelWrapper](Action act) { pWrap->signals.SignalHotkeyFired((uint32_t)act); });
+        pKernelWrapper->pHotkeys->SetHandler([this](Action action) {
+            CefPostTask(TID_RENDERER, base::BindOnce(&DataBindAccessor::HotkeyActionTask_, base::Unretained(this), action)); });
     }
 
     bool DataBindAccessor::Execute(const CefString& name, CefRefPtr<CefV8Value> object, const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)

@@ -134,10 +134,7 @@ namespace p2c::client::util
 											i != registeredHotkeys_.cend()) {
 											// if match found dispatch action on renderer thread
 											pmlog_verb(v::hotkey)("hotkey dispatching");
-											CefPostTask(TID_RENDERER, base::BindOnce(
-												&Hotkeys::DispatchHotkey_,
-												base::Unretained(this), i->second
-											));
+											DispatchHotkey_(i->second);
 										}
 									}
 								}
@@ -173,7 +170,6 @@ namespace p2c::client::util
 	}
 	void Hotkeys::DispatchHotkey_(Action action) const
 	{
-		std::lock_guard lk{ mtx_ };
 		if (Handler_) {
 			pmlog_verb(v::hotkey)("execute handler with hotkey action");
 			Handler_(action);
