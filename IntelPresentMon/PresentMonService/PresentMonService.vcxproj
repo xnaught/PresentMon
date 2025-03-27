@@ -126,7 +126,6 @@
     <ClCompile Include="PresentMonSession.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ActionHelper.h" />
     <ClInclude Include="acts\EnumerateAdapters.h" />
     <ClInclude Include="acts\GetStaticCpuMetrics.h" />
     <ClInclude Include="acts\GetIntrospectionShmName.h" />

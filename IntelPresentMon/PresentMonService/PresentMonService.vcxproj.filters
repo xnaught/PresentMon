@@ -28,7 +28,6 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="LogSetup.h" />
     <ClInclude Include="acts\OpenSession.h" />
-    <ClInclude Include="ActionHelper.h" />
     <ClInclude Include="acts\StartTracking.h" />
     <ClInclude Include="acts\GetStaticCpuMetrics.h" />
     <ClInclude Include="acts\EnumerateAdapters.h" />

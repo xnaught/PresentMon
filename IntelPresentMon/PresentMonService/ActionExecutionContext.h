@@ -12,7 +12,7 @@
 #include "Service.h"
 
 
-namespace pmon::svc
+namespace pmon::svc::acts
 {
     struct ActionExecutionContext;
 

@@ -19,8 +19,8 @@ namespace pmon::svc
         auto sec = pipe::DuplexPipe::GetSecurityString(pipeName ?
             pipe::SecurityMode::Child : pipe::SecurityMode::Service);
         // construct (and start) the server
-        pImpl_ = std::make_shared<act::SymmetricActionServer<ActionExecutionContext>>(
-            ActionExecutionContext{ .pSvc = pSvc, .pPmon = pPmon },
+        pImpl_ = std::make_shared<act::SymmetricActionServer<acts::ActionExecutionContext>>(
+            acts::ActionExecutionContext{ .pSvc = pSvc, .pPmon = pPmon },
             pipeName.value_or(gid::defaultControlPipeName),
             2, std::move(sec)
         );

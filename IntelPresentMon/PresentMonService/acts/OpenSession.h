@@ -1,18 +1,21 @@
 #pragma once
-#include "../ActionHelper.h"
+#include "../../Interprocess/source/act/ActionHelper.h"
 #include "../../Versioning/BuildId.h"
 #include <format>
 
-#define ACTNAME OpenSession
+#define ACT_NAME OpenSession
+#define ACT_EXEC_CTX ActionExecutionContext
+#define ACT_TYPE AsyncActionBase_
+#define ACT_NS ::pmon::svc::acts
 
 namespace pmon::svc::acts
 {
 	using namespace ipc::act;
 
-	class ACTNAME : public AsyncActionBase_<ACTNAME, ActionExecutionContext>
+	class ACT_NAME : public ACT_TYPE<ACT_NAME, ACT_EXEC_CTX>
 	{
 	public:
-		static constexpr const char* Identifier = STRINGIFY(ACTNAME);
+		static constexpr const char* Identifier = STRINGIFY(ACT_NAME);
 		struct Params
 		{
 			uint32_t clientPid;
@@ -33,8 +36,8 @@ namespace pmon::svc::acts
 			}
 		};
 	private:
-		friend class AsyncActionBase_<ACTNAME, ActionExecutionContext>;
-		static Response Execute_(const ActionExecutionContext& ctx, SessionContext& stx, Params&& in)
+		friend class ACT_TYPE<ACT_NAME, ACT_EXEC_CTX>;
+		static Response Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
 		{
 			stx.remotePid = in.clientPid;
 			stx.clientBuildId = in.clientBuildId;
@@ -50,11 +53,14 @@ namespace pmon::svc::acts
 		}
 	};
 
-#ifdef PM_SERVICE_ASYNC_ACTION_REGISTRATION_
-	ACTION_REG(ACTNAME);
+#ifdef PM_ASYNC_ACTION_REGISTRATION_
+	ACTION_REG();
 #endif
 }
 
-ACTION_TRAITS_DEF(ACTNAME);
+ACTION_TRAITS_DEF();
 
-#undef ACTNAME
+#undef ACT_NAME
+#undef ACT_EXEC_CTX
+#undef ACT_NS
+#undef ACT_TYPE
