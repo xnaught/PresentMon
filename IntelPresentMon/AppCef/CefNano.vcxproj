@@ -45,6 +45,8 @@
     <ClInclude Include="source\NanoCefProcessHandler.h" />
     <ClInclude Include="source\SchemeFileHandler.h" />
     <ClInclude Include="source\SchemeHandlerFactory.h" />
+    <ClInclude Include="source\util\kact\KernelExecutionContext.h" />
+    <ClInclude Include="source\util\kact\OpenSession.h" />
     <ClInclude Include="source\util\AsyncEndpoint.h" />
     <ClInclude Include="source\util\AsyncEndpointCollection.h" />
     <ClInclude Include="source\util\AsyncEndpointManager.h" />
@@ -69,12 +71,14 @@
     <ClInclude Include="source\util\async\SetAdapter.h" />
     <ClInclude Include="source\util\CefValues.h" />
     <ClInclude Include="source\util\FileLocation.h" />
+    <ClInclude Include="source\util\cact\CefExecutionContext.h" />
     <ClInclude Include="source\util\KernelWrapper.h" />
     <ClInclude Include="source\util\MakeOverlaySpec.h" />
     <ClInclude Include="source\util\PathSanitaryCheck.h" />
     <ClInclude Include="source\util\SignalManager.h" />
     <ClInclude Include="source\util\FontEnumerator.h" />
     <ClInclude Include="source\util\HotkeyListener.h" />
+    <ClInclude Include="source\util\cact\HotkeyAction.h" />
     <ClInclude Include="source\util\ThreadCompass.h" />
     <ClInclude Include="source\util\V8Transfer.h" />
   </ItemGroup>

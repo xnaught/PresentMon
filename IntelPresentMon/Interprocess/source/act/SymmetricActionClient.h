@@ -24,7 +24,7 @@ namespace pmon::ipc::act
     {
         using SessionContextType = typename ExecCtx::SessionContextType;
     public:
-        SymmetricActionClient(std::string pipeName)
+        SymmetricActionClient(std::string pipeName, ExecCtx context = {})
             :
             basePipeName_{ std::move(pipeName) },
             stx_{ .stopEvt = { ioctx_ } }
