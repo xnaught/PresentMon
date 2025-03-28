@@ -107,8 +107,8 @@ namespace p2c::client::cef
             util::kact::KernelExecutionContext{}, R"(\\.\pipe\ipm-v8-channel)", 1, ""
         );
         std::this_thread::sleep_for(50ms);
-        pKernelWrapper->pClient = std::make_unique<::pmon::ipc::act::SymmetricActionClient<util::cact::CefExecutionContext>>(
-            R"(\\.\pipe\ipm-v8-channel)", util::cact::CefExecutionContext{}
+        pKernelWrapper->pClient = std::make_unique<util::CefClient>(
+            R"(\\.\pipe\ipm-v8-channel)", util::cact::CefExecutionContext{ .pSignalManager = &pKernelWrapper->signals }
         );
         pAccessor = new DataBindAccessor{ pBrowser, pKernelWrapper.get() };
 

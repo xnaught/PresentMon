@@ -1,6 +1,7 @@
 #pragma once
 #include "../Interprocess/source/act/SymmetricActionConnector.h"
 #include "../CommonUtilities/pipe/ManualAsyncEvent.h"
+#include "../SignalManager.h"
 #include <memory>
 #include <set>
 #include <unordered_map>
@@ -26,7 +27,6 @@ namespace p2c::client::util::cact
         // uint32_t sendCount = 0;
         uint32_t receiveCount = 0;
         uint32_t errorCount = 0;
-        std::string clientBuildId;
     };
 
     struct CefExecutionContext
@@ -35,6 +35,7 @@ namespace p2c::client::util::cact
         using SessionContextType = CefSessionContext;
 
         // data
+        SignalManager* pSignalManager = nullptr;
         std::optional<uint32_t> responseWriteTimeoutMs;
     };
 }

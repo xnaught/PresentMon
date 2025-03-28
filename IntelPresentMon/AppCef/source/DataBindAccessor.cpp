@@ -7,6 +7,13 @@
 #include <include/base/cef_callback.h> 
 #include <include/wrapper/cef_closure_task.h> 
 #include "util/CefValues.h"
+#include "util/kact/KernelExecutionContext.h"
+#include <Interprocess/source/act/SymmetricActionServer.h>
+#include "util/cact/HotkeyAction.h"
+#include "util/cact/TargetLostAction.h"
+#include "util/cact/OverlayDiedAction.h"
+#include "util/cact/PresentmonInitFailedAction.h"
+#include "util/cact/StalePidAction.h"
 
 
 namespace p2c::client::cef
@@ -14,60 +21,37 @@ namespace p2c::client::cef
     class DBAKernelHandler : public kern::KernelHandler
     {
     public:
-        DBAKernelHandler(util::SignalManager* pSignals_) : pSignals{ pSignals_ } {}
-        void OnTargetLost(uint32_t pid_) override
+        DBAKernelHandler(util::KernelWrapper* pWrapper) : pWrapper_{ pWrapper } {}
+        void OnTargetLost(uint32_t pid) override
         {
-            CefPostTask(TID_RENDERER, base::BindOnce(&DBAKernelHandler::TargetLostTask_, base::Unretained(this), pid_));
+            pWrapper_->pServer->DispatchAsync(util::cact::TargetLostAction::Params{ pid });
         }
         void OnOverlayDied() override
         {
-            CefPostTask(TID_RENDERER, base::BindOnce(&DBAKernelHandler::OverlayDiedTask_, base::Unretained(this)));
+            pWrapper_->pServer->DispatchAsync(util::cact::OverlayDiedAction::Params{});
         }
         void OnPresentmonInitFailed() override
         {
-            CefPostTask(TID_RENDERER, base::BindOnce(&DBAKernelHandler::PresentmonInitFailedTask_, base::Unretained(this)));
+            pWrapper_->pServer->DispatchAsync(util::cact::PresentmonInitFailedAction::Params{});
         }
         void OnStalePidSelected() override
         {
-            CefPostTask(TID_RENDERER, base::BindOnce(&DBAKernelHandler::StalePidTask_, base::Unretained(this)));
+            pWrapper_->pServer->DispatchAsync(util::cact::StalePidAction::Params{});
         }
     private:
-        // functions needed for CefPostTask (which cannot handle lambdas)
-        void TargetLostTask_(uint32_t pid_)
-        {
-            pSignals->SignalTargetLost(pid_);
-        }
-        void OverlayDiedTask_()
-        {
-            pSignals->SignalOverlayDied();
-        }
-        void PresentmonInitFailedTask_()
-        {
-            pSignals->SignalPresentmonInitFailed();
-        }
-        void StalePidTask_()
-        {
-            pSignals->SignalStalePid();
-        }
         // data
-        util::SignalManager* pSignals;
+        util::KernelWrapper* pWrapper_;
     };
-
-
-    void DataBindAccessor::HotkeyActionTask_(Action action)
-    {
-        pKernelWrapper->signals.SignalHotkeyFired(uint32_t(action));
-    }
 
     DataBindAccessor::DataBindAccessor(CefRefPtr<CefBrowser> pBrowser, util::KernelWrapper* pKernelWrapper_)
         :
         pBrowser{ std::move(pBrowser) },
         pKernelWrapper{ pKernelWrapper_ }
     {
-        pKernelWrapper->pKernelHandler = std::make_unique<DBAKernelHandler>(&pKernelWrapper_->signals);
+        pKernelWrapper->pKernelHandler = std::make_unique<DBAKernelHandler>(pKernelWrapper_);
         pKernelWrapper->pHotkeys = std::make_unique<util::Hotkeys>();
-        pKernelWrapper->pHotkeys->SetHandler([this](Action action) {
-            CefPostTask(TID_RENDERER, base::BindOnce(&DataBindAccessor::HotkeyActionTask_, base::Unretained(this), action)); });
+        pKernelWrapper->pHotkeys->SetHandler([this](Action action) { pKernelWrapper->pServer->DispatchAsync(
+            util::cact::HotkeyAction::Params{ action }); });
     }
 
     bool DataBindAccessor::Execute(const CefString& name, CefRefPtr<CefV8Value> object, const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)

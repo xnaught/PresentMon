@@ -7,7 +7,7 @@
 #include <include/base/cef_callback.h> 
 #include <include/wrapper/cef_closure_task.h> 
 
-#define ACT_NAME HotkeyAction
+#define ACT_NAME StalePidAction
 #define ACT_EXEC_CTX CefExecutionContext
 #define ACT_TYPE AsyncEventActionBase_
 #define ACT_NS ::p2c::client::util::cact
@@ -22,18 +22,14 @@ namespace p2c::client::util::cact
 		static constexpr const char* Identifier = STRINGIFY(ACT_NAME);
 		struct Params
 		{
-			Action action;
-
-			template<class A> void serialize(A& ar) {
-				ar(action);
-			}
+			template<class A> void serialize(A& ar) {}
 		};
 	private:
 		friend class ACT_TYPE<ACT_NAME, ACT_EXEC_CTX>;
 		static void Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
 		{
-			CefPostTask(TID_RENDERER, base::BindOnce(&SignalManager::SignalHotkeyFired,
-				base::Unretained(ctx.pSignalManager), uint32_t(in.action)));
+			CefPostTask(TID_RENDERER, base::BindOnce(&SignalManager::SignalStalePid,
+				base::Unretained(ctx.pSignalManager)));
 		}
 	};
 

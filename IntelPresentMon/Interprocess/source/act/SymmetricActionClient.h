@@ -27,6 +27,7 @@ namespace pmon::ipc::act
         SymmetricActionClient(std::string pipeName, ExecCtx context = {})
             :
             basePipeName_{ std::move(pipeName) },
+            ctx_{ std::move(context) },
             stx_{ .stopEvt = { ioctx_ } }
         {
             stx_.pConn = SymmetricActionConnector<ExecCtx>::ConnectToServer(basePipeName_, ioctx_);

@@ -293,25 +293,25 @@ namespace p2c::client::kact
 
         const auto work = [] {
             Client ac{ yaboi };
-            std::this_thread::sleep_for(50ms);
-            std::vector<std::jthread> threads;
-            for (int i = 0; i < 12; i++) {
-                threads.push_back(std::jthread{ [&, tid = i] {
-                    std::minstd_rand0 rne{ std::random_device{}() };
-                    std::uniform_int_distribution<uint32_t> dist{ 1, 1000 };
-                    for (int i = 0; i < 60; i++) {
-                        const auto in = dist(rne);
-                        const auto [out] = ac.DispatchSync(TestAct::Params{ in });
-                        pmlog_info("action run").pmwatch(tid).pmwatch(i).pmwatch(in).pmwatch(out);
-                        if (out != in * 2) {
-                            DebugBreak();
-                        }
-                        std::this_thread::sleep_for(1ms);
-                        ac.DispatchAsync(TestEvent::Params{ in + 1 });
-                        std::this_thread::sleep_for(1ms);
-                    }
-                } });
-            }
+            //std::this_thread::sleep_for(50ms);
+            //std::vector<std::jthread> threads;
+            //for (int i = 0; i < 12; i++) {
+            //    threads.push_back(std::jthread{ [&, tid = i] {
+            //        std::minstd_rand0 rne{ std::random_device{}() };
+            //        std::uniform_int_distribution<uint32_t> dist{ 1, 1000 };
+            //        for (int i = 0; i < 60; i++) {
+            //            const auto in = dist(rne);
+            //            const auto [out] = ac.DispatchSync(TestAct::Params{ in });
+            //            pmlog_info("action run").pmwatch(tid).pmwatch(i).pmwatch(in).pmwatch(out);
+            //            if (out != in * 2) {
+            //                DebugBreak();
+            //            }
+            //            std::this_thread::sleep_for(1ms);
+            //            ac.DispatchAsync(TestEvent::Params{ in + 1 });
+            //            std::this_thread::sleep_for(1ms);
+            //        }
+            //    } });
+            //}
             std::this_thread::sleep_for(20s);
         };
 

@@ -18,26 +18,26 @@ namespace p2c::client::util::kact
 		static constexpr const char* Identifier = STRINGIFY(ACT_NAME);
 		struct Params
 		{
-			uint32_t clientPid;
+			uint32_t cefRenderPid;
 
 			template<class A> void serialize(A& ar) {
-				ar(clientPid);
+				ar(cefRenderPid);
 			}
 		};
 		struct Response {
-			uint32_t servicePid;
+			uint32_t kernelPid;
 
 			template<class A> void serialize(A& ar) {
-				ar(servicePid);
+				ar(kernelPid);
 			}
 		};
 	private:
 		friend class ACT_TYPE<ACT_NAME, ACT_EXEC_CTX>;
 		static Response Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
 		{
-			stx.remotePid = in.clientPid;
-			const Response res{ .servicePid = GetCurrentProcessId() };
-			pmlog_info(std::format("Kernel open action for cli={} svc={}", in.clientPid, res.servicePid));
+			stx.remotePid = in.cefRenderPid;
+			const Response res{ .kernelPid = GetCurrentProcessId() };
+			pmlog_info(std::format("Kernel open action for cli={} svc={}", in.cefRenderPid, res.kernelPid));
 			return res;
 		}
 	};

@@ -26,7 +26,6 @@ namespace p2c::client::util::kact
         // uint32_t sendCount = 0;
         uint32_t receiveCount = 0;
         uint32_t errorCount = 0;
-        std::string clientBuildId;
     };
 
     struct KernelExecutionContext
