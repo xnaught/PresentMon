@@ -3,6 +3,7 @@
 #pragma once
 #include <Core/source/win/WinAPI.h>
 #include <include/cef_v8.h>
+#include <include/wrapper/cef_helpers.h>
 #include <string>
 #include <unordered_map>
 #include <functional>
@@ -11,6 +12,7 @@
 #include <unordered_map>
 #include "AsyncEndpointCollection.h"
 #include "ActionClientServer.h"
+#include "V8Transfer.h"
 
 
 namespace p2c::client::util
@@ -29,25 +31,51 @@ namespace p2c::client::util
 			CefRefPtr<CefV8Value> pV8RejectFunction;
 			CefRefPtr<CefV8Context> pV8Context;
 		};
-		struct Invocation
-		{
-			CallbackContext context;
-		};
-		struct Bindings
-		{
-			std::function<void(CefV8Value&)> dispatch;
-		};
 		// functions
-		void DispatchInvocation(const std::string& key, CallbackContext ctx, CefRefPtr<CefV8Value> pObj, CefBrowser& browser, cef::DataBindAccessor& accessor, kern::Kernel& kernel);
-		void ResolveInvocation(uint64_t uid, bool success, CefRefPtr<CefValue> pArgs);
-		bool HasHandler(const std::string& key) const;
+		void DispatchInvocation(const std::string& key, CallbackContext ctx, CefRefPtr<CefV8Value> pArgs)
+		{
+			// TODO: explicit lookup and handle missing error
+			dispatchBindings_[key](std::move(ctx), std::move(pArgs));
+		}
+		bool HasHandler(const std::string& key) const
+		{
+			return dispatchBindings_.contains(key);
+		}
+		template<class A>
+		void RegisterDispatchBinding()
+		{
+			using Params = typename A::Params;
+			using Response = typename A::Response;
+			dispatchBindings_[A::Identifier] = [this](CallbackContext ctx, CefRefPtr<CefV8Value> pObj) {
+				client_.DispatchDetachedWithContinuation(FromV8<Params>(*pObj), [ctx = std::move(ctx)](Response&& res) {
+					CefPostTask(TID_RENDERER, base::BindOnce(
+						&IpcInvocationManager::ResolveInvocation_<Response>,
+						// TODO: populate an actual success here (catch exception somewhere?)
+						true, std::move(ctx), std::move(res)
+					));
+				});
+			};
+		}
+		IpcInvocationManager(CefClient& client) : client_{ client } {}
 	private:
-		uint64_t nextUid = 0;
-		AsyncEndpointCollection endpoints;
-		// todo: use separate mutex for endpoints+uid than for invocations
-		std::mutex mtx;
-		std::unordered_map<uint64_t, Invocation> invocations;
-		CefClient& client;
+		// function
+		template<class Response>
+		static void ResolveInvocation_(bool success, CallbackContext ctx, Response res)
+		{
+			CEF_REQUIRE_RENDERER_THREAD();
+
+			ctx.pV8Context->Enter();
+			if (success) {
+				ctx.pV8ResolveFunction->ExecuteFunction(nullptr, { ToV8(res) });
+			}
+			else {
+				ctx.pV8RejectFunction->ExecuteFunction(nullptr, { ToV8(res) });
+			}
+			ctx.pV8Context->Exit();
+		}
+		// data
+		std::unordered_map<std::string, std::function<void(CallbackContext, CefRefPtr<CefV8Value>)>> dispatchBindings_;
+		CefClient& client_;
 	};
 }
 

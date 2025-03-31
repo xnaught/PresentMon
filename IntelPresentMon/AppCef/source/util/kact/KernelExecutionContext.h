@@ -8,6 +8,7 @@
 #include <optional>
 #include <cstdint>
 #include <chrono>
+#include <Core/source/kernel/Kernel.h>
 
 namespace p2c::client::util::kact
 {
@@ -35,5 +36,7 @@ namespace p2c::client::util::kact
 
         // data
         std::optional<uint32_t> responseWriteTimeoutMs;
+
+        std::unique_ptr<kern::Kernel>* ppKernel;
     };
 }

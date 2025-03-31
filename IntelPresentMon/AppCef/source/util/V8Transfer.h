@@ -65,7 +65,7 @@ namespace p2c::client::util
 		}
 		else if constexpr (std::is_class_v<T>) {
 			refl::for_each([&](const auto I) {
-				FromV8(v8.GetValue(refl::member_name<I>(out)), refl::get<I>(out));
+				FromV8(*v8.GetValue(CefString((std::string)refl::member_name<I>(out))), refl::get<I>(out));
 			}, out);
 		}
 	}

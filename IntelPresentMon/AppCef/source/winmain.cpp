@@ -20,8 +20,8 @@
 #pragma comment(lib, "Dwmapi.lib")
 
 using namespace p2c;
-using namespace pmon::util;
-using namespace pmon::bid;
+using namespace ::pmon::util;
+using namespace ::pmon::bid;
 using p2c::cli::Options;
 namespace ccef = client::cef;
 using namespace std::chrono_literals;
@@ -259,7 +259,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
                 "--log-pipe-name"s, *logSvcPipe,
                 "--enable-stdio-log");
 
-            if (!pmon::util::win::WaitForNamedPipe(*opt.controlPipe + "-in", 1500)) {
+            if (!::pmon::util::win::WaitForNamedPipe(*opt.controlPipe + "-in", 1500)) {
                 pmlog_error("timeout waiting for child service control pipe to go online");
                 return -1;
             }

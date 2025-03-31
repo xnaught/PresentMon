@@ -84,7 +84,7 @@ namespace pmon::ipc::act
             std::function<void(ResponseFromParams<Params>&&)> conti)
         {
             // wrap the AsyncEmit in a coro so we can assure non-concurrent increment of the token
-            const auto coro = [](auto&& params, SessionContextType& stx, util::pipe::DuplexPipe& pipe, auto conti)
+            const auto coro = [](auto params, SessionContextType& stx, util::pipe::DuplexPipe& pipe, auto conti)
                 -> as::awaitable<void> {
                 auto res = co_await SyncRequest<ActionFromParams<Params>>(std::forward<Params>(params), stx.nextCommandToken++, pipe);
                 conti(std::move(res));

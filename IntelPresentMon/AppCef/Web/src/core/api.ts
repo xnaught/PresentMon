@@ -99,7 +99,7 @@ export class Api {
         await this.invokeEndpointFuture('pushSpecification', spec);
     }
     static async setCapture(active: boolean): Promise<void> {
-        await this.invokeEndpointFuture('setCapture', {active});
+        await this.invokeEndpointFuture('SetCapture', {active});
     }
 
     /////// file access-related /////////

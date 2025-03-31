@@ -36,7 +36,6 @@ namespace p2c::client::util
 		// functions
 		void DispatchInvocation(const std::string& key, CallbackContext ctx, CefRefPtr<CefV8Value> pObj, CefBrowser& browser, cef::DataBindAccessor& accessor, kern::Kernel& kernel);
 		void ResolveInvocation(uint64_t uid, bool success, CefRefPtr<CefValue> pArgs);
-		bool HasHandler(const std::string& key) const;
 	private:
 		uint64_t nextUid = 0;
 		AsyncEndpointCollection endpoints;

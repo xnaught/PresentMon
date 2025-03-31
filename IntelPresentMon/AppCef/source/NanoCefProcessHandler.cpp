@@ -15,6 +15,7 @@
 #include "util/CefValues.h"
 #include <Core/source/cli/CliOptions.h>
 #include <include/cef_parser.h>
+#include "util/kact/SetCapture.h"
 
 using namespace pmon::util;
 using namespace std::chrono_literals;
@@ -104,12 +105,14 @@ namespace p2c::client::cef
     void NanoCefProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context)
     {
         pKernelWrapper->pServer = std::make_unique<::pmon::ipc::act::SymmetricActionServer<util::kact::KernelExecutionContext>>(
-            util::kact::KernelExecutionContext{}, R"(\\.\pipe\ipm-v8-channel)", 1, ""
+            util::kact::KernelExecutionContext{ .ppKernel = &pKernelWrapper->pKernel }, R"(\\.\pipe\ipm-v8-channel)", 1, ""
         );
         std::this_thread::sleep_for(50ms);
         pKernelWrapper->pClient = std::make_unique<util::CefClient>(
             R"(\\.\pipe\ipm-v8-channel)", util::cact::CefExecutionContext{ .pSignalManager = &pKernelWrapper->signals }
         );
+        pKernelWrapper->pInvocationManager = std::make_unique<util::IpcInvocationManager>(*pKernelWrapper->pClient);
+        pKernelWrapper->pInvocationManager->RegisterDispatchBinding<util::kact::SetCapture>();
         pAccessor = new DataBindAccessor{ pBrowser, pKernelWrapper.get() };
 
         auto core = CefV8Value::CreateObject(nullptr, nullptr);

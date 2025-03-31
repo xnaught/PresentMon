@@ -16,7 +16,6 @@
 #include "async/Introspect.h"
 #include "async/EnumerateKeys.h"
 #include "async/EnumerateModifiers.h"
-#include "async/SetCapture.h"
 #include "async/ExploreCaptures.h"
 #include "async/LoadFile.h"
 #include "async/StoreFile.h"
@@ -50,7 +49,6 @@ namespace p2c::client::util
 		AddEndpoint<Introspect>();
 		AddEndpoint<EnumerateKeys>();
 		AddEndpoint<EnumerateModifiers>();
-		AddEndpoint<SetCapture>();
 		AddEndpoint<ExploreCaptures>();
 		AddEndpoint<LoadFile>();
 		AddEndpoint<StoreFile>();

@@ -85,14 +85,22 @@ namespace p2c::client::cef
                 if (arguments.size() == 4 && arguments[0]->IsString() && arguments[1]->IsObject() &&
                     arguments[2]->IsFunction() && arguments[3]->IsFunction())
                 {
-                    pKernelWrapper->asyncEndpoints.DispatchInvocation(
-                        arguments[0]->GetStringValue(),
-                        { arguments[2], arguments[3], CefV8Context::GetCurrentContext() },
-                        arguments[1],
-                        *pBrowser,
-                        *this,
-                        *pKernelWrapper->pKernel
-                    );
+                    const auto& key = arguments[0]->GetStringValue();
+                    if (pKernelWrapper->pInvocationManager->HasHandler(key)) {
+                        pKernelWrapper->pInvocationManager->DispatchInvocation(key,
+                            { arguments[2], arguments[3], CefV8Context::GetCurrentContext() },
+                            arguments[1]
+                        );
+                    }
+                    else {
+                        pKernelWrapper->asyncEndpoints.DispatchInvocation(key,
+                            { arguments[2], arguments[3], CefV8Context::GetCurrentContext() },
+                            arguments[1],
+                            *pBrowser,
+                            *this,
+                            *pKernelWrapper->pKernel
+                        );
+                    }
                 }
                 else
                 {

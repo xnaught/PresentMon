@@ -4,6 +4,7 @@
 #include "SignalManager.h"
 #include "AsyncEndpointManager.h"
 #include "ActionClientServer.h"
+#include "IpcInvocationManager.h"
 
 namespace p2c::kern
 {
@@ -23,6 +24,7 @@ namespace p2c::client::util
         std::unique_ptr<kern::KernelHandler> pKernelHandler;
         std::unique_ptr<KernelServer> pServer;
         std::unique_ptr<CefClient> pClient;
+        std::unique_ptr<IpcInvocationManager> pInvocationManager;
         std::unique_ptr<Hotkeys> pHotkeys;
 	};
 }
