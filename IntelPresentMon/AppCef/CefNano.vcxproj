@@ -47,10 +47,12 @@
     <ClInclude Include="source\NanoCefProcessHandler.h" />
     <ClInclude Include="source\SchemeFileHandler.h" />
     <ClInclude Include="source\SchemeHandlerFactory.h" />
+    <ClInclude Include="source\util\ActionClientServer.h" />
     <ClInclude Include="source\util\cact\OverlayDiedAction.h" />
     <ClInclude Include="source\util\cact\PresentmonInitFailedAction.h" />
     <ClInclude Include="source\util\cact\StalePidAction.h" />
     <ClInclude Include="source\util\cact\TargetLostAction.h" />
+    <ClInclude Include="source\util\IpcInvocationManager.h" />
     <ClInclude Include="source\util\kact\KernelExecutionContext.h" />
     <ClInclude Include="source\util\kact\OpenSession.h" />
     <ClInclude Include="source\util\AsyncEndpoint.h" />

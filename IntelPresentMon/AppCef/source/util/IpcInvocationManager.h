@@ -10,16 +10,18 @@
 #include <future>
 #include <unordered_map>
 #include "AsyncEndpointCollection.h"
+#include "ActionClientServer.h"
 
 
 namespace p2c::client::util
 {
-	class AsyncEndpointManager
+	// this class exists to:
+	// A) bridge from key string to action
+	// B) encode conversion from V8 to Params{}
+	// C) encode conversion from Response{} to V8
+	class IpcInvocationManager
 	{
 	public:
-		// constants
-		static constexpr std::string GetDispatchMessageName() { return "disp-async"; }
-		static constexpr std::string GetResolveMessageName() { return "reso-async"; }
 		// types
 		struct CallbackContext
 		{
@@ -30,8 +32,10 @@ namespace p2c::client::util
 		struct Invocation
 		{
 			CallbackContext context;
-			const AsyncEndpoint* pEndpoint;
-			std::future<void> taskFuture;
+		};
+		struct Bindings
+		{
+			std::function<void(CefV8Value&)> dispatch;
 		};
 		// functions
 		void DispatchInvocation(const std::string& key, CallbackContext ctx, CefRefPtr<CefV8Value> pObj, CefBrowser& browser, cef::DataBindAccessor& accessor, kern::Kernel& kernel);
@@ -43,6 +47,7 @@ namespace p2c::client::util
 		// todo: use separate mutex for endpoints+uid than for invocations
 		std::mutex mtx;
 		std::unordered_map<uint64_t, Invocation> invocations;
+		CefClient& client;
 	};
 }
 

@@ -105,4 +105,13 @@ namespace pmon::ipc::act
 	concept Event = std::is_base_of_v<AsyncEventActionBase_<A, typename A::ExecutionContext>, A> && requires {
 		typename A::Params;
 	};
+
+	template<class Params>
+	using ActionFromParams = typename ActionParamsTraits<std::decay_t<Params>>::Action;
+
+	template<class Params>
+	using ResponseFromParams = typename ActionFromParams<Params>::Response;
+
+	template<class Params>
+	using AwaitableFromParams = pipe::as::awaitable<ResponseFromParams<Params>>;
 }

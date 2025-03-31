@@ -13,8 +13,10 @@ namespace pmon::ipc::act
 	template<class ExecCtx>
 	class SymmetricActionConnector
 	{
-        using SessionContextType = typename ExecCtx::SessionContextType;
 	public:
+        // types
+        using SessionContextType = typename ExecCtx::SessionContextType;
+        // functions
         as::awaitable<void> SyncHandleRequest(ExecCtx& ctx, SessionContextType& stx)
         {
             PacketHeader header;
@@ -57,27 +59,37 @@ namespace pmon::ipc::act
         template<class Params>
         auto DispatchSync(Params&& params, as::io_context& ioctx, SessionContextType& stx)
         {
-            using Action = typename ipc::act::ActionParamsTraits<std::decay_t<Params>>::Action;
-            using Response = Action::Response;
             // wrap the SyncRequest in a coro so we can assure non-concurrent increment of the token
             // CAUTION: this coro has captures that will blow up if we try and exit this function before completion
             // currently OK because we block on future, but any future refactor needs to take this into consideration
-            const auto coro = [](auto&& params, SessionContextType& stx, util::pipe::DuplexPipe& pipe) -> as::awaitable<Response> {
-                co_return co_await SyncRequest<Action>(std::forward<Params>(params), stx.nextCommandToken++, pipe);
+            const auto coro = [](auto&& params, SessionContextType& stx, util::pipe::DuplexPipe& pipe) -> AwaitableFromParams<Params> {
+                co_return co_await SyncRequest<ActionFromParams<Params>>(std::forward<Params>(params), stx.nextCommandToken++, pipe);
             };
             return as::co_spawn(ioctx, coro(std::forward<Params>(params), stx, *pOutPipe_), as::use_future).get();
         }
         // TODO: this should support both retained requests and unretained events
         // need to figure out fully async request flow and how to implement the continuation API(s)
+        // TODO: rename to DispatchDetached
         template<class Params>
         auto DispatchAsync(Params&& params, as::io_context& ioctx, SessionContextType& stx)
         {
-            using Action = typename ipc::act::ActionParamsTraits<std::decay_t<Params>>::Action;
             // wrap the AsyncEmit in a coro so we can assure non-concurrent increment of the token
             const auto coro = [](auto&& params, SessionContextType& stx, util::pipe::DuplexPipe& pipe) -> as::awaitable<void> {
-                co_await AsyncEmit<Action>(std::forward<Params>(params), stx.nextCommandToken++, pipe);
+                co_await AsyncEmit<ActionFromParams<Params>>(std::forward<Params>(params), stx.nextCommandToken++, pipe);
             };
             as::co_spawn(ioctx, coro(std::forward<Params>(params), stx, *pOutPipe_), as::detached);
+        }
+        template<class Params>
+        void DispatchDetachedWithContinuation(Params&& params, as::io_context& ioctx, SessionContextType& stx,
+            std::function<void(ResponseFromParams<Params>&&)> conti)
+        {
+            // wrap the AsyncEmit in a coro so we can assure non-concurrent increment of the token
+            const auto coro = [](auto&& params, SessionContextType& stx, util::pipe::DuplexPipe& pipe, auto conti)
+                -> as::awaitable<void> {
+                auto res = co_await SyncRequest<ActionFromParams<Params>>(std::forward<Params>(params), stx.nextCommandToken++, pipe);
+                conti(std::move(res));
+            };
+            as::co_spawn(ioctx, coro(std::forward<Params>(params), stx, *pOutPipe_, std::move(conti)), as::detached);
         }
         uint32_t GetId() const
         {

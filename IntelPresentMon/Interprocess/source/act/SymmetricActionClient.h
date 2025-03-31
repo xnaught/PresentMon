@@ -54,6 +54,11 @@ namespace pmon::ipc::act
         {
             return stx_.pConn->DispatchAsync(std::forward<Params>(params), ioctx_, stx_);
         }
+        template<class Params>
+        void DispatchDetachedWithContinuation(Params&& params, std::function<void(ResponseFromParams<Params>&&)> cont)
+        {
+            return stx_.pConn->DispatchDetachedWithContinuation(std::forward<Params>(params), ioctx_, stx_, std::move(cont));
+        }
 
     protected:
         void EstablishSession_(uint32_t serverPid)
