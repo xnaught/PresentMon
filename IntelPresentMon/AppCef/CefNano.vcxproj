@@ -75,10 +75,10 @@
     <ClInclude Include="source\util\async\ExploreCaptures.h" />
     <ClInclude Include="source\util\async\LaunchKernel.h" />
     <ClInclude Include="source\util\async\PushSpecification.h" />
-    <ClInclude Include="source\util\async\SetAdapter.h" />
     <ClInclude Include="source\util\CefValues.h" />
     <ClInclude Include="source\util\FileLocation.h" />
     <ClInclude Include="source\util\cact\CefExecutionContext.h" />
+    <ClInclude Include="source\util\kact\SetAdapter.h" />
     <ClInclude Include="source\util\kact\SetCapture.h" />
     <ClInclude Include="source\util\KernelWrapper.h" />
     <ClInclude Include="source\util\MakeOverlaySpec.h" />

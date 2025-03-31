@@ -16,6 +16,7 @@
 #include <Core/source/cli/CliOptions.h>
 #include <include/cef_parser.h>
 #include "util/kact/SetCapture.h"
+#include "util/kact/SetAdapter.h"
 
 using namespace pmon::util;
 using namespace std::chrono_literals;
@@ -112,7 +113,9 @@ namespace p2c::client::cef
             R"(\\.\pipe\ipm-v8-channel)", util::cact::CefExecutionContext{ .pSignalManager = &pKernelWrapper->signals }
         );
         pKernelWrapper->pInvocationManager = std::make_unique<util::IpcInvocationManager>(*pKernelWrapper->pClient);
+        // TODO: play way/place to do this registration
         pKernelWrapper->pInvocationManager->RegisterDispatchBinding<util::kact::SetCapture>();
+        pKernelWrapper->pInvocationManager->RegisterDispatchBinding<util::kact::SetAdapter>();
         pAccessor = new DataBindAccessor{ pBrowser, pKernelWrapper.get() };
 
         auto core = CefV8Value::CreateObject(nullptr, nullptr);
