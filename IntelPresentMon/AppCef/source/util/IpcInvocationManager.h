@@ -4,6 +4,9 @@
 #include <Core/source/win/WinAPI.h>
 #include <include/cef_v8.h>
 #include <include/wrapper/cef_helpers.h>
+#include <include/cef_task.h>
+#include <include/base/cef_callback.h>
+#include <include/wrapper/cef_closure_task.h>
 #include <string>
 #include <unordered_map>
 #include <functional>
@@ -35,22 +38,31 @@ namespace p2c::client::util
 		void DispatchInvocation(const std::string& key, CallbackContext ctx, CefRefPtr<CefV8Value> pArgs)
 		{
 			// TODO: explicit lookup and handle missing error
-			dispatchBindings_[key](std::move(ctx), std::move(pArgs));
+			dispatchBindings_[key](std::move(ctx), std::move(pArgs), client_);
 		}
 		bool HasHandler(const std::string& key) const
 		{
 			return dispatchBindings_.contains(key);
 		}
 		template<class A>
-		void RegisterDispatchBinding()
+		static void RegisterDispatchBinding()
 		{
 			using Params = typename A::Params;
 			using Response = typename A::Response;
-			dispatchBindings_[A::Identifier] = [this](CallbackContext ctx, CefRefPtr<CefV8Value> pObj) {
-				client_.DispatchDetachedWithContinuation(FromV8<Params>(*pObj), [ctx = std::move(ctx)](Response&& res) {
+			// register handler function for the endpoint identifer (e.g. SetCapture) that takes in V8 context and V8 action args
+			// this handler will be called when the DBA receives an Execute call on the invokeEndpoint channel
+			dispatchBindings_[A::Identifier] = [](CallbackContext ctx, CefRefPtr<CefV8Value> pObj, CefClient& client) {
+				// convert the V8 args to the Params struct associated with the action A
+				// create a lambda which accepts the incoming result of this action and stores the V8 context
+				// lamba will be invoked after the response is received from the server, causing the response
+				// to be returned to the original V8 caller in js land
+				client.DispatchDetachedWithContinuation(FromV8<Params>(*pObj), [ctx = std::move(ctx)](Response&& res) {
 					CefPostTask(TID_RENDERER, base::BindOnce(
 						&IpcInvocationManager::ResolveInvocation_<Response>,
 						// TODO: populate an actual success here (catch exception somewhere?)
+						// more likely the lambda should receive some error info to propagate
+						// alternatively Dispatch... will throw error that should be caught providing
+						// alternative resolution path below
 						true, std::move(ctx), std::move(res)
 					));
 				});
@@ -74,7 +86,7 @@ namespace p2c::client::util
 			ctx.pV8Context->Exit();
 		}
 		// data
-		std::unordered_map<std::string, std::function<void(CallbackContext, CefRefPtr<CefV8Value>)>> dispatchBindings_;
+		static std::unordered_map<std::string, std::function<void(CallbackContext, CefRefPtr<CefV8Value>, CefClient&)>> dispatchBindings_;
 		CefClient& client_;
 	};
 }

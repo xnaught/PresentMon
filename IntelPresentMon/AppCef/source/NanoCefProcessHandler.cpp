@@ -3,20 +3,18 @@
 #include "NanoCefBrowserClient.h"
 #include <Core/source/kernel/Kernel.h>
 #include <include/wrapper/cef_helpers.h>
+#include <include/wrapper/cef_closure_task.h>
+#include <include/cef_parser.h>
+#include <include/cef_task.h>
+#include <include/base/cef_callback.h>
 #include "NanoCefProcessHandler.h"
 #include "SchemeHandlerFactory.h"
 #include "DataBindAccessor.h"
 #include <Core/source/infra/Logging.h>
 #include <Core/source/infra/LogSetup.h>
-#include "include/wrapper/cef_closure_task.h"
-#include <include/cef_task.h>
-#include "include/base/cef_callback.h"
 #include "util/AsyncEndpointManager.h"
 #include "util/CefValues.h"
 #include <Core/source/cli/CliOptions.h>
-#include <include/cef_parser.h>
-#include "util/kact/SetCapture.h"
-#include "util/kact/SetAdapter.h"
 
 using namespace pmon::util;
 using namespace std::chrono_literals;
@@ -113,9 +111,6 @@ namespace p2c::client::cef
             R"(\\.\pipe\ipm-v8-channel)", util::cact::CefExecutionContext{ .pSignalManager = &pKernelWrapper->signals }
         );
         pKernelWrapper->pInvocationManager = std::make_unique<util::IpcInvocationManager>(*pKernelWrapper->pClient);
-        // TODO: play way/place to do this registration
-        pKernelWrapper->pInvocationManager->RegisterDispatchBinding<util::kact::SetCapture>();
-        pKernelWrapper->pInvocationManager->RegisterDispatchBinding<util::kact::SetAdapter>();
         pAccessor = new DataBindAccessor{ pBrowser, pKernelWrapper.get() };
 
         auto core = CefV8Value::CreateObject(nullptr, nullptr);

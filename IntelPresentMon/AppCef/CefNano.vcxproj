@@ -20,6 +20,7 @@
     <ClCompile Include="source\NanoCefProcessHandler.cpp" />
     <ClCompile Include="source\SchemeFileHandler.cpp" />
     <ClCompile Include="source\SchemeHandlerFactory.cpp" />
+    <ClCompile Include="source\util\ActionClientServer.cpp" />
     <ClCompile Include="source\util\AsyncEndpoint.cpp" />
     <ClCompile Include="source\util\AsyncEndpointCollection.cpp" />
     <ClCompile Include="source\util\AsyncEndpointManager.cpp" />
@@ -27,6 +28,7 @@
     <ClCompile Include="source\util\CefValues.cpp" />
     <ClCompile Include="source\util\FontEnumerator.cpp" />
     <ClCompile Include="source\util\HotkeyListener.cpp" />
+    <ClCompile Include="source\util\IpcInvocationManager.cpp" />
     <ClCompile Include="source\util\kact\KernelActionRegistration.cpp" />
     <ClCompile Include="source\util\KernelWrapper.cpp" />
     <ClCompile Include="source\util\MakeOverlaySpec.cpp" />
@@ -53,6 +55,7 @@
     <ClInclude Include="source\util\cact\StalePidAction.h" />
     <ClInclude Include="source\util\cact\TargetLostAction.h" />
     <ClInclude Include="source\util\IpcInvocationManager.h" />
+    <ClInclude Include="source\util\kact\AllActions.h" />
     <ClInclude Include="source\util\kact\KernelExecutionContext.h" />
     <ClInclude Include="source\util\kact\OpenSession.h" />
     <ClInclude Include="source\util\AsyncEndpoint.h" />

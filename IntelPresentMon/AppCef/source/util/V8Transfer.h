@@ -23,6 +23,11 @@ namespace p2c::client::util
 
 	PM_DEFINE_EX(BadV8Traversal);
 
+	inline CefString ToCefString(std::string_view sv)
+	{
+		return CefString(sv.data(), sv.size());
+	}
+
 	template<class T>
 	void FromV8(CefV8Value& v8, T& out)
 	{
@@ -65,7 +70,7 @@ namespace p2c::client::util
 		}
 		else if constexpr (std::is_class_v<T>) {
 			refl::for_each([&](const auto I) {
-				FromV8(*v8.GetValue(CefString((std::string)refl::member_name<I>(out))), refl::get<I>(out));
+				FromV8(*v8.GetValue(ToCefString(refl::member_name<I>(out))), refl::get<I>(out));
 			}, out);
 		}
 	}
@@ -117,7 +122,8 @@ namespace p2c::client::util
 			refl::for_each([&](const auto I) {
 				CefRefPtr<CefV8Value> pNewV8;
 				ToV8(refl::get<I>(in), pNewV8);
-				pV8->SetValue(refl::member_name<I>(in), std::move(pNewV8));
+				pV8->SetValue(ToCefString(refl::member_name<I>(in)), std::move(pNewV8),
+					CefV8Value::PropertyAttribute::V8_PROPERTY_ATTRIBUTE_NONE);
 			}, in);
 		}
 	}
