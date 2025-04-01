@@ -56,6 +56,7 @@
     <ClInclude Include="source\util\cact\TargetLostAction.h" />
     <ClInclude Include="source\util\IpcInvocationManager.h" />
     <ClInclude Include="source\util\kact\AllActions.h" />
+    <ClInclude Include="source\util\kact\EnumerateAdapters.h" />
     <ClInclude Include="source\util\kact\KernelExecutionContext.h" />
     <ClInclude Include="source\util\kact\OpenSession.h" />
     <ClInclude Include="source\util\AsyncEndpoint.h" />
@@ -70,7 +71,6 @@
     <ClInclude Include="source\util\async\BrowseStoreSpec.h" />
     <ClInclude Include="source\util\async\BindHotkey.h" />
     <ClInclude Include="source\util\async\ClearHotkey.h" />
-    <ClInclude Include="source\util\async\EnumerateAdapters.h" />
     <ClInclude Include="source\util\async\EnumerateKeys.h" />
     <ClInclude Include="source\util\async\Introspect.h" />
     <ClInclude Include="source\util\async\EnumerateModifiers.h" />

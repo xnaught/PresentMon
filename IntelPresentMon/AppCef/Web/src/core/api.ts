@@ -77,7 +77,7 @@ export class Api {
         return top;
     }
     static async enumerateAdapters(): Promise<Adapter[]> {
-        const {adapters} = await this.invokeEndpointFuture('enumerateAdapters', {});
+        const {adapters} = await this.invokeEndpointFuture('EnumerateAdapters', {});
         if (!Array.isArray(adapters)) {
             throw new Error('Bad (non-array) type returned from enumerateAdapters');
         }

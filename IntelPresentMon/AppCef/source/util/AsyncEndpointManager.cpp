@@ -95,7 +95,7 @@ namespace p2c::client::util
 			auto invocation = std::move(i->second);
 
 			if constexpr (v::v8async) {
-				pmlog_verb(v::v8async)(std::format("Async call {{{}}} resolved with payload:\n{}",
+				pmlog_verb(v::v8async)(std::format("Async call {{{}}} resolved with payload: \n{}",
 					uid, Traverse(pArgs).Dump()));
 			}
 			else {
