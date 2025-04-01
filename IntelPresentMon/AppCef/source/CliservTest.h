@@ -309,7 +309,7 @@ namespace p2c::client::kact
                         std::this_thread::sleep_for(1ms);
                         ac.DispatchAsync(TestEvent::Params{ in + 1 });
                         std::this_thread::sleep_for(1ms);
-                        ac.DispatchDetachedWithContinuation(TestAct::Params{ 4 }, [](TestAct::Response&& res) {
+                        ac.DispatchDetachedWithContinuation(TestAct::Params{ 4 }, [](TestAct::Response&& res, std::exception_ptr ex) {
                             pmlog_info("yeeeeowch!").pmwatch(res.out);
                         });
                         std::this_thread::sleep_for(1ms);

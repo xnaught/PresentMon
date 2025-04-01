@@ -56,14 +56,10 @@ namespace p2c::client::util
 				// create a lambda which accepts the incoming result of this action and stores the V8 context
 				// lamba will be invoked after the response is received from the server, causing the response
 				// to be returned to the original V8 caller in js land
-				client.DispatchDetachedWithContinuation(FromV8<Params>(*pObj), [ctx = std::move(ctx)](Response&& res) {
+				client.DispatchDetachedWithContinuation(FromV8<Params>(*pObj), [ctx = std::move(ctx)](Response&& res, std::exception_ptr pex) {
 					CefPostTask(TID_RENDERER, base::BindOnce(
 						&IpcInvocationManager::ResolveInvocation_<Response>,
-						// TODO: populate an actual success here (catch exception somewhere?)
-						// more likely the lambda should receive some error info to propagate
-						// alternatively Dispatch... will throw error that should be caught providing
-						// alternative resolution path below
-						true, std::move(ctx), std::move(res)
+						std::move(ctx), std::move(res), std::move(pex)
 					));
 				});
 			};
@@ -72,12 +68,13 @@ namespace p2c::client::util
 	private:
 		// function
 		template<class Response>
-		static void ResolveInvocation_(bool success, CallbackContext ctx, Response res)
+		static void ResolveInvocation_(CallbackContext ctx, Response res, std::exception_ptr pex)
 		{
 			CEF_REQUIRE_RENDERER_THREAD();
 
+			// TODO: give error details in the failure path
 			ctx.pV8Context->Enter();
-			if (success) {
+			if (!pex) {
 				ctx.pV8ResolveFunction->ExecuteFunction(nullptr, { ToV8(res) });
 			}
 			else {

@@ -53,6 +53,7 @@ namespace pmon::ipc::act
             if (pInPipe_->GetWriteBufferPending()) {
                 pInPipe_->ClearWriteBuffer();
             }
+            stx.errorCount++;
             auto resHeader = MakeResponseHeader(header, TransportStatus::TransportFailure, PM_STATUS_SUCCESS);
             co_await pInPipe_->WritePacket(std::move(resHeader), EmptyPayload{}, ctx.responseWriteTimeoutMs);
         }
@@ -75,19 +76,35 @@ namespace pmon::ipc::act
         {
             // wrap the AsyncEmit in a coro so we can assure non-concurrent increment of the token
             const auto coro = [](auto&& params, SessionContextType& stx, util::pipe::DuplexPipe& pipe) -> as::awaitable<void> {
-                co_await AsyncEmit<ActionFromParams<Params>>(std::forward<Params>(params), stx.nextCommandToken++, pipe);
+                try {
+                    co_await AsyncEmit<ActionFromParams<Params>>(std::forward<Params>(params), stx.nextCommandToken++, pipe);
+                }
+                catch (...) {
+                    pmlog_error(ReportException());
+                }
             };
             as::co_spawn(ioctx, coro(std::forward<Params>(params), stx, *pOutPipe_), as::detached);
         }
         template<class Params>
         void DispatchDetachedWithContinuation(Params&& params, as::io_context& ioctx, SessionContextType& stx,
-            std::function<void(ResponseFromParams<Params>&&)> conti)
+            std::function<void(ResponseFromParams<Params>&&, std::exception_ptr)> conti)
         {
             // wrap the AsyncEmit in a coro so we can assure non-concurrent increment of the token
             const auto coro = [](auto params, SessionContextType& stx, util::pipe::DuplexPipe& pipe, auto conti)
                 -> as::awaitable<void> {
-                auto res = co_await SyncRequest<ActionFromParams<Params>>(std::forward<Params>(params), stx.nextCommandToken++, pipe);
-                conti(std::move(res));
+                try {
+                    try {
+                        auto res = co_await SyncRequest<ActionFromParams<Params>>(std::forward<Params>(params), stx.nextCommandToken++, pipe);
+                        conti(std::move(res), {});
+                    }
+                    catch (...) {
+                        pmlog_dbg(ReportException("Error in IPC dispatch"));
+                        conti({}, std::current_exception());
+                    }
+                }
+                catch (...) {
+                    pmlog_error(ReportException("Final failure in calling continuation"));
+                }
             };
             as::co_spawn(ioctx, coro(std::forward<Params>(params), stx, *pOutPipe_, std::move(conti)), as::detached);
         }
