@@ -11,7 +11,6 @@
 #include "async/LaunchKernel.h"
 #include "async/PushSpecification.h"
 #include "async/EnumerateProcesses.h"
-#include "async/Introspect.h"
 #include "async/EnumerateKeys.h"
 #include "async/EnumerateModifiers.h"
 #include "async/ExploreCaptures.h"
@@ -42,7 +41,6 @@ namespace p2c::client::util
 		AddEndpoint<LaunchKernel>();
 		AddEndpoint<PushSpecification>();
 		AddEndpoint<EnumerateProcesses>();
-		AddEndpoint<Introspect>();
 		AddEndpoint<EnumerateKeys>();
 		AddEndpoint<EnumerateModifiers>();
 		AddEndpoint<ExploreCaptures>();

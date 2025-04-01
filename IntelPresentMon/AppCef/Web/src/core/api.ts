@@ -58,7 +58,7 @@ export class Api {
         return await this.invokeEndpointFuture('loadEnvVars', {});
     }
     static async introspect(): Promise<{metrics: Metric[], stats: Stat[], units: Unit[]}> {
-        const introData = await this.invokeEndpointFuture('introspect', {});
+        const introData = await this.invokeEndpointFuture('Introspect', {});
         if (!Array.isArray(introData.metrics) || !Array.isArray(introData.stats) || !Array.isArray(introData.units)) {
             console.log("error intro call");
             throw new Error('Bad (non-array) member type returned from introspect');

@@ -3,3 +3,4 @@
 #include "SetAdapter.h"
 #include "SetCapture.h"
 #include "EnumerateAdapters.h"
+#include "Introspect.h"
