@@ -2,50 +2,42 @@
 // SPDX-License-Identifier: MIT
 #include "MakeOverlaySpec.h"
 #include <Core/source/gfx/layout/style/RawAttributeHelpers.h>
-#include "CefValues.h"
+#include <Core/source/kernel/OverlaySpec.h>
+#include "kact/PushSpecification.h"
 
 namespace p2c::client::util
 {
     using namespace gfx;
     using namespace lay;
+    using util::str::ToNarrow;
+    using util::str::ToWide;
 
-    namespace
+    std::unique_ptr<kern::OverlaySpec> MakeOverlaySpec(const kact::push_spec_impl::Params& spec)
     {
-        Color ColorFromV8(const CefRefPtr<CefValue>& rgba)
-        {
-            return Color::FromBytes(
-                Traverse(rgba)["r"],
-                Traverse(rgba)["g"],
-                Traverse(rgba)["b"]
-            ).WithAlpha(Traverse(rgba)["a"]);
-        }
-    }
+        // Alias for brevity.
+        auto& pref = spec.preferences;
 
-    std::unique_ptr<kern::OverlaySpec> MakeOverlaySpec(CefRefPtr<CefValue> vSpec)
-    {
-        auto traversedSpec = Traverse(vSpec);
-        auto traversedPref = traversedSpec["preferences"];
-
+        // Build the core OverlaySpec with fields converted from the new input.
         auto pSpec = std::make_unique<kern::OverlaySpec>(kern::OverlaySpec{
-            .pid = traversedSpec["pid"],
-            .capturePath = traversedPref["capturePath"].AsWString(),
-            .graphDataWindowSize = traversedPref["timeRange"],
-            .averagingWindowSize = traversedPref["metricsWindow"],
-            .metricsOffset = traversedPref["metricsOffset"],
-            .etwFlushPeriod = traversedPref["etwFlushPeriod"],
-            .manualEtwFlush = traversedPref["manualEtwFlush"],
-            .overlayPosition = (kern::OverlaySpec::OverlayPosition)traversedPref["overlayPosition"],
-            .overlayWidth = traversedPref["overlayWidth"],
-            .upscale = traversedPref["upscale"],
-            .upscaleFactor = traversedPref["upscaleFactor"],
-            .metricPollRate = traversedPref["metricPollRate"],
-            .overlayDrawRate = traversedPref["overlayDrawRate"],
-            .telemetrySamplingPeriodMs = traversedPref["telemetrySamplingPeriodMs"],
-            .hideDuringCapture = traversedPref["hideDuringCapture"],
-            .hideAlways = traversedPref["hideAlways"],
-            .independentKernelWindow = traversedPref["independentWindow"],
-            .generateStats = traversedPref["generateStats"],
-            .enableFlashInjection = traversedPref["enableFlashInjection"],
+            .pid = *spec.pid, // Assuming pid is set based on behavior of kact::PushSpecification
+            .capturePath = ToWide(pref.capturePath),
+            .graphDataWindowSize = double(pref.timeRange),
+            .averagingWindowSize = double(pref.metricsWindow),
+            .metricsOffset = double(pref.metricsOffset),
+            .etwFlushPeriod = double(pref.etwFlushPeriod),
+            .manualEtwFlush = pref.manualEtwFlush,
+            .overlayPosition = pref.overlayPosition,
+            .overlayWidth = int(pref.overlayWidth),
+            .upscale = pref.upscale,
+            .upscaleFactor = pref.upscaleFactor,
+            .metricPollRate = pref.metricPollRate,
+            .overlayDrawRate = pref.overlayDrawRate,
+            .telemetrySamplingPeriodMs = pref.telemetrySamplingPeriodMs,
+            .hideDuringCapture = pref.hideDuringCapture,
+            .hideAlways = pref.hideAlways,
+            .independentKernelWindow = pref.independentWindow,
+            .generateStats = pref.generateStats,
+            .enableFlashInjection = pref.enableFlashInjection,
         });
 
         // style sheets
@@ -56,17 +48,18 @@ namespace p2c::client::util
             const auto gutterSize = 30.;
             const auto gutterPadding = 4.;
 
-            const double graphPadding = traversedPref["graphPadding"];
-            const double graphBorder = traversedPref["graphBorder"];
-            const double graphMargin = traversedPref["graphMargin"];
+            const double graphPadding = pref.graphPadding;
+            const double graphBorder = pref.graphBorder;
+            const double graphMargin = pref.graphMargin;
 
-            const double overlayPadding = traversedPref["overlayPadding"];
-            const double overlayBorder = traversedPref["overlayBorder"];
-            const double overlayMargin = traversedPref["overlayMargin"];
-            const auto overlayBorderColor = at::make::Color(ColorFromV8(traversedPref["overlayBorderColor"]));
+            const double overlayPadding = pref.overlayPadding;
+            const double overlayBorder = pref.overlayBorder;
+            const double overlayMargin = pref.overlayMargin;
+            const auto overlayBorderColor = at::make::Color(pref.overlayBorderColor);
+            const auto overlayBackgroundColor = at::make::Color(pref.overlayBackgroundColor);
 
             sheets.push_back(Stylesheet::Make({ {}, {"doc"} }));
-            sheets.back()->InsertRaw<at::backgroundColor>(at::make::Color(ColorFromV8(traversedPref["overlayBackgroundColor"])));
+            sheets.back()->InsertRaw<at::backgroundColor>(overlayBackgroundColor);
             sheets.back()->InsertRaw<at::flexDirection>(at::make::Enum(gfx::lay::FlexDirection::Column));
             sheets.back()->InsertRaw<at::paddingLeft>(overlayPadding);
             sheets.back()->InsertRaw<at::paddingTop>(overlayPadding);
@@ -104,11 +97,11 @@ namespace p2c::client::util
             sheets.back()->InsertRaw<at::borderTop>(graphBorder);
             sheets.back()->InsertRaw<at::borderRight>(graphBorder);
             sheets.back()->InsertRaw<at::borderBottom>(graphBorder);
-            sheets.back()->InsertRaw<at::textFont>(traversedPref["graphFont"]["name"].AsWString());
+            sheets.back()->InsertRaw<at::textFont>(ToWide(pref.graphFont.name));
             sheets.back()->InsertRaw<at::graphLineColor>(at::make::Color(Color::FromBytes(100, 255, 255, 220)));
             sheets.back()->InsertRaw<at::graphFillColor>(at::make::Color(Color::FromBytes(57, 210, 210, 25)));
             // TODO: clarify, consider which plot attributes apply to which sub-elements
-            sheets.back()->InsertRaw<at::graphTimeWindow>((double)traversedPref["timeRange"]);
+            sheets.back()->InsertRaw<at::graphTimeWindow>((double)pref.timeRange);
 
             sheets.push_back(Stylesheet::Make({ {"$graph"}, {"$label-units"} }));
             sheets.back()->InsertRaw<at::marginLeft>(3.);
@@ -138,7 +131,7 @@ namespace p2c::client::util
             sheets.back()->InsertRaw<at::flexJustification>(at::make::Enum(FlexJustification::End));
 
             sheets.push_back(Stylesheet::Make({ {"$graph"}, {"$axis"} }));
-            sheets.back()->InsertRaw<at::textSize>((double)traversedPref["graphFont"]["axisSize"]);
+            sheets.back()->InsertRaw<at::textSize>((double)pref.graphFont.axisSize);
 
             sheets.push_back(Stylesheet::Make({ {"$graph"}, {"$body"} }));
             sheets.back()->InsertRaw<at::flexDirection>(at::make::Enum(gfx::lay::FlexDirection::Row));
@@ -253,90 +246,85 @@ namespace p2c::client::util
         }
 
         // populate widgets into spec file
-        {         
-            auto widgets = traversedSpec["widgets"].AsCefValue();
-            const auto widgetCount = Traverse(widgets).GetLength();
-            for (size_t i = 0; i < widgetCount; i++)
-            {
-                auto widget = Traverse(widgets)[i].AsCefValue();
-                const auto widgetType = kern::WidgetType(Traverse(widget)["widgetType"]);
-                if (widgetType == kern::WidgetType::Graph) {
-                    auto& vGraph = widget;
+        {
+            for (auto&& [i,widget] : spec.widgets | vi::enumerate) {
+                if (auto pGraph = std::get_if<kact::push_spec_impl::Graph>(&widget)) {
                     const auto tag = std::format("g{}", i);
-                    auto widgetMetrics = Traverse(vGraph)["metrics"];
+                    auto& graph = *pGraph;
 
                     {
-                        auto type = lay::EnumRegistry<GraphType>::ToEnum(Traverse(vGraph)["graphType"]["name"].AsWString());
                         // create the metric specs for each line etc. in widget
                         std::vector<kern::GraphMetricSpec> graphMetricSpecs;
-                        for (size_t i = 0; i < widgetMetrics.GetLength(); i++) {
-                            auto widgetMetric = Traverse(widgetMetrics)[i];
-                            const gfx::lay::AxisAffinity axis = widgetMetric["axisAffinity"];
-                            auto qualifiedMetric = widgetMetric["metric"];
+                        for (auto& widgetMetric : graph.metrics) {
+                            auto& qualifiedMetric = widgetMetric.metric;
                             graphMetricSpecs.push_back(kern::GraphMetricSpec{
                                 .metric = {
-                                    .metricId = qualifiedMetric["metricId"],
-                                    .statId = qualifiedMetric["statId"],
-                                    .arrayIndex = qualifiedMetric["arrayIndex"],
-                                    .deviceId = qualifiedMetric["deviceId"],
-                                    .unitId = qualifiedMetric["desiredUnitId"],
+                                    .metricId = qualifiedMetric.metricId,
+                                    .statId = qualifiedMetric.statId,
+                                    .arrayIndex = qualifiedMetric.arrayIndex,
+                                    .deviceId = qualifiedMetric.deviceId,
+                                    .unitId = qualifiedMetric.desiredUnitId,
                                 },
-                                .axisAffinity = axis,
+                                .axisAffinity = widgetMetric.axisAffinity,
                             });
                         }
                         pSpec->widgets.push_back(kern::GraphSpec{
                             .metrics = std::move(graphMetricSpecs),
-                            .type = type, .tag = tag,
-                        });
+                            .type = lay::EnumRegistry<GraphType>::ToEnum(ToWide(graph.graphType.name)),
+                            .tag = tag,
+                         });
                     }
 
                     {
                         using namespace gfx::lay::sty;
                         auto& sheets = pSpec->sheets;
 
-                        const auto gridColor = at::make::Color(ColorFromV8(Traverse(vGraph)["gridColor"]));
-                        const auto backgroundColor = at::make::Color(ColorFromV8(Traverse(vGraph)["backgroundColor"]));
-                        const auto borderColor = at::make::Color(ColorFromV8(Traverse(vGraph)["borderColor"]));
+                        const auto gridColor = at::make::Color(graph.gridColor);
+                        const auto backgroundColor = at::make::Color(graph.backgroundColor);
+                        const auto borderColor = at::make::Color(graph.borderColor);
+                        const auto textColor = at::make::Color(graph.textColor);
+                        const auto dividerColor = at::make::Color(graph.dividerColor);
+
 
                         sheets.push_back(Stylesheet::Make({ {}, { "$graph", tag } }));
                         // TODO: consider renaming range to rangeLeft
-                        sheets.back()->InsertRaw<at::graphMinValueLeft>((double)Traverse(vGraph)["graphType"]["range"][(size_t)0]);
-                        sheets.back()->InsertRaw<at::graphMaxValueLeft>((double)Traverse(vGraph)["graphType"]["range"][1]);
-                        sheets.back()->InsertRaw<at::graphMinValueRight>((double)Traverse(vGraph)["graphType"]["rangeRight"][(size_t)0]);
-                        sheets.back()->InsertRaw<at::graphMaxValueRight>((double)Traverse(vGraph)["graphType"]["rangeRight"][1]);
-                        sheets.back()->InsertRaw<at::graphMinCount>((double)Traverse(vGraph)["graphType"]["countRange"][(size_t)0]);
-                        sheets.back()->InsertRaw<at::graphMaxCount>((double)Traverse(vGraph)["graphType"]["countRange"][1]);
+                        sheets.back()->InsertRaw<at::graphMinValueLeft>((double)graph.graphType.range[0]);
+                        sheets.back()->InsertRaw<at::graphMaxValueLeft>((double)graph.graphType.range[1]);
+                        sheets.back()->InsertRaw<at::graphMinValueRight>((double)graph.graphType.rangeRight[0]);
+                        sheets.back()->InsertRaw<at::graphMaxValueRight>((double)graph.graphType.rangeRight[1]);
+                        sheets.back()->InsertRaw<at::graphMinCount>((double)graph.graphType.countRange[0]);
+                        sheets.back()->InsertRaw<at::graphMaxCount>((double)graph.graphType.countRange[1]);
                         sheets.back()->InsertRaw<at::backgroundColor>(backgroundColor);
-                        sheets.back()->InsertRaw<at::textColor>(at::make::Color(ColorFromV8(Traverse(vGraph)["textColor"])));
+                        sheets.back()->InsertRaw<at::textColor>(textColor);
                         // since border is 0px, these settings do nothing
                         // sheets.back()->InsertRaw<at::borderColorLeft>(borderColor);
                         // sheets.back()->InsertRaw<at::borderColorTop>(borderColor);
                         // sheets.back()->InsertRaw<at::borderColorRight>(borderColor);
                         // sheets.back()->InsertRaw<at::borderColorBottom>(borderColor);
-                        if (Traverse(vGraph)["graphType"]["autoLeft"]) {
+                        if (graph.graphType.autoLeft) {
                             sheets.back()->InsertRaw<at::graphAutoscaleLeft>(true);
                         }
-                        if (Traverse(vGraph)["graphType"]["autoRight"]) {
+                        if (graph.graphType.autoRight) {
                             sheets.back()->InsertRaw<at::graphAutoscaleRight>(true);
                         }
-                        if (Traverse(vGraph)["graphType"]["autoCount"]) {
+                        if (graph.graphType.autoCount) {
                             sheets.back()->InsertRaw<at::graphAutoscaleCount>(true);
                         }
 
                         sheets.push_back(Stylesheet::Make({ { "$graph", tag }, {"$label"} }));
-                        sheets.back()->InsertRaw<at::textSize>((double)Traverse(vGraph)["textSize"]);
+                        sheets.back()->InsertRaw<at::textSize>((double)graph.textSize);
 
                         sheets.push_back(Stylesheet::Make({ { "$graph", tag }, {"$label-units"} }));
-                        sheets.back()->InsertRaw<at::textSize>((double)Traverse(vGraph)["textSize"]);
+                        sheets.back()->InsertRaw<at::textSize>((double)graph.textSize);
 
                         sheets.push_back(Stylesheet::Make({ { "$graph", tag }, {"$label-value"} }));
-                        sheets.back()->InsertRaw<at::textSize>((double)Traverse(vGraph)["textSize"]);
+                        sheets.back()->InsertRaw<at::textSize>((double)graph.textSize);
 
                         sheets.push_back(Stylesheet::Make({ { "$graph", tag }, {"$label-value"} }));
-                        sheets.back()->InsertRaw<at::textSize>((double)Traverse(vGraph)["textSize"]);
+                        sheets.back()->InsertRaw<at::textSize>((double)graph.textSize);
 
                         sheets.push_back(Stylesheet::Make({ { "$graph", tag }, {"$body"} }));
-                        sheets.back()->InsertRaw<at::height>((double)Traverse(vGraph)["height"]);
+                        sheets.back()->InsertRaw<at::height>((double)graph.height);
 
                         sheets.push_back(Stylesheet::Make({ { "$graph", tag }, {"$body-plot"} }));
                         sheets.back()->InsertRaw<at::borderColorLeft>(gridColor);
@@ -344,55 +332,41 @@ namespace p2c::client::util
                         sheets.back()->InsertRaw<at::borderColorRight>(gridColor);
                         sheets.back()->InsertRaw<at::borderColorBottom>(gridColor);
                         sheets.back()->InsertRaw<at::graphGridColor>(gridColor);
-                        sheets.back()->InsertRaw<at::graphVerticalDivs>((double)Traverse(vGraph)["vDivs"]);
-                        sheets.back()->InsertRaw<at::graphHorizontalDivs>((double)Traverse(vGraph)["hDivs"]);
-                        sheets.back()->InsertRaw<at::graphBinCount>((double)Traverse(vGraph)["graphType"]["binCount"]);
+                        sheets.back()->InsertRaw<at::graphVerticalDivs>((double)graph.vDivs);
+                        sheets.back()->InsertRaw<at::graphHorizontalDivs>((double)graph.hDivs);
+                        sheets.back()->InsertRaw<at::graphBinCount>((double)graph.graphType.binCount);
 
                         sheets.push_back(Stylesheet::Make({ { "$graph", "$line", tag }, {"$body-plot"} }));
-                        sheets.back()->InsertRaw<at::borderColorRight>(at::make::Color(ColorFromV8(Traverse(vGraph)["dividerColor"])));
+                        sheets.back()->InsertRaw<at::borderColorRight>(dividerColor);
 
-                        sheets.push_back(Stylesheet::Make({ { "$graph", "$line", tag }, {"$body-right", "$value"}}));
-                        // why is this hardcoded using index 0?
-                        sheets.back()->InsertRaw<at::textColor>(at::make::Color(ColorFromV8(widgetMetrics[0ull]["lineColor"])));
+                        sheets.push_back(Stylesheet::Make({ { "$graph", "$line", tag }, {"$body-right", "$value"} }));
+                        // TODO: investigate--why is this hardcoded using index 0?
+                        sheets.back()->InsertRaw<at::textColor>(at::make::Color(graph.metrics[0].lineColor));
 
-                        const auto widgetMetricCount = widgetMetrics.GetLength();
+
                         bool hasRightAxis = false;
-                        for (size_t iWidgetMetric = 0; iWidgetMetric < widgetMetricCount; iWidgetMetric++) {
-                            auto widgetMetric = widgetMetrics[iWidgetMetric];
-                            const auto axisAffinity = (AxisAffinity)widgetMetric["axisAffinity"];
-                            hasRightAxis = hasRightAxis || axisAffinity == AxisAffinity::Right;
+                        for (auto&& [iwm, widgetMetric] : graph.metrics | vi::enumerate) {
+                            hasRightAxis = hasRightAxis || widgetMetric.axisAffinity == AxisAffinity::Right;
+                            const auto lineColor = at::make::Color(widgetMetric.lineColor);
+                            const auto fillColor = at::make::Color(widgetMetric.fillColor);
                             
-                            sheets.push_back(Stylesheet::Make({ { "$graph", tag }, { "$metric", std::format("$metric-{}", iWidgetMetric)}}));
-                            sheets.back()->InsertRaw<at::graphLineColor>(
-                                at::make::Color(ColorFromV8(widgetMetric["lineColor"]))
-                            );
-                            sheets.back()->InsertRaw<at::graphFillColor>(
-                                at::make::Color(ColorFromV8(widgetMetric["fillColor"]))
-                            );
-                            sheets.back()->InsertRaw<at::backgroundColor>(
-                                at::make::Color(ColorFromV8(widgetMetric["lineColor"]))
-                            );
+                            sheets.push_back(Stylesheet::Make({ { "$graph", tag }, { "$metric", std::format("$metric-{}", iwm)}}));
+                            sheets.back()->InsertRaw<at::graphLineColor>(lineColor);
+                            sheets.back()->InsertRaw<at::graphFillColor>(fillColor);
+                            sheets.back()->InsertRaw<at::backgroundColor>(lineColor);
 
-                            sheets.push_back(Stylesheet::Make({ { "$graph", tag }, { "$label-swatch", std::format("$metric-{}", iWidgetMetric)} }));
-                            sheets.back()->InsertRaw<at::graphLineColor>(
-                                at::make::Color(ColorFromV8(widgetMetric["lineColor"]))
-                            );
-                            sheets.back()->InsertRaw<at::graphFillColor>(
-                                at::make::Color(ColorFromV8(widgetMetric["fillColor"]))
-                            );
-                            sheets.back()->InsertRaw<at::backgroundColor>(
-                                at::make::Color(ColorFromV8(widgetMetric["lineColor"]))
-                            );
+                            sheets.push_back(Stylesheet::Make({ { "$graph", tag }, { "$label-swatch", std::format("$metric-{}", iwm)} }));
+                            sheets.back()->InsertRaw<at::graphLineColor>(lineColor);
+                            sheets.back()->InsertRaw<at::graphFillColor>(fillColor);
+                            sheets.back()->InsertRaw<at::backgroundColor>(lineColor);
 
-                            sheets.push_back(Stylesheet::Make({ { "$graph", tag }, { "$label-value", std::format("$metric-{}", iWidgetMetric)}}));
-                            sheets.back()->InsertRaw<at::textColor>(
-                                at::make::Color(ColorFromV8(widgetMetric["lineColor"]))
-                            );
+                            sheets.push_back(Stylesheet::Make({ { "$graph", tag }, { "$label-value", std::format("$metric-{}", iwm)}}));
+                            sheets.back()->InsertRaw<at::textColor>(lineColor);
 
-                            sheets.push_back(Stylesheet::Make({ { "$graph", tag }, { "$label-units", std::format("$metric-{}", iWidgetMetric)} }));
+                            sheets.push_back(Stylesheet::Make({ { "$graph", tag }, { "$label-units", std::format("$metric-{}", iwm)} }));
                             sheets.back()->InsertRaw<at::textColor>(
                                 // darken line color for units
-                                at::make::Color(ColorFromV8(widgetMetric["lineColor"]) * 0.7f)
+                                at::make::Color(widgetMetric.lineColor * 0.7f)
                             );
                         }
 
@@ -403,51 +377,53 @@ namespace p2c::client::util
                         }
                     }
                 }
-                else if (widgetType == kern::WidgetType::Readout) {
+                else if (auto pReadout = std::get_if<kact::push_spec_impl::Readout>(&widget)) {
                     using namespace gfx::lay::sty;
-                    auto& vReadout = widget;
+                    auto& readout = *pReadout;
                     auto& sheets = pSpec->sheets;
                     const auto tag = std::format("r{}", i);
-                    if (Traverse(vReadout)["metrics"].GetLength() > 1) {
+                    if (pReadout->metrics.size() > 1) {
                         pmlog_warn("Too many metricIds for readout widget");
                     }
-                    auto qualifiedMetric = Traverse(vReadout)["metrics"][0ull]["metric"];
+                    auto& qualifiedMetric = readout.metrics.back().metric;
                     pSpec->widgets.push_back(kern::ReadoutSpec{
                         .metric = {
-                            .metricId = qualifiedMetric["metricId"],
-                            .statId = qualifiedMetric["statId"],
-                            .arrayIndex = qualifiedMetric["arrayIndex"],
-                            .deviceId = qualifiedMetric["deviceId"],
-                            .unitId = qualifiedMetric["desiredUnitId"],
+                            .metricId = qualifiedMetric.metricId,
+                            .statId = qualifiedMetric.statId,
+                            .arrayIndex = qualifiedMetric.arrayIndex,
+                            .deviceId = qualifiedMetric.deviceId,
+                            .unitId = qualifiedMetric.desiredUnitId,
                         },
                         .tag = tag,
                     });
 
-                    const double fontSize = Traverse(vReadout)["fontSize"];
+                    const auto fontSize = double(readout.fontSize);
+                    auto backgroundColor = at::make::Color(readout.backgroundColor);
+                    auto fontColor = at::make::Color(readout.fontColor);
 
                     sheets.push_back(Stylesheet::Make({ {}, { "$readout", tag } }));
-                    sheets.back()->InsertRaw<at::backgroundColor>(at::make::Color(ColorFromV8(Traverse(vReadout)["backgroundColor"])));
+                    sheets.back()->InsertRaw<at::backgroundColor>(backgroundColor);
 
-                    if (!Traverse(vReadout)["showLabel"]) {
+                    if (!readout.showLabel) {
                         sheets.push_back(Stylesheet::Make({ { "$readout", tag }, { "$label" } }));
                         sheets.back()->InsertRaw<at::display>(at::make::Enum(Display::None));
                     }
 
                     sheets.push_back(Stylesheet::Make({ { "$readout", tag }, { "$text-large" } }));
-                    sheets.back()->InsertRaw<at::textColor>(at::make::Color(ColorFromV8(Traverse(vReadout)["fontColor"])));
+                    sheets.back()->InsertRaw<at::textColor>(fontColor);
                     sheets.back()->InsertRaw<at::textSize>(fontSize);
 
                     sheets.push_back(Stylesheet::Make({ { "$readout", tag }, { "$text-large" } }));
-                    sheets.back()->InsertRaw<at::textColor>(at::make::Color(ColorFromV8(Traverse(vReadout)["fontColor"])));
+                    sheets.back()->InsertRaw<at::textColor>(fontColor);
                     sheets.back()->InsertRaw<at::textSize>(fontSize);
 
                     sheets.push_back(Stylesheet::Make({ { "$readout", tag }, { "$numeric-units" } }));
-                    sheets.back()->InsertRaw<at::textColor>(at::make::Color(ColorFromV8(Traverse(vReadout)["fontColor"])));
+                    sheets.back()->InsertRaw<at::textColor>(fontColor);
                     sheets.back()->InsertRaw<at::textSize>(fontSize);
                     sheets.back()->InsertRaw<at::paddingLeft>(fontSize / 5.);
                 }
                 else {
-                    pmlog_warn(std::format("Unknown widget type [{}]", (int)widgetType));
+                    pmlog_warn(std::format("Unknown widget type; variant index [{}]", widget.index()));
                 }
             }
         }

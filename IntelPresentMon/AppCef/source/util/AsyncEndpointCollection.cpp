@@ -9,7 +9,6 @@
 #include "async/BindHotkey.h"
 #include "async/ClearHotkey.h"
 #include "async/LaunchKernel.h"
-#include "async/PushSpecification.h"
 #include "async/EnumerateProcesses.h"
 #include "async/EnumerateKeys.h"
 #include "async/EnumerateModifiers.h"
@@ -39,7 +38,6 @@ namespace p2c::client::util
 		AddEndpoint<BindHotkey>();
 		AddEndpoint<ClearHotkey>();
 		AddEndpoint<LaunchKernel>();
-		AddEndpoint<PushSpecification>();
 		AddEndpoint<EnumerateProcesses>();
 		AddEndpoint<EnumerateKeys>();
 		AddEndpoint<EnumerateModifiers>();

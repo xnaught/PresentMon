@@ -28,14 +28,27 @@ namespace p2c::client::util
 		return CefString(sv.data(), sv.size());
 	}
 
+	// specialize this to enable custom conversion behavior for specific types
+	template<class T>
+	struct CustomV8Conversion {};
+
+	template<class T>
+	concept HasCustomFromV8 = requires(CefV8Value& v8, T& out) {
+		CustomV8Conversion<T>::FromV8(v8, out);
+	};
+
 	template<class T>
 	void FromV8(CefV8Value& v8, T& out)
 	{
-		if constexpr (IsContainer<std::optional, T>) {
+		if constexpr (HasCustomFromV8<T>) {
+			CustomV8Conversion<T>::FromV8(v8, out);
+		}
+		else if constexpr (IsContainer<std::optional, T>) {
 			if (v8.IsNull()) {
 				out.reset();
 			}
 			else {
+				out.emplace();
 				FromV8(v8, *out);
 			}
 		}
