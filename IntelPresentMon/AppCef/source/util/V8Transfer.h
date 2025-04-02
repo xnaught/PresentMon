@@ -14,6 +14,7 @@
 #include <string_view>
 #include <CommonUtilities/ref/WrapReflect.h>
 #include <ranges>
+#include <array>
 
 namespace p2c::client::util
 {
@@ -63,6 +64,11 @@ namespace p2c::client::util
 			for (int i = 0; i < v8.GetArrayLength(); i++) {
 				out.emplace_back();
 				FromV8(*v8.GetValue(i), out.back());
+			}
+		}
+		else if constexpr (IsStdArray<T>) {
+			for (int i = 0; i < v8.GetArrayLength(); i++) {
+				FromV8(*v8.GetValue(i), out[i]);
 			}
 		}
 		else if constexpr (std::is_floating_point_v<T>) {
@@ -116,6 +122,14 @@ namespace p2c::client::util
 		else if constexpr (IsContainer<std::vector, T>) {
 			pV8 = CefV8Value::CreateArray((int)in.size());
 			for (auto&&[i, el] : in | vi::enumerate) {
+				CefRefPtr<CefV8Value> pNewV8;
+				ToV8(el, pNewV8);
+				pV8->SetValue((int)i, std::move(pNewV8));
+			}
+		}
+		else if constexpr (IsStdArray<T>) {
+			pV8 = CefV8Value::CreateArray((int)in.size());
+			for (auto&& [i, el] : in | vi::enumerate) {
 				CefRefPtr<CefV8Value> pNewV8;
 				ToV8(el, pNewV8);
 				pV8->SetValue((int)i, std::move(pNewV8));
