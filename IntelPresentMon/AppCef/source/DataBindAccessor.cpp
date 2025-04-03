@@ -9,11 +9,11 @@
 #include "util/CefValues.h"
 #include "util/kact/KernelExecutionContext.h"
 #include <Interprocess/source/act/SymmetricActionServer.h>
-#include "util/cact/HotkeyAction.h"
 #include "util/cact/TargetLostAction.h"
 #include "util/cact/OverlayDiedAction.h"
 #include "util/cact/PresentmonInitFailedAction.h"
 #include "util/cact/StalePidAction.h"
+#include "util/SignalManager.h"
 
 
 namespace p2c::client::cef
@@ -50,8 +50,11 @@ namespace p2c::client::cef
     {
         pKernelWrapper->pKernelHandler = std::make_unique<DBAKernelHandler>(pKernelWrapper_);
         pKernelWrapper->pHotkeys = std::make_unique<util::Hotkeys>();
-        pKernelWrapper->pHotkeys->SetHandler([this](Action action) { pKernelWrapper->pServer->DispatchAsync(
-            util::cact::HotkeyAction::Params{ action }); });
+        // set the hotkey listener component to call hotkey signal on the signal manager when a hotkey chord is detected
+        pKernelWrapper->pHotkeys->SetHandler([this](Action action) {
+            CefPostTask(TID_RENDERER, base::BindOnce(&util::SignalManager::SignalHotkeyFired,
+                base::Unretained(&pKernelWrapper->signals), uint32_t(action)));
+        });
     }
 
     bool DataBindAccessor::Execute(const CefString& name, CefRefPtr<CefV8Value> object, const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)

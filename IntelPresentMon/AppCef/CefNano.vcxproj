@@ -89,7 +89,6 @@
     <ClInclude Include="source\util\SignalManager.h" />
     <ClInclude Include="source\util\FontEnumerator.h" />
     <ClInclude Include="source\util\HotkeyListener.h" />
-    <ClInclude Include="source\util\cact\HotkeyAction.h" />
     <ClInclude Include="source\util\ThreadCompass.h" />
     <ClInclude Include="source\util\V8Transfer.h" />
   </ItemGroup>
