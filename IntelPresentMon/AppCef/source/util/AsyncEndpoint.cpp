@@ -18,12 +18,6 @@ namespace p2c::client::util
 		return MakeStringErrorResult(L"virtual not implemented");
 	}
 
-	AsyncEndpoint::Result AsyncEndpoint::ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const
-	{
-		pmlog_warn("virtual not implemented");
-		return MakeStringErrorResult(L"virtual not implemented");
-	}
-
 	AsyncEndpoint::Environment AsyncEndpoint::GetEnvironment() const { return env; }
 
 	AsyncEndpoint::Result AsyncEndpoint::MakeStringErrorResult(std::wstring errorString)

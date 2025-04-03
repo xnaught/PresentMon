@@ -13,9 +13,9 @@ namespace p2c::client::util::async
     {
     public:
         static constexpr std::string GetKey() { return "checkPathExistence"; }
-        CheckPathExistence() : AsyncEndpoint{ AsyncEndpoint::Environment::KernelTask } {}
+        CheckPathExistence() : AsyncEndpoint{ AsyncEndpoint::Environment::RenderProcess } {}
         // {location:int, path:string} => bool
-        Result ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const override
+        Result ExecuteOnRenderer(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor&) const override
         {
             const auto filePath = ResolveSanitizedPath(
                 Traverse(pArgObj)["location"],

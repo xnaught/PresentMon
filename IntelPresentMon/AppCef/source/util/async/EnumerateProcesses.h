@@ -1,6 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
+#include <Core/source/win/ProcessMapBuilder.h>
 #include "../AsyncEndpoint.h"
 #include <Core/source/kernel/Kernel.h>
 #include "../CefValues.h"
@@ -11,15 +12,29 @@ namespace p2c::client::util::async
     {
     public:
         static constexpr std::string GetKey() { return "enumerateProcesses"; }
-        EnumerateProcesses() : AsyncEndpoint{ AsyncEndpoint::Environment::KernelTask } {}
+        EnumerateProcesses() : AsyncEndpoint{ AsyncEndpoint::Environment::RenderProcess } {}
         // {} => {processes: [{name: string, pid: uint}]}
-        Result ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const override
+        Result ExecuteOnRenderer(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor&) const override
         {
-            auto procList = kernel.ListProcesses();
-            auto procListCef = MakeCefList(procList.size());
-            for (int i = 0; i < procList.size(); i++)
-            {
-                auto& proc = procList[i];
+            // enumerate processes on system
+            win::ProcessMapBuilder builder;
+            builder.FillWindowHandles();
+            builder.FilterHavingWindow();
+            auto pmap = builder.Extract();
+            // get window titles for each proc
+            std::vector<kern::Process> list;
+            list.reserve(pmap.size());
+            for (auto& entry : pmap) {
+                using Win32Handle = ::pmon::util::win::Handle;
+                kern::Process proc = std::move(entry.second);
+                if (proc.hWnd) {
+                    proc.windowName = win::GetWindowTitle(proc.hWnd);
+                }
+                list.push_back(std::move(proc));
+            }
+            // convert to cef objects
+            auto procListCef = MakeCefList(list.size());
+            for (auto&&[i, proc] : list | vi::enumerate) {
                 procListCef->SetValue(i, MakeCefObject(
                     CefProp{ "name", std::move(proc.name) },
                     CefProp{ "pid", proc.pid },

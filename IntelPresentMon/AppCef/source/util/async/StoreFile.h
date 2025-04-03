@@ -13,9 +13,9 @@ namespace p2c::client::util::async
     {
     public:
         static constexpr std::string GetKey() { return "storeFile"; }
-        StoreFile() : AsyncEndpoint{ AsyncEndpoint::Environment::KernelTask } {}
+        StoreFile() : AsyncEndpoint{ AsyncEndpoint::Environment::RenderProcess } {}
         // {payload: string, location: int, path: string} => null
-        Result ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const override
+        Result ExecuteOnRenderer(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor&) const override
         {
             const auto filePath = ResolveSanitizedPath(
                 Traverse(pArgObj)["location"],

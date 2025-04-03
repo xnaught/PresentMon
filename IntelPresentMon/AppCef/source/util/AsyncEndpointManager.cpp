@@ -71,25 +71,8 @@ namespace p2c::client::util
 					));
 				});
 				break;
-			case AsyncEndpoint::Environment::KernelTask:
-				iInvoke->second.taskFuture = std::async([&kernel, key, uid, pArgObj = V8ToCefValue(*pObj), pEndpoint, this]() mutable {
-					AsyncEndpoint::Result result;
-					try {
-						// run the async command procudure on the std::async thread pool
-						result = pEndpoint->ExecuteOnKernelTask(uid, std::move(pArgObj), kernel);
-					}
-					catch (...) {
-						const auto rep =
-							ReportException("Error in async API endpoint dispatch (kernel context)");
-						result = AsyncEndpoint::MakeStringErrorResult(ToWide(rep.first));
-					}
-					// pass results and run the resolve logic (V8 conversion etc.) on the renderer thread
-					CefPostTask(TID_RENDERER, base::BindOnce(
-						&AsyncEndpointManager::ResolveInvocation, base::Unretained(this),
-						uid, result.succeeded, std::move(result.pArgs)
-					));
-				});
-				break;
+			default:
+				pmlog_error("Unknown async endp env").pmwatch(int(pEndpoint->GetEnvironment()));
 			}
 		}
 		else {

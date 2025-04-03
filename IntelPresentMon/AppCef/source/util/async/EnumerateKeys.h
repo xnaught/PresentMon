@@ -11,9 +11,9 @@ namespace p2c::client::util::async
     {
     public:
         static constexpr std::string GetKey() { return "enumerateKeys"; }
-        EnumerateKeys() : AsyncEndpoint{ AsyncEndpoint::Environment::KernelTask } {}
+        EnumerateKeys() : AsyncEndpoint{ AsyncEndpoint::Environment::RenderProcess } {}
         // {} => {keys: [{code: uint, text: string}]}
-        Result ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const override
+        Result ExecuteOnRenderer(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor&) const override
         {
             using namespace win;
             auto keyList = Key::EnumerateKeys();

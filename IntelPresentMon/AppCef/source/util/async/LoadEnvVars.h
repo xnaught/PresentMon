@@ -12,9 +12,9 @@ namespace p2c::client::util::async
     {
     public:
         static constexpr std::string GetKey() { return "loadEnvVars"; }
-        LoadEnvVars() : AsyncEndpoint{ AsyncEndpoint::Environment::KernelTask } {}
+        LoadEnvVars() : AsyncEndpoint{ AsyncEndpoint::Environment::RenderProcess } {}
         // {} => EnvVars
-        Result ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const override
+        Result ExecuteOnRenderer(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor&) const override
         {
             const auto& opt = cli::Options::Get();
             auto vars = MakeCefObject(

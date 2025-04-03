@@ -144,6 +144,7 @@ namespace p2c::client::cef
                 mods
             );
         }
+        return false;
     }
 
     bool DataBindAccessor::ClearHotkey(CefValue& pArgObj)
@@ -156,6 +157,7 @@ namespace p2c::client::cef
                 (Action)pArgObj.GetDictionary()->GetInt("action")
             );
         }
+        return false;
     }
 
     void DataBindAccessor::LaunchKernel()

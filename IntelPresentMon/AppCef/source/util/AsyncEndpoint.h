@@ -28,7 +28,6 @@ namespace p2c::client::util
 		{
 			BrowserProcess,
 			RenderProcess,
-			KernelTask,
 		};
 		struct Result
 		{
@@ -39,7 +38,6 @@ namespace p2c::client::util
 		AsyncEndpoint(Environment env);
 		virtual void ExecuteOnBrowser(uint64_t uid, CefRefPtr<CefValue> pArgObj, CefRefPtr<CefBrowser> pBrowser) const;
 		virtual Result ExecuteOnRenderer(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor& accessor) const;
-		virtual Result ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const;
 		Environment GetEnvironment() const;
 		static Result MakeStringErrorResult(std::wstring errorString);
 	private:
