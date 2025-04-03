@@ -184,7 +184,7 @@ namespace p2c::client::util
 		pmlog_verb(v::hotkey)("Hotkey handler set");
 		Handler_ = std::move(handler);
 	}
-	void Hotkeys::BindAction(Action action, win::Key key, win::ModSet mods, std::function<void(bool)> resultCallback)
+	bool Hotkeys::BindAction(Action action, win::Key key, win::ModSet mods)
 	{
 		pmlog_verb(v::hotkey)("Hotkey action binding");
 		std::lock_guard lk{ mtx_ };
@@ -202,10 +202,10 @@ namespace p2c::client::util
 			std::forward_as_tuple(key, mods),
 			std::forward_as_tuple(action)
 		);
-		// signal callback success
-		resultCallback(true);
+		// signal success
+		return true;
 	}
-	void Hotkeys::ClearAction(Action action, std::function<void(bool)> resultCallback)
+	bool Hotkeys::ClearAction(Action action)
 	{
 		pmlog_verb(v::hotkey)("Hotkey action clearing");
 		std::lock_guard lk{ mtx_ };
@@ -218,8 +218,8 @@ namespace p2c::client::util
 		else {
 			pmlog_warn("Attempted to clear unregistered hotkey");
 		}
-		// signal callback success
-		resultCallback(true);
+		// signal success
+		return true;
 	}
 	win::ModSet Hotkeys::GatherModifiers_() const
 	{

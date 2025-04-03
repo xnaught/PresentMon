@@ -50,9 +50,26 @@ namespace p2c::client::util
 					// resolve is invoked in the handler for the return message from browser process
 				}
 				break;
-			case AsyncEndpoint::Environment::RenderImmediate:
-				pEndpoint->ExecuteOnRenderAccessor(uid, V8ToCefValue(*pObj), accessor);
+			case AsyncEndpoint::Environment::RenderProcess:
+				pEndpoint->ExecuteOnRenderer(uid, V8ToCefValue(*pObj), accessor);
 				// resolve is invoked in ExecuteOnRenderAccessor
+				iInvoke->second.taskFuture = std::async([&accessor, key, uid, pArgObj = V8ToCefValue(*pObj), pEndpoint, this]() mutable {
+					AsyncEndpoint::Result result;
+					try {
+						// run the async command procudure on the std::async thread pool
+						result = pEndpoint->ExecuteOnRenderer(uid, std::move(pArgObj), accessor);
+					}
+					catch (...) {
+						const auto rep =
+							ReportException("Error in async API endpoint dispatch (render process)");
+						result = AsyncEndpoint::MakeStringErrorResult(ToWide(rep.first));
+					}
+					// pass results and run the resolve logic (V8 conversion etc.) on the renderer thread
+					CefPostTask(TID_RENDERER, base::BindOnce(
+						&AsyncEndpointManager::ResolveInvocation, base::Unretained(this),
+						uid, result.succeeded, std::move(result.pArgs)
+					));
+				});
 				break;
 			case AsyncEndpoint::Environment::KernelTask:
 				iInvoke->second.taskFuture = std::async([&kernel, key, uid, pArgObj = V8ToCefValue(*pObj), pEndpoint, this]() mutable {
@@ -61,15 +78,10 @@ namespace p2c::client::util
 						// run the async command procudure on the std::async thread pool
 						result = pEndpoint->ExecuteOnKernelTask(uid, std::move(pArgObj), kernel);
 					}
-					catch (const std::exception& e) {
-						result = AsyncEndpoint::MakeStringErrorResult(ToWide(
-							std::format("Error in async API endpoint dispatch (kernel environment) [{}]: {}", key, e.what())
-						));
-					}
 					catch (...) {
-						result = AsyncEndpoint::MakeStringErrorResult(ToWide(
-							std::format("Error in async API endpoint dispatch (kernel environment) [{}]", key)
-						));
+						const auto rep =
+							ReportException("Error in async API endpoint dispatch (kernel context)");
+						result = AsyncEndpoint::MakeStringErrorResult(ToWide(rep.first));
 					}
 					// pass results and run the resolve logic (V8 conversion etc.) on the renderer thread
 					CefPostTask(TID_RENDERER, base::BindOnce(

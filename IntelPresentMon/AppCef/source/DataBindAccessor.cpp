@@ -122,43 +122,38 @@ namespace p2c::client::cef
         }
     }
 
-    void DataBindAccessor::BindHotkey(CefValue& pArgObj, std::function<void(bool)> resultCallback)
+    bool DataBindAccessor::BindHotkey(CefValue& pArgObj)
     {
         // {action:int, combination: {modifiers:[], key:int}}
 
         std::shared_lock lk{ kernelMtx };
-        if (pKernelWrapper)
-        {
+        if (pKernelWrapper) {
             const auto payload = pArgObj.GetDictionary();
             const auto comboJs = payload->GetDictionary("combination");
             const auto modsJs = comboJs->GetList("modifiers");
 
             auto mods = win::Mod::Null;
-            for (int i = 0; i < modsJs->GetSize(); i++)
-            {
+            for (int i = 0; i < modsJs->GetSize(); i++) {
                 const auto modCode = modsJs->GetValue(i)->GetInt();
                 mods = mods | *win::ModSet::SingleModFromCode(modCode);
             }
 
-            pKernelWrapper->pHotkeys->BindAction(
+            return pKernelWrapper->pHotkeys->BindAction(
                 (Action)payload->GetInt("action"),
                 win::Key{ (win::Key::Code)comboJs->GetInt("key") },
-                mods,
-                std::move(resultCallback)
+                mods
             );
         }
     }
 
-    void DataBindAccessor::ClearHotkey(CefValue& pArgObj, std::function<void(bool)> resultCallback)
+    bool DataBindAccessor::ClearHotkey(CefValue& pArgObj)
     {
         // {action:int}
 
         std::shared_lock lk{ kernelMtx };
-        if (pKernelWrapper)
-        {
-            pKernelWrapper->pHotkeys->ClearAction(
-                (Action)pArgObj.GetDictionary()->GetInt("action"),
-                std::move(resultCallback)
+        if (pKernelWrapper) {
+            return pKernelWrapper->pHotkeys->ClearAction(
+                (Action)pArgObj.GetDictionary()->GetInt("action")
             );
         }
     }

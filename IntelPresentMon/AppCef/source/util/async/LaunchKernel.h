@@ -12,27 +12,12 @@ namespace p2c::client::util::async
     {
     public:
         static constexpr std::string GetKey() { return "launchKernel"; }
-        LaunchKernel() : AsyncEndpoint{ AsyncEndpoint::Environment::RenderImmediate } {}
+        LaunchKernel() : AsyncEndpoint{ AsyncEndpoint::Environment::RenderProcess } {}
         // {} => null
-        void ExecuteOnRenderAccessor(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor& accessor) const override
+        Result ExecuteOnRenderer(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor& accessor) const override
         {
-            using ::pmon::util::str::ToWide;
-
-            try {
-                accessor.LaunchKernel();
-            }
-            catch (const std::exception& e) {
-                const auto pExName = typeid(e).name();
-                auto result = AsyncEndpoint::MakeStringErrorResult(ToWide(
-                    std::format("Async API endpoint [launchKernel] failed with exception [{}]: {}", pExName, e.what())
-                ));
-                accessor.ResolveAsyncEndpoint(uid, result.succeeded, std::move(result.pArgs));
-            }
-            catch (...) {
-                auto result = AsyncEndpoint::MakeStringErrorResult(L"Async API endpoint [launchKernel] failed");
-                accessor.ResolveAsyncEndpoint(uid, result.succeeded, std::move(result.pArgs));
-            }
-            accessor.ResolveAsyncEndpoint(uid, true, CefValueNull());
+            accessor.LaunchKernel();
+            return Result{ true, CefValueNull() };
         }
     };
 }

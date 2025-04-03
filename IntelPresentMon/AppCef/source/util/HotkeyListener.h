@@ -22,8 +22,8 @@ namespace p2c::client::util
         Hotkeys(const Hotkeys&) = delete;
         Hotkeys& operator=(const Hotkeys&) = delete;
 		~Hotkeys();
-		void BindAction(Action action, win::Key key, win::ModSet mods, std::function<void(bool)> resultCallback);
-		void ClearAction(Action action, std::function<void(bool)> resultCallback);
+		bool BindAction(Action action, win::Key key, win::ModSet mods);
+		bool ClearAction(Action action);
 		void SetHandler(std::function<void(Action)> handler);
 	private:
 		// types

@@ -19,8 +19,8 @@ namespace p2c::client::cef
             CefRefPtr<CefV8Value>& retval,
             CefString& exception) override;
         void ResolveAsyncEndpoint(uint64_t uid, bool success, CefRefPtr<CefValue> pArgs);
-        void BindHotkey(CefValue& pArgObj, std::function<void(bool)> resultCallback);
-        void ClearHotkey(CefValue& pArgObj, std::function<void(bool)> resultCallback);
+        bool BindHotkey(CefValue& pArgObj);
+        bool ClearHotkey(CefValue& pArgObj);
         void LaunchKernel();
         void ClearKernelWrapper();
     private:
