@@ -16,7 +16,7 @@ namespace p2c::client::util
 {
 	using ::pmon::util::str::ToWide;
 
-	void AsyncEndpointManager::DispatchInvocation(const std::string& key, CallbackContext ctx, CefRefPtr<CefV8Value> pObj, CefBrowser& browser, cef::DataBindAccessor& accessor, kern::Kernel& kernel)
+	void AsyncEndpointManager::DispatchInvocation(const std::string& key, CallbackContext ctx, CefRefPtr<CefV8Value> pObj, CefBrowser& browser, cef::DataBindAccessor& accessor)
 	{
 		CEF_REQUIRE_RENDERER_THREAD();
 

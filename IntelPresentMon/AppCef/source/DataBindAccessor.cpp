@@ -97,8 +97,7 @@ namespace p2c::client::cef
                             { arguments[2], arguments[3], CefV8Context::GetCurrentContext() },
                             arguments[1],
                             *pBrowser,
-                            *this,
-                            *pKernelWrapper->pKernel
+                            *this
                         );
                     }
                 }
