@@ -8,7 +8,6 @@
 #include "async/BrowseStoreSpec.h"
 #include "async/BindHotkey.h"
 #include "async/ClearHotkey.h"
-#include "async/LaunchKernel.h"
 #include "async/EnumerateProcesses.h"
 #include "async/EnumerateKeys.h"
 #include "async/EnumerateModifiers.h"
@@ -37,7 +36,6 @@ namespace p2c::client::util
 		AddEndpoint<BrowseStoreSpec>();
 		AddEndpoint<BindHotkey>();
 		AddEndpoint<ClearHotkey>();
-		AddEndpoint<LaunchKernel>();
 		AddEndpoint<EnumerateProcesses>();
 		AddEndpoint<EnumerateKeys>();
 		AddEndpoint<EnumerateModifiers>();

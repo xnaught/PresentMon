@@ -8,12 +8,12 @@ namespace p2c::kern
 	struct OverlaySpec;
 }
 
-namespace p2c::client::util::kact::push_spec_impl
+namespace kproc::kact::push_spec_impl
 {
 	struct Params;
 }
 
-namespace p2c::client::util
+namespace kproc
 {
-	std::unique_ptr<kern::OverlaySpec> MakeOverlaySpec(const kact::push_spec_impl::Params& spec);
+	std::unique_ptr<p2c::kern::OverlaySpec> MakeOverlaySpec(const kact::push_spec_impl::Params& spec);
 }

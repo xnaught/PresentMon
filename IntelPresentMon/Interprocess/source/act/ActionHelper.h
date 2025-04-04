@@ -12,7 +12,9 @@
 
 #ifdef PM_ASYNC_ACTION_REGISTRATION_
 #include "AsyncActionCollection.h"
-#define ACTION_REG() ::pmon::ipc::act::AsyncActionRegistrator<ACT_NS::ACT_NAME, ACT_NS::ACT_EXEC_CTX> CONCATENATE(regSvcAct_, ACT_NAME)##_; PM_ASYNC_ACTION_CUSTOM_REG_(ACT_NAME)
+#define ACTION_REG() ::pmon::ipc::act::AsyncActionRegistrator<ACT_NS::ACT_NAME, ACT_NS::ACT_EXEC_CTX> CONCATENATE(regSvcAct_, ACT_NAME)##_; PM_ASYNC_ACTION_CUSTOM_REG_(name)
+#else
+#define ACTION_REG() PM_ASYNC_ACTION_CUSTOM_REG_(name)
 #endif
 
 #define ACTION_TRAITS_DEF() namespace pmon::ipc::act { template<> struct ActionParamsTraits<ACT_NS::ACT_NAME::Params> { using Action = ACT_NS::ACT_NAME; }; }

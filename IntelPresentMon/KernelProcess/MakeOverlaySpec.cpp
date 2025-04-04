@@ -1,18 +1,24 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "MakeOverlaySpec.h"
-#include <Core/source/gfx/layout/style/RawAttributeHelpers.h>
-#include <Core/source/kernel/OverlaySpec.h>
+#include "../Core/source/gfx/layout/style/RawAttributeHelpers.h"
+#include "../Core/source/gfx/layout/style/Stylesheet.h"
+#include "../Core/source/gfx/prim/Enums.h"
+#include "../Core/source/kernel/OverlaySpec.h"
+#include "../Core/source/gfx/base/Geometry.h"
 #include "kact/PushSpecification.h"
+#include "../CommonUtilities/str/String.h"
 
-namespace p2c::client::util
+namespace kproc
 {
+    namespace vi = std::views;
+    using namespace p2c;
     using namespace gfx;
     using namespace lay;
-    using util::str::ToNarrow;
-    using util::str::ToWide;
+    using ::pmon::util::str::ToNarrow;
+    using ::pmon::util::str::ToWide;
 
-    std::unique_ptr<kern::OverlaySpec> MakeOverlaySpec(const kact::push_spec_impl::Params& spec)
+    std::unique_ptr<p2c::kern::OverlaySpec> MakeOverlaySpec(const kact::push_spec_impl::Params& spec)
     {
         // Alias for brevity.
         auto& pref = spec.preferences;

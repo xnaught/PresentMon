@@ -103,9 +103,6 @@ namespace p2c::client::cef
 
     void NanoCefProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context)
     {
-        pKernelWrapper->pServer = std::make_unique<::pmon::ipc::act::SymmetricActionServer<util::kact::KernelExecutionContext>>(
-            util::kact::KernelExecutionContext{ .ppKernel = &pKernelWrapper->pKernel }, R"(\\.\pipe\ipm-v8-channel)", 1, ""
-        );
         std::this_thread::sleep_for(50ms);
         pKernelWrapper->pClient = std::make_unique<util::CefClient>(
             R"(\\.\pipe\ipm-v8-channel)", util::cact::CefExecutionContext{ .pSignalManager = &pKernelWrapper->signals }

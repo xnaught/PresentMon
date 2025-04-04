@@ -1,14 +1,15 @@
 #pragma once
-#include "../../../Interprocess/source/act/ActionHelper.h"
+#include "../../Interprocess/source/act/ActionHelper.h"
 #include "KernelExecutionContext.h"
 #include <format>
+#include "../../Core/source/kernel/Kernel.h"
 
-#define ACT_NAME OpenSession
+#define ACT_NAME SetCapture
 #define ACT_EXEC_CTX KernelExecutionContext
 #define ACT_TYPE AsyncActionBase_
-#define ACT_NS ::p2c::client::util::kact
+#define ACT_NS kproc::kact
 
-namespace p2c::client::util::kact
+namespace ACT_NS
 {
 	using namespace ::pmon::ipc::act;
 
@@ -18,33 +19,26 @@ namespace p2c::client::util::kact
 		static constexpr const char* Identifier = STRINGIFY(ACT_NAME);
 		struct Params
 		{
-			uint32_t cefRenderPid;
+			bool active;
 
 			template<class A> void serialize(A& ar) {
-				ar(cefRenderPid);
+				ar(active);
 			}
 		};
 		struct Response {
-			uint32_t kernelPid;
-
 			template<class A> void serialize(A& ar) {
-				ar(kernelPid);
 			}
 		};
 	private:
 		friend class ACT_TYPE<ACT_NAME, ACT_EXEC_CTX>;
 		static Response Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
 		{
-			stx.remotePid = in.cefRenderPid;
-			const Response res{ .kernelPid = GetCurrentProcessId() };
-			pmlog_info(std::format("Kernel open action for cli={} svc={}", in.cefRenderPid, res.kernelPid));
-			return res;
+			(*ctx.ppKernel)->SetCapture(in.active);
+			return {};
 		}
 	};
 
-#ifdef PM_ASYNC_ACTION_REGISTRATION_
 	ACTION_REG();
-#endif
 }
 
 ACTION_TRAITS_DEF();

@@ -1,20 +1,19 @@
 #pragma once
-#include "../../../Interprocess/source/act/ActionHelper.h"
+#include "../../Interprocess/source/act/ActionHelper.h"
 #include "KernelExecutionContext.h"
-#include "../KernelWrapper.h"
 #include <format>
-#include <Core/source/kernel/Kernel.h>
-#include <PresentMonAPIWrapper/PresentMonAPIWrapper.h>
+#include "../../Core/source/kernel/Kernel.h"
+#include "../../PresentMonAPIWrapper/PresentMonAPIWrapper.h"
 #include <ranges>
 #include <array>
 
 #define ACT_NAME Introspect
 #define ACT_EXEC_CTX KernelExecutionContext
 #define ACT_TYPE AsyncActionBase_
-#define ACT_NS ::p2c::client::util::kact
+#define ACT_NS kproc::kact
 
 
-namespace p2c::client::util::kact
+namespace ACT_NS
 {
 	using namespace ::pmon::ipc::act;
 
@@ -136,9 +135,7 @@ namespace p2c::client::util::kact
 		}
 	};
 
-#ifdef PM_ASYNC_ACTION_REGISTRATION_
 	ACTION_REG();
-#endif
 }
 
 ACTION_TRAITS_DEF();

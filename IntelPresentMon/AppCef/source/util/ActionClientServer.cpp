@@ -1,5 +1,5 @@
 #include "ActionClientServer.h"
-#include "kact/OpenSession.h"
+#include "../KernelProcess/kact/OpenSession.h"
 
 namespace p2c::client::util
 {
@@ -7,7 +7,7 @@ namespace p2c::client::util
         :
         SymmetricActionClient{ std::move(pipeName), std::move(context) }
     {
-        auto res = DispatchSync(kact::OpenSession::Params{ GetCurrentProcessId() });
+        auto res = DispatchSync(kproc::kact::OpenSession::Params{ GetCurrentProcessId() });
         EstablishSession_(res.kernelPid);
     }
 }

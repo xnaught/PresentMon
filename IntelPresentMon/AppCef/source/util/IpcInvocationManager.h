@@ -16,6 +16,7 @@
 #include "AsyncEndpointCollection.h"
 #include "ActionClientServer.h"
 #include "V8Transfer.h"
+#include "../KernelProcess/kact/PushSpecification.h"
 
 
 namespace p2c::client::util
@@ -85,6 +86,41 @@ namespace p2c::client::util
 		// data
 		static std::unordered_map<std::string, std::function<void(CallbackContext, CefRefPtr<CefV8Value>, CefClient&)>> dispatchBindings_;
 		CefClient& client_;
+	};
+
+	template<>
+	struct CustomV8Conversion<kproc::kact::push_spec_impl::Widget>
+	{
+		static void FromV8(CefV8Value& v8, kproc::kact::push_spec_impl::Widget& out)
+		{
+			kern::WidgetType type;
+			::p2c::client::util::FromV8(*v8.GetValue("widgetType"), type);
+			if (type == kern::WidgetType::Graph) {
+				using Xfer = kproc::kact::push_spec_impl::Graph;
+				out.emplace<Xfer>();
+				::p2c::client::util::FromV8(v8, std::get<Xfer>(out));
+			}
+			else if (type == kern::WidgetType::Readout) {
+				using Xfer = kproc::kact::push_spec_impl::Readout;
+				out.emplace<Xfer>();
+				::p2c::client::util::FromV8(v8, std::get<Xfer>(out));
+			}
+			else {
+				pmlog_error("Unknown widget type").pmwatch(int(type));
+			}
+		}
+	};
+
+	template<>
+	struct CustomV8Conversion<gfx::Color>
+	{
+		static void FromV8(CefV8Value& v8, gfx::Color& out)
+		{
+			out.r = float(v8.GetValue("r")->GetIntValue()) / 255.f;
+			out.g = float(v8.GetValue("g")->GetIntValue()) / 255.f;
+			out.b = float(v8.GetValue("b")->GetIntValue()) / 255.f;
+			out.a = float(v8.GetValue("a")->GetDoubleValue());
+		}
 	};
 }
 

@@ -54,6 +54,8 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <AdditionalIncludeDirectories>..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -69,6 +71,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -95,7 +98,20 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="kact\KernelActionRegistration.cpp" />
+    <ClCompile Include="MakeOverlaySpec.cpp" />
     <ClCompile Include="winmain.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="kact\AllActions.h" />
+    <ClInclude Include="kact\EnumerateAdapters.h" />
+    <ClInclude Include="kact\Introspect.h" />
+    <ClInclude Include="kact\KernelExecutionContext.h" />
+    <ClInclude Include="kact\OpenSession.h" />
+    <ClInclude Include="kact\PushSpecification.h" />
+    <ClInclude Include="kact\SetAdapter.h" />
+    <ClInclude Include="kact\SetCapture.h" />
+    <ClInclude Include="MakeOverlaySpec.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

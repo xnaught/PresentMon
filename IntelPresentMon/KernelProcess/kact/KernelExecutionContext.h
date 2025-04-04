@@ -1,6 +1,6 @@
 #pragma once
-#include "../Interprocess/source/act/SymmetricActionConnector.h"
-#include "../CommonUtilities/pipe/ManualAsyncEvent.h"
+#include "../../Interprocess/source/act/SymmetricActionConnector.h"
+#include "../../CommonUtilities/pipe/ManualAsyncEvent.h"
 #include <memory>
 #include <set>
 #include <unordered_map>
@@ -8,9 +8,9 @@
 #include <optional>
 #include <cstdint>
 #include <chrono>
-#include <Core/source/kernel/Kernel.h>
+#include "../../Core/source/kernel/Kernel.h"
 
-namespace p2c::client::util::kact
+namespace kproc::kact
 {
     using namespace ::pmon;
     struct KernelExecutionContext;
@@ -37,6 +37,6 @@ namespace p2c::client::util::kact
         // data
         std::optional<uint32_t> responseWriteTimeoutMs;
 
-        std::unique_ptr<kern::Kernel>* ppKernel;
+        p2c::kern::Kernel** ppKernel = nullptr;
     };
 }

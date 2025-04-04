@@ -1,23 +1,23 @@
 #pragma once
-#include "../../../Interprocess/source/act/ActionHelper.h"
+#include "../../Interprocess/source/act/ActionHelper.h"
 #include "KernelExecutionContext.h"
-#include "../KernelWrapper.h"
 #include "../MakeOverlaySpec.h"
 #include <format>
-#include <Core/source/kernel/Kernel.h>
+#include "../../Core/source/kernel/Kernel.h"
+#include "../../Core/source/gfx/base/Geometry.h"
 #include <variant>
 #include <cereal/types/variant.hpp>
 #include <cereal/types/array.hpp>
-#include "../V8Transfer.h"
 
 #define ACT_NAME PushSpecification
 #define ACT_EXEC_CTX KernelExecutionContext
 #define ACT_TYPE AsyncActionBase_
-#define ACT_NS ::p2c::client::util::kact
+#define ACT_NS kproc::kact
 
-namespace p2c::client::util::kact
+namespace ACT_NS
 {
 	using namespace ::pmon::ipc::act;
+    using ::p2c::gfx::Color;
     
     namespace push_spec_impl
     {
@@ -37,9 +37,9 @@ namespace p2c::client::util::kact
         struct WidgetMetric
         {
             Metric metric;
-            gfx::Color lineColor;
-            gfx::Color fillColor;
-            gfx::lay::AxisAffinity axisAffinity;
+            Color lineColor;
+            Color fillColor;
+            ::p2c::gfx::lay::AxisAffinity axisAffinity;
 
             template<class A> void serialize(A& ar) {
                 ar(metric, lineColor, fillColor, axisAffinity);
@@ -68,11 +68,11 @@ namespace p2c::client::util::kact
                     ar(name, range, rangeRight, binCount, countRange, autoLeft, autoRight, autoCount);
                 }
             } graphType;
-            gfx::Color gridColor;
-            gfx::Color dividerColor;
-            gfx::Color backgroundColor;
-            gfx::Color borderColor;
-            gfx::Color textColor;
+            Color gridColor;
+            Color dividerColor;
+            Color backgroundColor;
+            Color borderColor;
+            Color textColor;
             float textSize;
 
             template<class A> void serialize(A& ar) {
@@ -86,8 +86,8 @@ namespace p2c::client::util::kact
 
             bool showLabel;
             float fontSize;
-            gfx::Color fontColor;
-            gfx::Color backgroundColor;
+            Color fontColor;
+            Color backgroundColor;
 
             template<class A> void serialize(A& ar) {
                 ar(metrics, showLabel, fontSize, fontColor, backgroundColor);
@@ -115,7 +115,7 @@ namespace p2c::client::util::kact
                 bool manualEtwFlush;
                 uint32_t metricsOffset;
                 uint32_t metricsWindow;
-                kern::OverlaySpec::OverlayPosition overlayPosition;
+                ::p2c::kern::OverlaySpec::OverlayPosition overlayPosition;
                 float timeRange;
                 float overlayMargin;
                 float overlayBorder;
@@ -123,8 +123,8 @@ namespace p2c::client::util::kact
                 float graphMargin;
                 float graphBorder;
                 float graphPadding;
-                gfx::Color overlayBorderColor;
-                gfx::Color overlayBackgroundColor;
+                Color overlayBorderColor;
+                Color overlayBackgroundColor;
 
                 struct GraphFont {
                     std::string name;
@@ -143,9 +143,9 @@ namespace p2c::client::util::kact
                 std::optional<int> adapterId; // Uncertain: may be a different type in your system.
                 bool enableFlashInjection;
                 float flashInjectionSize;
-                gfx::Color flashInjectionColor;
+                Color flashInjectionColor;
                 bool flashInjectionBackgroundEnable;
-                gfx::Color flashInjectionBackgroundColor;
+                Color flashInjectionBackgroundColor;
                 float flashInjectionRightShift;
 
                 template<class A> void serialize(A& ar) {
@@ -203,11 +203,7 @@ namespace p2c::client::util::kact
         }
 	};
 
-
-
-#ifdef PM_ASYNC_ACTION_REGISTRATION_
 	ACTION_REG();
-#endif
 }
 
 namespace cereal
@@ -217,44 +213,6 @@ namespace cereal
     {
         archive(s.r, s.g, s.b, s.a);
     }
-}
-
-namespace p2c::client::util
-{
-    template<>
-    struct CustomV8Conversion<kact::push_spec_impl::Widget>
-    {
-        static void FromV8(CefV8Value& v8, kact::push_spec_impl::Widget& out)
-        {
-            kern::WidgetType type;
-            ::p2c::client::util::FromV8(*v8.GetValue("widgetType"), type);
-            if (type == kern::WidgetType::Graph) {
-                using Xfer = kact::push_spec_impl::Graph;
-                out.emplace<Xfer>();
-                ::p2c::client::util::FromV8(v8, std::get<Xfer>(out));
-            }
-            else if (type == kern::WidgetType::Readout) {
-                using Xfer = kact::push_spec_impl::Readout;
-                out.emplace<Xfer>();
-                ::p2c::client::util::FromV8(v8, std::get<Xfer>(out));
-            }
-            else {
-                pmlog_error("Unknown widget type").pmwatch(int(type));
-            }
-        }
-    };
-
-    template<>
-    struct CustomV8Conversion<gfx::Color>
-    {
-        static void FromV8(CefV8Value& v8, gfx::Color& out)
-        {
-            out.r = float(v8.GetValue("r")->GetIntValue()) / 255.f;
-            out.g = float(v8.GetValue("g")->GetIntValue()) / 255.f;
-            out.b = float(v8.GetValue("b")->GetIntValue()) / 255.f;
-            out.a = float(v8.GetValue("a")->GetDoubleValue());
-        }
-    };
 }
 
 ACTION_TRAITS_DEF();

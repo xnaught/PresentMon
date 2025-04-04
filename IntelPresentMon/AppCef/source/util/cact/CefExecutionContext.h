@@ -1,7 +1,7 @@
 #pragma once
-#include "../Interprocess/source/act/SymmetricActionConnector.h"
+#include <Interprocess/source/act/ActionHelper.h>
+#include <Interprocess/source/act/SymmetricActionConnector.h>
 #include "../CommonUtilities/pipe/ManualAsyncEvent.h"
-#include "../SignalManager.h"
 #include <memory>
 #include <set>
 #include <unordered_map>
@@ -9,6 +9,11 @@
 #include <optional>
 #include <cstdint>
 #include <chrono>
+
+namespace p2c::client::util
+{
+    class SignalManager;
+}
 
 namespace p2c::client::util::cact
 {

@@ -1,11 +1,8 @@
 #pragma once
-#include "../../../Interprocess/source/act/ActionHelper.h"
+#include <Interprocess/source/act/ActionHelper.h>
 #include "CefExecutionContext.h"
 #include "../../Action.h"
 #include <format>
-#include <include/cef_task.h> 
-#include <include/base/cef_callback.h> 
-#include <include/wrapper/cef_closure_task.h> 
 
 #define ACT_NAME PresentmonInitFailedAction
 #define ACT_EXEC_CTX CefExecutionContext
@@ -26,17 +23,25 @@ namespace p2c::client::util::cact
 		};
 	private:
 		friend class ACT_TYPE<ACT_NAME, ACT_EXEC_CTX>;
-		static void Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
-		{
-			CefPostTask(TID_RENDERER, base::BindOnce(&SignalManager::SignalPresentmonInitFailed,
-				base::Unretained(ctx.pSignalManager)));
-		}
+		static void Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in);
 	};
+}
 
 #ifdef PM_ASYNC_ACTION_REGISTRATION_
+#include <include/cef_task.h> 
+#include <include/base/cef_callback.h> 
+#include <include/wrapper/cef_closure_task.h> 
+#include "../SignalManager.h"
+namespace p2c::client::util::cact
+{
 	ACTION_REG();
-#endif
+	void ACT_NAME::Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
+	{
+		CefPostTask(TID_RENDERER, base::BindOnce(&SignalManager::SignalPresentmonInitFailed,
+			base::Unretained(ctx.pSignalManager)));
+	}
 }
+#endif
 
 ACTION_TRAITS_DEF();
 

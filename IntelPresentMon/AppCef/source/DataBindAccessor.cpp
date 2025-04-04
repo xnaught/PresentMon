@@ -7,7 +7,6 @@
 #include <include/base/cef_callback.h> 
 #include <include/wrapper/cef_closure_task.h> 
 #include "util/CefValues.h"
-#include "util/kact/KernelExecutionContext.h"
 #include <Interprocess/source/act/SymmetricActionServer.h>
 #include "util/cact/TargetLostAction.h"
 #include "util/cact/OverlayDiedAction.h"
@@ -18,37 +17,11 @@
 
 namespace p2c::client::cef
 {
-    class DBAKernelHandler : public kern::KernelHandler
-    {
-    public:
-        DBAKernelHandler(util::KernelWrapper* pWrapper) : pWrapper_{ pWrapper } {}
-        void OnTargetLost(uint32_t pid) override
-        {
-            pWrapper_->pServer->DispatchAsync(util::cact::TargetLostAction::Params{ pid });
-        }
-        void OnOverlayDied() override
-        {
-            pWrapper_->pServer->DispatchAsync(util::cact::OverlayDiedAction::Params{});
-        }
-        void OnPresentmonInitFailed() override
-        {
-            pWrapper_->pServer->DispatchAsync(util::cact::PresentmonInitFailedAction::Params{});
-        }
-        void OnStalePidSelected() override
-        {
-            pWrapper_->pServer->DispatchAsync(util::cact::StalePidAction::Params{});
-        }
-    private:
-        // data
-        util::KernelWrapper* pWrapper_;
-    };
-
     DataBindAccessor::DataBindAccessor(CefRefPtr<CefBrowser> pBrowser, util::KernelWrapper* pKernelWrapper_)
         :
         pBrowser{ std::move(pBrowser) },
         pKernelWrapper{ pKernelWrapper_ }
     {
-        pKernelWrapper->pKernelHandler = std::make_unique<DBAKernelHandler>(pKernelWrapper_);
         pKernelWrapper->pHotkeys = std::make_unique<util::Hotkeys>();
         // set the hotkey listener component to call hotkey signal on the signal manager when a hotkey chord is detected
         pKernelWrapper->pHotkeys->SetHandler([this](Action action) {
@@ -72,14 +45,6 @@ namespace p2c::client::cef
                     pmlog_error("registerSignalHandler called with incorrect parameter signature");
                     exception = "registerSignalHandler called with incorrect parameter signature";
                 }
-                return true;
-            }
-
-            // only allow launchKernel async endpoint if we have not yet launched the kernel
-            if (!pKernelWrapper->pKernel && arguments[0]->GetStringValue() != "launchKernel")
-            {
-                pmlog_error(std::format("js endpoint called without kernel: {}", std::string(name)));
-                exception = "core kernel not launched";
                 return true;
             }
 
@@ -160,20 +125,6 @@ namespace p2c::client::cef
             );
         }
         return false;
-    }
-
-    void DataBindAccessor::LaunchKernel()
-    {
-        std::shared_lock lk{ kernelMtx };
-        if (pKernelWrapper) {
-            if (pKernelWrapper->pKernel)
-            {
-                pmlog_warn("launchKernel called but kernel already exists");
-                return;
-            }
-
-            pKernelWrapper->pKernel = std::make_unique<kern::Kernel>(pKernelWrapper->pKernelHandler.get());
-        }
     }
 
     void DataBindAccessor::ClearKernelWrapper()

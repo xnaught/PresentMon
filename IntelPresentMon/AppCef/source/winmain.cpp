@@ -15,7 +15,6 @@
 #include <dwmapi.h>
 #include <boost/process.hpp>
 
-#include "CliservTest.h"
 
 #pragma comment(lib, "Dwmapi.lib")
 
@@ -233,12 +232,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     
     // configure the logging system (partially based on command line options)
     ConfigureLogging();
-
-    if (!opt.cefType) {
-        client::kact::LaunchServer();
-        std::this_thread::sleep_for(250ms);
-        client::kact::LaunchClientWork();
-    }
 
     try {
         // service-as-child handling

@@ -29,9 +29,7 @@
     <ClCompile Include="source\util\FontEnumerator.cpp" />
     <ClCompile Include="source\util\HotkeyListener.cpp" />
     <ClCompile Include="source\util\IpcInvocationManager.cpp" />
-    <ClCompile Include="source\util\kact\KernelActionRegistration.cpp" />
     <ClCompile Include="source\util\KernelWrapper.cpp" />
-    <ClCompile Include="source\util\MakeOverlaySpec.cpp" />
     <ClCompile Include="source\util\PathSanitaryCheck.cpp" />
     <ClCompile Include="source\util\SignalManager.cpp" />
     <ClCompile Include="source\util\ThreadCompass.cpp" />
@@ -43,7 +41,6 @@
   <ItemGroup>
     <ClInclude Include="resource.h" />
     <ClInclude Include="source\Action.h" />
-    <ClInclude Include="source\CliservTest.h" />
     <ClInclude Include="source\DataBindAccessor.h" />
     <ClInclude Include="source\NanoCefBrowserClient.h" />
     <ClInclude Include="source\NanoCefProcessHandler.h" />
@@ -55,11 +52,6 @@
     <ClInclude Include="source\util\cact\StalePidAction.h" />
     <ClInclude Include="source\util\cact\TargetLostAction.h" />
     <ClInclude Include="source\util\IpcInvocationManager.h" />
-    <ClInclude Include="source\util\kact\AllActions.h" />
-    <ClInclude Include="source\util\kact\EnumerateAdapters.h" />
-    <ClInclude Include="source\util\kact\Introspect.h" />
-    <ClInclude Include="source\util\kact\KernelExecutionContext.h" />
-    <ClInclude Include="source\util\kact\OpenSession.h" />
     <ClInclude Include="source\util\AsyncEndpoint.h" />
     <ClInclude Include="source\util\AsyncEndpointCollection.h" />
     <ClInclude Include="source\util\AsyncEndpointManager.h" />
@@ -76,15 +68,10 @@
     <ClInclude Include="source\util\async\EnumerateModifiers.h" />
     <ClInclude Include="source\util\async\EnumerateProcesses.h" />
     <ClInclude Include="source\util\async\ExploreCaptures.h" />
-    <ClInclude Include="source\util\async\LaunchKernel.h" />
     <ClInclude Include="source\util\CefValues.h" />
     <ClInclude Include="source\util\FileLocation.h" />
     <ClInclude Include="source\util\cact\CefExecutionContext.h" />
-    <ClInclude Include="source\util\kact\PushSpecification.h" />
-    <ClInclude Include="source\util\kact\SetAdapter.h" />
-    <ClInclude Include="source\util\kact\SetCapture.h" />
     <ClInclude Include="source\util\KernelWrapper.h" />
-    <ClInclude Include="source\util\MakeOverlaySpec.h" />
     <ClInclude Include="source\util\PathSanitaryCheck.h" />
     <ClInclude Include="source\util\SignalManager.h" />
     <ClInclude Include="source\util\FontEnumerator.h" />
@@ -209,7 +196,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>Cef\Lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;Dwrite.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Message>Executing Post Build</Message>
@@ -239,7 +226,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>Cef\Lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;Dwrite.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <UACUIAccess>true</UACUIAccess>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
@@ -271,7 +258,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>Cef\Lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcef.lib;libcef_dll_wrapper.lib;Dwrite.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <UACUIAccess>true</UACUIAccess>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
