@@ -29,6 +29,7 @@
     <ClCompile Include="source\util\FontEnumerator.cpp" />
     <ClCompile Include="source\util\HotkeyListener.cpp" />
     <ClCompile Include="source\util\IpcInvocationManager.cpp" />
+    <ClCompile Include="source\util\KernelActionRegistration.cpp" />
     <ClCompile Include="source\util\KernelWrapper.cpp" />
     <ClCompile Include="source\util\PathSanitaryCheck.cpp" />
     <ClCompile Include="source\util\SignalManager.cpp" />

@@ -249,6 +249,16 @@ namespace pmon::util::cli
 		}
 	};
 
+	class Mandatory : RuleBase_
+	{
+	public:
+		template<class T>
+		Mandatory(T& element)
+		{
+			GetOption_(element)->required(true);
+		}
+	};
+
 	class Dependency : RuleBase_
 	{
 	public:

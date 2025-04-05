@@ -47,6 +47,7 @@ namespace p2c::cli
 		Option<std::string> cefType{ this, "--type", "", "Type of the current chromium process" };
 		Option<std::string> logPipeName{ this, "--p2c-log-pipe-name", "", "The postfix used to create the named pipe for logging source server" };
 		Option<std::string> middlewareDllPath{ this, "--p2c-middleware-dll-path", "", "Override middleware DLL path discovery with custom path" };
+		Option<std::string> actName{ this, "--p2c-act-name", "", "Base name for the named pipes connecting CEF and the overlay Kernel process" };
 
 		static constexpr const char* description = "PresentMon performance overlay and trace capture application";
 		static constexpr const char* name = "PresentMon.exe";

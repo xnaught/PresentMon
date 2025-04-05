@@ -105,7 +105,7 @@ namespace p2c::client::cef
     {
         std::this_thread::sleep_for(50ms);
         pKernelWrapper->pClient = std::make_unique<util::CefClient>(
-            R"(\\.\pipe\ipm-v8-channel)", util::cact::CefExecutionContext{ .pSignalManager = &pKernelWrapper->signals }
+            *cli::Options::Get().actName, util::cact::CefExecutionContext{.pSignalManager = &pKernelWrapper->signals}
         );
         pKernelWrapper->pInvocationManager = std::make_unique<util::IpcInvocationManager>(*pKernelWrapper->pClient);
         pAccessor = new DataBindAccessor{ pBrowser, pKernelWrapper.get() };

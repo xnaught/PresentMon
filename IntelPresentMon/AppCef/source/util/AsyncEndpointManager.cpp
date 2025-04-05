@@ -76,7 +76,7 @@ namespace p2c::client::util
 			}
 		}
 		else {
-			pmlog_error(std::format("Key [{}] does not have an async endpoint registered", key)).no_trace();
+			pmlog_error(std::format("Key [{}] does not have an async endpoint registered", key));
 		}
 	}
 

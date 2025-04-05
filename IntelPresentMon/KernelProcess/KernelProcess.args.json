@@ -1,0 +1,104 @@
+{
+  "FileVersion": 2,
+  "Id": "8524c555-b172-46ef-be42-7b7b7bb102e4",
+  "Items": [
+    {
+      "Id": "05c87f08-36f8-4173-995d-dea7a6601ccc",
+      "Command": "standalone-svc",
+      "Items": [
+        {
+          "Id": "ec7c8885-3303-44ff-bb50-ade63f721595",
+          "Command": "--p2c-control-pipe \"\\\\.\\pipe\\eff\""
+        },
+        {
+          "Id": "16c492e5-6878-4801-a0f7-d0ed7afa4847",
+          "Command": "--p2c-shm-name pm_my_intro"
+        }
+      ]
+    },
+    {
+      "Id": "4c4287df-9395-4cae-b58f-e98f721e084c",
+      "Command": "--p2c-svc-as-child"
+    },
+    {
+      "Id": "55e24bd6-46de-438b-a379-2c5df5f2f6a2",
+      "Command": "--p2c-files-working"
+    },
+    {
+      "Id": "1dbdf4ec-40c6-4c27-954e-b3d1d86af0c5",
+      "Command": "--p2c-log-level debug"
+    },
+    {
+      "Id": "f2f249e9-3483-47c0-92c5-189db9eb1efe",
+      "Command": "--p2c-log-level verbose"
+    },
+    {
+      "Id": "bab48d6d-3a48-4b3b-9ed9-903e381824c6",
+      "Command": "--p2c-log-svc-pipe-enable"
+    },
+    {
+      "Id": "bda24a31-51f4-481a-96f0-037e62a1e578",
+      "Command": "--p2c-middleware-dll-path .\\PresentMonAPI2.dll"
+    },
+    {
+      "Id": "a3c885b0-5528-4c13-a876-475500be88cd",
+      "Command": "--p2c-log-middleware-copy"
+    },
+    {
+      "Id": "e45eafed-5bc0-47b9-a8be-4d5d42068a67",
+      "Command": "--p2c-enable-ui-dev-options"
+    },
+    {
+      "Id": "e8eeba3f-b756-4276-b1b3-10eaf2069b40",
+      "Command": "--p2c-enable-timestamp-column"
+    },
+    {
+      "Id": "db98ea11-812e-476e-891d-81e5e5de8270",
+      "Command": "--p2c-url \"http://localhost:8080\""
+    },
+    {
+      "Id": "5cef3a6c-d5a7-4ef3-ba5a-ee1aa9144241",
+      "Command": "--p2c-enable-diagnostic"
+    },
+    {
+      "Id": "907ff44e-4734-41ba-8eb1-1ee21d94bfcf",
+      "Command": "--p2c-log-allow-list \"b stak.txt\""
+    },
+    {
+      "Id": "92b05cc7-82c0-41c9-b2a3-14883ea280ba",
+      "Command": "--p2c-log-deny-list \"b stak.txt\""
+    },
+    {
+      "Id": "1c46fa7d-4a6d-4c65-bd76-7b3af4eca5aa",
+      "Command": "--p2c-log-folder C:\\scratch"
+    },
+    {
+      "Id": "162ab5d9-e860-4bd5-a53f-ee33a58a3b12",
+      "Command": "--p2c-log-trace-level warning"
+    },
+    {
+      "Id": "f6c76be2-0dcf-4b04-917c-d84bcb493ed5",
+      "Command": "--p2c-allow-tearing"
+    },
+    {
+      "Id": "202c5983-1f88-4346-a72a-66a871db376d",
+      "Command": "--p2c-disable-alpha"
+    },
+    {
+      "Id": "d1b2992e-0793-42c5-9569-f52f09dd75fc",
+      "Command": "--p2c-debug-wait-render"
+    },
+    {
+      "Id": "36ae38e6-9866-4c86-9f1f-4dd46bd2a1ef",
+      "Command": "--p2c-debug-wait-client"
+    },
+    {
+      "Id": "04169744-d7a6-46e6-a1dd-ec3854547dcd",
+      "Command": "--help"
+    },
+    {
+      "Id": "014ad39a-6be3-40a1-908e-62e47282af3e",
+      "Command": "--remote-allow-origins=http://127.0.0.1:9009"
+    }
+  ]
+}

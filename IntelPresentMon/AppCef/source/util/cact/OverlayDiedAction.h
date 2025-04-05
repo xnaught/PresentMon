@@ -35,6 +35,10 @@ namespace p2c::client::util::cact
 namespace p2c::client::util::cact
 {
 	ACTION_REG();
+	// need to put this function definition only in the cef-server-side since it contains
+	// references to CEF types we do not want to pollute other projects with
+	// TODO: consider a better approach to maintaining single-file actions like this
+	// while also enabling dependency decoupling more easily
 	void ACT_NAME::Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
 	{
 		CefPostTask(TID_RENDERER, base::BindOnce(&SignalManager::SignalOverlayDied,

@@ -7,6 +7,10 @@
 #include "../AppCef/source/util/cact/OverlayDiedAction.h"
 #include "../AppCef/source/util/cact/PresentmonInitFailedAction.h"
 #include "../AppCef/source/util/cact/StalePidAction.h"
+#include <Core/source/cli/CliOptions.h>
+#include <PresentMonAPI2Loader/Loader.h>
+#include <Core/source/infra/LogSetup.h>
+#include <CommonUtilities/win/Utilities.h>
 
 
 using namespace pmon;
@@ -44,13 +48,75 @@ namespace kproc
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     using namespace kproc;
+    using namespace p2c;
 
+#ifdef NDEBUG
+    constexpr bool is_debug = false;
+#else
+    constexpr bool is_debug = true;
+#endif
+    // parse the command line arguments and make them globally available
+    if (auto err = cli::Options::Init(__argc, __argv, true)) {
+        if (*err == 0) {
+            MessageBoxA(nullptr, cli::Options::GetDiagnostics().c_str(), "Command Line Help",
+                MB_ICONINFORMATION | MB_APPLMODAL | MB_SETFOREGROUND);
+        }
+        else {
+            MessageBoxA(nullptr, cli::Options::GetDiagnostics().c_str(), "Command Line Parse Error",
+                MB_ICONERROR | MB_APPLMODAL | MB_SETFOREGROUND);
+        }
+        return *err;
+    }
+    const auto& opt = cli::Options::Get();
+    // optionally override the middleware dll path (typically when running from IDE in dev cycle)
+    if (auto path = opt.middlewareDllPath.AsOptional()) {
+        pmLoaderSetPathToMiddlewareDll_(path->c_str());
+    }
+
+    // create logging system and ensure cleanup before main ext
+    LogChannelManager zLogMan_;
+
+    // configure the logging system (partially based on command line options)
+    ConfigureLogging();
+
+    // launch the service as a child process if desired (typically during development)
+    boost::process::child childSvc;
+    if (opt.svcAsChild) {
+        using namespace std::literals;
+        namespace bp = boost::process;
+
+        //logSvcPipe = opt.logSvcPipe.AsOptional().value_or(
+        //    std::format("pm2-child-svc-log-{}", GetCurrentProcessId()));
+        childSvc = boost::process::child{
+            "PresentMonService.exe"s,
+            "--control-pipe"s, *opt.controlPipe,
+            "--nsm-prefix"s, "pm-frame-nsm"s,
+            "--intro-nsm"s, *opt.shmName,
+            "--etw-session-name"s, *opt.etwSessionName,
+            "--log-level"s, std::to_string((int)util::log::GlobalPolicy::Get().GetLogLevel()),
+            // "--log-pipe-name"s, *logSvcPipe,
+            "--enable-stdio-log",
+        };
+
+        if (!::pmon::util::win::WaitForNamedPipe(*opt.controlPipe + "-in", 1500)) {
+            pmlog_error("timeout waiting for child service control pipe to go online");
+            return -1;
+        }
+    }
+
+    // this pointer serves as a way to set the kernel on the server exec context after the server is created
     p2c::kern::Kernel* pKernel = nullptr;
-    KernelServer server{ kact::KernelExecutionContext{ .ppKernel = &pKernel },
-        std::format(R"(\\.\pipe\ipm-cef-channel-{})", GetCurrentProcessId()), 1, "" };
+    // this server receives a connection from the CEF render process
+    const auto actName = std::format(R"(\\.\pipe\ipm-cef-channel-{})", GetCurrentProcessId());
+    KernelServer server{ kact::KernelExecutionContext{ .ppKernel = &pKernel }, actName, 1, "" };
+    // this handler receives events from the kernel and transmits them to the render process
     KernelHandler kernHandler{ &server };
+    // the kernel manages the PresentMon data collection and the overlay rendering
     p2c::kern::Kernel kernel{ &kernHandler };
+    // new we set this pointer, giving the server access to the Kernel
+    pKernel = &kernel;
 
+    // launch the CEF browser process, which in turn launches all the other processes in the CEF process constellation
 	boost::process::child childCef{
 		"PresentMon.exe",
 		"--p2c-svc-as-child",
@@ -59,7 +125,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		"--p2c-svc-pipe-enable",
 		"--p2c-middleware-dll-path", "PresentMonAPI2.dll",
 		"--p2c-log-middleware-copy",
-		"--p2c-enable-ui-dev-options"
+		"--p2c-enable-ui-dev-options",
+        "--p2c-act-name", actName,
 	};
 	childCef.wait();
 
