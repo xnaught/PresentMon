@@ -4,6 +4,7 @@
 #include "Window.h"
 #include <Core/source/infra/Logging.h>
 #include <CommonUtilities/Exception.h>
+#include <KernelProcess/resource.h>
 
 namespace p2c::win
 {
@@ -17,6 +18,10 @@ namespace p2c::win
         wc.lpszClassName = L"PMON2-CAP-CLS";
         wc.style = 0;
         wc.lpfnWndProc = &SetupWndProc;
+        wc.hIcon = static_cast<HICON>(LoadImage(
+            wc.hInstance, MAKEINTRESOURCE(IDI_ICON1),
+            IMAGE_ICON, 32, 32, 0
+        ));
         atom = RegisterClassW(&wc);
         if (atom == 0)
         {

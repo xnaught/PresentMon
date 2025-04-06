@@ -11,6 +11,7 @@
 #include <PresentMonAPI2Loader/Loader.h>
 #include <Core/source/infra/LogSetup.h>
 #include <CommonUtilities/win/Utilities.h>
+#include <Shobjidl.h>
 
 
 using namespace pmon;
@@ -78,6 +79,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
     // configure the logging system (partially based on command line options)
     ConfigureLogging();
+
+    SetCurrentProcessExplicitAppUserModelID(L"Intel.PresentMon");
 
     // launch the service as a child process if desired (typically during development)
     boost::process::child childSvc;

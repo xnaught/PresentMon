@@ -165,6 +165,13 @@
     <ClInclude Include="kact\SetAdapter.h" />
     <ClInclude Include="kact\SetCapture.h" />
     <ClInclude Include="MakeOverlaySpec.h" />
+    <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="KernelProcess.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="flask.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

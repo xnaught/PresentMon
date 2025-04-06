@@ -12,6 +12,7 @@
 #include <PresentMonAPIWrapper/DiagnosticHandler.h>
 #include <dwmapi.h>
 #include <boost/process.hpp>
+#include <Shobjidl.h>
 
 
 #pragma comment(lib, "Dwmapi.lib")
@@ -214,6 +215,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             );
         }
     } pmcatch_report;
+
+    // set the app id so that windows get grouped
+    SetCurrentProcessExplicitAppUserModelID(L"Intel.PresentMon");
 
     try {
         // service-as-child handling
