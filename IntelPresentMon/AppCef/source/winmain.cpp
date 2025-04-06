@@ -220,32 +220,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     SetCurrentProcessExplicitAppUserModelID(L"Intel.PresentMon");
 
     try {
-        // service-as-child handling
-        std::optional<std::string> logSvcPipe;
-        boost::process::child childSvc;
-        if (!opt.cefType && opt.svcAsChild) {
-            using namespace std::literals;
-            namespace bp = boost::process;
-
-            logSvcPipe = opt.logSvcPipe.AsOptional().value_or(
-                std::format("pm2-child-svc-log-{}", GetCurrentProcessId()));
-            childSvc = boost::process::child{
-                "PresentMonService.exe"s,
-                "--control-pipe"s, *opt.controlPipe,
-                "--nsm-prefix"s, "pm-frame-nsm"s,
-                "--intro-nsm"s, *opt.shmName,
-                "--etw-session-name"s, *opt.etwSessionName,
-                "--log-level"s, std::to_string((int)log::GlobalPolicy::Get().GetLogLevel()),
-                "--log-pipe-name"s, *logSvcPipe,
-                "--enable-stdio-log" 
-            };
-
-            if (!::pmon::util::win::WaitForNamedPipe(*opt.controlPipe + "-in", 1500)) {
-                pmlog_error("timeout waiting for child service control pipe to go online");
-                return -1;
-            }
-        }
-
         //if (!opt.cefType && opt.logSvcPipeEnable) {
         //    // connect to service's log pipe (best effort)
         //    ConnectToLoggingSourcePipe(logSvcPipe.value_or(*opt.logSvcPipe), 0);

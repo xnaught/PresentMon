@@ -78,6 +78,14 @@
       <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
       <RefTargetDir>INSTALLFOLDER</RefTargetDir>
     </ProjectReference>
+    <ProjectReference Include="..\KernelProcess\KernelProcess.vcxproj">
+      <Name>KernelProcess</Name>
+      <Project>{8524c555-b172-46ef-be42-7b7b7bb102e4}</Project>
+      <Private>True</Private>
+      <DoNotHarvest>True</DoNotHarvest>
+      <RefProjectOutputGroups>Binaries;Content;Satellites</RefProjectOutputGroups>
+      <RefTargetDir>INSTALLFOLDER</RefTargetDir>
+    </ProjectReference>
     <ProjectReference Include="..\PresentMonAPI2Loader\PresentMonAPI2Loader.vcxproj">
       <Name>PresentMonAPI2Loader</Name>
       <Project>{8f86d067-2437-46fc-8f82-4d7155ceced7}</Project>

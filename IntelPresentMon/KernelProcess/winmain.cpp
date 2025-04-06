@@ -23,26 +23,26 @@ namespace kproc
 	class KernelHandler : public p2c::kern::KernelHandler
 	{
     public:
-        KernelHandler(KernelServer* pServer) : pServer_{ pServer } {}
+        KernelHandler(KernelServer& server) : server_{ server } {}
         void OnTargetLost(uint32_t pid) override
         {
-            pServer_->DispatchAsync(p2c::client::util::cact::TargetLostAction::Params{ pid });
+            server_.DispatchAsync(p2c::client::util::cact::TargetLostAction::Params{ pid });
         }
         void OnOverlayDied() override
         {
-            pServer_->DispatchAsync(p2c::client::util::cact::OverlayDiedAction::Params{});
+            server_.DispatchAsync(p2c::client::util::cact::OverlayDiedAction::Params{});
         }
         void OnPresentmonInitFailed() override
         {
-            pServer_->DispatchAsync(p2c::client::util::cact::PresentmonInitFailedAction::Params{});
+            server_.DispatchAsync(p2c::client::util::cact::PresentmonInitFailedAction::Params{});
         }
         void OnStalePidSelected() override
         {
-            pServer_->DispatchAsync(p2c::client::util::cact::StalePidAction::Params{});
+            server_.DispatchAsync(p2c::client::util::cact::StalePidAction::Params{});
         }
     private:
         // data
-        KernelServer* pServer_;
+        KernelServer& server_;
 	};
 }
 
@@ -80,6 +80,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     // configure the logging system (partially based on command line options)
     ConfigureLogging();
 
+    // set the app id so that windows get grouped
     SetCurrentProcessExplicitAppUserModelID(L"Intel.PresentMon");
 
     // launch the service as a child process if desired (typically during development)
@@ -112,8 +113,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     // this server receives a connection from the CEF render process
     const auto actName = std::format(R"(\\.\pipe\ipm-cef-channel-{})", GetCurrentProcessId());
     KernelServer server{ kact::KernelExecutionContext{ .ppKernel = &pKernel }, actName, 1, "" };
-    // this handler receives events from the kernel and transmits them to the render process
-    KernelHandler kernHandler{ &server };
+    // this handler receives events from the kernel and transmits them to the render process via the server
+    KernelHandler kernHandler{ server };
     // the kernel manages the PresentMon data collection and the overlay rendering
     p2c::kern::Kernel kernel{ &kernHandler };
     // new we set this pointer, giving the server access to the Kernel
@@ -122,12 +123,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     // launch the CEF browser process, which in turn launches all the other processes in the CEF process constellation
 	boost::process::child childCef{
 		"PresentMonUI.exe",
-		"--p2c-svc-as-child",
 		"--p2c-files-working",
 		"--p2c-log-level", "debug",
-		"--p2c-svc-pipe-enable",
-		"--p2c-middleware-dll-path", "PresentMonAPI2.dll",
-		"--p2c-log-middleware-copy",
 		"--p2c-enable-ui-dev-options",
         "--p2c-act-name", actName,
 	};

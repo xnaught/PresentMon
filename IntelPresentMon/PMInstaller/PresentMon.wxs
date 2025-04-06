@@ -307,6 +307,16 @@
                 </File>
             </Component>
             <Component
+                Id="pm_app_kern_proc_exe"
+                Guid="7E4A9C50-97C5-4BFE-B4D0-0E3B2FA5C3F7">
+                <File
+                    Id="pm_app_kern_proc_exe"
+                    Name="$(var.KernelProcess.TargetFileName)"
+                    Source="$(var.KernelProcess.TargetPath)"
+                    KeyPath="yes">
+                </File>
+            </Component>
+            <Component
                 Id="pm_app_chrome_100_percent_pak"
                 Guid="13A93BF0-666B-44D9-AFD1-FDBC05563822">
                 <File
