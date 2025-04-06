@@ -140,12 +140,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>PresentMon</TargetName>
+    <TargetName>PresentMonUI</TargetName>
     <LinkIncremental>true</LinkIncremental>
     <EmbedManifest>true</EmbedManifest>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TargetName>PresentMon</TargetName>
+    <TargetName>PresentMonUI</TargetName>
     <LinkIncremental>false</LinkIncremental>
     <EmbedManifest>true</EmbedManifest>
   </PropertyGroup>

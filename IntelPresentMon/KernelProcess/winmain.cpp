@@ -118,7 +118,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
     // launch the CEF browser process, which in turn launches all the other processes in the CEF process constellation
 	boost::process::child childCef{
-		"PresentMon.exe",
+		"PresentMonUI.exe",
 		"--p2c-svc-as-child",
 		"--p2c-files-working",
 		"--p2c-log-level", "debug",
