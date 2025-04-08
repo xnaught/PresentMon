@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include "../AsyncEndpoint.h"
-#include <Core/source/kernel/Kernel.h>
 #include <include/cef_task.h>
 #include "include/base/cef_callback.h"
 #include "include/wrapper/cef_closure_task.h"

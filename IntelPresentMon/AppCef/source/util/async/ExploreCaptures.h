@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include "../AsyncEndpoint.h"
-#include <Core/source/kernel/Kernel.h>
 #include "../CefValues.h"
 #include <fstream>
 #include <Core/source/infra/util/FolderResolver.h>
-#include <Core/source/win/WinAPI.h>
+#include <CommonUtilities/win/WinAPI.h>
 #include <CommonUtilities/Exception.h>
 #include <shellapi.h>
 

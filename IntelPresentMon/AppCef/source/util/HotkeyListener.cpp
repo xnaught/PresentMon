@@ -1,7 +1,6 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "HotkeyListener.h"
-#include <Core/source/win/WinAPI.h>
 #include <Core/source/infra/Logging.h>
 #include <CommonUtilities/Exception.h>
 #include <ranges>

@@ -1,6 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
+#include <CommonUtilities/win/WinAPI.h>
 #include <cstdint>
 #include <map>
 #include <thread>

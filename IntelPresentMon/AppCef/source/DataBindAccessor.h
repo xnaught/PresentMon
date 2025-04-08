@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <Core/source/win/WinAPI.h>
+#include <CommonUtilities/win/WinAPI.h>
 #include <include/cef_v8.h>
 #include "util/KernelWrapper.h"
 #include <shared_mutex>
@@ -21,7 +21,6 @@ namespace p2c::client::cef
         void ResolveAsyncEndpoint(uint64_t uid, bool success, CefRefPtr<CefValue> pArgs);
         bool BindHotkey(CefValue& pArgObj);
         bool ClearHotkey(CefValue& pArgObj);
-        void LaunchKernel();
         void ClearKernelWrapper();
     private:
         // data

@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "FontEnumerator.h"
-#include <Core/source/win/WinAPI.h>
+#include <CommonUtilities/win/WinAPI.h>
 #include <Core/source/gfx/base/ComPtr.h>
 #include <Core/source/infra/Logging.h>
 #include <CommonUtilities/log/HrLogger.h>

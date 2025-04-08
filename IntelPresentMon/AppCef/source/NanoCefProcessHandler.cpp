@@ -1,7 +1,6 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "NanoCefBrowserClient.h"
-#include <Core/source/kernel/Kernel.h>
 #include <include/wrapper/cef_helpers.h>
 #include <include/wrapper/cef_closure_task.h>
 #include <include/cef_parser.h>

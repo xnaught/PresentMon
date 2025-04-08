@@ -11,8 +11,6 @@ namespace p2c::client::util
 {
 	struct KernelWrapper
 	{
-        KernelWrapper();
-        ~KernelWrapper();
         std::unique_ptr<Hotkeys> pHotkeys;
         util::SignalManager signals;
         util::AsyncEndpointManager asyncEndpoints;

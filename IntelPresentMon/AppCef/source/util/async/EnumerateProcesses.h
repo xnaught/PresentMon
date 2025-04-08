@@ -3,7 +3,6 @@
 #pragma once
 #include <Core/source/win/ProcessMapBuilder.h>
 #include "../AsyncEndpoint.h"
-#include <Core/source/kernel/Kernel.h>
 #include "../CefValues.h"
 
 namespace p2c::client::util::async
