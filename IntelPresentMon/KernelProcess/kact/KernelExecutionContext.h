@@ -18,7 +18,6 @@ namespace kproc::kact
     struct KernelSessionContext
     {
         std::unique_ptr<ipc::act::SymmetricActionConnector<KernelExecutionContext>> pConn;
-        ::pmon::util::pipe::ManualAsyncEvent stopEvt;
         uint32_t remotePid = 0;
         std::optional<uint32_t> lastTokenSeen;
         uint32_t nextCommandToken = 0;

@@ -18,7 +18,6 @@ namespace pmon::mid
     struct MiddlewareSessionContext
     {
         std::unique_ptr<SymmetricActionConnector<MiddlewareExecutionContext>> pConn;
-        pipe::ManualAsyncEvent stopEvt;
         uint32_t remotePid = 0;
         std::optional<uint32_t> lastTokenSeen;
         std::chrono::high_resolution_clock::time_point lastReceived;

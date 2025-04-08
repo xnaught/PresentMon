@@ -41,7 +41,7 @@ namespace pmon::ipc::act
         SymmetricActionServer& operator=(SymmetricActionServer&&) = delete;
         ~SymmetricActionServer()
         {
-            as::co_spawn(ioctx_, SignalStop_(), as::detached);
+            ioctx_.stop();
         }
         template<class Params>
         auto DispatchSync(Params&& params)
@@ -87,18 +87,14 @@ namespace pmon::ipc::act
                 auto pConn = co_await SymmetricActionConnector<ExecCtx>::AcceptClientConnection(basePipeName_, ioctx_, security_);
                 // insert a session context object for this connection, will be initialized properly upon OpenSession action
                 sessionId = pConn->GetId();
-                auto&&[i, b] = sessions_.emplace(*sessionId, SessionContextType{
-                    .pConn = std::move(pConn), .stopEvt = {ioctx_}});
+                auto&&[i, b] = sessions_.emplace(*sessionId, SessionContextType{ .pConn = std::move(pConn) });
                 pmlog_info(std::format("Action pipe connected id:{}", *sessionId));
                 auto& stx = i->second;
                 // fork this acceptor coroutine
                 as::co_spawn(ioctx_, SessionStrand_(), as::detached);
                 // run the action handler until client session is terminated
-                bool alive = true;
-                while (alive) {
-                    // TODO: consider a cancel flow that doesn't throw, and using cancel directly instead of stopEvt
-                    auto sig = co_await (stx.pConn->SyncHandleRequest(ctx_, stx) || stx.stopEvt.AsyncWait());
-                    alive = sig.index() == 0;
+                while (true) {
+                    co_await stx.pConn->SyncHandleRequest(ctx_, stx);
                 }
             }
             catch (const pipe::BenignPipeError&) {
@@ -133,13 +129,6 @@ namespace pmon::ipc::act
                 pmlog_warn("Session to be removed not found");
             }
             return remotePid;
-        }
-        as::awaitable<void> SignalStop_()
-        {
-            for (auto&& [sid, stx] : sessions_) {
-                stx.stopEvt.Signal();
-            }
-            co_return;
         }
         // data
         uint32_t reservedPipeInstanceCount_;

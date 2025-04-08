@@ -19,7 +19,6 @@ namespace pmon::svc::acts
     struct ActionSessionContext
     {
         std::unique_ptr<ipc::act::SymmetricActionConnector<ActionExecutionContext>> pConn;
-        util::pipe::ManualAsyncEvent stopEvt;
         uint32_t remotePid = 0;
         std::set<uint32_t> trackedPids;
         std::optional<uint32_t> requestedAdapterId;

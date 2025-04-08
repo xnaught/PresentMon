@@ -23,7 +23,6 @@ namespace p2c::client::util::cact
     struct CefSessionContext
     {
         std::unique_ptr<ipc::act::SymmetricActionConnector<CefExecutionContext>> pConn;
-        ::pmon::util::pipe::ManualAsyncEvent stopEvt;
         uint32_t remotePid = 0;
         std::optional<uint32_t> lastTokenSeen;
         uint32_t nextCommandToken = 0;

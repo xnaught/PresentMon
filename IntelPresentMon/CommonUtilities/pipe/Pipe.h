@@ -21,11 +21,11 @@ namespace pmon::util::pipe
 
 	PM_DEFINE_EX(PipeError);
 	// pipe errors that are often part of acceptable program flow
-	PM_DEFINE_EX(BenignPipeError);
+	PM_DEFINE_EX_FROM(PipeError, BenignPipeError);
 	// pipe was broken (closed by remote)
-	PM_DEFINE_EX_FROM(PipeError, PipeBroken);
-	// pipe operation was canceled (e.g. by operator ||)
-	PM_DEFINE_EX_FROM(PipeError, PipeOperationCanceled);
+	PM_DEFINE_EX_FROM(BenignPipeError, PipeBroken);
+	// pipe operation was canceled (e.g. by operator ||, ioctx.stop)
+	PM_DEFINE_EX_FROM(BenignPipeError, PipeOperationCanceled);
 
 	class DuplexPipe
 	{

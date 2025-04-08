@@ -27,8 +27,7 @@ namespace pmon::ipc::act
         SymmetricActionClient(std::string pipeName, ExecCtx context = {})
             :
             basePipeName_{ std::move(pipeName) },
-            ctx_{ std::move(context) },
-            stx_{ .stopEvt = { ioctx_ } }
+            ctx_{ std::move(context) }
         {
             stx_.pConn = SymmetricActionConnector<ExecCtx>::ConnectToServer(basePipeName_, ioctx_);
             as::co_spawn(ioctx_, SessionStrand_(), as::detached);
@@ -41,7 +40,7 @@ namespace pmon::ipc::act
         SymmetricActionClient& operator=(SymmetricActionClient&&) = delete;
         ~SymmetricActionClient()
         {
-            stx_.stopEvt.Signal();
+            ioctx_.stop();
         }
 
         template<class Params>
@@ -89,9 +88,8 @@ namespace pmon::ipc::act
             // TODO: work on propagation of server disconnection event errors
             try {
                 bool alive = true;
-                while (alive) {
-                    auto res = co_await(stx_.pConn->SyncHandleRequest(ctx_, stx_) || stx_.stopEvt.AsyncWait());
-                    alive = res.index() == 0;
+                while (true) {
+                    co_await stx_.pConn->SyncHandleRequest(ctx_, stx_);
                 }
             }
             catch (const pipe::BenignPipeError&) {
