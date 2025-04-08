@@ -1,6 +1,7 @@
 #include "../CommonUtilities/win/WinAPI.h"
 #include <boost/process.hpp>
 #include "../Core/source/kernel/Kernel.h"
+#include "../Core/source/infra/util/FolderResolver.h"
 #include "../Interprocess/source/act/SymmetricActionServer.h"
 #include "kact/KernelExecutionContext.h"
 #include "../AppCef/source/util/cact/TargetLostAction.h"
@@ -69,6 +70,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         return *err;
     }
     const auto& opt = cli::Options::Get();
+    if (opt.filesWorking) {
+        infra::util::FolderResolver::SetDevMode();
+    }
     // optionally override the middleware dll path (typically when running from IDE in dev cycle)
     if (auto path = opt.middlewareDllPath.AsOptional()) {
         pmLoaderSetPathToMiddlewareDll_(path->c_str());

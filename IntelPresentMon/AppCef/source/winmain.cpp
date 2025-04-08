@@ -5,11 +5,10 @@
 #include "../resource.h"
 #include <Core/source/infra/Logging.h>
 #include <Core/source/infra/util/FolderResolver.h>
-#include <Core/source/cli/CliOptions.h>
+#include "util/CliOptions.h"
 #include <CommonUtilities/log/IdentificationTable.h>
 #include <Versioning/BuildId.h>
 #include <CommonUtilities/win/Utilities.h>
-#include <PresentMonAPIWrapper/DiagnosticHandler.h>
 #include <dwmapi.h>
 #include <boost/process.hpp>
 #include <Shobjidl.h>
@@ -20,7 +19,7 @@
 using namespace p2c;
 using namespace ::pmon::util;
 using namespace ::pmon::bid;
-using p2c::cli::Options;
+using p2c::client::util::cli::Options;
 namespace ccef = client::cef;
 using namespace std::chrono_literals;
 
@@ -189,6 +188,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         return *err;
     }
     const auto& opt = Options::Get();
+    if (opt.filesWorking) {
+        infra::util::FolderResolver::SetDevMode();
+    }
 
     // wait for debugger connection
     if ((opt.cefType && *opt.cefType == "renderer" && opt.debugWaitRender) ||
@@ -201,20 +203,20 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     // name this process / thread
     log::IdentificationTable::AddThisProcess(opt.cefType.AsOptional().value_or("main-client"));
     log::IdentificationTable::AddThisThread("main");
-    // connect to the diagnostic layer (not generally used by appcef since we connect to logging directly)
-    std::optional<pmapi::DiagnosticHandler> diag;
-    try {
-        if (opt.enableDiagnostic && opt.cefType && *opt.cefType == "renderer") {
-            diag.emplace(
-                (PM_DIAGNOSTIC_LEVEL)opt.logLevel.AsOptional().value_or(log::GlobalPolicy::Get().GetLogLevel()),
-                PM_DIAGNOSTIC_OUTPUT_FLAGS_DEBUGGER | PM_DIAGNOSTIC_OUTPUT_FLAGS_QUEUE,
-                [](const PM_DIAGNOSTIC_MESSAGE& msg) {
-                auto ts = msg.pTimestamp ? msg.pTimestamp : std::string{};
-                pmlog_(log::Level(msg.level)).note(std::format("@@ D I A G @@ => <{}> {}", ts, msg.pText));
-            }
-            );
-        }
-    } pmcatch_report;
+    //// connect to the diagnostic layer (not generally used by appcef since we connect to logging directly)
+    //std::optional<pmapi::DiagnosticHandler> diag;
+    //try {
+    //    if (opt.enableDiagnostic && opt.cefType && *opt.cefType == "renderer") {
+    //        diag.emplace(
+    //            (PM_DIAGNOSTIC_LEVEL)opt.logLevel.AsOptional().value_or(log::GlobalPolicy::Get().GetLogLevel()),
+    //            PM_DIAGNOSTIC_OUTPUT_FLAGS_DEBUGGER | PM_DIAGNOSTIC_OUTPUT_FLAGS_QUEUE,
+    //            [](const PM_DIAGNOSTIC_MESSAGE& msg) {
+    //            auto ts = msg.pTimestamp ? msg.pTimestamp : std::string{};
+    //            pmlog_(log::Level(msg.level)).note(std::format("@@ D I A G @@ => <{}> {}", ts, msg.pText));
+    //        }
+    //        );
+    //    }
+    //} pmcatch_report;
 
     // set the app id so that windows get grouped
     SetCurrentProcessExplicitAppUserModelID(L"Intel.PresentMon");

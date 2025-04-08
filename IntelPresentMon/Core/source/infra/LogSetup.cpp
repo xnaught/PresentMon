@@ -118,8 +118,8 @@ namespace p2c
 					infra::util::FolderResolver::Folder::App, L"logs\\");
 			}
 			// always enable the logfile for client
-			const auto logfileNameClient = bool(opt.cefType) ? std::format(L"pmlog-{}-{}.txt",
-				str::ToWide(*opt.cefType), GetCurrentProcessId()) : L"pmlog.txt"s;
+			const auto logfileNameClient = bool(false) ? std::format(L"pmlog-{}-{}.txt",
+				str::ToWide("*opt.cefType"), GetCurrentProcessId()) : L"pmlog.txt"s;
 			const auto logfilePathClient = std::filesystem::path{ logFolder } / logfileNameClient;
 			pChan->AttachComponent(std::make_shared<BasicFileDriver>(std::make_shared<TextFormatter>(),
 				std::make_shared<SimpleFileStrategy>(logfilePathClient)), "drv:file");

@@ -13,7 +13,7 @@
 #include <Core/source/infra/LogSetup.h>
 #include "util/AsyncEndpointManager.h"
 #include "util/CefValues.h"
-#include <Core/source/cli/CliOptions.h>
+#include "util/CliOptions.h"
 
 using namespace pmon::util;
 using namespace std::chrono_literals;
@@ -27,7 +27,7 @@ namespace p2c::client::cef
 #else
         constexpr bool is_debug = true;
 #endif
-        const auto& opt = cli::Options::Get();
+        const auto& opt = util::cli::Options::Get();
         std::string host;
         std::string port;
 
@@ -73,7 +73,7 @@ namespace p2c::client::cef
 
     void NanoCefProcessHandler::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> pChildCommandLine)
     {
-        auto& opt = cli::Options::Get();
+        auto& opt = util::cli::Options::Get();
         // propagate custom cli switches to children
         auto pCmdLine = CefCommandLine::GetGlobalCommandLine();
         for (auto&&[name, val] : opt.GetForwardedOptions()) {
@@ -104,7 +104,7 @@ namespace p2c::client::cef
     {
         std::this_thread::sleep_for(50ms);
         pKernelWrapper->pClient = std::make_unique<util::CefClient>(
-            *cli::Options::Get().actName, util::cact::CefExecutionContext{.pSignalManager = &pKernelWrapper->signals}
+            *util::cli::Options::Get().actName, util::cact::CefExecutionContext{.pSignalManager = &pKernelWrapper->signals}
         );
         pKernelWrapper->pInvocationManager = std::make_unique<util::IpcInvocationManager>(*pKernelWrapper->pClient);
         pAccessor = new DataBindAccessor{ pBrowser, pKernelWrapper.get() };

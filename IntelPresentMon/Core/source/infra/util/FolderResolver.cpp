@@ -7,7 +7,6 @@
 #include <format>
 #include <Core/source/infra/Logging.h>
 #include <CommonUtilities/Exception.h>
-#include <Core/source/cli/CliOptions.h>
 
 namespace p2c::infra::util
 {
@@ -162,8 +161,14 @@ namespace p2c::infra::util
 	FolderResolver& FolderResolver::Get()
 	{
 		static FolderResolver res{
-			cli::Options::Get().filesWorking ? L"" : L"Intel\\PresentMon",
-			cli::Options::Get().filesWorking ? L"" : L"PresentMon" };
+			useDevMode ? L"" : L"Intel\\PresentMon",
+			useDevMode ? L"" : L"PresentMon"
+		};
 		return res;
+	}
+
+	void FolderResolver::SetDevMode()
+	{
+		useDevMode = true;
 	}
 }

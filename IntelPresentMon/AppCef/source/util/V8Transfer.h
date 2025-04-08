@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <Core/source/win/WinAPI.h>
+#include <CommonUtilities/win/WinAPI.h>
 #include <include/cef_v8.h>
 #include <type_traits>
 #include <string>

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include "../AsyncEndpoint.h"
-#include <Core/source/cli/CliOptions.h>
+#include "../CliOptions.h"
 #include "../CefValues.h"
 
 namespace p2c::client::util::async
