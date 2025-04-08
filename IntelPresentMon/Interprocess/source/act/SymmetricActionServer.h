@@ -4,6 +4,7 @@
 #include "SymmetricActionConnector.h"
 #include "../../../CommonUtilities/str/String.h"
 #include "../../../CommonUtilities/pipe/ManualAsyncEvent.h"
+#include "../../../CommonUtilities/mt/Thread.h"
 #include "AsyncActionCollection.h"
 #include "ActionContext.h"
 #include <thread>
@@ -31,7 +32,7 @@ namespace pmon::ipc::act
             basePipeName_{ std::move(basePipeName) },
             security_{ std::move(securityString) },
             ctx_{ std::move(context) },
-            worker_{ &SymmetricActionServer::Run_, this }
+            worker_{ std::format("symact-{}-srv", MakeWorkerName_(basePipeName_)), &SymmetricActionServer::Run_, this}
         {
             assert(reservedPipeInstanceCount_ > 0);
         }
@@ -60,6 +61,18 @@ namespace pmon::ipc::act
 
     private:
         // functions
+        static std::string MakeWorkerName_(const std::string& pipeNameBase)
+        {
+            constexpr std::string_view prefix = R"(\\.\pipe\)";
+            std::string base;
+            if (pipeNameBase.starts_with(prefix)) {
+                base = pipeNameBase.substr(prefix.size());
+            }
+            else {
+                base = pipeNameBase;
+            }
+            return base;
+        }
         void Run_()
         {
             try {
@@ -138,6 +151,6 @@ namespace pmon::ipc::act
         // maps session uid => session (uid is same as session recv (in) pipe id)
         std::unordered_map<uint32_t, SessionContextType> sessions_;
         ExecCtx ctx_;
-        std::jthread worker_;
+        mt::Thread worker_;
     };
 }

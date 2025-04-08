@@ -4,6 +4,7 @@
 #include "SymmetricActionConnector.h"
 #include "../../../CommonUtilities/str/String.h"
 #include "../../../CommonUtilities/pipe/ManualAsyncEvent.h"
+#include "../../../CommonUtilities/mt/Thread.h"
 #include "AsyncActionCollection.h"
 #include "ActionContext.h"
 #include <thread>
@@ -31,7 +32,8 @@ namespace pmon::ipc::act
         {
             stx_.pConn = SymmetricActionConnector<ExecCtx>::ConnectToServer(basePipeName_, ioctx_);
             as::co_spawn(ioctx_, SessionStrand_(), as::detached);
-            runner_ = std::jthread{ &SymmetricActionClient::Run_, this };
+            runner_ = mt::Thread{ std::format("symact-{}-cli", MakeWorkerName_(basePipeName_)),
+                &SymmetricActionClient::Run_, this };
         }
 
         SymmetricActionClient(const SymmetricActionClient&) = delete;
@@ -67,6 +69,18 @@ namespace pmon::ipc::act
 
     private:
         // function
+        static std::string MakeWorkerName_(const std::string& pipeNameBase)
+        {
+            constexpr std::string_view prefix = R"(\\.\pipe\)";
+            std::string base;
+            if (pipeNameBase.starts_with(prefix)) {
+                base = pipeNameBase.substr(prefix.size());
+            }
+            else {
+                base = pipeNameBase;
+            }
+            return base;
+        }
         void Run_()
         {
             // TODO: investigate heap issue with this line
@@ -105,6 +119,6 @@ namespace pmon::ipc::act
         pipe::as::io_context ioctx_;
         SessionContextType stx_;
         ExecCtx ctx_;
-        std::jthread runner_;
+        mt::Thread runner_;
     };
 }
