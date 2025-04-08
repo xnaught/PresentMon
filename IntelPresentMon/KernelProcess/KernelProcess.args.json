@@ -17,6 +17,10 @@
       ]
     },
     {
+      "Id": "3a21ce62-1247-45a5-81ef-6698569c73e4",
+      "Command": "--ui-option url  \"http://localhost:8080\""
+    },
+    {
       "Id": "4c4287df-9395-4cae-b58f-e98f721e084c",
       "Command": "--svc-as-child"
     },
@@ -91,6 +95,14 @@
     {
       "Id": "014ad39a-6be3-40a1-908e-62e47282af3e",
       "Command": "--remote-allow-origins=http://127.0.0.1:9009"
+    },
+    {
+      "Id": "0a44a142-1ca4-4e76-9632-bad6e9e845ff",
+      "Command": "--ui-flag enable-ui-dev-options"
+    },
+    {
+      "Id": "d660460c-73a3-4173-9155-fde0756a2178",
+      "Command": "--ui-flag debug-wait-client"
     }
   ]
 }

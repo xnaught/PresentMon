@@ -13,9 +13,14 @@
 #include <Core/source/infra/LogSetup.h>
 #include <CommonUtilities/win/Utilities.h>
 #include <Shobjidl.h>
+#include <array>
+#include <ranges>
 
 
 using namespace pmon;
+namespace vi = std::views;
+namespace rn = std::ranges;
+using namespace std::literals;
 
 namespace kproc
 {
@@ -124,13 +129,26 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     // new we set this pointer, giving the server access to the Kernel
     pKernel = &kernel;
 
+    // compose optional cli args for cef process tree
+    auto args = std::vector<std::string>{
+        opt.filesWorking ? "--p2c-files-working"s : ""s,
+        opt.traceExceptions ? "--p2c-trace-exceptions"s : ""s,
+        opt.logFolder ? "--p2c-log-folder"s : "", *opt.logFolder,
+    } | vi::filter(std::not_fn(&std::string::empty)) | rn::to<std::vector>();
+    for (auto& f : *opt.uiFlags) {
+        args.push_back("--p2c-" + f);
+    }
+    for (auto& o : *opt.uiOptions) {
+        args.push_back("--p2c-" + o.first);
+        args.push_back(o.second);
+    }
     // launch the CEF browser process, which in turn launches all the other processes in the CEF process constellation
 	boost::process::child childCef{
 		"PresentMonUI.exe",
-		"--p2c-files-working",
-		"--p2c-log-level", "debug",
-		"--p2c-enable-ui-dev-options",
+        "--p2c-log-level"s, util::log::GetLevelName(*opt.logLevel),
+        "--p2c-log-trace-level"s, util::log::GetLevelName(*opt.logTraceLevel),
         "--p2c-act-name", actName,
+        boost::process::args(args),
 	};
 	childCef.wait();
 
