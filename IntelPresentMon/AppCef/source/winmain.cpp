@@ -35,13 +35,6 @@ LRESULT CALLBACK BrowserWindowWndProc(HWND window_handle, UINT message, WPARAM w
 {
     switch (message)
     {
-    case WM_CLOSE:
-        if (pBrowserClient) {
-            if (auto lResult = pBrowserClient->HandleCloseMessage()) {
-                return *lResult;
-            }
-        }
-        break;
     case WM_CREATE:
     {
         pBrowserClient = new ccef::NanoCefBrowserClient{};
@@ -170,8 +163,7 @@ HWND CreateMessageWindow(HINSTANCE instance_handle)
 
 void AppQuitMessageLoop()
 {
-    if (hwndAppMsg != nullptr)
-    {
+    if (hwndAppMsg != nullptr) {
         PostMessage(hwndAppMsg, WM_COMMAND, quitCefCode, 0);
     }
 }

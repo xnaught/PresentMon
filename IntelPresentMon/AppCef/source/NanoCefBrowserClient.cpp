@@ -59,10 +59,9 @@ namespace p2c::client::cef
 
     void NanoCefBrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser_)
     {
+        CefLifeSpanHandler::OnBeforeClose(browser_);
         pBrowser.reset();
         AppQuitMessageLoop();
-
-        CefLifeSpanHandler::OnBeforeClose(browser_);
     }
 
     bool NanoCefBrowserClient::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefProcessId source_process, CefRefPtr<CefProcessMessage> message)
@@ -79,42 +78,7 @@ namespace p2c::client::cef
             }
             return true;
         }
-        else if (message->GetName() == NanoCefProcessHandler::GetShutdownMessageName())
-        {
-            shutdownAcknowledgementFlag = true;
-            // this causes another WM_CLOSE
-            pBrowser->GetHost()->CloseBrowser(true);
-            return true;
-        }
         return false;
-    }
-
-    std::optional<LRESULT> NanoCefBrowserClient::HandleCloseMessage()
-    {
-        // if a previous close was sent and acknowledged to/from render process (or timed out), proceed with close
-        if (shutdownAcknowledgementFlag && shutdownSemaphore.try_acquire()) {
-            return {};
-        }
-        // shutdown was requested, but not acked yet (or timeout fired already)
-        if (shutdownRequestFlag) {
-            return 0;
-        }
-        // if this is the first close request, don't close and instead send request to render process
-        else {
-            shutdownRequestFlag = true;
-            // send message to render process to destroy the kernel and kernel-associated objects
-            auto msg = CefProcessMessage::Create(NanoCefProcessHandler::GetShutdownMessageName());
-            pBrowser->GetMainFrame()->SendProcessMessage(PID_RENDERER, std::move(msg));
-            // set a timeout to force close if ack is not received from render process
-            std::thread{ [this] {
-                using namespace std::chrono_literals;
-                std::this_thread::sleep_for(1000ms);
-                shutdownAcknowledgementFlag = true;
-                pBrowser->GetHost()->CloseBrowser(true);
-                pmlog_warn("Shutdown ack timed out");
-            } }.detach();
-            return 0;
-        }
     }
 
     CefRefPtr<CefContextMenuHandler> NanoCefBrowserClient::GetContextMenuHandler()

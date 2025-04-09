@@ -135,18 +135,6 @@ namespace p2c::client::cef
             );
             return true;
         }
-        else if (message->GetName() == GetShutdownMessageName())
-        {
-            // release important resources
-            pAccessor->ClearKernelWrapper();
-            pKernelWrapper.reset();
-
-            // send shutdown ack
-            auto pMsg = CefProcessMessage::Create(GetShutdownMessageName());
-            pBrowser->GetMainFrame()->SendProcessMessage(PID_BROWSER, std::move(pMsg));
-
-            return true;
-        }
         return false;
     }
 }

@@ -28,7 +28,6 @@ namespace p2c::client::cef
             CefRefPtr<CefFrame> frame,
             CefProcessId source_process,
             CefRefPtr<CefProcessMessage> message) override;
-        std::optional<LRESULT> HandleCloseMessage();
         CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override;
         bool OnConsoleMessage(
             CefRefPtr<CefBrowser> browser,
