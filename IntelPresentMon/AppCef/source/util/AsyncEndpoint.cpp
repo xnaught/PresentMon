@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "AsyncEndpoint.h"
-#include <Core/source/infra/Logging.h>
+#include "Logging.h"
 
 namespace p2c::client::util
 {

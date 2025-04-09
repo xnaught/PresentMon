@@ -90,24 +90,25 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     ConfigureLogging();
 
     // set the app id so that windows get grouped
+    // TODO: verify operation when multiple app instances running concurrently
     SetCurrentProcessExplicitAppUserModelID(L"Intel.PresentMon");
 
     // launch the service as a child process if desired (typically during development)
+    const auto logSvcPipe = opt.logSvcPipe.AsOptional().value_or(
+        std::format("pm2-child-svc-log-{}", GetCurrentProcessId()));
     boost::process::child childSvc;
     if (opt.svcAsChild) {
         using namespace std::literals;
         namespace bp = boost::process;
 
-        //logSvcPipe = opt.logSvcPipe.AsOptional().value_or(
-        //    std::format("pm2-child-svc-log-{}", GetCurrentProcessId()));
         childSvc = boost::process::child{
             "PresentMonService.exe"s,
             "--control-pipe"s, *opt.controlPipe,
             "--nsm-prefix"s, "pm-frame-nsm"s,
             "--intro-nsm"s, *opt.shmName,
             "--etw-session-name"s, *opt.etwSessionName,
-            "--log-level"s, std::to_string((int)util::log::GlobalPolicy::Get().GetLogLevel()),
-            // "--log-pipe-name"s, *logSvcPipe,
+            "--log-level"s, util::log::GetLevelName(util::log::GlobalPolicy::Get().GetLogLevel()),
+            "--log-pipe-name"s, logSvcPipe,
             "--enable-stdio-log",
         };
 
@@ -116,6 +117,27 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             return -1;
         }
     }
+
+    if (opt.logSvcPipeEnable) {
+        // connect to service's log pipe (best effort)
+        ConnectToLoggingSourcePipe(logSvcPipe);
+    }
+
+    //// connect to the middleware diagnostic layer (not generally used by ipm since we connect
+    //// to logging directly via copy channel in dev and log middleware to file in production)
+    //std::optional<pmapi::DiagnosticHandler> diag;
+    //try {
+    //    if (opt.enableDiagnostic && opt.cefType && *opt.cefType == "renderer") {
+    //        diag.emplace(
+    //            (PM_DIAGNOSTIC_LEVEL)opt.logLevel.AsOptional().value_or(log::GlobalPolicy::Get().GetLogLevel()),
+    //            PM_DIAGNOSTIC_OUTPUT_FLAGS_DEBUGGER | PM_DIAGNOSTIC_OUTPUT_FLAGS_QUEUE,
+    //            [](const PM_DIAGNOSTIC_MESSAGE& msg) {
+    //            auto ts = msg.pTimestamp ? msg.pTimestamp : std::string{};
+    //            pmlog_(log::Level(msg.level)).note(std::format("@@ D I A G @@ => <{}> {}", ts, msg.pText));
+    //        }
+    //        );
+    //    }
+    //} pmcatch_report;
 
     // this pointer serves as a way to set the kernel on the server exec context after the server is created
     p2c::kern::Kernel* pKernel = nullptr;
@@ -142,14 +164,18 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         args.push_back("--p2c-" + o.first);
         args.push_back(o.second);
     }
+    const auto cefLogPipe = std::format("pm-ui-log-{}", GetCurrentProcessId());
     // launch the CEF browser process, which in turn launches all the other processes in the CEF process constellation
 	boost::process::child childCef{
 		"PresentMonUI.exe",
         "--p2c-log-level"s, util::log::GetLevelName(*opt.logLevel),
         "--p2c-log-trace-level"s, util::log::GetLevelName(*opt.logTraceLevel),
         "--p2c-act-name", actName,
+        "--p2c-log-pipe-name", cefLogPipe,
         boost::process::args(args),
 	};
+    // connect logging to the CEF process constellation
+    ConnectToLoggingSourcePipe(cefLogPipe);
 	childCef.wait();
 
 	return 0;

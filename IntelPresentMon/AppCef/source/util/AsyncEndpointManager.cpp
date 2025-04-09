@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "AsyncEndpointManager.h"
-#include <Core/source/infra/Logging.h>
+#include "Logging.h"
 #include <algorithm>
 #include "CefValues.h"
 #include <include/cef_task.h>

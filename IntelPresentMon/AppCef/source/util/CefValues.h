@@ -7,7 +7,7 @@
 #include <string>
 #include <algorithm>
 #include <iterator>
-#include <Core/source/infra/Logging.h>
+#include "Logging.h"
 #include <CommonUtilities/str/String.h>
 #include <CommonUtilities/Exception.h>
 #include <CommonUtilities/Meta.h>

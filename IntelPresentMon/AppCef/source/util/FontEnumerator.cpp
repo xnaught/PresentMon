@@ -3,7 +3,7 @@
 #include "FontEnumerator.h"
 #include <CommonUtilities/win/WinAPI.h>
 #include <Core/source/gfx/base/ComPtr.h>
-#include <Core/source/infra/Logging.h>
+#include "Logging.h"
 #include <CommonUtilities/log/HrLogger.h>
 #include <dwrite.h>
 

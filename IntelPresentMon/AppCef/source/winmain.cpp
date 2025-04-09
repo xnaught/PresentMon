@@ -3,7 +3,8 @@
 #include "NanoCefBrowserClient.h"
 #include "NanoCefProcessHandler.h"
 #include "../resource.h"
-#include <Core/source/infra/Logging.h>
+#include "util/Logging.h"
+#include "util/LogSetup.h"
 #include <Core/source/infra/util/FolderResolver.h>
 #include "util/CliOptions.h"
 #include <CommonUtilities/log/IdentificationTable.h>
@@ -192,6 +193,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         infra::util::FolderResolver::SetDevMode();
     }
 
+    // create logging system and ensure cleanup before main ext
+    client::util::LogChannelManager zLogMan_;
+
     // wait for debugger connection
     if ((opt.cefType && *opt.cefType == "renderer" && opt.debugWaitRender) ||
         (!opt.cefType && opt.debugWaitClient)) {
@@ -200,33 +204,18 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         }
         DebugBreak();
     }
+
     // name this process / thread
     log::IdentificationTable::AddThisProcess(opt.cefType.AsOptional().value_or("main-client"));
     log::IdentificationTable::AddThisThread("main");
-    //// connect to the diagnostic layer (not generally used by appcef since we connect to logging directly)
-    //std::optional<pmapi::DiagnosticHandler> diag;
-    //try {
-    //    if (opt.enableDiagnostic && opt.cefType && *opt.cefType == "renderer") {
-    //        diag.emplace(
-    //            (PM_DIAGNOSTIC_LEVEL)opt.logLevel.AsOptional().value_or(log::GlobalPolicy::Get().GetLogLevel()),
-    //            PM_DIAGNOSTIC_OUTPUT_FLAGS_DEBUGGER | PM_DIAGNOSTIC_OUTPUT_FLAGS_QUEUE,
-    //            [](const PM_DIAGNOSTIC_MESSAGE& msg) {
-    //            auto ts = msg.pTimestamp ? msg.pTimestamp : std::string{};
-    //            pmlog_(log::Level(msg.level)).note(std::format("@@ D I A G @@ => <{}> {}", ts, msg.pText));
-    //        }
-    //        );
-    //    }
-    //} pmcatch_report;
+
+    // initialize the logging system
+    client::util::ConfigureLogging();
 
     // set the app id so that windows get grouped
     SetCurrentProcessExplicitAppUserModelID(L"Intel.PresentMon");
 
     try {
-        //if (!opt.cefType && opt.logSvcPipeEnable) {
-        //    // connect to service's log pipe (best effort)
-        //    ConnectToLoggingSourcePipe(logSvcPipe.value_or(*opt.logSvcPipe), 0);
-        //}
-
         using namespace client;
         // cef process constellation fork control
         CefMainArgs main_args{ hInstance };
@@ -273,7 +262,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         UnregisterClass(BrowserWindowClassName, hInstance);
         UnregisterClass(MessageWindowClassName, hInstance);
 
-        pmlog_info("== client process exiting ==");
+        pmlog_info("== UI client root process exiting ==");
 
         return (int)msg.wParam;
     }

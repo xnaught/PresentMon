@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-namespace p2c
+namespace p2c::client::util
 {
 	// LogChannelManager should be instantiated as early as possible in the entry point of the process/module
 	// It acts as a guard to prevent stack trace resolution in the channel worker thread after exiting main

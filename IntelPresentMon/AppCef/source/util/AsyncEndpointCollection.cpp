@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "AsyncEndpointCollection.h"
-#include <Core/source/infra/Logging.h>
+#include "Logging.h"
 #include <CommonUtilities/str/String.h>
 
 #include "async/BrowseReadSpec.h"

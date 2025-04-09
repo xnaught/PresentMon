@@ -26,6 +26,7 @@
     <ClCompile Include="source\util\HotkeyListener.cpp" />
     <ClCompile Include="source\util\IpcInvocationManager.cpp" />
     <ClCompile Include="source\util\KernelActionRegistration.cpp" />
+    <ClCompile Include="source\util\LogSetup.cpp" />
     <ClCompile Include="source\util\PathSanitaryCheck.cpp" />
     <ClCompile Include="source\util\SignalManager.cpp" />
     <ClCompile Include="source\util\ThreadCompass.cpp" />
@@ -69,6 +70,8 @@
     <ClInclude Include="source\util\FileLocation.h" />
     <ClInclude Include="source\util\cact\CefExecutionContext.h" />
     <ClInclude Include="source\util\KernelWrapper.h" />
+    <ClInclude Include="source\util\Logging.h" />
+    <ClInclude Include="source\util\LogSetup.h" />
     <ClInclude Include="source\util\PathSanitaryCheck.h" />
     <ClInclude Include="source\util\SignalManager.h" />
     <ClInclude Include="source\util\FontEnumerator.h" />

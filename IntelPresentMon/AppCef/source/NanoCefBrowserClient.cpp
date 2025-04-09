@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 #include "NanoCefBrowserClient.h"
 #include <include/wrapper/cef_helpers.h>
-#include <Core/source/infra/Logging.h>
+#include "util/Logging.h"
 #include <format>
 #include <fstream>
 #include <streambuf>

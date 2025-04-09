@@ -1,3 +1,5 @@
+#include <CommonUtilities/win/WinAPI.h>
+#include <CommonUtilities/win/HrErrorCodeProvider.h>
 #include <CommonUtilities/log/Log.h>
 #include <CommonUtilities/log/Channel.h>
 #include <CommonUtilities/log/MsvcDebugDriver.h>
@@ -7,20 +9,16 @@
 #include <CommonUtilities/log/TextFormatter.h>
 #include <CommonUtilities/log/SimpleFileStrategy.h>
 #include <CommonUtilities/log/LinePolicy.h>
+#include <CommonUtilities/log/LineTable.h>
 #include <CommonUtilities/log/ErrorCodeResolvePolicy.h>
 #include <CommonUtilities/log/ErrorCodeResolver.h>
-#include <CommonUtilities/mt/Thread.h>
 #include <CommonUtilities/log/NamedPipeMarshallReceiver.h>
 #include <CommonUtilities/log/EntryMarshallInjector.h>
-#include <CommonUtilities/win/WinAPI.h>
-#include <CommonUtilities/win/HrErrorCodeProvider.h>
-#include <CommonUtilities/str/String.h>
 #include <CommonUtilities/log/PanicLogger.h>
-#include <PresentMonAPIWrapperCommon/PmErrorCodeProvider.h>
-#include <PresentMonAPI2/Internal.h>
-#include <PresentMonAPI2/PresentMonDiagnostics.h>
+#include <CommonUtilities/mt/Thread.h>
+#include <CommonUtilities/str/String.h>
 #include <Core/source/infra/util/FolderResolver.h>
-#include "../cli/CliOptions.h"
+#include "CliOptions.h"
 #include "LogSetup.h"
 #include <memory>
 #include <format>
@@ -37,12 +35,11 @@ namespace pmon::util::log
 		std::shared_ptr<IChannel> MakeChannel()
 		{
 			GlobalPolicy::Get().SetSubsystem(Subsystem::IntelPresentmon);
-			// channel (use custom deleter to ensure deletion in this module's heap)
-			auto pChannel = std::shared_ptr<IChannel>{ new Channel{}, [](Channel* p) { delete p; } };
+			// make the channel instance
+			auto pChannel = std::make_shared<Channel>();
 			// error resolver
 			auto pErrorResolver = std::make_shared<ErrorCodeResolver>();
 			pErrorResolver->AddProvider(std::make_unique<win::HrErrorCodeProvider>());
-			pErrorResolver->AddProvider(std::make_unique<pmapi::PmErrorCodeProvider>());
 			// error resolving policy
 			auto pErrPolicy = std::make_shared<ErrorCodeResolvePolicy>();
 			pErrPolicy->SetResolver(std::move(pErrorResolver));
@@ -54,7 +51,7 @@ namespace pmon::util::log
 			// attach drivers
 			// TODO: test if cwd is writeable, if not write to some other location (temp?)
 			pChannel->AttachComponent(std::make_shared<MsvcDebugDriver>(pFormatter), "drv:dbg");
-			const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("pm-early-log.txt");
+			const auto pFileStrategy = std::make_shared<SimpleFileStrategy>(std::format("pmui-init-log-{}.txt", GetCurrentProcessId()));
 			pChannel->AttachComponent(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy), "drv:file");
 
 			return pChannel;
@@ -68,7 +65,7 @@ namespace pmon::util::log
 	}
 }
 
-namespace p2c
+namespace p2c::client::util
 {
 	using namespace pmon::util;
 	using namespace pmon::util::log;
@@ -76,6 +73,7 @@ namespace p2c
 	_invalid_parameter_handler pOriginalInvalidParameterHandler_ = nullptr;
 
 	namespace {
+		// TODO: factor this out as it is useful everywhere
 		void InvalidParameterHandler_(
 			const wchar_t* expression,
 			const wchar_t* function,
@@ -108,75 +106,55 @@ namespace p2c
 			// shortcut for command line
 			const auto& opt = cli::Options::Get();
 
-			// determine log folder path
-			std::filesystem::path logFolder;
-			if (opt.logFolder) {
-				logFolder = *opt.logFolder;
-			}
-			else {
-				logFolder = infra::util::FolderResolver::Get().Resolve(
-					infra::util::FolderResolver::Folder::App, L"logs\\");
-			}
-			// always enable the logfile for client
-			const auto logfilePathClient = std::filesystem::path{ logFolder } / "pmlog.txt";
-			pChan->AttachComponent(std::make_shared<BasicFileDriver>(std::make_shared<TextFormatter>(),
-				std::make_shared<SimpleFileStrategy>(logfilePathClient)), "drv:file");
 			auto&& pol = GlobalPolicy::Get();
-			// connect dll channel and id table to exe, get access to global settings in dll
-			LoggingSingletons getters;
-			if (opt.logMiddlewareCopy) {
-				getters = pmLinkLogging_(pChan, []() -> IdentificationTable& {
-					return IdentificationTable::Get_(); });
-			}
 			// set the global policy settings
 			if (opt.logLevel) {
 				pol.SetLogLevel(*opt.logLevel);
-				if (getters) {
-					getters.getGlobalPolicy().SetLogLevel(*opt.logLevel);
-				}
 			}
 			if (opt.logTraceLevel) {
 				pol.SetTraceLevel(*opt.logTraceLevel);
-				if (getters) {
-					getters.getGlobalPolicy().SetTraceLevel(*opt.logTraceLevel);
-				}
 			}
 			if (opt.traceExceptions) {
 				pol.SetExceptionTrace(*opt.traceExceptions);
 				pol.SetSehTracing(*opt.traceExceptions);
-				if (getters) {
-					getters.getGlobalPolicy().SetExceptionTrace(*opt.traceExceptions);
-					getters.getGlobalPolicy().SetSehTracing(*opt.traceExceptions);
-				}
 			}
 			if (opt.logDenyList) {
 				pmquell(LineTable::IngestList(*opt.logDenyList, true));
-				if (getters) {
-					pmquell(getters.getLineTable().IngestList_(*opt.logDenyList, true));
-				}
 			}
 			else if (opt.logAllowList) {
 				pmquell(LineTable::IngestList(*opt.logAllowList, false));
-				if (getters) {
-					pmquell(getters.getLineTable().IngestList_(*opt.logAllowList, false));
+			}
+			// setup ipc logging server connection for parent process (graph flowing towards kproc)
+			if (opt.logPipeName) {
+				try {
+					auto pSender = std::make_shared<log::NamedPipeMarshallSender>(*opt.logPipeName);
+					log::IdentificationTable::RegisterSink(pSender);
+					auto pDriver = std::make_shared<log::MarshallDriver>(pSender);
+					pChan->AttachComponent(std::move(pDriver));
+					// block here waiting for the parent process to connect
+					if (!pSender->WaitForConnection(1500ms)) {
+						pmlog_warn("Parent process did not connect to ipc logging pipe before timeout (it might have connected later)");
+					}
+					else {
+						// remove independent output drivers (only copy to main process via IPC)
+						pChan->AttachComponent({}, "drv:dbg");
+						pChan->AttachComponent({}, "drv:file");
+					}
+				}
+				catch (...) {
+					pmlog_error(ReportException("log server setup"));
 				}
 			}
-			// enable logfile for middleware if we're not doing the copy connection
-			if (!opt.logMiddlewareCopy) {
-				if (auto sta = pmSetupFileLogging_((logFolder / "pmlog-mid.txt").string().c_str(),
-					(PM_DIAGNOSTIC_LEVEL)pol.GetLogLevel(),
-					(PM_DIAGNOSTIC_LEVEL)pol.GetTraceLevel(),
-					pol.GetExceptionTrace()
-				); sta != PM_STATUS_SUCCESS) {
-					pmlog_error("configuring middleware file logging").code(sta).no_trace();
-				}
+			else if (!opt.cefType || *opt.cefType == "render") {
+				pmlog_warn("log pipe name not specified");
 			}
 		}
 		catch (...) {
-			pmlog_error(ReportException());
+			pmlog_error(ReportException("general log configuration"));
 		}
 	}
 
+	// TODO: factor this logic out because it is used by kproc and appcef
 	void ConnectToLoggingSourcePipe(const std::string& pipePrefix)
 	{
 		mt::Thread{ "logconn-" + pipePrefix, [pipePrefix] {
@@ -217,7 +195,6 @@ namespace p2c
 	}
 	LogChannelManager::~LogChannelManager()
 	{
-		pmFlushEntryPoint_();
 		FlushEntryPoint();
 	}
 }

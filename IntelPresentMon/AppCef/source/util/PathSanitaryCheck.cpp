@@ -3,7 +3,7 @@
 #include "PathSanitaryCheck.h"
 #include <algorithm>
 #include <Core/source/infra/util/FolderResolver.h>
-#include <Core/source/infra/Logging.h>
+#include "Logging.h"
 #include <CommonUtilities/str/String.h>
 
 

@@ -9,8 +9,8 @@
 #include "NanoCefProcessHandler.h"
 #include "SchemeHandlerFactory.h"
 #include "DataBindAccessor.h"
-#include <Core/source/infra/Logging.h>
-#include <Core/source/infra/LogSetup.h>
+#include "util/Logging.h"
+#include "util/LogSetup.h"
 #include "util/AsyncEndpointManager.h"
 #include "util/CefValues.h"
 #include "util/CliOptions.h"
@@ -88,10 +88,10 @@ namespace p2c::client::cef
         if (pChildCommandLine->GetSwitchValue("type") == "renderer") {
             // inject logging ipc pipe cli option to child
             static int count = 0;
-            std::string pipePrefix = std::format("p2c-logpipe-{}-{}", GetCurrentProcessId(), ++count);
+            std::string pipePrefix = std::format("pm-uir-log-{}-{}", GetCurrentProcessId(), ++count);
             pChildCommandLine->AppendSwitchWithValue(opt.logPipeName.GetName(), pipePrefix);
             // launch connector thread
-            ConnectToLoggingSourcePipe(pipePrefix, count);
+            util::ConnectToLoggingSourcePipe(pipePrefix);
         }
     }
 
