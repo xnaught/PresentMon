@@ -181,6 +181,7 @@ powertoys.powerlauncher.exe
 powertoys.powerrename.exe
 ppenosrs.exe
 presentmon.exe
+presentmonui.exe
 pushbullet_client.exe
 qbittorrent.exe
 radeonsettings.exe
