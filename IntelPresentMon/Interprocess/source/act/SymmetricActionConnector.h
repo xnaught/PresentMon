@@ -32,10 +32,6 @@ namespace pmon::ipc::act
                         pmlog_warn("Received action without a valid session opened");
                     }
                 }
-                // bookkeeping
-                stx.lastTokenSeen = header.commandToken;
-                stx.lastReceived = std::chrono::high_resolution_clock::now();
-                stx.receiveCount++;
                 // lookup the command by identifier and execute it with remaining buffer contents
                 // response is then transmitted over the pipe to remote
                 // TODO: make this return result code (increment error count based on this)
@@ -53,7 +49,6 @@ namespace pmon::ipc::act
             if (pInPipe_->GetWriteBufferPending()) {
                 pInPipe_->ClearWriteBuffer();
             }
-            stx.errorCount++;
             auto resHeader = MakeResponseHeader(header, TransportStatus::TransportFailure, PM_STATUS_SUCCESS);
             co_await pInPipe_->WritePacket(std::move(resHeader), EmptyPayload{}, ctx.responseWriteTimeoutMs);
         }

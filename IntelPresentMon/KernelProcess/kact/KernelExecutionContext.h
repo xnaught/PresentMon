@@ -17,15 +17,10 @@ namespace kproc::kact
 
     struct KernelSessionContext
     {
+        // common session context items
         std::unique_ptr<ipc::act::SymmetricActionConnector<KernelExecutionContext>> pConn;
         uint32_t remotePid = 0;
-        std::optional<uint32_t> lastTokenSeen;
         uint32_t nextCommandToken = 0;
-        std::chrono::high_resolution_clock::time_point lastReceived;
-        // std::chrono::high_resolution_clock::time_point lastSent;
-        // uint32_t sendCount = 0;
-        uint32_t receiveCount = 0;
-        uint32_t errorCount = 0;
     };
 
     struct KernelExecutionContext
