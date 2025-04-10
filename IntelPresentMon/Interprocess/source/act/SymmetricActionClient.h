@@ -51,14 +51,14 @@ namespace pmon::ipc::act
             return stx_.pConn->DispatchSync(std::forward<Params>(params), ioctx_, stx_);
         }
         template<class Params>
-        auto DispatchAsync(Params&& params)
+        auto DispatchDetached(Params&& params)
         {
-            return stx_.pConn->DispatchAsync(std::forward<Params>(params), ioctx_, stx_);
+            return stx_.pConn->DispatchDetached(std::forward<Params>(params), ioctx_, stx_);
         }
         template<class Params>
-        void DispatchDetachedWithContinuation(Params&& params, std::function<void(ResponseFromParams<Params>&&, std::exception_ptr)> cont)
+        void DispatchWithContinuation(Params&& params, std::function<void(ResponseFromParams<Params>&&, std::exception_ptr)> cont)
         {
-            return stx_.pConn->DispatchDetachedWithContinuation(std::forward<Params>(params), ioctx_, stx_, std::move(cont));
+            return stx_.pConn->DispatchWithContinuation(std::forward<Params>(params), ioctx_, stx_, std::move(cont));
         }
 
     protected:

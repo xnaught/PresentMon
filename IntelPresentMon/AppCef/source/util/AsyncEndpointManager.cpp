@@ -31,11 +31,11 @@ namespace p2c::client::util
 			lck.unlock();
 
 			if constexpr (v::v8async) {
-				pmlog_verb(v::v8async)(std::format("Async call {{{}}} from V8 to endpoint [{}] with payload:\n{}",
+				pmlog_verb(v::v8async)(std::format("JS async call {{{}}} from V8 to endpoint [{}] with payload:\n{}",
 					uid, key, Traverse(V8ToCefValue(*pObj)).Dump()));
 			}
 			else {
-				pmlog_dbg(std::format("Async call {{{}}} from V8 to endpoint [{}]", uid, key));
+				pmlog_dbg(std::format("JS async call {{{}}} from V8 to endpoint [{}]", uid, key));
 			}
 
 			switch (pEndpoint->GetEnvironment())

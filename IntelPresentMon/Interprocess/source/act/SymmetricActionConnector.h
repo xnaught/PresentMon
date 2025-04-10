@@ -55,6 +55,7 @@ namespace pmon::ipc::act
         template<class Params>
         auto DispatchSync(Params&& params, as::io_context& ioctx, SessionContextType& stx)
         {
+            LogDispatch_<Params>(stx);
             // wrap the SyncRequest in a coro so we can assure non-concurrent increment of the token
             // CAUTION: this coro has captures that will blow up if we try and exit this function before completion
             // currently OK because we block on future, but any future refactor needs to take this into consideration
@@ -65,10 +66,10 @@ namespace pmon::ipc::act
         }
         // TODO: this should support both retained requests and unretained events
         // need to figure out fully async request flow and how to implement the continuation API(s)
-        // TODO: rename to DispatchDetached
         template<class Params>
-        auto DispatchAsync(Params&& params, as::io_context& ioctx, SessionContextType& stx)
+        auto DispatchDetached(Params&& params, as::io_context& ioctx, SessionContextType& stx)
         {
+            LogDispatch_<Params>(stx);
             // wrap the AsyncEmit in a coro so we can assure non-concurrent increment of the token
             const auto coro = [](auto&& params, SessionContextType& stx, util::pipe::DuplexPipe& pipe) -> as::awaitable<void> {
                 try {
@@ -81,9 +82,10 @@ namespace pmon::ipc::act
             as::co_spawn(ioctx, coro(std::forward<Params>(params), stx, *pOutPipe_), as::detached);
         }
         template<class Params>
-        void DispatchDetachedWithContinuation(Params&& params, as::io_context& ioctx, SessionContextType& stx,
+        void DispatchWithContinuation(Params&& params, as::io_context& ioctx, SessionContextType& stx,
             std::function<void(ResponseFromParams<Params>&&, std::exception_ptr)> conti)
         {
+            LogDispatch_<Params>(stx);
             // wrap the AsyncEmit in a coro so we can assure non-concurrent increment of the token
             const auto coro = [](auto params, SessionContextType& stx, util::pipe::DuplexPipe& pipe, auto conti)
                 -> as::awaitable<void> {
@@ -131,6 +133,13 @@ namespace pmon::ipc::act
             pInPipe_{ pipe::DuplexPipe::ConnectAsPtr(basePipeName + "-out", ioctx) }
         {}
 	private:
+        // functions
+        template<class Params>
+        void LogDispatch_(const SessionContextType& stx) const
+        {
+            using Action = ActionFromParams<Params>;
+            pmlog_dbg("Action Dispatch").pmwatch(Action::Identifier).pmwatch(stx.remotePid);
+        }
 		// data
 		std::unique_ptr<pipe::DuplexPipe> pOutPipe_;
 		std::unique_ptr<pipe::DuplexPipe> pInPipe_;

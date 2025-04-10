@@ -37,7 +37,7 @@ namespace ACT_NS
 		{
 			stx.remotePid = in.cefRenderPid;
 			const Response res{ .kernelPid = GetCurrentProcessId() };
-			pmlog_info(std::format("Kernel open action for cli={} svc={}", in.cefRenderPid, res.kernelPid));
+			pmlog_info(std::format("Kernel open action for cef={} krn={}", in.cefRenderPid, res.kernelPid));
 			return res;
 		}
 	};

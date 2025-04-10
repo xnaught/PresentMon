@@ -57,7 +57,7 @@ namespace p2c::client::util
 				// create a lambda which accepts the incoming result of this action and stores the V8 context
 				// lamba will be invoked after the response is received from the server, causing the response
 				// to be returned to the original V8 caller in js land
-				client.DispatchDetachedWithContinuation(FromV8<Params>(*pObj), [ctx = std::move(ctx)](Response&& res, std::exception_ptr pex) {
+				client.DispatchWithContinuation(FromV8<Params>(*pObj), [ctx = std::move(ctx)](Response&& res, std::exception_ptr pex) {
 					CefPostTask(TID_RENDERER, base::BindOnce(
 						&IpcInvocationManager::ResolveInvocation_<Response>,
 						std::move(ctx), std::move(res), std::move(pex)

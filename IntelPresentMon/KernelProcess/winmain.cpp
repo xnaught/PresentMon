@@ -32,19 +32,19 @@ namespace kproc
         KernelHandler(KernelServer& server) : server_{ server } {}
         void OnTargetLost(uint32_t pid) override
         {
-            server_.DispatchAsync(p2c::client::util::cact::TargetLostAction::Params{ pid });
+            server_.DispatchDetached(p2c::client::util::cact::TargetLostAction::Params{ pid });
         }
         void OnOverlayDied() override
         {
-            server_.DispatchAsync(p2c::client::util::cact::OverlayDiedAction::Params{});
+            server_.DispatchDetached(p2c::client::util::cact::OverlayDiedAction::Params{});
         }
         void OnPresentmonInitFailed() override
         {
-            server_.DispatchAsync(p2c::client::util::cact::PresentmonInitFailedAction::Params{});
+            server_.DispatchDetached(p2c::client::util::cact::PresentmonInitFailedAction::Params{});
         }
         void OnStalePidSelected() override
         {
-            server_.DispatchAsync(p2c::client::util::cact::StalePidAction::Params{});
+            server_.DispatchDetached(p2c::client::util::cact::StalePidAction::Params{});
         }
     private:
         // data
