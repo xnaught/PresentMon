@@ -3,6 +3,7 @@
 #include "HotkeyListener.h"
 #include "Logging.h"
 #include <CommonUtilities/Exception.h>
+#include <CommonUtilities/ref/WrapReflect.h>
 #include <ranges>
 #include <include/cef_task.h> 
 #include "include/base/cef_callback.h" 
@@ -170,7 +171,7 @@ namespace p2c::client::util
 	void Hotkeys::DispatchHotkey_(Action action) const
 	{
 		if (Handler_) {
-			pmlog_verb(v::hotkey)("execute handler with hotkey action");
+			pmlog_dbg("hotkey action dispatched to handler").pmwatch(reflect::enum_name(action));
 			Handler_(action);
 		}
 		else {
