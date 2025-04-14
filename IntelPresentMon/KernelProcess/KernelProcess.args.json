@@ -89,10 +89,6 @@
       "Command": "--help"
     },
     {
-      "Id": "014ad39a-6be3-40a1-908e-62e47282af3e",
-      "Command": "--remote-allow-origins=http://127.0.0.1:9009"
-    },
-    {
       "Id": "0a44a142-1ca4-4e76-9632-bad6e9e845ff",
       "Command": "--ui-flag enable-ui-dev-options"
     },

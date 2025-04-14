@@ -161,6 +161,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         args.push_back("--p2c-" + f);
     }
     for (auto& o : *opt.uiOptions) {
+        if (o.first == "url" && is_debug) {
+            // needed in order to connect Chrome debuggers to CEF
+            args.push_back("--remote-allow-origins=*");
+        }
         args.push_back("--p2c-" + o.first);
         args.push_back(o.second);
     }
