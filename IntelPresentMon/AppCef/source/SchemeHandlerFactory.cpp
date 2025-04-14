@@ -6,6 +6,12 @@
 #include <format>
 #include "util/Logging.h"
 
+#ifdef NDEBUG
+#define IS_DEBUG false
+#else
+#define IS_DEBUG true
+#endif
+
 
 namespace p2c::client::cef
 {
@@ -38,7 +44,7 @@ namespace p2c::client::cef
         if (mode_ == SchemeMode::Web) {
             // anything goes if web mode
             // but don't worry about loading app files (only use default schema managers)
-            pmlog_info(std::format("Processing request URL: {}", request->GetURL().ToString()));
+            pmlog_dbg(std::format("Processing request URL: {}", request->GetURL().ToString()));
             return nullptr;
         }
         else if (mode_ == SchemeMode::Local) {
@@ -48,11 +54,17 @@ namespace p2c::client::cef
                 DoErrorMessage("URL Error", "Failed parsing URL, see log.");
             }
             else if (CefString(&url_parts.host) != localHost_ && CefString(&url_parts.port) != localPort_) {
-                pmlog_error(std::format("URL does not match dev endpoint: {}", request->GetURL().ToString())).no_trace();
-                DoErrorMessage("URL Error", "URL does not match dev endpoint, see log.");
+                if constexpr (IS_DEBUG) {
+                    pmlog_warn(std::format("URL does not match dev endpoint: {}", request->GetURL().ToString()));
+                }
+                else {
+                    pmlog_error(std::format("URL does not match dev endpoint: {}", request->GetURL().ToString())).no_trace();
+                    DoErrorMessage("URL Error", "URL does not match dev endpoint, see log.");
+                    std::terminate();
+                }
             }
             else {
-                pmlog_info(std::format("Processing request URL: {}", request->GetURL().ToString()));
+                pmlog_dbg(std::format("Processing request URL: {}", request->GetURL().ToString()));
             }
             return nullptr;
         }

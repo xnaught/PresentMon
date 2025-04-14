@@ -102,7 +102,7 @@
     },
     {
       "Id": "3a21ce62-1247-45a5-81ef-6698569c73e4",
-      "Command": "--ui-option url  \"http://localhost:8080\""
+      "Command": "--ui-option url  \"http://localhost:5173\""
     }
   ]
 }
