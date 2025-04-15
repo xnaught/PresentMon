@@ -12,6 +12,12 @@ import * as directives from 'vuetify/directives'
 import App from './App.vue'
 import router from './router'
 
+if (import.meta.env.DEV) {
+    const script = document.createElement('script');
+    script.src = 'http://localhost:8098';
+    document.head.appendChild(script);
+}
+
 const vuetify = createVuetify({
     components,
     directives,
