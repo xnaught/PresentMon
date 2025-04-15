@@ -11,6 +11,7 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "@mdi/font": "^7.4.47",
     "pinia": "^3.0.1",
     "sass": "^1.86.3",
     "vite-plugin-vuetify": "^2.1.1",

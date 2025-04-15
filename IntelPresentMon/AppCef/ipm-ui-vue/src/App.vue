@@ -1,95 +1,54 @@
-<script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from '@/components/HelloWorld.vue'
-import { useCounterStore } from '@/stores/counter';
-
-const counter = useCounterStore()
-function work() {
-  console.log(`Henlo @${counter.count}`);  
-}
-</script>
-
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+  <v-app>
+    <v-main>
+      <v-container class="py-10">
+        <v-card class="pa-6" elevation="4">
+          <v-card-title>Dashboard View</v-card-title>
 
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
-      <v-btn color="primary" @click="counter.increment">Vuetify is working!</v-btn>
-      <v-btn color="primary" @click="work">LAWG</v-btn>
-      <h1>{{ counter.count }}</h1>
-      <h1>{{ counter.doubleCount }}</h1>
+          <v-card-text>
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  label="Search"
+                  prepend-inner-icon="mdi-magnify"
+                  variant="outlined"
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-btn color="primary" class="me-2">Submit</v-btn>
+                <v-btn color="secondary" variant="outlined">Reset</v-btn>
+              </v-col>
+            </v-row>
 
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
-    </div>
-  </header>
+            <v-divider class="my-6" />
 
-  <RouterView />
+            <v-row>
+              <v-col cols="12" md="4">
+                <v-switch label="Enable option" color="primary" v-model="enabled" />
+              </v-col>
+              <v-col cols="12" md="4">
+                <v-slider v-model="value" :max="100" label="Volume" />
+              </v-col>
+              <v-col cols="12" md="4">
+                <v-progress-circular
+                  :model-value="value"
+                  :size="50"
+                  :width="6"
+                  color="primary"
+                  indeterminate
+                ></v-progress-circular>
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+      </v-container>
+    </v-main>
+  </v-app>
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
-  max-height: 100vh;
-}
+<script setup lang="ts">
+import { ref } from 'vue'
 
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-nav {
-  width: 100%;
-  font-size: 12px;
-  text-align: center;
-  margin-top: 2rem;
-}
-
-nav a.router-link-exact-active {
-  color: var(--color-text);
-}
-
-nav a.router-link-exact-active:hover {
-  background-color: transparent;
-}
-
-nav a {
-  display: inline-block;
-  padding: 0 1rem;
-  border-left: 1px solid var(--color-border);
-}
-
-nav a:first-of-type {
-  border: 0;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  nav {
-    text-align: left;
-    margin-left: -1rem;
-    font-size: 1rem;
-
-    padding: 1rem 0;
-    margin-top: 1rem;
-  }
-}
-</style>
+const enabled = ref(true)
+const value = ref(40)
+</script>
