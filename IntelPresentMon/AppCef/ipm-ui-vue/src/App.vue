@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
-import HelloWorld from './components/HelloWorld.vue'
-import { ref, computed } from 'vue'
+import HelloWorld from '@/components/HelloWorld.vue'
+import { useCounterStore } from '@/stores/counter';
 
-const count = ref<number>(0)
-
-function increment(): void {
-  count.value++
+const counter = useCounterStore()
+function work() {
+  console.log(`Henlo @${counter.count}`);  
 }
-
 </script>
 
 <template>
@@ -17,8 +15,10 @@ function increment(): void {
 
     <div class="wrapper">
       <HelloWorld msg="You did it!" />
-      <v-btn color="primary" @click="increment">Vuetify is working!</v-btn>
-      <div>{{ count }}</div>
+      <v-btn color="primary" @click="counter.increment">Vuetify is working!</v-btn>
+      <v-btn color="primary" @click="work">LAWG</v-btn>
+      <h1>{{ counter.count }}</h1>
+      <h1>{{ counter.doubleCount }}</h1>
 
       <nav>
         <RouterLink to="/">Home</RouterLink>
