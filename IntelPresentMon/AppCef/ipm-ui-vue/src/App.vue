@@ -6,96 +6,108 @@ const inSettings = ref(true)
 
 <template>
   <v-app>
-    <v-navigation-drawer
-      v-if="inSettings"
-      permanent
-      :width="180"
-      color="#030308"
-      class="pt-3"
-      app
-    >
-      <router-link :to="{name: 'simple'}" class="nav-back"><v-icon class="nav-back-arrow">mdi-arrow-left</v-icon> Top</router-link>
-      <v-list nav>
-        <v-list-item color="primary" :to="{name: 'overlay-config'}">
-          <v-list-item-content>
-            <v-list-item-title>Overlay</v-list-item-title>
-          </v-list-item-content>
-        </v-list-item>
-        <v-list-item color="primary" :to="{name: 'metric-processing'}">
-          <v-list-item-content>
-            <v-list-item-title>Data Processing</v-list-item-title>
-          </v-list-item-content>
-        </v-list-item>
-        <v-list-item color="primary" :to="{name: 'capture-config'}">
-          <v-list-item-content>
-            <v-list-item-title>Capture</v-list-item-title>
-          </v-list-item-content>
-        </v-list-item>
-        <v-list-item color="primary" :to="{name: 'flash-config'}">
-          <v-list-item-content>
-            <v-list-item-title>Flash Injection</v-list-item-title>
-          </v-list-item-content>
-        </v-list-item>
-        <v-list-item color="primary" :to="{name: 'other-config'}">
-          <v-list-item-content>
-            <v-list-item-title>Other</v-list-item-title>
-          </v-list-item-content>
-        </v-list-item>
-        <v-list-item v-if="true" color="primary">
-          <v-list-item-content>
-            <v-btn @click="">#Updt. Prest.#</v-btn>
-          </v-list-item-content>
-        </v-list-item>
-      </v-list>
-    </v-navigation-drawer>
+    <div class="app-layout">
+      <div class="content-row">
+        <v-navigation-drawer
+          v-if="inSettings"
+          permanent
+          :width="180"
+          color="#030308"
+          class="custom-drawer"
+        >
+          <router-link :to="{ name: 'simple' }" class="nav-back">
+            <v-icon class="nav-back-arrow">mdi-arrow-left</v-icon> Top
+          </router-link>
+          <v-list nav>
+            <v-list-item color="primary" :to="{ name: 'overlay-config' }">
+              <v-list-item-content>
+                <v-list-item-title>Overlay</v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+            <!-- Add other list items here -->
+          </v-list>
+        </v-navigation-drawer>
 
-    <v-main>
-      <div class="d-flex justify-center"> 
-        <router-view></router-view>
+        <v-main class="main-view">
+          <router-view />
+        </v-main>
       </div>
-    </v-main>
 
-    <v-footer
-      color="primary darken-3"
-      height="22"
-      class="status-bar"
-      app
-    >
-      <div class="sta-region">
-        <div class="pl-2">{{ "Heaven.exe" }}</div>
-        <div><v-icon v-show="true" small color="red darken-1">mdi-camera-control</v-icon></div>
+      <div class="footer-wrap">
+        <v-footer class="footer" color="blue-darken-3" height="22">
+          <div class="sta-region">
+            <div class="pl-2">Heaven.exe</div>
+            <v-icon small color="red-darken-1">mdi-camera-control</v-icon>
+          </div>
+          <div class="sta-region">
+            <div>Hidden</div>
+            <div>60Hz</div>
+            <div>15fps</div>
+          </div>
+        </v-footer>
       </div>
-      <div class="sta-region">
-        <div>{{ "Hidden" }}</div>
-        <div>{{ 60 }}Hz</div>
-        <div>{{ 15 }}fps</div>
-      </div>
-    </v-footer>
+    </div>
   </v-app>
 </template>
 
 <style scoped>
-* {
-  user-select: none; 
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
 }
-.status-bar {
-  padding: 0;
+
+.content-row {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.custom-drawer {
+  height: calc(100vh - 22px); /* Subtract footer height */
+  max-height: calc(100vh - 22px);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.main-view {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.footer-wrap {
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   font-size: 12px;
   font-weight: 300;
-  justify-content: space-between;
+  padding: 0;
+  height: 22px !important;
+  min-height: 22px !important;
+  max-height: 22px !important;
   user-select: none;
+  color: white;
 }
+
 .sta-region {
   display: flex;
 }
+
 .sta-region > div {
   display: flex;
   align-items: center;
   padding: 0 4px;
 }
-.menu-item {
-  border-radius: 0;
-}
+
 .nav-back {
   text-decoration: none;
   color: whitesmoke;
