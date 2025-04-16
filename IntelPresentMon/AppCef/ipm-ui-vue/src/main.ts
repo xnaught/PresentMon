@@ -1,16 +1,17 @@
-import './assets/main.css'
+import '@/assets/global.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 
 // Vuetify
-import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
-import { aliases, mdi } from 'vuetify/iconsets/mdi'
+import 'vuetify/styles'
+// css
 import '@mdi/font/css/materialdesignicons.css'
+import '@fontsource/roboto/index.css'
 
-import App from './App.vue'
-import router from './router'
+import App from '@/App.vue'
+import router from '@/router'
 
 if (import.meta.env.DEV) {
     const script = document.createElement('script');
@@ -19,12 +20,7 @@ if (import.meta.env.DEV) {
 }
 
 const vuetify = createVuetify({
-    icons: {
-      defaultSet: 'mdi',
-      aliases,
-      sets: { mdi },
-    },
-    theme: { defaultTheme: 'dark' }
+    theme: { defaultTheme: 'dark' },
 })
 
 const app = createApp(App)

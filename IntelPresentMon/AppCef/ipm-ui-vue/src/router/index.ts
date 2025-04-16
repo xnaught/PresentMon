@@ -6,16 +6,54 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'home',
+      redirect: { name: 'simple' },
+    },
+    {
+      path: '/graphs/:index',
+      name: 'graph-config',
+      component: HomeView,
+      props: true,
+    },
+    {
+      path: '/readouts/:index',
+      name: 'readout-config',
+      component: HomeView,
+      props: true,
+    },
+    {
+      path: '/simple',
+      name: 'simple',
       component: HomeView,
     },
     {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import('../views/AboutView.vue'),
+      path: '/overlay',
+      name: 'overlay-config',
+      component: HomeView,
+    },
+    {
+      path: '/metrics',
+      name: 'metric-processing',
+      component: HomeView,
+    },
+    {
+      path: '/loadout',
+      name: 'loadout-config',
+      component: HomeView,
+    },
+    {
+      path: '/capture',
+      name: 'capture-config',
+      component: HomeView,
+    },
+    {
+      path: '/other',
+      name: 'other-config',
+      component: HomeView,
+    },
+    {
+      path: '/flash',
+      name: 'flash-config',
+      component: HomeView,
     },
   ],
 })
