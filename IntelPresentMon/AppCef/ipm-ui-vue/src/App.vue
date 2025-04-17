@@ -66,7 +66,7 @@ const inSettings = ref(true)
 }
 
 .custom-drawer {
-  height: calc(100vh - 22px); /* Subtract footer height */
+  height: calc(100vh - 22px);
   max-height: calc(100vh - 22px);
   flex-shrink: 0;
   display: flex;
@@ -77,6 +77,7 @@ const inSettings = ref(true)
 .main-view {
   flex: 1;
   overflow-y: auto;
+  height: 100%;
 }
 
 .footer-wrap {
@@ -91,9 +92,6 @@ const inSettings = ref(true)
   font-size: 12px;
   font-weight: 300;
   padding: 0;
-  height: 22px !important;
-  min-height: 22px !important;
-  max-height: 22px !important;
   user-select: none;
   color: white;
 }
