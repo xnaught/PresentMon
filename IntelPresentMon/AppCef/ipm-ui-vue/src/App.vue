@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useCounterStore } from '@/stores/counter'; 
 
-const inSettings = ref(true)
+const cs = useCounterStore()
 </script>
 
 <template>
@@ -9,7 +10,7 @@ const inSettings = ref(true)
     <div class="app-layout">
       <div class="content-row">
         <v-navigation-drawer
-          v-if="inSettings"
+          v-if="cs.isOpen"
           permanent
           :width="180"
           color="#030308"

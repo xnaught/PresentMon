@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import TheWelcome from '../components/TheWelcome.vue'
+import { useCounterStore } from '@/stores/counter'; 
+const counter = useCounterStore()
 </script>
 
 <template>
-  <main>
-    <TheWelcome />
-  </main>
+  <div>
+    <v-btn @click="counter.click">Click Me</v-btn>
+  </div>
 </template>
