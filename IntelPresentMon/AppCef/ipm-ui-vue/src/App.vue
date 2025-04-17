@@ -13,18 +13,18 @@ const inSettings = ref(true)
           permanent
           :width="180"
           color="#030308"
-          class="custom-drawer"
+          class="custom-drawer pt-3"
         >
           <router-link :to="{ name: 'simple' }" class="nav-back">
             <v-icon class="nav-back-arrow">mdi-arrow-left</v-icon> Top
           </router-link>
           <v-list nav>
             <v-list-item color="primary" :to="{ name: 'overlay-config' }">
-              <v-list-item-content>
-                <v-list-item-title>Overlay</v-list-item-title>
-              </v-list-item-content>
+              <v-list-item-title class="nav-item">Overlay</v-list-item-title>
             </v-list-item>
-            <!-- Add other list items here -->
+            <v-list-item color="primary" :to="{ name: 'flash-config' }">
+              <v-list-item-title class="nav-item">Flash Injection</v-list-item-title>
+            </v-list-item>
           </v-list>
         </v-navigation-drawer>
 
@@ -112,5 +112,23 @@ const inSettings = ref(true)
   margin-left: 10px;
   text-transform: uppercase;
   font-size: 18px;
+}
+
+.v-list-item {
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.v-list-item-title.v-list-item-title {
+  font-size: 16px;
+}
+
+.v-list-item:hover {
+  background-color: #0d0e0f;
+}
+
+.v-list-item--active {
+  background-color: #011627;
+  font-weight: 500;
 }
 </style>
