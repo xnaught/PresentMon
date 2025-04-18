@@ -6,7 +6,12 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: { name: 'simple' },
+      redirect: { name: 'main' },
+    },
+    {
+      path: '/main',
+      name: 'main',
+      component: HomeView,
     },
     {
       path: '/graphs/:index',
@@ -19,11 +24,6 @@ const router = createRouter({
       name: 'readout-config',
       component: HomeView,
       props: true,
-    },
-    {
-      path: '/simple',
-      name: 'simple',
-      component: HomeView,
     },
     {
       path: '/overlay',
