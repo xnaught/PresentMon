@@ -2,7 +2,11 @@
 import { ref } from 'vue'
 import { type Process } from '@/core/process';
 import { type ListItem } from 'vuetify/lib/composables/list-items.mjs';
+import { Action } from '@/core/hotkey';
+import { Preset } from '@/core/preferences';
 
+// magic number used to indicate that custom preset is selected
+const customPresetValue = 1000
 // match autocomplete typed text if substring of window name or process name or pid
 function selectFilter(item: Process, query: string) {
     const winText = item.windowName?.toLowerCase();
@@ -24,11 +28,18 @@ function makeSelectorName(winName: string): string {
         return winName;
     }
 }
+// test whether selected preset is the "custom" one
+function isCustomPresetSelected(p:Preset): boolean {
+    return p === customPresetValue
+}
 
 
 // placeholders here
 const pid = ref<number|null>(null)
 const enableAutotargetting = ref(false)
+const selectedPreset = ref(Preset.Slot1)
+const enableCaptureDuration = ref(false)
+const captureDuration = ref(1)
 function processes(): Process[] {
     return [
         {pid: 21, name: "twenty-one.exe", windowName: "Twenty One"},
@@ -40,6 +51,7 @@ function refreshProcessList() {}
 function asProcess(item: ListItem<any>): Process {
     return item as unknown as Process
 }
+function handleCaptureExplore() {}
 </script>
 
 <template>
@@ -117,7 +129,7 @@ function asProcess(item: ListItem<any>): Process {
         </v-col>
 
         <v-col cols="9" class="d-flex justify-center align-center">
-        <hotkey-button :action="toggleOverlayAction"></hotkey-button>
+        <hotkey-button :action="Action.ToggleOverlay"></hotkey-button>
         </v-col>
     </v-row>
     </v-card>
@@ -144,7 +156,7 @@ function asProcess(item: ListItem<any>): Process {
             Power/Temp
             </v-btn>
 
-            <v-btn class="px-5" large :value="1000">
+            <v-btn class="px-5" large :value="customPresetValue">
             Custom
             </v-btn>        
         </v-btn-toggle>
@@ -166,7 +178,7 @@ function asProcess(item: ListItem<any>): Process {
         </v-col>
 
         <v-col cols="9" class="d-flex justify-center align-center">    
-        <hotkey-button :action="cyclePresetAction"></hotkey-button>
+        <hotkey-button :action="Action.CyclePreset"></hotkey-button>
         </v-col>  
     </v-row>
     </v-card>
@@ -204,7 +216,7 @@ function asProcess(item: ListItem<any>): Process {
         </v-col>
 
         <v-col cols="9" class="d-flex justify-center align-center">
-        <hotkey-button :action="toggleCaptureAction"></hotkey-button>
+        <hotkey-button :action="Action.ToggleCapture"></hotkey-button>
         </v-col>
     </v-row>
 
@@ -222,7 +234,7 @@ function asProcess(item: ListItem<any>): Process {
             large
             color="secondary"
             class="px-6"
-            @click="handleExploreClick"
+            @click="handleCaptureExplore"
         >Open in Explorer</v-btn>
         </v-col>
     </v-row>
