@@ -1,6 +1,45 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
+import { type Process } from '@/core/process';
+import { type ListItem } from 'vuetify/lib/composables/list-items.mjs';
 
+// match autocomplete typed text if substring of window name or process name or pid
+function selectFilter(item: Process, query: string) {
+    const winText = item.windowName?.toLowerCase();
+    if (winText && winText.indexOf(query) > -1) {
+        return true;
+    }
+    return item.name.toLowerCase().indexOf(query) > -1 ||
+        item.pid.toString().indexOf(query) > -1;
+}
+// truncate long process/window names by eliding the middle part
+function makeSelectorName(winName: string): string {
+    const maxLen = 73;
+    const leading = 30;
+    const trailing = 40;
+    if (winName.length > maxLen) {
+     return winName.substr(0, leading) + '...' + winName.substr(-trailing);
+    }
+    else {
+        return winName;
+    }
+}
+
+
+// placeholders here
+const pid = ref<number|null>(null)
+const enableAutotargetting = ref(false)
+function processes(): Process[] {
+    return [
+        {pid: 21, name: "twenty-one.exe", windowName: "Twenty One"},
+        {pid: 22, name: "twenty-two.exe", windowName: "Twenty Two"},
+        {pid: 23, name: "twenty-three.exe", windowName: "Twenty Three"},
+    ]
+}
+function refreshProcessList() {}
+function asProcess(item: ListItem<any>): Process {
+    return item as unknown as Process
+}
 </script>
 
 <template>
@@ -28,32 +67,32 @@ import { ref } from 'vue'
             clearable
             dense
         >
-            <template v-slot:selection="data">
-            <template v-if="data.item.windowName">
-                {{ makeSelectorName(data.item.windowName) }} 
-                <span class="pid-node-inline">[{{ data.item.pid }}]</span>
-            </template>            
-            <template v-else>
-                <div>
-                {{ data.item.name }}
-                <span class="pid-node">[{{ data.item.pid }}]</span>
-                </div>
+            <template v-slot:selection="{item, index}: {item:ListItem<Process>, index:number}">
+                <template v-if="item.raw.windowName">
+                    {{ makeSelectorName(item.raw.windowName) }} 
+                    <span class="pid-node-inline">[{{ item.raw.pid }}]</span>
+                </template>            
+                <template v-else>
+                    <div>
+                    {{ item.raw.name }}
+                    <span class="pid-node">[{{ item.raw.pid }}]</span>
+                    </div>
+                </template>
             </template>
-            </template>
-            <template v-slot:item="data">            
-            <template v-if="data.item.windowName">
-                <v-list-item-content>
-                <v-list-item-title>{{ makeSelectorName(data.item.windowName) }}</v-list-item-title>
-                <v-list-item-subtitle>
-                    {{ data.item.name }}
-                    <span class="pid-node">[{{ data.item.pid }}]</span>
-                </v-list-item-subtitle>
-                </v-list-item-content>
-            </template>
-            <template v-else>
-                {{ data.item.name }}
-                <span class="pid-node-inline">[{{ data.item.pid }}]</span>
-            </template>
+            <template v-slot:item="{item, props, index}: {item:ListItem<Process>, props:any, index:number}">
+                <v-list-item v-if="item.raw.windowName" v-bind="props">
+                    <v-list-item-title>{{ makeSelectorName(item.raw.windowName) }}</v-list-item-title>
+                    <v-list-item-subtitle>
+                        {{ item.raw.name }}
+                        <span class="pid-node">[{{ item.raw.pid }}]</span>
+                    </v-list-item-subtitle>
+                </v-list-item>
+                <v-list-item v-else v-bind="props">
+                    <v-list-item-title>{{ makeSelectorName(item.raw.name) }}</v-list-item-title>
+                    <v-list-item-subtitle>
+                        <span class="pid-node">[{{ item.raw.pid }}]</span>
+                    </v-list-item-subtitle>
+                </v-list-item>
             </template>
         </v-autocomplete>
         </v-col>
