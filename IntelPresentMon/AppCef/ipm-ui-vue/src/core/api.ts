@@ -1,17 +1,14 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-import { Metric } from '@/core/metric'
-import { Stat } from './stat'
-import { Unit } from './unit'
-import { Process } from '@/core/process'
-import { Adapter } from './adapter'
-import { Spec } from '@/core/spec'
-import { Binding, KeyOption, ModifierOption, Action } from '@/core/hotkey'
-import { EnvVars } from './env-vars'
+import { type Metric } from '@/core/metric'
+import { type Stat } from './stat'
+import { type Unit } from './unit'
+import { type Process } from '@/core/process'
+import { type Adapter } from './adapter'
+import { type Spec } from '@/core/spec'
+import { type Binding, type KeyOption, type ModifierOption, Action } from '@/core/hotkey'
+import { type EnvVars } from './env-vars'
 import { delayFor } from './timing'
-
-
-/* eslint-disable no-explicit-any */
 
 export enum FileLocation {
     Install,

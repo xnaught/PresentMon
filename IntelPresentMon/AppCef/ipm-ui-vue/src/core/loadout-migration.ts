@@ -1,10 +1,10 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-import { Signature, compareVersions } from "./signature";
-import { LoadoutFile, signature } from "./loadout";
-import { Widget, WidgetType } from "./widget";
-import { Readout, migrateReadout } from "./readout";
-import { Graph, migrateGraph } from "./graph";
+import { type Signature, compareVersions } from "./signature";
+import { type LoadoutFile, signature } from "./loadout";
+import { type Widget, WidgetType } from "./widget";
+import { type Readout, migrateReadout } from "./readout";
+import { type Graph, migrateGraph } from "./graph";
 
 
 export function migrateLoadout(file: LoadoutFile): void {

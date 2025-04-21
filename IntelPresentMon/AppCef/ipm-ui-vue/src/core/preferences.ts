@@ -1,9 +1,9 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-import { Binding } from "./hotkey";
-import { Signature } from "./signature";
+import { type Binding } from "./hotkey";
+import { type Signature } from "./signature";
 import { OverlayPosition } from "./overlay-position";
-import { RgbaColor } from "./color";
+import { type RgbaColor } from "./color";
 import { compareVersions } from "./signature";
 
 

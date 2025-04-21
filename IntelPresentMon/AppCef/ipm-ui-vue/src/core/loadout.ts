@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-import { Signature } from "./signature";
-import { Widget } from "./widget";
+import { type Signature } from "./signature";
+import { type Widget } from "./widget";
 
 export interface LoadoutFile {
     signature: Signature;

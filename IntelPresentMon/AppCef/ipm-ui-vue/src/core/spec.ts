@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-import { Preferences } from "./preferences";
-import { Widget } from "./widget";
+import { type Preferences } from "./preferences";
+import { type Widget } from "./widget";
 
 export interface Spec {
   pid: number|null;

@@ -1,10 +1,10 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-import { RgbaColor } from "./color"
+import { type RgbaColor } from "./color"
 import { compareVersions } from "./signature";
-import { Widget, WidgetType, GenerateKey } from './widget'
+import { type Widget, WidgetType, generateKey } from './widget'
 import { makeDefaultWidgetMetric } from "./widget-metric";
-import { QualifiedMetric } from "./qualified-metric";
+import { type QualifiedMetric } from "./qualified-metric";
 
 export interface Graph extends Widget {
     height: number;
@@ -31,7 +31,7 @@ export interface Graph extends Widget {
 
 export function makeDefaultGraph(metric: QualifiedMetric|null = null): Graph {
     return {
-        key: GenerateKey(),
+        key: generateKey(),
         metrics: [makeDefaultWidgetMetric(metric)],
         widgetType: WidgetType.Graph,
         height: 80,

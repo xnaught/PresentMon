@@ -1,8 +1,8 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-import { Graph } from './graph'
-import { Readout } from './readout'
-import { WidgetMetric, RegenerateKeys as RegenerateMetricKeys } from './widget-metric';
+import { type Graph } from './graph'
+import { type Readout } from './readout'
+import { type WidgetMetric, regenerateKeys as regenerateMetricKeys } from './widget-metric';
 
 export enum WidgetType {
     Graph,
@@ -17,29 +17,29 @@ export interface Widget {
 
 let nextKey = 0;
 
-export function GenerateKey(): number {
+export function generateKey(): number {
     return nextKey++;
 }
 
-export function ResetKeySequence(): void {
+export function resetKeySequence(): void {
     nextKey = 0;
 }
 
-export function RegenerateKeys(w: Widget): void {
+export function regenerateKeys(w: Widget): void {
     for (const m of w.metrics) {
-        RegenerateMetricKeys(m);
+        regenerateMetricKeys(m);
     }
-    w.key = GenerateKey();
+    w.key = generateKey();
 }
 
-export function AsGraph(w: Widget): Graph {    
+export function asGraph(w: Widget): Graph {    
     if (w.widgetType !== WidgetType.Graph) {
         throw new Error(`Widget type [${WidgetType[w.widgetType]}] accessed as Graph`);
     }
     return w as Graph;
 }
 
-export function AsReadout(w: Widget): Readout {    
+export function asReadout(w: Widget): Readout {    
     if (w.widgetType !== WidgetType.Readout) {
         throw new Error(`Widget type [${WidgetType[w.widgetType]}] accessed as Readout`);
     }

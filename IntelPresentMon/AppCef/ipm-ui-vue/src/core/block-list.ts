@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 import { Api, FileLocation } from "./api";
-import { GetEnvVars } from "./env-vars";
+import { getEnvVars } from "./env-vars";
 
 var targetBlocklist:Set<string> = new Set();
 
@@ -22,8 +22,8 @@ function constructSetFromString(text: string): Set<string> {
     return lineSet;
   }
 
-export async function LoadBlocklists(): Promise<void> {
-    const env = await GetEnvVars();
+export async function loadBlocklists(): Promise<void> {
+    const env = await getEnvVars();
     if (env.useDebugBlocklist) {
       // try loading default block list from debug directory
       try {
@@ -53,11 +53,11 @@ export async function LoadBlocklists(): Promise<void> {
     targetBlocklist.clear();
 }
 
-export function IsBlocked(process: string): boolean {
+export function isBlocked(process: string): boolean {
     const s = targetBlocklist;
     return targetBlocklist.has(process.toLowerCase());
 }
 
-export function GetBlocklist(): string[] {
+export function getBlocklist(): string[] {
     return Array.from(targetBlocklist);
 }

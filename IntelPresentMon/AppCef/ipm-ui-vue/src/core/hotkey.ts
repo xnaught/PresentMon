@@ -1,6 +1,6 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-import { Distinct } from "./meta";
+import { type Distinct } from "./meta";
 
 export enum Action {
     ToggleCapture,

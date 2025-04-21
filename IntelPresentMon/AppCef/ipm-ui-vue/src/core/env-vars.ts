@@ -7,15 +7,19 @@ export interface EnvVars {
 
 var vars:EnvVars|null = null;
 
-export async function GetEnvVars(): Promise<EnvVars> {
+export async function getEnvVars(): Promise<EnvVars> {
     if (vars === null) {
         vars = await Api.loadEnvVars()
     }
     return vars;
 }
 
-export function IsDevelopment(): boolean {
-    if (process?.env?.NODE_ENV === 'development') {
+export function isDevBuild(): boolean {
+    return import.meta.env.DEV
+}
+
+export function isDevelopment(): boolean {
+    if (isDevBuild()) {
         return true;
     }
     return vars !== null && vars.enableDevMode;

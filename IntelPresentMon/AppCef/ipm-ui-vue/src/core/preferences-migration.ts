@@ -1,7 +1,7 @@
 // Copyright (C) 2024 Intel Corporation
 // SPDX-License-Identifier: MIT
 import { compareVersions } from "./signature";
-import { PreferenceFile, signature, migratePreferences as migrate } from "./preferences";
+import { type PreferenceFile, signature, migratePreferences as migrate } from "./preferences";
 
 
 export function migratePreferences(file: PreferenceFile): void {

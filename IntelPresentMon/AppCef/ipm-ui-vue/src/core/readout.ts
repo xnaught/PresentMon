@@ -1,9 +1,9 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-import { Widget, WidgetType, GenerateKey } from './widget'
+import { type Widget, WidgetType, generateKey } from './widget'
 import { makeDefaultWidgetMetric } from './widget-metric';
-import { QualifiedMetric } from './qualified-metric';
-import { RgbaColor } from './color';
+import { type QualifiedMetric } from './qualified-metric';
+import { type RgbaColor } from './color';
 import { compareVersions } from './signature';
 
 export interface Readout extends Widget {
@@ -15,7 +15,7 @@ export interface Readout extends Widget {
 
 export function makeDefaultReadout(metric: QualifiedMetric|null = null): Readout {
     return {
-        key: GenerateKey(),
+        key: generateKey(),
         metrics: [makeDefaultWidgetMetric(metric)],
         widgetType: WidgetType.Readout,
         showLabel: true,

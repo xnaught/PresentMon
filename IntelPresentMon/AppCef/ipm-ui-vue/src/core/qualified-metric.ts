@@ -1,6 +1,6 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-import { Metric } from "./metric"
+import { type Metric } from "./metric"
 
 // fully-specified metric that can be used as a query element
 export interface QualifiedMetric {

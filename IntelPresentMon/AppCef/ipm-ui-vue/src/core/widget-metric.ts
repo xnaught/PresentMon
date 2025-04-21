@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-import { RgbaColor } from './color'
-import { QualifiedMetric, makeDefaultQualifiedMetric } from './qualified-metric';
+import { type RgbaColor } from './color'
+import { type QualifiedMetric, makeDefaultQualifiedMetric } from './qualified-metric';
 
 export enum AxisAffinity {
     Left,
@@ -20,21 +20,21 @@ export interface WidgetMetric {
 
 let nextKey = 0;
 
-function GenerateKey(): number {
+function generateKey(): number {
     return nextKey++;
 }
 
-export function ResetKeySequence(): void {
+export function resetKeySequence(): void {
     nextKey = 0;
 }
 
-export function RegenerateKeys(m: WidgetMetric): void {
-    m.key = GenerateKey();
+export function regenerateKeys(m: WidgetMetric): void {
+    m.key = generateKey();
 }
 
 export function makeDefaultWidgetMetric(qualifiedMetric: QualifiedMetric|null = null): WidgetMetric {
     return {
-        key: GenerateKey(),
+        key: generateKey(),
         metric: qualifiedMetric ?? makeDefaultQualifiedMetric(),
         lineColor: {
           r: 100,

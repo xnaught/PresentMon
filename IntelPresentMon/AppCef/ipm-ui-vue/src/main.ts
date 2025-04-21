@@ -12,8 +12,9 @@ import '@fontsource/roboto/index.css'
 
 import App from '@/App.vue'
 import router from '@/router'
+import { isDevBuild } from './core/env-vars'
 
-if (import.meta.env.DEV) {
+if (isDevBuild()) {
     const script = document.createElement('script');
     script.src = 'http://localhost:8098';
     document.head.appendChild(script);

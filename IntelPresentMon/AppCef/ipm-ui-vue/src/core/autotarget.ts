@@ -1,17 +1,17 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-import { dispatchDelayedTask, DelayedTask, awaitDelayedPromise } from "./timing";
-import { Process } from "./process";
+import { dispatchDelayedTask, type DelayedTask, awaitDelayedPromise } from "./timing";
+import { type Process } from "./process";
 import { Api } from "./api"
-import { GetBlocklist } from "./block-list";
-import { Preferences } from "@/store/preferences";
+import { getBlocklist } from "./block-list";
+//import { Preferences } from "@/store/preferences";
 
 var utilizationPollTask: DelayedTask<Promise<Process|null>>|null = null;
 
 export async function launchAutotargetting(): Promise<void> {
     const top = await doGpuUtilizationTopPolling(250);
     if (top !== null) {
-        Preferences.setPid(top.pid);
+        // Preferences.setPid(top.pid);
     }
 }
 
@@ -21,7 +21,7 @@ export async function doGpuUtilizationTopPolling(specifiedDelayMs: number): Prom
     // loop polling while result not received
     while (true) {
         utilizationPollTask = dispatchDelayedTask(async () => {
-            return await Api.getTopGpuProcess(GetBlocklist());        
+            return await Api.getTopGpuProcess(getBlocklist());        
         }, delayMs);
         const result = await awaitDelayedPromise(utilizationPollTask.promise);
         if (result !== null) {
