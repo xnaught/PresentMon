@@ -36,7 +36,7 @@ function isCustomPresetSelected(p:Preset): boolean {
 }
 
 
-// placeholders here
+// TODO placeholders
 const pid = ref<number|null>(null)
 const enableAutotargetting = ref(false)
 const selectedPreset = ref(Preset.Slot1)
