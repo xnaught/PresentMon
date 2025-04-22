@@ -78,9 +78,9 @@ function handleCaptureExplore() {}
             append-icon=""
             :disabled="enableAutotargetting"
             hide-details
-            outlined
             clearable
-            dense
+            density="compact"
+            variant="outlined"
         >
             <template v-slot:selection="{item, index}: {item:ListItem<Process>, index:number}">
                 <template v-if="item.raw.windowName">
@@ -146,20 +146,20 @@ function handleCaptureExplore() {}
         </v-col>
 
         <v-col cols="9" class="d-flex justify-center align-center">        
-        <v-btn-toggle v-model="selectedPreset" :mandatory="selectedPreset !== null">
-            <v-btn class="px-5" large>
+        <v-btn-toggle v-model="selectedPreset" :mandatory="selectedPreset !== null" variant="outlined" class="toggle-bg">
+            <v-btn class="px-5 border-thin" large>
             Basic
             </v-btn>
 
-            <v-btn class="px-5" large>
+            <v-btn class="px-5 border-thin" large>
             GPU Focus
             </v-btn>
 
-            <v-btn class="px-5" large>
+            <v-btn class="px-5 border-thin" large>
             Power/Temp
             </v-btn>
 
-            <v-btn class="px-5" large :value="customPresetValue">
+            <v-btn class="px-5 border-thin" large :value="customPresetValue">
             Custom
             </v-btn>        
         </v-btn-toggle>
@@ -204,8 +204,8 @@ function handleCaptureExplore() {}
             class="mt-4 ml-8"
             hide-details
             type="number"
-            outlined
-            dense
+            variant="outlined"
+            density="compact"
             hide-spin-buttons
         ></v-text-field>
         </v-col>
@@ -294,6 +294,9 @@ function handleCaptureExplore() {}
     i.v-icon.v-icon {
     color: inherit;
     }
+}
+.toggle-bg {
+    background-color: rgb(48, 48, 48);
 }
 </style>
 
