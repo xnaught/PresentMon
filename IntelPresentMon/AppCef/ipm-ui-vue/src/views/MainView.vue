@@ -5,6 +5,8 @@ import { type ListItem } from 'vuetify/lib/composables/list-items.mjs';
 import { Action } from '@/core/hotkey';
 import { Preset } from '@/core/preferences';
 
+defineOptions({name: 'MainView'})
+
 // magic number used to indicate that custom preset is selected
 const customPresetValue = 1000
 // match autocomplete typed text if substring of window name or process name or pid
