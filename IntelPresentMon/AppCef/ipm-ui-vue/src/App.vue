@@ -30,7 +30,9 @@ const cs = useCounterStore()
         </v-navigation-drawer>
 
         <v-main class="main-view">
-          <router-view />
+          <div class="d-flex justify-center">
+            <router-view />
+          </div>
         </v-main>
       </div>
 
