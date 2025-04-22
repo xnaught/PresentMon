@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
-import { type Process } from '@/core/process';
 import { type ListItem } from 'vuetify/lib/composables/list-items.mjs';
+import { type Process } from '@/core/process';
 import { Action } from '@/core/hotkey';
 import { Preset } from '@/core/preferences';
+import HotkeyButton from '@/components/HotkeyButton.vue';
 
 defineOptions({name: 'MainView'})
 
