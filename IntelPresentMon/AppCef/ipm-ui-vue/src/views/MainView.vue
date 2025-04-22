@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { type ListItem } from 'vuetify/lib/composables/list-items.mjs';
 import { type Process } from '@/core/process';
 import { Action } from '@/core/hotkey';
@@ -43,13 +43,12 @@ const enableAutotargetting = ref(false)
 const selectedPreset = ref(Preset.Slot1)
 const enableCaptureDuration = ref(false)
 const captureDuration = ref(1)
-function processes(): Process[] {
-    return [
-        {pid: 21, name: "twenty-one.exe", windowName: "Twenty One"},
-        {pid: 22, name: "twenty-two.exe", windowName: "Twenty Two"},
-        {pid: 23, name: "twenty-three.exe", windowName: "Twenty Three"},
-    ]
-}
+const processes = computed(() => [
+    {pid: 21, name: "twenty-one.exe", windowName: "Twenty One"},
+    {pid: 22, name: "twenty-two.exe", windowName: "Twenty Two"},
+    {pid: 23, name: "twenty-three.exe", windowName: "Twenty Three"},
+] as Process[])
+
 function refreshProcessList() {}
 function asProcess(item: ListItem<any>): Process {
     return item as unknown as Process

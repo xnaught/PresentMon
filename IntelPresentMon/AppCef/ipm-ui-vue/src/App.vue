@@ -10,7 +10,7 @@ const cs = useCounterStore()
     <div class="app-layout">
       <div class="content-row">
         <v-navigation-drawer
-          v-if="cs.isOpen"
+          v-if="false"
           permanent
           :width="180"
           color="#030308"
