@@ -16,7 +16,7 @@ const cs = useCounterStore()
           color="#030308"
           class="custom-drawer pt-3"
         >
-          <router-link :to="{ name: 'simple' }" class="nav-back">
+          <router-link :to="{ name: 'main' }" class="nav-back">
             <v-icon class="nav-back-arrow">mdi-arrow-left</v-icon> Top
           </router-link>
           <v-list nav>
