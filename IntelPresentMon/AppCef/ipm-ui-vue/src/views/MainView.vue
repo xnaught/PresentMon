@@ -46,7 +46,7 @@ const captureDuration = ref(1)
 const processes = computed(() => [
     {pid: 21, name: "twenty-one.exe", windowName: "Twenty One"},
     {pid: 22, name: "twenty-two.exe", windowName: "Twenty Two"},
-    {pid: 23, name: "twenty-three.exe", windowName: "Twenty Three"},
+    {pid: 23, name: "twenty-three.exe", windowName: null},
 ] as Process[])
 
 function refreshProcessList() {}
@@ -81,6 +81,7 @@ function handleCaptureExplore() {}
             clearable
             density="compact"
             variant="outlined"
+            color="primary"
         >
             <template v-slot:selection="{item, index}: {item:ListItem<Process>, index:number}">
                 <template v-if="item.raw.windowName">
@@ -90,23 +91,22 @@ function handleCaptureExplore() {}
                 <template v-else>
                     <div>
                     {{ item.raw.name }}
-                    <span class="pid-node">[{{ item.raw.pid }}]</span>
+                    <span class="pid-node-inline">[{{ item.raw.pid }}]</span>
                     </div>
                 </template>
             </template>
             <template v-slot:item="{item, props, index}: {item:ListItem<Process>, props:any, index:number}">
-                <v-list-item v-if="item.raw.windowName" v-bind="props">
-                    <v-list-item-title>{{ makeSelectorName(item.raw.windowName) }}</v-list-item-title>
+                <v-list-item v-if="item.raw.windowName" v-bind="props" :title="makeSelectorName(item.raw.windowName)">
                     <v-list-item-subtitle>
                         {{ item.raw.name }}
                         <span class="pid-node">[{{ item.raw.pid }}]</span>
                     </v-list-item-subtitle>
                 </v-list-item>
-                <v-list-item v-else v-bind="props">
-                    <v-list-item-title>{{ makeSelectorName(item.raw.name) }}</v-list-item-title>
-                    <v-list-item-subtitle>
-                        <span class="pid-node">[{{ item.raw.pid }}]</span>
-                    </v-list-item-subtitle>
+                <v-list-item v-else v-bind="props" :title="undefined">
+                    <v-list-item-title>
+                        {{ makeSelectorName(item.raw.name) }}
+                        <span class="pid-node-inline">[{{ item.raw.pid }}]</span>
+                    </v-list-item-title>
                 </v-list-item>
             </template>
         </v-autocomplete>
