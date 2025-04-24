@@ -64,7 +64,7 @@ function handleCaptureExplore() {}
     <v-row>
         <v-col cols="3">
         Process
-        <p class="text--secondary text-sm-caption mb-0">Application process to track, overlay and capture</p>
+        <p class="text-medium-emphasis text-caption mb-0">Application process to track, overlay and capture</p>
         </v-col>
         <v-col cols="9" class="d-flex align-center">
         <!-- todo mock the process reactives etc. -->
@@ -116,7 +116,7 @@ function handleCaptureExplore() {}
     <v-row dense>       
         <v-col cols="3">
         Auto-target
-        <p class="text--secondary text-sm-caption mb-0">Automatically target process with the highest GPU utilization</p>
+        <p class="text-medium-emphasis text-caption mb-0">Automatically target process with the highest GPU utilization</p>
         </v-col>
 
         <v-col cols="9" class="d-flex align-center">
@@ -128,7 +128,7 @@ function handleCaptureExplore() {}
     <v-row dense>       
         <v-col cols="3">
         Overlay Hotkey
-        <p class="text--secondary text-sm-caption mb-0">Set hotkey to toggle overlay on/off</p>
+        <p class="text-medium-emphasis text-caption mb-0">Set hotkey to toggle overlay on/off</p>
         </v-col>
 
         <v-col cols="9" class="d-flex justify-center align-center">
@@ -142,7 +142,7 @@ function handleCaptureExplore() {}
     <v-row>       
         <v-col cols="3">
         Preset
-        <p class="text--secondary text-sm-caption mb-0">Select a preset configuration for overlay widget loadout etc.</p>
+        <p class="text-medium-emphasis text-caption mb-0">Select a preset configuration for overlay widget loadout etc.</p>
         </v-col>
 
         <v-col cols="9" class="d-flex justify-center align-center">        
@@ -177,7 +177,7 @@ function handleCaptureExplore() {}
     <v-row dense>       
         <v-col cols="3">
         Preset Cycle Hotkey
-        <p class="text--secondary text-sm-caption mb-0">Set hotkey for cycling through presets</p>
+        <p class="text-medium-emphasis text-caption mb-0">Set hotkey for cycling through presets</p>
         </v-col>
 
         <v-col cols="9" class="d-flex justify-center align-center">    
@@ -191,7 +191,7 @@ function handleCaptureExplore() {}
     <v-row>
         <v-col cols="3">
         Capture Duration
-        <p class="text--secondary text-sm-caption mb-0">Automatically stop capture after N seconds</p>
+        <p class="text-medium-emphasis text-caption mb-0">Automatically stop capture after N seconds</p>
         </v-col>      
         <v-col cols="2">
             <v-switch v-model="enableCaptureDuration" color="primary" label="Enable" hide-details></v-switch>
@@ -216,7 +216,7 @@ function handleCaptureExplore() {}
     <v-row dense>       
         <v-col cols="3">
         Capture Hotkey
-        <p class="text--secondary text-sm-caption mb-0">Set hotkey for capture of per-frame performance data as CSV</p>
+        <p class="text-medium-emphasis text-caption mb-0">Set hotkey for capture of per-frame performance data as CSV</p>
         </v-col>
 
         <v-col cols="9" class="d-flex justify-center align-center">
@@ -230,7 +230,7 @@ function handleCaptureExplore() {}
     <v-row>       
         <v-col cols="3">
         Capture Storage
-        <p class="text--secondary text-sm-caption mb-0">Open the folder containing all frame traces and stats summaries</p>
+        <p class="text-medium-emphasis text-caption mb-0">Open the folder containing all frame traces and stats summaries</p>
         </v-col>
 
         <v-col cols="9" class="d-flex justify-center align-center">
