@@ -78,12 +78,12 @@ defineExpose({ show })
   <v-dialog
     v-model="active"
     max-width="680"
-    overlay-color="white"
+    overlay-color="black"
     persistent
   >
     <v-card>
       <v-card-title>
-        <span class="text-h6 grey--text">Hotkey for <span class="blue--text text--lighten-3">{{ name }}</span></span>
+        <span class="text-h6 text-grey">Hotkey for <span class="text-blue-lighten-3">{{ name }}</span></span>
       </v-card-title>
       <v-card-text>
         <v-row>
@@ -120,7 +120,7 @@ defineExpose({ show })
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn
-            color="red darken-2"
+            color="red-darken-2"
             text
             @click="clear"
             :disabled="!combinationSet"
@@ -128,7 +128,7 @@ defineExpose({ show })
             Clear
           </v-btn>
           <v-btn
-            color="white darken-3"
+            color="white-darken-3"
             text
             @click="cancel"
           >

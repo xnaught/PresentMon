@@ -59,7 +59,7 @@ const hotkeyCombination = ref<Combination|null>(null)
             {{ getHotkeyKeyName(hotkeyCombination.key) }}
         </div>
     </div>
-    <div v-else class="hot-combo-message">
+    <div v-else class="text-grey">
         Select hotkey chord
     </div>
 
@@ -88,9 +88,6 @@ const hotkeyCombination = ref<Combination|null>(null)
     background-color: hsl(240, 1%, 18%);
     border-color: color-mix(in srgb, var(--v-theme-secondary) 80%, white);
   }
-}
-.hot-combo-message {
-  color: color-mix(in srgb, var(--v-theme-secondary) 80%, white);
 }
 .hot-combo {
   display: flex;

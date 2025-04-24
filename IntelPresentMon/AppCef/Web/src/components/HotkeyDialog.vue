@@ -5,12 +5,11 @@
   <v-dialog
     v-model="active"
     max-width="680"
-    overlay-color="white"
     persistent
   >
     <v-card>
       <v-card-title>
-        <span class="text-h6 grey--text">Hotkey for <span class="blue--text text--lighten-3">{{ name }}</span></span>
+        <span class="text-h6 text-grey">Hotkey for <span class="text-blue-lighten-3">{{ name }}</span></span>
       </v-card-title>
       <v-card-text>
         <v-row>
