@@ -3,7 +3,6 @@
 <script lang="ts" setup>
 import { ref, computed, watch } from 'vue';
 import type { Combination, KeyOption, ModifierOption, ModifierCode, KeyCode } from '@/core/hotkey';
-import { Action } from '@/core/hotkey';
 import HotkeyDialog from '@/components/HotkeyDialog.vue';
 import { useHotkeyStore } from '@/stores/hotkey';
 
@@ -93,11 +92,12 @@ defineExpose({ show })
               :items="modifierOptions"
               v-model="modifiers_"
               label="Modifiers"
-              item-text="text"
+              item-title="text"
               item-value="code"
-              outlined
+              variant="outlined"
               multiple
               hide-details
+              color="primary"
             >
             </v-select>
           </v-col>
@@ -106,11 +106,12 @@ defineExpose({ show })
               :items="keyOptions"
               v-model="key_"
               label="Key"
-              item-text="text"
+              item-title="text"
               item-value="code"
-              outlined
+              variant="outlined"
               clearable
               hide-details
+              color="primary"
             >
             </v-select>
           </v-col>

@@ -13,6 +13,7 @@ import '@fontsource/roboto/index.css'
 import App from '@/App.vue'
 import router from '@/router'
 import { isDevBuild } from './core/env-vars'
+import { md2 } from 'vuetify/blueprints'
 
 if (isDevBuild()) {
     const script = document.createElement('script');
@@ -21,7 +22,26 @@ if (isDevBuild()) {
 }
 
 const vuetify = createVuetify({
-    theme: { defaultTheme: 'dark' },
+    blueprint: md2,
+    theme: {
+        defaultTheme: 'customDark',
+        themes: {
+            customDark: {
+                dark: true,
+                colors: {
+                    primary: '#1976D2',   // Vuetify 2 blue
+                    secondary: '#424242', // Vuetify 2 grey
+                    accent: '#82B1FF',
+                    error: '#FF5252',
+                    info: '#2196F3',
+                    success: '#4CAF50',
+                    warning: '#FFC107',
+                    background: '#121212',
+                    surface: '#1E1E1E',
+                },
+            },
+        },
+    },
 })
 
 const app = createApp(App)

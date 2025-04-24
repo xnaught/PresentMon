@@ -1,8 +1,16 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useCounterStore } from '@/stores/counter'; 
+import { useHotkeyStore } from './stores/hotkey';
 
+// === Stores ===
 const cs = useCounterStore()
+const hotkeys = useHotkeyStore()
+
+// === Lifecycle hooks ===
+onMounted(async () => {
+  await hotkeys.refreshOptions()
+})
 </script>
 
 <template>
@@ -10,7 +18,7 @@ const cs = useCounterStore()
     <div class="app-layout">
       <div class="content-row">
         <v-navigation-drawer
-          v-if="false"
+          v-if="cs.isOpen"
           permanent
           :width="180"
           color="#030308"
@@ -126,12 +134,7 @@ const cs = useCounterStore()
   font-size: 16px;
 }
 
-.v-list-item:hover {
-  background-color: #0d0e0f;
-}
-
 .v-list-item--active {
-  background-color: #011627;
-  font-weight: 500;
+  font-weight: 400;
 }
 </style>

@@ -64,7 +64,7 @@ const hotkeyCombination = ref<Combination|null>(null)
     </div>
 
     <hotkey-dialog
-        ref="dialog"
+        ref="dialogRef"
         :name="actionName"
         v-model="hotkeyCombination"
     ></hotkey-dialog>
@@ -79,29 +79,29 @@ const hotkeyCombination = ref<Combination|null>(null)
   height: 50px;
   padding: 10px 10px;
   border-radius: 5px;
-  border: solid var(--v-secondary-lighten1) 2px;
+  border: solid rgb(var(--v-theme-secondary)) 2px;
   margin: 0;
   user-select: none;
   cursor: pointer;
   transition: border-color .4s;
   &:hover {
     background-color: hsl(240, 1%, 18%);
-    border-color: var(--v-secondary-lighten5);
+    border-color: color-mix(in srgb, var(--v-theme-secondary) 80%, white);
   }
 }
 .hot-combo-message {
-    color: var(--v-secondary-lighten2)
+  color: color-mix(in srgb, var(--v-theme-secondary) 80%, white);
 }
 .hot-combo {
   display: flex;
-  color: var(--v-primary-base);
+  color: rgb(var(--v-theme-primary));
   font-size: 12px
 }
 .hot-mod {
   display: flex;
 }
 .hot-key {
-  border: solid var(--v-primary-base) 1.5px;
+  border: solid rgb(var(--v-theme-primary)) 1.5px;
   padding: 2px 7px;
   border-radius: 5px;
   min-width: 30px;
