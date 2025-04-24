@@ -146,20 +146,20 @@ function handleCaptureExplore() {}
         </v-col>
 
         <v-col cols="9" class="d-flex justify-center align-center">        
-        <v-btn-toggle v-model="selectedPreset" :mandatory="selectedPreset !== null" variant="outlined" class="toggle-bg">
-            <v-btn class="px-5 border-thin" large>
+        <v-btn-toggle v-model="selectedPreset" :mandatory="selectedPreset !== null" variant="outlined" divided>
+            <v-btn class="px-5" large>
             Basic
             </v-btn>
 
-            <v-btn class="px-5 border-thin" large>
+            <v-btn class="px-5" large>
             GPU Focus
             </v-btn>
 
-            <v-btn class="px-5 border-thin" large>
+            <v-btn class="px-5" large>
             Power/Temp
             </v-btn>
 
-            <v-btn class="px-5 border-thin" large :value="customPresetValue">
+            <v-btn class="px-5" large :value="customPresetValue">
             Custom
             </v-btn>        
         </v-btn-toggle>
@@ -288,9 +288,6 @@ function handleCaptureExplore() {}
     i.v-icon.v-icon {
     color: inherit;
     }
-}
-.toggle-bg {
-    background-color: rgb(48, 48, 48);
 }
 </style>
 
