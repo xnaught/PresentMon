@@ -99,6 +99,7 @@ const hotkeyCombination = ref<Combination|null>(null)
 }
 .hot-mod {
   display: flex;
+  align-items: center;
 }
 .hot-key {
   border: solid rgb(var(--v-theme-primary)) 1.5px;
