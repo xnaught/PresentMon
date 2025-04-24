@@ -120,7 +120,7 @@ function handleCaptureExplore() {}
         </v-col>
 
         <v-col cols="9" class="d-flex align-center">
-        <v-switch v-model="enableAutotargetting" label="Enable" hide-details></v-switch>
+        <v-switch v-model="enableAutotargetting" label="Enable" color="primary" hide-details></v-switch>
         </v-col>
     </v-row>   
     
@@ -194,7 +194,7 @@ function handleCaptureExplore() {}
         <p class="text--secondary text-sm-caption mb-0">Automatically stop capture after N seconds</p>
         </v-col>      
         <v-col cols="2">
-            <v-switch v-model="enableCaptureDuration" label="Enable" hide-details></v-switch>
+            <v-switch v-model="enableCaptureDuration" color="primary" label="Enable" hide-details></v-switch>
         </v-col>
         <v-col cols="3">
         <v-text-field
@@ -206,6 +206,7 @@ function handleCaptureExplore() {}
             type="number"
             variant="outlined"
             density="compact"
+            color="primary"
             hide-spin-buttons
         ></v-text-field>
         </v-col>
