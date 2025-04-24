@@ -1,3 +1,4 @@
+/* scrollbar settings */
 html, body {
     height: 100%;
     margin: 0;
@@ -21,4 +22,10 @@ html, body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: white;
+}
+
+/* global vuetify 3 overrides */
+.v-btn.v-btn.v-btn--disabled.v-btn--disabled {
+    color: gray !important;
+    background-color: black !important;
 }

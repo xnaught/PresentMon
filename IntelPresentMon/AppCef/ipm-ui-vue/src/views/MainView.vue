@@ -31,10 +31,6 @@ function makeSelectorName(winName: string): string {
         return winName;
     }
 }
-// test whether selected preset is the "custom" one
-function isCustomPresetSelected(p:Preset): boolean {
-    return p === customPresetValue
-}
 
 
 // TODO placeholders
@@ -54,6 +50,9 @@ function asProcess(item: ListItem<any>): Process {
     return item as unknown as Process
 }
 function handleCaptureExplore() {}
+const isCustomPresetSelected = computed(() =>
+    selectedPreset.value == customPresetValue
+)
 </script>
 
 
