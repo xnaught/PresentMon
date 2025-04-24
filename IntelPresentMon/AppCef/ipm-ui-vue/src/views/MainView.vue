@@ -273,13 +273,6 @@ function handleCaptureExplore() {}
 .page-wrap {
     max-width: 1024px;
 }
-.stepper-hilight.stepper-hilight.stepper-hilight.stepper-hilight {
-    border:1px solid white;
-    box-shadow:
-    0 0 2px 1px hsl(125, 100%, 88%),  /* inner white */
-    0 0 6px 4px hsl(84, 100%, 59%), /* middle green */
-    0 0 9px 5px hsl(266, 100%, 59%); /* outer cyan */
-}
 .hilight-info {
     color: greenyellow;
 }
