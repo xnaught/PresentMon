@@ -1,26 +1,29 @@
 <script setup lang="ts">
-import { ref, computed, defineProps, defineEmits } from 'vue';
+import { ref, computed, watchEffect } from 'vue';
 import type { RgbaColor } from '@/core/color';
 import { makeCssString } from '@/core/color';
 
 defineOptions({name: 'ColorPicker'})
-
-defineProps({
-  label: { type: String, default: '' },
-  color: { type: Object as () => RgbaColor },
-  minimal: { type: Boolean, default: false },
-});
-
-defineEmits(['update']);
+interface Props {
+  label?: string,
+  modelValue: RgbaColor,
+  minimal?: boolean,
+}
+const props = withDefaults(defineProps<Props>(), {
+  label: '', minimal: false
+})
+const emit = defineEmits<{
+  (e: 'update:modelValue', val: RgbaColor): void
+}>()
 
 const menuActive = ref(false);
-
-const swatchStyle = computed(() => {
-  const c = defineProps().color;
-  return {
-    backgroundColor: makeCssString(c),
-  };
-});
+const color = ref<RgbaColor>(props.modelValue)
+watchEffect(() => {
+  color.value = props.modelValue
+})
+const swatchStyle = computed(() => ({
+    backgroundColor: makeCssString(props.modelValue),
+}));
 </script>
 
 <template>
@@ -28,12 +31,12 @@ const swatchStyle = computed(() => {
     <v-card-text class="d-flex flex-column align-center" :class="{'pa-0': minimal}">
       <label v-if="label.length > 0" class="v-label pb-3">{{ label }}</label>
       <v-menu v-model="menuActive" top :close-on-content-click="false">
-        <template v-slot:activator="{ on }">
-          <div class="swatch" :style="swatchStyle" v-on="on"></div>
+        <template v-slot:activator="{ props }">
+          <div class="swatch" :style="swatchStyle" v-bind="props"></div>
         </template>
         <v-card>
           <v-card-text class="pa-0">
-            <v-color-picker @input="$emit('update', $event)" :value="color" flat></v-color-picker>
+            <v-color-picker @update:model-value="c => emit('update:modelValue', c)" :modelValue="color" flat></v-color-picker>
           </v-card-text>
         </v-card>
       </v-menu>

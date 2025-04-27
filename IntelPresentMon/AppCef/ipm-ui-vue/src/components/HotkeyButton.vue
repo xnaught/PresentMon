@@ -5,7 +5,7 @@ import { computed } from 'vue';
 import { ref, nextTick } from 'vue';
 import type { Combination, ModifierCode, KeyCode } from '@/core/hotkey';
 import { Action } from '@/core/hotkey';
-import HotkeyDialog from '@/components/HotkeyDialog.vue';
+import HotkeyDialog from './HotkeyDialog.vue';
 import { useHotkeyStore } from '@/stores/hotkey';
 
 // options

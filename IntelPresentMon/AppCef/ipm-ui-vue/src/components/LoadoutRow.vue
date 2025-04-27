@@ -4,7 +4,7 @@ import type { Widget } from '@/core/widget';
 import type { Metric } from '@/core/metric';
 import type { MetricOption } from '@/core/metric-option';
 import type { Stat } from '@/core/stat';
-import LoadoutLine from '@/components/LoadoutLine.vue';
+import LoadoutLine from './LoadoutLine.vue';
 import { Loadout } from '@/store/loadout';
 import type { WidgetMetric } from '@/core/widget-metric';
 

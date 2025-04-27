@@ -3,7 +3,6 @@
 <script lang="ts" setup>
 import { ref, computed, watch } from 'vue';
 import type { Combination, KeyOption, ModifierOption, ModifierCode, KeyCode } from '@/core/hotkey';
-import HotkeyDialog from '@/components/HotkeyDialog.vue';
 import { useHotkeyStore } from '@/stores/hotkey';
 
 // options
@@ -16,8 +15,6 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'update:modelValue', val: Combination | null): void
 }>()
-// element refs
-const dialogRef = ref<InstanceType<typeof HotkeyDialog>|null>(null)
 // stores
 const hotkeys = useHotkeyStore()
 // state

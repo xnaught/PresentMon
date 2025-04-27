@@ -1,26 +1,26 @@
 <script setup lang="ts">
 import Sortable from 'sortablejs';
-import { Preferences } from '@/store/preferences';
 import type { Preferences as PrefType } from '@/core/preferences';
-import { Loadout } from '@/store/loadout';
-import { Introspection } from '@/store/introspection';
 import type { Metric } from '@/core/metric';
 import type { Stat } from '@/core/stat';
 import type { Widget } from '@/core/widget';
 import { Api } from '@/core/api';
-import { Notifications } from '@/store/notifications';
 import LoadoutRow from '@/components/LoadoutRow.vue';
 import type { MetricOption } from '@/core/metric-option';
+import { Preferences } from '@/store/preferences';
+import { Loadout } from '@/store/loadout';
+import { Introspection } from '@/store/introspection';
+import { Notifications } from '@/store/notifications';
 
 import { ref } from 'vue';
 
 defineOptions({name: 'LoadoutConfigView'})
 
-const widgets = ref([]);
-const stats = ref([]);
-const metrics = ref([]);
-const metricOptions = ref([]);
-const activeAdapterId = ref(null);
+const widgets = ref<Widget[]>([]);
+const stats = ref<Stat[]>([]);
+const metrics = ref<Metric[]>([]);
+const metricOptions = ref<MetricOption[]>([]);
+const activeAdapterId = ref<number|null>(null);
 
 const save = () => {
   console.log('Save called');
