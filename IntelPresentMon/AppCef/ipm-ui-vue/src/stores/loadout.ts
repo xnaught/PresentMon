@@ -7,7 +7,7 @@ import { signature, type LoadoutFile } from '@/core/loadout'
 import type { QualifiedMetric } from '@/core/qualified-metric'
 import { makeDefaultGraph, type Graph } from '@/core/graph'
 
-export const useHotkeyStore = defineStore('loadout', () => {
+export const useLoadoutStore = defineStore('loadout', () => {
     // === State ===
     const widgets = ref<Widget[]>([])
     const debounceToken = ref<number|null>(null)
