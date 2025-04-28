@@ -17,6 +17,7 @@ const emit = defineEmits<{
 }>()
 
 const menuActive = ref(false);
+// TODO: try computed from prop instead of local ref data + watcher
 const color = ref<RgbaColor>(props.modelValue)
 watchEffect(() => {
   color.value = props.modelValue

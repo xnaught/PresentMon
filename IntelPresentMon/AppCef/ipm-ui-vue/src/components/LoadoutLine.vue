@@ -1,47 +1,52 @@
 <script setup lang="ts">
-import { ref, computed, defineProps, defineEmits } from 'vue';
-import type { Widget, WidgetType } from '@/core/widget';
+import { ref, computed } from 'vue';
+import { type Widget, WidgetType } from '@/core/widget';
 import type { Metric } from '@/core/metric';
 import type { MetricOption } from '@/core/metric-option';
 import type { QualifiedMetric } from '@/core/qualified-metric';
 import type { Stat } from '@/core/stat';
-import { Loadout } from '@/store/loadout';
-import type { AxisAffinity, WidgetMetric } from '@/core/widget-metric';
+import { AxisAffinity } from '@/core/widget-metric';
 import ColorPicker from './ColorPicker.vue';
 import type { RgbaColor } from '@/core/color';
+import { asGraph } from '@/core/widget';
 
 defineOptions({name: 'LoadoutLine'})
+interface Props {
+  widgetIdx: number,
+  lineIdx: number,
+  widgets: Widget[],
+  metrics: Metric[],
+  stats: Stat[],
+  metricOptions: MetricOption[],
+  locked?: boolean,
+  adapterId: number|null,
+}
+const props = withDefaults(defineProps<Props>(), {
+  locked: false,
+})
+const emit = defineEmits<{
+  (e: 'add'): void,
+  (e: 'delete', val: number): void,
+  (e: 'clearMulti', val: number): void,
+}>()
 
-defineProps({
-  widgetIdx: { required: true, type: Number },
-  lineIdx: { required: true, type: Number },
-  widgets: { required: true, type: Array as () => Widget[] },
-  metrics: { required: true, type: Array as () => Metric[] },
-  stats: { required: true, type: Array as () => Stat[] },
-  metricOptions: { required: true, type: Array as () => MetricOption[] },
-  locked: { default: false, type: Boolean },
-  adapterId: { required: true, type: Number || null },
-});
-
-defineEmits(['add', 'delete', 'clearMulti']);
-
-const widget = computed(() => defineProps().widgets[defineProps().widgetIdx]);
-const widgetMetric = computed(() => widget.value.metrics[defineProps().lineIdx]);
+const widget = computed(() => props.widgets[props.widgetIdx]);
+const widgetMetric = computed(() => widget.value.metrics[props.lineIdx]);
 
 const widgetType = computed({
   get: () => widget.value.widgetType,
   set: (type: WidgetType) => {
     if (type !== widget.value.widgetType) {
-      Loadout.resetWidgetAs({ index: defineProps().widgetIdx, type });
+      Loadout.resetWidgetAs({ index: props.widgetIdx, type });
     }
   },
 });
 
 const widgetSubtype = computed({
-  get: () => (widgetType.value === WidgetType.Graph ? AsGraph(widget.value).graphType.name : ''),
+  get: () => (widgetType.value === WidgetType.Graph ? asGraph(widget.value).graphType.name : ''),
   set: (val: string) => {
     if (widgetType.value === WidgetType.Graph) {
-      Loadout.setGraphTypeAttribute({ index: defineProps().widgetIdx, attr: 'name', val });
+      Loadout.setGraphTypeAttribute({ index: props.widgetIdx, attr: 'name', val });
     }
   },
 });
@@ -50,7 +55,7 @@ const lineColor = computed({
   get: () => widgetMetric.value.lineColor,
   set: (color: RgbaColor) => {
     const metric = { ...widgetMetric.value, lineColor: color };
-    Loadout.setWidgetMetric({ index: defineProps().widgetIdx, metricIdx: defineProps().lineIdx, metric });
+    Loadout.setWidgetMetric({ index: props.widgetIdx, metricIdx: props.lineIdx, metric });
   },
 });
 
@@ -58,7 +63,7 @@ const fillColor = computed({
   get: () => widgetMetric.value.fillColor,
   set: (color: RgbaColor) => {
     const metric = { ...widgetMetric.value, fillColor: color };
-    Loadout.setWidgetMetric({ index: defineProps().widgetIdx, metricIdx: defineProps().lineIdx, metric });
+    Loadout.setWidgetMetric({ index: props.widgetIdx, metricIdx: props.lineIdx, metric });
   },
 });
 
@@ -67,13 +72,13 @@ const axisAffinityRight = computed({
   set: (affinityRight: boolean) => {
     const axisAffinity = affinityRight ? AxisAffinity.Right : AxisAffinity.Left;
     const metric = { ...widgetMetric.value, axisAffinity };
-    Loadout.setWidgetMetric({ index: defineProps().widgetIdx, metricIdx: defineProps().lineIdx, metric });
+    Loadout.setWidgetMetric({ index: props.widgetIdx, metricIdx: props.lineIdx, metric });
   },
 });
 
 const metricOption = computed({
   get: () => {
-    const option = defineProps().metricOptions.find(
+    const option = props.metricOptions.find(
       (o) =>
         widgetMetric.value.metric.metricId === o.metricId &&
         widgetMetric.value.metric.arrayIndex === o.arrayIndex
@@ -103,29 +108,29 @@ const metricOption = computed({
       desiredUnitId: newMetric.preferredUnitId,
     };
     const metric = { ...widgetMetric.value, metric: qualifiedMetric };
-    Loadout.setWidgetMetric({ index: defineProps().widgetIdx, metricIdx: defineProps().lineIdx, metric });
+    Loadout.setWidgetMetric({ index: props.widgetIdx, metricIdx: props.lineIdx, metric });
   },
 });
 
 const stat = computed({
   get: () => {
-    const stat = defineProps().stats.find((s) => s.id === widgetMetric.value.metric.statId);
+    const stat = props.stats.find((s) => s.id === widgetMetric.value.metric.statId);
     if (!stat) throw new Error(`Stat ID ${widgetMetric.value.metric.statId} not found`);
     return stat;
   },
   set: (stat: Stat) => {
     const qualifiedMetric = { ...widgetMetric.value.metric, statId: stat.id };
     const metric = { ...widgetMetric.value, metric: qualifiedMetric };
-    Loadout.setWidgetMetric({ index: defineProps().widgetIdx, metricIdx: defineProps().lineIdx, metric });
+    Loadout.setWidgetMetric({ index: props.widgetIdx, metricIdx: props.lineIdx, metric });
   },
 });
 
 const statsForMetric = (metricId: number) => {
-  return defineProps().stats.filter((s) => findMetricById(metricId).availableStatIds.includes(s.id));
+  return props.stats.filter((s) => findMetricById(metricId).availableStatIds.includes(s.id));
 };
 
 const findMetricById = (metricId: number) => {
-  const metric = defineProps().metrics.find((m) => m.id === metricId);
+  const metric = props.metrics.find((m) => m.id === metricId);
   if (!metric) throw new Error(`Metric ID ${metricId} not found`);
   return metric;
 };
@@ -133,9 +138,9 @@ const findMetricById = (metricId: number) => {
 const widgetTypeToString = (t: WidgetType) => WidgetType[t];
 
 const metricOptionsFiltered = computed(() => {
-  return defineProps().lineIdx === 0
-    ? defineProps().metricOptions
-    : defineProps().metricOptions.filter((o) => findMetricById(o.metricId).numeric);
+  return props.lineIdx === 0
+    ? props.metricOptions
+    : props.metricOptions.filter((o) => findMetricById(o.metricId).numeric);
 });
 
 const widgetTypeOptions = computed(() => {
@@ -152,9 +157,9 @@ const widgetSubtypeOptions = computed(() => {
 
 const statOptions = computed(() => statsForMetric(widgetMetric.value.metric.metricId));
 
-const isMaster = computed(() => defineProps().lineIdx === 0);
+const isMaster = computed(() => props.lineIdx === 0);
 const isGraphWidget = computed(() => widgetType.value === WidgetType.Graph);
-const isLineGraphWidget = computed(() => isGraphWidget.value && AsGraph(widget.value).graphType.name === 'Line');
+const isLineGraphWidget = computed(() => isGraphWidget.value && asGraph(widget.value).graphType.name === 'Line');
 const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
 </script>
 
