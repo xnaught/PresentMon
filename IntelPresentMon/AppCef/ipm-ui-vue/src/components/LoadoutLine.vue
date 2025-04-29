@@ -9,6 +9,7 @@ import { AxisAffinity } from '@/core/widget-metric';
 import ColorPicker from './ColorPicker.vue';
 import type { RgbaColor } from '@/core/color';
 import { asGraph } from '@/core/widget';
+import { useLoadoutStore } from '@/stores/loadout';
 
 defineOptions({name: 'LoadoutLine'})
 interface Props {
@@ -30,6 +31,8 @@ const emit = defineEmits<{
   (e: 'clearMulti', val: number): void,
 }>()
 
+const loadoutStore = useLoadoutStore();
+
 const widget = computed(() => props.widgets[props.widgetIdx]);
 const widgetMetric = computed(() => widget.value.metrics[props.lineIdx]);
 
@@ -37,7 +40,7 @@ const widgetType = computed({
   get: () => widget.value.widgetType,
   set: (type: WidgetType) => {
     if (type !== widget.value.widgetType) {
-      Loadout.resetWidgetAs({ index: props.widgetIdx, type });
+      loadoutStore.resetWidgetAs(props.widgetIdx, type);
     }
   },
 });
@@ -46,7 +49,7 @@ const widgetSubtype = computed({
   get: () => (widgetType.value === WidgetType.Graph ? asGraph(widget.value).graphType.name : ''),
   set: (val: string) => {
     if (widgetType.value === WidgetType.Graph) {
-      Loadout.setGraphTypeAttribute({ index: props.widgetIdx, attr: 'name', val });
+      loadoutStore.setGraphAttribute(props.widgetIdx, 'name', val);
     }
   },
 });
@@ -55,7 +58,7 @@ const lineColor = computed({
   get: () => widgetMetric.value.lineColor,
   set: (color: RgbaColor) => {
     const metric = { ...widgetMetric.value, lineColor: color };
-    Loadout.setWidgetMetric({ index: props.widgetIdx, metricIdx: props.lineIdx, metric });
+    loadoutStore.setWidgetMetric(props.widgetIdx, props.lineIdx, metric);
   },
 });
 
@@ -63,7 +66,7 @@ const fillColor = computed({
   get: () => widgetMetric.value.fillColor,
   set: (color: RgbaColor) => {
     const metric = { ...widgetMetric.value, fillColor: color };
-    Loadout.setWidgetMetric({ index: props.widgetIdx, metricIdx: props.lineIdx, metric });
+    loadoutStore.setWidgetMetric(props.widgetIdx, props.lineIdx, metric);
   },
 });
 
@@ -72,7 +75,7 @@ const axisAffinityRight = computed({
   set: (affinityRight: boolean) => {
     const axisAffinity = affinityRight ? AxisAffinity.Right : AxisAffinity.Left;
     const metric = { ...widgetMetric.value, axisAffinity };
-    Loadout.setWidgetMetric({ index: props.widgetIdx, metricIdx: props.lineIdx, metric });
+    loadoutStore.setWidgetMetric(props.widgetIdx, props.lineIdx, metric);
   },
 });
 
@@ -108,7 +111,7 @@ const metricOption = computed({
       desiredUnitId: newMetric.preferredUnitId,
     };
     const metric = { ...widgetMetric.value, metric: qualifiedMetric };
-    Loadout.setWidgetMetric({ index: props.widgetIdx, metricIdx: props.lineIdx, metric });
+    loadoutStore.setWidgetMetric(props.widgetIdx, props.lineIdx, metric);
   },
 });
 
@@ -121,7 +124,7 @@ const stat = computed({
   set: (stat: Stat) => {
     const qualifiedMetric = { ...widgetMetric.value.metric, statId: stat.id };
     const metric = { ...widgetMetric.value, metric: qualifiedMetric };
-    Loadout.setWidgetMetric({ index: props.widgetIdx, metricIdx: props.lineIdx, metric });
+    loadoutStore.setWidgetMetric(props.widgetIdx, props.lineIdx, metric);
   },
 });
 
