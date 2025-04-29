@@ -43,6 +43,11 @@ export const useLoadoutStore = defineStore('loadout', () => {
         await serializeCurrent()
     }
 
+    async function setGraphTypeAttribute<K extends keyof Graph['graphType']>(index: number, attr: K, val: Graph['graphType'][K]) {
+        asGraph(widgets.value[index]).graphType[attr] = val;
+        await serializeCurrent();
+    }
+
     async function addReadout() {
         // Mocked Introspection.metrics
         // Original: const metric = Introspection.metrics[0]
@@ -182,6 +187,7 @@ export const useLoadoutStore = defineStore('loadout', () => {
         // === Actions ===
         addGraph,
         setGraphAttribute,
+        setGraphTypeAttribute,
         addReadout,
         setReadoutAttribute,
         removeWidget,
