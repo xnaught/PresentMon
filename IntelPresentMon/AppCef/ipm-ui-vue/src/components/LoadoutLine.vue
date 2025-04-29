@@ -10,6 +10,7 @@ import ColorPicker from './ColorPicker.vue';
 import type { RgbaColor } from '@/core/color';
 import { asGraph } from '@/core/widget';
 import { useLoadoutStore } from '@/stores/loadout';
+import type { ListItem } from 'vuetify/lib/composables/list-items.mjs';
 
 defineOptions({name: 'LoadoutLine'})
 interface Props {
@@ -172,11 +173,11 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
       <v-autocomplete
         v-model="metricOption"
         :items="metricOptionsFiltered"
-        item-text="name"
+        item-title="name"
         :disabled="locked"
         return-object
-        outlined
-        :dense="!isMaster"
+        variant="outlined"
+        :density="isMaster ? 'default' : 'compact'"
         hide-details
       ></v-autocomplete>
     </div>
@@ -184,11 +185,11 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
       <v-select
         v-model="stat"
         :items="statOptions"
-        item-text="shortName"
+        item-title="shortName"
         :disabled="locked || statOptions.length < 2"
         return-object
-        outlined
-        :dense="!isMaster"
+        variant="outlined"
+        :density="isMaster ? 'default' : 'compact'"
         hide-details
       ></v-select>
     </div>
@@ -198,14 +199,15 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         v-model="widgetType"
         :items="widgetTypeOptions"
         :disabled="locked || widgetTypeOptions.length < 2"
-        outlined
+        variant="outlined"
         hide-details
-      >    
-        <template #selection="{ item }">
-          {{ widgetTypeToString(item) }}
+      >
+        <template v-slot:selection="{item, index}: {item:ListItem<WidgetType>, index:number}">
+          {{ widgetTypeToString(item.raw) }}
         </template>
-        <template #item="{ item }">
-          {{ widgetTypeToString(item) }}
+        <template v-slot:item="{item, props, index}: {item:ListItem<WidgetType>, props:any, index:number}">
+          <v-list-item v-bind="props" :title="widgetTypeToString(item.raw)">
+          </v-list-item>
         </template>
       </v-select>
     </div>
@@ -215,10 +217,10 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         v-model="widgetSubtype"
         :items="widgetSubtypeOptions"
         :disabled="locked || widgetSubtypeOptions.length < 2"
-        outlined
+        variant="outlined"
         hide-details
       ></v-select>
-      <v-switch v-else v-model="axisAffinityRight" label="Right Axis" hide-details dense class="mt-0"></v-switch>
+      <v-switch v-else v-model="axisAffinityRight" label="Right Axis" hide-details density="compact" class="mt-0"></v-switch>
     </div>
     <div class="widget-cell col-line-color">
       <color-picker
@@ -240,13 +242,13 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
       <v-btn v-if="!locked && isReadoutWidget" :to="{name: 'readout-config', params: {index: widgetIdx}}" class="widget-btn details-btn" x-large icon>
         <v-icon>mdi-cog</v-icon>
       </v-btn>
-      <v-btn v-if="isMaster && !locked && isLineGraphWidget" @click="$emit('add')" class="widget-btn add-line-btn" x-large icon>
+      <v-btn v-if="isMaster && !locked && isLineGraphWidget" @click="emit('add')" class="widget-btn add-line-btn" x-large icon>
         <v-icon>mdi-plus</v-icon>
       </v-btn>
-      <v-btn v-if="isMaster && !locked" @click="$emit('delete', lineIdx)" class="widget-btn remove-btn" x-large icon>
+      <v-btn v-if="isMaster && !locked" @click="emit('delete', lineIdx)" class="widget-btn remove-btn" x-large icon>
         <v-icon>mdi-close</v-icon>
       </v-btn>
-      <v-btn v-if="!isMaster && !locked" @click="$emit('delete', lineIdx)" class="widget-line-btn line-btn mr-2" icon>
+      <v-btn v-if="!isMaster && !locked" @click="emit('delete', lineIdx)" class="widget-line-btn line-btn mr-2" icon>
         <v-icon>mdi-close</v-icon>
       </v-btn>
     </div>
