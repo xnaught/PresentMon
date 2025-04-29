@@ -1,16 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useCounterStore } from '@/stores/counter'; 
-import { useHotkeyStore } from './stores/hotkey';
+import { useCounterStore } from '@/stores/counter';
 
 // === Stores ===
 const cs = useCounterStore()
-const hotkeys = useHotkeyStore()
 
 // === Lifecycle hooks ===
-onMounted(async () => {
-  await hotkeys.refreshOptions()
-})
 </script>
 
 <template>

@@ -1,22 +1,14 @@
 <script setup lang="ts">
 import Sortable from 'sortablejs';
-import type { Preferences as PrefType } from '@/core/preferences';
-import type { Metric } from '@/core/metric';
-import type { Stat } from '@/core/stat';
+import { useIntrospectionStore } from '@/stores/introspection';
 import type { Widget } from '@/core/widget';
-import { Api } from '@/core/api';
 import LoadoutRow from '@/components/LoadoutRow.vue';
-import type { MetricOption } from '@/core/metric-option';
-import { Introspection } from '@/store/introspection';
-
 import { ref } from 'vue';
 
 defineOptions({name: 'LoadoutConfigView'})
 
+const introspectionStore = useIntrospectionStore();
 const widgets = ref<Widget[]>([]);
-const stats = ref<Stat[]>([]);
-const metrics = ref<Metric[]>([]);
-const metricOptions = ref<MetricOption[]>([]);
 const activeAdapterId = ref<number|null>(null);
 
 const save = () => {
@@ -45,9 +37,9 @@ const removeWidget = (widgetIdx:number) => {
 
     <v-row class="mt-5 loadout-table" id="sortable-row-container">
     <loadout-row
-        v-for="(w, i) in widgets" :key="w.key" :stats="stats"
-        :widgetIdx="i" :widgets="widgets" :metrics="metrics" 
-        :metricOptions="metricOptions" :adapterId="activeAdapterId" :locked="false" 
+        v-for="(w, i) in widgets" :key="w.key" :stats="introspectionStore.stats"
+        :widgetIdx="i" :widgets="widgets" :metrics="introspectionStore.metrics" 
+        :metricOptions="introspectionStore.metricOptions" :adapterId="activeAdapterId" :locked="false" 
         @delete="removeWidget" 
     ></loadout-row>
     <div class="add-btn-row">

@@ -15,6 +15,9 @@ import router from '@/router'
 import { isDevBuild } from './core/env-vars'
 import { md2 } from 'vuetify/blueprints'
 
+import { useHotkeyStore } from '@/stores/hotkey';
+import { useIntrospectionStore } from '@/stores/introspection';
+
 if (isDevBuild()) {
     const script = document.createElement('script');
     script.src = 'http://localhost:8098';
@@ -44,10 +47,20 @@ const vuetify = createVuetify({
     },
 })
 
-const app = createApp(App)
+async function initStores() {
+    useHotkeyStore().refreshOptions()
+    useIntrospectionStore().load()
+}
 
-app.use(createPinia())
-app.use(router)
-app.use(vuetify)
+var app:any;
+async function boot() {
+    await initStores()
+    // boot vue app
+    app = createApp(App)
+    app.use(createPinia())
+    app.use(router)
+    app.use(vuetify)    
+    app.mount('#app')
+}
 
-app.mount('#app')
+boot()
