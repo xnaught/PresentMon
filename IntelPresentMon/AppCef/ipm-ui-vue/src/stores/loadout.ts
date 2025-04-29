@@ -13,12 +13,12 @@ export const useLoadoutStore = defineStore('loadout', () => {
     // === State ===
     const widgets = ref<Widget[]>([])
     const debounceToken = ref<number|null>(null)
-    
+
     // === Computed ===
     const fileContents = computed(() => {
         const file: LoadoutFile = {
             signature,
-            widgets: widgets.value,
+            widgets: widgets.value
         }
         return JSON.stringify(file, null, 3)
     })
@@ -26,7 +26,7 @@ export const useLoadoutStore = defineStore('loadout', () => {
     // === Actions ===
     // graph-specific
     async function addGraph() {
-         // TODO: inject these defaults instead of hardcoding
+        // TODO: inject these defaults instead of hardcoding
         const qualifiedMetric: QualifiedMetric = {
             metricId: 8,
             arrayIndex: 0,
@@ -37,129 +37,129 @@ export const useLoadoutStore = defineStore('loadout', () => {
         widgets.value.push(makeDefaultGraph(qualifiedMetric))
         await serializeCurrent()
     }
-    async function setGraphAttribute<K extends keyof Graph>(payload: {index:number, attr: K, val: Graph[K]}) {
-        asGraph(widgets.value[payload.index])[payload.attr] = payload.val
+
+    async function setGraphAttribute<K extends keyof Graph>(index: number, attr: K, val: Graph[K]) {
+        asGraph(widgets.value[index])[attr] = val
         await serializeCurrent()
     }
 
     async function addReadout() {
         // Mocked Introspection.metrics
-        // Original: const metric = Introspection.metrics[0];
-        const mockMetrics = [{ id: 1, availableStatIds: [1] }];
-        const metric = mockMetrics[0];
+        // Original: const metric = Introspection.metrics[0]
+        const mockMetrics = [{ id: 1, availableStatIds: [1] }]
+        const metric = mockMetrics[0]
         const qualifiedMetric = {
             metricId: metric.id,
             arrayIndex: 0,
             statId: metric.availableStatIds[0],
             deviceId: 0,
             desiredUnitId: 0
-        };
-        widgets.value.push(makeDefaultReadout(qualifiedMetric));
-        await serializeCurrent();
+        }
+        widgets.value.push(makeDefaultReadout(qualifiedMetric))
+        await serializeCurrent()
     }
 
-    async function setReadoutAttribute<K extends keyof Readout>(payload: { index: number, attr: K, val: Readout[K] }) {
-        asReadout(widgets.value[payload.index])[payload.attr] = payload.val;
-        await serializeCurrent();
+    async function setReadoutAttribute<K extends keyof Readout>(index: number, attr: K, val: Readout[K]) {
+        asReadout(widgets.value[index])[attr] = val
+        await serializeCurrent()
     }
 
     async function removeWidget(index: number) {
-        widgets.value.splice(index, 1);
-        await serializeCurrent();
+        widgets.value.splice(index, 1)
+        await serializeCurrent()
     }
 
-    async function setWidgetMetrics(payload: { index: number, metrics: WidgetMetric[] }) {
-        const widget = widgets.value[payload.index];
+    async function setWidgetMetrics(index: number, metrics: WidgetMetric[]) {
+        const widget = widgets.value[index]
         if (widget.widgetType === WidgetType.Graph) {
             if ((widget as Graph).graphType.name === 'Line') {
-                widget.metrics = payload.metrics;
-                await serializeCurrent();
+                widget.metrics = metrics
+                await serializeCurrent()
                 return
             }
         }
-        if (payload.metrics.length > 1) {
-            console.warn(`Widget #${payload.index} is not Line Graph but trying to set ${payload.metrics.length} metrics`);
+        if (metrics.length > 1) {
+            console.warn(`Widget #${index} is not Line Graph but trying to set ${metrics.length} metrics`)
         }
-        widget.metrics = [payload.metrics[0]]
-        await serializeCurrent();
+        widget.metrics = [metrics[0]]
+        await serializeCurrent()
     }
 
-    async function addWidgetMetric(payload: { index: number, metric: QualifiedMetric }) {
-        const widget = widgets.value[payload.index];
+    async function addWidgetMetric(index: number, metric: QualifiedMetric) {
+        const widget = widgets.value[index]
         if (widget.widgetType === WidgetType.Graph) {
             if ((widget as Graph).graphType?.name !== 'Line') {
-                console.warn(`Widget #${payload.index} is not Line Graph but trying to add metric`);
-                throw new Error('bad addition of metric to widget');
+                console.warn(`Widget #${index} is not Line Graph but trying to add metric`)
+                throw new Error('bad addition of metric to widget')
             }
-            widget.metrics.push(makeDefaultWidgetMetric(payload.metric));
-            await serializeCurrent();
-        }
-        else {
-            console.warn(`Widget #${payload.index} is not Graph but trying to add metric`);
-            throw new Error('bad addition of metric to widget');
-        }
-    }
-
-    async function removeWidgetMetric(payload: { index: number, metricIdIdx: number }) {
-        const widget = widgets.value[payload.index];
-        if (widget.metrics.length < 2) {
-            console.warn('Not enough metrics in widget to allow a remove operation');
-            return;
-        }
-        widget.metrics.splice(payload.metricIdIdx, 1);
-        await serializeCurrent();
-    }
-
-    async function setWidgetMetric(payload: { index: number, metricIdx: number, metric: WidgetMetric }) {
-        const widget = widgets.value[payload.index];
-        widget.metrics.splice(payload.metricIdx, 1, payload.metric);
-        await serializeCurrent();
-    }
-
-    async function resetWidgetAs(payload: { index: number, type: WidgetType }) {
-        let qualifiedMetric: QualifiedMetric|null = widgets.value[payload.index].metrics[0]?.metric || null;
-        // Mocked Introspection.metrics
-        // Original: const metric = Introspection.metrics.find(m => m.id === qualifiedMetric.metricId);
-        const mockMetrics = [{ id: 1, numeric: true }];
-        if (qualifiedMetric && payload.type === WidgetType.Graph) {
-            const metric = mockMetrics.find(m => m.id === qualifiedMetric!.metricId);
-            if (!metric || !metric.numeric) {
-                qualifiedMetric = null;
-            }
-        }
-        let newWidget: Widget;
-        if (payload.type === WidgetType.Graph) {
-            newWidget = makeDefaultGraph(qualifiedMetric);
+            widget.metrics.push(makeDefaultWidgetMetric(metric))
+            await serializeCurrent()
         } else {
-            newWidget = makeDefaultReadout(qualifiedMetric);
+            console.warn(`Widget #${index} is not Graph but trying to add metric`)
+            throw new Error('bad addition of metric to widget')
         }
-        widgets.value.splice(payload.index, 1, newWidget);
-        await serializeCurrent();
     }
 
-    async function moveWidget(payload: { from: number, to: number }) {
-        const movedItem = widgets.value.splice(payload.from, 1)[0];
-        widgets.value.splice(payload.to, 0, movedItem);
-        await serializeCurrent();
+    async function removeWidgetMetric(index: number, metricIdIdx: number) {
+        const widget = widgets.value[index]
+        if (widget.metrics.length < 2) {
+            console.warn('Not enough metrics in widget to allow a remove operation')
+            return
+        }
+        widget.metrics.splice(metricIdIdx, 1)
+        await serializeCurrent()
     }
 
-    async function parseAndReplace(payload: { payload: string }) {
-        const loadout = JSON.parse(payload.payload) as LoadoutFile;
+    async function setWidgetMetric(index: number, metricIdx: number, metric: WidgetMetric) {
+        const widget = widgets.value[index]
+        widget.metrics.splice(metricIdx, 1, metric)
+        await serializeCurrent()
+    }
+
+    async function resetWidgetAs(index: number, type: WidgetType) {
+        let qualifiedMetric: QualifiedMetric | null = widgets.value[index].metrics[0]?.metric || null
+        // Mocked Introspection.metrics
+        // Original: const metric = Introspection.metrics.find(m => m.id === qualifiedMetric.metricId)
+        const mockMetrics = [{ id: 1, numeric: true }]
+        if (qualifiedMetric && type === WidgetType.Graph) {
+            const metric = mockMetrics.find(m => m.id === qualifiedMetric!.metricId)
+            if (!metric || !metric.numeric) {
+                qualifiedMetric = null
+            }
+        }
+        let newWidget: Widget
+        if (type === WidgetType.Graph) {
+            newWidget = makeDefaultGraph(qualifiedMetric)
+        } else {
+            newWidget = makeDefaultReadout(qualifiedMetric)
+        }
+        widgets.value.splice(index, 1, newWidget)
+        await serializeCurrent()
+    }
+
+    async function moveWidget(from: number, to: number) {
+        const movedItem = widgets.value.splice(from, 1)[0]
+        widgets.value.splice(to, 0, movedItem)
+        await serializeCurrent()
+    }
+
+    async function parseAndReplace(payload: string) {
+        const loadout = JSON.parse(payload) as LoadoutFile
         if (loadout.signature.code !== signature.code) {
-            throw new Error(`Bad loadout file format; expect:${signature.code} actual:${loadout.signature.code}`);
+            throw new Error(`Bad loadout file format; expect:${signature.code} actual:${loadout.signature.code}`)
         }
         if (loadout.signature.version !== signature.version) {
             // Mock migration
-            // Original: migrateLoadout(loadout);
-            console.info(`loadout migrated to ${signature.version}`);
+            // Original: migrateLoadout(loadout)
+            console.info(`loadout migrated to ${signature.version}`)
         }
-        loadout.widgets = loadout.widgets.filter(w => w.metrics.length > 0);
-        widgets.value.splice(0, widgets.value.length, ...loadout.widgets);
+        loadout.widgets = loadout.widgets.filter(w => w.metrics.length > 0)
+        widgets.value.splice(0, widgets.value.length, ...loadout.widgets)
     }
 
     // --- Mocked Actions ----
     async function browseAndSerialize() {
-        // await Api.browseStoreSpec(this.fileContents);
+        // await Api.browseStoreSpec(this.fileContents)
         console.log(`serialize browse: ${fileContents}`)
     }
     async function serializeCurrent() {
@@ -168,15 +168,15 @@ export const useLoadoutStore = defineStore('loadout', () => {
         }
         const token = setTimeout(() => {
             debounceToken.value = null
-            // Api.storeConfig(this.fileContents, 'custom-auto.json');
+            // Api.storeConfig(this.fileContents, 'custom-auto.json')
             console.log(`serialize current: ${fileContents}`)
-        }, 400);
+        }, 400)
         debounceToken.value = token
     }
 
     // === Exports ===
     return {
-        // === State ===   
+        // === State ===
         widgets,
 
         // === Actions ===
