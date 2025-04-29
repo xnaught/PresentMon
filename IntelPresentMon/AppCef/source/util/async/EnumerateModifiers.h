@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include "../AsyncEndpoint.h"
-#include <Core/source/kernel/Kernel.h>
 #include "../CefValues.h"
 #include <Core/source/win/ModSet.h>
 
@@ -12,9 +11,9 @@ namespace p2c::client::util::async
     {
     public:
         static constexpr std::string GetKey() { return "enumerateModifiers"; }
-        EnumerateModifiers() : AsyncEndpoint{ AsyncEndpoint::Environment::KernelTask } {}
+        EnumerateModifiers() : AsyncEndpoint{ AsyncEndpoint::Environment::RenderProcess } {}
         // {} => {mods: [{code: uint, text: string}]}
-        Result ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const override
+        Result ExecuteOnRenderer(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor&) const override
         {
             auto modList = win::ModSet::EnumerateMods();
             // remove the "Null" option from this list, it's stinky

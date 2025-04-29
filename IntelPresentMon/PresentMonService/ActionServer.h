@@ -18,5 +18,7 @@ namespace pmon::svc
         ActionServer& operator=(const ActionServer&) = delete;
         ActionServer(ActionServer&&) = delete;
         ActionServer& operator=(ActionServer&&) = delete;
+    private:
+        std::shared_ptr<void> pImpl_;
     };
 }

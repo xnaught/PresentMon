@@ -1,14 +1,14 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "AsyncEndpointManager.h"
-#include <Core/source/infra/Logging.h>
+#include "Logging.h"
 #include <algorithm>
 #include "CefValues.h"
 #include <include/cef_task.h>
-#include "include/base/cef_callback.h"
-#include "include/wrapper/cef_closure_task.h"
-#include "CefValues.h"
+#include <include/base/cef_callback.h>
+#include <include/wrapper/cef_closure_task.h>
 #include <include/wrapper/cef_helpers.h>
+#include "CefValues.h"
 #include <CommonUtilities\str\String.h>
 
 
@@ -16,7 +16,7 @@ namespace p2c::client::util
 {
 	using ::pmon::util::str::ToWide;
 
-	void AsyncEndpointManager::DispatchInvocation(const std::string& key, CallbackContext ctx, CefRefPtr<CefV8Value> pObj, CefBrowser& browser, cef::DataBindAccessor& accessor, kern::Kernel& kernel)
+	void AsyncEndpointManager::DispatchInvocation(const std::string& key, CallbackContext ctx, CefRefPtr<CefV8Value> pObj, CefBrowser& browser, cef::DataBindAccessor& accessor)
 	{
 		CEF_REQUIRE_RENDERER_THREAD();
 
@@ -31,11 +31,11 @@ namespace p2c::client::util
 			lck.unlock();
 
 			if constexpr (v::v8async) {
-				pmlog_verb(v::v8async)(std::format("Async call {{{}}} from V8 to endpoint [{}] with payload:\n{}",
+				pmlog_verb(v::v8async)(std::format("JS async call {{{}}} from V8 to endpoint [{}] with payload:\n{}",
 					uid, key, Traverse(V8ToCefValue(*pObj)).Dump()));
 			}
 			else {
-				pmlog_dbg(std::format("Async call {{{}}} from V8 to endpoint [{}]", uid, key));
+				pmlog_dbg(std::format("JS async call {{{}}} from V8 to endpoint [{}]", uid, key));
 			}
 
 			switch (pEndpoint->GetEnvironment())
@@ -50,26 +50,19 @@ namespace p2c::client::util
 					// resolve is invoked in the handler for the return message from browser process
 				}
 				break;
-			case AsyncEndpoint::Environment::RenderImmediate:
-				pEndpoint->ExecuteOnRenderAccessor(uid, V8ToCefValue(*pObj), accessor);
+			case AsyncEndpoint::Environment::RenderProcess:
+				pEndpoint->ExecuteOnRenderer(uid, V8ToCefValue(*pObj), accessor);
 				// resolve is invoked in ExecuteOnRenderAccessor
-				break;
-			case AsyncEndpoint::Environment::KernelTask:
-				iInvoke->second.taskFuture = std::async([&kernel, key, uid, pArgObj = V8ToCefValue(*pObj), pEndpoint, this]() mutable {
+				iInvoke->second.taskFuture = std::async([&accessor, key, uid, pArgObj = V8ToCefValue(*pObj), pEndpoint, this]() mutable {
 					AsyncEndpoint::Result result;
 					try {
 						// run the async command procudure on the std::async thread pool
-						result = pEndpoint->ExecuteOnKernelTask(uid, std::move(pArgObj), kernel);
-					}
-					catch (const std::exception& e) {
-						result = AsyncEndpoint::MakeStringErrorResult(ToWide(
-							std::format("Error in async API endpoint dispatch (kernel environment) [{}]: {}", key, e.what())
-						));
+						result = pEndpoint->ExecuteOnRenderer(uid, std::move(pArgObj), accessor);
 					}
 					catch (...) {
-						result = AsyncEndpoint::MakeStringErrorResult(ToWide(
-							std::format("Error in async API endpoint dispatch (kernel environment) [{}]", key)
-						));
+						const auto rep =
+							ReportException("Error in async API endpoint dispatch (render process)");
+						result = AsyncEndpoint::MakeStringErrorResult(ToWide(rep.first));
 					}
 					// pass results and run the resolve logic (V8 conversion etc.) on the renderer thread
 					CefPostTask(TID_RENDERER, base::BindOnce(
@@ -78,10 +71,12 @@ namespace p2c::client::util
 					));
 				});
 				break;
+			default:
+				pmlog_error("Unknown async endp env").pmwatch(int(pEndpoint->GetEnvironment()));
 			}
 		}
 		else {
-			pmlog_error(std::format("Key [{}] does not have an async endpoint registered", key)).no_trace();
+			pmlog_error(std::format("Key [{}] does not have an async endpoint registered", key));
 		}
 	}
 
@@ -95,7 +90,7 @@ namespace p2c::client::util
 			auto invocation = std::move(i->second);
 
 			if constexpr (v::v8async) {
-				pmlog_verb(v::v8async)(std::format("Async call {{{}}} resolved with payload:\n{}",
+				pmlog_verb(v::v8async)(std::format("Async call {{{}}} resolved with payload: \n{}",
 					uid, Traverse(pArgs).Dump()));
 			}
 			else {

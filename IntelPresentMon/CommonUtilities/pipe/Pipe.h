@@ -6,12 +6,12 @@
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
-#include "CoroMutex.h"
 #include "../win/Handle.h"
 #include "../win/Event.h"
 #include "../Exception.h"
 #include "../log/Log.h"
 #include "SecurityMode.h"
+#include "CoroMutex.h"
 #include <ranges>
 
 namespace pmon::util::pipe
@@ -20,7 +20,12 @@ namespace pmon::util::pipe
 	using namespace std::literals;
 
 	PM_DEFINE_EX(PipeError);
-	PM_DEFINE_EX_FROM(PipeError, PipeBroken);
+	// pipe errors that are often part of acceptable program flow
+	PM_DEFINE_EX_FROM(PipeError, BenignPipeError);
+	// pipe was broken (closed by remote)
+	PM_DEFINE_EX_FROM(BenignPipeError, PipeBroken);
+	// pipe operation was canceled (e.g. by operator ||, ioctx.stop)
+	PM_DEFINE_EX_FROM(BenignPipeError, PipeOperationCanceled);
 
 	class DuplexPipe
 	{
@@ -38,6 +43,9 @@ namespace pmon::util::pipe
 		template<class H, class P>
 		as::awaitable<void> WritePacket(const H& header, const P& payload, std::optional<uint32_t> timeoutMs = {})
 		{
+			// lock while this coro is running to prevent other coros from causing an overlapped operation fault
+			auto lk = co_await CoroLock(writeMtx_);
+			// some sanity checks
 			assert(writeBuf_.size() == 0);
 			assert(asioPipeHandle_.is_open());
 			// first we directly write bytes for the size of the body as a placeholder until we know how many are serialized
@@ -60,6 +68,10 @@ namespace pmon::util::pipe
 		template<class H>
 		as::awaitable<H> ReadPacketConsumeHeader(std::optional<uint32_t> timeoutMs = {})
 		{
+			// lock while this coro is running to prevent other coros from interrupting stream sequence
+			// and/or causing an overlapped operation fault
+			auto lk = co_await CoroLock(readMtx_);
+			// some sanity checks
 			assert(readBuf_.size() == 0);
 			assert(asioPipeHandle_.is_open());
 			// read in request
@@ -74,6 +86,9 @@ namespace pmon::util::pipe
 			readArchive_(header);
 			co_return header;
 		}
+		// NOTE: it might be necessary to pull the read lock up into the transfer layer to make sure nothing
+		// interposes between header and payload consumption
+		// alternatively
 		template<class P>
 		P ConsumePacketPayload()
 		{
@@ -112,8 +127,10 @@ namespace pmon::util::pipe
 		as::streambuf readBuf_;
 		std::istream readStream_;
 		cereal::BinaryInputArchive readArchive_;
+		CoroMutex readMtx_;
 		as::streambuf writeBuf_;
 		std::ostream writeStream_;
 		cereal::BinaryOutputArchive writeArchive_;
+		CoroMutex writeMtx_;
 	};
 }

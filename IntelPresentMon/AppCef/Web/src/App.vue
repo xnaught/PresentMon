@@ -142,7 +142,6 @@ export default Vue.extend({
       Api.registerPresentmonInitFailedHandler(this.handlePresentmonInitFailed);
       Api.registerOverlayDiedHandler(this.handleOverlayDied);
       Api.registerStalePidHandler(this.handleStalePid);
-      await Api.launchKernel();
       await Introspection.load();
       await Hotkey.refreshOptions();
       await Adapters.refresh();

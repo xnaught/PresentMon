@@ -79,7 +79,6 @@
     <ClInclude Include="source\win\KernelWindow.h" />
     <ClInclude Include="source\win\com\ProcessSpawnSink.h" />
     <ClInclude Include="source\pmon\StatisticsTracker.h" />
-    <ClInclude Include="source\infra\util\Meta.h" />
     <ClInclude Include="source\win\GpuUtilization.h" />
     <ClInclude Include="source\pmon\AdapterInfo.h" />
     <ClInclude Include="source\pmon\metric\DynamicPollingFetcher.h" />

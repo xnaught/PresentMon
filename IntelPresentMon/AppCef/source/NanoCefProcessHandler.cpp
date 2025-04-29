@@ -1,20 +1,19 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "NanoCefBrowserClient.h"
-#include <Core/source/kernel/Kernel.h>
 #include <include/wrapper/cef_helpers.h>
+#include <include/wrapper/cef_closure_task.h>
+#include <include/cef_parser.h>
+#include <include/cef_task.h>
+#include <include/base/cef_callback.h>
 #include "NanoCefProcessHandler.h"
 #include "SchemeHandlerFactory.h"
 #include "DataBindAccessor.h"
-#include <Core/source/infra/Logging.h>
-#include <Core/source/infra/LogSetup.h>
-#include "include/wrapper/cef_closure_task.h"
-#include <include/cef_task.h>
-#include "include/base/cef_callback.h"
+#include "util/Logging.h"
+#include "util/LogSetup.h"
 #include "util/AsyncEndpointManager.h"
 #include "util/CefValues.h"
-#include <Core/source/cli/CliOptions.h>
-#include <include/cef_parser.h>
+#include "util/CliOptions.h"
 
 using namespace pmon::util;
 using namespace std::chrono_literals;
@@ -28,7 +27,7 @@ namespace p2c::client::cef
 #else
         constexpr bool is_debug = true;
 #endif
-        const auto& opt = cli::Options::Get();
+        const auto& opt = util::cli::Options::Get();
         std::string host;
         std::string port;
 
@@ -74,7 +73,7 @@ namespace p2c::client::cef
 
     void NanoCefProcessHandler::OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> pChildCommandLine)
     {
-        auto& opt = cli::Options::Get();
+        auto& opt = util::cli::Options::Get();
         // propagate custom cli switches to children
         auto pCmdLine = CefCommandLine::GetGlobalCommandLine();
         for (auto&&[name, val] : opt.GetForwardedOptions()) {
@@ -89,10 +88,10 @@ namespace p2c::client::cef
         if (pChildCommandLine->GetSwitchValue("type") == "renderer") {
             // inject logging ipc pipe cli option to child
             static int count = 0;
-            std::string pipePrefix = std::format("p2c-logpipe-{}-{}", GetCurrentProcessId(), ++count);
+            std::string pipePrefix = std::format("pm-uir-log-{}-{}", GetCurrentProcessId(), ++count);
             pChildCommandLine->AppendSwitchWithValue(opt.logPipeName.GetName(), pipePrefix);
             // launch connector thread
-            ConnectToLoggingSourcePipe(pipePrefix, count);
+            util::ConnectToLoggingSourcePipe(pipePrefix);
         }
     }
 
@@ -103,6 +102,11 @@ namespace p2c::client::cef
 
     void NanoCefProcessHandler::OnContextCreated(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, CefRefPtr<CefV8Context> context)
     {
+        std::this_thread::sleep_for(50ms);
+        pKernelWrapper->pClient = std::make_unique<util::CefClient>(
+            *util::cli::Options::Get().actName, util::cact::CefExecutionContext{.pSignalManager = &pKernelWrapper->signals}
+        );
+        pKernelWrapper->pInvocationManager = std::make_unique<util::IpcInvocationManager>(*pKernelWrapper->pClient);
         pAccessor = new DataBindAccessor{ pBrowser, pKernelWrapper.get() };
 
         auto core = CefV8Value::CreateObject(nullptr, nullptr);
@@ -129,18 +133,6 @@ namespace p2c::client::cef
                 message->GetArgumentList()->GetBool(1),
                 message->GetArgumentList()->GetValue(2)
             );
-            return true;
-        }
-        else if (message->GetName() == GetShutdownMessageName())
-        {
-            // release important resources
-            pAccessor->ClearKernelWrapper();
-            pKernelWrapper.reset();
-
-            // send shutdown ack
-            auto pMsg = CefProcessMessage::Create(GetShutdownMessageName());
-            pBrowser->GetMainFrame()->SendProcessMessage(PID_BROWSER, std::move(pMsg));
-
             return true;
         }
         return false;

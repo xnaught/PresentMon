@@ -1,9 +1,9 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "HotkeyListener.h"
-#include <Core/source/win/WinAPI.h>
-#include <Core/source/infra/Logging.h>
+#include "Logging.h"
 #include <CommonUtilities/Exception.h>
+#include <CommonUtilities/ref/WrapReflect.h>
 #include <ranges>
 #include <include/cef_task.h> 
 #include "include/base/cef_callback.h" 
@@ -134,10 +134,7 @@ namespace p2c::client::util
 											i != registeredHotkeys_.cend()) {
 											// if match found dispatch action on renderer thread
 											pmlog_verb(v::hotkey)("hotkey dispatching");
-											CefPostTask(TID_RENDERER, base::BindOnce(
-												&Hotkeys::DispatchHotkey_,
-												base::Unretained(this), i->second
-											));
+											DispatchHotkey_(i->second);
 										}
 									}
 								}
@@ -173,9 +170,8 @@ namespace p2c::client::util
 	}
 	void Hotkeys::DispatchHotkey_(Action action) const
 	{
-		std::lock_guard lk{ mtx_ };
 		if (Handler_) {
-			pmlog_verb(v::hotkey)("execute handler with hotkey action");
+			pmlog_dbg("hotkey action dispatched to handler").pmwatch(reflect::enum_name(action));
 			Handler_(action);
 		}
 		else {
@@ -188,7 +184,7 @@ namespace p2c::client::util
 		pmlog_verb(v::hotkey)("Hotkey handler set");
 		Handler_ = std::move(handler);
 	}
-	void Hotkeys::BindAction(Action action, win::Key key, win::ModSet mods, std::function<void(bool)> resultCallback)
+	bool Hotkeys::BindAction(Action action, win::Key key, win::ModSet mods)
 	{
 		pmlog_verb(v::hotkey)("Hotkey action binding");
 		std::lock_guard lk{ mtx_ };
@@ -206,10 +202,10 @@ namespace p2c::client::util
 			std::forward_as_tuple(key, mods),
 			std::forward_as_tuple(action)
 		);
-		// signal callback success
-		resultCallback(true);
+		// signal success
+		return true;
 	}
-	void Hotkeys::ClearAction(Action action, std::function<void(bool)> resultCallback)
+	bool Hotkeys::ClearAction(Action action)
 	{
 		pmlog_verb(v::hotkey)("Hotkey action clearing");
 		std::lock_guard lk{ mtx_ };
@@ -222,8 +218,8 @@ namespace p2c::client::util
 		else {
 			pmlog_warn("Attempted to clear unregistered hotkey");
 		}
-		// signal callback success
-		resultCallback(true);
+		// signal success
+		return true;
 	}
 	win::ModSet Hotkeys::GatherModifiers_() const
 	{

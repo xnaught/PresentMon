@@ -102,6 +102,7 @@ namespace pmon::util::pipe
 		case SecurityMode::Child: return "D:(A;OICI;GA;;;WD)"s;
 		}
 	}
+
 	DuplexPipe::DuplexPipe(as::io_context& ioctx, HANDLE pipeHandle, std::string name, bool asClient)
 		:
 		name_{ std::move(name) },
@@ -109,8 +110,10 @@ namespace pmon::util::pipe
 		asioPipeHandle_{ ioctx },
 		readStream_{ &readBuf_ },
 		readArchive_{ readStream_ },
+		readMtx_{ ioctx },
 		writeStream_{ &writeBuf_ },
-		writeArchive_{ writeStream_ }
+		writeArchive_{ writeStream_ },
+		writeMtx_{ ioctx }
 	{
 		if (asClient) {
 			// client is automatically connected upon creation, so immediatly transfer pipe to asio
@@ -128,7 +131,7 @@ namespace pmon::util::pipe
 			FILE_FLAG_OVERLAPPED,			// Use overlapped (asynchronous) mode
 			NULL));							// No template file 
 		if (!handle) {
-			pmlog_error("Client failed to connect to named pipe instance").hr().raise<PipeError>();
+			pmlog_error("Client failed to connect to named pipe instance").pmwatch(name).hr().raise<PipeError>();
 		}
 		return handle.Release();
 	}
@@ -224,6 +227,9 @@ namespace pmon::util::pipe
 		if (ec) {
 			if (ec == as::error::broken_pipe || ec.value() == 232/* Pipe is being closed */) {
 				throw Except<PipeBroken>();
+			}
+			else if (ec.value() == 995) {
+				throw Except<PipeOperationCanceled>();
 			}
 			else {
 				throw Except<PipeError>(ec.what());

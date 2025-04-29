@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <Core/source/win/WinAPI.h>
+#include <CommonUtilities/win/WinAPI.h>
 #include <include/cef_v8.h>
 #include <string>
 #include <functional>
@@ -27,8 +27,7 @@ namespace p2c::client::util
 		enum class Environment
 		{
 			BrowserProcess,
-			RenderImmediate,
-			KernelTask,
+			RenderProcess,
 		};
 		struct Result
 		{
@@ -38,8 +37,7 @@ namespace p2c::client::util
 		// functions
 		AsyncEndpoint(Environment env);
 		virtual void ExecuteOnBrowser(uint64_t uid, CefRefPtr<CefValue> pArgObj, CefRefPtr<CefBrowser> pBrowser) const;
-		virtual void ExecuteOnRenderAccessor(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor& accessor) const;
-		virtual Result ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const;
+		virtual Result ExecuteOnRenderer(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor& accessor) const;
 		Environment GetEnvironment() const;
 		static Result MakeStringErrorResult(std::wstring errorString);
 	private:

@@ -28,7 +28,6 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="LogSetup.h" />
     <ClInclude Include="acts\OpenSession.h" />
-    <ClInclude Include="ActionHelper.h" />
     <ClInclude Include="acts\StartTracking.h" />
     <ClInclude Include="acts\GetStaticCpuMetrics.h" />
     <ClInclude Include="acts\EnumerateAdapters.h" />
@@ -36,7 +35,7 @@
     <ClInclude Include="acts\SelectAdapter.h" />
     <ClInclude Include="acts\StopTracking.h" />
     <ClInclude Include="AllActions.h" />
-    <ClInclude Include="ServiceExecutionContext.h" />
+    <ClInclude Include="ActionExecutionContext.h" />
     <ClInclude Include="Logging.h" />
     <ClInclude Include="acts\SetEtwFlushPeriod.h" />
     <ClInclude Include="Registry.h" />

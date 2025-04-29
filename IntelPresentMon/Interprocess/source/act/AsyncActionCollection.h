@@ -22,6 +22,7 @@ namespace pmon::ipc::act
 		{
 			return *actions_.at(key);
 		}
+		// Note: 1 collection allowed per context-process (module)
 		static AsyncActionCollection& Get()
 		{
 			static AsyncActionCollection this_;
@@ -37,7 +38,7 @@ namespace pmon::ipc::act
 			auto id = pAction->GetIdentifier();
 			if (auto&& [i, inserted] = actions_.insert({ std::string{ id }, std::move(pAction) }); !inserted) {
 				assert(false && "Duplicate key in AsyncActionCollection");
-				pmlog_warn(std::format("Duplicate key for AsyncActionCollection: {}", id));
+				pmlog_warn("Duplicate key for AsyncActionCollection").pmwatch(id);
 			}
 		}
 	private:

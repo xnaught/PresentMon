@@ -1,6 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
+#include <CommonUtilities/win/WinAPI.h>
 #include <cstdint>
 #include <map>
 #include <thread>
@@ -22,8 +23,8 @@ namespace p2c::client::util
         Hotkeys(const Hotkeys&) = delete;
         Hotkeys& operator=(const Hotkeys&) = delete;
 		~Hotkeys();
-		void BindAction(Action action, win::Key key, win::ModSet mods, std::function<void(bool)> resultCallback);
-		void ClearAction(Action action, std::function<void(bool)> resultCallback);
+		bool BindAction(Action action, win::Key key, win::ModSet mods);
+		bool ClearAction(Action action);
 		void SetHandler(std::function<void(Action)> handler);
 	private:
 		// types
@@ -47,7 +48,7 @@ namespace p2c::client::util
 		unsigned long threadId_{};
 		void* messageWindowHandle_ = nullptr;
 		std::bitset<win::Key::virtualKeyTableSize> pressedKeys_;
-		// control access to shared memory for key map / handler
+		// control access to concurrent memory for key map / handler
 		mutable std::mutex mtx_;
 		std::function<void(Action)> Handler_;
 		std::map<Hotkey, Action> registeredHotkeys_;

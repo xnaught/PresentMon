@@ -3,23 +3,18 @@
 #include "HotkeyListener.h"
 #include "SignalManager.h"
 #include "AsyncEndpointManager.h"
+#include "ActionClientServer.h"
+#include "IpcInvocationManager.h"
 
-namespace p2c::kern
-{
-    class Kernel;
-    class KernelHandler;
-}
 
 namespace p2c::client::util
 {
 	struct KernelWrapper
 	{
-        KernelWrapper();
-        ~KernelWrapper();
+        std::unique_ptr<Hotkeys> pHotkeys;
         util::SignalManager signals;
         util::AsyncEndpointManager asyncEndpoints;
-        std::unique_ptr<kern::Kernel> pKernel;
-        std::unique_ptr<kern::KernelHandler> pKernelHandler;
-        std::unique_ptr<util::Hotkeys> pHotkeys;
+        std::unique_ptr<CefClient> pClient;
+        std::unique_ptr<IpcInvocationManager> pInvocationManager;
 	};
 }

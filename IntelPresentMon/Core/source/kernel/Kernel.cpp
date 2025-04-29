@@ -193,27 +193,6 @@ namespace p2c::kern
         cv.notify_one();
     }
 
-    std::vector<Process> Kernel::ListProcesses()
-    {
-        HandleMarshalledException_();
-        win::ProcessMapBuilder builder;
-        builder.FillWindowHandles();
-        builder.FilterHavingWindow();
-        auto pmap = builder.Extract();
-
-        std::vector<Process> list;
-        list.reserve(pmap.size());
-        for (auto& entry : pmap) {
-            using Win32Handle = ::pmon::util::win::Handle;
-            Process proc = std::move(entry.second);
-            if (proc.hWnd) {
-                proc.windowName = win::GetWindowTitle(proc.hWnd);
-            }
-            list.push_back(std::move(proc));
-        }
-        return list;
-    }
-
     void Kernel::SetAdapter(uint32_t id)
     {
         HandleMarshalledException_();

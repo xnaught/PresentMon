@@ -58,7 +58,7 @@ export class Api {
         return await this.invokeEndpointFuture('loadEnvVars', {});
     }
     static async introspect(): Promise<{metrics: Metric[], stats: Stat[], units: Unit[]}> {
-        const introData = await this.invokeEndpointFuture('introspect', {});
+        const introData = await this.invokeEndpointFuture('Introspect', {});
         if (!Array.isArray(introData.metrics) || !Array.isArray(introData.stats) || !Array.isArray(introData.units)) {
             console.log("error intro call");
             throw new Error('Bad (non-array) member type returned from introspect');
@@ -77,7 +77,7 @@ export class Api {
         return top;
     }
     static async enumerateAdapters(): Promise<Adapter[]> {
-        const {adapters} = await this.invokeEndpointFuture('enumerateAdapters', {});
+        const {adapters} = await this.invokeEndpointFuture('EnumerateAdapters', {});
         if (!Array.isArray(adapters)) {
             throw new Error('Bad (non-array) type returned from enumerateAdapters');
         }
@@ -90,16 +90,16 @@ export class Api {
         await this.invokeEndpointFuture('clearHotkey', {action});
     }
     static async setAdapter(id: number): Promise<void> {
-        await this.invokeEndpointFuture('setAdapter', {id});
+        await this.invokeEndpointFuture('SetAdapter', {id});
     }
     static async launchKernel(): Promise<void> {
         await this.invokeEndpointFuture('launchKernel', {});
     }
     static async pushSpecification(spec: Spec): Promise<void> {
-        await this.invokeEndpointFuture('pushSpecification', spec);
+        await this.invokeEndpointFuture('PushSpecification', spec);
     }
     static async setCapture(active: boolean): Promise<void> {
-        await this.invokeEndpointFuture('setCapture', {active});
+        await this.invokeEndpointFuture('SetCapture', {active});
     }
 
     /////// file access-related /////////

@@ -1,9 +1,13 @@
 #pragma once
-#include "../ActionHelper.h"
+#include "../../Interprocess/source/act/ActionHelper.h"
+#include "../ActionExecutionContext.h"
 #include <format>
 #include <ranges>
 
-#define ACTNAME EnumerateAdapters
+#define ACT_NAME EnumerateAdapters
+#define ACT_EXEC_CTX ActionExecutionContext
+#define ACT_NS ::pmon::svc::acts
+#define ACT_TYPE AsyncActionBase_
 
 namespace pmon::svc::acts
 {
@@ -11,10 +15,10 @@ namespace pmon::svc::acts
 	namespace rn = std::ranges;
 	namespace vi = rn::views;
 
-	class ACTNAME : public AsyncActionBase_<ACTNAME, ServiceExecutionContext>
+	class ACT_NAME : public ACT_TYPE<ACT_NAME, ACT_EXEC_CTX>
 	{
 	public:
-		static constexpr const char* Identifier = STRINGIFY(ACTNAME);
+		static constexpr const char* Identifier = STRINGIFY(ACT_NAME);
 		struct Params {};
 		struct Response
 		{
@@ -38,8 +42,8 @@ namespace pmon::svc::acts
 			}
 		};
 	private:
-		friend class AsyncActionBase_<ACTNAME, ServiceExecutionContext>;
-		static Response Execute_(const ServiceExecutionContext& ctx, SessionContext& stx, Params&& in)
+		friend class ACT_TYPE<ACT_NAME, ACT_EXEC_CTX>;
+		static Response Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
 		{
 			Response out;
 			for (auto&&[i, adapter] : ctx.pPmon->EnumerateAdapters() | vi::enumerate) {
@@ -57,11 +61,14 @@ namespace pmon::svc::acts
 		}
 	};
 
-#ifdef PM_SERVICE_ASYNC_ACTION_REGISTRATION_
-	ACTION_REG(ACTNAME);
+#ifdef PM_ASYNC_ACTION_REGISTRATION_
+	ACTION_REG();
 #endif
 }
 
-ACTION_TRAITS_DEF(ACTNAME);
+ACTION_TRAITS_DEF();
 
-#undef ACTNAME
+#undef ACT_NAME
+#undef ACT_EXEC_CTX
+#undef ACT_NS
+#undef ACT_TYPE

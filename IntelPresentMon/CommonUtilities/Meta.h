@@ -30,12 +30,18 @@ namespace pmon::util
     // Concept to detect if a type `T` is an instantiation of a container-like template (has value_type)
     template <typename T>
     concept IsContainerLike = requires {
-        typename T::value_type;
+        typename std::remove_cvref_t<T>::value_type;
     };
+
+    // Concept to detect if a type `T` is an instantiation of std::array
+    template <typename T>
+    concept IsStdArray = std::is_same_v<std::remove_cvref_t<T>, std::array<typename std::remove_cvref_t<T>::value_type,
+        std::tuple_size_v<std::remove_cvref_t<T>>>>;
 
     // Concept to detect if a type `T` is an instantiation of a container-like template `Template`
     template <template <typename...> typename Template, typename T>
-    concept IsContainer = IsContainerLike<T> && std::is_same_v<T, Template<typename T::value_type>>;
+    concept IsContainer = IsContainerLike<std::remove_cvref_t<T>> &&
+        std::is_same_v<std::remove_cvref_t<T>, Template<typename std::remove_cvref_t<T>::value_type>>;
 
     // trait to deduce/extract the signature details of a function by pointer
     namespace impl {

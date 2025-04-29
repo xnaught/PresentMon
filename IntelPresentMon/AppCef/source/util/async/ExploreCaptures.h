@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include "../AsyncEndpoint.h"
-#include <Core/source/kernel/Kernel.h>
 #include "../CefValues.h"
 #include <fstream>
 #include <Core/source/infra/util/FolderResolver.h>
-#include <Core/source/win/WinAPI.h>
+#include <CommonUtilities/win/WinAPI.h>
 #include <CommonUtilities/Exception.h>
 #include <shellapi.h>
 
@@ -16,9 +15,9 @@ namespace p2c::client::util::async
     {
     public:
         static constexpr std::string GetKey() { return "exploreCaptures"; }
-        ExploreCaptures() : AsyncEndpoint{ AsyncEndpoint::Environment::KernelTask } {}
+        ExploreCaptures() : AsyncEndpoint{ AsyncEndpoint::Environment::RenderProcess } {}
         // {} => null
-        Result ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const override
+        Result ExecuteOnRenderer(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor&) const override
         {
             // try to resolve app folder, fallback to cwd
             std::wstring path = infra::util::FolderResolver::Get()

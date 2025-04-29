@@ -131,9 +131,6 @@ PRESENTMON_API2_EXPORT PM_STATUS pmSetupFileLogging_(const char* filename, PM_DI
 	PM_DIAGNOSTIC_LEVEL stackTraceLevel, bool exceptionTrace)
 {
 	auto filePath = std::filesystem::path(filename);
-	if (!std::filesystem::is_directory(filePath.parent_path())) {
-		return PM_STATUS_NONEXISTENT_FILE_PATH;
-	}
 	log::SetupFileChannel(std::move(filePath), GetLogLevel_(logLevel),
 		GetLogLevel_(stackTraceLevel), exceptionTrace);
 	return PM_STATUS_SUCCESS;

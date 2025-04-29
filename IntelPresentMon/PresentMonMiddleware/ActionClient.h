@@ -1,11 +1,11 @@
 #pragma once
 #include "../CommonUtilities/win/WinAPI.h"
 #include "../CommonUtilities/ref/StaticReflection.h"
-#include "../Interprocess/source/act/AsyncActionManager.h"
 #include "../Interprocess/source/PmStatusError.h"
 #include "../CommonUtilities/pipe/Pipe.h"
 #include "../PresentMonService/AllActions.h"
 #include "../Versioning/BuildId.h"
+#include "../Interprocess/source/act/SymmetricActionClient.h"
 
 namespace pmon::mid
 {
@@ -13,17 +13,33 @@ namespace pmon::mid
     using namespace svc;
     using namespace acts;
 
-    class ActionClient
+    // define minimial context for client side connection
+    struct MiddlewareExecutionContext;
+    struct MiddlewareSessionContext
+    {
+        // common session context items
+        std::unique_ptr<SymmetricActionConnector<MiddlewareExecutionContext>> pConn;
+        uint32_t remotePid = 0;
+        uint32_t nextCommandToken = 0;
+    };
+    struct MiddlewareExecutionContext
+    {
+        // types
+        using SessionContextType = MiddlewareSessionContext;
+
+        // data
+        std::optional<uint32_t> responseWriteTimeoutMs;
+    };
+
+    using ClientBase = ipc::act::SymmetricActionClient<MiddlewareExecutionContext>;
+    class ActionClient : public ClientBase
     {
     public:
-        ActionClient(std::string pipeName)
-            :
-            thisPid_{ GetCurrentProcessId() },
-            pipeName_{ std::move(pipeName) },
-            pipe_{ pipe::DuplexPipe::Connect(pipeName_, ioctx_) }
+        ActionClient(const std::string& pipeName) : ClientBase{ pipeName }
         {
             auto res = DispatchSync(OpenSession::Params{
-                .clientPid = thisPid_, .clientBuildId = bid::BuildIdShortHash(),
+                .clientPid = GetCurrentProcessId(),
+                .clientBuildId = bid::BuildIdShortHash(),
                 .clientBuildConfig = bid::BuildIdConfig(),
             });
             if (res.serviceBuildId != bid::BuildIdShortHash()) {
@@ -36,42 +52,8 @@ namespace pmon::mid
                     .pmwatch(res.serviceBuildConfig).pmwatch(bid::BuildIdConfig());
                 throw Except<ipc::PmStatusError>(PM_STATUS_MIDDLEWARE_SERVICE_MISMATCH);
             }
-            pmlog_info(std::format("Opened session with server, build id = [{}]", res.serviceBuildId));
+            pmlog_info(std::format("Opened session with server, pid = [{}]", res.servicePid));
+            EstablishSession_(res.servicePid);
         }
-
-        ActionClient(const ActionClient&) = delete;
-        ActionClient& operator=(const ActionClient&) = delete;
-        ActionClient(ActionClient&&) = delete;
-        ActionClient& operator=(ActionClient&&) = delete;
-        ~ActionClient() = default;
-
-        template<class Params>
-        auto DispatchSync(Params&& params)
-        {
-            using Action = typename ipc::act::ActionParamsTraits<std::decay_t<Params>>::Action;
-            using Response = Action::Response;
-            pmlog_dbg(std::format("dispatching action [{}] w/ params: {}", Action::Identifier, ref::DumpStatic(params)));
-            return ExecuteSynchronous_([this](Params&& params) -> pipe::as::awaitable<Response> {
-                co_return co_await ipc::act::SyncRequest<Action>(std::forward<Params>(params), token_++, pipe_, timeoutMs_);
-            }(std::forward<Params>(params)));
-        }
-
-    private:
-        // functions
-        template<class C>
-        auto ExecuteSynchronous_(C&& coro)
-        {
-            auto fut = pipe::as::co_spawn(ioctx_, std::forward<C>(coro), pipe::as::use_future);
-            ioctx_.run();
-            ioctx_.restart();
-            return fut.get();
-        }
-        // data
-        uint32_t timeoutMs_ = 1000;
-        uint32_t token_ = 0;
-        uint32_t thisPid_;
-        std::string pipeName_;
-        pipe::as::io_context ioctx_;
-        pipe::DuplexPipe pipe_;
     };
 }

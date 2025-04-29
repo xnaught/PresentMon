@@ -10,45 +10,35 @@ namespace pmon::ipc::act
 {
 	using namespace util;
 
-	template<class ExecutionContext>
+	template<class ExecCtx>
 	class AsyncAction
 	{
 	public:
+		// types
+		using ExecutionContext = ExecCtx;
+		using SessionContext = ExecutionContext::SessionContextType;
+		// functions
 		virtual const char* GetIdentifier() const = 0;
-		virtual pipe::as::awaitable<void> Execute(ExecutionContext& ctx,
+		virtual pipe::as::awaitable<void> Execute(ExecutionContext& ctx, SessionContext& stx,
 			const PacketHeader& header, pipe::DuplexPipe& pipe) const = 0;
 	};
 
 	template<class T, class ExecutionContext>
 	class AsyncActionBase_ : public AsyncAction<ExecutionContext>
 	{
-	protected:
-		using SessionContext = typename ExecutionContext::SessionContextType;
 	public:
-		pipe::as::awaitable<void> Execute(ExecutionContext& ctx,
+		pipe::as::awaitable<void> Execute(ExecutionContext& ctx, AsyncAction<ExecutionContext>::SessionContext& stx,
 			const PacketHeader& header, pipe::DuplexPipe& pipe) const final
 		{
 			PacketHeader resHeader;
 			typename T::Response output;
-			auto& stx = ctx.sessions.at(pipe.GetId());
 			try {
-				// session should be initialized except in the special case of the OpenSession action
-				// TODO: find a way of pushing this check down to the app-specific layer rather than hardcode identifier here
-				if (header.identifier != "OpenSession") {
-					assert(bool(stx.clientPid));
-					if (!stx.clientPid) {
-						pmlog_warn("Received action without a valid session opened");
-					}
-				}
-				stx.lastTokenSeen = header.commandToken;
-				stx.lastReceived = std::chrono::high_resolution_clock::now();
-				stx.receiveCount++;
 				output = T::Execute_(ctx, stx, pipe.ConsumePacketPayload<typename T::Params>());
-				resHeader = MakeResponseHeader_(header, TransportStatus::Success, PM_STATUS_SUCCESS);
+				resHeader = MakeResponseHeader(header, TransportStatus::Success, PM_STATUS_SUCCESS);
 			}
 			catch (const ActionExecutionError& e) {
 				pmlog_error(std::format("Error in action [{}] execution", GetIdentifier())).code(e.GetCode());
-				resHeader = MakeResponseHeader_(header, TransportStatus::ExecutionFailure, e.GetCode());
+				resHeader = MakeResponseHeader(header, TransportStatus::ExecutionFailure, e.GetCode());
 			}
 			catch (...) {
 				pmlog_error(util::ReportException());
@@ -56,14 +46,13 @@ namespace pmon::ipc::act
 				if (pipe.GetWriteBufferPending()) {
 					pipe.ClearWriteBuffer();
 				}
-				resHeader = MakeResponseHeader_(header, TransportStatus::TransportFailure, PM_STATUS_SUCCESS);
+				resHeader = MakeResponseHeader(header, TransportStatus::TransportFailure, PM_STATUS_SUCCESS);
 			}
 			if (resHeader.transportStatus == TransportStatus::Success) {
 				// if no errors occured transmit standard packet with header and action response payload
 				co_await pipe.WritePacket(resHeader, output, ctx.responseWriteTimeoutMs);
 			}
 			else {
-				stx.errorCount++;
 				// if there was an error, transmit header (configured with error status) and empty payload
 				co_await pipe.WritePacket(resHeader, EmptyPayload{}, ctx.responseWriteTimeoutMs);
 			}
@@ -74,16 +63,55 @@ namespace pmon::ipc::act
 		}
 		// default version for all actions
 		static constexpr uint16_t Version = 1;
-	private:
-		static PacketHeader MakeResponseHeader_(const PacketHeader& reqHeader, TransportStatus txs, int exs)
+	};
+
+	template<class T, class ExecutionContext>
+	class AsyncEventActionBase_ : public AsyncAction<ExecutionContext>
+	{
+	public:
+		pipe::as::awaitable<void> Execute(ExecutionContext& ctx, AsyncAction<ExecutionContext>::SessionContext& stx,
+			const PacketHeader& header, pipe::DuplexPipe& pipe) const final
 		{
-			auto resHeader = reqHeader;
-			resHeader.transportStatus = txs;
-			resHeader.executionStatus = exs;
-			return resHeader;
+			PacketHeader resHeader;
+			try {
+				T::Execute_(ctx, stx, pipe.ConsumePacketPayload<typename T::Params>());
+			}
+			catch (const ActionExecutionError& e) {
+				pmlog_error(std::format("Error in action [{}] execution: {}", GetIdentifier(), e.what())).code(e.GetCode());
+			}
+			catch (...) {
+				pmlog_error(util::ReportException());
+			}
+			co_return;
 		}
+		const char* GetIdentifier() const final
+		{
+			return T::Identifier;
+		}
+		// default version for all actions
+		static constexpr uint16_t Version = 1;
 	};
 
 	template<class P>
 	struct ActionParamsTraits;
+
+	template<class A>
+	concept Request = std::is_base_of_v<AsyncActionBase_<A, typename A::ExecutionContext>, A> && requires {
+		typename A::Params;
+		typename A::Response;
+	};
+
+	template<class A>
+	concept Event = std::is_base_of_v<AsyncEventActionBase_<A, typename A::ExecutionContext>, A> && requires {
+		typename A::Params;
+	};
+
+	template<class Params>
+	using ActionFromParams = typename ActionParamsTraits<std::decay_t<Params>>::Action;
+
+	template<class Params>
+	using ResponseFromParams = typename ActionFromParams<Params>::Response;
+
+	template<class Params>
+	using AwaitableFromParams = pipe::as::awaitable<ResponseFromParams<Params>>;
 }

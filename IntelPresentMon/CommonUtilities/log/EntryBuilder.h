@@ -56,8 +56,9 @@ namespace pmon::util::log
 		template<typename E>
 		EntryBuilder& raise()
 		{
+			auto note = note_;
 			commit_();
-			throw Except<E>(note_);
+			throw Except<E>(std::move(note));
 		}
 		EntryBuilder& mark(const TimePoint& tp) noexcept;
 		EntryBuilder& note(std::string note = "") noexcept;

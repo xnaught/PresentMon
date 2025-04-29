@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include "../AsyncEndpoint.h"
-#include <Core/source/kernel/Kernel.h>
 #include "../CefValues.h"
 #include <unordered_set>
 #include <ranges>
@@ -16,9 +15,9 @@ namespace p2c::client::util::async
     {
     public:
         static constexpr std::string GetKey() { return "getTopGpuProcess"; }
-        GetTopGpuProcess() : AsyncEndpoint{ AsyncEndpoint::Environment::KernelTask } {}
+        GetTopGpuProcess() : AsyncEndpoint{ AsyncEndpoint::Environment::RenderProcess } {}
         // {blacklist: uint[]} => {top: Process|null}
-        Result ExecuteOnKernelTask(uint64_t uid, CefRefPtr<CefValue> pArgObj, kern::Kernel& kernel) const override
+        Result ExecuteOnRenderer(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor&) const override
         {
             namespace rn = std::ranges;
             namespace vi = rn::views;

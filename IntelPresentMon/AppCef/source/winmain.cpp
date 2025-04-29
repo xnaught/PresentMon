@@ -3,24 +3,24 @@
 #include "NanoCefBrowserClient.h"
 #include "NanoCefProcessHandler.h"
 #include "../resource.h"
-#include <Core/source/infra/Logging.h>
-#include <Core/source/infra/LogSetup.h>
+#include "util/Logging.h"
+#include "util/LogSetup.h"
 #include <Core/source/infra/util/FolderResolver.h>
-#include <Core/source/cli/CliOptions.h>
+#include "util/CliOptions.h"
 #include <CommonUtilities/log/IdentificationTable.h>
 #include <Versioning/BuildId.h>
 #include <CommonUtilities/win/Utilities.h>
-#include <PresentMonAPIWrapper/DiagnosticHandler.h>
-#include <PresentMonAPI2Loader/Loader.h>
 #include <dwmapi.h>
 #include <boost/process.hpp>
+#include <Shobjidl.h>
+
 
 #pragma comment(lib, "Dwmapi.lib")
 
 using namespace p2c;
-using namespace pmon::util;
-using namespace pmon::bid;
-using p2c::cli::Options;
+using namespace ::pmon::util;
+using namespace ::pmon::bid;
+using p2c::client::util::cli::Options;
 namespace ccef = client::cef;
 using namespace std::chrono_literals;
 
@@ -35,13 +35,6 @@ LRESULT CALLBACK BrowserWindowWndProc(HWND window_handle, UINT message, WPARAM w
 {
     switch (message)
     {
-    case WM_CLOSE:
-        if (pBrowserClient) {
-            if (auto lResult = pBrowserClient->HandleCloseMessage()) {
-                return *lResult;
-            }
-        }
-        break;
     case WM_CREATE:
     {
         pBrowserClient = new ccef::NanoCefBrowserClient{};
@@ -170,8 +163,7 @@ HWND CreateMessageWindow(HINSTANCE instance_handle)
 
 void AppQuitMessageLoop()
 {
-    if (hwndAppMsg != nullptr)
-    {
+    if (hwndAppMsg != nullptr) {
         PostMessage(hwndAppMsg, WM_COMMAND, quitCefCode, 0);
     }
 }
@@ -186,23 +178,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 #endif
     // parse the command line arguments and make them globally available
     if (auto err = Options::Init(__argc, __argv, true)) {
-        if (*err == 0) {
-            MessageBoxA(nullptr, Options::GetDiagnostics().c_str(), "Command Line Help",
-                MB_ICONINFORMATION | MB_APPLMODAL | MB_SETFOREGROUND);
-        }
-        else {
-            MessageBoxA(nullptr, Options::GetDiagnostics().c_str(), "Command Line Parse Error",
-                MB_ICONERROR | MB_APPLMODAL | MB_SETFOREGROUND);
-        }
         return *err;
     }
     const auto& opt = Options::Get();
-    // optionally override the middleware dll path (typically when running from IDE in dev cycle)
-    if (auto path = opt.middlewareDllPath.AsOptional()) {
-        pmLoaderSetPathToMiddlewareDll_(path->c_str());
+    if (opt.filesWorking) {
+        infra::util::FolderResolver::SetDevMode();
     }
+
     // create logging system and ensure cleanup before main ext
-    LogChannelManager zLogMan_;
+    client::util::LogChannelManager zLogMan_;
+
     // wait for debugger connection
     if ((opt.cefType && *opt.cefType == "renderer" && opt.debugWaitRender) ||
         (!opt.cefType && opt.debugWaitClient)) {
@@ -211,57 +196,18 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         }
         DebugBreak();
     }
+
     // name this process / thread
     log::IdentificationTable::AddThisProcess(opt.cefType.AsOptional().value_or("main-client"));
     log::IdentificationTable::AddThisThread("main");
-    // connect to the diagnostic layer (not generally used by appcef since we connect to logging directly)
-    std::optional<pmapi::DiagnosticHandler> diag;
-    try {
-        if (opt.enableDiagnostic && opt.cefType && *opt.cefType == "renderer") {
-            diag.emplace(
-                (PM_DIAGNOSTIC_LEVEL)opt.logLevel.AsOptional().value_or(log::GlobalPolicy::Get().GetLogLevel()),
-                PM_DIAGNOSTIC_OUTPUT_FLAGS_DEBUGGER | PM_DIAGNOSTIC_OUTPUT_FLAGS_QUEUE,
-                [](const PM_DIAGNOSTIC_MESSAGE& msg) {
-                auto ts = msg.pTimestamp ? msg.pTimestamp : std::string{};
-                pmlog_(log::Level(msg.level)).note(std::format("@@ D I A G @@ => <{}> {}", ts, msg.pText));
-            }
-            );
-        }
-    } pmcatch_report;
-    
-    // configure the logging system (partially based on command line options)
-    ConfigureLogging();
+
+    // initialize the logging system
+    client::util::ConfigureLogging();
+
+    // set the app id so that windows get grouped
+    SetCurrentProcessExplicitAppUserModelID(L"Intel.PresentMon");
 
     try {
-        // service-as-child handling
-        std::optional<std::string> logSvcPipe;
-        std::optional<boost::process::child> childSvc;
-        if (!opt.cefType && opt.svcAsChild) {
-            using namespace std::literals;
-            namespace bp = boost::process;
-
-            logSvcPipe = opt.logSvcPipe.AsOptional().value_or(
-                std::format("pm2-child-svc-log-{}", GetCurrentProcessId()));
-            childSvc.emplace("PresentMonService.exe"s,
-                "--control-pipe"s, *opt.controlPipe,
-                "--nsm-prefix"s, "pm-frame-nsm"s,
-                "--intro-nsm"s, *opt.shmName,
-                "--etw-session-name"s, *opt.etwSessionName,
-                "--log-level"s, std::to_string((int)log::GlobalPolicy::Get().GetLogLevel()),
-                "--log-pipe-name"s, *logSvcPipe,
-                "--enable-stdio-log");
-
-            if (!pmon::util::win::WaitForNamedPipe(*opt.controlPipe, 1500)) {
-                pmlog_error("timeout waiting for child service control pipe to go online");
-                return -1;
-            }
-        }
-
-        if (!opt.cefType && opt.logSvcPipeEnable) {
-            // connect to service's log pipe (best effort)
-            ConnectToLoggingSourcePipe(logSvcPipe.value_or(*opt.logSvcPipe), 0);
-        }
-
         using namespace client;
         // cef process constellation fork control
         CefMainArgs main_args{ hInstance };
@@ -308,12 +254,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         UnregisterClass(BrowserWindowClassName, hInstance);
         UnregisterClass(MessageWindowClassName, hInstance);
 
-        pmlog_info("== client process exiting ==");
+        pmlog_info("== UI client root process exiting ==");
 
         return (int)msg.wParam;
     }
     catch (const std::exception& e) {
-        MessageBoxA(nullptr, e.what(), "Fatal Error", MB_ICONERROR|MB_APPLMODAL|MB_SETFOREGROUND);
+        auto title = std::format("Fatal Error [{}]", typeid(e).name());
+        MessageBoxA(nullptr, e.what(), title.c_str(), MB_ICONERROR | MB_APPLMODAL | MB_SETFOREGROUND);
         return -1;
     }
     catch (...) {

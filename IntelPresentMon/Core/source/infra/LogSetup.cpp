@@ -54,7 +54,7 @@ namespace pmon::util::log
 			// attach drivers
 			// TODO: test if cwd is writeable, if not write to some other location (temp?)
 			pChannel->AttachComponent(std::make_shared<MsvcDebugDriver>(pFormatter), "drv:dbg");
-			const auto pFileStrategy = std::make_shared<SimpleFileStrategy>(std::format("pm-early-log-{}.txt", GetCurrentProcessId()));
+			const auto pFileStrategy = std::make_shared<SimpleFileStrategy>("pm-early-log.txt");
 			pChannel->AttachComponent(std::make_shared<BasicFileDriver>(pFormatter, pFileStrategy), "drv:file");
 
 			return pChannel;
@@ -107,7 +107,6 @@ namespace p2c
 			pOriginalInvalidParameterHandler_ = _set_invalid_parameter_handler(InvalidParameterHandler_);
 			// shortcut for command line
 			const auto& opt = cli::Options::Get();
-			const auto render = opt.cefType && *opt.cefType == "renderer";
 
 			// determine log folder path
 			std::filesystem::path logFolder;
@@ -119,53 +118,51 @@ namespace p2c
 					infra::util::FolderResolver::Folder::App, L"logs\\");
 			}
 			// always enable the logfile for client
-			const auto logfileNameClient = bool(opt.cefType) ? std::format(L"pmlog-{}-{}.txt",
-				str::ToWide(*opt.cefType), GetCurrentProcessId()) : L"pmlog.txt"s;
-			const auto logfilePathClient = std::filesystem::path{ logFolder } / logfileNameClient;
+			const auto logfilePathClient = std::filesystem::path{ logFolder } / "pmlog.txt";
 			pChan->AttachComponent(std::make_shared<BasicFileDriver>(std::make_shared<TextFormatter>(),
 				std::make_shared<SimpleFileStrategy>(logfilePathClient)), "drv:file");
 			auto&& pol = GlobalPolicy::Get();
 			// connect dll channel and id table to exe, get access to global settings in dll
 			LoggingSingletons getters;
-			if (render && opt.logMiddlewareCopy) {
+			if (opt.logMiddlewareCopy) {
 				getters = pmLinkLogging_(pChan, []() -> IdentificationTable& {
 					return IdentificationTable::Get_(); });
 			}
 			// set the global policy settings
 			if (opt.logLevel) {
 				pol.SetLogLevel(*opt.logLevel);
-				if (render && getters) {
+				if (getters) {
 					getters.getGlobalPolicy().SetLogLevel(*opt.logLevel);
 				}
 			}
 			if (opt.logTraceLevel) {
 				pol.SetTraceLevel(*opt.logTraceLevel);
-				if (render && getters) {
+				if (getters) {
 					getters.getGlobalPolicy().SetTraceLevel(*opt.logTraceLevel);
 				}
 			}
 			if (opt.traceExceptions) {
 				pol.SetExceptionTrace(*opt.traceExceptions);
 				pol.SetSehTracing(*opt.traceExceptions);
-				if (render && getters) {
+				if (getters) {
 					getters.getGlobalPolicy().SetExceptionTrace(*opt.traceExceptions);
 					getters.getGlobalPolicy().SetSehTracing(*opt.traceExceptions);
 				}
 			}
 			if (opt.logDenyList) {
 				pmquell(LineTable::IngestList(*opt.logDenyList, true));
-				if (render && getters) {
+				if (getters) {
 					pmquell(getters.getLineTable().IngestList_(*opt.logDenyList, true));
 				}
 			}
 			else if (opt.logAllowList) {
 				pmquell(LineTable::IngestList(*opt.logAllowList, false));
-				if (render && getters) {
+				if (getters) {
 					pmquell(getters.getLineTable().IngestList_(*opt.logAllowList, false));
 				}
 			}
 			// enable logfile for middleware if we're not doing the copy connection
-			if (!opt.logMiddlewareCopy && *opt.cefType == "renderer") {
+			if (!opt.logMiddlewareCopy) {
 				if (auto sta = pmSetupFileLogging_((logFolder / "pmlog-mid.txt").string().c_str(),
 					(PM_DIAGNOSTIC_LEVEL)pol.GetLogLevel(),
 					(PM_DIAGNOSTIC_LEVEL)pol.GetTraceLevel(),
@@ -174,36 +171,15 @@ namespace p2c
 					pmlog_error("configuring middleware file logging").code(sta).no_trace();
 				}
 			}
-			// setup server to ipc logging connection for child processes (renderer)
-			if (opt.logPipeName) {
-				try {
-					auto pSender = std::make_shared<log::NamedPipeMarshallSender>(*opt.logPipeName);
-					log::IdentificationTable::RegisterSink(pSender);
-					auto pDriver = std::make_shared<log::MarshallDriver>(pSender);
-					pChan->AttachComponent(std::move(pDriver));
-					// block here waiting for the browser process to connect
-					if (!pSender->WaitForConnection(1500ms)) {
-						pmlog_warn("browser process did not connect to ipc logging pipe before timeout (it might have connected later)");
-					}
-					else {
-						// remove independent output drivers (only copy to main process via IPC)
-						pChan->AttachComponent({}, "drv:dbg");
-						pChan->AttachComponent({}, "drv:file");
-					}
-				}
-				catch (...) {
-					pmlog_error(ReportException());
-				}
-			}
 		}
 		catch (...) {
 			pmlog_error(ReportException());
 		}
 	}
 
-	void ConnectToLoggingSourcePipe(const std::string& pipePrefix, int count)
+	void ConnectToLoggingSourcePipe(const std::string& pipePrefix)
 	{
-		mt::Thread{ "logconn-" + pipePrefix, count, [pipePrefix] {
+		mt::Thread{ "logconn-" + pipePrefix, [pipePrefix] {
 			try {
 				const auto fullPipeName = R"(\\.\pipe\)" + pipePrefix;
 				// wait maximum 1.5sec for pipe to be created

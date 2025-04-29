@@ -73,6 +73,7 @@
     <ClInclude Include="log\NamedPipeMarshallSender.h" />
     <ClInclude Include="mt\Thread.h" />
     <ClInclude Include="pipe\CoroMutex.h" />
+    <ClInclude Include="pipe\ManualAsyncEvent.h" />
     <ClInclude Include="pipe\Pipe.h" />
     <ClInclude Include="pipe\SecurityMode.h" />
     <ClInclude Include="PrecisionWaiter.h" />

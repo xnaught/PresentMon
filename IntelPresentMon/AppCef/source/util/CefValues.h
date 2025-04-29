@@ -1,17 +1,19 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <Core/source/win/WinAPI.h>
+#include <CommonUtilities/win/WinAPI.h>
 #include <include/cef_v8.h>
 #include <type_traits>
 #include <string>
 #include <algorithm>
 #include <iterator>
-#include <Core/source/infra/Logging.h>
+#include "Logging.h"
 #include <CommonUtilities/str/String.h>
-#include <Core/source/infra/util/Meta.h>
 #include <CommonUtilities/Exception.h>
+#include <CommonUtilities/Meta.h>
 #include <string_view>
+#include <concepts>
+#include <optional>
 
 namespace p2c::client::util
 {
@@ -120,7 +122,7 @@ namespace p2c::client::util
 		{
 			v = std::forward<T1>(val);
 		}
-		else if constexpr (infra::util::is_optional<T>)
+		else if constexpr (IsContainer<std::optional, T>)
 		{
 			if (val) {
 				v = MakeCefValue(*val);

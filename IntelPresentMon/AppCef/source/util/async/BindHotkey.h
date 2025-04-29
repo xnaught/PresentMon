@@ -14,24 +14,11 @@ namespace p2c::client::util::async
 	{
 	public:
         static constexpr std::string GetKey() { return "bindHotkey"; }
-        BindHotkey() : AsyncEndpoint{ AsyncEndpoint::Environment::RenderImmediate } {}
+        BindHotkey() : AsyncEndpoint{ AsyncEndpoint::Environment::RenderProcess } {}
         // {combination: {modifiers:[], hotkey:int}, action:int} => null
-		void ExecuteOnRenderAccessor(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor& accessor) const override
+		Result ExecuteOnRenderer(uint64_t uid, CefRefPtr<CefValue> pArgObj, cef::DataBindAccessor& accessor) const override
 		{
-            accessor.BindHotkey(*pArgObj, [uid = uid, pAccessor = &accessor](bool succeeded) {
-                CefPostTask(TID_RENDERER, base::BindOnce(Resolve_, uid, succeeded, CefRefPtr<cef::DataBindAccessor>{ pAccessor }));
-            });
+			return Result{ accessor.BindHotkey(*pArgObj), CefValueNull() };
 		}
-    private:
-        static void Resolve_(uint64_t uid, bool succeeded, CefRefPtr<cef::DataBindAccessor> pAccessor)
-        {
-            if (succeeded) {
-                pAccessor->ResolveAsyncEndpoint(uid, true, CefValueNull());
-            }
-            else {
-                auto result = AsyncEndpoint::MakeStringErrorResult(L"Async API endpoint [bindHotkey] failed");
-                pAccessor->ResolveAsyncEndpoint(uid, result.succeeded, std::move(result.pArgs));
-            }
-        }
 	};
 }

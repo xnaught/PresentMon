@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 #include "SignalManager.h"
 #include "CefValues.h"
-#include <Core/source/infra/Logging.h>
+#include "Logging.h"
 #include <CommonUtilities/str/String.h>
 #include <algorithm>
 #include <include/wrapper/cef_helpers.h>

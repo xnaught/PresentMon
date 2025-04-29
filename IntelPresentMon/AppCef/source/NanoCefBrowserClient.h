@@ -1,7 +1,7 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <Core/source/win/WinAPI.h>
+#include <CommonUtilities/win/WinAPI.h>
 #include <include/cef_client.h>
 #include <semaphore>
 #include <memory>
@@ -28,7 +28,6 @@ namespace p2c::client::cef
             CefRefPtr<CefFrame> frame,
             CefProcessId source_process,
             CefRefPtr<CefProcessMessage> message) override;
-        std::optional<LRESULT> HandleCloseMessage();
         CefRefPtr<CefContextMenuHandler> GetContextMenuHandler() override;
         bool OnConsoleMessage(
             CefRefPtr<CefBrowser> browser,

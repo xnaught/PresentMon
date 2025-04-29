@@ -3,13 +3,14 @@
 #include "../../../CommonUtilities/pipe/Pipe.h"
 #include "Packet.h"
 #include "ActionExecutionError.h"
+#include "AsyncAction.h"
 
 namespace pmon::ipc::act
 {
 	namespace as = boost::asio;
 	using namespace util::pipe;
 
-	template<class C>
+	template<Request C>
 	auto SyncRequest(const typename C::Params& params, uint32_t commandToken, DuplexPipe& pipe, std::optional<uint32_t> timeoutMs = {})
 		-> as::awaitable<typename C::Response>
 	{
@@ -35,5 +36,19 @@ namespace pmon::ipc::act
 			}
 		}
 		co_return pipe.ConsumePacketPayload<typename C::Response>();
+	}
+
+	template<Event C>
+	auto AsyncEmit(const typename C::Params& params, uint32_t commandToken, DuplexPipe& pipe, std::optional<uint32_t> timeoutMs = {})
+		-> as::awaitable<void>
+	{
+		const PacketHeader reqHeader{
+			.identifier = C::Identifier,
+			.commandToken = commandToken,
+			.packetType = PacketType::ActionEvent,
+			.headerVersion = 1,
+			.actionVersion = C::Version,
+		};
+		co_await pipe.WritePacket(reqHeader, params, timeoutMs);
 	}
 }

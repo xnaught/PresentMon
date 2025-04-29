@@ -62,7 +62,6 @@ namespace p2c::kern
         void UpdateInjection(bool enableInjection, std::optional<uint32_t> pid, bool enableBackground,
             const gfx::Color& flashColor, const gfx::Color& backgroundColor, float width, float rightShift);
         void ClearOverlay();
-        std::vector<Process> ListProcesses();
         void SetAdapter(uint32_t id);
         std::vector<pmon::AdapterInfo> EnumerateAdapters() const;
         void SetCapture(bool active);

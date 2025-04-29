@@ -1,66 +1,32 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "DataBindAccessor.h"
-#include <Core/source/kernel/Kernel.h>
-#include <Core/source/infra/Logging.h>
+#include "util/Logging.h"
 #include <include/cef_task.h> 
 #include <include/base/cef_callback.h> 
 #include <include/wrapper/cef_closure_task.h> 
 #include "util/CefValues.h"
+#include <Interprocess/source/act/SymmetricActionServer.h>
+#include "util/cact/TargetLostAction.h"
+#include "util/cact/OverlayDiedAction.h"
+#include "util/cact/PresentmonInitFailedAction.h"
+#include "util/cact/StalePidAction.h"
+#include "util/SignalManager.h"
 
 
 namespace p2c::client::cef
 {
-    class DBAKernelHandler : public kern::KernelHandler
-    {
-    public:
-        DBAKernelHandler(util::SignalManager* pSignals_) : pSignals{ pSignals_ } {}
-        void OnTargetLost(uint32_t pid_) override
-        {
-            CefPostTask(TID_RENDERER, base::BindOnce(&DBAKernelHandler::TargetLostTask_, base::Unretained(this), pid_));
-        }
-        void OnOverlayDied() override
-        {
-            CefPostTask(TID_RENDERER, base::BindOnce(&DBAKernelHandler::OverlayDiedTask_, base::Unretained(this)));
-        }
-        void OnPresentmonInitFailed() override
-        {
-            CefPostTask(TID_RENDERER, base::BindOnce(&DBAKernelHandler::PresentmonInitFailedTask_, base::Unretained(this)));
-        }
-        void OnStalePidSelected() override
-        {
-            CefPostTask(TID_RENDERER, base::BindOnce(&DBAKernelHandler::StalePidTask_, base::Unretained(this)));
-        }
-    private:
-        // functions needed for CefPostTask (which cannot handle lambdas)
-        void TargetLostTask_(uint32_t pid_)
-        {
-            pSignals->SignalTargetLost(pid_);
-        }
-        void OverlayDiedTask_()
-        {
-            pSignals->SignalOverlayDied();
-        }
-        void PresentmonInitFailedTask_()
-        {
-            pSignals->SignalPresentmonInitFailed();
-        }
-        void StalePidTask_()
-        {
-            pSignals->SignalStalePid();
-        }
-        // data
-        util::SignalManager* pSignals;
-    };
-
     DataBindAccessor::DataBindAccessor(CefRefPtr<CefBrowser> pBrowser, util::KernelWrapper* pKernelWrapper_)
         :
         pBrowser{ std::move(pBrowser) },
         pKernelWrapper{ pKernelWrapper_ }
     {
-        pKernelWrapper->pKernelHandler = std::make_unique<DBAKernelHandler>(&pKernelWrapper_->signals);
         pKernelWrapper->pHotkeys = std::make_unique<util::Hotkeys>();
-        pKernelWrapper->pHotkeys->SetHandler([pWrap = pKernelWrapper](Action act) { pWrap->signals.SignalHotkeyFired((uint32_t)act); });
+        // set the hotkey listener component to call hotkey signal on the signal manager when a hotkey chord is detected
+        pKernelWrapper->pHotkeys->SetHandler([this](Action action) {
+            CefPostTask(TID_RENDERER, base::BindOnce(&util::SignalManager::SignalHotkeyFired,
+                base::Unretained(&pKernelWrapper->signals), uint32_t(action)));
+        });
     }
 
     bool DataBindAccessor::Execute(const CefString& name, CefRefPtr<CefV8Value> object, const CefV8ValueList& arguments, CefRefPtr<CefV8Value>& retval, CefString& exception)
@@ -81,27 +47,26 @@ namespace p2c::client::cef
                 return true;
             }
 
-            // only allow launchKernel async endpoint if we have not yet launched the kernel
-            if (!pKernelWrapper->pKernel && arguments[0]->GetStringValue() != "launchKernel")
-            {
-                pmlog_error(std::format("js endpoint called without kernel: {}", std::string(name)));
-                exception = "core kernel not launched";
-                return true;
-            }
-
             // async endpoint entry function
             if (name == "invokeEndpoint") {
                 if (arguments.size() == 4 && arguments[0]->IsString() && arguments[1]->IsObject() &&
                     arguments[2]->IsFunction() && arguments[3]->IsFunction())
                 {
-                    pKernelWrapper->asyncEndpoints.DispatchInvocation(
-                        arguments[0]->GetStringValue(),
-                        { arguments[2], arguments[3], CefV8Context::GetCurrentContext() },
-                        arguments[1],
-                        *pBrowser,
-                        *this,
-                        *pKernelWrapper->pKernel
-                    );
+                    const auto& key = arguments[0]->GetStringValue();
+                    if (pKernelWrapper->pInvocationManager->HasHandler(key)) {
+                        pKernelWrapper->pInvocationManager->DispatchInvocation(key,
+                            { arguments[2], arguments[3], CefV8Context::GetCurrentContext() },
+                            arguments[1]
+                        );
+                    }
+                    else {
+                        pKernelWrapper->asyncEndpoints.DispatchInvocation(key,
+                            { arguments[2], arguments[3], CefV8Context::GetCurrentContext() },
+                            arguments[1],
+                            *pBrowser,
+                            *this
+                        );
+                    }
                 }
                 else
                 {
@@ -123,59 +88,42 @@ namespace p2c::client::cef
         }
     }
 
-    void DataBindAccessor::BindHotkey(CefValue& pArgObj, std::function<void(bool)> resultCallback)
+    bool DataBindAccessor::BindHotkey(CefValue& pArgObj)
     {
         // {action:int, combination: {modifiers:[], key:int}}
 
         std::shared_lock lk{ kernelMtx };
-        if (pKernelWrapper)
-        {
+        if (pKernelWrapper) {
             const auto payload = pArgObj.GetDictionary();
             const auto comboJs = payload->GetDictionary("combination");
             const auto modsJs = comboJs->GetList("modifiers");
 
             auto mods = win::Mod::Null;
-            for (int i = 0; i < modsJs->GetSize(); i++)
-            {
+            for (int i = 0; i < modsJs->GetSize(); i++) {
                 const auto modCode = modsJs->GetValue(i)->GetInt();
                 mods = mods | *win::ModSet::SingleModFromCode(modCode);
             }
 
-            pKernelWrapper->pHotkeys->BindAction(
+            return pKernelWrapper->pHotkeys->BindAction(
                 (Action)payload->GetInt("action"),
                 win::Key{ (win::Key::Code)comboJs->GetInt("key") },
-                mods,
-                std::move(resultCallback)
+                mods
             );
         }
+        return false;
     }
 
-    void DataBindAccessor::ClearHotkey(CefValue& pArgObj, std::function<void(bool)> resultCallback)
+    bool DataBindAccessor::ClearHotkey(CefValue& pArgObj)
     {
         // {action:int}
 
         std::shared_lock lk{ kernelMtx };
-        if (pKernelWrapper)
-        {
-            pKernelWrapper->pHotkeys->ClearAction(
-                (Action)pArgObj.GetDictionary()->GetInt("action"),
-                std::move(resultCallback)
+        if (pKernelWrapper) {
+            return pKernelWrapper->pHotkeys->ClearAction(
+                (Action)pArgObj.GetDictionary()->GetInt("action")
             );
         }
-    }
-
-    void DataBindAccessor::LaunchKernel()
-    {
-        std::shared_lock lk{ kernelMtx };
-        if (pKernelWrapper) {
-            if (pKernelWrapper->pKernel)
-            {
-                pmlog_warn("launchKernel called but kernel already exists");
-                return;
-            }
-
-            pKernelWrapper->pKernel = std::make_unique<kern::Kernel>(pKernelWrapper->pKernelHandler.get());
-        }
+        return false;
     }
 
     void DataBindAccessor::ClearKernelWrapper()
