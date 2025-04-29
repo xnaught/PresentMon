@@ -4,11 +4,12 @@ import { useIntrospectionStore } from '@/stores/introspection';
 import type { Widget } from '@/core/widget';
 import LoadoutRow from '@/components/LoadoutRow.vue';
 import { ref } from 'vue';
+import { useLoadoutStore } from '@/stores/loadout';
 
 defineOptions({name: 'LoadoutConfigView'})
 
-const introspectionStore = useIntrospectionStore();
-const widgets = ref<Widget[]>([]);
+const intro = useIntrospectionStore();
+const loadout = useLoadoutStore()
 const activeAdapterId = ref<number|null>(null);
 
 const save = () => {
@@ -20,7 +21,7 @@ const load = () => {
 };
 
 const addWidget = () => {
-  console.log('Add Widget called');
+  loadout.addGraph()
 };
 
 const removeWidget = (widgetIdx:number) => {
@@ -37,9 +38,9 @@ const removeWidget = (widgetIdx:number) => {
 
     <v-row class="mt-5 loadout-table" id="sortable-row-container">
     <loadout-row
-        v-for="(w, i) in widgets" :key="w.key" :stats="introspectionStore.stats"
-        :widgetIdx="i" :widgets="widgets" :metrics="introspectionStore.metrics" 
-        :metricOptions="introspectionStore.metricOptions" :adapterId="activeAdapterId" :locked="false" 
+        v-for="(w, i) in loadout.widgets" :key="w.key" :stats="intro.stats"
+        :widgetIdx="i" :widgets="loadout.widgets" :metrics="intro.metrics" 
+        :metricOptions="intro.metricOptions" :adapterId="activeAdapterId" :locked="false" 
         @delete="removeWidget" 
     ></loadout-row>
     <div class="add-btn-row">

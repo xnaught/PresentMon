@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, defineProps, defineEmits, onMounted, withDefaults } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type { Widget } from '@/core/widget'
 import type { Metric } from '@/core/metric'
 import type { MetricOption } from '@/core/metric-option'

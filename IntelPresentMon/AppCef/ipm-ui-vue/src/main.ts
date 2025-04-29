@@ -54,10 +54,9 @@ async function initStores() {
 
 var app:any;
 async function boot() {
-    await initStores()
-    // boot vue app
     app = createApp(App)
     app.use(createPinia())
+    await initStores()
     app.use(router)
     app.use(vuetify)    
     app.mount('#app')
