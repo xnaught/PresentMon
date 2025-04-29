@@ -7,10 +7,7 @@ import type { Widget } from '@/core/widget';
 import { Api } from '@/core/api';
 import LoadoutRow from '@/components/LoadoutRow.vue';
 import type { MetricOption } from '@/core/metric-option';
-import { Preferences } from '@/store/preferences';
-import { Loadout } from '@/store/loadout';
 import { Introspection } from '@/store/introspection';
-import { Notifications } from '@/store/notifications';
 
 import { ref } from 'vue';
 
@@ -34,7 +31,7 @@ const addWidget = () => {
   console.log('Add Widget called');
 };
 
-const removeWidget = (widgetIdx) => {
+const removeWidget = (widgetIdx:number) => {
   console.log('Remove Widget called with index:', widgetIdx);
 };
 </script>

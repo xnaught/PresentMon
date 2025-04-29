@@ -13,6 +13,6 @@ watchEffect(() => {
 <template>
   <div>
     <v-btn @click="counter.click">Click Me</v-btn>
-    <ColorPicker v-model="color"></ColorPicker>
+    <color-picker v-model="color"></color-picker>
   </div>
 </template>
