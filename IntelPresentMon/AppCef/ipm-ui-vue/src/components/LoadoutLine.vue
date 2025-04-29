@@ -49,7 +49,7 @@ const widgetSubtype = computed({
   get: () => (widgetType.value === WidgetType.Graph ? asGraph(widget.value).graphType.name : ''),
   set: (val: string) => {
     if (widgetType.value === WidgetType.Graph) {
-      loadoutStore.setGraphAttribute(props.widgetIdx, 'name', val);
+      loadoutStore.setGraphTypeAttribute(props.widgetIdx, 'name', val);
     }
   },
 });
