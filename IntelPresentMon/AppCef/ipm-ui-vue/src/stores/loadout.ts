@@ -2,10 +2,12 @@ import { ref, reactive, readonly, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { Api } from '@/core/api'
 import { getEnumValues } from '@/core/meta'
-import { asGraph, type Widget } from '@/core/widget'
+import { asGraph, asReadout, WidgetType, type Widget } from '@/core/widget'
 import { signature, type LoadoutFile } from '@/core/loadout'
 import type { QualifiedMetric } from '@/core/qualified-metric'
 import { makeDefaultGraph, type Graph } from '@/core/graph'
+import { makeDefaultReadout, type Readout } from '@/core/readout'
+import { makeDefaultWidgetMetric, type WidgetMetric } from '@/core/widget-metric'
 
 export const useLoadoutStore = defineStore('loadout', () => {
     // === State ===
@@ -68,24 +70,34 @@ export const useLoadoutStore = defineStore('loadout', () => {
 
     async function setWidgetMetrics(payload: { index: number, metrics: WidgetMetric[] }) {
         const widget = widgets.value[payload.index];
-        if (widget.widgetType !== 'Graph' || widget.graphType?.name !== 'Line') {
-            if (payload.metrics.length > 1) {
-                console.warn(`Widget #${payload.index} is not Line Graph but trying to set ${payload.metrics.length} metrics`);
-                widget.metrics = [payload.metrics[0]];
+        if (widget.widgetType === WidgetType.Graph) {
+            if ((widget as Graph).graphType.name === 'Line') {
+                widget.metrics = payload.metrics;
+                await serializeCurrent();
+                return
             }
         }
-        widget.metrics = payload.metrics;
+        if (payload.metrics.length > 1) {
+            console.warn(`Widget #${payload.index} is not Line Graph but trying to set ${payload.metrics.length} metrics`);
+        }
+        widget.metrics = [payload.metrics[0]]
         await serializeCurrent();
     }
 
     async function addWidgetMetric(payload: { index: number, metric: QualifiedMetric }) {
         const widget = widgets.value[payload.index];
-        if (widget.widgetType !== 'Graph' || widget.graphType?.name !== 'Line') {
-            console.warn(`Widget #${payload.index} is not Line Graph but trying to add metric`);
+        if (widget.widgetType === WidgetType.Graph) {
+            if ((widget as Graph).graphType?.name !== 'Line') {
+                console.warn(`Widget #${payload.index} is not Line Graph but trying to add metric`);
+                throw new Error('bad addition of metric to widget');
+            }
+            widget.metrics.push(makeDefaultWidgetMetric(payload.metric));
+            await serializeCurrent();
+        }
+        else {
+            console.warn(`Widget #${payload.index} is not Graph but trying to add metric`);
             throw new Error('bad addition of metric to widget');
         }
-        widget.metrics.push(makeDefaultWidgetMetric(payload.metric));
-        await serializeCurrent();
     }
 
     async function removeWidgetMetric(payload: { index: number, metricIdIdx: number }) {
@@ -105,18 +117,18 @@ export const useLoadoutStore = defineStore('loadout', () => {
     }
 
     async function resetWidgetAs(payload: { index: number, type: WidgetType }) {
-        let qualifiedMetric = widgets.value[payload.index].metrics[0]?.metric || null;
+        let qualifiedMetric: QualifiedMetric|null = widgets.value[payload.index].metrics[0]?.metric || null;
         // Mocked Introspection.metrics
         // Original: const metric = Introspection.metrics.find(m => m.id === qualifiedMetric.metricId);
         const mockMetrics = [{ id: 1, numeric: true }];
-        if (qualifiedMetric && payload.type === 'Graph') {
-            const metric = mockMetrics.find(m => m.id === qualifiedMetric.metricId);
+        if (qualifiedMetric && payload.type === WidgetType.Graph) {
+            const metric = mockMetrics.find(m => m.id === qualifiedMetric!.metricId);
             if (!metric || !metric.numeric) {
                 qualifiedMetric = null;
             }
         }
-        let newWidget;
-        if (payload.type === 'Graph') {
+        let newWidget: Widget;
+        if (payload.type === WidgetType.Graph) {
             newWidget = makeDefaultGraph(qualifiedMetric);
         } else {
             newWidget = makeDefaultReadout(qualifiedMetric);
@@ -132,7 +144,7 @@ export const useLoadoutStore = defineStore('loadout', () => {
     }
 
     async function parseAndReplace(payload: { payload: string }) {
-        const loadout = JSON.parse(payload.payload);
+        const loadout = JSON.parse(payload.payload) as LoadoutFile;
         if (loadout.signature.code !== signature.code) {
             throw new Error(`Bad loadout file format; expect:${signature.code} actual:${loadout.signature.code}`);
         }
