@@ -98,15 +98,15 @@ const removeWidget = (widgetIdx:number) => {
   }
   .widget-row:hover .widget-btn.remove-btn:hover {
     opacity: 1;
-    color: red;
+    color: red !important;
   }
   .widget-row:hover .widget-btn.add-line-btn:hover {
     opacity: 1;
-    color: greenyellow;
+    color: rgb(47, 255, 64) !important;
   }
   .widget-row:hover .widget-btn.details-btn:hover {
     opacity: 1;
-    color: lightskyblue;
+    color: rgb(92, 148, 253) !important;
   }
 }
 .widget-row {
@@ -133,7 +133,7 @@ const removeWidget = (widgetIdx:number) => {
   }
   &:hover .line-btn:hover {
     opacity: 1;
-    color: red;
+    color: red !important;
   }
 }
 .widget-row .widget-cell {

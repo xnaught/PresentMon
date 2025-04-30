@@ -179,6 +179,7 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         variant="outlined"
         :density="isMaster ? 'default' : 'compact'"
         hide-details
+        color="primary"
       ></v-autocomplete>
     </div>
     <div class="widget-cell col-stat"> 
@@ -191,6 +192,7 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         variant="outlined"
         :density="isMaster ? 'default' : 'compact'"
         hide-details
+        color="primary"
       ></v-select>
     </div>
     <div class="widget-cell col-type">
@@ -202,6 +204,7 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         :density="isMaster ? 'default' : 'compact'"
         variant="outlined"
         hide-details
+        color="primary"
       >
         <template v-slot:selection="{item, index}: {item:ListItem<WidgetType>, index:number}">
           {{ widgetTypeToString(item.raw) }}
@@ -221,8 +224,9 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         :density="isMaster ? 'default' : 'compact'"
         variant="outlined"
         hide-details
+        color="primary"
       ></v-select>
-      <v-switch v-else v-model="axisAffinityRight" label="Right Axis" hide-details density="compact" class="mt-0"></v-switch>
+      <v-switch v-else v-model="axisAffinityRight" label="Right Axis" hide-details density="compact" class="mt-0" color="primary"></v-switch>
     </div>
     <div class="widget-cell col-line-color">
       <color-picker
@@ -238,16 +242,36 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
       ></color-picker>
     </div>
     <div class="widget-cell col-controls text-right">
-      <v-btn v-if="isMaster && !locked && isGraphWidget" :to="{name: 'graph-config', params: {index: widgetIdx}}" class="widget-btn details-btn" x-large icon>
-        <v-icon>mdi-cog</v-icon>
+      <v-btn icon v-if="isMaster && !locked && isGraphWidget"
+        :to="{name: 'graph-config', params: {index: widgetIdx}}"
+        class="widget-btn details-btn"
+        variant="text"
+        size="large">
+        <v-icon size="x-large">mdi-cog</v-icon>
       </v-btn>
-      <v-btn v-if="!locked && isReadoutWidget" :to="{name: 'readout-config', params: {index: widgetIdx}}" class="widget-btn details-btn" x-large icon>
-        <v-icon>mdi-cog</v-icon>
+      <v-btn icon v-if="!locked && isReadoutWidget"
+        :to="{name: 'readout-config', params: {index: widgetIdx}}"
+        class="widget-btn details-btn"
+        variant="text">
+        <v-icon size="x-large">mdi-cog</v-icon>
       </v-btn>
-      <v-btn v-if="isMaster && !locked && isLineGraphWidget" @click="emit('add')" class="widget-btn add-line-btn" x-large icon>
-        <v-icon>mdi-plus</v-icon>
+      <v-btn icon v-if="isMaster && !locked && isLineGraphWidget"
+        @click="emit('add')"
+        class="widget-btn add-line-btn"
+        variant="text">
+        <v-icon size="x-large">mdi-plus</v-icon>
       </v-btn>
-      <v-btn v-if="isMaster && !locked" @click="emit('delete', lineIdx)" class="widget-btn remove-btn" x-large icon>
+      <v-btn icon v-if="isMaster && !locked"
+        @click="emit('delete', lineIdx)"
+        class="widget-btn remove-btn"
+        variant="text">
+        <v-icon size="x-large">mdi-close</v-icon>
+      </v-btn>
+      <v-btn icon v-if="!isMaster && !locked"
+        @click="emit('delete', lineIdx)"
+        class="widget-line-btn line-btn mr-1"
+        variant="text"
+        size="small">
         <v-icon>mdi-close</v-icon>
       </v-btn>
     </div>
