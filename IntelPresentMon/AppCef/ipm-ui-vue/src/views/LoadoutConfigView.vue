@@ -3,7 +3,7 @@ import Sortable from 'sortablejs';
 import { useIntrospectionStore } from '@/stores/introspection';
 import type { Widget } from '@/core/widget';
 import LoadoutRow from '@/components/LoadoutRow.vue';
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useLoadoutStore } from '@/stores/loadout';
 
 defineOptions({name: 'LoadoutConfigView'})
@@ -11,6 +11,28 @@ defineOptions({name: 'LoadoutConfigView'})
 const intro = useIntrospectionStore();
 const loadout = useLoadoutStore()
 const activeAdapterId = ref<number|null>(null);
+let sort: Sortable|null = null;
+
+onMounted(() => {  
+  sort = new Sortable(document.querySelector('#sortable-row-container')!, {
+    draggable: '.sortable-row',
+    handle: '.sortable-handle',
+    forceFallback: true,
+    onChoose: e => e.target.classList.add('sortable-grabbing'),
+    onUnchoose: e => e.target.classList.remove('sortable-grabbing'),
+    onStart: e => e.target.classList.add('sortable-grabbing'),
+    onEnd: e => {
+        e.target.classList.remove('sortable-grabbing')
+        dragReorder(e)
+    },
+  })
+})
+
+const dragReorder = (e: Sortable.SortableEvent) => {
+  if (e.oldIndex !== undefined && e.newIndex !== undefined) {
+    loadout.moveWidget(e.oldIndex, e.newIndex)
+  }
+}
 
 const save = () => {
   console.log('Save called');
@@ -25,7 +47,7 @@ const addWidget = () => {
 };
 
 const removeWidget = (widgetIdx:number) => {
-  console.log('Remove Widget called with index:', widgetIdx);
+  console.log('Remove Widget called with index:', widgetIdx)
 };
 </script>
 
