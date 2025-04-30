@@ -13,7 +13,8 @@ const loadout = useLoadoutStore()
 const activeAdapterId = ref<number|null>(null);
 let sort: Sortable|null = null;
 
-onMounted(() => {  
+onMounted(() => {
+  // hook up the Sortable.js drag and drop machinery to our elements
   sort = new Sortable(document.querySelector('#sortable-row-container')!, {
     draggable: '.sortable-row',
     handle: '.sortable-handle',
@@ -35,10 +36,12 @@ const dragReorder = (e: Sortable.SortableEvent) => {
 }
 
 const save = () => {
+  // TODO: implement
   console.log('Save called');
 };
 
 const load = () => {
+  // TODO: implement
   console.log('Load called');
 };
 
@@ -47,7 +50,7 @@ const addWidget = () => {
 };
 
 const removeWidget = (widgetIdx:number) => {
-  console.log('Remove Widget called with index:', widgetIdx)
+  loadout.removeWidget(widgetIdx)
 };
 </script>
 

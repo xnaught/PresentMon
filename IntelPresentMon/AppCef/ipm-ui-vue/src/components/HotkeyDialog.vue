@@ -118,7 +118,7 @@ defineExpose({ show })
           <v-spacer></v-spacer>
           <v-btn
             color="red-darken-2"
-            text
+            variant="text"
             @click="clear"
             :disabled="!combinationSet"
           >
@@ -126,14 +126,14 @@ defineExpose({ show })
           </v-btn>
           <v-btn
             color="white-darken-3"
-            text
+            variant="text"
             @click="cancel"
           >
             Cancel
           </v-btn>
           <v-btn
             color="primary"
-            text
+            variant="text"
             @click="submit"
             :disabled="!combinationValid"
           >
