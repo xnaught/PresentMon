@@ -246,32 +246,37 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         :to="{name: 'graph-config', params: {index: widgetIdx}}"
         class="widget-btn details-btn"
         variant="text"
-        size="large">
+        size="large"
+        color="white">
         <v-icon size="x-large">mdi-cog</v-icon>
       </v-btn>
       <v-btn icon v-if="!locked && isReadoutWidget"
         :to="{name: 'readout-config', params: {index: widgetIdx}}"
         class="widget-btn details-btn"
-        variant="text">
+        variant="text"
+        color="white">
         <v-icon size="x-large">mdi-cog</v-icon>
       </v-btn>
       <v-btn icon v-if="isMaster && !locked && isLineGraphWidget"
         @click="emit('add')"
         class="widget-btn add-line-btn"
-        variant="text">
+        variant="text"
+        color="white">
         <v-icon size="x-large">mdi-plus</v-icon>
       </v-btn>
       <v-btn icon v-if="isMaster && !locked"
         @click="emit('delete', lineIdx)"
         class="widget-btn remove-btn"
-        variant="text">
+        variant="text"
+        color="white">
         <v-icon size="x-large">mdi-close</v-icon>
       </v-btn>
       <v-btn icon v-if="!isMaster && !locked"
         @click="emit('delete', lineIdx)"
         class="widget-line-btn line-btn mr-1"
         variant="text"
-        size="small">
+        size="small"
+        color="white">
         <v-icon>mdi-close</v-icon>
       </v-btn>
     </div>

@@ -54,7 +54,7 @@ const removeWidget = (widgetIdx:number) => {
 <template>
   <div class="flex-grow-1 flex-column mx-lg-12 mx-xl-16">
     <h2 class="mt-5 ml-5 link-head" @click="$router.back()">
-        <v-icon style="vertical-align: 0" color="inherit">mdi-chevron-left</v-icon>
+        <v-icon size="22" color="inherit">mdi-chevron-left</v-icon>
         Loadout Configuration
     </h2>
 
@@ -66,13 +66,13 @@ const removeWidget = (widgetIdx:number) => {
         @delete="removeWidget" 
     ></loadout-row>
     <div class="add-btn-row">
-        <v-btn @click="addWidget()" class="add-btn">Add New Widget</v-btn>
+        <v-btn @click="addWidget()" class="add-btn" variant="tonal" height="48" color="white">Add New Widget</v-btn>
     </div>
     </v-row>
 
     <v-row>
-    <v-col cols="6" style="text-align: center"><v-btn @click="save()">Save</v-btn></v-col>
-    <v-col cols="6" style="text-align: center"><v-btn @click="load()">Load</v-btn></v-col>
+    <v-col cols="6" style="text-align: center"><v-btn @click="save()" variant="tonal" color="white">Save</v-btn></v-col>
+    <v-col cols="6" style="text-align: center"><v-btn @click="load()" variant="tonal" color="white">Load</v-btn></v-col>
     </v-row>
   </div>
 </template>
@@ -170,16 +170,18 @@ const removeWidget = (widgetIdx:number) => {
 .sortable-grabbing * {
   cursor: grabbing !important;
 }
-button.v-btn.add-btn.add-btn {
-  padding: 24px 96px;
+.add-btn {
   margin: 8px
 }
-.link-head { 
-  color: white; 
-  cursor: pointer; 
-  user-select: none; 
-  transition: color .2s; 
-} 
+.link-head {
+  display: inline-flex;
+  align-items: center;
+  color: white;
+  cursor: pointer;
+  user-select: none;
+  transition: color .2s;
+  gap: 4px;
+}
 .link-head:hover { 
   color: #2196f3; 
 } 
