@@ -199,6 +199,7 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         v-model="widgetType"
         :items="widgetTypeOptions"
         :disabled="locked || widgetTypeOptions.length < 2"
+        :density="isMaster ? 'default' : 'compact'"
         variant="outlined"
         hide-details
       >
@@ -217,6 +218,7 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         v-model="widgetSubtype"
         :items="widgetSubtypeOptions"
         :disabled="locked || widgetSubtypeOptions.length < 2"
+        :density="isMaster ? 'default' : 'compact'"
         variant="outlined"
         hide-details
       ></v-select>
@@ -246,9 +248,6 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         <v-icon>mdi-plus</v-icon>
       </v-btn>
       <v-btn v-if="isMaster && !locked" @click="emit('delete', lineIdx)" class="widget-btn remove-btn" x-large icon>
-        <v-icon>mdi-close</v-icon>
-      </v-btn>
-      <v-btn v-if="!isMaster && !locked" @click="emit('delete', lineIdx)" class="widget-line-btn line-btn mr-2" icon>
         <v-icon>mdi-close</v-icon>
       </v-btn>
     </div>
