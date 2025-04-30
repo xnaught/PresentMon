@@ -90,7 +90,7 @@ export const useLoadoutStore = defineStore('loadout', () => {
         await serializeCurrent()
     }
 
-    async function addWidgetMetric(index: number, metric: QualifiedMetric) {
+    async function addWidgetMetric(index: number, metric: QualifiedMetric|null) {
         const widget = widgets.value[index]
         if (widget.widgetType === WidgetType.Graph) {
             if ((widget as Graph).graphType?.name !== 'Line') {

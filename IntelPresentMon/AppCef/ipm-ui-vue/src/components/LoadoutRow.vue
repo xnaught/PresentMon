@@ -52,7 +52,7 @@ const handleDelete = (lineIdx: number) => {
 
 const handleAdd = () => {
   try {
-    loadoutStore.addWidgetMetric(props.widgetIdx, { metricId: 0, arrayIndex: 0, statId: 0, deviceId: 0, desiredUnitId: 0 })
+    loadoutStore.addWidgetMetric(props.widgetIdx, null)
     lineKeys.value.push(nextKey.value++)
   } catch (e) {}
 }
