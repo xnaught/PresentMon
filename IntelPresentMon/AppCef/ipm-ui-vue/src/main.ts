@@ -45,6 +45,27 @@ const vuetify = createVuetify({
             },
         },
     },
+    defaults: {
+        global: {
+            hideDetails: true,
+        },
+        VSlider: {
+            color: "primary",
+            thumbSize: 16,
+        },
+        VRangeSlider: {
+            color: "primary",
+            thumbSize: 16,
+        },
+        VTextField: {
+            color: "primary",
+            variant: "outlined",
+            density: "compact",
+        },
+        VSwitch: {
+            color: "primary",
+        },
+    }
 })
 
 async function initStores() {

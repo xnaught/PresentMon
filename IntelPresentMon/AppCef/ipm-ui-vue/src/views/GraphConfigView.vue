@@ -18,7 +18,6 @@ const loadoutStore = useLoadoutStore();
 
 const widget = computed(() => loadoutStore.widgets[props.index]);
 const graph = computed(() => asGraph(widget.value));
-const widgetTypeName = computed(() => WidgetType[widget.value.widgetType])
 
 const timeRange = ref(10); // Mocked value
 const metricPollRate = ref(1); // Mocked value
@@ -108,17 +107,17 @@ const typeCountRange = computed({
     </h2>
 
     <v-card class="page-card my-7">
-      <v-card-title class="mt-0">Graph Settings</v-card-title>
+      <v-card-title class="mt-0 text-medium-emphasis">Graph Settings</v-card-title>
       <v-divider class="ma-0"></v-divider>
 
       <v-row class="mt-8">
         <v-col v-if="typeName !== 'Line'" cols="3">
           Value Range
-          <p class="text--secondary text-sm-caption mb-0">Range of metric values for the bins this histogram</p>
+          <p class="text-medium-emphasis text-caption mb-0">Range of metric values for the bins this histogram</p>
         </v-col>
         <v-col v-else cols="3">
           Left Value Range
-          <p class="text--secondary text-sm-caption mb-0">Range of metric values to be displayed by the left axis of this graph</p>
+          <p class="text-medium-emphasis text-caption mb-0">Range of metric values to be displayed by the left axis of this graph</p>
         </v-col>
         <v-col cols="9">
           <v-row dense>
@@ -161,11 +160,11 @@ const typeCountRange = computed({
       <v-row class="mt-3">
         <v-col v-if="typeName !== 'Line'" cols="3">
           Autoscale Range
-          <p class="text--secondary text-sm-caption mb-0">Automatically adjust the range of values for the bins this histogram</p>
+          <p class="text-medium-emphasis text-caption mb-0">Automatically adjust the range of values for the bins this histogram</p>
         </v-col>
         <v-col v-else cols="3">
           Autoscale Left
-          <p class="text--secondary text-sm-caption mb-0">Automatically adjust the range of the left y-axis</p>
+          <p class="text-medium-emphasis text-caption mb-0">Automatically adjust the range of the left y-axis</p>
         </v-col>
         <v-col cols="9">
           <v-switch v-model="autoLeft" hide-details></v-switch>
@@ -175,7 +174,7 @@ const typeCountRange = computed({
       <v-row v-if="typeName === 'Line'" class="mt-8">
         <v-col cols="3">
           Right Value Range
-          <p class="text--secondary text-sm-caption mb-0">Range of metric values to be displayed by the right axis of this graph</p>
+          <p class="text-medium-emphasis text-caption mb-0">Range of metric values to be displayed by the right axis of this graph</p>
         </v-col>
         <v-col cols="9">
           <v-row dense>
@@ -218,7 +217,7 @@ const typeCountRange = computed({
       <v-row v-if="typeName === 'Line'" class="mt-3">
         <v-col cols="3">
           Autoscale Right
-          <p class="text--secondary text-sm-caption mb-0">Automatically adjust the range of the right y-axis</p>
+          <p class="text-medium-emphasis text-caption mb-0">Automatically adjust the range of the right y-axis</p>
         </v-col>
         <v-col cols="9">
           <v-switch v-model="autoRight" hide-details></v-switch>
@@ -229,7 +228,7 @@ const typeCountRange = computed({
         <v-row class="mt-8">
           <v-col cols="3">
             Number of Bins
-            <p class="text--secondary text-sm-caption mb-0">Number of bins (bars) in histogram</p>
+            <p class="text-medium-emphasis text-caption mb-0">Number of bins (bars) in histogram</p>
           </v-col>
           <v-col cols="9">
             <v-slider
@@ -245,7 +244,7 @@ const typeCountRange = computed({
         <v-row class="mt-8">
           <v-col cols="3">
             Count Range
-            <p class="text--secondary text-sm-caption mb-0">Range of bin counts displayed by this histogram</p>
+            <p class="text-medium-emphasis text-caption mb-0">Range of bin counts displayed by this histogram</p>
           </v-col>
           <v-col cols="9">
             <v-row dense>
@@ -288,7 +287,7 @@ const typeCountRange = computed({
         <v-row v-if="typeName !== 'Line'" class="mt-3">
           <v-col cols="3">
             Autoscale Count
-            <p class="text--secondary text-sm-caption mb-0">Automatically adjust the range of bin counts</p>
+            <p class="text-medium-emphasis text-caption mb-0">Automatically adjust the range of bin counts</p>
           </v-col>
           <v-col cols="9">
             <v-switch v-model="autoCount" hide-details></v-switch>
@@ -298,13 +297,13 @@ const typeCountRange = computed({
         <v-row v-if="typeName !== 'Line'" class="mt-3">
           <v-col cols="3">
             Total Count
-            <p class="text--secondary text-sm-caption mb-0">Total expected data points being counted into bins</p>
+            <p class="text-medium-emphasis text-caption mb-0">Total expected data points being counted into bins</p>
           </v-col>
           <v-col cols="9">
-            <p class="text--secondary text-sm-caption">
+            <p class="text-medium-emphasis text-caption">
               The total count of data points displayed is controlled by <span style="color: orange;">Time Scale</span>
-              (<router-link :to="{name: 'overlay-config'}">Settings>Overlay</router-link>) multiplied by the <span style="color: orange;">Metric Poll Rate</span>
-              (<router-link :to="{name: 'metric-processing'}">Settings>Data Processing</router-link>). <br> Currently it is
+              (<router-link class="app-link" :to="{name: 'overlay-config'}">Settings>Overlay</router-link>) multiplied by the <span style="color: orange;">Metric Poll Rate</span>
+              (<router-link class="app-link" :to="{name: 'metric-processing'}">Settings>Data Processing</router-link>). <br> Currently it is
               <span style="color: green;">{{ timeRange }}s</span> * <span style="color: green;">{{ metricPollRate }}Hz</span> =
               <span style="color: violet;">{{ totalCount }}</span> data points.
             </p>
@@ -314,13 +313,13 @@ const typeCountRange = computed({
     </v-card>
 
     <v-card class="page-card my-7">
-      <v-card-title class="mt-0">Style Settings</v-card-title>
+      <v-card-title class="mt-0 text-medium-emphasis">Style Settings</v-card-title>
       <v-divider class="ma-0"></v-divider>
 
       <v-row class="mt-5">
         <v-col cols="3">
           Graph Height
-          <p class="text--secondary text-sm-caption mb-0">Vertical size of the graph</p>
+          <p class="text-medium-emphasis text-caption mb-0">Vertical size of the graph</p>
         </v-col>
         <v-col cols="9">
           <v-slider
@@ -336,7 +335,7 @@ const typeCountRange = computed({
       <v-row class="mt-8">
         <v-col cols="3">
           Grid Vertical
-          <p class="text--secondary text-sm-caption mb-0">Number of vertical divisions in the grid</p>
+          <p class="text-medium-emphasis text-caption mb-0">Number of vertical divisions in the grid</p>
         </v-col>
         <v-col cols="9">
           <v-slider
@@ -352,7 +351,7 @@ const typeCountRange = computed({
       <v-row class="mt-8">
         <v-col cols="3">
           Grid Horizontal
-          <p class="text--secondary text-sm-caption mb-0">Number of horizontal divisions in the grid</p>
+          <p class="text-medium-emphasis text-caption mb-0">Number of horizontal divisions in the grid</p>
         </v-col>
         <v-col cols="9">
           <v-slider
@@ -368,7 +367,7 @@ const typeCountRange = computed({
       <v-row class="mt-8">
         <v-col cols="3">
           Font Size
-          <p class="text--secondary text-sm-caption mb-0">Size of text in this readout widget</p>
+          <p class="text-medium-emphasis text-caption mb-0">Size of text in this readout widget</p>
         </v-col>
         <v-col cols="9">
           <v-slider
@@ -385,7 +384,7 @@ const typeCountRange = computed({
       <v-row class="mt-8">
         <v-col cols="3">
           Colors
-          <p class="text--secondary text-sm-caption mb-0">Colors of various elements of the graph</p>
+          <p class="text-medium-emphasis text-caption mb-0">Colors of various elements of the graph</p>
         </v-col>
         <v-col cols="9">
           <v-row dense>
@@ -427,5 +426,8 @@ i.v-icon.v-icon {
 }
 .page-wrap {
   max-width: 750px;
+}
+a.app-link {
+  color: rgb(var(--v-theme-primary));
 }
 </style>
