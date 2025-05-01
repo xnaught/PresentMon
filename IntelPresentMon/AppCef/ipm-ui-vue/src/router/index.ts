@@ -20,7 +20,7 @@ const router = createRouter({
       path: '/graphs/:index',
       name: 'graph-config',
       component: GraphConfigView,
-      props: true,
+      props: route => ({ index: Number(route.params.index) }),
     },
     {
       path: '/readouts/:index',

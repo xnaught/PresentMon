@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import ColorPicker from '@/components/ColorPicker.vue';
 import type { RgbaColor } from '@/core/color';
 import type { Graph } from '@/core/graph';
-import type { Widget, WidgetType } from '@/core/widget';
+import { WidgetType, type Widget } from '@/core/widget';
 import { asGraph, WidgetType as WidgetTypeEnum } from '@/core/widget';
 import { useLoadoutStore } from '@/stores/loadout';
 
@@ -12,23 +12,13 @@ defineOptions({ name: 'GraphConfigView' });
 interface Props {
   index: number;
 }
-
 const props = defineProps<Props>();
 
 const loadoutStore = useLoadoutStore();
 
 const widget = computed(() => loadoutStore.widgets[props.index]);
 const graph = computed(() => asGraph(widget.value));
-
-const widgetTypeName = ref('');
-watch(
-  () => widgetTypeName.value,
-  (type, oldType) => {
-    if (oldType !== '') {
-      loadoutStore.resetWidgetAs(props.index, WidgetTypeEnum[type as keyof typeof WidgetTypeEnum]);
-    }
-  }
-);
+const widgetTypeName = computed(() => WidgetType[widget.value.widgetType])
 
 const timeRange = ref(10); // Mocked value
 const metricPollRate = ref(1); // Mocked value
@@ -117,8 +107,8 @@ const typeCountRange = computed({
       Detailed Graph Configuration
     </h2>
 
-    <v-card class="page-card my-7" v-if="widgetTypeName === 'Graph'">
-      <v-subheader class="mt-0">Graph Settings</v-subheader>
+    <v-card class="page-card my-7">
+      <v-card-title class="mt-0">Graph Settings</v-card-title>
       <v-divider class="ma-0"></v-divider>
 
       <v-row class="mt-8">
@@ -242,12 +232,13 @@ const typeCountRange = computed({
             <p class="text--secondary text-sm-caption mb-0">Number of bins (bars) in histogram</p>
           </v-col>
           <v-col cols="9">
-            <v-range
+            <v-slider
               v-model="typeBinCount"
               :min="5"
               :max="200"
               thumb-label="always"
-            ></v-range>
+                hide-details
+            ></v-slider>
           </v-col>
         </v-row>
 
@@ -322,8 +313,8 @@ const typeCountRange = computed({
       </div>
     </v-card>
 
-    <v-card class="page-card my-7" v-if="widgetTypeName === 'Graph'">
-      <v-subheader class="mt-0">Style Settings</v-subheader>
+    <v-card class="page-card my-7">
+      <v-card-title class="mt-0">Style Settings</v-card-title>
       <v-divider class="ma-0"></v-divider>
 
       <v-row class="mt-5">
@@ -332,12 +323,13 @@ const typeCountRange = computed({
           <p class="text--secondary text-sm-caption mb-0">Vertical size of the graph</p>
         </v-col>
         <v-col cols="9">
-          <v-range
+          <v-slider
             v-model="height"
             :min="20"
             :max="450"
             thumb-label="always"
-          ></v-range>
+            hide-details
+          ></v-slider>
         </v-col>
       </v-row>
 
@@ -347,12 +339,13 @@ const typeCountRange = computed({
           <p class="text--secondary text-sm-caption mb-0">Number of vertical divisions in the grid</p>
         </v-col>
         <v-col cols="9">
-          <v-range
+          <v-slider
             v-model="vDivs"
             :min="1"
             :max="40"
             thumb-label="always"
-          ></v-range>
+            hide-details
+          ></v-slider>
         </v-col>
       </v-row>
 
@@ -362,12 +355,13 @@ const typeCountRange = computed({
           <p class="text--secondary text-sm-caption mb-0">Number of horizontal divisions in the grid</p>
         </v-col>
         <v-col cols="9">
-          <v-range
+          <v-slider
             v-model="hDivs"
             :min="1"
             :max="100"
             thumb-label="always"
-          ></v-range>
+            hide-details
+          ></v-slider>
         </v-col>
       </v-row>
 
@@ -377,13 +371,14 @@ const typeCountRange = computed({
           <p class="text--secondary text-sm-caption mb-0">Size of text in this readout widget</p>
         </v-col>
         <v-col cols="9">
-          <v-range
+          <v-slider
             v-model="textSize"
             :min="5"
             :max="80"
             :step="0.5"
             thumb-label="always"
-          ></v-range>
+            hide-details
+          ></v-slider>
         </v-col>
       </v-row>
 
