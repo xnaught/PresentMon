@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import MainView from '@/views/MainView.vue'
 import HomeView from '@/views/HomeView.vue'
 import LoadoutConfigView from '@/views/LoadoutConfigView.vue'
+import GraphConfigView from '@/views/GraphConfigView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -18,7 +19,7 @@ const router = createRouter({
     {
       path: '/graphs/:index',
       name: 'graph-config',
-      component: HomeView,
+      component: GraphConfigView,
       props: true,
     },
     {
