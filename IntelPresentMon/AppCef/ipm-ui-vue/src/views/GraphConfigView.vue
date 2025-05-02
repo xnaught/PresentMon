@@ -20,8 +20,8 @@ const widget = computed(() => loadoutStore.widgets[props.index]);
 const graph = computed(() => asGraph(widget.value));
 
 const timeRange = ref(10); // Mocked value
-const metricPollRate = ref(1); // Mocked value
-const totalCount = computed(() => 1000 * timeRange.value * metricPollRate.value);
+const metricPollRate = ref(40); // Mocked value
+const totalCount = computed(() => timeRange.value * metricPollRate.value);
 
 const height = computed({
   get: () => graph.value.height,
