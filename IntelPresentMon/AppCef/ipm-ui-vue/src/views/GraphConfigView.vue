@@ -418,7 +418,7 @@ i.v-icon.v-icon {
   transition: color .2s;
 }
 .link-head:hover {
-  color: #2196f3;
+  color: rgb(var(--v-theme-primary));
 }
 .page-card {
   margin: 15px 0;

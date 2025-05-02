@@ -186,6 +186,6 @@ const removeWidget = (widgetIdx:number) => {
   gap: 4px;
 }
 .link-head:hover { 
-  color: #2196f3; 
+  color: rgb(var(--v-theme-primary)); 
 } 
 </style>

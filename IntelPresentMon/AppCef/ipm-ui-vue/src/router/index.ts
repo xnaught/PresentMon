@@ -3,6 +3,7 @@ import MainView from '@/views/MainView.vue'
 import HomeView from '@/views/HomeView.vue'
 import LoadoutConfigView from '@/views/LoadoutConfigView.vue'
 import GraphConfigView from '@/views/GraphConfigView.vue'
+import ReadoutConfigView from '@/views/ReadoutConfigView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -25,8 +26,8 @@ const router = createRouter({
     {
       path: '/readouts/:index',
       name: 'readout-config',
-      component: HomeView,
-      props: true,
+      component: ReadoutConfigView,
+      props: route => ({ index: Number(route.params.index) }),
     },
     {
       path: '/overlay',

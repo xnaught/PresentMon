@@ -1,124 +1,105 @@
 <!-- Copyright (C) 2022 Intel Corporation -->
 <!-- SPDX-License-Identifier: MIT -->
   
-<script lang="ts">
-import Vue from 'vue'
-import ColorPicker from '@/components/ColorPicker.vue'
-import { RgbaColor } from '@/core/color'
-import { Readout } from '@/core/readout'
-import { Widget, AsReadout } from '@/core/widget'
-import { Loadout } from '@/store/loadout'
+<script setup lang="ts">
+import { computed } from 'vue';
+import ColorPicker from '@/components/ColorPicker.vue';
+import type { RgbaColor } from '@/core/color';
+import type { Readout } from '@/core/readout';
+import { asReadout, type Widget } from '@/core/widget';
+import { useLoadoutStore } from '@/stores/loadout';
 
-export default Vue.extend({
-name: 'WidgetConfig',
-components: {
-    ColorPicker,
-},
+defineOptions({ name: 'WidgetConfig' });
 
-props: {
-    index: {required: true, type: Number},
-},
-beforeMount() {
-},
-data: () => ({
-}),
-methods: {
-},  
-computed: {
-    widget(): Widget {
-    return Loadout.widgets[this.index];
-    },
-    readout(): Readout {
-    return AsReadout(this.widget);
-    },
+interface Props {
+  index: number;
+}
+const props = defineProps<Props>();
 
-    // v-model enablers
-    showLabel: {
-    get(): boolean { return this.readout.showLabel; },
-    set(val: boolean) {
-        Loadout.setReadoutAttribute({ index: this.index, attr: 'showLabel', val });
-    },
-    },
-    fontSize: {
-    get(): number { return this.readout.fontSize; },
-    set(fontSize: number) {
-        Loadout.setReadoutAttribute({ index: this.index, attr: 'fontSize', val: fontSize });
-    },
-    },
-    fontColor: {
-    get(): RgbaColor { return this.readout.fontColor; },
-    set(fontColor: RgbaColor) {
-        Loadout.setReadoutAttribute({ index: this.index, attr: 'fontColor', val: fontColor });
-    },
-    },
-    backgroundColor: {
-    get(): RgbaColor { return this.readout.backgroundColor; },
-    set(backgroundColor: RgbaColor) {
-        Loadout.setReadoutAttribute({ index: this.index, attr: 'backgroundColor', val: backgroundColor });
-    },
-    },
-},
+const loadoutStore = useLoadoutStore();
+
+const widget = computed(() => loadoutStore.widgets[props.index]);
+const readout = computed(() => asReadout(widget.value));
+
+const showLabel = computed({
+  get: () => readout.value.showLabel,
+  set: (val: boolean) => loadoutStore.setReadoutAttribute(props.index, 'showLabel', val),
+});
+
+const fontSize = computed({
+  get: () => readout.value.fontSize,
+  set: (val: number) => loadoutStore.setReadoutAttribute(props.index, 'fontSize', val),
+});
+
+const fontColor = computed({
+  get: () => readout.value.fontColor,
+  set: (val: RgbaColor) => loadoutStore.setReadoutAttribute(props.index, 'fontColor', val),
+});
+
+const backgroundColor = computed({
+  get: () => readout.value.backgroundColor,
+  set: (val: RgbaColor) => loadoutStore.setReadoutAttribute(props.index, 'backgroundColor', val),
 });
 </script>
 
 <template>
     <div class="page-wrap">
-      
-    <h2 class="mt-5 ml-5 link-head" @click="$router.back()">
-        <v-icon style="vertical-align: 0" color="inherit">mdi-chevron-left</v-icon>
-        Detailed Readout Configuration
-    </h2>
-  
-    <v-card class="page-card my-7">
-      <v-subheader class="mt-0">Style Settings</v-subheader>
-      <v-divider class="ma-0"></v-divider>
-      
-      <v-row class="mt-8">       
-        <v-col cols="3">
-          Font Size
-          <p class="text--secondary text-sm-caption mb-0">Size of text in this readout widget</p>
-        </v-col>
-        <v-col cols="9">
-          <v-slider
-            v-model="fontSize"
-            :min="5"
-            :max="80"
-            :step="0.5"
-            thumb-label="always"
-          ></v-slider>
-        </v-col>
-      </v-row>
+      <h2 class="mt-5 ml-5 link-head" @click="$router.back()">
+          <v-icon style="vertical-align: 0" color="inherit">mdi-chevron-left</v-icon>
+          Detailed Readout Configuration
+      </h2>
     
-      <v-row class="mt-8">       
-        <v-col cols="3">
-          Colors
-          <p class="text--secondary text-sm-caption mb-0">Colors of various elements of the widget</p>
-        </v-col>
-        <v-col cols="9">
-          <v-row dense>
-            <v-col cols="6">
-              <color-picker v-model="fontColor" class="color-picker" label="Text"></color-picker>
-            </v-col>
-            <v-col cols="6">
-              <color-picker v-model="backgroundColor" class="color-picker" label="Background"></color-picker>
-            </v-col>
-          </v-row>
-        </v-col>
-      </v-row>
-  
-      <v-row class="mt-3">       
-        <v-col cols="3">
-          Show Label
-          <p class="text--secondary text-sm-caption mb-0">Show label for this readout widget</p>
-        </v-col>
-        <v-col cols="9">
-          <v-switch v-model="showLabel" hide-details label="Show"></v-switch>
-        </v-col>
-      </v-row>
-    </v-card>
-  
-    </div>
-  </template>
+      <v-card class="page-card my-7">
+        <v-card-title class="mt-0 text-medium-emphasis">Style Settings</v-card-title>
+        <v-divider class="ma-0"></v-divider>
+        
+        <v-row class="mt-8">       
+          <v-col cols="3">
+            Font Size
+            <p class="text-medium-emphasis text-caption mb-0">Size of text in this readout widget</p>
+          </v-col>
+          <v-col cols="9">
+            <v-slider
+              v-model="fontSize"
+              :min="5"
+              :max="80"
+              :step="0.5"
+              thumb-label="always"
+              hide-details
+            ></v-slider>
+          </v-col>
+        </v-row>
+      
+        <v-row class="mt-8">       
+          <v-col cols="3">
+            Colors
+            <p class="text-medium-emphasis text-caption mb-0">Colors of various elements of the widget</p>
+          </v-col>
+          <v-col cols="9">
+            <v-row dense>
+              <v-col cols="6">
+                <color-picker v-model="fontColor" class="color-picker" label="Text"></color-picker>
+              </v-col>
+              <v-col cols="6">
+                <color-picker v-model="backgroundColor" class="color-picker" label="Background"></color-picker>
+              </v-col>
+            </v-row>
+          </v-col>
+        </v-row>
+    
+        <v-row class="mt-3">       
+          <v-col cols="3">
+            Show Label
+            <p class="text-medium-emphasis text-caption mb-0">Show label for this readout widget</p>
+          </v-col>
+          <v-col cols="9">
+            <v-switch v-model="showLabel" hide-details label="Show"></v-switch>
+          </v-col>
+        </v-row>
+      </v-card>
+    
+      </div>
+    </template>
   
   <style scoped>
   .color-picker {
@@ -134,7 +115,7 @@ computed: {
     transition: color .2s;
   }
   .link-head:hover {
-    color: #2196f3;
+    color: rgb(var(--v-theme-primary));
   }
   .page-card {
     margin: 15px 0;
@@ -144,5 +125,4 @@ computed: {
     width: 750px;
   }
   </style>
-  
-  
+
