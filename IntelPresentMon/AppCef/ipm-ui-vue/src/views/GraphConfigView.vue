@@ -302,7 +302,7 @@ const typeCountRange = computed({
           <v-col cols="9">
             <p class="text-medium-emphasis text-caption">
               The total count of data points displayed is controlled by <span style="color: orange;">Time Scale</span>
-              (<router-link class="app-link" :to="{name: 'overlay-config'}">Settings>Overlay</router-link>) multiplied by the <span style="color: orange;">Metric Poll Rate</span>
+              (<router-link class="app-link" :to="{name: 'overlay-config'}">Settings>Overlay</router-link>) multiplied by <span style="color: orange;">Metric Poll Rate</span>
               (<router-link class="app-link" :to="{name: 'metric-processing'}">Settings>Data Processing</router-link>). <br> Currently it is
               <span style="color: green;">{{ timeRange }}s</span> * <span style="color: green;">{{ metricPollRate }}Hz</span> =
               <span style="color: violet;">{{ totalCount }}</span> data points.
