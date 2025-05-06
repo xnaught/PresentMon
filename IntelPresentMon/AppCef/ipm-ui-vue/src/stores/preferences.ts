@@ -34,10 +34,6 @@ export const usePreferencesStore = defineStore('preferences', () => {
     pid.value = newPid;
   }
 
-  function setAttribute<K extends keyof PreferencesType>(payload: { attr: K; val: PreferencesType[K] }) {
-    preferences.value[payload.attr] = payload.val;
-  }
-
   function setDebounceToken(token: number | null) {
     debounceToken.value = token;
   }
@@ -53,7 +49,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
 
   async function writeAdapterId(id: number) {
     await Api.setAdapter(id);
-    setAttribute({ attr: 'adapterId', val: id });
+    preferences.value.adapterId = id;
     serialize();
   }
 
@@ -75,12 +71,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
 
   function resetPreferences() {
     setAllPreferences(makeDefaultPreferences());
-    setAttribute({ attr: 'selectedPreset', val: Preset.Slot1 });
-    serialize();
-  }
-
-  async function writeAttribute<K extends keyof PreferencesType>(payload: { attr: K; val: PreferencesType[K] }) {
-    setAttribute(payload);
+    preferences.value.selectedPreset = Preset.Slot1;
     serialize();
   }
 
@@ -143,13 +134,11 @@ export const usePreferencesStore = defineStore('preferences', () => {
     setCapture,
     setCaptureDurationToken,
     setPid,
-    setAttribute,
     setDebounceToken,
     setAllPreferences,
     writeAdapterId,
     serialize,
     resetPreferences,
-    writeAttribute,
     writeCapture,
     parseAndReplaceRawPreferenceString,
   };

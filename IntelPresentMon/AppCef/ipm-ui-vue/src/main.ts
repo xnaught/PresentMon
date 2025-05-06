@@ -52,10 +52,12 @@ const vuetify = createVuetify({
         VSlider: {
             color: "primary",
             thumbSize: 16,
+            density: "compact",
         },
         VRangeSlider: {
             color: "primary",
             thumbSize: 16,
+            density: "compact",
         },
         VTextField: {
             color: "primary",
@@ -64,6 +66,16 @@ const vuetify = createVuetify({
         },
         VSwitch: {
             color: "primary",
+        },
+        VSelect: {
+            color: "primary",
+            variant: "outlined",
+            density: "compact",
+        },
+        VAutocomplete: {
+            color: "primary",
+            variant: "outlined",
+            density: "compact",
         },
     }
 })

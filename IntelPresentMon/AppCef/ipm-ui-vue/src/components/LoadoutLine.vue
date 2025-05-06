@@ -176,10 +176,7 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         item-title="name"
         :disabled="locked"
         return-object
-        variant="outlined"
         :density="isMaster ? 'default' : 'compact'"
-        hide-details
-        color="primary"
       ></v-autocomplete>
     </div>
     <div class="widget-cell col-stat"> 
@@ -189,10 +186,7 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         item-title="shortName"
         :disabled="locked || statOptions.length < 2"
         return-object
-        variant="outlined"
         :density="isMaster ? 'default' : 'compact'"
-        hide-details
-        color="primary"
       ></v-select>
     </div>
     <div class="widget-cell col-type">
@@ -202,9 +196,6 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         :items="widgetTypeOptions"
         :disabled="locked || widgetTypeOptions.length < 2"
         :density="isMaster ? 'default' : 'compact'"
-        variant="outlined"
-        hide-details
-        color="primary"
       >
         <template v-slot:selection="{item, index}: {item:ListItem<WidgetType>, index:number}">
           {{ widgetTypeToString(item.raw) }}
@@ -222,9 +213,6 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         :items="widgetSubtypeOptions"
         :disabled="locked || widgetSubtypeOptions.length < 2"
         :density="isMaster ? 'default' : 'compact'"
-        variant="outlined"
-        hide-details
-        color="primary"
       ></v-select>
       <v-switch v-else v-model="axisAffinityRight" label="Right Axis" hide-details density="compact" class="mt-0" color="primary"></v-switch>
     </div>

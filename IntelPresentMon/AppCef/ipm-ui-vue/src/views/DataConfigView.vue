@@ -26,7 +26,7 @@ const metricPollMessages = computed(() => {
 
 <template>
   <div class="page-wrap">
-    <h2 class="mt-5 ml-5 link-head">
+    <h2 class="mt-5 ml-5 header-top">
       Data Processing Configuration
     </h2>
 
@@ -34,14 +34,14 @@ const metricPollMessages = computed(() => {
       <v-row class="mt-5" v-if="isDevelopment()">
         <v-col cols="3">
           ETW Manual Flush
-          <p class="text--secondary text-sm-caption mb-0">
+          <p class="text-medium-emphasis text-caption mb-0">
             Control whether manual ETW flushing is performed or the default 1000ms timer is used (may require service restart).
           </p>
         </v-col>
         <v-col cols="9">
           <v-row>
             <v-col cols="6">
-              <v-switch v-model="prefs.preferences.manualEtwFlush" label="Enable"></v-switch>
+              <v-switch v-model="prefs.preferences.manualEtwFlush" label="Enable" color="primary"></v-switch>
             </v-col>
           </v-row>
         </v-col>
@@ -50,7 +50,7 @@ const metricPollMessages = computed(() => {
       <v-row class="mt-5" v-if="isDevelopment()">
         <v-col cols="3">
           ETW Manual Flush Period
-          <p class="text--secondary text-sm-caption mb-0">
+          <p class="text-medium-emphasis text-caption mb-0">
             Rate of manual flushing of the ETW event buffers. Offset should roughly match this.
           </p>
         </v-col>
@@ -68,7 +68,7 @@ const metricPollMessages = computed(() => {
       <v-row class="mt-5">
         <v-col cols="3">
           Polling Rate
-          <p class="text--secondary text-sm-caption mb-0">
+          <p class="text-medium-emphasis text-caption mb-0">
             Rate at which to poll API for metric data (Hz). Controls temporal resolution of graphs and readouts.
           </p>
         </v-col>
@@ -87,7 +87,7 @@ const metricPollMessages = computed(() => {
       <v-row class="mt-5" v-if="isDevelopment()">
         <v-col cols="3">
           Metric Window offset
-          <p class="text--secondary text-sm-caption mb-0">
+          <p class="text-medium-emphasis text-caption mb-0">
             Time in ms to offset the sliding window by to ensure it doesn't slide into the time region of frames not yet received.
           </p>
         </v-col>
@@ -104,7 +104,7 @@ const metricPollMessages = computed(() => {
       <v-row class="mt-5">
         <v-col cols="3">
           Telemetry Period
-          <p class="text--secondary text-sm-caption mb-0">
+          <p class="text-medium-emphasis text-caption mb-0">
             Time between service-side power telemetry polling calls (ms). Indirectly affects temporal resolution of a subset of metrics, such as GPU power and temperature.
           </p>
         </v-col>
@@ -114,7 +114,6 @@ const metricPollMessages = computed(() => {
             :max="500"
             :min="1"
             thumb-label="always"
-            hide-details
           ></v-slider>
         </v-col>
       </v-row>
@@ -122,7 +121,7 @@ const metricPollMessages = computed(() => {
       <v-row class="mt-8">
         <v-col cols="3">
           Window Size
-          <p class="text--secondary text-sm-caption mb-0">
+          <p class="text-medium-emphasis text-caption mb-0">
             Size of sample window used for calculating statistics such as average or 99% (ms)
           </p>
         </v-col>
@@ -133,7 +132,6 @@ const metricPollMessages = computed(() => {
             :min="10"
             :step="10"
             thumb-label="always"
-            hide-details
           ></v-slider>
         </v-col>
       </v-row>
@@ -141,7 +139,7 @@ const metricPollMessages = computed(() => {
       <v-row class="mt-8">
         <v-col cols="3">
           Adapter
-          <p class="text--secondary text-sm-caption mb-0">
+          <p class="text-medium-emphasis text-caption mb-0">
             Adapter used to source GPU telemetry data such as power
           </p>
         </v-col>
@@ -152,9 +150,6 @@ const metricPollMessages = computed(() => {
             item-value="id"
             item-text="name"
             placeholder="Default adapter"
-            outlined
-            dense
-            hide-details
           ></v-select>
         </v-col>
       </v-row>
@@ -168,7 +163,7 @@ const metricPollMessages = computed(() => {
     padding: 0;
     height: auto;
   }
-  .link-head {
+  .header-top {
     color: white;
     user-select: none;
   }
