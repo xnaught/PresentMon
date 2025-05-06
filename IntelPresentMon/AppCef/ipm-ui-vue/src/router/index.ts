@@ -1,9 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import MainView from '@/views/MainView.vue'
-import HomeView from '@/views/HomeView.vue'
 import LoadoutConfigView from '@/views/LoadoutConfigView.vue'
 import GraphConfigView from '@/views/GraphConfigView.vue'
 import ReadoutConfigView from '@/views/ReadoutConfigView.vue'
+import DataConfigView from '@/views/DataConfigView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -32,12 +32,12 @@ const router = createRouter({
     {
       path: '/overlay',
       name: 'overlay-config',
-      component: HomeView,
+      component: MainView,
     },
     {
-      path: '/metrics',
-      name: 'metric-processing',
-      component: HomeView,
+      path: '/data',
+      name: 'data-config',
+      component: DataConfigView,
     },
     {
       path: '/loadout',
@@ -47,17 +47,17 @@ const router = createRouter({
     {
       path: '/capture',
       name: 'capture-config',
-      component: HomeView,
+      component: MainView,
     },
     {
       path: '/other',
       name: 'other-config',
-      component: HomeView,
+      component: MainView,
     },
     {
       path: '/flash',
       name: 'flash-config',
-      component: HomeView,
+      component: MainView,
     },
   ],
 })

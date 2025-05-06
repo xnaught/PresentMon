@@ -6,52 +6,22 @@ import { ref, computed } from 'vue';
 import { usePreferencesStore } from '@/stores/preferences';
 //import { useAdaptersStore } from '@/stores/adapters';
 import { isDevelopment } from '@/core/env-vars';
+import type { Adapter } from '@/core/adapter';
 
 const prefs = usePreferencesStore();
 // const adaptersStore = useAdaptersStore();
+const adapters = computed(() => [] as Adapter[]);
+const adapter = ref<number | null>(null);
 
-const isDev = computed(() => isDevelopment());
-
-const overlayDrawRate = computed(() => prefs.overlayDrawRate);
+const overlayDrawRate = computed(() => prefs.preferences.overlayDrawRate);
 
 const metricPollMessages = computed(() => {
-  if (metricPollRate.value % overlayDrawRate.value !== 0) {
+  if (prefs.preferences.metricPollRate % overlayDrawRate.value !== 0) {
     return [`Recommend setting poll rate to be a whole multiple of the overlay draw rate (currently ${overlayDrawRate.value}fps).`];
   }
   return [];
 });
 
-const offset = computed({
-  get: () => prefs.metricsOffset,
-  set: (metricsOffset) => prefs.setMetricsOffset(metricsOffset),
-});
-
-const windowSize = computed({
-  get: () => prefs.metricsWindow,
-  set: (metricsWindow) => prefs.setMetricsWindow(metricsWindow),
-});
-
-const etwFlushPeriod = computed({
-  get: () => prefs.etwFlushPeriod,
-  set: (period) => prefs.setEtwFlushPeriod(period),
-});
-
-const manualEtwFlush = computed({
-  get: () => prefs.manualEtwFlush,
-  set: (enabled) => prefs.setManualEtwFlush(enabled),
-});
-
-const telemetrySamplingPeriod = computed({
-  get: () => prefs.telemetrySamplingPeriodMs,
-  set: (period) => prefs.setTelemetrySamplingPeriodMs(period),
-});
-
-const adapterId = computed({
-  get: () => prefs.adapterId,
-  set: (id) => prefs.setAdapterId(id),
-});
-
-const adapters = computed(() => adaptersStore.adapters);
 </script>
 
 <template>
@@ -61,7 +31,7 @@ const adapters = computed(() => adaptersStore.adapters);
     </h2>
 
     <v-card class="page-card">
-      <v-row class="mt-5" v-if="isDev">
+      <v-row class="mt-5" v-if="isDevelopment()">
         <v-col cols="3">
           ETW Manual Flush
           <p class="text--secondary text-sm-caption mb-0">
@@ -71,13 +41,13 @@ const adapters = computed(() => adaptersStore.adapters);
         <v-col cols="9">
           <v-row>
             <v-col cols="6">
-              <v-switch v-model="manualEtwFlush" label="Enable"></v-switch>
+              <v-switch v-model="prefs.preferences.manualEtwFlush" label="Enable"></v-switch>
             </v-col>
           </v-row>
         </v-col>
       </v-row>
 
-      <v-row class="mt-5" v-if="isDev">
+      <v-row class="mt-5" v-if="isDevelopment()">
         <v-col cols="3">
           ETW Manual Flush Period
           <p class="text--secondary text-sm-caption mb-0">
@@ -86,10 +56,10 @@ const adapters = computed(() => adaptersStore.adapters);
         </v-col>
         <v-col cols="9">
           <v-slider
-            v-model="etwFlushPeriod"
+            v-model="prefs.preferences.etwFlushPeriod"
             :max="1000"
             :min="1"
-            :disabled="!manualEtwFlush"
+            :disabled="!prefs.preferences.manualEtwFlush"
             thumb-label="always"
           ></v-slider>
         </v-col>
@@ -114,7 +84,7 @@ const adapters = computed(() => adaptersStore.adapters);
         </v-col>
       </v-row>
 
-      <v-row class="mt-5" v-if="isDev">
+      <v-row class="mt-5" v-if="isDevelopment()">
         <v-col cols="3">
           Metric Window offset
           <p class="text--secondary text-sm-caption mb-0">
@@ -123,7 +93,7 @@ const adapters = computed(() => adaptersStore.adapters);
         </v-col>
         <v-col cols="9">
           <v-slider
-            v-model="offset"
+            v-model="prefs.preferences.metricsOffset"
             :max="1500"
             :min="0"
             thumb-label="always"
@@ -140,7 +110,7 @@ const adapters = computed(() => adaptersStore.adapters);
         </v-col>
         <v-col cols="9">
           <v-slider
-            v-model="telemetrySamplingPeriod"
+            v-model="prefs.preferences.telemetrySamplingPeriodMs"
             :max="500"
             :min="1"
             thumb-label="always"
@@ -158,7 +128,7 @@ const adapters = computed(() => adaptersStore.adapters);
         </v-col>
         <v-col cols="9">
           <v-slider
-            v-model="windowSize"
+            v-model="prefs.preferences.metricsWindow"
             :max="5000"
             :min="10"
             :step="10"
@@ -177,7 +147,7 @@ const adapters = computed(() => adaptersStore.adapters);
         </v-col>
         <v-col cols="9">
           <v-select
-            v-model="adapterId"
+            v-model="adapter"
             :items="adapters"
             item-value="id"
             item-text="name"

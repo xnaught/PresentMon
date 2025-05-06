@@ -1,11 +1,18 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useCounterStore } from '@/stores/counter';
+import { onMounted, ref, computed } from 'vue';
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
 
 // === Stores ===
-const cs = useCounterStore()
 
 // === Lifecycle hooks ===
+
+const inSettings = computed(() => {
+  const routeName = typeof route.name === 'symbol' ? route.name.toString() : route.name;
+  return ['capture-config', 'overlay-config', 'data-config', 'other-config', 'flash-config']
+    .includes(routeName ?? '');
+});
 </script>
 
 <template>
@@ -13,7 +20,7 @@ const cs = useCounterStore()
     <div class="app-layout">
       <div class="content-row">
         <v-navigation-drawer
-          v-if="cs.isOpen"
+          v-if="inSettings"
           permanent
           :width="180"
           color="#030308"
@@ -23,6 +30,9 @@ const cs = useCounterStore()
             <v-icon class="nav-back-arrow">mdi-arrow-left</v-icon> Top
           </router-link>
           <v-list nav>
+            <v-list-item color="primary" :to="{ name: 'data-config' }">
+              <v-list-item-title class="nav-item">Data</v-list-item-title>
+            </v-list-item>
             <v-list-item color="primary" :to="{ name: 'overlay-config' }">
               <v-list-item-title class="nav-item">Overlay</v-list-item-title>
             </v-list-item>
