@@ -5,11 +5,13 @@ import { type Process } from '@/core/process';
 import { Action } from '@/core/hotkey';
 import { Preset } from '@/core/preferences';
 import HotkeyButton from '@/components/HotkeyButton.vue';
+import { usePreferencesStore } from '@/stores/preferences';
 
 defineOptions({name: 'MainView'})
 
-// magic number used to indicate that custom preset is selected
-const customPresetValue = 1000
+// stores
+const prefs = usePreferencesStore()
+
 // match autocomplete typed text if substring of window name or process name or pid
 function selectFilter(item: Process, query: string) {
     const winText = item.windowName?.toLowerCase();
@@ -36,7 +38,6 @@ function makeSelectorName(winName: string): string {
 // TODO placeholders
 const pid = ref<number|null>(null)
 const enableAutotargetting = ref(false)
-const selectedPreset = ref(Preset.Slot1)
 const enableCaptureDuration = ref(false)
 const captureDuration = ref(1)
 const processes = computed(() => [
@@ -51,7 +52,7 @@ function asProcess(item: ListItem<any>): Process {
 }
 function handleCaptureExplore() {}
 const isCustomPresetSelected = computed(() =>
-    selectedPreset.value == customPresetValue
+    prefs.preferences.selectedPreset == Preset.Custom
 )
 </script>
 
@@ -76,11 +77,7 @@ const isCustomPresetSelected = computed(() =>
             @click="refreshProcessList"
             append-icon=""
             :disabled="enableAutotargetting"
-            hide-details
             clearable
-            density="compact"
-            variant="outlined"
-            color="primary"
         >
             <template v-slot:selection="{item, index}: {item:ListItem<Process>, index:number}">
                 <template v-if="item.raw.windowName">
@@ -119,7 +116,7 @@ const isCustomPresetSelected = computed(() =>
         </v-col>
 
         <v-col cols="9" class="d-flex align-center">
-        <v-switch v-model="enableAutotargetting" label="Enable" color="primary" hide-details></v-switch>
+        <v-switch v-model="enableAutotargetting" label="Enable"></v-switch>
         </v-col>
     </v-row>   
     
@@ -145,7 +142,7 @@ const isCustomPresetSelected = computed(() =>
         </v-col>
 
         <v-col cols="9" class="d-flex justify-center align-center">        
-        <v-btn-toggle v-model="selectedPreset" :mandatory="selectedPreset !== null" variant="outlined" divided>
+        <v-btn-toggle v-model="prefs.preferences.selectedPreset" :mandatory="prefs.preferences.selectedPreset !== null" variant="outlined" divided>
             <v-btn class="px-5" large>
             Basic
             </v-btn>
@@ -158,7 +155,7 @@ const isCustomPresetSelected = computed(() =>
             Power/Temp
             </v-btn>
 
-            <v-btn class="px-5" large :value="customPresetValue">
+            <v-btn class="px-5" large :value="Preset.Custom">
             Custom
             </v-btn>        
         </v-btn-toggle>
@@ -203,9 +200,6 @@ const isCustomPresetSelected = computed(() =>
             class="mt-4 ml-8"
             hide-details
             type="number"
-            variant="outlined"
-            density="compact"
-            color="primary"
             hide-spin-buttons
         ></v-text-field>
         </v-col>
