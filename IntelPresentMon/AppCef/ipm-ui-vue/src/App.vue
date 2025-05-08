@@ -60,14 +60,14 @@ watch([() => prefs.preferences, () => prefs.pid, () => loadout.widgets],
             <v-icon class="nav-back-arrow">mdi-arrow-left</v-icon> Top
           </router-link>
           <v-list nav>
-            <v-list-item color="primary" :to="{ name: 'data-config' }">
-              <v-list-item-title class="nav-item">Data</v-list-item-title>
-            </v-list-item>
             <v-list-item color="primary" :to="{ name: 'overlay-config' }">
               <v-list-item-title class="nav-item">Overlay</v-list-item-title>
             </v-list-item>
+            <v-list-item color="primary" :to="{ name: 'data-config' }">
+              <v-list-item-title class="nav-item">Data</v-list-item-title>
+            </v-list-item>
             <v-list-item color="primary" :to="{ name: 'flash-config' }">
-              <v-list-item-title class="nav-item">Flash Injection</v-list-item-title>
+              <v-list-item-title class="nav-item">Flash</v-list-item-title>
             </v-list-item>
           </v-list>
         </v-navigation-drawer>

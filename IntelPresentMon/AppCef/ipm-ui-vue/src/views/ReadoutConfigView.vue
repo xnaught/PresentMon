@@ -65,7 +65,6 @@ const backgroundColor = computed({
               :max="80"
               :step="0.5"
               thumb-label="always"
-              hide-details
             ></v-slider>
           </v-col>
         </v-row>

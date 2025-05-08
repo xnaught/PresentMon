@@ -6,8 +6,7 @@ import { ref, computed } from 'vue';
 import { OverlayPosition } from '@/core/overlay-position';
 
 interface Props {
-  label: string;
-  value: number;
+  modelValue: OverlayPosition;
 }
 const props = defineProps<Props>();
 const emit = defineEmits<{
@@ -24,12 +23,11 @@ const positionKeys = computed(() => Object.freeze({
 
 <template>
   <div class="position-wrapper">
-    <label v-if="props.label.length > 0" class="v-label mb-2">{{ props.label }}</label>
     <div class="position-container">
       <div v-for="(key, name) in positionKeys" :key="name"
         @click="emit('update:modelValue', key)"
         class="position-panel"
-        :class="{'position-panel-selected': props.value === key}"
+        :class="{'position-panel-selected': props.modelValue === key}"
         v-ripple>
       </div>
     </div>

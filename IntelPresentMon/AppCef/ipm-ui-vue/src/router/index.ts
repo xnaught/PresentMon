@@ -4,6 +4,7 @@ import LoadoutConfigView from '@/views/LoadoutConfigView.vue'
 import GraphConfigView from '@/views/GraphConfigView.vue'
 import ReadoutConfigView from '@/views/ReadoutConfigView.vue'
 import DataConfigView from '@/views/DataConfigView.vue'
+import OverlayConfigView from '@/views/OverlayConfigView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -32,7 +33,7 @@ const router = createRouter({
     {
       path: '/overlay',
       name: 'overlay-config',
-      component: MainView,
+      component: OverlayConfigView,
     },
     {
       path: '/data',
