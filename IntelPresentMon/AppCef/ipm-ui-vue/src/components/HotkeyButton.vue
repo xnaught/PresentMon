@@ -14,6 +14,7 @@ interface Props {
   action: number
 }
 const props = defineProps<Props>()
+const emit = defineEmits<{ (e: 'update:modelValue', value: Combination | null): void }>();
 // element refs
 const dialogRef = ref<InstanceType<typeof HotkeyDialog>|null>(null)
 // stores
