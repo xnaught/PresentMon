@@ -6,11 +6,13 @@ import { Action } from '@/core/hotkey';
 import { Preset } from '@/core/preferences';
 import HotkeyButton from '@/components/HotkeyButton.vue';
 import { usePreferencesStore } from '@/stores/preferences';
+import { useProcessesStore } from '@/stores/processes';
 
 defineOptions({name: 'MainView'})
 
 // stores
 const prefs = usePreferencesStore()
+const procs = useProcessesStore()
 
 // match autocomplete typed text if substring of window name or process name or pid
 function selectFilter(item: Process, query: string) {
@@ -34,26 +36,11 @@ function makeSelectorName(winName: string): string {
     }
 }
 
-
 // TODO placeholders
-const pid = ref<number|null>(null)
 const enableAutotargetting = ref(false)
 const enableCaptureDuration = ref(false)
 const captureDuration = ref(1)
-const processes = computed(() => [
-    {pid: 21, name: "twenty-one.exe", windowName: "Twenty One"},
-    {pid: 22, name: "twenty-two.exe", windowName: "Twenty Two"},
-    {pid: 23, name: "twenty-three.exe", windowName: null},
-] as Process[])
-
-function refreshProcessList() {}
-function asProcess(item: ListItem<any>): Process {
-    return item as unknown as Process
-}
 function handleCaptureExplore() {}
-const isCustomPresetSelected = computed(() =>
-    prefs.preferences.selectedPreset == Preset.Custom
-)
 </script>
 
 
@@ -69,12 +56,12 @@ const isCustomPresetSelected = computed(() =>
         <v-col cols="9" class="d-flex align-center">
         <!-- todo mock the process reactives etc. -->
         <v-autocomplete
-            :items="processes"
-            v-model="pid"
+            :items="procs.processes"
+            v-model="prefs.pid"
             item-value="pid"
             :filter="selectFilter"
             label="Process"
-            @click="refreshProcessList"
+            @click="procs.refresh"
             append-icon=""
             :disabled="enableAutotargetting"
             clearable
@@ -161,7 +148,7 @@ const isCustomPresetSelected = computed(() =>
         </v-btn-toggle>
         <v-btn
             :to="{name: 'loadout-config'}"
-            :disabled="!isCustomPresetSelected"
+            :disabled="prefs.preferences.selectedPreset !== Preset.Custom"
             color="primary" class="ml-5"
         >
             Edit

@@ -53,11 +53,13 @@ const vuetify = createVuetify({
             color: "primary",
             thumbSize: 16,
             density: "compact",
+            step: 1,
         },
         VRangeSlider: {
             color: "primary",
             thumbSize: 16,
             density: "compact",
+            step: 1,
         },
         VTextField: {
             color: "primary",
@@ -77,6 +79,12 @@ const vuetify = createVuetify({
             variant: "outlined",
             density: "compact",
         },
+        VNumberInput: {
+            color: "primary",
+            variant: "outlined",
+            density: "compact",
+            controlVariant: "hidden",
+        }
     }
 })
 

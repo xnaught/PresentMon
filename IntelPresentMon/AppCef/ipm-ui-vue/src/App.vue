@@ -1,18 +1,48 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, ref, computed, watchEffect, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { usePreferencesStore } from './stores/preferences';
+import { Preset } from './core/preferences';
+import { Api } from './core/api';
+import { useLoadoutStore } from './stores/loadout';
 
-const route = useRoute();
+const route = useRoute()
 
 // === Stores ===
+const prefs = usePreferencesStore()
+const loadout = useLoadoutStore()
 
-// === Lifecycle hooks ===
+// === Lifecycle Hooks ===
+
+
 
 const inSettings = computed(() => {
   const routeName = typeof route.name === 'symbol' ? route.name.toString() : route.name;
   return ['capture-config', 'overlay-config', 'data-config', 'other-config', 'flash-config']
-    .includes(routeName ?? '');
+    .includes(routeName ?? '')
 });
+
+// === Global Watchers ===
+// react to change in selected preset and load the corresponding config file
+watchEffect(async () => {
+  const selectedPreset = prefs.preferences.selectedPreset
+  if (selectedPreset === Preset.Custom) {
+    const {payload} = await Api.loadConfig('custom-auto.json');
+    const err = 'Failed to load autosave loadout file. ';
+    await loadout.loadConfigFromPayload(payload, err);
+  }
+  else if (selectedPreset !== null) {
+    const presetFileName = `preset-${selectedPreset}.json`;
+    const {payload} = await Api.loadPreset(presetFileName);
+    const err = `Failed to load preset file [${presetFileName}]. `;
+    await loadout.loadConfigFromPayload(payload, err);
+  }
+})
+// react to changes in the prefs, loadout widgets, or pid and push spec
+watch([() => prefs.preferences, () => prefs.pid, () => loadout.widgets],
+  async () => {
+    await prefs.pushSpecification()
+}, {deep: true})
 </script>
 
 <template>

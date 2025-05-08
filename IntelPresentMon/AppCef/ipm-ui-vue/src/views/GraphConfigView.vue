@@ -23,6 +23,12 @@ const timeRange = ref(10); // Mocked value
 const metricPollRate = ref(40); // Mocked value
 const totalCount = computed(() => timeRange.value * metricPollRate.value);
 
+function parseNumber(val:string|number): number {
+  if (typeof val === 'number') return val;
+  const parsed = parseFloat(val);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
 const height = computed({
   get: () => graph.value.height,
   set: (val) => loadoutStore.setGraphAttribute(props.index, 'height', val),
@@ -65,12 +71,36 @@ const typeName = computed({
 
 const typeRange = computed({
   get: () => graph.value.graphType.range,
-  set: (range) => loadoutStore.setGraphTypeAttribute(props.index, 'range', range),
+  set: (rangeRight) => loadoutStore.setGraphTypeAttribute(props.index, 'range', rangeRight),
+});
+
+const typeRangeTextMin = computed({
+  get: () => graph.value.graphType.range[0],
+  set: (rangeLeftMin:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'range',
+    [parseNumber(rangeLeftMin), typeRange.value[1]]),
+});
+
+const typeRangeTextMax = computed({
+  get: () => graph.value.graphType.range[1],
+  set: (rangeLeftMax:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'range',
+    [typeRange.value[0], parseNumber(rangeLeftMax)]),
 });
 
 const typeRangeRight = computed({
   get: () => graph.value.graphType.rangeRight,
   set: (rangeRight) => loadoutStore.setGraphTypeAttribute(props.index, 'rangeRight', rangeRight),
+});
+
+const typeRangeRightTextMin = computed({
+  get: () => graph.value.graphType.rangeRight[0],
+  set: (rangeRightMin:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'rangeRight',
+    [parseNumber(rangeRightMin), typeRangeRight.value[1]]),
+});
+
+const typeRangeRightTextMax = computed({
+  get: () => graph.value.graphType.rangeRight[1],
+  set: (rangeRightMax:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'rangeRight',
+    [typeRangeRight.value[0], parseNumber(rangeRightMax)]),
 });
 
 const autoLeft = computed({
@@ -97,6 +127,19 @@ const typeCountRange = computed({
   get: () => graph.value.graphType.countRange,
   set: (countRange) => loadoutStore.setGraphTypeAttribute(props.index, 'countRange', countRange),
 });
+
+const typeCountRangeTextMin = computed({
+  get: () => graph.value.graphType.countRange[0],
+  set: (countRangeMin:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'countRange',
+    [parseNumber(countRangeMin), typeCountRange.value[1]]),
+});
+
+const typeCountRangeTextMax = computed({
+  get: () => graph.value.graphType.countRange[1],
+  set: (countRangeMax:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'countRange',
+    [typeCountRange.value[0], parseNumber(countRangeMax)]),
+});
+
 </script>
 
 <template>
@@ -125,7 +168,6 @@ const typeCountRange = computed({
               v-model="typeRange"
               :min="0"
               :max="5000"
-              :step="0.1"
               :disabled="autoLeft"
               hide-details
             ></v-range-slider>
@@ -133,23 +175,17 @@ const typeCountRange = computed({
           <v-row no-gutters class="mt-2">
             <v-col cols="2">
               <v-text-field
-                v-model="typeRange[0]"
+                v-model="typeRangeTextMin"
                 :disabled="autoLeft"
                 type="number"
-                hide-details
-                variant="outlined"
-                density="compact"
                 hide-spin-buttons
               ></v-text-field>
             </v-col>
             <v-col cols="2" offset="8">
               <v-text-field
-                v-model="typeRange[1]"
+                v-model="typeRangeTextMax"
                 :disabled="autoLeft"
                 type="number"
-                hide-details
-                variant="outlined"
-                density="compact"
                 hide-spin-buttons
               ></v-text-field>
             </v-col>
@@ -182,7 +218,6 @@ const typeCountRange = computed({
               v-model="typeRangeRight"
               :min="0"
               :max="5000"
-              :step="0.1"
               :disabled="autoRight"
               hide-details
             ></v-range-slider>
@@ -190,23 +225,17 @@ const typeCountRange = computed({
           <v-row no-gutters class="mt-2">
             <v-col cols="2">
               <v-text-field
-                v-model="typeRangeRight[0]"
+                v-model="typeRangeRightTextMin"
                 :disabled="autoRight"
                 type="number"
-                hide-details
-                variant="outlined"
-                density="compact"
                 hide-spin-buttons
               ></v-text-field>
             </v-col>
             <v-col cols="2" offset="8">
               <v-text-field
-                v-model="typeRangeRight[1]"
+                v-model="typeRangeRightTextMax"
                 :disabled="autoRight"
                 type="number"
-                hide-details
-                variant="outlined"
-                density="compact"
                 hide-spin-buttons
               ></v-text-field>
             </v-col>
@@ -252,7 +281,6 @@ const typeCountRange = computed({
                 v-model="typeCountRange"
                 :min="0"
                 :max="5000"
-                :step="0.1"
                 :disabled="autoCount"
                 hide-details
               ></v-range-slider>
@@ -260,23 +288,17 @@ const typeCountRange = computed({
             <v-row no-gutters class="mt-2">
               <v-col cols="2">
                 <v-text-field
-                  v-model="typeCountRange[0]"
+                  v-model="typeCountRangeTextMin"
                   :disabled="autoCount"
                   type="number"
-                  hide-details
-                  variant="outlined"
-                  density="compact"
                   hide-spin-buttons
                 ></v-text-field>
               </v-col>
               <v-col cols="2" offset="8">
                 <v-text-field
-                  v-model="typeCountRange[1]"
+                  v-model="typeCountRangeTextMax"
                   :disabled="autoCount"
                   type="number"
-                  hide-details
-                  variant="outlined"
-                  density="compact"
                   hide-spin-buttons
                 ></v-text-field>
               </v-col>
@@ -303,7 +325,7 @@ const typeCountRange = computed({
             <p class="text-medium-emphasis text-caption">
               The total count of data points displayed is controlled by <span style="color: orange;">Time Scale</span>
               (<router-link class="app-link" :to="{name: 'overlay-config'}">Settings>Overlay</router-link>) multiplied by <span style="color: orange;">Metric Poll Rate</span>
-              (<router-link class="app-link" :to="{name: 'metric-processing'}">Settings>Data Processing</router-link>). <br> Currently it is
+              (<router-link class="app-link" :to="{name: 'data-config'}">Settings>Data Processing</router-link>). <br> Currently it is
               <span style="color: green;">{{ timeRange }}s</span> * <span style="color: green;">{{ metricPollRate }}Hz</span> =
               <span style="color: violet;">{{ totalCount }}</span> data points.
             </p>

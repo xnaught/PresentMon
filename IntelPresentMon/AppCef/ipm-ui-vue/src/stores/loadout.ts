@@ -162,6 +162,20 @@ export const useLoadoutStore = defineStore('loadout', () => {
         widgets.value.splice(0, widgets.value.length, ...loadout.widgets)
     }
 
+    async function loadConfigFromPayload(payload: string, err: string) {
+        try {
+            await parseAndReplace(payload);
+        } catch (e: any) {
+            if (e.noticeOverride) {
+                err += e.message ?? '';
+            }
+            // Mocked Notifications.notify
+            // Original: await Notifications.notify({ text: err });
+            console.error(`Notification: ${err}`);
+            console.error([err, e]);
+        }
+    }
+
     // --- Mocked Actions ----
     async function browseAndSerialize() {
         // await Api.browseStoreSpec(this.fileContents)
@@ -198,6 +212,7 @@ export const useLoadoutStore = defineStore('loadout', () => {
         resetWidgetAs,
         moveWidget,
         parseAndReplace,
+        loadConfigFromPayload,
         browseAndSerialize,
         serializeCurrent
     }

@@ -10,8 +10,15 @@ import { useHotkeyStore } from './hotkey';
 import { type DelayToken, dispatchDelayedTask } from '@/core/timing';
 //import { Adapters } from './adapters';
 import { migratePreferences } from '@/core/preferences-migration';
+import type { Widget } from '@/core/widget';
+import { useLoadoutStore } from './loadout';
+import { useIntrospectionStore } from './introspection';
 
 export const usePreferencesStore = defineStore('preferences', () => {
+  // === Dependent Stores ===
+  const loadout = useLoadoutStore()
+  const intro = useIntrospectionStore()
+
   // === State ===
   const preferences = ref<PreferencesType>(makeDefaultPreferences())
   const capturing = ref(false)
@@ -122,6 +129,44 @@ export const usePreferencesStore = defineStore('preferences', () => {
     //   }
     // }
   }
+  
+  async function pushSpecification() {
+    // TODO: try structuredClone instead of JSON.parse(JSON.stringify())
+    const widgets = JSON.parse(JSON.stringify(loadout.widgets)) as Widget[];
+    console.log('Widgets before processing:', JSON.stringify(widgets, null, 2)); // Log widgets array with pretty print
+    for (const widget of widgets) {
+      // Filter out the widgetMetrics that do not meet the condition, modify those that do
+      widget.metrics = widget.metrics.filter(widgetMetric => {
+        const metric = intro.metrics.find(m => m.id === widgetMetric.metric.metricId);
+        if (metric === undefined || metric.availableDeviceIds.length === 0) {
+          // If the metric is undefined, this widgetMetric will be dropped
+          return false;
+        }
+        // If the metric is found, set up the deviceId and desiredUnitId as needed
+        widgetMetric.metric.deviceId = 0; // establish universal device id
+        // Check whether metric is a gpu metric, then we need non-universal device id
+        if (!metric.availableDeviceIds.includes(0)) {
+          // if no specific adapter id set, assume adapter id = 1 is active
+          const adapterId = preferences.value.adapterId !== null ? preferences.value.adapterId : 1;
+          // Set adapter id for this query element to the active one if available
+          if (metric.availableDeviceIds.includes(adapterId)) {
+            widgetMetric.metric.deviceId = adapterId;
+          } else { // if active adapter id is not available drop this widgetMetric
+            return false;
+          }
+        }
+        // Fill out the unit
+        widgetMetric.metric.desiredUnitId = metric.preferredUnitId;
+        // Since the metric is defined, keep this widgetMetric by returning true
+        return true;
+      });
+    }
+    await Api.pushSpecification({
+      pid: pid.value,
+      preferences: preferences.value,
+      widgets: widgets.filter(w => w.metrics.length > 0),
+    });
+  }
 
   // === Exports ===
   return {
@@ -141,5 +186,6 @@ export const usePreferencesStore = defineStore('preferences', () => {
     resetPreferences,
     writeCapture,
     parseAndReplaceRawPreferenceString,
+    pushSpecification
   };
 });
