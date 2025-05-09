@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
 import ColorPicker from '@/components/ColorPicker.vue';
-import type { RgbaColor } from '@/core/color';
-import type { Graph } from '@/core/graph';
-import { WidgetType, type Widget } from '@/core/widget';
 import { asGraph, WidgetType as WidgetTypeEnum } from '@/core/widget';
 import { useLoadoutStore } from '@/stores/loadout';
+import { usePreferencesStore } from '@/stores/preferences';
 
 defineOptions({ name: 'GraphConfigView' });
 
@@ -14,132 +12,59 @@ interface Props {
 }
 const props = defineProps<Props>();
 
+// === Stores ===
 const loadoutStore = useLoadoutStore();
+const prefs = usePreferencesStore();
 
-const widget = computed(() => loadoutStore.widgets[props.index]);
-const graph = computed(() => asGraph(widget.value));
-
-const timeRange = ref(10); // Mocked value
-const metricPollRate = ref(40); // Mocked value
-const totalCount = computed(() => timeRange.value * metricPollRate.value);
-
+// === Functions ===
 function parseNumber(val:string|number): number {
   if (typeof val === 'number') return val;
   const parsed = parseFloat(val);
   return isNaN(parsed) ? 0 : parsed;
 }
 
-const height = computed({
-  get: () => graph.value.height,
-  set: (val) => loadoutStore.setGraphAttribute(props.index, 'height', val),
-});
-
-const vDivs = computed({
-  get: () => graph.value.vDivs,
-  set: (val) => loadoutStore.setGraphAttribute(props.index, 'vDivs', val),
-});
-
-const hDivs = computed({
-  get: () => graph.value.hDivs,
-  set: (val) => loadoutStore.setGraphAttribute(props.index, 'hDivs', val),
-});
-
-const textSize = computed({
-  get: () => graph.value.textSize,
-  set: (val) => loadoutStore.setGraphAttribute(props.index, 'textSize', val),
-});
-
-const gridColor = computed({
-  get: () => graph.value.gridColor,
-  set: (val) => loadoutStore.setGraphAttribute(props.index, 'gridColor', val),
-});
-
-const backgroundColor = computed({
-  get: () => graph.value.backgroundColor,
-  set: (val) => loadoutStore.setGraphAttribute(props.index, 'backgroundColor', val),
-});
-
-const textColor = computed({
-  get: () => graph.value.textColor,
-  set: (val) => loadoutStore.setGraphAttribute(props.index, 'textColor', val),
-});
-
-const typeName = computed({
-  get: () => graph.value.graphType.name,
-  set: (name) => loadoutStore.setGraphTypeAttribute(props.index, 'name', name),
-});
-
-const typeRange = computed({
-  get: () => graph.value.graphType.range,
-  set: (rangeRight) => loadoutStore.setGraphTypeAttribute(props.index, 'range', rangeRight),
-});
-
+// === Computed ===
+const widget = computed(() => loadoutStore.widgets[props.index]);
+const graph = computed(() => asGraph(widget.value));
+const graphType = computed(() => graph.value.graphType);
+const typeName = computed(() => graph.value.graphType.name);
+const totalCount = computed(() => prefs.preferences.timeRange * prefs.preferences.metricPollRate);
+// left range text helpers
+const rangeLeft = computed(() => graph.value.graphType.range);
 const typeRangeTextMin = computed({
   get: () => graph.value.graphType.range[0],
   set: (rangeLeftMin:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'range',
-    [parseNumber(rangeLeftMin), typeRange.value[1]]),
+    [parseNumber(rangeLeftMin), rangeLeft.value[1]]),
 });
-
 const typeRangeTextMax = computed({
   get: () => graph.value.graphType.range[1],
   set: (rangeLeftMax:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'range',
-    [typeRange.value[0], parseNumber(rangeLeftMax)]),
+    [rangeLeft.value[0], parseNumber(rangeLeftMax)]),
 });
-
-const typeRangeRight = computed({
-  get: () => graph.value.graphType.rangeRight,
-  set: (rangeRight) => loadoutStore.setGraphTypeAttribute(props.index, 'rangeRight', rangeRight),
-});
-
+// right range text helpers
+const rangeRight = computed(() => graph.value.graphType.rangeRight);
 const typeRangeRightTextMin = computed({
   get: () => graph.value.graphType.rangeRight[0],
   set: (rangeRightMin:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'rangeRight',
-    [parseNumber(rangeRightMin), typeRangeRight.value[1]]),
+    [parseNumber(rangeRightMin), rangeLeft.value[1]]),
 });
-
 const typeRangeRightTextMax = computed({
   get: () => graph.value.graphType.rangeRight[1],
   set: (rangeRightMax:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'rangeRight',
-    [typeRangeRight.value[0], parseNumber(rangeRightMax)]),
+    [rangeLeft.value[0], parseNumber(rangeRightMax)]),
 });
-
-const autoLeft = computed({
-  get: () => graph.value.graphType.autoLeft,
-  set: (val) => loadoutStore.setGraphTypeAttribute(props.index, 'autoLeft', val),
-});
-
-const autoRight = computed({
-  get: () => graph.value.graphType.autoRight,
-  set: (val) => loadoutStore.setGraphTypeAttribute(props.index, 'autoRight', val),
-});
-
-const autoCount = computed({
-  get: () => graph.value.graphType.autoCount,
-  set: (val) => loadoutStore.setGraphTypeAttribute(props.index, 'autoCount', val),
-});
-
-const typeBinCount = computed({
-  get: () => graph.value.graphType.binCount,
-  set: (binCount) => loadoutStore.setGraphTypeAttribute(props.index, 'binCount', binCount),
-});
-
-const typeCountRange = computed({
-  get: () => graph.value.graphType.countRange,
-  set: (countRange) => loadoutStore.setGraphTypeAttribute(props.index, 'countRange', countRange),
-});
-
+// count range text helpers
+const typeCountRange = computed(() => graph.value.graphType.countRange);
 const typeCountRangeTextMin = computed({
   get: () => graph.value.graphType.countRange[0],
   set: (countRangeMin:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'countRange',
     [parseNumber(countRangeMin), typeCountRange.value[1]]),
 });
-
 const typeCountRangeTextMax = computed({
   get: () => graph.value.graphType.countRange[1],
   set: (countRangeMax:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'countRange',
     [typeCountRange.value[0], parseNumber(countRangeMax)]),
 });
-
 </script>
 
 <template>
@@ -165,10 +90,10 @@ const typeCountRangeTextMax = computed({
         <v-col cols="9">
           <v-row dense>
             <v-range-slider
-              v-model="typeRange"
+              v-model="graphType.range"
               :min="0"
               :max="5000"
-              :disabled="autoLeft"
+              :disabled="graphType.autoLeft"
               hide-details
             ></v-range-slider>
           </v-row>
@@ -176,7 +101,7 @@ const typeCountRangeTextMax = computed({
             <v-col cols="2">
               <v-text-field
                 v-model="typeRangeTextMin"
-                :disabled="autoLeft"
+                :disabled="graphType.autoLeft"
                 type="number"
                 hide-spin-buttons
               ></v-text-field>
@@ -184,7 +109,7 @@ const typeCountRangeTextMax = computed({
             <v-col cols="2" offset="8">
               <v-text-field
                 v-model="typeRangeTextMax"
-                :disabled="autoLeft"
+                :disabled="graphType.autoLeft"
                 type="number"
                 hide-spin-buttons
               ></v-text-field>
@@ -203,7 +128,7 @@ const typeCountRangeTextMax = computed({
           <p class="text-medium-emphasis text-caption mb-0">Automatically adjust the range of the left y-axis</p>
         </v-col>
         <v-col cols="9">
-          <v-switch v-model="autoLeft" hide-details></v-switch>
+          <v-switch v-model="graphType.autoLeft" hide-details></v-switch>
         </v-col>
       </v-row>
 
@@ -215,10 +140,10 @@ const typeCountRangeTextMax = computed({
         <v-col cols="9">
           <v-row dense>
             <v-range-slider
-              v-model="typeRangeRight"
+              v-model="graphType.rangeRight"
               :min="0"
               :max="5000"
-              :disabled="autoRight"
+              :disabled="graphType.autoRight"
               hide-details
             ></v-range-slider>
           </v-row>
@@ -226,7 +151,7 @@ const typeCountRangeTextMax = computed({
             <v-col cols="2">
               <v-text-field
                 v-model="typeRangeRightTextMin"
-                :disabled="autoRight"
+                :disabled="graphType.autoRight"
                 type="number"
                 hide-spin-buttons
               ></v-text-field>
@@ -234,7 +159,7 @@ const typeCountRangeTextMax = computed({
             <v-col cols="2" offset="8">
               <v-text-field
                 v-model="typeRangeRightTextMax"
-                :disabled="autoRight"
+                :disabled="graphType.autoRight"
                 type="number"
                 hide-spin-buttons
               ></v-text-field>
@@ -249,7 +174,7 @@ const typeCountRangeTextMax = computed({
           <p class="text-medium-emphasis text-caption mb-0">Automatically adjust the range of the right y-axis</p>
         </v-col>
         <v-col cols="9">
-          <v-switch v-model="autoRight" hide-details></v-switch>
+          <v-switch v-model="graphType.autoRight" hide-details></v-switch>
         </v-col>
       </v-row>
 
@@ -261,7 +186,7 @@ const typeCountRangeTextMax = computed({
           </v-col>
           <v-col cols="9">
             <v-slider
-              v-model="typeBinCount"
+              v-model="graphType.binCount"
               :min="5"
               :max="200"
               thumb-label="always"
@@ -281,7 +206,7 @@ const typeCountRangeTextMax = computed({
                 v-model="typeCountRange"
                 :min="0"
                 :max="5000"
-                :disabled="autoCount"
+                :disabled="graphType.autoCount"
                 hide-details
               ></v-range-slider>
             </v-row>
@@ -289,7 +214,7 @@ const typeCountRangeTextMax = computed({
               <v-col cols="2">
                 <v-text-field
                   v-model="typeCountRangeTextMin"
-                  :disabled="autoCount"
+                  :disabled="graphType.autoCount"
                   type="number"
                   hide-spin-buttons
                 ></v-text-field>
@@ -297,7 +222,7 @@ const typeCountRangeTextMax = computed({
               <v-col cols="2" offset="8">
                 <v-text-field
                   v-model="typeCountRangeTextMax"
-                  :disabled="autoCount"
+                  :disabled="graphType.autoCount"
                   type="number"
                   hide-spin-buttons
                 ></v-text-field>
@@ -312,7 +237,7 @@ const typeCountRangeTextMax = computed({
             <p class="text-medium-emphasis text-caption mb-0">Automatically adjust the range of bin counts</p>
           </v-col>
           <v-col cols="9">
-            <v-switch v-model="autoCount" hide-details></v-switch>
+            <v-switch v-model="graphType.autoCount" hide-details></v-switch>
           </v-col>
         </v-row>
 
@@ -326,8 +251,8 @@ const typeCountRangeTextMax = computed({
               The total count of data points displayed is controlled by <span style="color: orange;">Time Scale</span>
               (<router-link class="app-link" :to="{name: 'overlay-config'}">Settings>Overlay</router-link>) multiplied by <span style="color: orange;">Metric Poll Rate</span>
               (<router-link class="app-link" :to="{name: 'data-config'}">Settings>Data Processing</router-link>). <br> Currently it is
-              <span style="color: green;">{{ timeRange }}s</span> * <span style="color: green;">{{ metricPollRate }}Hz</span> =
-              <span style="color: violet;">{{ totalCount }}</span> data points.
+              <span style="color: green;">{{ prefs.preferences.timeRange }}s</span> * <span style="color: green;">
+                {{ prefs.preferences.metricPollRate }}Hz</span> = <span style="color: violet;">{{ totalCount }}</span> data points.
             </p>
           </v-col>
         </v-row>
@@ -345,7 +270,7 @@ const typeCountRangeTextMax = computed({
         </v-col>
         <v-col cols="9">
           <v-slider
-            v-model="height"
+            v-model="graph.height"
             :min="20"
             :max="450"
             thumb-label="always"
@@ -361,7 +286,7 @@ const typeCountRangeTextMax = computed({
         </v-col>
         <v-col cols="9">
           <v-slider
-            v-model="vDivs"
+            v-model="graph.vDivs"
             :min="1"
             :max="40"
             thumb-label="always"
@@ -377,7 +302,7 @@ const typeCountRangeTextMax = computed({
         </v-col>
         <v-col cols="9">
           <v-slider
-            v-model="hDivs"
+            v-model="graph.hDivs"
             :min="1"
             :max="100"
             thumb-label="always"
@@ -393,7 +318,7 @@ const typeCountRangeTextMax = computed({
         </v-col>
         <v-col cols="9">
           <v-slider
-            v-model="textSize"
+            v-model="graph.textSize"
             :min="5"
             :max="80"
             :step="0.5"
@@ -411,13 +336,13 @@ const typeCountRangeTextMax = computed({
         <v-col cols="9">
           <v-row dense>
             <v-col cols="4">
-              <color-picker v-model="gridColor" class="color-picker" label="Grid"></color-picker>
+              <color-picker v-model="graph.gridColor" class="color-picker" label="Grid"></color-picker>
             </v-col>
             <v-col cols="4">
-              <color-picker v-model="backgroundColor" class="color-picker" label="Background"></color-picker>
+              <color-picker v-model="graph.backgroundColor" class="color-picker" label="Background"></color-picker>
             </v-col>
             <v-col cols="4">
-              <color-picker v-model="textColor" class="color-picker" label="Text"></color-picker>
+              <color-picker v-model="graph.textColor" class="color-picker" label="Text"></color-picker>
             </v-col>
           </v-row>
         </v-col>
