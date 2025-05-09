@@ -33,37 +33,31 @@ const totalCount = computed(() => prefs.preferences.timeRange * prefs.preference
 const rangeLeft = computed(() => graph.value.graphType.range);
 const typeRangeTextMin = computed({
   get: () => graph.value.graphType.range[0],
-  set: (rangeLeftMin:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'range',
-    [parseNumber(rangeLeftMin), rangeLeft.value[1]]),
+  set: (rangeLeftMin:string|number) => { graphType.value.range[0] = parseNumber(rangeLeftMin) }
 });
 const typeRangeTextMax = computed({
   get: () => graph.value.graphType.range[1],
-  set: (rangeLeftMax:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'range',
-    [rangeLeft.value[0], parseNumber(rangeLeftMax)]),
+  set: (rangeLeftMax:string|number) => { graphType.value.range[1] = parseNumber(rangeLeftMax); }
 });
 // right range text helpers
 const rangeRight = computed(() => graph.value.graphType.rangeRight);
 const typeRangeRightTextMin = computed({
   get: () => graph.value.graphType.rangeRight[0],
-  set: (rangeRightMin:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'rangeRight',
-    [parseNumber(rangeRightMin), rangeLeft.value[1]]),
+  set: (rangeRightMin:string|number) => { graphType.value.rangeRight[0] = parseNumber(rangeRightMin); }
 });
 const typeRangeRightTextMax = computed({
   get: () => graph.value.graphType.rangeRight[1],
-  set: (rangeRightMax:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'rangeRight',
-    [rangeLeft.value[0], parseNumber(rangeRightMax)]),
+  set: (rangeRightMax:string|number) => { graphType.value.rangeRight[1] = parseNumber(rangeRightMax); }
 });
 // count range text helpers
 const typeCountRange = computed(() => graph.value.graphType.countRange);
 const typeCountRangeTextMin = computed({
   get: () => graph.value.graphType.countRange[0],
-  set: (countRangeMin:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'countRange',
-    [parseNumber(countRangeMin), typeCountRange.value[1]]),
+  set: (countRangeMin:string|number) => { graphType.value.countRange[0] = parseNumber(countRangeMin); }
 });
 const typeCountRangeTextMax = computed({
   get: () => graph.value.graphType.countRange[1],
-  set: (countRangeMax:string|number) => loadoutStore.setGraphTypeAttribute(props.index, 'countRange',
-    [typeCountRange.value[0], parseNumber(countRangeMax)]),
+  set: (countRangeMax:string|number) => { graphType.value.countRange[1] = parseNumber(countRangeMax); }
 });
 </script>
 

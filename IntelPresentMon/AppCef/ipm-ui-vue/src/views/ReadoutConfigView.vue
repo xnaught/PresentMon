@@ -4,8 +4,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import ColorPicker from '@/components/ColorPicker.vue';
-import type { RgbaColor } from '@/core/color';
-import type { Readout } from '@/core/readout';
 import { asReadout, type Widget } from '@/core/widget';
 import { useLoadoutStore } from '@/stores/loadout';
 
@@ -20,26 +18,6 @@ const loadoutStore = useLoadoutStore();
 
 const widget = computed(() => loadoutStore.widgets[props.index]);
 const readout = computed(() => asReadout(widget.value));
-
-const showLabel = computed({
-  get: () => readout.value.showLabel,
-  set: (val: boolean) => loadoutStore.setReadoutAttribute(props.index, 'showLabel', val),
-});
-
-const fontSize = computed({
-  get: () => readout.value.fontSize,
-  set: (val: number) => loadoutStore.setReadoutAttribute(props.index, 'fontSize', val),
-});
-
-const fontColor = computed({
-  get: () => readout.value.fontColor,
-  set: (val: RgbaColor) => loadoutStore.setReadoutAttribute(props.index, 'fontColor', val),
-});
-
-const backgroundColor = computed({
-  get: () => readout.value.backgroundColor,
-  set: (val: RgbaColor) => loadoutStore.setReadoutAttribute(props.index, 'backgroundColor', val),
-});
 </script>
 
 <template>
@@ -60,7 +38,7 @@ const backgroundColor = computed({
           </v-col>
           <v-col cols="9">
             <v-slider
-              v-model="fontSize"
+              v-model="readout.fontSize"
               :min="5"
               :max="80"
               :step="0.5"
@@ -77,10 +55,10 @@ const backgroundColor = computed({
           <v-col cols="9">
             <v-row dense>
               <v-col cols="6">
-                <color-picker v-model="fontColor" class="color-picker" label="Text"></color-picker>
+                <color-picker v-model="readout.fontColor" class="color-picker" label="Text"></color-picker>
               </v-col>
               <v-col cols="6">
-                <color-picker v-model="backgroundColor" class="color-picker" label="Background"></color-picker>
+                <color-picker v-model="readout.backgroundColor" class="color-picker" label="Background"></color-picker>
               </v-col>
             </v-row>
           </v-col>
@@ -92,7 +70,7 @@ const backgroundColor = computed({
             <p class="text-medium-emphasis text-caption mb-0">Show label for this readout widget</p>
           </v-col>
           <v-col cols="9">
-            <v-switch v-model="showLabel" hide-details label="Show"></v-switch>
+            <v-switch v-model="readout.showLabel" hide-details label="Show"></v-switch>
           </v-col>
         </v-row>
       </v-card>

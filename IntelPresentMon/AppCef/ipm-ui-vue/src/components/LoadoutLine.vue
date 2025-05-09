@@ -7,7 +7,6 @@ import type { QualifiedMetric } from '@/core/qualified-metric';
 import type { Stat } from '@/core/stat';
 import { AxisAffinity } from '@/core/widget-metric';
 import ColorPicker from './ColorPicker.vue';
-import type { RgbaColor } from '@/core/color';
 import { asGraph } from '@/core/widget';
 import { useLoadoutStore } from '@/stores/loadout';
 import type { ListItem } from 'vuetify/lib/composables/list-items.mjs';
@@ -45,29 +44,12 @@ const widgetType = computed({
     }
   },
 });
-
 const widgetSubtype = computed({
   get: () => (widgetType.value === WidgetType.Graph ? asGraph(widget.value).graphType.name : ''),
   set: (val: string) => {
     if (widgetType.value === WidgetType.Graph) {
-      loadoutStore.setGraphTypeAttribute(props.widgetIdx, 'name', val);
+      asGraph(widget.value).graphType.name = val
     }
-  },
-});
-
-const lineColor = computed({
-  get: () => widgetMetric.value.lineColor,
-  set: (color: RgbaColor) => {
-    const metric = { ...widgetMetric.value, lineColor: color };
-    loadoutStore.setWidgetMetric(props.widgetIdx, props.lineIdx, metric);
-  },
-});
-
-const fillColor = computed({
-  get: () => widgetMetric.value.fillColor,
-  set: (color: RgbaColor) => {
-    const metric = { ...widgetMetric.value, fillColor: color };
-    loadoutStore.setWidgetMetric(props.widgetIdx, props.lineIdx, metric);
   },
 });
 
@@ -122,7 +104,7 @@ const stat = computed({
     if (!stat) throw new Error(`Stat ID ${widgetMetric.value.metric.statId} not found`);
     return stat;
   },
-  set: (stat: Stat) => {
+  set: (stat: Stat) => {    
     const qualifiedMetric = { ...widgetMetric.value.metric, statId: stat.id };
     const metric = { ...widgetMetric.value, metric: qualifiedMetric };
     loadoutStore.setWidgetMetric(props.widgetIdx, props.lineIdx, metric);
@@ -219,13 +201,13 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
     <div class="widget-cell col-line-color">
       <color-picker
         v-if="isGraphWidget"
-        v-model="lineColor"
+        v-model="widgetMetric.lineColor"
         :minimal="true"
         class="mb-1"
       ></color-picker>
       <color-picker
         v-if="isGraphWidget"
-        v-model="fillColor"
+        v-model="widgetMetric.fillColor"
         :minimal="true"
       ></color-picker>
     </div>
