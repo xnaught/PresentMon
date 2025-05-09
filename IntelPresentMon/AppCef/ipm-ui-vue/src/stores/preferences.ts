@@ -18,46 +18,25 @@ export const usePreferencesStore = defineStore('preferences', () => {
   // === Dependent Stores ===
   const loadout = useLoadoutStore()
   const intro = useIntrospectionStore()
+  const hotkeys = useHotkeyStore()
 
   // === State ===
   const preferences = ref<PreferencesType>(makeDefaultPreferences())
   const capturing = ref(false)
   const captureDurationToken = ref<DelayToken | null>(null)
-  const capturingActive = ref(false)
   const pid = ref<number | null>(null)
   const debounceToken = ref<number | null>(null)
-  const hotkeys = useHotkeyStore()
+
+  // === Functions ===
+  // TODO: move private functions here
 
   // === Actions ===
-  function setCapture(active: boolean) {
-    capturing.value = active;
-  }
-
-  function setCaptureDurationToken(token: DelayToken | null) {
-    captureDurationToken.value = token;
-  }
-
-  function setPid(newPid: number | null) {
-    pid.value = newPid;
-  }
-
-  function setDebounceToken(token: number | null) {
-    debounceToken.value = token;
-  }
-
   function setAllPreferences(prefs: PreferencesType) {
     preferences.value = { ...preferences.value, ...prefs };
     capturing.value = false;
     captureDurationToken.value = null;
-    capturingActive.value = false;
     pid.value = null;
     debounceToken.value = null;
-  }
-
-  async function writeAdapterId(id: number) {
-    await Api.setAdapter(id);
-    preferences.value.adapterId = id;
-    serialize();
   }
 
   function serialize() {
@@ -85,17 +64,18 @@ export const usePreferencesStore = defineStore('preferences', () => {
   async function writeCapture(active: boolean) {
     if (active) {
       if (preferences.value.enableCaptureDuration) {
-        setCaptureDurationToken(
-          dispatchDelayedTask(() => setCapture(false), preferences.value.captureDuration * 1000).token
-        );
+        captureDurationToken.value = dispatchDelayedTask(
+          () => { capturing.value = false },
+          preferences.value.captureDuration * 1000
+        ).token          
       }
-      setCapture(true);
+      capturing.value = true;
     } else {
       if (captureDurationToken.value) {
         captureDurationToken.value.cancel();
-        setCaptureDurationToken(null);
+        captureDurationToken.value = null;
       }
-      setCapture(false);
+      capturing.value = false;
     }
   }
 
@@ -172,16 +152,8 @@ export const usePreferencesStore = defineStore('preferences', () => {
   return {
     preferences,
     capturing,
-    captureDurationToken,
-    capturingActive,
     pid,
-    debounceToken,
-    setCapture,
-    setCaptureDurationToken,
-    setPid,
-    setDebounceToken,
     setAllPreferences,
-    writeAdapterId,
     serialize,
     resetPreferences,
     writeCapture,

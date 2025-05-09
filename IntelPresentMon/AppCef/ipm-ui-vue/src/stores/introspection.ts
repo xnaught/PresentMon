@@ -12,7 +12,7 @@ export const useIntrospectionStore = defineStore('introspection', () => {
   const stats = ref<Stat[]>([]);
   const units = ref<Unit[]>([]);
 
-  // === Getters ===
+  // === Computed ===
   const metricOptions = computed<MetricOption[]>(() => {
     return metrics.value.flatMap(m => 
       Array.from({ length: m.arraySize }, (_, i) => ({
@@ -23,7 +23,7 @@ export const useIntrospectionStore = defineStore('introspection', () => {
     );
   });
 
-  // === Actions ===
+  // === Functions ===
   function replaceAllMetrics(newMetrics: Metric[]) {
     metrics.value = newMetrics;
   }
@@ -36,6 +36,7 @@ export const useIntrospectionStore = defineStore('introspection', () => {
     units.value = newUnits;
   }
 
+  // === Actions ===
   async function load() {
     if (metrics.value.length === 0) {
       const intro = await Api.introspect();

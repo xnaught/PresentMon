@@ -11,6 +11,6 @@ export function getEnumValues<T extends StandardEnum<number>>(e: T): number[] {
     return Object.keys(e).filter(k => typeof e[k] !== "number").map(k => parseInt(k));
 }
 
-type IsSameType<A, B> = 
+export type IsSameType<A, B> = 
   (<G>() => G extends A ? 1 : 2) extends 
   (<G>() => G extends B ? 1 : 2) ? true : false;

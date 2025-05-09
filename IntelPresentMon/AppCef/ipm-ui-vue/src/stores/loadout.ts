@@ -23,6 +23,9 @@ export const useLoadoutStore = defineStore('loadout', () => {
         return JSON.stringify(file, null, 3)
     })
 
+    // === Functions ===
+    // TODO: move private functions here
+
     // === Actions ===
     // graph-specific
     async function addGraph() {
@@ -180,10 +183,7 @@ export const useLoadoutStore = defineStore('loadout', () => {
 
     // === Exports ===
     return {
-        // === State ===
         widgets,
-
-        // === Actions ===
         addGraph,
         addReadout,
         removeWidget,
