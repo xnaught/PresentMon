@@ -4,14 +4,14 @@ import { dispatchDelayedTask, type DelayedTask, awaitDelayedPromise } from "./ti
 import { type Process } from "./process";
 import { Api } from "./api"
 import { getBlocklist } from "./block-list";
-//import { Preferences } from "@/store/preferences";
+import { usePreferencesStore } from "@/stores/preferences";
 
 var utilizationPollTask: DelayedTask<Promise<Process|null>>|null = null;
 
 export async function launchAutotargetting(): Promise<void> {
     const top = await doGpuUtilizationTopPolling(250);
     if (top !== null) {
-        // Preferences.setPid(top.pid);
+        usePreferencesStore().setPid(top.pid);
     }
 }
 
@@ -24,10 +24,14 @@ export async function doGpuUtilizationTopPolling(specifiedDelayMs: number): Prom
             return await Api.getTopGpuProcess(getBlocklist());        
         }, delayMs);
         const result = await awaitDelayedPromise(utilizationPollTask.promise);
+        // if result is not null, we have a process to target
+        // otherwise, the delayed task was cancelled
         if (result !== null) {
             utilizationPollTask = null;
             return result;
         }
+        // null here means somebody called cancelTopPolling
+        // probably not necessary, but just in case
         if (utilizationPollTask === null) {
             return result;
         }

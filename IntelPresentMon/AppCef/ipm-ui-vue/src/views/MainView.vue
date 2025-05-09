@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import { type ListItem } from 'vuetify/lib/composables/list-items.mjs';
 import { type Process } from '@/core/process';
 import { Action } from '@/core/hotkey';
@@ -8,6 +8,7 @@ import HotkeyButton from '@/components/HotkeyButton.vue';
 import { usePreferencesStore } from '@/stores/preferences';
 import { useProcessesStore } from '@/stores/processes';
 import { isBlocked } from '@/core/block-list';
+import { cancelTopPolling, launchAutotargetting } from '@/core/autotarget';
 
 defineOptions({name: 'MainView'})
 
@@ -47,8 +48,24 @@ const processes = computed(() => {
     }
 })
 
+// === Watchers ===
+// watching selected pid and autotargetting enabled state
+watchEffect(async () => {
+    const pid = prefs.pid
+    if (pid !== null) {
+        cancelTopPolling()
+        if (procs.processes.find(p => p.pid == pid) == null) {
+            await procs.refresh();
+        }
+    }
+    else {
+        if (prefs.preferences.enableAutotargetting) {
+            launchAutotargetting();
+        }
+    }
+})
+
 // TODO placeholders
-const enableAutotargetting = ref(false)
 const enableCaptureDuration = ref(false)
 const captureDuration = ref(1)
 function handleCaptureExplore() {}
@@ -74,7 +91,7 @@ function handleCaptureExplore() {}
             label="Process"
             @click="procs.refresh"
             append-icon=""
-            :disabled="enableAutotargetting"
+            :disabled="prefs.preferences.enableAutotargetting"
             clearable
         >
             <template v-slot:selection="{item, index}: {item:ListItem<Process>, index:number}">
@@ -114,7 +131,7 @@ function handleCaptureExplore() {}
         </v-col>
 
         <v-col cols="9" class="d-flex align-center">
-        <v-switch v-model="enableAutotargetting" label="Enable"></v-switch>
+        <v-switch label="Enable" v-model="prefs.preferences.enableAutotargetting"></v-switch>
         </v-col>
     </v-row>   
     
