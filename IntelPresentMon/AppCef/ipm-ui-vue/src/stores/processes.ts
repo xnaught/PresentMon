@@ -8,7 +8,7 @@ export const useProcessesStore = defineStore('processes', () => {
   const processes = ref<Process[]>([]);
 
   // === Actions ===
-  async function refresh() {        
+  async function refresh() {
     processes.value = await Api.enumerateProcesses();
   }
 

@@ -22,7 +22,7 @@ function constructSetFromString(text: string): Set<string> {
     return lineSet;
   }
 
-export async function LoadBlocklists(): Promise<void> {
+export async function loadBlocklists(): Promise<void> {
     const env = await GetEnvVars();
     if (env.useDebugBlocklist) {
       // try loading default block list from debug directory
@@ -53,11 +53,11 @@ export async function LoadBlocklists(): Promise<void> {
     targetBlocklist.clear();
 }
 
-export function IsBlocked(process: string): boolean {
+export function isBlocked(process: string): boolean {
     const s = targetBlocklist;
     return targetBlocklist.has(process.toLowerCase());
 }
 
-export function GetBlocklist(): string[] {
+export function getBlocklist(): string[] {
     return Array.from(targetBlocklist);
 }

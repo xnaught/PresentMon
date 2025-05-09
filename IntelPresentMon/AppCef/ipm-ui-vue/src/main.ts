@@ -18,6 +18,7 @@ import { md2 } from 'vuetify/blueprints'
 import { useHotkeyStore } from '@/stores/hotkey';
 import { useIntrospectionStore } from '@/stores/introspection';
 import { useAdaptersStore } from './stores/adapters'
+import { loadBlocklists } from './core/block-list'
 
 if (isDevBuild()) {
     const script = document.createElement('script');
@@ -94,6 +95,7 @@ async function initStores() {
         useHotkeyStore().refreshOptions(),
         useIntrospectionStore().load(),
         useAdaptersStore().refresh(),
+        loadBlocklists(),
     ])
 }
 

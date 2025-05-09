@@ -7,10 +7,11 @@ import { Preset } from '@/core/preferences';
 import HotkeyButton from '@/components/HotkeyButton.vue';
 import { usePreferencesStore } from '@/stores/preferences';
 import { useProcessesStore } from '@/stores/processes';
+import { isBlocked } from '@/core/block-list';
 
 defineOptions({name: 'MainView'})
 
-// stores
+// === Stores ===
 const prefs = usePreferencesStore()
 const procs = useProcessesStore()
 
@@ -36,6 +37,16 @@ function makeSelectorName(winName: string): string {
     }
 }
 
+// === Computed ===
+const processes = computed(() => {    
+    if (prefs.preferences.enableTargetBlocklist) {
+        return procs.processes.filter(proc => !isBlocked(proc.name));
+    }
+    else {
+        return procs.processes;
+    }
+})
+
 // TODO placeholders
 const enableAutotargetting = ref(false)
 const enableCaptureDuration = ref(false)
@@ -56,7 +67,7 @@ function handleCaptureExplore() {}
         <v-col cols="9" class="d-flex align-center">
         <!-- todo mock the process reactives etc. -->
         <v-autocomplete
-            :items="procs.processes"
+            :items="processes"
             v-model="prefs.pid"
             item-value="pid"
             :filter="selectFilter"
