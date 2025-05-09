@@ -17,6 +17,7 @@ import { md2 } from 'vuetify/blueprints'
 
 import { useHotkeyStore } from '@/stores/hotkey';
 import { useIntrospectionStore } from '@/stores/introspection';
+import { useAdaptersStore } from './stores/adapters'
 
 if (isDevBuild()) {
     const script = document.createElement('script');
@@ -89,8 +90,11 @@ const vuetify = createVuetify({
 })
 
 async function initStores() {
-    useHotkeyStore().refreshOptions()
-    useIntrospectionStore().load()
+    await Promise.all([
+        useHotkeyStore().refreshOptions(),
+        useIntrospectionStore().load(),
+        useAdaptersStore().refresh(),
+    ])
 }
 
 var app:any;

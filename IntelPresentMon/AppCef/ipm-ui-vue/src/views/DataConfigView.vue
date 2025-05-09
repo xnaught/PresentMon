@@ -2,22 +2,17 @@
 <!-- SPDX-License-Identifier: MIT -->
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import { usePreferencesStore } from '@/stores/preferences';
-//import { useAdaptersStore } from '@/stores/adapters';
 import { isDevelopment } from '@/core/env-vars';
-import type { Adapter } from '@/core/adapter';
+import { useAdaptersStore } from '@/stores/adapters';
 
 const prefs = usePreferencesStore();
-// const adaptersStore = useAdaptersStore();
-const adapters = computed(() => [] as Adapter[]);
-const adapter = ref<number | null>(null);
-
-const overlayDrawRate = computed(() => prefs.preferences.overlayDrawRate);
+const adaptersStore = useAdaptersStore();
 
 const metricPollMessages = computed(() => {
-  if (prefs.preferences.metricPollRate % overlayDrawRate.value !== 0) {
-    return [`Recommend setting poll rate to be a whole multiple of the overlay draw rate (currently ${overlayDrawRate.value}fps).`];
+  if (prefs.preferences.metricPollRate % prefs.preferences.overlayDrawRate !== 0) {
+    return [`Recommend setting poll rate to be a whole multiple of the overlay draw rate (currently ${prefs.preferences.overlayDrawRate}fps).`];
   }
   return [];
 });
@@ -145,10 +140,10 @@ const metricPollMessages = computed(() => {
         </v-col>
         <v-col cols="9">
           <v-select
-            v-model="adapter"
-            :items="adapters"
+            v-model="prefs.preferences.adapterId"
+            :items="adaptersStore.adapters"
             item-value="id"
-            item-text="name"
+            item-title="name"
             placeholder="Default adapter"
           ></v-select>
         </v-col>

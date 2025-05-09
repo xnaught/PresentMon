@@ -102,7 +102,7 @@ const prefs = usePreferencesStore();
                 </v-col>
                 <v-col cols="8">
                     <v-slider
-                        class="mt-4"
+                        class="mt-3"
                         label="Factor"
                         v-model="prefs.preferences.upscaleFactor"
                         :max="5"
