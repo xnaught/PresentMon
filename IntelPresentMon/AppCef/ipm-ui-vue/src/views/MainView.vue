@@ -54,13 +54,17 @@ watchEffect(async () => {
     const pid = prefs.pid
     if (pid !== null) {
         cancelTopPolling()
+        // if the top reported process is not in current list, refresh the list
         if (procs.processes.find(p => p.pid == pid) == null) {
-            await procs.refresh();
+            await procs.refresh()
         }
     }
     else {
         if (prefs.preferences.enableAutotargetting) {
-            launchAutotargetting();
+            launchAutotargetting()
+        }
+        else {
+            cancelTopPolling()
         }
     }
 })
