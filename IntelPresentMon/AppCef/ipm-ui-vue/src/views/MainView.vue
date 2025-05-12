@@ -17,6 +17,9 @@ defineOptions({name: 'MainView'})
 const prefs = usePreferencesStore()
 const procs = useProcessesStore()
 
+// === State ===
+const loadingProcs = ref(false)
+
 // match autocomplete typed text if substring of window name or process name or pid
 function selectFilter(item: Process, query: string) {
     const winText = item.windowName?.toLowerCase();
@@ -39,9 +42,15 @@ function makeSelectorName(winName: string): string {
     }
 }
 // handle click on the capture explore button
-
 async function handleCaptureExplore() {
     await Api.exploreCaptures()
+}
+// load the process list
+async function loadProcesses() {
+    loadingProcs.value = true
+    await procs.refresh()
+    loadingProcs.value = false
+    
 }
 
 // === Computed ===
@@ -94,7 +103,8 @@ watchEffect(async () => {
             item-value="pid"
             :filter="selectFilter"
             label="Process"
-            @click="procs.refresh"
+            :loading="loadingProcs"
+            @click="loadProcesses"
             append-icon=""
             :disabled="prefs.preferences.enableAutotargetting"
             clearable
