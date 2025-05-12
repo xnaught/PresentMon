@@ -43,10 +43,7 @@ function getHotkeyKeyName(key: KeyCode): string {
 
 // computed
 const actionName = computed(() => getHotkeyActionName(props.action))
-
-
-// TODO placeholders
-const hotkeyCombination = ref<Combination|null>(null)
+const hotkeyCombination = computed(() => hotkeys.bindings[Action[props.action]].combination)
 </script>
 
 <template>
@@ -67,7 +64,7 @@ const hotkeyCombination = ref<Combination|null>(null)
     <hotkey-dialog
         ref="dialogRef"
         :name="actionName"
-        v-model="hotkeyCombination"
+        v-model="hotkeys.bindings[Action[props.action]].combination"
     ></hotkey-dialog>
 </div>
 </template>

@@ -19,7 +19,8 @@ export const useHotkeyStore = defineStore('hotkey', () => {
         )
     )
     // TODO: receive this from kernel or generate based on SSoT
-    const defaultBindings = readonly<Binding[]>([
+    // TODO: understand why this as a readonly<> or ref<> causes the modifiers to become an object rather than array
+    const defaultBindings = [
         {
           action: HotkeyAction.ToggleCapture,
           combination: { key: 42 as KeyCode, modifiers: [2 as ModifierCode, 4 as ModifierCode] },
@@ -32,7 +33,7 @@ export const useHotkeyStore = defineStore('hotkey', () => {
           action: HotkeyAction.ToggleOverlay,
           combination: { key: 46 as KeyCode, modifiers: [2 as ModifierCode, 4 as ModifierCode] },
         },
-    ]) as readonly Binding[]
+    ] as Binding[]
 
     // === Actions ===
     // use the api to get the keys/modifiers from the kernel
@@ -75,12 +76,10 @@ export const useHotkeyStore = defineStore('hotkey', () => {
 
     // === Exports ===
     return {
-        // === State ===
         keyOptions,
         modifierOptions,
         bindings,
-        defaultBindings,      
-        // === Actions ===
+        defaultBindings,
         refreshOptions,
         bindDefaults,
         bindHotkey,
