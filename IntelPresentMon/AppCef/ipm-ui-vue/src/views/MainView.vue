@@ -9,6 +9,7 @@ import { usePreferencesStore } from '@/stores/preferences';
 import { useProcessesStore } from '@/stores/processes';
 import { isBlocked } from '@/core/block-list';
 import { cancelTopPolling, launchAutotargetting } from '@/core/autotarget';
+import { Api } from '@/core/api';
 
 defineOptions({name: 'MainView'})
 
@@ -36,6 +37,11 @@ function makeSelectorName(winName: string): string {
     else {
         return winName;
     }
+}
+// handle click on the capture explore button
+
+async function handleCaptureExplore() {
+    await Api.exploreCaptures()
 }
 
 // === Computed ===
@@ -68,9 +74,6 @@ watchEffect(async () => {
         }
     }
 })
-
-// TODO placeholders
-function handleCaptureExplore() {}
 </script>
 
 
