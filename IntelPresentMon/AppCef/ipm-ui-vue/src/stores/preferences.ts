@@ -13,6 +13,7 @@ import { migratePreferences } from '@/core/preferences-migration';
 import type { Widget } from '@/core/widget';
 import { useLoadoutStore } from './loadout';
 import { useIntrospectionStore } from './introspection';
+import { deepToRaw } from '@/core/vue-utils';
 
 export const usePreferencesStore = defineStore('preferences', () => {
   // === Dependent Stores ===
@@ -105,8 +106,8 @@ export const usePreferencesStore = defineStore('preferences', () => {
   }
   
   async function pushSpecification() {
-    // TODO: try structuredClone instead of JSON.parse(JSON.stringify())
-    const widgets = JSON.parse(JSON.stringify(loadout.widgets)) as Widget[];
+    // we need to get a non-proxy object for the  call
+    const widgets = deepToRaw(loadout.widgets);
     for (const widget of widgets) {
       // Filter out the widgetMetrics that do not meet the condition, modify those that do
       widget.metrics = widget.metrics.filter(widgetMetric => {
@@ -136,7 +137,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
     }
     await Api.pushSpecification({
       pid: pid.value,
-      preferences: preferences.value,
+      preferences: preferences.value, // NOTE: if arrays are embedded in prefs in future, will need deepToRaw
       widgets: widgets.filter(w => w.metrics.length > 0),
     });
   }
