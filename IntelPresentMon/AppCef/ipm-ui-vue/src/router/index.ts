@@ -5,6 +5,7 @@ import GraphConfigView from '@/views/GraphConfigView.vue'
 import ReadoutConfigView from '@/views/ReadoutConfigView.vue'
 import DataConfigView from '@/views/DataConfigView.vue'
 import OverlayConfigView from '@/views/OverlayConfigView.vue'
+import CaptureConfigView from '@/views/CaptureConfigView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -48,7 +49,7 @@ const router = createRouter({
     {
       path: '/capture',
       name: 'capture-config',
-      component: MainView,
+      component: CaptureConfigView,
     },
     {
       path: '/other',

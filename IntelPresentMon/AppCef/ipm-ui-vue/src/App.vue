@@ -108,8 +108,8 @@ watch(() => loadout.widgets, async () => {
             <v-list-item color="primary" :to="{ name: 'data-config' }">
               <v-list-item-title class="nav-item">Data</v-list-item-title>
             </v-list-item>
-            <v-list-item color="primary" :to="{ name: 'flash-config' }">
-              <v-list-item-title class="nav-item">Flash</v-list-item-title>
+            <v-list-item color="primary" :to="{ name: 'capture-config' }">
+              <v-list-item-title class="nav-item">Capture</v-list-item-title>
             </v-list-item>
           </v-list>
         </v-navigation-drawer>
