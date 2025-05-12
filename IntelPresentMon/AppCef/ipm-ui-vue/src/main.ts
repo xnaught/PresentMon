@@ -19,6 +19,7 @@ import { useHotkeyStore } from '@/stores/hotkey';
 import { useIntrospectionStore } from '@/stores/introspection';
 import { useAdaptersStore } from './stores/adapters'
 import { loadBlocklists } from './core/block-list'
+import { usePreferencesStore } from './stores/preferences'
 
 if (isDevBuild()) {
     const script = document.createElement('script');
@@ -97,6 +98,7 @@ async function initStores() {
         useAdaptersStore().refresh(),
         loadBlocklists(),
     ])
+    await usePreferencesStore().initPreferences()
 }
 
 var app:any;

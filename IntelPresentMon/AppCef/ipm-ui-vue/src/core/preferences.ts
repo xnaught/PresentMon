@@ -106,7 +106,7 @@ export function makeDefaultPreferences(): Preferences {
         upscale: false,
         generateStats: true,
         enableTargetBlocklist: true,
-        enableAutotargetting: true,
+        enableAutotargetting: false,
         upscaleFactor: 2,        
         adapterId: null,
         enableFlashInjection: false,

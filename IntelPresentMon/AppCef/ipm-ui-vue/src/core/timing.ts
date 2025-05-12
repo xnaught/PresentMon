@@ -65,11 +65,10 @@ export async function delayFor(ms: number): Promise<void> {
     return delayTask(() => {}, ms);
 }
 
-export function debounce<T>(fn: () => T, delay: number, token: DelayToken|null): void {
-    if (token !== null) {
-        token.cancel();
+export function debounce<T>(fn: () => T, delay: number, task: DelayedTask<T>|null): void {
+    if (task !== null) {
+        task.token.cancel();
     }
-    const newToken = dispatchDelayedTask(fn, delay);
-    token = newToken.token;
+    task = dispatchDelayedTask(fn, delay);
 }
   

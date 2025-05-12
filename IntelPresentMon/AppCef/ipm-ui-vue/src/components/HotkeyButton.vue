@@ -43,7 +43,22 @@ function getHotkeyKeyName(key: KeyCode): string {
 
 // computed
 const actionName = computed(() => getHotkeyActionName(props.action))
-const hotkeyCombination = computed(() => hotkeys.bindings[Action[props.action]].combination)
+const hotkeyCombination = computed({
+  get() {
+    return hotkeys.bindings[Action[props.action]].combination;
+  },
+  set(value: Combination | null) {
+    if (value !== null) {
+      hotkeys.bindHotkey({
+        action: props.action,
+        combination: value,
+      });
+    }
+    else {
+      hotkeys.clearHotkey(props.action)
+    }
+  }
+});
 </script>
 
 <template>
@@ -64,7 +79,7 @@ const hotkeyCombination = computed(() => hotkeys.bindings[Action[props.action]].
     <hotkey-dialog
         ref="dialogRef"
         :name="actionName"
-        v-model="hotkeys.bindings[Action[props.action]].combination"
+        v-model="hotkeyCombination"
     ></hotkey-dialog>
 </div>
 </template>

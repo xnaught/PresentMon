@@ -1,9 +1,10 @@
-import { ref, reactive, readonly } from 'vue'
+import { ref, reactive, readonly, toRaw } from 'vue'
 import { defineStore } from 'pinia'
 import type { ModifierOption, KeyOption, Binding, KeyCode, ModifierCode } from '@/core/hotkey'
 import { Action as HotkeyAction } from '@/core/hotkey'
 import { Api } from '@/core/api'
 import { getEnumValues } from '@/core/meta'
+import { deepToRaw } from '@/core/vue-utils'
 
 export const useHotkeyStore = defineStore('hotkey', () => {
     // === State ===
@@ -54,8 +55,9 @@ export const useHotkeyStore = defineStore('hotkey', () => {
     // set a hotkey combination for an action
     async function bindHotkey(binding: Binding) {
       try {
-        await Api.bindHotkey(binding)
         bindings[HotkeyAction[binding.action]] = binding
+        // we need to clone the binding because pinia turns array into an object
+        await Api.bindHotkey(deepToRaw(binding))
       } catch (e) {
         const actionName = HotkeyAction[binding.action]
         // TODO Notifications.notify({ text: `Failed to bind hotkey for [${actionName}]` })

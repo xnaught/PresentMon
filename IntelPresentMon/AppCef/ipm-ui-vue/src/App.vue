@@ -5,12 +5,14 @@ import { usePreferencesStore } from './stores/preferences';
 import { Preset } from './core/preferences';
 import { Api } from './core/api';
 import { useLoadoutStore } from './stores/loadout';
+import { useHotkeyStore } from './stores/hotkey';
 
 const route = useRoute()
 
 // === Stores ===
 const prefs = usePreferencesStore()
 const loadout = useLoadoutStore()
+const hotkeys = useHotkeyStore()
 
 // === Lifecycle Hooks ===
 
@@ -38,9 +40,10 @@ watchEffect(async () => {
     await loadout.loadConfigFromPayload(payload, err);
   }
 })
-// react to changes in the prefs, loadout widgets, or pid and push spec
-watch([() => prefs.preferences, () => prefs.pid, () => loadout.widgets],
+// react to changes in spec data and push spec
+watch([() => prefs.preferences, () => prefs.pid, () => loadout.widgets, () => hotkeys.bindings],
   async () => {
+    prefs.serialize()
     await prefs.pushSpecification()
 }, {deep: true})
 </script>

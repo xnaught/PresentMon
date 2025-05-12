@@ -7,7 +7,7 @@ import { type Preferences as PreferencesType, type PreferenceFile, makeDefaultPr
 import { combinationsAreSame } from '@/core/hotkey';
 import { signature } from '@/core/preferences';
 import { useHotkeyStore } from './hotkey';
-import { type DelayToken, dispatchDelayedTask } from '@/core/timing';
+import { debounce, type DelayedTask, type DelayToken, dispatchDelayedTask } from '@/core/timing';
 //import { Adapters } from './adapters';
 import { migratePreferences } from '@/core/preferences-migration';
 import type { Widget } from '@/core/widget';
@@ -25,7 +25,9 @@ export const usePreferencesStore = defineStore('preferences', () => {
   const capturing = ref(false)
   const captureDurationToken = ref<DelayToken | null>(null)
   const pid = ref<number | null>(null)
-  const debounceToken = ref<number | null>(null)
+
+  // === Nonreactive State ===
+  let serializeDelayToken: DelayedTask<void> | null = null
 
   // === Functions ===
   function setAllPreferences(prefs: PreferencesType) {
@@ -33,7 +35,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
     capturing.value = false;
     captureDurationToken.value = null;
     pid.value = null;
-    debounceToken.value = null;
+    serializeDelayToken = null;
   }
 
   function resetPreferences() {
@@ -74,19 +76,14 @@ export const usePreferencesStore = defineStore('preferences', () => {
 
   // === Actions ===
   function serialize() {
-    if (debounceToken.value !== null) {
-      clearTimeout(debounceToken.value);
-    }
-    const token = setTimeout(() => {
-      debounceToken.value = null;
+    debounce(() => {
       const file: PreferenceFile = {
         signature,
         preferences: preferences.value,
         hotkeyBindings: hotkeys.bindings,
       };
       Api.storePreferences(JSON.stringify(file, null, 3));
-    }, 400);
-    debounceToken.value = token;
+    }, 400, serializeDelayToken);
   }
 
   async function writeCapture(active: boolean) {
