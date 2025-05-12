@@ -90,10 +90,8 @@ export const usePreferencesStore = defineStore('preferences', () => {
   function writeCapture(reqActive: boolean) {
     if (reqActive) {
       if (preferences.value.enableCaptureDuration) {
-        captureAutostopTask = dispatchDelayedTask(() => {
-            capturing.value = false
-            captureAutostopTask = null
-          },
+        captureAutostopTask = dispatchDelayedTask(
+          () => writeCapture(false),
           preferences.value.captureDuration * 1000
         )       
       }

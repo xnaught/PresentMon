@@ -70,8 +70,6 @@ watchEffect(async () => {
 })
 
 // TODO placeholders
-const enableCaptureDuration = ref(false)
-const captureDuration = ref(1)
 function handleCaptureExplore() {}
 </script>
 
@@ -209,13 +207,13 @@ function handleCaptureExplore() {}
         <p class="text-medium-emphasis text-caption mb-0">Automatically stop capture after N seconds</p>
         </v-col>      
         <v-col cols="2">
-            <v-switch v-model="enableCaptureDuration" color="primary" label="Enable" hide-details></v-switch>
+            <v-switch v-model="prefs.preferences.enableCaptureDuration" color="primary" label="Enable" hide-details></v-switch>
         </v-col>
         <v-col cols="3">
         <v-text-field
             label="Seconds"
-            v-model="captureDuration"
-            :disabled="!enableCaptureDuration"
+            v-model="prefs.preferences.captureDuration"
+            :disabled="!prefs.preferences.enableCaptureDuration"
             class="mt-4 ml-8"
             hide-details
             type="number"
