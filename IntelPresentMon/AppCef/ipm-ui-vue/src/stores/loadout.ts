@@ -30,7 +30,6 @@ export const useLoadoutStore = defineStore('loadout', () => {
     // TODO: move private functions here
 
     // === Actions ===
-    // graph-specific
     async function addGraph() {
         // TODO: inject these defaults instead of hardcoding
         const qualifiedMetric: QualifiedMetric = {
@@ -85,7 +84,6 @@ export const useLoadoutStore = defineStore('loadout', () => {
                 throw new Error('bad addition of metric to widget')
             }
             widget.metrics.push(makeDefaultWidgetMetric(metric))
-            await serializeCurrent()
         } else {
             console.warn(`Widget #${index} is not Graph but trying to add metric`)
             throw new Error('bad addition of metric to widget')
@@ -131,6 +129,7 @@ export const useLoadoutStore = defineStore('loadout', () => {
         widgets.value.splice(to, 0, movedItem)
     }
 
+    // loads loadout from json string data without any error handling
     async function parseAndReplace(payload: string) {
         const loadout = JSON.parse(payload) as LoadoutFile
         if (loadout.signature.code !== signature.code) {
@@ -145,6 +144,7 @@ export const useLoadoutStore = defineStore('loadout', () => {
         widgets.value.splice(0, widgets.value.length, ...loadout.widgets)
     }
 
+    // wraps parseAndReplace in try/catch and handles errors
     async function loadConfigFromPayload(payload: string, err: string) {
         try {
             await parseAndReplace(payload);
@@ -162,7 +162,7 @@ export const useLoadoutStore = defineStore('loadout', () => {
     async function browseAndSerialize() {
         await Api.browseStoreSpec(fileContents.value)
     }
-    
+
     function serializeCurrent() {
         debounce(() => {
             Api.storeConfig(fileContents.value, 'custom-auto.json')

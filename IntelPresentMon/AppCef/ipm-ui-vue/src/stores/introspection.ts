@@ -23,26 +23,13 @@ export const useIntrospectionStore = defineStore('introspection', () => {
     );
   });
 
-  // === Functions ===
-  function replaceAllMetrics(newMetrics: Metric[]) {
-    metrics.value = newMetrics;
-  }
-
-  function replaceAllStats(newStats: Stat[]) {
-    stats.value = newStats;
-  }
-
-  function replaceAllUnits(newUnits: Unit[]) {
-    units.value = newUnits;
-  }
-
   // === Actions ===
   async function load() {
     if (metrics.value.length === 0) {
       const intro = await Api.introspect();
-      replaceAllMetrics(intro.metrics);
-      replaceAllStats(intro.stats);
-      replaceAllUnits(intro.units);
+      metrics.value = intro.metrics;
+      stats.value = intro.stats;
+      units.value = intro.units;
     }
   }
 
