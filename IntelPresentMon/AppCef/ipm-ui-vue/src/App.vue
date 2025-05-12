@@ -6,6 +6,7 @@ import { Preset } from './core/preferences';
 import { Api } from './core/api';
 import { useLoadoutStore } from './stores/loadout';
 import { useHotkeyStore } from './stores/hotkey';
+import { Action } from './core/hotkey';
 
 const route = useRoute()
 
@@ -15,6 +16,22 @@ const loadout = useLoadoutStore()
 const hotkeys = useHotkeyStore()
 
 // === Lifecycle Hooks ===
+Api.registerHotkeyHandler((action: number) => {
+  switch (action as Action) {
+    case Action.ToggleOverlay:
+      prefs.preferences.hideAlways = !prefs.preferences.hideAlways
+      break;
+    case Action.CyclePreset:
+      console.info('Cycle preset hotkey pressed');
+      break;
+    case Action.ToggleCapture:
+      prefs.toggleCapture()
+      break;
+    default:
+      console.warn(`Unhandled hotkey action: ${action}`);
+      break;
+  }
+})
 
 
 
@@ -23,6 +40,7 @@ const inSettings = computed(() => {
   return ['capture-config', 'overlay-config', 'data-config', 'other-config', 'flash-config']
     .includes(routeName ?? '')
 });
+
 
 // === Global Watchers ===
 // react to change in selected preset and load the corresponding config file
@@ -100,7 +118,7 @@ watch(() => loadout.widgets, async () => {
         <v-footer class="footer" color="blue-darken-3" height="22">
           <div class="sta-region">
             <div class="pl-2">Heaven.exe</div>
-            <v-icon small color="red-darken-1">mdi-camera-control</v-icon>
+            <v-icon v-show="prefs.capturing" small color="red-darken-1">mdi-camera-control</v-icon>
           </div>
           <div class="sta-region">
             <div>Hidden</div>

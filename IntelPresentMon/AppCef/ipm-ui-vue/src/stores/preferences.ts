@@ -24,19 +24,19 @@ export const usePreferencesStore = defineStore('preferences', () => {
   // === State ===
   const preferences = ref<PreferencesType>(makeDefaultPreferences())
   const capturing = ref(false)
-  const captureDurationToken = ref<DelayToken | null>(null)
   const pid = ref<number | null>(null)
 
   // === Nonreactive State ===
-  let serializeDelayToken: DelayedTask<void> | null = null
+  let serializeDebounceTask: DelayedTask<void> | null = null
+  let captureAutostopTask: DelayedTask<void> | null = null
 
   // === Functions ===
   function setAllPreferences(prefs: PreferencesType) {
     preferences.value = prefs;
     capturing.value = false;
-    captureDurationToken.value = null;
     pid.value = null;
-    serializeDelayToken = null;
+    serializeDebounceTask = null;
+    captureAutostopTask = null;
   }
 
   function resetPreferences() {
@@ -84,24 +84,36 @@ export const usePreferencesStore = defineStore('preferences', () => {
         hotkeyBindings: hotkeys.bindings,
       };
       Api.storePreferences(JSON.stringify(file, null, 3));
-    }, 400, serializeDelayToken);
+    }, 400, serializeDebounceTask);
   }
 
-  async function writeCapture(active: boolean) {
-    if (active) {
+  function writeCapture(reqActive: boolean) {
+    if (reqActive) {
       if (preferences.value.enableCaptureDuration) {
-        captureDurationToken.value = dispatchDelayedTask(
-          () => { capturing.value = false },
+        captureAutostopTask = dispatchDelayedTask(() => {
+            capturing.value = false
+            captureAutostopTask = null
+          },
           preferences.value.captureDuration * 1000
-        ).token          
+        )       
       }
+      Api.setCapture(true);
       capturing.value = true;
     } else {
-      if (captureDurationToken.value) {
-        captureDurationToken.value.cancel();
-        captureDurationToken.value = null;
+      if (captureAutostopTask) {
+        captureAutostopTask.token.cancel();
+        captureAutostopTask = null;
       }
+      Api.setCapture(false);
       capturing.value = false;
+    }
+  }
+
+  function toggleCapture() {
+    if (capturing.value) {
+      writeCapture(false);
+    } else {
+      writeCapture(true);
     }
   }
   
@@ -163,6 +175,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
     pid,
     serialize,
     writeCapture,
+    toggleCapture,
     pushSpecification,
     initPreferences
   };
