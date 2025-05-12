@@ -15,6 +15,15 @@ const prefs = usePreferencesStore()
 const loadout = useLoadoutStore()
 const hotkeys = useHotkeyStore()
 
+// === Functions ===
+function cyclePreset() {
+  if (prefs.preferences.selectedPreset === null || prefs.preferences.selectedPreset >= 2) {
+    prefs.preferences.selectedPreset = 0;
+  } else {
+    prefs.preferences.selectedPreset++;
+  }
+}
+
 // === Lifecycle Hooks ===
 Api.registerHotkeyHandler((action: number) => {
   switch (action as Action) {
@@ -22,7 +31,7 @@ Api.registerHotkeyHandler((action: number) => {
       prefs.preferences.hideAlways = !prefs.preferences.hideAlways
       break;
     case Action.CyclePreset:
-      console.info('Cycle preset hotkey pressed');
+      cyclePreset()
       break;
     case Action.ToggleCapture:
       prefs.toggleCapture()
@@ -33,14 +42,12 @@ Api.registerHotkeyHandler((action: number) => {
   }
 })
 
-
-
+// === Computed ===
 const inSettings = computed(() => {
   const routeName = typeof route.name === 'symbol' ? route.name.toString() : route.name;
   return ['capture-config', 'overlay-config', 'data-config', 'other-config', 'flash-config']
     .includes(routeName ?? '')
 });
-
 
 // === Global Watchers ===
 // react to change in selected preset and load the corresponding config file
