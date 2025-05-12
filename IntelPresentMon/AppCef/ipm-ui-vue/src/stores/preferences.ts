@@ -28,55 +28,17 @@ export const usePreferencesStore = defineStore('preferences', () => {
   const debounceToken = ref<number | null>(null)
 
   // === Functions ===
-  // TODO: move private functions here
-
-  // === Actions ===
   function setAllPreferences(prefs: PreferencesType) {
-    preferences.value = { ...preferences.value, ...prefs };
+    preferences.value = prefs;
     capturing.value = false;
     captureDurationToken.value = null;
     pid.value = null;
     debounceToken.value = null;
   }
 
-  function serialize() {
-    if (debounceToken.value !== null) {
-      clearTimeout(debounceToken.value);
-    }
-    const token = setTimeout(() => {
-      debounceToken.value = null;
-      const file: PreferenceFile = {
-        signature,
-        preferences: preferences.value,
-        hotkeyBindings: hotkeys.bindings,
-      };
-      Api.storePreferences(JSON.stringify(file, null, 3));
-    }, 400);
-    debounceToken.value = token;
-  }
-
   function resetPreferences() {
     setAllPreferences(makeDefaultPreferences());
     preferences.value.selectedPreset = Preset.Slot1;
-    serialize();
-  }
-
-  async function writeCapture(active: boolean) {
-    if (active) {
-      if (preferences.value.enableCaptureDuration) {
-        captureDurationToken.value = dispatchDelayedTask(
-          () => { capturing.value = false },
-          preferences.value.captureDuration * 1000
-        ).token          
-      }
-      capturing.value = true;
-    } else {
-      if (captureDurationToken.value) {
-        captureDurationToken.value.cancel();
-        captureDurationToken.value = null;
-      }
-      capturing.value = false;
-    }
   }
 
   async function parseAndReplaceRawPreferenceString(payload: { payload: string }) {
@@ -100,7 +62,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
       }
     }
 
-    // TODO: implement adapters
+    // TODO: implement adapters (maybe setAdapter can be removed since device is now specified per qualified metric)
     // if (preferences.value.adapterId !== null) {
     //   if (preferences.value.adapterId >= Adapters.adapters.length) {
     //     setAttribute({ attr: 'adapterId', val: null });
@@ -109,11 +71,45 @@ export const usePreferencesStore = defineStore('preferences', () => {
     //   }
     // }
   }
+
+  // === Actions ===
+  function serialize() {
+    if (debounceToken.value !== null) {
+      clearTimeout(debounceToken.value);
+    }
+    const token = setTimeout(() => {
+      debounceToken.value = null;
+      const file: PreferenceFile = {
+        signature,
+        preferences: preferences.value,
+        hotkeyBindings: hotkeys.bindings,
+      };
+      Api.storePreferences(JSON.stringify(file, null, 3));
+    }, 400);
+    debounceToken.value = token;
+  }
+
+  async function writeCapture(active: boolean) {
+    if (active) {
+      if (preferences.value.enableCaptureDuration) {
+        captureDurationToken.value = dispatchDelayedTask(
+          () => { capturing.value = false },
+          preferences.value.captureDuration * 1000
+        ).token          
+      }
+      capturing.value = true;
+    } else {
+      if (captureDurationToken.value) {
+        captureDurationToken.value.cancel();
+        captureDurationToken.value = null;
+      }
+      capturing.value = false;
+    }
+  }
   
   async function pushSpecification() {
     // TODO: try structuredClone instead of JSON.parse(JSON.stringify())
     const widgets = JSON.parse(JSON.stringify(loadout.widgets)) as Widget[];
-    console.log('Widgets before processing:', JSON.stringify(widgets, null, 2)); // Log widgets array with pretty print
     for (const widget of widgets) {
       // Filter out the widgetMetrics that do not meet the condition, modify those that do
       widget.metrics = widget.metrics.filter(widgetMetric => {
@@ -147,17 +143,29 @@ export const usePreferencesStore = defineStore('preferences', () => {
       widgets: widgets.filter(w => w.metrics.length > 0),
     });
   }
+  
+  async function initPreferences() {
+    try {
+      const payload = await Api.loadPreferences();
+      await parseAndReplaceRawPreferenceString(payload);
+    }
+    catch (e) {
+      await hotkeys.bindDefaults();
+      resetPreferences();
+      preferences.value.selectedPreset = Preset.Slot1;
+      console.warn('Preferences reset due to load failure: ' + e)
+      // TODO: Notifications.notify({ text: `Preferences reset due to load failure: ${e}` })
+    }
+  }
 
   // === Exports ===
   return {
     preferences,
     capturing,
     pid,
-    setAllPreferences,
     serialize,
-    resetPreferences,
     writeCapture,
-    parseAndReplaceRawPreferenceString,
-    pushSpecification
+    pushSpecification,
+    initPreferences
   };
 });
