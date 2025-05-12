@@ -40,10 +40,24 @@ watchEffect(async () => {
     await loadout.loadConfigFromPayload(payload, err);
   }
 })
-// react to changes in spec data and push spec
-watch([() => prefs.preferences, () => prefs.pid, () => loadout.widgets, () => hotkeys.bindings],
-  async () => {
+// change in pid requires spec push but no serialize
+watch(() => prefs.pid, async () => {
+  await prefs.pushSpecification()
+})
+// change in preferences requires spec push and serialize
+watch(() => prefs.preferences, async () => {
     prefs.serialize()
+    await prefs.pushSpecification()
+}, {deep: true})
+// change in hotkeys requires only serialize
+watch(() => hotkeys.bindings, async () => {
+    prefs.serialize()
+}, {deep: true})
+// change in loadout requires push and additional loadout serialization if custom
+watch(() => loadout.widgets, async () => {
+    if (prefs.preferences.selectedPreset === Preset.Custom) {
+      loadout.serializeCurrent()
+    }
     await prefs.pushSpecification()
 }, {deep: true})
 </script>

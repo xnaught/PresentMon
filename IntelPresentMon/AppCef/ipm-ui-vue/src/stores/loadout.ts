@@ -8,11 +8,14 @@ import type { QualifiedMetric } from '@/core/qualified-metric'
 import { makeDefaultGraph, type Graph } from '@/core/graph'
 import { makeDefaultReadout, type Readout } from '@/core/readout'
 import { makeDefaultWidgetMetric, type WidgetMetric } from '@/core/widget-metric'
+import { debounce, type DelayedTask } from '@/core/timing'
 
 export const useLoadoutStore = defineStore('loadout', () => {
     // === State ===
     const widgets = ref<Widget[]>([])
-    const debounceToken = ref<number|null>(null)
+    
+    // === Nonreactive State ===
+    const debounceSerializeTask: DelayedTask<void>|null = null
 
     // === Computed ===
     const fileContents = computed(() => {
@@ -38,7 +41,6 @@ export const useLoadoutStore = defineStore('loadout', () => {
             desiredUnitId: 0
         }
         widgets.value.push(makeDefaultGraph(qualifiedMetric))
-        await serializeCurrent()
     }
 
     async function addReadout() {
@@ -54,12 +56,10 @@ export const useLoadoutStore = defineStore('loadout', () => {
             desiredUnitId: 0
         }
         widgets.value.push(makeDefaultReadout(qualifiedMetric))
-        await serializeCurrent()
     }
 
     async function removeWidget(index: number) {
         widgets.value.splice(index, 1)
-        await serializeCurrent()
     }
 
     async function setWidgetMetrics(index: number, metrics: WidgetMetric[]) {
@@ -75,7 +75,6 @@ export const useLoadoutStore = defineStore('loadout', () => {
             console.warn(`Widget #${index} is not Line Graph but trying to set ${metrics.length} metrics`)
         }
         widget.metrics = [metrics[0]]
-        await serializeCurrent()
     }
 
     async function addWidgetMetric(index: number, metric: QualifiedMetric|null) {
@@ -100,13 +99,11 @@ export const useLoadoutStore = defineStore('loadout', () => {
             return
         }
         widget.metrics.splice(metricIdIdx, 1)
-        await serializeCurrent()
     }
 
     async function setWidgetMetric(index: number, metricIdx: number, metric: WidgetMetric) {
         const widget = widgets.value[index]
         widget.metrics.splice(metricIdx, 1, metric)
-        await serializeCurrent()
     }
 
     async function resetWidgetAs(index: number, type: WidgetType) {
@@ -127,13 +124,11 @@ export const useLoadoutStore = defineStore('loadout', () => {
             newWidget = makeDefaultReadout(qualifiedMetric)
         }
         widgets.value.splice(index, 1, newWidget)
-        await serializeCurrent()
     }
 
     async function moveWidget(from: number, to: number) {
         const movedItem = widgets.value.splice(from, 1)[0]
         widgets.value.splice(to, 0, movedItem)
-        await serializeCurrent()
     }
 
     async function parseAndReplace(payload: string) {
@@ -163,22 +158,15 @@ export const useLoadoutStore = defineStore('loadout', () => {
             console.error([err, e]);
         }
     }
-
-    // --- Mocked Actions ----
+    
     async function browseAndSerialize() {
-        // await Api.browseStoreSpec(this.fileContents)
-        console.log(`serialize browse: ${fileContents}`)
+        await Api.browseStoreSpec(fileContents.value)
     }
-    async function serializeCurrent() {
-        if (debounceToken.value !== null) {
-            clearTimeout(debounceToken.value)
-        }
-        const token = setTimeout(() => {
-            debounceToken.value = null
-            // Api.storeConfig(this.fileContents, 'custom-auto.json')
-            console.log(`serialize current: ${fileContents}`)
-        }, 400)
-        debounceToken.value = token
+    
+    function serializeCurrent() {
+        debounce(() => {
+            Api.storeConfig(fileContents.value, 'custom-auto.json')
+        }, 400, debounceSerializeTask)
     }
 
     // === Exports ===
