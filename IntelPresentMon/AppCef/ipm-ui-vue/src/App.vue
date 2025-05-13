@@ -7,6 +7,7 @@ import { Api } from './core/api';
 import { useLoadoutStore } from './stores/loadout';
 import { useHotkeyStore } from './stores/hotkey';
 import { Action } from './core/hotkey';
+import { useProcessesStore } from './stores/processes';
 
 const route = useRoute()
 
@@ -14,6 +15,7 @@ const route = useRoute()
 const prefs = usePreferencesStore()
 const loadout = useLoadoutStore()
 const hotkeys = useHotkeyStore()
+const procs = useProcessesStore()
 
 // === Functions ===
 function cyclePreset() {
@@ -47,6 +49,24 @@ const inSettings = computed(() => {
   const routeName = typeof route.name === 'symbol' ? route.name.toString() : route.name;
   return ['capture-config', 'overlay-config', 'data-config', 'other-config', 'flash-config']
     .includes(routeName ?? '')
+});
+const targetName = computed(() => {
+  const target = prefs.pid;
+  if (target === null) {
+    return '';
+  }
+  return procs.processes.find((proc) => proc.pid === target)?.name ?? '';
+});
+const visibilityString = computed(() => {
+  if (prefs.preferences.hideAlways) {
+    return 'Hidden';
+  } else if (prefs.preferences.hideDuringCapture && prefs.capturing) {
+    return "(Auto)Hidden";
+  } else if (prefs.preferences.hideDuringCapture && !prefs.capturing) {
+    return "Autohide";
+  } else {
+    return '';
+  }
 });
 
 // === Global Watchers ===
@@ -130,13 +150,13 @@ watch(() => loadout.widgets, async () => {
       <div class="footer-wrap">
         <v-footer class="footer" color="blue-darken-3" height="22">
           <div class="sta-region">
-            <div class="pl-2">Heaven.exe</div>
+            <div class="pl-2">{{ targetName }}</div>
             <v-icon v-show="prefs.capturing" small color="red-darken-1">mdi-camera-control</v-icon>
           </div>
           <div class="sta-region">
-            <div>Hidden</div>
-            <div>60Hz</div>
-            <div>15fps</div>
+            <div>{{ visibilityString }}</div>
+            <div>{{ prefs.preferences.metricPollRate }}Hz</div>
+            <div>{{ prefs.preferences.overlayDrawRate }}fps</div>
           </div>
         </v-footer>
       </div>
