@@ -175,6 +175,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
     writeCapture,
     toggleCapture,
     pushSpecification,
-    initPreferences
+    initPreferences,
+    resetPreferences
   };
 });

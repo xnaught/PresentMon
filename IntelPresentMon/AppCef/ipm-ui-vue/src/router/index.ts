@@ -7,6 +7,7 @@ import DataConfigView from '@/views/DataConfigView.vue'
 import OverlayConfigView from '@/views/OverlayConfigView.vue'
 import CaptureConfigView from '@/views/CaptureConfigView.vue'
 import FlashConfigView from '@/views/FlashConfigView.vue'
+import OtherConfigView from '@/views/OtherConfigView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -55,7 +56,7 @@ const router = createRouter({
     {
       path: '/other',
       name: 'other-config',
-      component: MainView,
+      component: OtherConfigView,
     },
     {
       path: '/flash',
