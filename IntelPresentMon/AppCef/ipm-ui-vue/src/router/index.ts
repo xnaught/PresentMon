@@ -6,6 +6,7 @@ import ReadoutConfigView from '@/views/ReadoutConfigView.vue'
 import DataConfigView from '@/views/DataConfigView.vue'
 import OverlayConfigView from '@/views/OverlayConfigView.vue'
 import CaptureConfigView from '@/views/CaptureConfigView.vue'
+import FlashConfigView from '@/views/FlashConfigView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -59,7 +60,7 @@ const router = createRouter({
     {
       path: '/flash',
       name: 'flash-config',
-      component: MainView,
+      component: FlashConfigView,
     },
   ],
 })
