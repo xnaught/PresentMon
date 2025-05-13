@@ -86,9 +86,6 @@ export class Api {
     static async clearHotkey(action: Action): Promise<void> {
         await this.invokeEndpointFuture('clearHotkey', {action});
     }
-    static async setAdapter(id: number): Promise<void> {
-        await this.invokeEndpointFuture('SetAdapter', {id});
-    }
     static async launchKernel(): Promise<void> {
         await this.invokeEndpointFuture('launchKernel', {});
     }

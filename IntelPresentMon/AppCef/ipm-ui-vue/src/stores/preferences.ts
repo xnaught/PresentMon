@@ -8,7 +8,6 @@ import { combinationsAreSame } from '@/core/hotkey';
 import { signature } from '@/core/preferences';
 import { useHotkeyStore } from './hotkey';
 import { debounce, type DelayedTask, type DelayToken, dispatchDelayedTask } from '@/core/timing';
-//import { Adapters } from './adapters';
 import { migratePreferences } from '@/core/preferences-migration';
 import type { Widget } from '@/core/widget';
 import { useLoadoutStore } from './loadout';
@@ -66,15 +65,6 @@ export const usePreferencesStore = defineStore('preferences', () => {
         await hotkeys.bindHotkey(newBinding);
       }
     }
-
-    // TODO: implement adapters (maybe setAdapter can be removed since device is now specified per qualified metric)
-    // if (preferences.value.adapterId !== null) {
-    //   if (preferences.value.adapterId >= Adapters.adapters.length) {
-    //     setAttribute({ attr: 'adapterId', val: null });
-    //   } else {
-    //     await Api.setAdapter(preferences.value.adapterId);
-    //   }
-    // }
   }
 
   // === Actions ===
