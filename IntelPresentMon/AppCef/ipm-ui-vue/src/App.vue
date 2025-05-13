@@ -11,6 +11,13 @@ import { useProcessesStore } from './stores/processes';
 
 const route = useRoute()
 
+// === State ===
+interface ErrorMessage {
+  title: string;
+  text: string;
+}
+const dialogError = ref<ErrorMessage|null>(null);
+
 // === Stores ===
 const prefs = usePreferencesStore()
 const loadout = useLoadoutStore()
@@ -27,22 +34,6 @@ function cyclePreset() {
 }
 
 // === Lifecycle Hooks ===
-Api.registerHotkeyHandler((action: number) => {
-  switch (action as Action) {
-    case Action.ToggleOverlay:
-      prefs.preferences.hideAlways = !prefs.preferences.hideAlways
-      break;
-    case Action.CyclePreset:
-      cyclePreset()
-      break;
-    case Action.ToggleCapture:
-      prefs.toggleCapture()
-      break;
-    default:
-      console.warn(`Unhandled hotkey action: ${action}`);
-      break;
-  }
-})
 
 // === Computed ===
 const inSettings = computed(() => {
@@ -68,11 +59,34 @@ const visibilityString = computed(() => {
     return '';
   }
 });
+const errorDialogActive = computed(() => dialogError.value !== null);
 
 // === Signal Handlers ===
-// target lost so deselect
 Api.registerTargetLostHandler(() => {
   prefs.pid = null
+})
+Api.registerHotkeyHandler((action: number) => {
+  switch (action as Action) {
+    case Action.ToggleOverlay:
+      prefs.preferences.hideAlways = !prefs.preferences.hideAlways
+      break;
+    case Action.CyclePreset:
+      cyclePreset()
+      break;
+    case Action.ToggleCapture:
+      prefs.toggleCapture()
+      break;
+    default:
+      console.warn(`Unhandled hotkey action: ${action}`);
+      break;
+  }
+})
+Api.registerPresentmonInitFailedHandler(() => {
+  dialogError.value = {
+    title: 'PresentMon Initialization Error',
+    text: 'Failed to initialize PresentMon API. Ensure that PresentMon Service is installed and running, and try again.',
+  }
+  console.error('received presentmon init failed signal')
 })
 
 // === Global Watchers ===
@@ -166,6 +180,18 @@ watch(() => loadout.widgets, async () => {
           </div>
         </v-footer>
       </div>
+
+      <!-- Fullscreen Modal for Serious Errors -->
+      <v-dialog v-model="errorDialogActive" persistent max-width="500">
+        <v-card>
+          <v-card-title class="text-h5 text-error">
+            {{ dialogError!.title }}
+          </v-card-title>
+          <v-card-text>
+            {{ dialogError!.text }}
+          </v-card-text>
+        </v-card>
+      </v-dialog>
     </div>
   </v-app>
 </template>
@@ -245,5 +271,9 @@ watch(() => loadout.widgets, async () => {
 
 .v-list-item--active {
   font-weight: 400;
+}
+
+* {
+  user-select: none; 
 }
 </style>
