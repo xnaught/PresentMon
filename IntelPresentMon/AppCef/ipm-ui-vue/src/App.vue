@@ -8,6 +8,8 @@ import { useLoadoutStore } from './stores/loadout';
 import { useHotkeyStore } from './stores/hotkey';
 import { Action } from './core/hotkey';
 import { useProcessesStore } from './stores/processes';
+import { useNotificationsStore } from './stores/notifications';
+import { dispatchDelayedTask } from './core/timing';
 
 const route = useRoute()
 
@@ -23,6 +25,7 @@ const prefs = usePreferencesStore()
 const loadout = useLoadoutStore()
 const hotkeys = useHotkeyStore()
 const procs = useProcessesStore()
+const notes = useNotificationsStore()
 
 // === Functions ===
 function cyclePreset() {
@@ -60,6 +63,12 @@ const visibilityString = computed(() => {
   }
 });
 const errorDialogActive = computed(() => dialogError.value !== null);
+const notificationMoreText = computed(() => {
+  if (notes.count > 1) {
+    return `[${notes.count} more...]`;
+  }
+  return '';
+});
 
 // === Signal Handlers ===
 Api.registerTargetLostHandler(() => {
@@ -192,6 +201,16 @@ watch(() => loadout.widgets, async () => {
           </v-card-text>
         </v-card>
       </v-dialog>
+
+      <!-- Snackbar for Notifications -->
+      <v-snackbar v-model="notes.showing" :timeout="-1" location="bottom">        
+        {{ notes.current!.text }} <span style="font-size: 11px; color: grey">{{ notificationMoreText }}</span>
+        <template v-slot:actions>
+          <v-btn icon @click="notes.dismiss">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </template>
+      </v-snackbar>
     </div>
   </v-app>
 </template>
