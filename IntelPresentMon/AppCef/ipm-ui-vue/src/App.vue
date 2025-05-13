@@ -97,6 +97,16 @@ Api.registerPresentmonInitFailedHandler(() => {
   }
   console.error('received presentmon init failed signal')
 })
+Api.registerOverlayDiedHandler(() => {
+  notes.notify({text: 'Error: overlay crashed unexpectedly'});
+  prefs.pid = null
+  console.error('received overlay died signal');
+})
+Api.registerStalePidHandler(() => {
+  notes.notify({text: 'Selected process has already exited.'});
+  prefs.pid = null
+  console.warn('received stale pid signal');
+})
 
 // === Global Watchers ===
 // react to change in selected preset and load the corresponding config file
