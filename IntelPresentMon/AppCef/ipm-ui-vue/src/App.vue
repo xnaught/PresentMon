@@ -69,6 +69,12 @@ const visibilityString = computed(() => {
   }
 });
 
+// === Signal Handlers ===
+// target lost so deselect
+Api.registerTargetLostHandler(() => {
+  prefs.pid = null
+})
+
 // === Global Watchers ===
 // react to change in selected preset and load the corresponding config file
 watchEffect(async () => {
