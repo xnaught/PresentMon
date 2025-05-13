@@ -87,6 +87,11 @@ const vuetify = createVuetify({
             variant: "outlined",
             density: "compact",
             controlVariant: "hidden",
+        },
+        VTooltip: {
+            openDelay: 750,
+            location: "bottom",
+            openOnHover: true,
         }
     }
 })

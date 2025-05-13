@@ -161,15 +161,10 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         return-object
         :density="isMaster ? 'default' : 'compact'"
       >
-        <template v-slot:item="{item, props, index}: {item:ListItem<MetricOption>, props:any, index:number}">
-          <v-tooltip v-bind="props"
-            :open-on-hover="true"
-            :text="findMetricById(item.raw.metricId).description"
-            location="bottom"
-            open-delay="750"
-          >
-            <template v-slot:activator="{ props }">
-              <v-list-item v-bind="props" :title="item.raw.name"/>
+        <template v-slot:item="{item, props: itemProps}: {item:ListItem<MetricOption>, props:any}">
+          <v-tooltip :text="findMetricById(item.raw.metricId).description">
+            <template v-slot:activator="{props: tooltipProps}">
+              <v-list-item v-bind="{...itemProps, ...tooltipProps}" :title="item.raw.name"/>
             </template>
           </v-tooltip>
         </template>
@@ -184,15 +179,10 @@ const isReadoutWidget = computed(() => widgetType.value === WidgetType.Readout);
         return-object
         :density="isMaster ? 'default' : 'compact'"
       >
-        <template v-slot:item="{item, props, index}: {item:ListItem<Stat>, props:any, index:number}">
-          <v-tooltip v-bind="props"
-            :open-on-hover="true"
-            :text="`${item.raw.name}: ${item.raw.description}`"
-            location="bottom"
-            open-delay="750"
-          >
-            <template v-slot:activator="{ props }">
-              <v-list-item v-bind="props" :title="item.raw.shortName"/>
+        <template v-slot:item="{item, props: itemProps}: {item:ListItem<Stat>, props:any}">
+          <v-tooltip :text="`${item.raw.name}: ${item.raw.description}`">
+            <template v-slot:activator="{props: tooltipProps}">
+              <v-list-item v-bind="{...itemProps, ...tooltipProps}" :title="item.raw.shortName"/>
             </template>
           </v-tooltip>
         </template>
