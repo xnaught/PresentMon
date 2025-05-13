@@ -9,8 +9,15 @@ import { makeDefaultGraph, type Graph } from '@/core/graph'
 import { makeDefaultReadout, type Readout } from '@/core/readout'
 import { makeDefaultWidgetMetric, type WidgetMetric } from '@/core/widget-metric'
 import { debounce, type DelayedTask } from '@/core/timing'
+import { migrateLoadout } from '@/core/loadout-migration'
+import { useIntrospectionStore } from './introspection'
+import { useNotificationsStore } from './notifications'
 
 export const useLoadoutStore = defineStore('loadout', () => {
+    // === Dependent Stores ===
+    const intro = useIntrospectionStore()
+    const notes = useNotificationsStore()
+
     // === State ===
     const widgets = ref<Widget[]>([])
     
@@ -27,7 +34,19 @@ export const useLoadoutStore = defineStore('loadout', () => {
     })
 
     // === Functions ===
-    // TODO: move private functions here
+    // loads loadout from json string data without any error handling
+    async function parseAndReplace(payload: string) {
+        const loadout = JSON.parse(payload) as LoadoutFile
+        if (loadout.signature.code !== signature.code) {
+            throw new Error(`Bad loadout file format; expect:${signature.code} actual:${loadout.signature.code}`)
+        }
+        if (loadout.signature.version !== signature.version) {
+            migrateLoadout(loadout)
+            console.info(`loadout migrated to ${signature.version}`)
+        }
+        loadout.widgets = loadout.widgets.filter(w => w.metrics.length > 0)
+        widgets.value.splice(0, widgets.value.length, ...loadout.widgets)
+    }
 
     // === Actions ===
     async function addGraph() {
@@ -43,10 +62,7 @@ export const useLoadoutStore = defineStore('loadout', () => {
     }
 
     async function addReadout() {
-        // Mocked Introspection.metrics
-        // Original: const metric = Introspection.metrics[0]
-        const mockMetrics = [{ id: 1, availableStatIds: [1] }]
-        const metric = mockMetrics[0]
+        const metric = intro.metrics[0]
         const qualifiedMetric = {
             metricId: metric.id,
             arrayIndex: 0,
@@ -106,11 +122,8 @@ export const useLoadoutStore = defineStore('loadout', () => {
 
     async function resetWidgetAs(index: number, type: WidgetType) {
         let qualifiedMetric: QualifiedMetric | null = widgets.value[index].metrics[0]?.metric || null
-        // Mocked Introspection.metrics
-        // Original: const metric = Introspection.metrics.find(m => m.id === qualifiedMetric.metricId)
-        const mockMetrics = [{ id: 1, numeric: true }]
         if (qualifiedMetric && type === WidgetType.Graph) {
-            const metric = mockMetrics.find(m => m.id === qualifiedMetric!.metricId)
+            const metric = intro.metrics.find(m => m.id === qualifiedMetric!.metricId)
             if (!metric || !metric.numeric) {
                 qualifiedMetric = null
             }
@@ -129,21 +142,6 @@ export const useLoadoutStore = defineStore('loadout', () => {
         widgets.value.splice(to, 0, movedItem)
     }
 
-    // loads loadout from json string data without any error handling
-    async function parseAndReplace(payload: string) {
-        const loadout = JSON.parse(payload) as LoadoutFile
-        if (loadout.signature.code !== signature.code) {
-            throw new Error(`Bad loadout file format; expect:${signature.code} actual:${loadout.signature.code}`)
-        }
-        if (loadout.signature.version !== signature.version) {
-            // Mock migration
-            // Original: migrateLoadout(loadout)
-            console.info(`loadout migrated to ${signature.version}`)
-        }
-        loadout.widgets = loadout.widgets.filter(w => w.metrics.length > 0)
-        widgets.value.splice(0, widgets.value.length, ...loadout.widgets)
-    }
-
     // wraps parseAndReplace in try/catch and handles errors
     async function loadConfigFromPayload(payload: string, err: string) {
         try {
@@ -152,10 +150,8 @@ export const useLoadoutStore = defineStore('loadout', () => {
             if (e.noticeOverride) {
                 err += e.message ?? '';
             }
-            // Mocked Notifications.notify
-            // Original: await Notifications.notify({ text: err });
-            console.error(`Notification: ${err}`);
-            console.error([err, e]);
+            await notes.notify({ text: err });
+            console.error(err, e);
         }
     }
     
@@ -181,7 +177,6 @@ export const useLoadoutStore = defineStore('loadout', () => {
         setWidgetMetric,
         resetWidgetAs,
         moveWidget,
-        parseAndReplace,
         loadConfigFromPayload,
         browseAndSerialize,
         serializeCurrent

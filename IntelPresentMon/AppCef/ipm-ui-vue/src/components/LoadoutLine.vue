@@ -36,6 +36,7 @@ const loadoutStore = useLoadoutStore();
 const widget = computed(() => props.widgets[props.widgetIdx]);
 const widgetMetric = computed(() => widget.value.metrics[props.lineIdx]);
 
+// TODO: use fewer get/set constructions here and bind directly where possible
 const widgetType = computed({
   get: () => widget.value.widgetType,
   set: (type: WidgetType) => {

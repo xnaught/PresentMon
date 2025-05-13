@@ -14,12 +14,14 @@ import type { Widget } from '@/core/widget';
 import { useLoadoutStore } from './loadout';
 import { useIntrospectionStore } from './introspection';
 import { deepToRaw } from '@/core/vue-utils';
+import { useNotificationsStore } from './notifications';
 
 export const usePreferencesStore = defineStore('preferences', () => {
   // === Dependent Stores ===
   const loadout = useLoadoutStore()
   const intro = useIntrospectionStore()
   const hotkeys = useHotkeyStore()
+  const notes = useNotificationsStore()
 
   // === State ===
   const preferences = ref<PreferencesType>(makeDefaultPreferences())
@@ -162,7 +164,7 @@ export const usePreferencesStore = defineStore('preferences', () => {
       resetPreferences();
       preferences.value.selectedPreset = Preset.Slot1;
       console.warn('Preferences reset due to load failure: ' + e)
-      // TODO: Notifications.notify({ text: `Preferences reset due to load failure: ${e}` })
+      notes.notify({ text: `Preferences reset due to load failure: ${e}` })
     }
   }
 

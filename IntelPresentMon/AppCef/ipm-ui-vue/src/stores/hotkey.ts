@@ -5,8 +5,11 @@ import { Action as HotkeyAction } from '@/core/hotkey'
 import { Api } from '@/core/api'
 import { getEnumValues } from '@/core/meta'
 import { deepToRaw } from '@/core/vue-utils'
+import { useNotificationsStore } from './notifications'
 
 export const useHotkeyStore = defineStore('hotkey', () => {
+    // === Dependent Stores ===
+    const notes = useNotificationsStore()
     // === State ===
     const keyOptions = ref<KeyOption[]>([])
     const modifierOptions = ref<ModifierOption[]>([])
@@ -20,7 +23,6 @@ export const useHotkeyStore = defineStore('hotkey', () => {
         )
     )
     // TODO: receive this from kernel or generate based on SSoT
-    // TODO: understand why this as a readonly<> or ref<> causes the modifiers to become an object rather than array
     const defaultBindings = [
         {
           action: HotkeyAction.ToggleCapture,
@@ -48,7 +50,8 @@ export const useHotkeyStore = defineStore('hotkey', () => {
         try {
           await bindHotkey(binding)
         } catch (e) {
-          // TODO Notifications.notify({ text: `Unable to bind default hotkey for ${HotkeyAction[binding.action]}` })
+          notes.notify({ text: `Unable to bind default hotkey for ${HotkeyAction[binding.action]}` })
+          console.error([`Unable to bind default hotkey for ${HotkeyAction[binding.action]}`, e])
         }
       }
     }
@@ -60,7 +63,7 @@ export const useHotkeyStore = defineStore('hotkey', () => {
         await Api.bindHotkey(deepToRaw(binding))
       } catch (e) {
         const actionName = HotkeyAction[binding.action]
-        // TODO Notifications.notify({ text: `Failed to bind hotkey for [${actionName}]` })
+        notes.notify({ text: `Failed to bind hotkey for [${actionName}]` })
         console.error([`Failed to bind hotkey; Action: [${actionName}]`, e])
       }
     }
@@ -71,7 +74,7 @@ export const useHotkeyStore = defineStore('hotkey', () => {
         bindings[HotkeyAction[action]] = { action, combination: null }
       } catch (e) {
         const actionName = HotkeyAction[action]
-        // TODO Notifications.notify({ text: `Failed to clear hotkey for [${actionName}]` })
+        notes.notify({ text: `Failed to clear hotkey for [${actionName}]` })
         console.error([`Failed to clear hotkey; Action: [${actionName}]`, e])
       }
     }

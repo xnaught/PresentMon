@@ -96,7 +96,6 @@ watchEffect(async () => {
         <p class="text-medium-emphasis text-caption mb-0">Application process to track, overlay and capture</p>
         </v-col>
         <v-col cols="9" class="d-flex align-center">
-        <!-- todo mock the process reactives etc. -->
         <v-autocomplete
             :items="processes"
             v-model="prefs.pid"
@@ -150,7 +149,6 @@ watchEffect(async () => {
         </v-col>
     </v-row>   
     
-    <!-- todo minimal hotkey-button component -->
     <v-row dense>       
         <v-col cols="3">
         Overlay Hotkey
@@ -163,7 +161,6 @@ watchEffect(async () => {
     </v-row>
     </v-card>
     
-    <!-- todo mock selected preset refs -->
     <v-card class="page-card my-5 pt-3">
     <v-row>       
         <v-col cols="3">

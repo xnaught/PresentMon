@@ -62,6 +62,7 @@ const hotkeyCombination = computed({
 </script>
 
 <template>
+  <!-- TODO: this could probably be rolled up with HotkeyDialog as one component under Vuetify 3 -->
 <div class="hot-border" @click="openHotkeyDialog">
     <div v-if="hotkeyCombination != null" class="hot-combo">
         <div v-for="m in hotkeyCombination.modifiers" :key="m" class="hot-mod">

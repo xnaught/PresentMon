@@ -5,11 +5,15 @@ import type { Widget } from '@/core/widget';
 import LoadoutRow from '@/components/LoadoutRow.vue';
 import { onMounted, ref } from 'vue';
 import { useLoadoutStore } from '@/stores/loadout';
+import { useNotificationsStore } from '@/stores/notifications';
+import { Api } from '@/core/api';
 
 defineOptions({name: 'LoadoutConfigView'})
 
 const intro = useIntrospectionStore();
 const loadout = useLoadoutStore()
+const notes = useNotificationsStore()
+
 const activeAdapterId = ref<number|null>(null);
 let sort: Sortable|null = null;
 
@@ -35,14 +39,29 @@ const dragReorder = (e: Sortable.SortableEvent) => {
   }
 }
 
-const save = () => {
-  // TODO: implement
-  console.log('Save called');
+async function save() {
+  try {
+    await loadout.browseAndSerialize()
+  }
+  catch (e) {
+    console.error('Error saving loadout:', e)
+    notes.notify({ text: 'An error occurred while saving the loadout. Please try again.' })
+  }
 };
 
-const load = () => {
-  // TODO: implement
-  console.log('Load called');
+async function load() {
+  try {
+    let {payload} = await Api.browseReadSpec();
+    // zero length result means user canceled out of dialog
+    if (payload.length > 0) {
+      const err = 'Failed to load preset file. ';
+      await loadout.loadConfigFromPayload(payload, err);
+    }
+  }
+  catch (e) {
+    console.error('Error loading loadout:', e)
+    notes.notify({ text: 'An error occurred while loading the loadout. Please try again.' })
+  }
 };
 
 const addWidget = () => {
