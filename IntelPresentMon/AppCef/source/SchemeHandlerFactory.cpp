@@ -15,9 +15,10 @@
 
 namespace p2c::client::cef
 {
+    // TODO: consider injecting relative and/or full path to web page file w/ CLI configuration options
     SchemeHandlerFactory::SchemeHandlerFactory(SchemeMode mode, bool hardFail, std::string localHost, std::string localPort)
         :
-        baseDir_{ std::filesystem::current_path() / "Web\\" },
+        baseDir_{ std::filesystem::current_path() / "ipm-ui-vue\\" },
         mode_{ mode },
         hardFail_{ hardFail },
         localHost_{ std::move(localHost) },
