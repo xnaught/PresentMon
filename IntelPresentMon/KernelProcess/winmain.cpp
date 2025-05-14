@@ -157,11 +157,17 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
         opt.traceExceptions ? "--p2c-trace-exceptions"s : ""s,
         opt.logFolder ? "--p2c-log-folder"s : "", *opt.logFolder,
     } | vi::filter(std::not_fn(&std::string::empty)) | rn::to<std::vector>();
+    bool allOriginsAllowed = false;
     for (auto& f : *opt.uiFlags) {
+        if (f == "enable-chromium-debug") {
+            // needed in order to connect Chrome debuggers to CEF
+            args.push_back("--remote-allow-origins=*");
+            allOriginsAllowed = true;
+        }
         args.push_back("--p2c-" + f);
     }
     for (auto& o : *opt.uiOptions) {
-        if (o.first == "url" && is_debug) {
+        if (o.first == "url" && is_debug && !allOriginsAllowed) {
             // needed in order to connect Chrome debuggers to CEF
             args.push_back("--remote-allow-origins=*");
         }

@@ -177,7 +177,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     constexpr bool is_debug = true;
 #endif
     // parse the command line arguments and make them globally available
-    if (auto err = Options::Init(__argc, __argv, true)) {
+    if (auto err = Options::Init(__argc, __argv, false)) {
         return *err;
     }
     const auto& opt = Options::Get();

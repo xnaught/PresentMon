@@ -112,7 +112,8 @@ async function boot() {
     app.use(createPinia())
     await initStores()
     app.use(router)
-    app.use(vuetify)    
+    app.use(vuetify)
+    await router.isReady()
     app.mount('#app')
 }
 

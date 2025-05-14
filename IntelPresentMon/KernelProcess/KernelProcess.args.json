@@ -99,6 +99,14 @@
     {
       "Id": "3a21ce62-1247-45a5-81ef-6698569c73e4",
       "Command": "--ui-option url  \"http://localhost:5173\""
+    },
+    {
+      "Id": "eeaa57c0-80dc-4b72-a051-77843e4706f6",
+      "Command": "--ui-option web-root \"C:\\Files\\Repos\\PresentMon\\IntelPresentMon\\AppCef\\ipm-ui-vue\\dist\""
+    },
+    {
+      "Id": "5217575f-37d8-4f60-a2d2-a85992ce4341",
+      "Command": "--ui-flag enable-chromium-debug"
     }
   ]
 }

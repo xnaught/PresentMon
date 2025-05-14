@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import MainView from '@/views/MainView.vue'
 import LoadoutConfigView from '@/views/LoadoutConfigView.vue'
 import GraphConfigView from '@/views/GraphConfigView.vue'
@@ -10,7 +10,7 @@ import FlashConfigView from '@/views/FlashConfigView.vue'
 import OtherConfigView from '@/views/OtherConfigView.vue'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createMemoryHistory(),
   routes: [
     {
       path: '/',
