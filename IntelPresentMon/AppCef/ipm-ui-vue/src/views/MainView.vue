@@ -76,7 +76,9 @@ watchEffect(async () => {
     }
     else {
         if (prefs.preferences.enableAutotargetting) {
-            launchAutotargetting()
+            launchAutotargetting((pid: number) => {
+                prefs.pid = pid
+            })
         }
         else {
             cancelTopPolling()

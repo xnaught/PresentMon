@@ -4,14 +4,13 @@ import { dispatchDelayedTask, type DelayedTask, awaitDelayedPromise } from "./ti
 import { type Process } from "./process";
 import { Api } from "./api"
 import { getBlocklist } from "./block-list";
-import { usePreferencesStore } from "@/stores/preferences";
 
 var utilizationPollTask: DelayedTask<Promise<Process|null>>|null = null;
 
-export async function launchAutotargetting(): Promise<void> {
+export async function launchAutotargetting(setter: (pid: number)=>void): Promise<void> {
     const top = await doGpuUtilizationTopPolling(250);
     if (top !== null) {
-        usePreferencesStore().setPid(top.pid);
+        setter(top.pid);
     }
 }
 
