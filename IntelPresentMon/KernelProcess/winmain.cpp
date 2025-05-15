@@ -12,6 +12,7 @@
 #include <PresentMonAPI2Loader/Loader.h>
 #include <Core/source/infra/LogSetup.h>
 #include <CommonUtilities/win/Utilities.h>
+#include <Versioning/BuildId.h>
 #include <Shobjidl.h>
 #include <array>
 #include <ranges>
@@ -92,6 +93,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     // set the app id so that windows get grouped
     // TODO: verify operation when multiple app instances running concurrently
     SetCurrentProcessExplicitAppUserModelID(L"Intel.PresentMon");
+
+    pmlog_info(std::format("== kernel process starting build#{} clean:{} ==",
+        bid::BuildIdShortHash(), !bid::BuildIdDirtyFlag()));
 
     // launch the service as a child process if desired (typically during development)
     const auto logSvcPipe = opt.logSvcPipe.AsOptional().value_or(
@@ -187,6 +191,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     // connect logging to the CEF process constellation
     ConnectToLoggingSourcePipe(cefLogPipe);
 	childCef.wait();
+
+    pmlog_info("== kernel process exiting ==");
 
 	return 0;
 }

@@ -13,6 +13,7 @@
 #include <dwmapi.h>
 #include <boost/process.hpp>
 #include <Shobjidl.h>
+#include <include/cef_version.h>
 
 
 #pragma comment(lib, "Dwmapi.lib")
@@ -219,7 +220,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
         // code from here on is only executed by the root process (browser window process)
 
-        pmlog_info(std::format("== client section starting build#{} clean:{} ==", BuildIdShortHash(), !BuildIdDirtyFlag()));
+        pmlog_info(std::format("== client section starting build#{} clean:{} CEF:{} ==",
+            BuildIdShortHash(), !BuildIdDirtyFlag(), CEF_VERSION));
 
         {
             auto& folderResolver = infra::util::FolderResolver::Get();
