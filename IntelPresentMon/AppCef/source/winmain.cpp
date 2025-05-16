@@ -260,14 +260,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
         return (int)msg.wParam;
     }
-    catch (const std::exception& e) {
-        auto title = std::format("Fatal Error [{}]", typeid(e).name());
-        MessageBoxA(nullptr, e.what(), title.c_str(), MB_ICONERROR | MB_APPLMODAL | MB_SETFOREGROUND);
-        return -1;
-    }
     catch (...) {
-        MessageBoxA(nullptr, "Unidentified exception was thrown", "Fatal Error",
-            MB_ICONERROR|MB_APPLMODAL|MB_SETFOREGROUND);
+        pmlog_error(ReportException("Fatal Error"));
         return -1;
     }
 }
