@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <unordered_set>
 
-static constexpr int PRESENTEVENT_CIRCULAR_BUFFER_SIZE = 1024;
+static constexpr int PRESENTEVENT_CIRCULAR_BUFFER_SIZE = 4096;
 
 static uint32_t gNextFrameId = 1;
 
