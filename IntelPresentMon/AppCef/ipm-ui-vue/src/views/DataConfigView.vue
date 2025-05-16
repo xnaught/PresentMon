@@ -75,6 +75,7 @@ const metricPollMessages = computed(() => {
             :min="1"
             :messages="metricPollMessages"
             thumb-label="always"
+            :hide-details="false"
           ></v-slider>
         </v-col>
       </v-row>
