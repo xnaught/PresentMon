@@ -28,13 +28,15 @@ you only need Visual Studio.  Ignore the other build and source dependency instr
 
 2. Build the Chromium Embedded Framework (CEF)
 
-    1. Download the CEF 122.1.13 distribution and extract it to a local folder (e.g., CefDir): https://cef-builds.spotifycdn.com/index.html
+    1. Download the CEF distribution and extract it to a local folder (e.g. C:\cef_133): https://cef-builds.spotifycdn.com/index.html
 
-        - The "Minimal Distribution" is sufficient.
+        - Most recently tested release is version 136
 
         - Proximal versions will most likely be compatible, but are not officially supported.
 
-    2. Build 64-bit Debug and Release configurations (replace "CefDir" with the directory you downloaded into):
+        - The "Minimal Distribution" is sufficient.
+
+    2. Build 64-bit Debug and Release configurations (replace "CefDir" with the full path to the directory you downloaded into):
 
         ```bat
         > cmake -G "Visual Studio 17" -A x64 -DUSE_SANDBOX=OFF -S CefDir -B CefDir\build
@@ -53,13 +55,13 @@ you only need Visual Studio.  Ignore the other build and source dependency instr
 3. Download and build the web asset dependencies via NPM.  This only needs to be run once on fresh clone, or after new packages are added:
 
     ```bat
-    > pushd IntelPresentMon\AppCef\Web
+    > pushd IntelPresentMon\AppCef\ipm-ui-vue
     > npm ci
     > npm run build
     > popd
     ```
 
-    Note: instead of using the production build as described above, you can use a development process with a local server with hotloading support.  To do this, use `npm run serve` instead, and use the `--p2c-url=http://localhost:8080/` command line argument when running the *PresentMon Capture Application*.  This causes the app to load web content from localhost rather than the files in Web/.
+    Note: instead of using the production build as described above, you can use a development process with a local server with hotloading support.  To do this, use `npm run dev` instead, and use the `--ui-option url "http://localhost:5173/"` command line argument when running the *PresentMon Capture Application*.  This causes the app to load web content from localhost rather than the files in ipm-ui-vue/.
 
 4. Create and install a trusted test certificate.  This is only required for the Release build.  Open a command shell as administrator and run the following:
 
