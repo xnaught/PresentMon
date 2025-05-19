@@ -22,6 +22,7 @@ namespace {
 
 void CheckAll(size_t const* columnIndex, bool* ok, std::initializer_list<PresentMonCsv::Header> const& headers)
 {
+    *ok = true;
     for (auto const& h : headers) {
         if (columnIndex[h] == SIZE_MAX) {
             *ok = false;
@@ -32,6 +33,7 @@ void CheckAll(size_t const* columnIndex, bool* ok, std::initializer_list<Present
 
 size_t CheckOne(size_t const* columnIndex, bool* ok, std::initializer_list<PresentMonCsv::Header> const& headers)
 {
+    *ok = true;
     size_t i = 0;
     for (auto const& h : headers) {
         if (columnIndex[h] != SIZE_MAX) {
@@ -51,21 +53,41 @@ size_t CheckOne(size_t const* columnIndex, bool* ok, std::initializer_list<Prese
 
 bool CheckAllIfAny(size_t const* columnIndex, bool* ok, std::initializer_list<PresentMonCsv::Header> const& headers)
 {
+    *ok = true;
     for (auto const& h : headers) {
         if (columnIndex[h] != SIZE_MAX) {
             CheckAll(columnIndex, ok, headers);
-            return true;
+            return *ok;
         }
     }
     return false;
+}
+
+bool CaseInsensitiveCompare(const std::string& str1, const std::string& str2) {
+    if (str1.size() != str2.size()) {
+        return false;
+    }
+    return std::equal(str1.begin(), str1.end(), str2.begin(),
+        [](unsigned char c1, unsigned char c2) {
+            return std::tolower(c1) == std::tolower(c2);
+        });
 }
 
 PresentMonCsv::Header FindHeader(char const* header)
 {
     for (uint32_t i = 0; i < PresentMonCsv::KnownHeaderCount; ++i) {
         auto h = (PresentMonCsv::Header) i;
-        if (strcmp(header, PresentMonCsv::GetHeaderString(h)) == 0) {
-            return h;
+        // do a case insensitive compare to see if the header starts with "ms"
+
+        std::string headerName = PresentMonCsv::GetHeaderString(h);
+        if (std::tolower(headerName[0]) == 'm' && std::tolower(headerName[1]) == 's') {
+            if (CaseInsensitiveCompare(header, headerName)) {
+                return h;
+            }
+        } else {
+            if (strcmp(header, PresentMonCsv::GetHeaderString(h)) == 0) {
+                return h;
+            }
         }
     }
     return PresentMonCsv::UnknownHeader;
@@ -123,6 +145,21 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
                                                               Header_TimeInSeconds,
                                                               Header_msBetweenPresents,
                                                               Header_msInPresentAPI });
+
+    auto v2 = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_FrameTime,
+                                                              Header_CPUBusy,
+                                                              Header_CPUWait,
+                                                              Header_GPULatency,
+                                                              Header_GPUTime,
+                                                              Header_GPUBusy,
+                                                              Header_GPUWait,
+                                                              Header_VideoBusy,
+                                                              Header_DisplayLatency,
+                                                              Header_DisplayedTime,
+                                                              Header_AnimationError,
+                                                              Header_AnimationTime,
+                                                              Header_ClickToPhotonLatency,
+                                                              Header_AllInputToPhotonLatency });
     if (v1) {
         CheckAll(headerColumnIndex_, &columnsOK, { Header_Application,
                                                    Header_ProcessID,
@@ -147,7 +184,7 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
         if (!track_gpu)       params_.emplace_back(L"--no_track_gpu");
         if (track_gpu_video)  params_.emplace_back(L"--track_gpu_video");
         if (!track_input)     params_.emplace_back(L"--no_track_input");
-    } else {
+    } else if (v2){
         CheckAll(headerColumnIndex_, &columnsOK, { Header_Application,
                                                    Header_ProcessID,
                                                    Header_SwapChainAddress,
@@ -175,7 +212,62 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
         auto track_gpu_video  = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_VideoBusy });
         auto track_input      = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_ClickToPhotonLatency });
         auto track_frame_type = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_FrameType });
-        auto track_app_timing = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_InstrumentedLatency });
+        auto track_app_timing = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_InstrumentedLatency,
+                                                                                Header_InstrumentedSleep,
+                                                                                Header_InstrumentedRenderLatency,
+                                                                                Header_InstrumentedGPULatency });
+        params_.emplace_back(L"--v2_metrics");
+        switch (time) {
+        case 1: params_.emplace_back(L"--qpc_time");    break;
+        case 2: params_.emplace_back(L"--qpc_time_ms"); break;
+        case 3: params_.emplace_back(L"--date_time");   break;
+        }
+        if (!track_display)   params_.emplace_back(L"--no_track_display");
+        if (!track_gpu)       params_.emplace_back(L"--no_track_gpu");
+        if (track_gpu_video)  params_.emplace_back(L"--track_gpu_video");
+        if (!track_input)     params_.emplace_back(L"--no_track_input");
+        if (track_frame_type) params_.emplace_back(L"--track_frame_type");
+        if (track_app_timing) params_.emplace_back(L"--track_app_timing");
+    }
+    else {
+        CheckAll(headerColumnIndex_, &columnsOK, { Header_Application,
+                                                   Header_ProcessID,
+                                                   Header_SwapChainAddress,
+                                                   Header_PresentRuntime,
+                                                   Header_SyncInterval,
+                                                   Header_PresentFlags,
+                                                   Header_MsBetweenSimulationStart,
+                                                   Header_msBetweenPresents,
+                                                   Header_msInPresentAPI,
+                                                   Header_MsPCLatency, 
+                                                   Header_MsBetweenAppStart,
+                                                   Header_MsCPUBusy,
+                                                   Header_MsCPUWait });
+
+        size_t time           = CheckOne(headerColumnIndex_, &columnsOK,      { Header_TimeInSeconds,
+                                                                                Header_TimeInQPC,
+                                                                                Header_TimeInMs,
+                                                                                Header_TimeInDateTime });
+        auto track_display    = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_AllowsTearing,
+                                                                                Header_PresentMode,
+                                                                                Header_msBetweenDisplayChange,
+                                                                                Header_msUntilDisplayed,
+                                                                                Header_MsRenderPresentLatency,
+                                                                                Header_MsAnimationError,
+                                                                                Header_AnimationTime });
+        auto track_gpu        = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_MsGPULatency,
+                                                                                Header_MsGPUTime,
+                                                                                Header_MsGPUBusy,
+                                                                                Header_MsGPUWait });
+        auto track_gpu_video  = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_MsVideoBusy });
+        auto track_input      = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_MsClickToPhotonLatency,
+                                                                                Header_MsAllInputToPhotonLatency });
+        auto track_frame_type = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_FrameType });
+        auto track_app_timing = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_MsInstrumentedLatency,
+                                                                                Header_MsInstrumentedSleep,
+                                                                                Header_MsInstrumentedRenderLatency,
+                                                                                Header_MsInstrumentedGPULatency,
+                                                                                Header_MsReprojectedLatency});
 
         switch (time) {
         case 1: params_.emplace_back(L"--qpc_time");    break;
