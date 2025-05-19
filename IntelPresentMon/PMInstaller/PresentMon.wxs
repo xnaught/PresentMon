@@ -36,7 +36,6 @@
                 Absent="disallow" >
                 <ComponentGroupRef Id="service_files" />
                 <ComponentGroupRef Id="pm_app" />
-                <ComponentGroupRef Id="pm_app_locales" />
                 <ComponentGroupRef Id="pm_app_shaders" />
                 <ComponentGroupRef Id="pm_app_presets" />
                 <ComponentGroupRef Id="pm_app_web" />
@@ -145,9 +144,6 @@
                         <Directory
                             Id="pm_app_folder"
                             Name="PresentMonApplication">
-                            <Directory
-                                Id="pm_app_locales_folder"
-                                Name="locales"/>
                             <Directory
                                 Id="pm_app_shaders_folder"
                                 Name="Shaders"/>
@@ -313,111 +309,6 @@
                     KeyPath="yes">
                 </File>
             </Component>
-			<Component Id="pm_app_chrome_100_percent_pak" Guid="13A93BF0-666B-44D9-AFD1-FDBC05563822">
-				<File
-				  Id="pm_app_chrome_100_percent_pak"
-				  Name="chrome_100_percent.pak"
-				  Source="$(var.PresentMon.TargetDir)chrome_100_percent.pak"
-				  KeyPath="yes" />
-			</Component>
-			<Component Id="pm_app_chrome_200_percent_pak" Guid="7A505719-765F-419B-B30B-3088804544A2">
-				<File
-				  Id="pm_app_chrome_200_percent_pak"
-				  Name="chrome_200_percent.pak"
-				  Source="$(var.PresentMon.TargetDir)chrome_200_percent.pak"
-				  KeyPath="yes" />
-			</Component>
-			<Component Id="pm_app_icudtl_dat" Guid="880B36DE-12B0-4162-9D45-8A5DF709D3E8">
-				<File
-				  Id="pm_app_icudtl_dat"
-				  Name="icudtl.dat"
-				  Source="$(var.PresentMon.TargetDir)icudtl.dat"
-				  KeyPath="yes" />
-			</Component>
-			<Component Id="pm_app_resources_pak" Guid="0C685F5A-1B2E-4525-B3E9-DAC4A6A78010">
-				<File
-				  Id="pm_app_resources_pak"
-				  Name="resources.pak"
-				  Source="$(var.PresentMon.TargetDir)resources.pak"
-				  KeyPath="yes" />
-			</Component>
-			<Component Id="pm_app_chrome_elf_dll" Guid="051D8D11-84AA-44A8-8D59-553F09CF9057">
-				<File
-				  Id="pm_app_chrome_elf_dll"
-				  Name="chrome_elf.dll"
-				  Source="$(var.PresentMon.TargetDir)chrome_elf.dll"
-				  KeyPath="yes" />
-			</Component>
-			<Component Id="pm_app_d3dcompiler_47_dll" Guid="1A19BDC1-515F-4ABC-9938-AD95EC0B1A87">
-				<File
-				  Id="pm_app_d3dcompiler_47_dll"
-				  Name="d3dcompiler_47.dll"
-				  Source="$(var.PresentMon.TargetDir)d3dcompiler_47.dll"
-				  KeyPath="yes" />
-			</Component>
-			<Component Id="pm_app_dxil_dll" Guid="D4D58A6D-518B-47A1-9D50-DC41BC71EF86">
-				<File
-				  Id="pm_app_dxil_dll"
-				  Name="dxil.dll"
-				  Source="$(var.PresentMon.TargetDir)dxil.dll"
-				  KeyPath="yes" />
-			</Component>
-			<Component Id="pm_app_dxcompiler_dll" Guid="A961C2D2-B4F0-4E7A-A4D1-FDE1C65E06D7">
-				<File
-				  Id="pm_app_dxcompiler_dll"
-				  Name="dxcompiler.dll"
-				  Source="$(var.PresentMon.TargetDir)dxcompiler.dll"
-				  KeyPath="yes" />
-			</Component>
-			<Component Id="pm_app_libcef_dll" Guid="F71E17C3-1945-4155-89D4-4213D4FAE8E2">
-				<File
-				  Id="pm_app_libcef_dll"
-				  Name="libcef.dll"
-				  Source="$(var.PresentMon.TargetDir)libcef.dll"
-				  KeyPath="yes" />
-			</Component>
-			<Component Id="pm_app_v8_context_snapshot_bin" Guid="B79CE37E-3742-46C1-AA3C-77D6FD06A4A2">
-				<File
-				  Id="pm_app_v8_context_snapshot_bin"
-				  Name="v8_context_snapshot.bin"
-				  Source="$(var.PresentMon.TargetDir)v8_context_snapshot.bin"
-				  KeyPath="yes" />
-			</Component>
-			<Component Id="pm_app_vk_swiftshader_dll" Guid="9A033193-4C62-46E3-B555-3B9415A5B8C2">
-				<File
-				  Id="pm_app_vk_swiftshader_dll"
-				  Name="vk_swiftshader.dll"
-				  Source="$(var.PresentMon.TargetDir)vk_swiftshader.dll"
-				  KeyPath="yes" />
-			</Component>
-			<Component Id="pm_app_vk_swiftshader_icd_json" Guid="6F21C9CC-FAC9-44B5-9EEA-EC613746A935">
-				<File
-				  Id="pm_app_vk_swiftshader_icd_json"
-				  Name="vk_swiftshader_icd.json"
-				  Source="$(var.PresentMon.TargetDir)vk_swiftshader_icd.json"
-				  KeyPath="yes" />
-			</Component>
-			<Component Id="pm_app_vulkan_1_dll" Guid="F2FF5AE6-1550-4E71-A8B9-5DC41AF29CB7">
-				<File
-				  Id="pm_app_vulkan_1_dll"
-				  Name="vulkan-1.dll"
-				  Source="$(var.PresentMon.TargetDir)vulkan-1.dll"
-				  KeyPath="yes" />
-			</Component>
-			<Component Id="pm_app_libegl" Guid="25283688-C2F1-4F45-836B-4899D9504175">
-				<File
-				  Id="pm_app_libegl"
-				  Name="libEGL.dll"
-				  Source="$(var.PresentMon.TargetDir)libEGL.dll"
-				  KeyPath="yes" />
-			</Component>
-			<Component Id="pm_app_libGLES2" Guid="4D33A488-B7F4-4EA8-AB85-4D0482813F10">
-				<File
-				  Id="pm_app_libGLES2"
-				  Name="libGLESv2.dll"
-				  Source="$(var.PresentMon.TargetDir)libGLESv2.dll"
-				  KeyPath="yes" />
-			</Component>
 			<Component
                 Id="pm_app_target_block_list_txt"
                 Guid="203B303F-A097-4B1E-BFA0-895794F192C1">
@@ -483,20 +374,6 @@
                     KeyPath="yes">
 				</File>
 			</Component>
-        </ComponentGroup>
-        <ComponentGroup
-            Id="pm_app_locales"
-            Directory="pm_app_locales_folder">
-            <Component
-                Id="pm_app_locales_en_us_pak"
-                Guid="0490E0FC-2406-4803-947B-6190E522B128">
-                <File
-                    Id="pm_app_locales_en_us_pak"
-                    Name="en-US.pak"
-                    Source="$(var.PresentMon.TargetDir)locales\en-US.pak"
-                    KeyPath="yes">
-                </File>
-            </Component>
         </ComponentGroup>
         <ComponentGroup
             Id="pm_app_shaders"
