@@ -145,8 +145,9 @@ struct MouseClickData {
 };
 
 struct PresentFrameTypeEvent {
-    uint32_t FrameId;
-    FrameType FrameType;
+    uint32_t FrameId = 0;
+    FrameType FrameType = FrameType::NotSet;
+    uint32_t AppFrameId = 0;
 };
 
 struct FlipFrameTypeEvent {
@@ -157,6 +158,7 @@ struct FlipFrameTypeEvent {
 
 struct AppTimingData {
     uint32_t AppProcessId = 0;
+    uint32_t AppFrameId = 0;
     uint64_t AppSleepStartTime = 0;
     uint64_t AppSleepEndTime = 0;
     uint64_t AppSimStartTime = 0;
@@ -166,14 +168,16 @@ struct AppTimingData {
     uint64_t AppPresentStartTime = 0;
     uint64_t AppPresentEndTime = 0;
     std::pair<uint64_t, InputDeviceType> AppInputSample = { 0, InputDeviceType::None };
+    bool AssignedToPresent = false;
+    bool PresentCompleted = false;
 };
 
 // A ProcessEvent occurs whenever a Process starts or stops.
 struct ProcessEvent {
-    std::wstring ImageFileName; // The name of the process exe file.  This is only available on process start events.
-    uint64_t QpcTime;           // The time of the start/stop event.
-    uint32_t ProcessId;         // The id of the process.
-    bool IsStartEvent;          // Whether this is a start event (true) or a stop event (false).
+    std::wstring ImageFileName = {};    // The name of the process exe file.  This is only available on process start events.
+    uint64_t QpcTime = 0;               // The time of the start/stop event.
+    uint32_t ProcessId = 0;             // The id of the process.
+    bool IsStartEvent = false;          // Whether this is a start event (true) or a stop event (false).
 };
 
 struct PresentEvent {
@@ -189,6 +193,16 @@ struct PresentEvent {
     uint64_t InputTime;         // Earliest QPC value when the keyboard/mouse were tapped/moved and used by this frame
     uint64_t MouseClickTime;    // Earliest QPC value when the mouse was clicked and used by this frame
 
+    // Used to track the application work when Intel XeSS-FG is enabled
+    uint64_t AppPropagatedPresentStartTime;  // Propogated QPC value of the first event related to the Present (D3D9, DXGI, or DXGK Present_Start)
+    uint64_t AppPropagatedTimeInPresent;     // Propogated  QPC duration of the Present call (only applicable for D3D9/DXGI)
+    uint64_t AppPropagatedGPUStartTime;      // Propogated QPC value when the frame's first DMA packet started
+    uint64_t AppPropagatedReadyTime;         // Propogated QPC value when the frame's last DMA packet completed
+    uint64_t AppPropagatedGPUDuration;       // Propogated QPC duration during which a frame's DMA packet was running on
+    // ... any node (if mTrackGPUVideo==false) or non-video nodes (if mTrackGPUVideo==true)
+    uint64_t AppPropagatedGPUVideoDuration;  // Propogated QPC duration during which a frame's DMA packet was running on a video node (if mTrackGPUVideo==true)
+
+    // Application provided events
     uint32_t AppFrameId;
     uint64_t AppSleepStartTime;         // QPC value of app sleep start time provided by Intel App Provider
     uint64_t AppSleepEndTime;           // QPC value of app sleep end time provided by Intel App Provider
@@ -450,13 +464,12 @@ struct PMTraceConsumer
     std::unordered_map<std::pair<uint32_t, uint32_t>, 
                        std::shared_ptr<PresentEvent>,
                        PairHash<uint32_t, uint32_t>>            mPresentByAppFrameId;                   // Intel provider app frame id -> PresentEvent
-    std::unordered_map<uint32_t, uint32_t>                      mNextAppFrameIdByProcessid;             // ProcessId -> Next Intel provider app frame id
     std::unordered_map<std::pair<uint32_t, uint32_t>,
                        AppTimingData,
-                       PairHash<uint32_t, uint32_t>>            mPendingAppTimingDataByAppFrameId;      // Intel provider app frame id -> AppTimingData
+                       PairHash<uint32_t, uint32_t>>            mAppTimingDataByAppFrameId;             // Intel provider app frame id -> AppTimingData
     std::unordered_map<std::pair<uint32_t, uint64_t>,
                        uint32_t,
-                       PairHash<uint32_t, uint64_t>>             mHybridPresentModeBySwapChainPid;       // SwapChain and process id -> HybridPresentMode
+                       PairHash<uint32_t, uint64_t>>            mHybridPresentModeBySwapChainPid;       // SwapChain and process id -> HybridPresentMode
 
     // mGpuTrace tracks work executed on the GPU.
     GpuTrace mGpuTrace;
@@ -544,8 +557,13 @@ struct PMTraceConsumer
     void DeferFlipFrameType(uint64_t vidPnLayerId, uint64_t presentId, uint64_t timestamp, FrameType frameType);
     void ApplyFlipFrameType(std::shared_ptr<PresentEvent> const& present, uint64_t timestamp, FrameType frameType);
     void ApplyPresentFrameType(std::shared_ptr<PresentEvent> const& present);
-    void UpdatePendingAppTimingData(const EVENT_RECORD* pEventRecord);
-    bool UpdateAppTimingPresent(const EVENT_RECORD* pEventRecord);
+    void SetAppTimingData(const EVENT_RECORD* pEventRecord);
 
     void SignalEventsReady();
+    
+    // -------------------------------------------------------------------------------------------
+    // Function for managing app provided events
+    AppTimingData* ExtractAppTimingData(uint32_t processId, uint32_t appFrameId, uint64_t presentStartTime);
+    bool IsApplicationPresent(std::shared_ptr<PresentEvent> const& present);
+    void SetAppTimingDataAsComplete(uint32_t processId, uint32_t appFrameId);
 };
