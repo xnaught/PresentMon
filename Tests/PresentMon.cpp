@@ -212,10 +212,7 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
         auto track_gpu_video  = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_VideoBusy });
         auto track_input      = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_ClickToPhotonLatency });
         auto track_frame_type = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_FrameType });
-        auto track_app_timing = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_InstrumentedLatency,
-                                                                                Header_InstrumentedSleep,
-                                                                                Header_InstrumentedRenderLatency,
-                                                                                Header_InstrumentedGPULatency });
+        auto track_app_timing = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_InstrumentedLatency });
         params_.emplace_back(L"--v2_metrics");
         switch (time) {
         case 1: params_.emplace_back(L"--qpc_time");    break;
@@ -263,11 +260,7 @@ bool PresentMonCsv::Open(char const* file, int line, std::wstring const& path)
         auto track_input      = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_MsClickToPhotonLatency,
                                                                                 Header_MsAllInputToPhotonLatency });
         auto track_frame_type = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_FrameType });
-        auto track_app_timing = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_MsInstrumentedLatency,
-                                                                                Header_MsInstrumentedSleep,
-                                                                                Header_MsInstrumentedRenderLatency,
-                                                                                Header_MsInstrumentedGPULatency,
-                                                                                Header_MsReprojectedLatency});
+        auto track_app_timing = CheckAllIfAny(headerColumnIndex_, &columnsOK, { Header_MsInstrumentedLatency});
 
         switch (time) {
         case 1: params_.emplace_back(L"--qpc_time");    break;
