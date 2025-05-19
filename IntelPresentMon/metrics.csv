@@ -13,26 +13,26 @@ PM_METRIC_FRAME_TYPE,,Frame Type,Whether the frame was rendered by the applicati
 ,,,
 PM_METRIC_CPU_START_TIME,,CPU Start Time,The time the CPU started working on this frame.
 PM_METRIC_CPU_START_QPC,1,CPU Start QPC,"The time the CPU started working on this frame, as a QueryPerformanceCounter() value."
-PM_METRIC_CPU_FRAME_TIME,,Frame Time,How long it took from the start of this frame until the CPU started working on the next frame.
-PM_METRIC_CPU_BUSY,,CPU Busy,How long the CPU spent working on this frame before presenting it.
-PM_METRIC_CPU_WAIT,,CPU Wait,How long the CPU spent waiting before starting the next frame.
+PM_METRIC_CPU_FRAME_TIME,,FrameTime-App,How long it took from the start of this frame until the CPU started working on the next frame.
+PM_METRIC_CPU_BUSY,,Ms CPU Busy,How long the CPU spent working on this frame before presenting it.
+PM_METRIC_CPU_WAIT,,Ms CPU Wait,How long the CPU spent waiting before starting the next frame.
 ,,,
-PM_METRIC_GPU_LATENCY,,GPU Latency,How long it took from the start of this frame until the GPU started working on it.
-PM_METRIC_GPU_TIME,,GPU Time,The total amount of time that GPU was working on this frame.
-PM_METRIC_GPU_BUSY,,GPU Busy,"How long the GPU was actively working on this frame (i.e., the time during which at least one GPU engine is executing work from the target process)."
-PM_METRIC_GPU_WAIT,,GPU Wait,How long the GPU was idle while working on this frame.
+PM_METRIC_GPU_LATENCY,,Ms GPU Latency,How long it took from the start of this frame until the GPU started working on it.
+PM_METRIC_GPU_TIME,,Ms GPU Time,The total amount of time that GPU was working on this frame.
+PM_METRIC_GPU_BUSY,,Ms GPU Busy,"How long the GPU was actively working on this frame (i.e., the time during which at least one GPU engine is executing work from the target process)."
+PM_METRIC_GPU_WAIT,,Ms GPU Wait,How long the GPU was idle while working on this frame.
 PM_METRIC_VIDEO_BUSY,,Video Busy,How long the GPU video encode/decode engines were actively working on this frame.
 ,,,
 PM_METRIC_DISPLAY_LATENCY,,Display Latency,How long it took from the start of this frame until the frame was displayed on the screen.
 PM_METRIC_DISPLAYED_TIME,,Displayed Time,"How long the frame was displayed on the screen, or 'NA' if the frame was not displayed."
-PM_METRIC_ANIMATION_ERROR,,Animation Error,"The difference between the previous frame's CPU delta and display delta."
+PM_METRIC_ANIMATION_ERROR,,Ms Animation Error,"The difference between the previous frame's CPU delta and display delta."
 PM_METRIC_ANIMATION_TIME,,Animation Time,The time the CPU started animation work on this frame.
-PM_METRIC_CLICK_TO_PHOTON_LATENCY,,Click-To-Photon Latency,How long it took from the earliest mouse click that contributed to this frame until this frame was displayed.
-PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY,,All-Input-To-Photon Latency,How long it took from the earliest keyboard or mouse interaction that contributed to this frame until this frame was displayed.
+PM_METRIC_CLICK_TO_PHOTON_LATENCY,,Ms Click To Photon Latency,How long it took from the earliest mouse click that contributed to this frame until this frame was displayed.
+PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY,,Ms All Input To Photon Latency,How long it took from the earliest keyboard or mouse interaction that contributed to this frame until this frame was displayed.
 ,,,
-PM_METRIC_DISPLAYED_FPS,1,Displayed FPS,The rate at which new frames are being displayed on the screen.
-PM_METRIC_APPLICATION_FPS,1,Application FPS,The rate at which the application is rendering and displaying new frames to the screen.
-PM_METRIC_PRESENTED_FPS,1,Presented FPS,The rate at which the application is calling Present().
+PM_METRIC_DISPLAYED_FPS,1,FPS-Display,The rate at which new frames are being displayed on the screen.
+PM_METRIC_APPLICATION_FPS,1,FPS-App,The rate at which the application is rendering and displaying new frames to the screen.
+PM_METRIC_PRESENTED_FPS,1,FPS-Presents,The rate at which the application is calling Present().
 PM_METRIC_DROPPED_FRAMES,1,Dropped Frames,Indicates if the frame was not displayed.
 ,,,
 PM_METRIC_GPU_VENDOR,1,GPU Vendor,Vendor name of the GPU.
@@ -91,3 +91,15 @@ PM_METRIC_GPU_TEMPERATURE_PERCENT,1,GPU Temperature Percent,GPU temperature as a
 PM_METRIC_GPU_POWER_PERCENT,1,GPU Power Percent,GPU power draw as a ratio of default maximum power.
 PM_METRIC_GPU_FAN_SPEED_PERCENT,1,GPU Fan Speed Percent,GPU fan speed as a ratio of the max speed for that fan.
 PM_METRIC_GPU_CARD_POWER,1,GPU Card Power,Total power consumption of the graphics adapter board.
+PM_METRIC_PRESENT_START_TIME,1,Time In Seconds,"The time the Present() call was made, in seconds."
+PM_METRIC_PRESENT_START_QPC,1,Present Start QPC,The time the Present() call was made as a QueryPerformanceCounter() value.
+PM_METRIC_BETWEEN_PRESENTS,,Ms Between Presents,"The time between this Present() call and the previous one, in milliseconds."
+PM_METRIC_IN_PRESENT_API,,Ms In Present API,"The time spent inside the Present() call, in milliseconds."
+PM_METRIC_BETWEEN_DISPLAY_CHANGE,,Ms Between Display Change,"How long the previous frame was displayed before this Present() was displayed, in milliseconds."
+PM_METRIC_UNTIL_DISPLAYED,,Ms Until Displayed,"The time between the Present() call and when the frame was displayed, in milliseconds."
+PM_METRIC_RENDER_PRESENT_LATENCY,,Ms Render Present Latency,"The time between the Present() call and when GPU work for this frame completed, in milliseconds."
+PM_METRIC_BETWEEN_SIMULATION_START,,Ms Between Simulation Start,"The time between the start of simulation processing of the previous frame and this one, in milliseconds."
+PM_METRIC_PC_LATENCY,,Ms PC Latency,"Time between PC receiving input and frame being sent to the display, in milliseconds."
+PM_METRIC_DISPLAYED_FRAME_TIME,,FrameTime-Display,"The time between when the previous frame was displayed and this frame was, in milliseconds."
+PM_METRIC_PRESENTED_FRAME_TIME,,FrameTime-Presents,"The time between this Present call and the previous one, in milliseconds."
+PM_METRIC_BETWEEN_APP_START,,Ms Between App Start,"How long it took from the start of this frame until the CPU started working on the next frame, in milliseconds."

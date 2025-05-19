@@ -25,8 +25,10 @@ class StreamClient {
                                          const PmNsmFrameData** pNextFrame,
                                          const PmNsmFrameData** pFrameDataOfNextDisplayed,
                                          const PmNsmFrameData** pFrameDataOfLastPresented,
+                                         const PmNsmFrameData** pFrameDataOfLastAppPresented,
                                          const PmNsmFrameData** pFrameDataOfLastDisplayed,
-                                         const PmNsmFrameData** pPreviousFrameDataOfLastDisplayed);
+                                         const PmNsmFrameData** pFrameDataOfLastAppDisplayed,
+                                         const PmNsmFrameData** pFrameDataOfPreviousAppFrameOfLastAppDisplayed);
   // Return the last frame id that holds valid data
   uint64_t GetLatestFrameIndex();
   NamedSharedMem* GetNamedSharedMemView() { return shared_mem_view_.get(); }
@@ -46,11 +48,21 @@ class StreamClient {
 
  private:
   uint64_t CheckPendingReadFrames();
+
+  // Functions to peek at the next and previous frames
   void PeekNextFrames(const PmNsmFrameData** pNextFrame,
                       const PmNsmFrameData** pNextDisplayedFrame);
   void PeekPreviousFrames(const PmNsmFrameData** pFrameDataOfLastPresented,
+                          const PmNsmFrameData** pFrameDataOfLastAppPresented,
                           const PmNsmFrameData** pFrameDataOfLastDisplayed,
-                          const PmNsmFrameData** pPreviousFrameDataOfLastDisplayed);
+                          const PmNsmFrameData** pFrameDataOfLastAppDisplayed,
+                          const PmNsmFrameData** pFrameDataOfPreviousAppFrameOfLastAppDisplayed);
+
+  // Helper functions evaluater various frame types
+  bool IsAppPresentedFrame(const PmNsmFrameData* frame) const;
+  bool IsDisplayedFrame(const PmNsmFrameData* frame) const;
+  bool IsAppDisplayedFrame(const PmNsmFrameData* frame) const;
+
   // Shared memory view that the client opened into based on mapfile name
   std::unique_ptr<NamedSharedMem> shared_mem_view_;
   // mapfile name the client has for named shared memory

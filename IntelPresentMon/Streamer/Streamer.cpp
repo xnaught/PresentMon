@@ -78,8 +78,17 @@ void Streamer::CopyFromPresentMonPresentEvent(
     nsm_present_event->TimeInPresent = present_event->TimeInPresent;
     nsm_present_event->GPUStartTime = present_event->GPUStartTime;
     nsm_present_event->ReadyTime = present_event->ReadyTime;
+    nsm_present_event->GPUDuration = present_event->GPUDuration;
+    nsm_present_event->GPUVideoDuration = present_event->GPUVideoDuration;
     nsm_present_event->InputTime = present_event->InputTime;
     nsm_present_event->MouseClickTime = present_event->MouseClickTime;
+
+    nsm_present_event->AppPropagatedPresentStartTime = present_event->AppPropagatedPresentStartTime;
+    nsm_present_event->AppPropagatedTimeInPresent = present_event->AppPropagatedTimeInPresent;
+    nsm_present_event->AppPropagatedGPUStartTime = present_event->AppPropagatedGPUStartTime;
+    nsm_present_event->AppPropagatedReadyTime = present_event->AppPropagatedReadyTime;
+    nsm_present_event->AppPropagatedGPUDuration = present_event->AppPropagatedGPUDuration;
+    nsm_present_event->AppPropagatedGPUVideoDuration = present_event->AppPropagatedGPUVideoDuration;
 
     nsm_present_event->AppSleepStartTime = present_event->AppSleepStartTime;
     nsm_present_event->AppSleepEndTime = present_event->AppSleepEndTime;
@@ -139,8 +148,6 @@ void Streamer::CopyFromPresentMonPresentEvent(
     nsm_present_event->PresentInDwmWaitingStruct =
         present_event->PresentInDwmWaitingStruct;
 
-    nsm_present_event->GPUDuration = present_event->GPUDuration;
-    nsm_present_event->GPUVideoDuration = present_event->GPUVideoDuration;
     return;
 }
 
@@ -196,10 +203,6 @@ void Streamer::ProcessPresentEvent(
     }
 
     PmNsmFrameData data = {};
-    if (present_event->PresentStartTime == 2694939860393)
-    {
-        auto i = 20;
-    }
     // Copy the passed in PresentEvent data into the PmNsmFrameData
     // structure.
     CopyFromPresentMonPresentEvent(present_event, &data.present_event);
@@ -223,6 +226,7 @@ void Streamer::ProcessPresentEvent(
       auto start = std::chrono::high_resolution_clock::now();
       std::chrono::milliseconds time_elapsed =
           std::chrono::milliseconds::zero();
+
 
       auto& opt = clio::Options::Get();
       while ((stream_mode_ == StreamMode::kOfflineEtl ||

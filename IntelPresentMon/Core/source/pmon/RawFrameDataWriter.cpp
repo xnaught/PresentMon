@@ -139,7 +139,11 @@ namespace p2c::pmon
                     metricId == PM_METRIC_ANIMATION_ERROR ||
                     metricId == PM_METRIC_ANIMATION_TIME ||
                     metricId == PM_METRIC_CLICK_TO_PHOTON_LATENCY ||
-                    metricId == PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY) {
+                    metricId == PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY ||
+                    metricId == PM_METRIC_BETWEEN_SIMULATION_START ||
+                    metricId == PM_METRIC_PC_LATENCY ||
+                    metricId == PM_METRIC_BETWEEN_DISPLAY_CHANGE ||
+                    metricId == PM_METRIC_UNTIL_DISPLAYED ) {
                     flags |= Annotation_::FLAG_NAN_MEANS_NOT_AVAILABLE;
                 }
 
@@ -148,7 +152,8 @@ namespace p2c::pmon
                 }
 
                 // special case for TIME, it needs to be relative to TIME of first frame and scaled ms => s
-                if (metricId == PM_METRIC_CPU_START_TIME) {
+                if (metricId == PM_METRIC_CPU_START_TIME ||
+                    metricId == PM_METRIC_PRESENT_START_TIME ) {
                     pAnnotation = std::make_unique<TypedAnnotation_<TimeAnnotationType_>>();
                 }
                 else {
@@ -202,8 +207,8 @@ namespace p2c::pmon
                 if (el.metricId == PM_METRIC_CPU_START_TIME) {
                     totalTimeElementIdx_ = int(queryElements_.size() - 1);
                 }
-                else if (el.metricId == PM_METRIC_CPU_FRAME_TIME) {
-                    frametimeElementIdx_ = int(queryElements_.size() - 1);
+                else if (el.metricId == PM_METRIC_BETWEEN_PRESENTS) {
+                    msBetweenPresentsElementIdx_ = int(queryElements_.size() - 1);
                 }
                 else if (el.metricId == PM_METRIC_ANIMATION_ERROR) {
                     animationErrorElementIdx_ = int(queryElements_.size() - 1);
@@ -219,14 +224,14 @@ namespace p2c::pmon
                 });
                 totalTimeElementIdx_ = int(queryElements_.size() - 1);
             }
-            if (frametimeElementIdx_ < 0) {
+            if (msBetweenPresentsElementIdx_ < 0) {
                 queryElements_.push_back(PM_QUERY_ELEMENT{
-                    .metric = PM_METRIC_CPU_FRAME_TIME,
+                    .metric = PM_METRIC_BETWEEN_PRESENTS,
                     .stat = PM_STAT_NONE,
                     .deviceId = 0,
                     .arrayIndex = 0,
                 });
-                frametimeElementIdx_ = int(queryElements_.size() - 1);
+                msBetweenPresentsElementIdx_ = int(queryElements_.size() - 1);
             }
             if (animationErrorElementIdx_ < 0) {
                 queryElements_.push_back(PM_QUERY_ELEMENT{
@@ -255,7 +260,7 @@ namespace p2c::pmon
         }
         double ExtractFrameTimeFromBlob(const uint8_t* pBlob) const
         {
-            return reinterpret_cast<const double&>(pBlob[queryElements_[frametimeElementIdx_].dataOffset]);
+            return reinterpret_cast<const double&>(pBlob[queryElements_[msBetweenPresentsElementIdx_].dataOffset]);
         }
         double ExtractAnimationErrorFromBlob(const uint8_t* pBlob) const
         {
@@ -292,7 +297,7 @@ namespace p2c::pmon
         std::vector<PM_QUERY_ELEMENT> queryElements_;
         // query elements referenced used for summary stats gathering
         int totalTimeElementIdx_ = -1;
-        int frametimeElementIdx_ = -1;
+        int msBetweenPresentsElementIdx_ = -1;
         int animationErrorElementIdx_ = -1;
     };
 

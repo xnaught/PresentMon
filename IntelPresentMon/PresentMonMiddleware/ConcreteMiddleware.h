@@ -34,7 +34,12 @@ namespace pmon::mid
         // The most recent present that has been processed (e.g., output into CSV and/or used for frame
         // statistics).
         PmNsmPresentEvent mLastPresent;
+		// The most recent app present that has been processed (e.g., output into CSV and/or used for frame
+		// statistics).
+		PmNsmPresentEvent mLastAppPresent;
+
         bool mLastPresentIsValid = false;
+		bool mLastAppPresentIsValid = false;
 
         // Whether to include frame data in the next PresentEvent's FrameMetrics.
         bool mIncludeFrameData = true;
@@ -54,6 +59,13 @@ namespace pmon::mid
 		std::vector<double> mAllInputToPhotonLatency;
         std::vector<double> mDropped;
 		std::vector<double> mInstrumentedDisplayLatency;
+		std::vector<double> mMsBetweenPresents;
+        std::vector<double> mMsInPresentApi;
+        std::vector<double> mMsUntilDisplayed;
+        std::vector<double> mMsBetweenDisplayChange;
+		std::vector<double> mMsUntilRenderComplete;
+		std::vector<double> mMsBetweenSimStarts;
+		std::vector<double> mMsPcLatency;
 
 		std::vector<double> mInstrumentedSleep;
 		std::vector<double> mInstrumentedRenderLatency;
@@ -67,6 +79,7 @@ namespace pmon::mid
 
         // begin/end screen times to optimize average calculation:
 		uint64_t mLastDisplayedScreenTime = 0;    // The last presented frame's ScreenTime (qpc)
+		uint64_t mLastDisplayedAppScreenTime = 0; // The last presented app frame's ScreenTime (qpc)
 		uint64_t display_0_screen_time = 0;       // The first presented frame's ScreenTime (qpc)
 		uint64_t mLastDisplayedSimStart = 0;      // The simulation start of the last presented frame
 		uint32_t display_count = 0;               // The number of presented frames

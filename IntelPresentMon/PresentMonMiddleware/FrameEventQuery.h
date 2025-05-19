@@ -28,7 +28,9 @@ public:
 		void UpdateSourceData(const PmNsmFrameData* pSourceFrameData_in,
 			const PmNsmFrameData* pFrameDataOfNextDisplayed,
 			const PmNsmFrameData* pFrameDataofLastPresented,
+			const PmNsmFrameData* pFrameDataofLastAppPresented,
 			const PmNsmFrameData* pFrameDataOfLastDisplayed,
+			const PmNsmFrameData* pFrameDataOfLastAppDisplayed,
 			const PmNsmFrameData* pPreviousFrameDataOfLastDisplayed);
 		// data
 		const PmNsmFrameData* pSourceFrameData = nullptr;
@@ -38,12 +40,16 @@ public:
 		bool dropped{};
 		// Start qpc of the previous frame, displayed or not
 		uint64_t cpuStart = 0;
+        // Present start qpc of the previous frame, displayed or not
+        uint64_t previousPresentStartQpc = 0;
 		// The simulation start of the last displayed frame
 		uint64_t previousDisplayedSimStartQpc = 0;
 		// Start cpustart qpc of the previously displayed frame
 		uint64_t lastDisplayedCpuStart = 0;
 		// Screen time qpc of the previously displayed frame.
 		uint64_t previousDisplayedQpc = 0;
+		// Screen time qpc of the last displayed application frame.
+		uint64_t previousDisplayedAppQpc = 0;
 		// Screen time qpc of the first display in the next displayed PmNsmFrameData
 		uint64_t nextDisplayedQpc = 0;
 		// Display index to attribute cpu work, gpu work, animation error and
