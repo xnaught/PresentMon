@@ -274,6 +274,7 @@ void PrintUsage()
         LR"(--date_time)",        LR"(Output the CPU start time as a date and time with nanosecond precision.)",
         LR"(--exclude_dropped)",  LR"(Exclude frames that were not displayed to the screen from the CSV output.)",
         LR"(--v1_metrics)",       LR"(Output a CSV using PresentMon 1.x metrics.)",
+        LR"(--v2_metrics)",       LR"(Output a CSV using PresentMon 2.x metrics.)",
 
         LR"(--Recording Options)", nullptr,
         LR"(--hotkey key)",       LR"(Use the specified key press to start and stop recording. 'key' is of the form MODIFIER+KEY, e.g., "ALT+SHIFT+F11".)",
@@ -402,6 +403,7 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     args->mTryToElevate = false;
     args->mMultiCsv = false;
     args->mUseV1Metrics = false;
+    args->mUseV2Metrics = false;
     args->mStopExistingSession = false;
     args->mWriteFrameId = false;
     args->mWriteDisplayTime = false;
@@ -439,6 +441,7 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         else if (ParseArg(argv[i], L"date_time"))        { dtTime                = true;                              continue; }
         else if (ParseArg(argv[i], L"exclude_dropped"))  { args->mExcludeDropped = true;                              continue; }
         else if (ParseArg(argv[i], L"v1_metrics"))       { args->mUseV1Metrics   = true;                              continue; }
+        else if (ParseArg(argv[i], L"v2_metrics"))       { args->mUseV2Metrics   = true;                              continue; }
 
         // Recording options:
         else if (ParseArg(argv[i], L"hotkey"))           { if (ParseValue(argv, argc, &i) && AssignHotkey(argv[i], args)) continue; }
@@ -568,6 +571,10 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         args->mTrackFrameType = false;
     }
 
+    if (args->mUseV1Metrics && args->mUseV2Metrics) {
+        PrintWarning(L"warning: ignoring --v1_metrics due to --v2_metrics.\n");
+        args->mUseV1Metrics = false;
+    }
     // Enable verbose trace if requested, and disable Full or Simple console output
     #if PRESENTMON_ENABLE_DEBUG_TRACE
     if (verboseTrace) {

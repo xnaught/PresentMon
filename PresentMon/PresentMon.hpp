@@ -31,6 +31,7 @@ which is controlled from MainThread based on user input or timer.
 
 #include <unordered_map>
 #include <queue>
+#include <optional>
 
 // Verbosity of console output for normal operation:
 enum class ConsoleOutput {
@@ -86,6 +87,7 @@ struct CommandLineArgs {
     bool mTryToElevate;
     bool mMultiCsv;
     bool mUseV1Metrics;
+    bool mUseV2Metrics;
     bool mStopExistingSession;
     bool mWriteFrameId;
     bool mWriteDisplayTime;
@@ -94,29 +96,35 @@ struct CommandLineArgs {
 
 // Metrics computed per-frame.  Duration and Latency metrics are in milliseconds.
 struct FrameMetrics {
-    uint64_t mCPUStart;
-    double mCPUBusy;
-    double mCPUWait;
-    double mGPULatency;
-    double mGPUBusy;
-    double mVideoBusy;
-    double mGPUWait;
-    double mDisplayLatency;
-    double mDisplayedTime;
-    double mAnimationError;
-    double mAnimationTime;
-    double mClickToPhotonLatency;
-    double mAllInputPhotonLatency;
-    uint64_t mScreenTime;
-    FrameType mFrameType;
-    double mInstrumentedLatency;
+    uint64_t mTimeInSeconds = 0;
+    double mMsDisplayLatency = 0;
+    double mMsDisplayedTime = 0;
+    double mMsBetweenPresents = 0;
+    double mMsInPresentApi = 0;
+    double mMsUntilRenderComplete = 0;
+    double mMsUntilDisplayed = 0;
+    double mMsBetweenDisplayChange = 0;
+    uint64_t mCPUStart = 0;
+    double mMsCPUBusy = 0;
+    double mMsCPUWait = 0;
+    double mMsGPULatency = 0;
+    double mMsGPUBusy = 0;
+    double mMsVideoBusy = 0;
+    double mMsGPUWait = 0;
+    std::optional<double> mMsAnimationError = {};
+    std::optional<double> mAnimationTime = {};
+    double mMsClickToPhotonLatency = 0;
+    double mMsAllInputPhotonLatency = 0;
+    uint64_t mScreenTime = 0;
+    FrameType mFrameType = FrameType::NotSet;
+    double mMsInstrumentedLatency = 0;
 
     // Internal Intel Metrics
-    double mInstrumentedRenderLatency;
-    double mInstrumentedSleep;
-    double mInstrumentedGpuLatency;
-    double mReadyTimeToDisplayLatency;
-    double mInstrumentedInputTime;
+    double mMsInstrumentedRenderLatency = 0;
+    double mMsInstrumentedSleep = 0;
+    double mMsInstrumentedGpuLatency = 0;
+    double mMsReadyTimeToDisplayLatency = 0;
+    double mMsInstrumentedInputTime = 0;
 };
 
 struct FrameMetrics1 {
@@ -132,6 +140,25 @@ struct FrameMetrics1 {
     uint64_t qpcScreenTime;
 };
 
+struct FrameMetrics2 {
+    uint64_t mCPUStart = 0;
+    double mCPUBusy = 0;
+    double mCPUWait = 0;
+    double mGPULatency = 0;
+    double mGPUBusy = 0;
+    double mVideoBusy = 0;
+    double mGPUWait = 0;
+    double mDisplayLatency = 0;
+    double mDisplayedTime = 0;
+    std::optional<double> mAnimationError = {};
+    std::optional<double> mAnimationTime = {};
+    double mClickToPhotonLatency = 0;
+    double mAllInputPhotonLatency = 0;
+    uint64_t mScreenTime = 0;
+    FrameType mFrameType = FrameType::NotSet;
+    double mInstrumentedLatency = 0;
+};
+
 // We store SwapChainData per process and per swapchain, where we maintain:
 // - information on previous presents needed for console output or to compute metrics for upcoming
 //   presents,
@@ -144,9 +171,13 @@ struct SwapChainData {
     // The most recent present that has been processed (e.g., output into CSV and/or used for frame
     // statistics).
     std::shared_ptr<PresentEvent> mLastPresent;
+    // The most recent application present that has been processed (e.g., output into CSV and/or used
+    // for frame statistics).
+    std::shared_ptr<PresentEvent> mLastAppPresent;
 
     // The CPU start and screen time for the most recent frame that was displayed
     uint64_t mLastDisplayedSimStartTime = 0;
+    uint64_t mLastDisplayedAppScreenTime = 0;
     uint64_t mLastDisplayedScreenTime = 0;
     // QPC of first received simulation start time from the application provider
     uint64_t mFirstAppSimStartTime = 0;
@@ -162,6 +193,8 @@ struct SwapChainData {
     float mAvgGPUDuration = 0.f;
     float mAvgDisplayLatency = 0.f;
     float mAvgDisplayedTime = 0.f;
+    float mAvgMsUntilDisplayed = 0.f;
+    float mAvgMsBetweenDisplayChange = 0.f;
 };
 
 struct ProcessInfo {

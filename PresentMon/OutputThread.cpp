@@ -238,20 +238,40 @@ static void UpdateChain(
     std::shared_ptr<PresentEvent> const& p)
 {
     if (p->FinalState == PresentResult::Presented) {
-        if (p->AppSimStartTime != 0) {
-            chain->mLastDisplayedSimStartTime = p->AppSimStartTime;
-            if (chain->mFirstAppSimStartTime == 0) {
-                // Received the first app sim start time.
-                chain->mFirstAppSimStartTime = p->AppSimStartTime;
+        if (p->Displayed.empty() == false) {
+            if (p->Displayed.back().first == FrameType::NotSet ||
+                p->Displayed.back().first == FrameType::Application) {
+                if (p->AppSimStartTime != 0) {
+                    chain->mLastDisplayedSimStartTime = p->AppSimStartTime;
+                    if (chain->mFirstAppSimStartTime == 0) {
+                        // Received the first app sim start time.
+                        chain->mFirstAppSimStartTime = p->AppSimStartTime;
+                    }
+                } else if (chain->mLastAppPresent != nullptr) {
+                    chain->mLastDisplayedSimStartTime = chain->mLastAppPresent->PresentStartTime +
+                        chain->mLastAppPresent->TimeInPresent;
+                }
+                chain->mLastDisplayedAppScreenTime = p->Displayed.back().second;
             }
-            
-        } else if (chain->mLastPresent != nullptr) {
-            chain->mLastDisplayedSimStartTime = chain->mLastPresent->PresentStartTime +
-                                                chain->mLastPresent->TimeInPresent;
         }
+        // Want this to always be updated with the last displayed screen time regardless if the
+        // frame was generated or not
         chain->mLastDisplayedScreenTime = p->Displayed.empty() ? 0 : p->Displayed.back().second;
     }
 
+    if (p->Displayed.empty() == false) {
+        if (p->Displayed.back().first == FrameType::NotSet ||
+            p->Displayed.back().first == FrameType::Application) {
+            chain->mLastAppPresent = p;
+        }
+    } else {
+        // If the last present was not displayed, we need to set the last app present to the last
+        // present.
+        chain->mLastAppPresent = p;
+    }
+
+    // Want this to always be updated with the last present regardless if the
+    // frame was generated or not
     chain->mLastPresent = p;
 }
 
@@ -332,13 +352,18 @@ static void ReportMetricsHelper(
 
     // Figure out what display index to attribute cpu work, gpu work, animation error, and input
     // latency to. Start looking from the current display index.
-    size_t appIndex = 0;
-    for (size_t i = displayIndex; i < displayCount; ++i) {
-        if (p->Displayed[i].first == FrameType::NotSet ||
-            p->Displayed[i].first == FrameType::Application) {
-            appIndex = i;
-            break;
+    size_t appIndex = std::numeric_limits<size_t>::max();
+    if (displayCount > 0) {
+        for (size_t i = displayIndex; i < displayCount; ++i) {
+            if (p->Displayed[i].first == FrameType::NotSet ||
+                p->Displayed[i].first == FrameType::Application) {
+                appIndex = i;
+                break;
+            }
         }
+    } else {
+        // If there are no displayed frames
+        appIndex = 0;
     }
 
     do {
@@ -373,84 +398,123 @@ static void ReportMetricsHelper(
 
         double msGPUDuration = 0.0;
 
-        FrameMetrics metrics;
-        metrics.mCPUStart = chain->mLastPresent->PresentStartTime + chain->mLastPresent->TimeInPresent;
+        FrameMetrics metrics{};
+        metrics.mCPUStart = 0;
+
+        // Calculate these metrics for every present
+        metrics.mTimeInSeconds = p->PresentStartTime;
+        metrics.mMsBetweenPresents = chain->mLastPresent == nullptr ? 0 : 
+            pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastPresent->PresentStartTime, p->PresentStartTime);
+        metrics.mMsInPresentApi = pmSession.TimestampDeltaToMilliSeconds(p->TimeInPresent);
+        metrics.mMsUntilRenderComplete = pmSession.TimestampDeltaToMilliSeconds(p->PresentStartTime, p->ReadyTime);
+
+        if (chain->mLastAppPresent) {
+            if (chain->mLastAppPresent->AppPropagatedPresentStartTime != 0) {
+                metrics.mCPUStart = chain->mLastAppPresent->AppPropagatedPresentStartTime + chain->mLastAppPresent->AppPropagatedTimeInPresent;
+            }
+            else {
+                metrics.mCPUStart = chain->mLastAppPresent->PresentStartTime + chain->mLastAppPresent->TimeInPresent;
+            }
+        } else {
+            metrics.mCPUStart = chain->mLastPresent->PresentStartTime + chain->mLastPresent->TimeInPresent;
+        }
 
         if (displayIndex == appIndex) {
-            msGPUDuration                   = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->GPUStartTime, p->ReadyTime);
-            metrics.mCPUBusy                = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->PresentStartTime);
-            metrics.mCPUWait                = pmSession.TimestampDeltaToMilliSeconds(p->TimeInPresent);
-            metrics.mGPULatency             = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->GPUStartTime);
-            metrics.mGPUBusy                = pmSession.TimestampDeltaToMilliSeconds(p->GPUDuration);
-            metrics.mVideoBusy              = pmSession.TimestampDeltaToMilliSeconds(p->GPUVideoDuration);
-            metrics.mGPUWait                = std::max(0.0, msGPUDuration - metrics.mGPUBusy);
+            uint64_t gpuStartTime = 0;
+            if (p->AppPropagatedPresentStartTime != 0) {
+                msGPUDuration = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppPropagatedGPUStartTime, p->AppPropagatedReadyTime);
+                gpuStartTime = p->AppPropagatedGPUStartTime;
+                metrics.mMsCPUBusy = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->AppPropagatedPresentStartTime);
+                metrics.mMsCPUWait = pmSession.TimestampDeltaToMilliSeconds(p->AppPropagatedTimeInPresent);
+                metrics.mMsGPULatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, gpuStartTime);
+                metrics.mMsGPUBusy = pmSession.TimestampDeltaToMilliSeconds(p->AppPropagatedGPUDuration);
+                metrics.mMsVideoBusy = pmSession.TimestampDeltaToMilliSeconds(p->AppPropagatedGPUVideoDuration);
+                metrics.mMsGPUWait = std::max(0.0, msGPUDuration - metrics.mMsGPUBusy);
+            } else {
+                msGPUDuration = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->GPUStartTime, p->ReadyTime);
+                gpuStartTime = p->GPUStartTime;
+                metrics.mMsCPUBusy = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, p->PresentStartTime);
+                metrics.mMsCPUWait = pmSession.TimestampDeltaToMilliSeconds(p->TimeInPresent);
+                metrics.mMsGPULatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, gpuStartTime);
+                metrics.mMsGPUBusy = pmSession.TimestampDeltaToMilliSeconds(p->GPUDuration);
+                metrics.mMsVideoBusy = pmSession.TimestampDeltaToMilliSeconds(p->GPUVideoDuration);
+                metrics.mMsGPUWait = std::max(0.0, msGPUDuration - metrics.mMsGPUBusy);
+            }
+
             // Need both AppSleepStart and AppSleepEnd to calculate XellSleep
-            metrics.mInstrumentedSleep      = (p->AppSleepEndTime == 0 || p->AppSleepStartTime == 0) ? 0 :
-                                              pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppSleepStartTime, p->AppSleepEndTime);
+            metrics.mMsInstrumentedSleep      = (p->AppSleepEndTime == 0 || p->AppSleepStartTime == 0) ? 0 :
+                                                pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppSleepStartTime, p->AppSleepEndTime);
             // If there isn't a valid sleep end time use the sim start time
             auto InstrumentedStartTime      = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : p->AppSimStartTime;
             // If neither the sleep end time or sim start time is valid, there is no
             // way to calculate the Xell Gpu latency
-            metrics.mInstrumentedGpuLatency = InstrumentedStartTime == 0 ? 0 :
-                                           pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, p->GPUStartTime);
+            metrics.mMsInstrumentedGpuLatency = InstrumentedStartTime == 0 ? 0 :
+                                                pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, gpuStartTime);
         } else {
-            metrics.mCPUBusy                = 0;
-            metrics.mCPUWait                = 0;
-            metrics.mGPULatency             = 0;
-            metrics.mGPUBusy                = 0;
-            metrics.mVideoBusy              = 0;
-            metrics.mGPUWait                = 0;
-            metrics.mInstrumentedSleep      = 0;
-            metrics.mInstrumentedGpuLatency = 0;
+            metrics.mMsCPUBusy                = 0;
+            metrics.mMsCPUWait                = 0;
+            metrics.mMsGPULatency             = 0;
+            metrics.mMsGPUBusy                = 0;
+            metrics.mMsVideoBusy              = 0;
+            metrics.mMsGPUWait                = 0;
+            metrics.mMsInstrumentedSleep      = 0;
+            metrics.mMsInstrumentedGpuLatency = 0;
         }
 
         if (displayed) {
-            metrics.mDisplayLatency = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, screenTime);
-            metrics.mDisplayedTime  = pmSession.TimestampDeltaToUnsignedMilliSeconds(screenTime, nextScreenTime);
-            metrics.mScreenTime     = screenTime;
+            // Calculate the various display metrics
+            metrics.mMsDisplayLatency       = pmSession.TimestampDeltaToUnsignedMilliSeconds(metrics.mCPUStart, screenTime);
+            metrics.mMsDisplayedTime        = pmSession.TimestampDeltaToUnsignedMilliSeconds(screenTime, nextScreenTime);
+            metrics.mMsUntilDisplayed       = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->PresentStartTime, screenTime);
+            metrics.mMsBetweenDisplayChange = chain->mLastDisplayedScreenTime == 0 ? 0 :
+                                              pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastDisplayedScreenTime, screenTime);
+            metrics.mScreenTime             = screenTime;
+
             // If we have AppRenderSubmitStart calculate the render latency
-            metrics.mInstrumentedRenderLatency  = p->AppRenderSubmitStartTime == 0 ? 0 : 
-                                      pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppRenderSubmitStartTime, screenTime);
-            metrics.mReadyTimeToDisplayLatency  = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ReadyTime, screenTime);
+            metrics.mMsInstrumentedRenderLatency  = p->AppRenderSubmitStartTime == 0 ? 0 : 
+                                                    pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppRenderSubmitStartTime, screenTime);
+            metrics.mMsReadyTimeToDisplayLatency  = pmSession.TimestampDeltaToUnsignedMilliSeconds(p->ReadyTime, screenTime);
             // If there isn't a valid sleep end time use the sim start time
             auto InstrumentedStartTime = p->AppSleepEndTime != 0 ? p->AppSleepEndTime : p->AppSimStartTime;
             // If neither the sleep end time or sim start time is valid, there is no
             // way to calculate the Xell Gpu latency
-            metrics.mInstrumentedLatency = InstrumentedStartTime == 0 ? 0 :
+            metrics.mMsInstrumentedLatency = InstrumentedStartTime == 0 ? 0 : 
                 pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, screenTime);
         } else {
-            metrics.mDisplayLatency            = 0;
-            metrics.mDisplayedTime             = 0;
-            metrics.mScreenTime                = 0;
-            metrics.mInstrumentedLatency       = 0;
-            metrics.mInstrumentedRenderLatency = 0;
-            metrics.mReadyTimeToDisplayLatency = 0;
+            metrics.mMsDisplayLatency               = 0;
+            metrics.mMsDisplayedTime                = 0;
+            metrics.mMsUntilDisplayed               = 0;
+            metrics.mMsBetweenDisplayChange         = 0;
+            metrics.mScreenTime                     = 0;
+            metrics.mMsInstrumentedLatency          = 0;
+            metrics.mMsInstrumentedRenderLatency    = 0;
+            metrics.mMsReadyTimeToDisplayLatency    = 0;
         }
 
         if (displayIndex == appIndex) {
             if (displayed) {
                 auto updatedInputTime = chain->mLastReceivedNotDisplayedAllInputTime == 0 ? 0 :
                     pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedAllInputTime, screenTime);
-                metrics.mAllInputPhotonLatency = p->InputTime == 0 ? updatedInputTime : 
+                metrics.mMsAllInputPhotonLatency = p->InputTime == 0 ? updatedInputTime : 
                     pmSession.TimestampDeltaToUnsignedMilliSeconds(p->InputTime, screenTime);
 
                 updatedInputTime = chain->mLastReceivedNotDisplayedMouseClickTime == 0 ? 0 :
                     pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedMouseClickTime, screenTime);
-                metrics.mClickToPhotonLatency = p->MouseClickTime == 0 ? updatedInputTime :
+                metrics.mMsClickToPhotonLatency = p->MouseClickTime == 0 ? updatedInputTime :
                     pmSession.TimestampDeltaToUnsignedMilliSeconds(p->MouseClickTime, screenTime);
 
                 updatedInputTime = chain->mLastReceivedNotDisplayedAppProviderInputTime == 0 ? 0 :
                     pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastReceivedNotDisplayedAppProviderInputTime, screenTime);
-                metrics.mInstrumentedInputTime = p->AppInputSample.first == 0 ? updatedInputTime :
+                metrics.mMsInstrumentedInputTime = p->AppInputSample.first == 0 ? updatedInputTime :
                     pmSession.TimestampDeltaToUnsignedMilliSeconds(p->AppInputSample.first, screenTime);
 
                 chain->mLastReceivedNotDisplayedAllInputTime = 0;
                 chain->mLastReceivedNotDisplayedMouseClickTime = 0;
                 chain->mLastReceivedNotDisplayedAppProviderInputTime = 0;
             } else {
-                metrics.mClickToPhotonLatency = 0;
-                metrics.mAllInputPhotonLatency = 0;
-                metrics.mInstrumentedInputTime = 0;
+                metrics.mMsClickToPhotonLatency = 0;
+                metrics.mMsAllInputPhotonLatency = 0;
+                metrics.mMsInstrumentedInputTime = 0;
                 if (p->InputTime != 0) {
                     chain->mLastReceivedNotDisplayedAllInputTime = p->InputTime;
                 }
@@ -462,9 +526,9 @@ static void ReportMetricsHelper(
                 }
             }
         } else {
-            metrics.mClickToPhotonLatency = 0;
-            metrics.mAllInputPhotonLatency = 0;
-            metrics.mInstrumentedInputTime = 0;
+            metrics.mMsClickToPhotonLatency  = 0;
+            metrics.mMsAllInputPhotonLatency = 0;
+            metrics.mMsInstrumentedInputTime = 0;
         }
 
         if (displayed && displayIndex == appIndex) {
@@ -475,14 +539,14 @@ static void ReportMetricsHelper(
                 // If the simulation start time is less than the last displated simulation start time it means
                 // we are transitioning to app provider events.
                 if (simStartTime > chain->mLastDisplayedSimStartTime) {
-                    metrics.mAnimationError = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
+                    metrics.mMsAnimationError = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedAppScreenTime,
                         simStartTime - chain->mLastDisplayedSimStartTime);
                 }
                 else {
-                    metrics.mAnimationError = 0;
+                    metrics.mMsAnimationError = 0;
                 }
             } else {
-                metrics.mAnimationError = 0;
+                metrics.mMsAnimationError = 0;
             }
             // If we have a value in app sim start and we haven't set the first
             // sim start time then we are transitioning from using cpu start to
@@ -491,12 +555,14 @@ static void ReportMetricsHelper(
             if (p->AppSimStartTime != 0 && chain->mFirstAppSimStartTime == 0) {
                 metrics.mAnimationTime = 0.;
             } else {
-                CalculateAnimationTime(pmSession, chain->mFirstAppSimStartTime, simStartTime, metrics.mAnimationTime);
+                double animationTime = 0.;
+                CalculateAnimationTime(pmSession, chain->mFirstAppSimStartTime, simStartTime, animationTime);
+                metrics.mAnimationTime = animationTime;
             }
             
         } else {
-            metrics.mAnimationError      = 0;
-            metrics.mAnimationTime       = 0;
+            metrics.mMsAnimationError = std::nullopt;
+            metrics.mAnimationTime    = std::nullopt;
         }
 
 
@@ -512,12 +578,14 @@ static void ReportMetricsHelper(
 
         if (computeAvg) {
             if (displayIndex == appIndex) {
-                UpdateAverage(&chain->mAvgCPUDuration, metrics.mCPUBusy + metrics.mCPUWait);
+                UpdateAverage(&chain->mAvgCPUDuration, metrics.mMsCPUBusy + metrics.mMsCPUWait);
                 UpdateAverage(&chain->mAvgGPUDuration, msGPUDuration);
             }
             if (displayed) {
-                UpdateAverage(&chain->mAvgDisplayLatency, metrics.mDisplayLatency);
-                UpdateAverage(&chain->mAvgDisplayedTime, metrics.mDisplayedTime);
+                UpdateAverage(&chain->mAvgDisplayLatency, metrics.mMsDisplayLatency);
+                UpdateAverage(&chain->mAvgDisplayedTime, metrics.mMsDisplayedTime);
+                UpdateAverage(&chain->mAvgMsUntilDisplayed, metrics.mMsUntilDisplayed);
+                UpdateAverage(&chain->mAvgMsBetweenDisplayChange, metrics.mMsBetweenDisplayChange);
             }
         }
 
