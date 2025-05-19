@@ -35,7 +35,7 @@ foreach ($job in $jobs) {
          -dr pm_app_folder `
          -cg $job.ComponentGroup `
          -var var.PresentMon.TargetDir `
-         -suid -g1 -gg `
+         -suid -g1 -ag `
          -out $job.Out
 
     if ($LASTEXITCODE -ne 0) {
