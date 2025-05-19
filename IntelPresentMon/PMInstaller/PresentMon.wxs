@@ -36,6 +36,8 @@
                 Absent="disallow" >
                 <ComponentGroupRef Id="service_files" />
                 <ComponentGroupRef Id="pm_app" />
+				<ComponentGroupRef Id="CefBinaries" />
+				<ComponentGroupRef Id="CefResources" />
                 <ComponentGroupRef Id="pm_app_shaders" />
                 <ComponentGroupRef Id="pm_app_presets" />
                 <ComponentGroupRef Id="pm_app_web" />
