@@ -1,4 +1,4 @@
-// Copyright (C) 2022 Intel Corporation
+﻿// Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "NanoCefBrowserClient.h"
 #include "NanoCefProcessHandler.h"
@@ -220,7 +220,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
         // code from here on is only executed by the root process (browser window process)
 
-        pmlog_info(std::format("== client section starting build#{} clean:{} CEF:{} ==",
+        pmlog_info(std::format("== UI client root process starting build#{} clean:{} CEF:{} ==",
             BuildIdShortHash(), !BuildIdDirtyFlag(), CEF_VERSION));
 
         {
