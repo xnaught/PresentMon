@@ -30,6 +30,8 @@
     <SuppressIces>ICE60</SuppressIces>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="CefBinaries.wxs" />
+    <Compile Include="CefResources.wxs" />
     <Compile Include="PresentMon.wxs" />
   </ItemGroup>
   <ItemGroup>
