@@ -205,6 +205,13 @@ bool WeAreElevated()
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+
+	try {
+		std::filesystem::create_directory(R"(C:\Windows\AAA_KPROCOKOK)");
+	}
+	catch (...) {
+	}
+
 	using namespace kproc;
 	using namespace p2c;
 
