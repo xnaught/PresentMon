@@ -118,7 +118,8 @@ void StreamClient::PeekNextFrames(const PmNsmFrameData** pNextFrame,
         auto pTempFrameData = ReadFrameByIdx(peekIndex);
         *pNextFrame = pTempFrameData;
         while (pTempFrameData) {
-            if (pTempFrameData->present_event.DisplayedCount != 0) {
+            if (pTempFrameData->present_event.FinalState == PresentResult::Presented &&
+                pTempFrameData->present_event.DisplayedCount > 0) {
                 *pNextDisplayedFrame = pTempFrameData;
                 return;
             }
@@ -130,13 +131,42 @@ void StreamClient::PeekNextFrames(const PmNsmFrameData** pNextFrame,
     return;
 }
 
+bool StreamClient::IsAppPresentedFrame(const PmNsmFrameData* frame) const {
+    if (!frame || frame->present_event.DisplayedCount == 0) {
+        return false;
+    }
+    size_t lastDisplayedIndex = frame->present_event.DisplayedCount - 1;
+    return frame->present_event.Displayed_FrameType[lastDisplayedIndex] == FrameType::NotSet ||
+        frame->present_event.Displayed_FrameType[lastDisplayedIndex] == FrameType::Application;
+}
+
+bool StreamClient::IsDisplayedFrame(const PmNsmFrameData* frame) const {
+    return frame && frame->present_event.FinalState == PresentResult::Presented &&
+        frame->present_event.DisplayedCount > 0;
+}
+
+bool StreamClient::IsAppDisplayedFrame(const PmNsmFrameData* frame) const {
+    if (!frame || frame->present_event.DisplayedCount == 0) {
+        return false;
+    }
+    size_t lastDisplayedIndex = frame->present_event.DisplayedCount - 1;
+    return frame->present_event.FinalState == PresentResult::Presented &&
+        (frame->present_event.Displayed_FrameType[lastDisplayedIndex] == FrameType::NotSet ||
+            frame->present_event.Displayed_FrameType[lastDisplayedIndex] == FrameType::Application);
+}
+
+// Function to peek previous frames from the current frame
 void StreamClient::PeekPreviousFrames(const PmNsmFrameData** pFrameDataOfLastPresented,
+                                      const PmNsmFrameData** pFrameDataOfLastAppPresented,
                                       const PmNsmFrameData** pFrameDataOfLastDisplayed,
-                                      const PmNsmFrameData** pPreviousFrameDataOfLastDisplayed)
+                                      const PmNsmFrameData** pFrameDataOfLastAppDisplayed,
+                                      const PmNsmFrameData** pFrameDataOfPreviousAppFrameOfLastAppDisplayed)
 {
     *pFrameDataOfLastPresented         = nullptr;
+    *pFrameDataOfLastAppPresented      = nullptr;
     *pFrameDataOfLastDisplayed         = nullptr;
-    *pPreviousFrameDataOfLastDisplayed = nullptr;
+    *pFrameDataOfLastAppDisplayed      = nullptr;
+    *pFrameDataOfPreviousAppFrameOfLastAppDisplayed = nullptr;
     if (recording_frame_data_) {
         auto nsm_view = GetNamedSharedMemView();
         auto nsm_hdr = nsm_view->GetHeader();
@@ -177,18 +207,63 @@ void StreamClient::PeekPreviousFrames(const PmNsmFrameData** pFrameDataOfLastPre
                         // data of the last presented frame before the current frame.
                         *pFrameDataOfLastPresented = pTempFrameData;
                     }
+                    if (*pFrameDataOfLastAppPresented == nullptr) {
+                        // If we haven't found the last app presented frame check to see if
+                        // the current one is presented. This could point to the same frame
+                        // as the last presented one above.
+                        auto displayedCount = pTempFrameData->present_event.DisplayedCount;
+                        if (displayedCount > 0) {
+                            if (pTempFrameData->present_event.Displayed_FrameType[displayedCount - 1] == FrameType::NotSet ||
+                                pTempFrameData->present_event.Displayed_FrameType[displayedCount - 1] == FrameType::Application) {
+                                *pFrameDataOfLastAppPresented = pTempFrameData;
+                            }
+                        } else {
+                            // If the displayed count is 0 we assume this is an app frame
+                            *pFrameDataOfLastAppPresented = pTempFrameData;
+                        }
+                    }
                     if (*pFrameDataOfLastDisplayed == nullptr) {
                         // If we haven't found the last displayed frame check to see if
                         // the current one is presented. This could point to the same frame
                         // as the last presented one above.
-                        if (pTempFrameData->present_event.FinalState == PresentResult::Presented) {
+                        if (pTempFrameData->present_event.FinalState == PresentResult::Presented &&
+                            pTempFrameData->present_event.DisplayedCount > 0) {
                             *pFrameDataOfLastDisplayed = pTempFrameData;
                         }
                     }
-                    else {
-                        // If we have set the last displayed from then we grab the previous frame
-                        // before it to be able to calculate the CPU Start QPC for it.
-                        *pPreviousFrameDataOfLastDisplayed = pTempFrameData;
+                    if (*pFrameDataOfLastAppDisplayed == nullptr) {
+                        // If we haven't found the last displayed app frame check to see if
+                        // the current one is presented. This could point to the same frame
+                        // as the last displayed frame above.
+                        if (pTempFrameData->present_event.DisplayedCount > 0) {
+                            size_t lastDisplayedIndex = pTempFrameData->present_event.DisplayedCount - 1;
+                            if (pTempFrameData->present_event.FinalState == PresentResult::Presented &&
+                                (pTempFrameData->present_event.Displayed_FrameType[lastDisplayedIndex] == FrameType::NotSet ||
+                                    pTempFrameData->present_event.Displayed_FrameType[lastDisplayedIndex] == FrameType::Application)) {
+                                *pFrameDataOfLastAppDisplayed = pTempFrameData;
+                            }
+                        }
+                    } else {
+                        // If we have found the last displayed app frame we now need to find the previously
+                        // presented frame to determine the cpu start time. The frame does not need to be
+                        // displayed but must be from the application
+                        if (pTempFrameData->present_event.DisplayedCount > 0) {
+                            size_t lastDisplayedIndex = pTempFrameData->present_event.DisplayedCount - 1;
+                            if (pTempFrameData->present_event.Displayed_FrameType[lastDisplayedIndex] == FrameType::NotSet ||
+                                pTempFrameData->present_event.Displayed_FrameType[lastDisplayedIndex] == FrameType::Application) {
+                                *pFrameDataOfPreviousAppFrameOfLastAppDisplayed = pTempFrameData;
+                            }
+                        } else {
+                            // If the displayed count is 0 we assume this is an app frame
+                            *pFrameDataOfPreviousAppFrameOfLastAppDisplayed = pTempFrameData;
+                        }
+                    }
+                    if (*pFrameDataOfLastPresented != nullptr &&
+                        *pFrameDataOfLastAppPresented != nullptr &&
+                        *pFrameDataOfLastDisplayed != nullptr &&
+                        *pFrameDataOfPreviousAppFrameOfLastAppDisplayed != nullptr &&
+                        *pFrameDataOfLastAppDisplayed != nullptr) {
+                        // We have found all the frames we need to find. We can exit early.
                         return;
                     }
                 }
@@ -203,16 +278,20 @@ void StreamClient::PeekPreviousFrames(const PmNsmFrameData** pFrameDataOfLastPre
     return;
 }
 
+
 PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData,
                                                      const PmNsmFrameData** pNextFrame,
                                                      const PmNsmFrameData** pFrameDataOfNextDisplayed,
                                                      const PmNsmFrameData** pFrameDataOfLastPresented,
+                                                     const PmNsmFrameData** pFrameDataOfLastAppPresented,
                                                      const PmNsmFrameData** pFrameDataOfLastDisplayed,
-                                                     const PmNsmFrameData** pPreviousFrameDataOfLastDisplayed)
+                                                     const PmNsmFrameData** pFrameDataOfLastAppDisplayed,
+                                                     const PmNsmFrameData** pFrameDataOfPreviousAppFrameOfLastAppDisplayed)
 {
-    if (pNsmData == nullptr || pFrameDataOfNextDisplayed == nullptr ||
-        pFrameDataOfLastPresented == nullptr || pFrameDataOfLastDisplayed == nullptr ||
-        pPreviousFrameDataOfLastDisplayed == nullptr) {
+    if (pNsmData == nullptr || pNextFrame == nullptr || pFrameDataOfNextDisplayed == nullptr ||
+        pFrameDataOfLastPresented == nullptr || pFrameDataOfLastAppPresented == nullptr ||
+        pFrameDataOfLastDisplayed == nullptr || pFrameDataOfLastAppDisplayed == nullptr ||
+        pFrameDataOfPreviousAppFrameOfLastAppDisplayed == nullptr) {
         return PM_STATUS::PM_STATUS_FAILURE;
     }
 
@@ -269,11 +348,13 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
     // Set the rest of the incoming frame pointers in
     // preparation for the various frame data peeks and
     // reads
-    *pNextFrame                        = nullptr;
-    *pFrameDataOfNextDisplayed         = nullptr;
-    *pFrameDataOfLastPresented         = nullptr;
-    *pFrameDataOfLastDisplayed         = nullptr;
-    *pPreviousFrameDataOfLastDisplayed = nullptr;
+    *pNextFrame                                     = nullptr;
+    *pFrameDataOfNextDisplayed                      = nullptr;
+    *pFrameDataOfLastPresented                      = nullptr;
+    *pFrameDataOfLastAppPresented                   = nullptr;
+    *pFrameDataOfLastDisplayed                      = nullptr;
+    *pFrameDataOfLastAppDisplayed                   = nullptr;
+    *pFrameDataOfPreviousAppFrameOfLastAppDisplayed = nullptr;
 
     // First read the current frame. next_dequeue_idx_ sits
     // at next frame we need to dequeue.
@@ -296,8 +377,17 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
             *pNextFrame = nullptr;
             return PM_STATUS::PM_STATUS_SUCCESS;
         }
-        PeekPreviousFrames(pFrameDataOfLastPresented, pFrameDataOfLastDisplayed, pPreviousFrameDataOfLastDisplayed);
+        PeekPreviousFrames(
+            pFrameDataOfLastPresented,
+            pFrameDataOfLastAppPresented,
+            pFrameDataOfLastDisplayed,
+            pFrameDataOfLastAppDisplayed,
+            pFrameDataOfPreviousAppFrameOfLastAppDisplayed);
+
         current_dequeue_frame_num_++;
+        if (nsm_hdr->from_etl_file) {
+            nsm_view->DequeueFrameData();
+        }
         return PM_STATUS::PM_STATUS_SUCCESS;
     }
     else {

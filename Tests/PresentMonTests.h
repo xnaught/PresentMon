@@ -13,6 +13,7 @@
 struct PresentMonCsv
 {
     enum Header {
+        // Headers common to all versions
         Header_Application,
         Header_ProcessID,
         Header_SwapChainAddress,
@@ -21,11 +22,38 @@ struct PresentMonCsv
         Header_PresentFlags,
         Header_AllowsTearing,
         Header_PresentMode,
-        Header_FrameType,
+
+        // Current headers
+        Header_MsBetweenSimulationStart,
+        Header_MsPCLatency,
+        Header_CPUStartTimeInMs,
+        Header_CPUStartTimeInSeconds,
+        Header_MsBetweenAppStart,
+        Header_MsCPUBusy,
+        Header_MsCPUWait,
+        Header_MsGPULatency,
+        Header_MsGPUTime,
+        Header_MsGPUBusy,
+        Header_MsGPUWait,
+        Header_MsVideoBusy,
+        Header_MsAnimationError,
+        Header_MsClickToPhotonLatency,
+        Header_MsAllInputToPhotonLatency,
+        Header_MsRenderPresentLatency,
+        Header_TimeInQPC,
+        Header_TimeInMs,
+        Header_TimeInDateTime,
+
+        // Current Internal Intel Metrics
+        Header_MsInstrumentedLatency,
+        Header_MsInstrumentedRenderLatency,
+        Header_MsInstrumentedSleep,
+        Header_MsInstrumentedGPULatency,
+        Header_MsReadyTimeToDisplayLatency,
+        Header_MsReprojectedLatency,
+
+        // Headers for --v2_metrics only
         Header_CPUStartTime,
-        Header_CPUStartQPC,
-        Header_CPUStartQPCTime,
-        Header_CPUStartDateTime,
         Header_FrameTime,
         Header_CPUBusy,
         Header_CPUWait,
@@ -41,18 +69,32 @@ struct PresentMonCsv
         Header_ClickToPhotonLatency,
         Header_AllInputToPhotonLatency,
 
-        // App Provided Metrics
+        // Headers of internal Intel Metrics --v2_metrics only
         Header_InstrumentedLatency,
+        Header_InstrumentedRenderLatency,
+        Header_InstrumentedSleep,
+        Header_InstrumentedGPULatency,
+        Header_ReadyTimeToDisplayLatency,
 
-        // --v1_metrics
-        Header_Runtime,
-        Header_Dropped,
-        Header_TimeInSeconds,
+        // Headers shared between current and --v2_metrics
+        Header_FrameType,
+        Header_CPUStartQPC,
+        Header_CPUStartQPCTime,
+        Header_CPUStartDateTime,
+
+        // Headers shared between current, --v1_metrics and --v2_metrics
         Header_msBetweenPresents,
         Header_msInPresentAPI,
         Header_msBetweenDisplayChange,
         Header_msUntilRenderComplete,
         Header_msUntilDisplayed,
+
+        // Headers shared between current and --v1_metrics
+        Header_TimeInSeconds,
+
+        // --v1_metrics
+        Header_Runtime,
+        Header_Dropped,
         Header_msUntilRenderStart,
         Header_msGPUActive,
         Header_msGPUVideoActive,
@@ -80,6 +122,8 @@ struct PresentMonCsv
         case Header_AllowsTearing:              return "AllowsTearing";
         case Header_PresentMode:                return "PresentMode";
         case Header_FrameType:                  return "FrameType";
+        case Header_CPUStartTimeInMs:           return "CPUStartTimeInMs";
+        case Header_CPUStartTimeInSeconds:      return "CPUStartTimeInSeconds";
         case Header_CPUStartTime:               return "CPUStartTime";
         case Header_CPUStartQPC:                return "CPUStartQPC";
         case Header_CPUStartQPCTime:            return "CPUStartQPCTime";
@@ -101,6 +145,9 @@ struct PresentMonCsv
         case Header_Runtime:                    return "Runtime";
         case Header_Dropped:                    return "Dropped";
         case Header_TimeInSeconds:              return "TimeInSeconds";
+        case Header_TimeInQPC:                  return "TimeInQPC";
+        case Header_TimeInMs:                   return "TimeInMs";
+        case Header_TimeInDateTime:             return "TimeInDateTime";
         case Header_msBetweenPresents:          return "msBetweenPresents";
         case Header_msInPresentAPI:             return "msInPresentAPI";
         case Header_msBetweenDisplayChange:     return "msBetweenDisplayChange";
@@ -116,6 +163,21 @@ struct PresentMonCsv
         case Header_DwmNotified:                return "DwmNotified";
 
         case Header_InstrumentedLatency:        return "InstrumentedLatency";
+        case Header_MsRenderPresentLatency:     return "MsRenderPresentLatency";
+        case Header_MsBetweenAppStart:          return "MsBetweenAppStart";
+        case Header_MsCPUBusy:                  return "MsCPUBusy";
+        case Header_MsCPUWait:                  return "MsCPUWait";
+        case Header_MsGPULatency:               return "MsGPULatency";
+        case Header_MsGPUTime:                  return "MsGPUTime";
+        case Header_MsGPUBusy:                  return "MsGPUBusy";
+        case Header_MsGPUWait:                  return "MsGPUWait";
+        case Header_MsVideoBusy:                return "MsVideoBusy";
+        case Header_MsAnimationError:           return "MsAnimationError";
+        case Header_MsClickToPhotonLatency:     return "MsClickToPhotonLatency";
+        case Header_MsAllInputToPhotonLatency:  return "MsAllInputToPhotonLatency";
+        case Header_MsInstrumentedLatency:      return "MsInstrumentedLatency";
+        case Header_MsBetweenSimulationStart:   return "MsBetweenSimulationStart";
+        case Header_MsPCLatency:                return "MsPCLatency";
         }
         return "<unknown>";
     }

@@ -47,13 +47,16 @@ void PresentMonProvider_ShutDown(PresentMonProvider* ctxt);
 // Drivers or SDKs that present generated frames other than the application-rendered frames should
 // use these functions to inform PresentMon what type of frame is being presented.
 //
-// Use PresentMonProvider_PresentFrameType() when presenting generated frames that are submitted
-// through a standard present API. PresentMonProvider_PresentFrameType() should be called before
-// calling each Present(), on the same thread as the Present() call.  Use 'frameId' to identify when
-// multiple Present()s refer to the same logical frame.  e.g., you may have one
+// Use PresentMonProvider_PresentFrameType() when presenting generated frames that are submitted 
+// through a standard present API. PresentMonProvider_PresentFrameType() should be called before 
+// calling each Present(), on the same thread as the Present() call.  
+// Use 'frameId' to identify when multiple Present()s refer to the same logical frame.  e.g., you may have one
 // PresentMonProvider_FrameType_Original Present() and multiple
 // non-PresentMonProvider_FrameType_Original Present()s associated with the same frameId.  Do not
 // reuse a frameId value to refer to a new frame for at least several seconds.
+// Use 'appFrameId' to identify the corresponding application data passed in via the
+// PresentMonProvider_Application_* calls. Application data associated with the ''frame_id' will
+// be attached to the application Present() with the matching 'appFrameId'
 //
 // Use PresentMonProvider_FlipFrameType() when displaying generated frames that are submitted
 // through a proprietary mechanism. PresentMonProvider_FlipFrameType() should be called as close as
@@ -73,6 +76,11 @@ enum PresentMonProvider_FrameType {
 ULONG PresentMonProvider_PresentFrameType(PresentMonProvider* ctxt,
                                           uint32_t frameId,
                                           PresentMonProvider_FrameType frameType);
+
+ULONG PresentMonProvider_PresentFrameType(PresentMonProvider* ctxt,
+                                          uint32_t frameId,
+                                          PresentMonProvider_FrameType frameType,
+                                          uint32_t appFrameId);
 
 ULONG PresentMonProvider_FlipFrameType(PresentMonProvider* ctxt,
                                        uint32_t vidPnSourceId,

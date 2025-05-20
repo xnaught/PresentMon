@@ -284,36 +284,95 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
     if (args.mTrackHybridPresent) {
         fwprintf(fp, L",HybridPresent");
     }
-    switch (args.mTimeUnit) {
-    case TimeUnit::MilliSeconds:    fwprintf(fp, L",CPUStartTime"); break;
-    case TimeUnit::QPC:             fwprintf(fp, L",CPUStartQPC"); break;
-    case TimeUnit::QPCMilliSeconds: fwprintf(fp, L",CPUStartQPCTime"); break;
-    case TimeUnit::DateTime:        fwprintf(fp, L",CPUStartDateTime"); break;
+    if (args.mUseV2Metrics == false) {
+        switch (args.mTimeUnit) {
+        case TimeUnit::MilliSeconds:    fwprintf(fp, L",TimeInMs"); break;
+        case TimeUnit::QPC:             fwprintf(fp, L",TimeInQPC"); break;
+        case TimeUnit::DateTime:        fwprintf(fp, L",TimeInDateTime"); break;
+        default:                        fwprintf(fp, L",TimeInSeconds"); break;
+        }
+
+        fwprintf(fp, L",MsBetweenSimulationStart"
+            L",MsBetweenPresents");
+
+        if (args.mTrackDisplay) {
+            fwprintf(fp, L",MsBetweenDisplayChange");
+        }
+
+        fwprintf(fp, L",MsInPresentAPI"
+            L",MsRenderPresentLatency");
+
+        if (args.mTrackDisplay) {
+            fwprintf(fp, L",MsUntilDisplayed"
+                L",MsPCLatency");
+        }
     }
-    fwprintf(fp, L",FrameTime"
-                 L",CPUBusy"
-                 L",CPUWait");
-    if (args.mTrackGPU) {
-        fwprintf(fp, L",GPULatency"
-                     L",GPUTime"
-                     L",GPUBusy"
-                     L",GPUWait");
-    }
-    if (args.mTrackGPUVideo) {
-        fwprintf(fp, L",VideoBusy");
-    }
-    if (args.mTrackDisplay) {
-        fwprintf(fp, L",DisplayLatency"
-                     L",DisplayedTime"
-                     L",AnimationError"
-                     L",AnimationTime");
-    }
-    if (args.mTrackInput) {
-        fwprintf(fp, L",AllInputToPhotonLatency");
-        fwprintf(fp, L",ClickToPhotonLatency");
-    }
-    if (args.mTrackAppTiming) {
-        fwprintf(fp, L",InstrumentedLatency");
+
+    if (args.mUseV2Metrics) {
+        switch (args.mTimeUnit) {
+        case TimeUnit::MilliSeconds:    fwprintf(fp, L",CPUStartTime"); break;
+        case TimeUnit::QPC:             fwprintf(fp, L",CPUStartQPC"); break;
+        case TimeUnit::QPCMilliSeconds: fwprintf(fp, L",CPUStartQPCTime"); break;
+        case TimeUnit::DateTime:        fwprintf(fp, L",CPUStartDateTime"); break;
+        default:                        fwprintf(fp, L",CPUStartTime"); break;
+        }
+        fwprintf(fp, L",FrameTime"
+                     L",CPUBusy"
+                     L",CPUWait");
+        if (args.mTrackGPU) {
+            fwprintf(fp, L",GPULatency"
+                         L",GPUTime"
+                         L",GPUBusy"
+                         L",GPUWait");
+        }
+        if (args.mTrackGPUVideo) {
+            fwprintf(fp, L",VideoBusy");
+        }
+        if (args.mTrackDisplay) {
+                fwprintf(fp, 
+                    L",DisplayLatency"
+                         L",DisplayedTime"
+                         L",AnimationError"
+                         L",AnimationTime");
+        }
+        if (args.mTrackInput) {
+            fwprintf(fp, L",AllInputToPhotonLatency");
+            fwprintf(fp, L",ClickToPhotonLatency");
+        }
+        if (args.mTrackAppTiming) {
+            fwprintf(fp, L",InstrumentedLatency");
+        }
+    } else {
+        switch (args.mTimeUnit) {
+        case TimeUnit::MilliSeconds:    fwprintf(fp, L",CPUStartTimeInMs"); break;
+        case TimeUnit::QPC:             fwprintf(fp, L",CPUStartQPC"); break;
+        case TimeUnit::QPCMilliSeconds: fwprintf(fp, L",CPUStartQPCTimeInMs"); break;
+        case TimeUnit::DateTime:        fwprintf(fp, L",CPUStartDateTime"); break;
+        default:                        fwprintf(fp, L",CPUStartTimeInSeconds"); break;
+        }
+        fwprintf(fp, L",MsBetweenAppStart"
+            L",MsCPUBusy"
+            L",MsCPUWait");
+        if (args.mTrackGPU) {
+            fwprintf(fp, L",MsGPULatency"
+                L",MsGPUTime"
+                L",MsGPUBusy"
+                L",MsGPUWait");
+        }
+        if (args.mTrackGPUVideo) {
+            fwprintf(fp, L",MsVideoBusy");
+        }
+        if (args.mTrackDisplay) {
+            fwprintf(fp, L",MsAnimationError"
+                L",AnimationTime");
+        }
+        if (args.mTrackInput) {
+            fwprintf(fp, L",MsAllInputToPhotonLatency");
+            fwprintf(fp, L",MsClickToPhotonLatency");
+        }
+        if (args.mTrackAppTiming) {
+            fwprintf(fp, L",MsInstrumentedLatency");
+        }
     }
     if (args.mWriteDisplayTime) {
         fwprintf(fp, L",DisplayTimeAbs");
@@ -358,6 +417,69 @@ void WriteCsvRow<FrameMetrics>(
         fwprintf(fp, L",%d", p.IsHybridPresent);
     }
 
+    if (args.mUseV2Metrics == false) {
+        // Time in Seconds
+        switch (args.mTimeUnit) {
+        case TimeUnit::DateTime: {
+            SYSTEMTIME st = {};
+            uint64_t ns = 0;
+            pmSession.TimestampToLocalSystemTime(metrics.mTimeInSeconds, &st, &ns);
+            fwprintf(fp, L",%u-%u-%u %u:%02u:%02u.%09llu", st.wYear,
+                st.wMonth,
+                st.wDay,
+                st.wHour,
+                st.wMinute,
+                st.wSecond,
+                ns);
+        }   break;
+        case TimeUnit::MilliSeconds:
+        case TimeUnit::QPCMilliSeconds:
+            fwprintf(fp, L",%.4lf", pmSession.TimestampToMilliSeconds(metrics.mTimeInSeconds));
+            break;
+        case TimeUnit::QPC:
+            fwprintf(fp, L",%llu", metrics.mTimeInSeconds);
+            break;
+        default:
+            fwprintf(fp, L",%.*lf", DBL_DIG - 1, 0.001 * pmSession.TimestampToMilliSeconds(metrics.mTimeInSeconds));
+            break;
+        }
+
+        // MsBetweenSimulationStart
+        fwprintf(fp, L",NA");
+
+        // MsBetweenPresents
+        fwprintf(fp, L",%.*lf", DBL_DIG - 1, metrics.mMsBetweenPresents);
+
+        // MsBetweenDisplayChange -> Transition from DisplayedTime
+        if (args.mTrackDisplay) {
+            if (metrics.mMsBetweenDisplayChange == 0.0) {
+                fwprintf(fp, L",NA");
+            }
+            else {
+                fwprintf(fp, L",%.*lf", DBL_DIG - 1, metrics.mMsBetweenDisplayChange);
+            }
+        }
+
+        // MsInPresentAPI
+        fwprintf(fp, L",%.*lf", DBL_DIG - 1, metrics.mMsInPresentApi);
+
+        // MsRenderPresentLatency
+        fwprintf(fp, L",%.*lf", DBL_DIG - 1, metrics.mMsUntilRenderComplete);
+
+        // MsUntilDisplayed
+        if (args.mTrackDisplay) {
+            if (metrics.mMsUntilDisplayed == 0.0) {
+                fwprintf(fp, L",NA");
+            } else {
+                fwprintf(fp, L",%.4lf", metrics.mMsUntilDisplayed);
+            }
+        }
+
+        // MsPCLatency
+        fwprintf(fp, L",NA");
+    }
+
+    // CPUStartTime
     switch (args.mTimeUnit) {
     case TimeUnit::MilliSeconds:
         fwprintf(fp, L",%.4lf", pmSession.TimestampToMilliSeconds(metrics.mCPUStart));
@@ -379,51 +501,67 @@ void WriteCsvRow<FrameMetrics>(
                                                        st.wMinute,
                                                        st.wSecond,
                                                        ns);
-    }   break;
+    }
+    break;
+    default:
+        fwprintf(fp, L",%.4lf", 0.001 * pmSession.TimestampToMilliSeconds(metrics.mCPUStart));
     }
 
-    fwprintf(fp, L",%.4lf,%.4lf,%.4lf", metrics.mCPUBusy + metrics.mCPUWait,
-        metrics.mCPUBusy,
-        metrics.mCPUWait);
+    // MsBetweenAppStart, MsCPUBusy, MsCPUWait
+    fwprintf(fp, L",%.4lf,%.4lf,%.4lf", metrics.mMsCPUBusy + metrics.mMsCPUWait,
+        metrics.mMsCPUBusy,
+        metrics.mMsCPUWait);
 
     if (args.mTrackGPU) {
-        fwprintf(fp, L",%.4lf,%.4lf,%.4lf,%.4lf", metrics.mGPULatency,
-                                                  metrics.mGPUBusy + metrics.mGPUWait,
-                                                  metrics.mGPUBusy,
-                                                  metrics.mGPUWait);
+        fwprintf(fp, L",%.4lf,%.4lf,%.4lf,%.4lf", metrics.mMsGPULatency,
+                                                  metrics.mMsGPUBusy + metrics.mMsGPUWait,
+                                                  metrics.mMsGPUBusy,
+                                                  metrics.mMsGPUWait);
     }
     if (args.mTrackGPUVideo) {
-        fwprintf(fp, L",%.4lf", metrics.mVideoBusy);
+        fwprintf(fp, L",%.4lf", metrics.mMsVideoBusy);
     }
     if (args.mTrackDisplay) {
-        if (metrics.mDisplayedTime == 0.0) {
-            fwprintf(fp, L",NA,NA,NA,NA");
-        } else {
-            fwprintf(fp, L",%.4lf,%.4lf,%.4lf,%.4lf", metrics.mDisplayLatency,
-                                                      metrics.mDisplayedTime,
-                                                      metrics.mAnimationError,
-                                                      metrics.mAnimationTime);
+        if (args.mUseV2Metrics) {
+            if (metrics.mMsDisplayedTime == 0.0) {
+                fwprintf(fp, L",NA,NA");
+            } else {
+                fwprintf(fp, L",%.4lf,%.4lf", metrics.mMsDisplayLatency,
+                    metrics.mMsDisplayedTime);
+            }
+        }
+        if (metrics.mMsAnimationError.has_value()) {
+            fwprintf(fp, L",%.4lf", metrics.mMsAnimationError.value());
+        }
+        else {
+            fwprintf(fp, L",NA");
+        }
+        if (metrics.mAnimationTime.has_value()) {
+            fwprintf(fp, L",%.4lf", metrics.mAnimationTime.value());
+        }
+        else {
+            fwprintf(fp, L",NA");
         }
     }
     if (args.mTrackInput) {
-        if (metrics.mAllInputPhotonLatency == 0.0) {
+        if (metrics.mMsAllInputPhotonLatency == 0.0) {
             fwprintf(fp, L",NA");
         }
         else {
-            fwprintf(fp, L",%.4lf", metrics.mAllInputPhotonLatency);
+            fwprintf(fp, L",%.4lf", metrics.mMsAllInputPhotonLatency);
         }
-        if (metrics.mClickToPhotonLatency == 0.0) {
+        if (metrics.mMsClickToPhotonLatency == 0.0) {
             fwprintf(fp, L",NA");
         } else {
-            fwprintf(fp, L",%.4lf", metrics.mClickToPhotonLatency);
+            fwprintf(fp, L",%.4lf", metrics.mMsClickToPhotonLatency);
         }
     }
     if (args.mTrackAppTiming) {
-        if (metrics.mInstrumentedLatency == 0.0) {
+        if (metrics.mMsInstrumentedLatency == 0.0) {
             fwprintf(fp, L",NA");
         }
         else {
-            fwprintf(fp, L",%.4lf", metrics.mInstrumentedLatency);
+            fwprintf(fp, L",%.4lf", metrics.mMsInstrumentedLatency);
         }
     }
 

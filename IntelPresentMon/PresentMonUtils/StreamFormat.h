@@ -68,11 +68,19 @@ struct PmNsmPresentEvent
 
 	uint64_t GPUDuration;		// QPC duration during which a frame's DMA packet was
 								// running on any node
-	uint64_t
-		GPUVideoDuration;		// QPC duration during which a frame's DMA packet was
+	uint64_t GPUVideoDuration;	// QPC duration during which a frame's DMA packet was
 								// running on a video node (if mTrackGPUVideo==true)
 	uint64_t InputTime;			// Earliest QPC value for all keyboard/mouse input used by this frame
 	uint64_t MouseClickTime;	// Earliest QPC value when the mouse was clicked and used by this frame
+
+	// Used to track the application work when Intel XeSS-FG is enabled
+	uint64_t AppPropagatedPresentStartTime;  // Propogated QPC value of the first event related to the Present (D3D9, DXGI, or DXGK Present_Start)
+	uint64_t AppPropagatedTimeInPresent;     // Propogated  QPC duration of the Present call (only applicable for D3D9/DXGI)
+	uint64_t AppPropagatedGPUStartTime;      // Propogated QPC value when the frame's first DMA packet started
+	uint64_t AppPropagatedReadyTime;         // Propogated QPC value when the frame's last DMA packet completed
+	uint64_t AppPropagatedGPUDuration;       // Propogated QPC duration during which a frame's DMA packet was running on
+	uint64_t AppPropagatedGPUVideoDuration;  // Propogated QPC duration during which a frame's DMA packet was running on 
+	                                         // a video node (if mTrackGPUVideo==true)
 
 	uint64_t AppSleepStartTime;         // QPC value of app sleep start time provided by Intel App Provider
 	uint64_t AppSleepEndTime;           // QPC value of app sleep end time provided by Intel App Provider

@@ -30,6 +30,7 @@ exit /b 0
 :create_csv
     call :create_csv_2 %1 "%~dpn1.csv"    " "
     call :create_csv_2 %1 "%~dpn1_v1.csv" "--v1_metrics"
+    call :create_csv_2 %1 "%~dpn1_v2.csv" "--v2_metrics"
     exit /b 0
 
 :create_csv_2

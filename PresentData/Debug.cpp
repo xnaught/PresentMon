@@ -199,10 +199,11 @@ void PrintFrameType(FrameType type)
     default:                     wprintf(L"Unknown (%u)", type); assert(false); break;
     }
 }
-void PrintInputType(uint32_t type)
+
+void PrintInputType(Intel_PresentMon::InputType type)
 {
     using namespace Intel_PresentMon;
-    switch (InputType(type)) {
+    switch (type) {
     case InputType::Unspecified:   wprintf(L"Unspecified"); break;
     case InputType::MouseClick:    wprintf(L"MouseClick"); break;
     case InputType::KeyboardClick: wprintf(L"KeyboardClick"); break;
@@ -667,10 +668,23 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
             }
 
             case PresentFrameType_Info::Id: {
-                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::PresentFrameType_Info_Props));
-                auto props = (Intel_PresentMon::PresentFrameType_Info_Props*) eventRecord->UserData;
-                PrintEventHeader(eventRecord->EventHeader);
-                wprintf(L"PM_PresentFrameType FrameType=%s\n", PMPFrameTypeToString(props->FrameType));
+                if (eventRecord->EventHeader.EventDescriptor.Version == 0) {
+                    DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::PresentFrameType_Info_Props));
+                    auto props = (Intel_PresentMon::PresentFrameType_Info_Props*)eventRecord->UserData;
+                    PrintEventHeader(eventRecord->EventHeader);
+                    wprintf(L"PM_PresentFrameType FrameType=%s, FrameId=%u\n",
+                        PMPFrameTypeToString(props->FrameType), props->FrameId);
+                }
+                else if (eventRecord->EventHeader.EventDescriptor.Version == 1) {
+                    DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::PresentFrameType_Info_2_Props));
+                    auto props = (Intel_PresentMon::PresentFrameType_Info_2_Props*)eventRecord->UserData;
+                    PrintEventHeader(eventRecord->EventHeader);
+                    wprintf(L"PM_PresentFrameType FrameType=%s, FrameId=%u, AppFrameId=%u\n",
+                        PMPFrameTypeToString(props->FrameType), props->FrameId, props->AppFrameId);
+                } else {
+                    DebugAssert(eventRecord->UserDataLength == 0);
+                }
+
                 break;
             }
             }
@@ -730,9 +744,12 @@ void VerboseTraceEventImpl(PMTraceConsumer* pmConsumer, EVENT_RECORD* eventRecor
             }
             return;
             case Intel_PresentMon::AppInputSample_Info::Id: {
-                DebugAssert(eventRecord->UserDataLength == sizeof(Intel_PresentMon::AppInputSample_Info_Props));
-                PrintEventHeader(eventRecord, metadata, "PM_AppInputSample", std::tuple{ L"FrameId", PrintU32,
-                                                                               L"InputType", PrintInputType});
+                auto props = (Intel_PresentMon::AppInputSample_Info_Props*)eventRecord->UserData;
+                PrintEventHeader(eventRecord->EventHeader);
+                wprintf(L"PM_AppInputSample FrameId=%u, InputType=",
+                    props->FrameId);
+                PrintInputType(props->InputType);
+                wprintf(L"\n");
             }
             return;
             }

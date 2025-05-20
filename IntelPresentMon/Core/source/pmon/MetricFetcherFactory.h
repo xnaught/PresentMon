@@ -7,7 +7,7 @@
 #include "DynamicQuery.h"
 #include "../kernel/OverlaySpec.h"
 #include "../pmon/PresentMon.h"
-#include <CommonUtilities//str/String.h>
+#include <CommonUtilities/str/String.h>
 #include <memory>
 #include <vector>
 #include <span>
@@ -20,6 +20,7 @@ namespace p2c::pmon
         namespace rn = std::ranges;
         namespace vi = std::views;
         using ::pmon::util::str::ToWide;
+        using ::pmon::util::str::ToLower;
     }
 
     class MetricFetcherFactory
@@ -51,6 +52,7 @@ namespace p2c::pmon
         MetricInfo GetMetricInfo(const kern::QualifiedMetric& qmet) const
         {
             MetricInfo info;
+
             auto& intro = pm_.GetIntrospectionRoot();
             const auto metric = intro.FindMetric((PM_METRIC)qmet.metricId);
             info.fullName = ToWide(metric.Introspect().GetName());
@@ -69,6 +71,14 @@ namespace p2c::pmon
                 if (auto statAbbv = intro.FindEnumKey(PM_ENUM_STAT, qmet.statId).GetShortName(); !statAbbv.empty()) {
                     info.fullName += std::format(L" ({})", ToWide(statAbbv));
                 }
+            }
+            // do a case insensitive compare to see if the metric starts with "ms" and if
+            // so, remove it from the name
+            std::wstring lowerFullName = ToLower(info.fullName);
+            if (lowerFullName[0] == L'm' && lowerFullName[1] == L's') {
+                info.fullName.erase(0, 2);
+                size_t nonSpace = info.fullName.find_first_not_of(L" ");
+                info.fullName.erase(0, nonSpace);
             }
             // add unit abbreviation to the end if metric is not dimensionless
             if (auto&& unit = metric.GetPreferredUnitHint(); unit != PM_UNIT_DIMENSIONLESS && unit) {

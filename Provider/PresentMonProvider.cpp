@@ -43,6 +43,7 @@ enum {
 
 enum Event {
     Event_PresentFrameType,
+    Event_PresentFrameTypeV2,
     Event_FlipFrameType,
     Event_MeasuredInput,
     Event_MeasuredScreenChange,
@@ -63,6 +64,7 @@ enum Event {
 static EVENT_DESCRIPTOR const EventDescriptor[] = {
     // ID, Version, Channel, Level, Opcode, Task, Keyword
     { ID_PresentFrameType,       0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_PresentFrameType,       Keyword_FrameTypes },
+    { ID_PresentFrameType,       1, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_PresentFrameType,       Keyword_FrameTypes },
     { ID_FlipFrameType,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_FlipFrameType,          Keyword_FrameTypes },
     { ID_MeasuredInput,          0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_MeasuredInput,          Keyword_Measurements },
     { ID_MeasuredScreenChange,   0, 0, TRACE_LEVEL_INFORMATION, EVENT_TRACE_TYPE_INFO, ID_MeasuredScreenChange,   Keyword_Measurements },
@@ -256,6 +258,20 @@ ULONG PresentMonProvider_PresentFrameType(
 
     return WriteEvent(ctxt, Event_PresentFrameType, frameId,
                                                     (uint8_t) frameType);
+}
+
+ULONG PresentMonProvider_PresentFrameType(
+    PresentMonProvider* ctxt,
+    uint32_t frameId,
+    PresentMonProvider_FrameType frameType,
+    uint32_t appFrameId)
+{
+    PRESENTMONPROVIDER_ASSERT(ctxt != nullptr);
+    PRESENTMONPROVIDER_ASSERT(IsValid(frameType));
+
+    return WriteEvent(ctxt, Event_PresentFrameTypeV2, frameId,
+                                                      (uint8_t)frameType,
+                                                      appFrameId);
 }
 
 ULONG PresentMonProvider_FlipFrameType(

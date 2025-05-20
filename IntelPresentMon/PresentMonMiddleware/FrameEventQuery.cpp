@@ -150,7 +150,7 @@ namespace
 		uint16_t outputPaddingSize_;
 		uint16_t inputIndex_;
 	};
-	template<uint64_t PmNsmPresentEvent::* pMember>
+	template<uint64_t PmNsmPresentEvent::* pMember, uint64_t PmNsmPresentEvent::* pAppPropagatedMember, bool usesAppIndex>
 	class QpcDurationGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
@@ -161,18 +161,77 @@ namespace
 		}
 		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
-			const auto qpcDuration = ctx.pSourceFrameData->present_event.*pMember;
-			if (qpcDuration != 0) {
+            if constexpr (usesAppIndex) {
 				if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
-					const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
+					if (ctx.pSourceFrameData->present_event.*pAppPropagatedMember != 0) {
+						const auto val = ctx.performanceCounterPeriodMs * double(ctx.pSourceFrameData->present_event.*pAppPropagatedMember);
+						reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+						return;
+					}
+					else if (ctx.pSourceFrameData->present_event.*pMember != 0) {
+						const auto val = ctx.performanceCounterPeriodMs * double(ctx.pSourceFrameData->present_event.*pMember);
+						reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+						return;
+					}
+				}
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+			} else {
+				const auto val = ctx.pSourceFrameData->present_event.*pMember != 0 ? 
+					ctx.performanceCounterPeriodMs * double(ctx.pSourceFrameData->present_event.*pMember) : 0.;
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			}
+
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + alignof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
+	template<uint64_t PmNsmPresentEvent::* pFromMember, uint64_t PmNsmPresentEvent::* pBackupFromMember, uint64_t PmNsmPresentEvent::* pToMember>
+	class QpcDeltaGatherWithBackupCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		QpcDeltaGatherWithBackupCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
+		{
+			const auto qpcFrom = ctx.pSourceFrameData->present_event.*pFromMember;
+			const auto qpcBackupFrom = ctx.pSourceFrameData->present_event.*pBackupFromMember;
+            uint64_t qpcTo = 0;
+			if (ctx.pSourceFrameData->present_event.AppPropagatedGPUStartTime != 0) {
+                qpcTo = ctx.pSourceFrameData->present_event.AppPropagatedGPUStartTime;
+            }
+            else {
+                qpcTo = ctx.pSourceFrameData->present_event.*pToMember;
+			}
+			auto instrumentedStart = qpcFrom != 0 ? qpcFrom : qpcBackupFrom;
+			if (instrumentedStart != 0) {
+				if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
+					const auto val = TimestampDeltaToUnsignedMilliSeconds(instrumentedStart, qpcTo, ctx.performanceCounterPeriodMs);
 					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 				}
 				else {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
 				}
 			}
 			else {
-				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
 			}
 		}
 		uint32_t GetBeginOffset() const override
@@ -191,54 +250,75 @@ namespace
 		uint32_t outputOffset_;
 		uint16_t outputPaddingSize_;
 	};
-	template<uint64_t PmNsmPresentEvent::* pFromMember, uint64_t PmNsmPresentEvent::* pBackupFromMember, uint64_t PmNsmPresentEvent::* pToMember, bool isInstrumentedGpuLatency>
-	class QpcDeltaGatherCommand_ : public pmon::mid::GatherCommand_
+	template<uint64_t PmNsmPresentEvent::* pFromMember, uint64_t PmNsmPresentEvent::* pToMember, bool usesAppIndex>
+	class QpcDeltaGatherFromToCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
-		QpcDeltaGatherCommand_(size_t nextAvailableByteOffset)
+		QpcDeltaGatherFromToCommand_(size_t nextAvailableByteOffset)
 		{
 			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
 			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
 		}
 		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
-			if constexpr (isInstrumentedGpuLatency) {
-				const auto qpcFrom = ctx.pSourceFrameData->present_event.*pFromMember;
-				const auto qpcBackupFrom = ctx.pSourceFrameData->present_event.*pBackupFromMember;
-				const auto qpcTo = ctx.pSourceFrameData->present_event.*pToMember;
-				auto instrumentedStart = qpcFrom != 0 ? qpcFrom : qpcBackupFrom;
-				if (instrumentedStart != 0) {
-					if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
-						const auto val = TimestampDeltaToUnsignedMilliSeconds(instrumentedStart, qpcTo, ctx.performanceCounterPeriodMs);
-						reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
-					}
-					else {
-						reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
-							std::numeric_limits<double>::quiet_NaN();
-					}
-				}
+			const auto qpcFrom = ctx.pSourceFrameData->present_event.*pFromMember;
+			const auto qpcTo = ctx.pSourceFrameData->present_event.*pToMember;
+			if (qpcFrom != 0 && qpcTo != 0) {
+                if constexpr (usesAppIndex) {
+                    if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
+                        const auto val = TimestampDeltaToUnsignedMilliSeconds(qpcFrom, qpcTo, ctx.performanceCounterPeriodMs);
+                        reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+                    }
+                    else {
+                        reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+                            std::numeric_limits<double>::quiet_NaN();
+                    }
+                }
 				else {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
-						std::numeric_limits<double>::quiet_NaN();
+					const auto val = TimestampDeltaToUnsignedMilliSeconds(qpcFrom, qpcTo, ctx.performanceCounterPeriodMs);
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 				}
 			}
 			else {
-				const auto qpcFrom = ctx.pSourceFrameData->present_event.*pFromMember;
-				const auto qpcTo = ctx.pSourceFrameData->present_event.*pToMember;
-				if (qpcFrom != 0) {
-					if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
-						const auto val = TimestampDeltaToUnsignedMilliSeconds(qpcFrom, qpcTo, ctx.performanceCounterPeriodMs);
-						reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
-					}
-					else {
-						reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
-							std::numeric_limits<double>::quiet_NaN();
-					}
-				}
-				else {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
-						std::numeric_limits<double>::quiet_NaN();
-				}
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
+			}
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + alignof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
+	template<uint64_t PmNsmPresentEvent::* pToMember>
+	class QpcDeltaGatherToCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		QpcDeltaGatherToCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
+		{
+			const auto qpcFrom = ctx.previousPresentStartQpc;
+			const auto qpcTo = ctx.pSourceFrameData->present_event.*pToMember;
+			if (qpcFrom != 0 && qpcTo != 0) {
+				const auto val = TimestampDeltaToUnsignedMilliSeconds(qpcFrom, qpcTo, ctx.performanceCounterPeriodMs);
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			} else {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
 			}
 		}
 		uint32_t GetBeginOffset() const override
@@ -268,10 +348,22 @@ namespace
 		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
-				const auto gpuDuration = TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.GPUStartTime,
-					ctx.pSourceFrameData->present_event.ReadyTime, ctx.performanceCounterPeriodMs);
-				const auto gpuBusy = TimestampDeltaToMilliSeconds(ctx.pSourceFrameData->present_event.GPUDuration,
-					ctx.performanceCounterPeriodMs);
+                double gpuDuration = 0.;
+				if (ctx.pSourceFrameData->present_event.AppPropagatedGPUStartTime != 0) {
+                    gpuDuration = TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.AppPropagatedGPUStartTime,
+                        ctx.pSourceFrameData->present_event.AppPropagatedReadyTime, ctx.performanceCounterPeriodMs);
+                } else {
+                    gpuDuration = TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.GPUStartTime,
+                        ctx.pSourceFrameData->present_event.ReadyTime, ctx.performanceCounterPeriodMs);
+                }
+                double gpuBusy = 0.;
+                if (ctx.pSourceFrameData->present_event.AppPropagatedGPUDuration != 0) {
+                    gpuBusy = TimestampDeltaToMilliSeconds(ctx.pSourceFrameData->present_event.AppPropagatedGPUDuration,
+                        ctx.performanceCounterPeriodMs);
+                } else {
+                    gpuBusy = TimestampDeltaToMilliSeconds(ctx.pSourceFrameData->present_event.GPUDuration,
+                        ctx.performanceCounterPeriodMs);
+                }
 				const auto gpuWait = std::max(0., gpuDuration - gpuBusy);
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = gpuBusy + gpuWait;
 			}
@@ -366,7 +458,7 @@ namespace
 	private:
 		uint32_t outputOffset_;
 	};
-	template<uint64_t PmNsmPresentEvent::* pEnd, bool doDroppedCheck, bool calcAnimationTime>
+	template<uint64_t PmNsmPresentEvent::* pEnd, bool doDroppedCheck, bool calcAnimationTime, bool calcPresentStartTime>
 	class StartDifferenceGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
@@ -380,13 +472,19 @@ namespace
 			if constexpr (calcAnimationTime)  {
 				if constexpr (doDroppedCheck) {
 					if (ctx.dropped) {
-						reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
-							std::numeric_limits<double>::quiet_NaN();
+						reinterpret_cast<double&>(pDestBlob[outputOffset_]) = std::numeric_limits<double>::quiet_NaN();
 						return;
 					}
 				}
-				if (ctx.sourceFrameDisplayIndex != ctx.appIndex) {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+				// Calculate the current frame's displayed time 
+				auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
+				auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
+					? ctx.nextDisplayedQpc
+					: ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex + 1];
+				const auto displayedTime = TimestampDeltaToUnsignedMilliSeconds(ScreenTime, NextScreenTime, ctx.performanceCounterPeriodMs);
+				if (ctx.sourceFrameDisplayIndex != ctx.appIndex ||
+					displayedTime == 0.0) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = std::numeric_limits<double>::quiet_NaN();
 					return;
 				}
 				const auto firstSimStartTime = ctx.firstAppSimStartTime != 0 ? ctx.firstAppSimStartTime :
@@ -395,7 +493,12 @@ namespace
 					ctx.cpuStart;
 				const auto val = TimestampDeltaToUnsignedMilliSeconds(firstSimStartTime, currentSimTime, ctx.performanceCounterPeriodMs);
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
-			} else {
+			} else if constexpr (calcPresentStartTime) {
+				const auto qpcDuration = ctx.pSourceFrameData->present_event.*pEnd - ctx.qpcStart;
+				const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			}
+			else {
 				const auto qpcDuration = ctx.cpuStart - ctx.qpcStart;
 				const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
@@ -440,7 +543,7 @@ namespace
 	private:
 		uint32_t outputOffset_;
 	};
-	template<uint64_t PmNsmPresentEvent::* pEnd, bool doDroppedCheck>
+	template<uint64_t PmNsmPresentEvent::* pEnd, uint64_t PmNsmPresentEvent::* pPropagatedEnd, bool doDroppedCheck>
 	class CpuFrameQpcDifferenceGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
@@ -459,9 +562,15 @@ namespace
 				}
 			}
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
-				const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuStart,
-					ctx.pSourceFrameData->present_event.*pEnd, ctx.performanceCounterPeriodMs);
-				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+                if (ctx.pSourceFrameData->present_event.*pPropagatedEnd != 0) {
+					const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuStart,
+						ctx.pSourceFrameData->present_event.*pPropagatedEnd, ctx.performanceCounterPeriodMs);
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+                } else {
+					const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuStart,
+						ctx.pSourceFrameData->present_event.*pEnd, ctx.performanceCounterPeriodMs);
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+				}
 			}
 			else{
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
@@ -483,7 +592,60 @@ namespace
 		uint32_t outputOffset_;
 		uint16_t outputPaddingSize_;
 	};
-	template<bool isXellRenderLatency, bool isXellRenderEndToDisplayLatency, bool isXellDisplayLatency>
+	template<uint64_t PmNsmPresentEvent::* pFrom>
+	class DisplayLatencyGatherFromCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		DisplayLatencyGatherFromCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
+		{
+			if (ctx.dropped) {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
+				return;
+			}
+
+			// Calculate the current frame's displayed time 
+			auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
+			auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
+				? ctx.nextDisplayedQpc
+				: ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex + 1];
+			const auto displayedTime = TimestampDeltaToUnsignedMilliSeconds(ScreenTime, NextScreenTime, ctx.performanceCounterPeriodMs);
+
+			uint64_t startQpc = 0;
+			if (ctx.pSourceFrameData->present_event.*pFrom == 0 ||
+				displayedTime == 0) {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
+				return;
+			}
+			const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pFrom,
+				ScreenTime,
+				ctx.performanceCounterPeriodMs);
+			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			return;
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + alignof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
+	template<bool isXellDisplayLatency, bool isBetweenDisplayChange>
 	class DisplayLatencyGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
@@ -500,64 +662,81 @@ namespace
                 return;
             }
 
+			// Calculate the current frame's displayed time 
+			auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
+			auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
+				? ctx.nextDisplayedQpc
+				: ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex + 1];
+			const auto displayedTime = TimestampDeltaToUnsignedMilliSeconds(ScreenTime, NextScreenTime, ctx.performanceCounterPeriodMs);
+
 			uint64_t startQpc = 0;
-			if constexpr (isXellRenderLatency) {
-				if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
-					if (ctx.pSourceFrameData->present_event.AppRenderSubmitStartTime == 0) {
-						reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
-							std::numeric_limits<double>::quiet_NaN();
-						return;
-					}
-					const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.AppRenderSubmitStartTime,
-						ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
-						ctx.performanceCounterPeriodMs);
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
-					return;
-				} else {
+			if constexpr (isXellDisplayLatency) {
+				if ((ctx.pSourceFrameData->present_event.AppSleepEndTime == 0 &&
+					 ctx.pSourceFrameData->present_event.AppSimStartTime == 0) ||
+					 displayedTime == 0) {
 					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
 						std::numeric_limits<double>::quiet_NaN();
 					return;
 				}
-			} else if constexpr (isXellRenderEndToDisplayLatency) {
-				if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
-					const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.ReadyTime,
-						ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
-						ctx.performanceCounterPeriodMs);
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
-					return;
-				} else {
+				const auto xellStartTime = ctx.pSourceFrameData->present_event.AppSleepEndTime != 0 ?
+					ctx.pSourceFrameData->present_event.AppSleepEndTime :
+					ctx.pSourceFrameData->present_event.AppSimStartTime;
+				const auto val = TimestampDeltaToUnsignedMilliSeconds(xellStartTime,
+					ScreenTime,
+					ctx.performanceCounterPeriodMs);
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+				return;
+            }
+			else if constexpr (isBetweenDisplayChange) {
+				if (ctx.previousDisplayedQpc == 0) {
 					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
 						std::numeric_limits<double>::quiet_NaN();
 					return;
 				}
-			} else if constexpr (isXellDisplayLatency) {
-				if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
-					if (ctx.pSourceFrameData->present_event.AppSleepEndTime == 0 &&
-						ctx.pSourceFrameData->present_event.AppSimStartTime == 0) {
-						reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
-							std::numeric_limits<double>::quiet_NaN();
-						return;
-					}
-					const auto xellStartTime = ctx.pSourceFrameData->present_event.AppSleepEndTime != 0 ?
-						ctx.pSourceFrameData->present_event.AppSleepEndTime :
-						ctx.pSourceFrameData->present_event.AppSimStartTime;
-					const auto val = TimestampDeltaToUnsignedMilliSeconds(xellStartTime,
-						ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
-						ctx.performanceCounterPeriodMs);
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
-					return;
-				} else {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
-						std::numeric_limits<double>::quiet_NaN();
-					return;
-				}
+				const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.previousDisplayedQpc,	ScreenTime,
+					ctx.performanceCounterPeriodMs);
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+				return;
 			} else {
-				const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuStart,
-																      ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
-																	  ctx.performanceCounterPeriodMs);
+				if (displayedTime == 0) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
+					return;
+				}
+				const auto val = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuStart, ScreenTime, 
+					ctx.performanceCounterPeriodMs);
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 				return;
 			}
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + alignof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
+	class ReturnNanGatherCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		ReturnNanGatherCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
+		{
+			reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+				std::numeric_limits<double>::quiet_NaN();
 		}
 		uint32_t GetBeginOffset() const override
 		{
@@ -645,7 +824,16 @@ namespace
 			}
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
 				auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-				auto PrevScreenTime = ctx.previousDisplayedQpc; // Always use application display time for animation error
+				auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
+					? ctx.nextDisplayedQpc
+					: ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex + 1];
+				const auto displayedTime = TimestampDeltaToUnsignedMilliSeconds(ScreenTime, NextScreenTime, ctx.performanceCounterPeriodMs);
+				if (displayedTime == 0.0) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+						std::numeric_limits<double>::quiet_NaN();
+					return;
+				}
+				auto PrevScreenTime = ctx.previousDisplayedAppQpc; // Always use application display time for animation error
 				auto SimStartTime = ctx.pSourceFrameData->present_event.AppSimStartTime != 0 ? 
 					ctx.pSourceFrameData->present_event.AppSimStartTime :
 					ctx.cpuStart;
@@ -691,11 +879,24 @@ namespace
 		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
-				const auto cpuBusy = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuStart, ctx.pSourceFrameData->present_event.PresentStartTime,
-					ctx.performanceCounterPeriodMs);
-				const auto cpuWait = TimestampDeltaToMilliSeconds(ctx.pSourceFrameData->present_event.TimeInPresent,
-					ctx.performanceCounterPeriodMs);
-
+                double cpuBusy = 0.;
+				if (ctx.pSourceFrameData->present_event.AppPropagatedPresentStartTime != 0) {
+                    cpuBusy = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuStart, ctx.pSourceFrameData->present_event.AppPropagatedPresentStartTime,
+						ctx.performanceCounterPeriodMs);
+                }
+                else {
+                    cpuBusy = TimestampDeltaToUnsignedMilliSeconds(ctx.cpuStart, ctx.pSourceFrameData->present_event.PresentStartTime,
+                        ctx.performanceCounterPeriodMs);
+				}
+                double cpuWait = 0.;
+				if (ctx.pSourceFrameData->present_event.AppPropagatedTimeInPresent != 0) {
+                    cpuWait = TimestampDeltaToMilliSeconds(ctx.pSourceFrameData->present_event.AppPropagatedTimeInPresent,
+                        ctx.performanceCounterPeriodMs);
+                }
+                else {
+                    cpuWait = TimestampDeltaToMilliSeconds(ctx.pSourceFrameData->present_event.TimeInPresent,
+                        ctx.performanceCounterPeriodMs);
+                }
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = cpuBusy + cpuWait;
 			}
 			else {
@@ -724,10 +925,20 @@ namespace
 		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
-				const auto gpuDuration = TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.GPUStartTime,
-					ctx.pSourceFrameData->present_event.ReadyTime, ctx.performanceCounterPeriodMs);
-				const auto gpuBusy = TimestampDeltaToMilliSeconds(ctx.pSourceFrameData->present_event.GPUDuration,
-					ctx.performanceCounterPeriodMs);
+                double gpuDuration = 0.;
+                double gpuBusy = 0.;
+                if (ctx.pSourceFrameData->present_event.AppPropagatedGPUStartTime != 0) {
+                    gpuDuration = TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.AppPropagatedGPUStartTime,
+                        ctx.pSourceFrameData->present_event.AppPropagatedReadyTime, ctx.performanceCounterPeriodMs);
+					gpuBusy = TimestampDeltaToMilliSeconds(ctx.pSourceFrameData->present_event.AppPropagatedGPUDuration,
+						ctx.performanceCounterPeriodMs);
+                }
+                else {
+                    gpuDuration = TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.GPUStartTime,
+                        ctx.pSourceFrameData->present_event.ReadyTime, ctx.performanceCounterPeriodMs);
+					gpuBusy = TimestampDeltaToMilliSeconds(ctx.pSourceFrameData->present_event.GPUDuration,
+						ctx.performanceCounterPeriodMs);
+                }
 				const auto val = std::max(0., gpuDuration - gpuBusy);
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 			}
@@ -896,7 +1107,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_SWAP_CHAIN_ADDRESS:
 		return std::make_unique<CopyGatherCommand_<&Pre::SwapChainAddress>>(pos);
 	case PM_METRIC_GPU_BUSY:
-		return std::make_unique<QpcDurationGatherCommand_<&Pre::GPUDuration>>(pos);
+		return std::make_unique<QpcDurationGatherCommand_<&Pre::GPUDuration, &Pre::AppPropagatedGPUDuration, 1>>(pos);
 	case PM_METRIC_DROPPED_FRAMES:
 		return std::make_unique<DroppedGatherCommand_>(pos);
 	case PM_METRIC_PRESENT_MODE:
@@ -977,13 +1188,14 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_PRESENT_FLAGS:
 		return std::make_unique<CopyGatherCommand_<&Pre::PresentFlags>>(pos);
 	case PM_METRIC_CPU_START_TIME:
-		return std::make_unique<StartDifferenceGatherCommand_<&Pre::PresentStartTime, 0, 0>>(pos);
+		return std::make_unique<StartDifferenceGatherCommand_<&Pre::PresentStartTime, 0, 0, 0>>(pos);
 	case PM_METRIC_CPU_FRAME_TIME:
+	case PM_METRIC_BETWEEN_APP_START:
 		return std::make_unique<CpuFrameQpcFrameTimeCommand_>(pos);
 	case PM_METRIC_CPU_BUSY:
-		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::PresentStartTime, 0>>(pos);
+		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::PresentStartTime, &Pre::AppPropagatedPresentStartTime, 0>>(pos);
 	case PM_METRIC_CPU_WAIT:
-		return std::make_unique<QpcDurationGatherCommand_<&Pre::TimeInPresent>>(pos);
+		return std::make_unique<QpcDurationGatherCommand_<&Pre::TimeInPresent, &Pre::AppPropagatedTimeInPresent, 1>>(pos);
 	case PM_METRIC_GPU_TIME:
 		return std::make_unique<GpuTimeGatherCommand_>(pos);
 	case PM_METRIC_GPU_WAIT:
@@ -993,17 +1205,35 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_ANIMATION_ERROR:
 		return std::make_unique<AnimationErrorGatherCommand_<1,1>>(pos);
 	case PM_METRIC_ANIMATION_TIME:
-		return std::make_unique<StartDifferenceGatherCommand_<&Pre::AppSimStartTime, 1, 1>>(pos);
+		return std::make_unique<StartDifferenceGatherCommand_<&Pre::AppSimStartTime, 1, 1, 0>>(pos);
 	case PM_METRIC_GPU_LATENCY:
-		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::GPUStartTime, 0>>(pos);
+		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::GPUStartTime, &Pre::AppPropagatedGPUStartTime, 0>>(pos);
 	case PM_METRIC_DISPLAY_LATENCY:
-		return std::make_unique<DisplayLatencyGatherCommand_<0,0,0>>(pos);
+		return std::make_unique<DisplayLatencyGatherCommand_<0,0>>(pos);
 	case PM_METRIC_CLICK_TO_PHOTON_LATENCY:
 		return std::make_unique<InputLatencyGatherCommand_<&Pre::MouseClickTime, 1, 1>>(pos);
 	case PM_METRIC_ALL_INPUT_TO_PHOTON_LATENCY:
 		return std::make_unique<InputLatencyGatherCommand_<&Pre::InputTime, 1, 0>>(pos);
 	case PM_METRIC_INSTRUMENTED_LATENCY:
-		return std::make_unique<DisplayLatencyGatherCommand_<0, 0, 1>>(pos);
+		return std::make_unique<DisplayLatencyGatherCommand_<1,0>>(pos);
+	case PM_METRIC_PRESENT_START_TIME:
+		return std::make_unique<StartDifferenceGatherCommand_<&Pre::PresentStartTime, 0, 0, 1>>(pos);
+	case PM_METRIC_PRESENT_START_QPC:
+		return std::make_unique<CopyGatherCommand_<&Pre::PresentStartTime>>(pos);
+    case PM_METRIC_IN_PRESENT_API:
+		return std::make_unique<QpcDurationGatherCommand_<&Pre::TimeInPresent, &Pre::TimeInPresent, 0>>(pos);
+    case PM_METRIC_UNTIL_DISPLAYED:
+        return std::make_unique<DisplayLatencyGatherFromCommand_<&Pre::PresentStartTime>>(pos);
+    case PM_METRIC_BETWEEN_DISPLAY_CHANGE:
+        return std::make_unique<DisplayLatencyGatherCommand_<0,1>>(pos);
+	case PM_METRIC_BETWEEN_PRESENTS:
+        return std::make_unique<QpcDeltaGatherToCommand_<&Pre::PresentStartTime>>(pos);
+	case PM_METRIC_RENDER_PRESENT_LATENCY:
+		return std::make_unique<QpcDeltaGatherFromToCommand_<&Pre::PresentStartTime, &Pre::ReadyTime, 0>>(pos);
+	case PM_METRIC_BETWEEN_SIMULATION_START:
+        return std::make_unique<ReturnNanGatherCommand_>(pos);
+	case PM_METRIC_PC_LATENCY:
+        return std::make_unique<ReturnNanGatherCommand_>(pos);
 	default:
 		pmlog_error("unknown metric id").pmwatch((int)q.metric).diag();
 		return {};
@@ -1013,12 +1243,14 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFrameData_in,
 											   const PmNsmFrameData* pFrameDataOfNextDisplayed,
 										       const PmNsmFrameData* pFrameDataOfLastPresented,
+											   const PmNsmFrameData* pFrameDataOfLastAppPresented,
 										       const PmNsmFrameData* pFrameDataOfLastDisplayed,
-										       const PmNsmFrameData* pPreviousFrameDataOfLastDisplayed)
+											   const PmNsmFrameData* pFrameDataOfLastAppDisplayed,	
+										       const PmNsmFrameData* pFrameDataOfPreviousAppFrameOfLastAppDisplayed)
 {
 	pSourceFrameData = pSourceFrameData_in;
     sourceFrameDisplayIndex = 0;
-	dropped = pSourceFrameData->present_event.FinalState != PresentResult::Presented && pSourceFrameData->present_event.DisplayedCount == 0;
+	dropped = pSourceFrameData->present_event.FinalState != PresentResult::Presented || pSourceFrameData->present_event.DisplayedCount == 0;
 	if (dropped) {
 		if (pSourceFrameData->present_event.MouseClickTime != 0) {
 			lastReceivedNotDisplayedClickQpc = pSourceFrameData->present_event.MouseClickTime;
@@ -1029,16 +1261,44 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 	}
 
 	if (firstAppSimStartTime == 0) {
-		firstAppSimStartTime = pSourceFrameData->present_event.AppSimStartTime;
+		// Handle this rare case at the start of consuming frames and the application is
+		// producing app frame data:
+		// [0] Frame - Not Dropped           - Valid App Data -> Start of raw frame data
+		// [1] Frame - Dropped | Not Dropped - Valid App Data
+		// [2] Frame - Dropped | Not Dropped - Valid App Data
+		// When we start processing the NSM at [0] we will not have a last presented frame data
+		// and therefore not enter this function to update source the data. However the correct
+		// app sim start time is at [0] regardless if [1] or [2] are dropped or not
+		if (pFrameDataOfLastDisplayed) {
+			firstAppSimStartTime = pFrameDataOfLastDisplayed->present_event.AppSimStartTime;
+		}
+		// In the case where [0] does not set the firstAppSimStartTime and the current frame is
+		// either [1] or [2] and is not dropped set the firstAppSimStartTime
+		if (firstAppSimStartTime == 0 && !dropped) {
+			firstAppSimStartTime = pSourceFrameData->present_event.AppSimStartTime;
+		}
 	}
 
 	if (pFrameDataOfLastPresented) {
-		cpuStart = pFrameDataOfLastPresented->present_event.PresentStartTime + 
-			       pFrameDataOfLastPresented->present_event.TimeInPresent;
+        previousPresentStartQpc = pFrameDataOfLastPresented->present_event.PresentStartTime;
+	} else {
+		// TODO: log issue or invalidate related columns or drop frame (or some combination)
+		pmlog_info("null pFrameDataOfLastPresented");
+		previousPresentStartQpc = 0;
+	}
+
+	if (pFrameDataOfLastAppPresented) {
+        if (pFrameDataOfLastAppPresented->present_event.AppPropagatedPresentStartTime != 0) {
+			cpuStart = pFrameDataOfLastAppPresented->present_event.AppPropagatedPresentStartTime +
+				pFrameDataOfLastAppPresented->present_event.AppPropagatedTimeInPresent;
+        } else {
+			cpuStart = pFrameDataOfLastAppPresented->present_event.PresentStartTime +
+				pFrameDataOfLastAppPresented->present_event.TimeInPresent;
+		}
 	}
 	else {
 		// TODO: log issue or invalidate related columns or drop frame (or some combination)
-		pmlog_info("null pFrameDataOfLastPresented");
+		pmlog_info("null pFrameDataOfLastAppPresented");
 		cpuStart = 0;
 	}
 
@@ -1053,31 +1313,50 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 	
 	if (pFrameDataOfLastDisplayed && pFrameDataOfLastDisplayed->present_event.DisplayedCount > 0) {
 		previousDisplayedQpc = pFrameDataOfLastDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastDisplayed->present_event.DisplayedCount - 1];
-		previousDisplayedSimStartQpc = pFrameDataOfLastDisplayed->present_event.AppSimStartTime;
 	}
 	else {
 		// TODO: log issue or invalidate related columns or drop frame (or some combination)
 		pmlog_info("null pFrameDataOfLastDisplayed");
 		previousDisplayedQpc = 0;
+	}
+
+	if (pFrameDataOfLastAppDisplayed && pFrameDataOfLastAppDisplayed->present_event.DisplayedCount > 0) {
+		previousDisplayedAppQpc = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
+		previousDisplayedSimStartQpc = pFrameDataOfLastAppDisplayed->present_event.AppSimStartTime;
+	}
+	else {
+		// TODO: log issue or invalidate related columns or drop frame (or some combination)
+		pmlog_info("null pFrameDataOfLastAppDisplayed");
+		previousDisplayedAppQpc = 0;
 		previousDisplayedSimStartQpc = 0;
 	}
 
-	if (pPreviousFrameDataOfLastDisplayed) {
-		// Similar to above calculation for cpu start however this time using data from
-		// the last displayed present
-		lastDisplayedCpuStart = pPreviousFrameDataOfLastDisplayed->present_event.PresentStartTime +
-			pPreviousFrameDataOfLastDisplayed->present_event.TimeInPresent;
+	if (pFrameDataOfPreviousAppFrameOfLastAppDisplayed) {
+		// TODO -> Add a comment here!!
+		if (pFrameDataOfPreviousAppFrameOfLastAppDisplayed->present_event.AppPropagatedPresentStartTime != 0) {
+            lastDisplayedCpuStart = pFrameDataOfPreviousAppFrameOfLastAppDisplayed->present_event.AppPropagatedPresentStartTime +
+				pFrameDataOfPreviousAppFrameOfLastAppDisplayed->present_event.AppPropagatedTimeInPresent;
+        } else {
+			lastDisplayedCpuStart = pFrameDataOfPreviousAppFrameOfLastAppDisplayed->present_event.PresentStartTime +
+				pFrameDataOfPreviousAppFrameOfLastAppDisplayed->present_event.TimeInPresent;
+		}
 	}
 	else {
 		pmlog_info("null pPreviousFrameDataOfLastDisplayed");
 		lastDisplayedCpuStart = 0;
 	}
-	appIndex = 0;
-	for (size_t i = 0; i < pSourceFrameData->present_event.DisplayedCount; ++i) {
-		if (pSourceFrameData->present_event.Displayed_FrameType[i] == FrameType::NotSet ||
-			pSourceFrameData->present_event.Displayed_FrameType[i] == FrameType::Application) {
-			appIndex = i;
-			break;
+	appIndex = std::numeric_limits<size_t>::max();
+    if (pSourceFrameData->present_event.DisplayedCount > 0) {
+		for (size_t i = 0; i < pSourceFrameData->present_event.DisplayedCount; ++i) {
+			if (pSourceFrameData->present_event.Displayed_FrameType[i] == FrameType::NotSet ||
+				pSourceFrameData->present_event.Displayed_FrameType[i] == FrameType::Application) {
+				appIndex = i;
+				break;
+			}
 		}
+	} else {
+        appIndex = 0;
 	}
+
+	return;
 }
