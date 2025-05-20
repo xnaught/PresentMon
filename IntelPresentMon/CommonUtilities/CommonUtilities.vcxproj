@@ -93,6 +93,7 @@
     <ClInclude Include="win\HrError.h" />
     <ClInclude Include="win\MessageBox.h" />
     <ClInclude Include="win\Overlapped.h" />
+    <ClInclude Include="win\Privileges.h" />
     <ClInclude Include="win\Utilities.h" />
     <ClInclude Include="win\WinAPI.h" />
   </ItemGroup>
@@ -141,6 +142,7 @@
     <ClCompile Include="win\HrErrorCodeProvider.cpp" />
     <ClCompile Include="win\HrError.cpp" />
     <ClCompile Include="win\MessageBox.cpp" />
+    <ClCompile Include="win\Privileges.cpp" />
     <ClCompile Include="win\Utilities.cpp" />
   </ItemGroup>
   <ItemGroup>

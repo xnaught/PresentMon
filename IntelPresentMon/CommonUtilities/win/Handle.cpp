@@ -57,6 +57,11 @@ namespace pmon::util::win
     {
         return std::exchange(handle_, nullptr);
     }
+    Handle::HandleType* Handle::ClearAndGetAddressOf()
+    {
+        Clear();
+        return &handle_;
+    }
     Handle::operator bool() const noexcept
     {
         return handle_ != nullptr && handle_ != INVALID_HANDLE_VALUE;
