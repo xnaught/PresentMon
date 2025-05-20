@@ -1,5 +1,4 @@
 ﻿#include "../CommonUtilities/win/WinAPI.h"
-#include <boost/process.hpp>
 #include "../Core/source/kernel/Kernel.h"
 #include "../Core/source/infra/util/FolderResolver.h"
 #include "../Interprocess/source/act/SymmetricActionServer.h"
@@ -25,6 +24,8 @@ using namespace pmon;
 namespace vi = std::views;
 namespace rn = std::ranges;
 using namespace std::literals;
+namespace bp2 = boost::process::v2;
+namespace as = boost::asio;
 
 namespace kproc
 {
@@ -112,21 +113,19 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		// launch the service as a child process if desired (typically during development)
 		const auto logSvcPipe = opt.logSvcPipe.AsOptional().value_or(
 			std::format("pm2-child-svc-log-{}", GetCurrentProcessId()));
-		boost::process::child childSvc;
+		as::io_context svcIoctx;
+		std::optional<bp2::basic_process<as::io_context::executor_type>> svcChild;
 		if (opt.svcAsChild) {
-			using namespace std::literals;
-			namespace bp = boost::process;
-
-			childSvc = boost::process::child{
-				"PresentMonService.exe"s,
+			svcChild = bp2::windows::default_launcher{}(
+				svcIoctx, "PresentMonService.exe"s, std::vector{
 				"--control-pipe"s, *opt.controlPipe,
 				"--nsm-prefix"s, "pm-frame-nsm"s,
 				"--intro-nsm"s, *opt.shmName,
 				"--etw-session-name"s, *opt.etwSessionName,
 				"--log-level"s, util::log::GetLevelName(util::log::GlobalPolicy::Get().GetLogLevel()),
 				"--log-pipe-name"s, logSvcPipe,
-				"--enable-stdio-log",
-			};
+				"--enable-stdio-log"s
+			});
 
 			if (!::pmon::util::win::WaitForNamedPipe(*opt.controlPipe + "-in", 1500)) {
 				pmlog_error("timeout waiting for child service control pipe to go online");
@@ -198,29 +197,31 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			"--p2c-act-name"s, actName,
 			"--p2c-log-pipe-name"s, cefLogPipe
 		}); 
-		namespace bp2 = boost::process::v2;
 		// launch the CEF browser process, which in turn launches all the other processes in the CEF process constellation
-		boost::asio::io_context ioctx;
-		auto child = [&] {
+		boost::asio::io_context cefIoctx;
+		auto cefChild = [&] {
 			if (util::win::WeAreElevated()) {
-				pmlog_info("detected elevation, attempting integrity downgrade");
-				auto mediumTokenPack = util::win::PrepareMediumIntegrityToken();
-				return bp2::windows::as_user_launcher{ mediumTokenPack.hMediumToken.Get() }(
-					ioctx, "PresentMonUI.exe"s, args
-				);
+				try {
+					pmlog_info("detected elevation, attempting integrity downgrade");
+					auto mediumTokenPack = util::win::PrepareMediumIntegrityToken();
+					return bp2::windows::as_user_launcher{ mediumTokenPack.hMediumToken.Get() }(
+						cefIoctx, "PresentMonUI.exe"s, args
+					);
+				}
+				catch (...) {
+					pmlog_warn(util::ReportException("Failed to downgrade integrity, falling back to standard process spawn"));
+				}
 			}
-			else {
-				return bp2::windows::default_launcher{}(
-					ioctx, "PresentMonUI.exe"s, args
-				);
-			}
+			return bp2::windows::default_launcher{}(
+				cefIoctx, "PresentMonUI.exe"s, args
+			);
 		}(); 
 
 		// connect logging to the CEF process constellation
 		ConnectToLoggingSourcePipe(cefLogPipe);
 
 		// don't exit this process until the CEF control panel exits
-		child.wait();
+		cefChild.wait();
 
 		pmlog_info("== kernel process exiting ==");
 	}
