@@ -172,12 +172,6 @@ void AppQuitMessageLoop()
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    try {
-        std::filesystem::create_directory(R"(C:\Windows\AAA_CEFNOTGOOD)");
-    }
-    catch (...) {
-    }
-
 #ifdef NDEBUG
     constexpr bool is_debug = false;
 #else
