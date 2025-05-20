@@ -12,6 +12,7 @@
 #include <PresentMonAPI2Loader/Loader.h>
 #include <Core/source/infra/LogSetup.h>
 #include <CommonUtilities/win/Utilities.h>
+#include <CommonUtilities/win/Privileges.h>
 #include <Versioning/BuildId.h>
 #include <Shobjidl.h>
 #include <boost/process/v2.hpp>
@@ -53,154 +54,6 @@ namespace kproc
 		// data
 		KernelServer& server_;
 	};
-}
-
-
-
-void PrintError(const char* fn, const char* role) {
-	pmlog_error(std::format("[{}] {} failed, error {}", role, fn, GetLastError()));
-}
-
-// Enable a privilege in this process token (returns false if not present)
-bool EnablePrivilege(LPCWSTR privName, const char* role) {
-	HANDLE hToken = nullptr;
-	if (!OpenProcessToken(GetCurrentProcess(),
-		TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
-		&hToken)) {
-		PrintError("EnablePrivilege: OpenProcessToken", role);
-		return false;
-	}
-
-	LUID luid;
-	if (!LookupPrivilegeValueW(nullptr, privName, &luid)) {
-		PrintError("EnablePrivilege: LookupPrivilegeValue", role);
-		CloseHandle(hToken);
-		return false;
-	}
-
-	TOKEN_PRIVILEGES tp{ 1, {{luid, SE_PRIVILEGE_ENABLED}} };
-	AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), nullptr, nullptr);
-	if (GetLastError() != ERROR_SUCCESS) {
-		PrintError("EnablePrivilege: AdjustTokenPrivileges", role);
-		CloseHandle(hToken);
-		return false;
-	}
-
-	CloseHandle(hToken);
-	return true;
-}
-
-// Returns a primary token at Medium integrity, or nullptr on error
-HANDLE PrepareMediumIntegrityToken()
-{
-	const char* role = "kproc";
-	// 0) Make sure we have the privileges to use this token
-	if (EnablePrivilege(L"SeIncreaseQuotaPrivilege", role)) {
-		std::wcout << L"[" << role << L"] [Spawn]  SeIncreaseQuotaPrivilege enabled\n";
-	}
-	else {
-		PrintError("enable SE_INCREASE_QUOTA_NAME", role);
-		return nullptr;
-	}
-
-	// 1) Open our elevated token
-	HANDLE hElev{};
-	if (!OpenProcessToken(
-		GetCurrentProcess(),
-		TOKEN_DUPLICATE | TOKEN_QUERY,
-		&hElev))
-	{
-		PrintError("OpenProcessToken", role);
-		return nullptr;
-	}
-
-	// 2) Strip admin rights & set medium IL
-	HANDLE hLow{};
-	if (!CreateRestrictedToken(
-		hElev,
-		LUA_TOKEN,   // UAC's built-in filter for medium IL
-		0, nullptr,  // no per-SID disables
-		0, nullptr,  // no priv removals
-		0, nullptr,  // no extra restrict SIDs
-		&hLow))
-	{
-		PrintError("CreateRestrictedToken", role);
-		CloseHandle(hElev);
-		return nullptr;
-	}
-	CloseHandle(hElev);
-
-	// 3) Duplicate into a fully-qualified primary token
-	HANDLE hDup{};
-	DWORD rights =
-		TOKEN_QUERY
-		| TOKEN_DUPLICATE
-		| TOKEN_ASSIGN_PRIMARY
-		| TOKEN_ADJUST_DEFAULT
-		| TOKEN_ADJUST_GROUPS
-		| TOKEN_ADJUST_SESSIONID;
-	if (!DuplicateTokenEx(
-		hLow,
-		rights,
-		nullptr,
-		SecurityImpersonation,
-		TokenPrimary,
-		&hDup))
-	{
-		PrintError("DuplicateTokenEx", role);
-		CloseHandle(hLow);
-		return nullptr;
-	}
-	CloseHandle(hLow);
-
-	// 4) Remove High‐Mandatory group, add Medium‐Mandatory group
-	SID_IDENTIFIER_AUTHORITY mAuth = SECURITY_MANDATORY_LABEL_AUTHORITY;
-	PSID pHigh = nullptr, pMed = nullptr;
-	if (AllocateAndInitializeSid(&mAuth, 1, SECURITY_MANDATORY_HIGH_RID,
-		0, 0, 0, 0, 0, 0, 0, &pHigh) &&
-		AllocateAndInitializeSid(&mAuth, 1, SECURITY_MANDATORY_MEDIUM_RID,
-			0, 0, 0, 0, 0, 0, 0, &pMed))
-	{
-		// Deny the old High label
-		TOKEN_GROUPS tg{};
-		tg.GroupCount = 1;
-		tg.Groups[0].Sid = pHigh;
-		tg.Groups[0].Attributes = SE_GROUP_USE_FOR_DENY_ONLY;
-		AdjustTokenGroups(hDup, FALSE, &tg, 0, nullptr, nullptr);
-
-		// Enable the Medium label
-		tg.Groups[0].Sid = pMed;
-		tg.Groups[0].Attributes = SE_GROUP_INTEGRITY | SE_GROUP_ENABLED;
-		AdjustTokenGroups(hDup, FALSE, &tg, 0, nullptr, nullptr);
-
-		// Now set the official Mandatory Label
-		TOKEN_MANDATORY_LABEL tml{};
-		tml.Label.Sid = pMed;
-		tml.Label.Attributes = SE_GROUP_INTEGRITY;
-		DWORD tmlSize = sizeof(tml) + GetLengthSid(pMed);
-		if (!SetTokenInformation(hDup, TokenIntegrityLevel, &tml, tmlSize)) {
-			PrintError("SetTokenInformation(TokenIntegrityLevel)", role);
-		}
-
-		FreeSid(pHigh);
-		// note: do NOT FreeSid(pMed) until after you spawn the process,
-		// because the label structure references pMed in the token.
-	}
-	else {
-		PrintError("AllocateAndInitializeSid", role);
-		// we'll proceed anyway; CreateTokenRestricted often already did the right IL
-	}
-
-	return hDup;
-}
-
-bool WeAreElevated()
-{
-	HANDLE hElev = nullptr; TOKEN_ELEVATION elev{}; DWORD len = 0;
-	OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hElev);
-	GetTokenInformation(hElev, TokenElevation, &elev, sizeof(elev), &len);
-	if (hElev) CloseHandle(hElev);
-	return bool(elev.TokenIsElevated);
 }
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
@@ -349,10 +202,10 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		// launch the CEF browser process, which in turn launches all the other processes in the CEF process constellation
 		boost::asio::io_context ioctx;
 		auto child = [&] {
-			if (WeAreElevated()) {
+			if (util::win::WeAreElevated()) {
 				pmlog_info("detected elevation, attempting integrity downgrade");
-				auto hMediumToken = PrepareMediumIntegrityToken();
-				return bp2::windows::as_user_launcher{ hMediumToken }(
+				auto mediumTokenPack = util::win::PrepareMediumIntegrityToken();
+				return bp2::windows::as_user_launcher{ mediumTokenPack.hMediumToken.Get() }(
 					ioctx, "PresentMonUI.exe"s, args
 				);
 			}

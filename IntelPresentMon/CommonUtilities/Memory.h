@@ -51,4 +51,53 @@ namespace pmon::util
 		}
 		return 0;
 	}
+
+	// out pointer for using smart pointers with c-api type functions
+	template<typename SP>
+	class OutPtrProxy {
+	public:
+		using Pointer = typename SP::pointer;
+
+		explicit OutPtrProxy(SP& smartPtr)
+			: smartPtr_(smartPtr), rawPtr_(nullptr)
+		{}
+
+		~OutPtrProxy() {
+			smartPtr_.reset(rawPtr_);
+		}
+
+		// implicit conversion so it can be passed wherever a Pointer* is required
+		operator Pointer* () {
+			return &rawPtr_;
+		}
+
+		// non-copyable
+		OutPtrProxy(OutPtrProxy const&) = delete;
+		OutPtrProxy& operator=(OutPtrProxy const&) = delete;
+
+		// moveable: steals the rawPtr_, leaves other.rawPtr_ null
+		OutPtrProxy(OutPtrProxy&& other) noexcept
+			: smartPtr_(other.smartPtr_), rawPtr_(other.rawPtr_)
+		{
+			other.rawPtr_ = nullptr;
+		}
+		OutPtrProxy& operator=(OutPtrProxy&& other) noexcept {
+			if (this != &other) {
+				// first commit any existing rawPtr_
+				smartPtr_.reset(rawPtr_);
+				// then steal
+				rawPtr_ = other.rawPtr_;
+				other.rawPtr_ = nullptr;
+			}
+			return *this;
+		}
+
+	private:
+		SP& smartPtr_;
+		Pointer  rawPtr_;
+	};
+	template<typename SP>
+	OutPtrProxy<SP> OutPtr(SP& smartPtr) {
+		return OutPtrProxy<SP>(smartPtr);
+	}
 }

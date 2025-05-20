@@ -243,6 +243,9 @@
     <ClInclude Include="pipe\ManualAsyncEvent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="win\Privileges.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">
@@ -378,6 +381,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="win\HrError.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="win\Privileges.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

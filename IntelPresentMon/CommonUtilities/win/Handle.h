@@ -23,6 +23,7 @@ namespace pmon::util::win
         Handle Clone() const;
         // empties this resource, returning owned handle value without closing
         HandleType Release();
+        HandleType* ClearAndGetAddressOf();
         operator bool() const noexcept;
         static Handle CreateCloned(HandleType handle);
     private:
