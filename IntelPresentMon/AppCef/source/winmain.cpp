@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2022 Intel Corporation
+// Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "NanoCefBrowserClient.h"
 #include "NanoCefProcessHandler.h"
@@ -71,14 +71,10 @@ LRESULT CALLBACK BrowserWindowWndProc(HWND window_handle, UINT message, WPARAM w
             && (pBrowserClient->GetBrowser()))
         {
             CefWindowHandle hwnd(pBrowserClient->GetBrowser()->GetHost()->GetWindowHandle());
-            if (hwnd)
-            {
-                RECT rect = { 0 };
+            if (hwnd) {
+                RECT rect{};
                 GetClientRect(window_handle, &rect);
-                HDWP hdwp = BeginDeferWindowPos(1);
-                hdwp = DeferWindowPos(hdwp, hwnd, NULL, rect.left,
-                    rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER);
-                EndDeferWindowPos(hdwp);
+                SetWindowPos(hwnd, NULL, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER);
             }
         }
         break;
@@ -91,14 +87,12 @@ LRESULT CALLBACK BrowserWindowWndProc(HWND window_handle, UINT message, WPARAM w
         }
         break;
     case WM_ENTERMENULOOP:
-        if (!w_param)
-        {
+        if (!w_param) {
             CefSetOSModalLoop(true);
         }
         break;
     case WM_EXITMENULOOP:
-        if (!w_param)
-        {
+        if (!w_param) {
             CefSetOSModalLoop(false);
         }
         break;
@@ -111,8 +105,7 @@ LRESULT CALLBACK MessageWindowWndProc(HWND window_handle, UINT message, WPARAM w
     switch (message)
     {
     case WM_COMMAND:
-        if (w_param == quitCefCode)
-        {
+        if (w_param == quitCefCode) {
             PostQuitMessage(0);
         }
         break;
