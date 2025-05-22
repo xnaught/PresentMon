@@ -505,8 +505,7 @@ static void ReportMetricsHelper(
                 pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, screenTime);
 
             metrics.mMsPcLatency = 0.f;
-            // Check to see if we have a valid pc latency sim start time. If not we will be unable
-            // to produce the pc latency metric
+            // Check to see if we have a valid pc latency sim start time.
             if (p->PclSimStartTime != 0) {
                 if (p->PclInputPingTime == 0) {
                     if (chain->mAccumulatedInput2FrameStartTime != 0) {
@@ -530,14 +529,13 @@ static void ReportMetricsHelper(
                         pmSession.TimestampDeltaToUnsignedMilliSeconds(p->PclInputPingTime, p->PclSimStartTime),
                         0.1);
                 }
-
-                // If we have a non-zero average input to frame start time and PC Latency simulation
-                // start time calculate the PC Latency
-                if (chain->mEmaInput2FrameStartTime != 0.f) {
-                    metrics.mMsPcLatency = chain->mEmaInput2FrameStartTime +
-                        pmSession.TimestampDeltaToMilliSeconds(p->PclSimStartTime, p->PresentStartTime) +
-                        pmSession.TimestampDeltaToMilliSeconds(p->PresentStartTime, screenTime);
-                }
+            }
+            // If we have a non-zero average input to frame start time and a PC Latency simulation
+            // start time calculate the PC Latency
+            auto simStartTime = p->PclSimStartTime != 0 ? p->PclSimStartTime : chain->mLastSimStartTime;
+            if (chain->mEmaInput2FrameStartTime != 0.f && simStartTime != 0) {
+                metrics.mMsPcLatency = chain->mEmaInput2FrameStartTime +
+                    pmSession.TimestampDeltaToMilliSeconds(simStartTime, screenTime);
             }
         } else {
             metrics.mMsDisplayLatency               = 0;

@@ -376,9 +376,6 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
             fwprintf(fp, L",MsInstrumentedLatency");
         }
     }
-    if (args.mTrackPcLatency) {
-        fwprintf(fp, L",PCLatency");
-    }
     if (args.mWriteDisplayTime) {
         fwprintf(fp, L",DisplayTimeAbs");
     }
