@@ -14,6 +14,7 @@
 #include <boost/process.hpp>
 #include <Shobjidl.h>
 #include <include/cef_version.h>
+#include "util/CefLog.h"
 
 
 #pragma comment(lib, "Dwmapi.lib")
@@ -121,7 +122,7 @@ HWND CreateBrowserWindow(HINSTANCE instance_handle, int show_minimize_or_maximiz
     wcex.lpfnWndProc = BrowserWindowWndProc;
     wcex.hInstance = instance_handle;
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+    wcex.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     wcex.lpszClassName = BrowserWindowClassName;
     wcex.hIcon = static_cast<HICON>(LoadImage(
         instance_handle, MAKEINTRESOURCE(IDI_ICON1),
@@ -221,7 +222,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             CefSettings settings;
             settings.multi_threaded_message_loop = true;
             settings.remote_debugging_port = is_debug || opt.enableChromiumDebug ? 9009 : 0;
-            settings.background_color = { 0x000000 };
+            settings.background_color = CefColorSetARGB(255, 0, 0, 0);;
             CefString(&settings.cache_path).FromWString(folderResolver.Resolve(infra::util::FolderResolver::Folder::App, L"cef-cache"));
             if (opt.logFolder) {
                 CefString(&settings.log_file).FromString(*opt.logFolder + "\\cef-debug.log");
@@ -229,7 +230,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             else {
                 CefString(&settings.log_file).FromWString(folderResolver.Resolve(infra::util::FolderResolver::Folder::App, L"logs\\cef-debug.log"));
             }
-            settings.log_severity = is_debug ? cef_log_severity_t::LOGSEVERITY_DEFAULT : cef_log_severity_t::LOGSEVERITY_ERROR;
+            settings.log_severity = ToCefLogLevel(util::log::GlobalPolicy::Get().GetLogLevel());
             CefInitialize(main_args, settings, app.get(), nullptr);
         }
         auto hwndBrowser = CreateBrowserWindow(hInstance, nCmdShow);
