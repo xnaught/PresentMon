@@ -535,6 +535,7 @@ struct FrameMetrics {
     FrameType mFrameType;
     double mInstrumentedDisplayLatency;
     double mPcLatency;
+    double mMsBetweenSimStarts;
 
     double mInstrumentedRenderLatency;
     double mInstrumentedSleep;
@@ -584,6 +585,15 @@ void UpdateChain(
         // present
         chain->mLastAppPresent = p;
         chain->mLastAppPresentIsValid = true;
+    }
+
+    // Set chain->mLastSimStartTime to either p->PclSimStartTime or p->AppSimStartTime depending on
+    // if either are not zero. If both are zero, do not set.
+    if (p.PclSimStartTime != 0) {
+        chain->mLastSimStartTime = p.PclSimStartTime;
+    }
+    else if (p.AppSimStartTime != 0) {
+        chain->mLastSimStartTime = p.AppSimStartTime;
     }
 
     chain->mLastPresent = p;
@@ -704,6 +714,13 @@ static void ReportMetricsHelper(
             // way to calculate the Xell Gpu latency
             metrics.mInstrumentedGpuLatency = instrumentedStartTime == 0 ? 0 :
                                       pmSession.TimestampDeltaToUnsignedMilliSeconds(instrumentedStartTime, p->GPUStartTime);
+            
+            if (p->PclSimStartTime != 0) {
+                metrics.mMsBetweenSimStarts = pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastSimStartTime, p->PclSimStartTime);
+            }
+            else if (p->AppSimStartTime != 0) {
+                metrics.mMsBetweenSimStarts = pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastSimStartTime, p->AppSimStartTime);
+            }
         } else {
             metrics.mCPUBusy                = 0;
             metrics.mCPUWait                = 0;
@@ -713,6 +730,7 @@ static void ReportMetricsHelper(
             metrics.mGPUWait                = 0;
             metrics.mInstrumentedSleep      = 0;
             metrics.mInstrumentedGpuLatency = 0;
+            metrics.mMsBetweenSimStarts     = 0;
         }
 
         // If the frame was displayed regardless of how it was produced, calculate the following
@@ -736,8 +754,7 @@ static void ReportMetricsHelper(
                 pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, screenTime);
 
             metrics.mPcLatency = 0.f;
-            // Check to see if we have a valid pc latency sim start time. If not we will be unable
-            // to produce the pc latency metric
+            // Check to see if we have a valid pc latency sim start time
             if (p->PclSimStartTime != 0) {
                 if (p->PclInputPingTime == 0) {
                     if (chain->mAccumulatedInput2FrameStartTime != 0) {
@@ -762,12 +779,13 @@ static void ReportMetricsHelper(
                         p->PclInputPingTime,
                         pmSession.TimestampDeltaToUnsignedMilliSeconds(p->PclInputPingTime, p->PclSimStartTime));
                 }
-                auto i2Fs = pclI2FsManager.GetI2FsForProcess(p->ProcessId);
-                if (i2Fs != 0.f) {
-                    metrics.mPcLatency = i2Fs +
-                        pmSession.TimestampDeltaToMilliSeconds(p->PclSimStartTime, p->PresentStartTime) +
-                        pmSession.TimestampDeltaToMilliSeconds(p->PresentStartTime, screenTime);
-                }
+            }
+            // If we have a non-zero average input to frame start time and a PC Latency simulation
+            // start time calculate the PC Latency
+            auto i2Fs = pclI2FsManager.GetI2FsForProcess(p->ProcessId);
+            auto simStartTime = p->PclSimStartTime != 0 ? p->PclSimStartTime : chain->mLastSimStartTime;
+            if (i2Fs != 0.f && simStartTime != 0) {
+                metrics.mPcLatency = i2Fs + pmSession.TimestampDeltaToMilliSeconds(simStartTime, screenTime);
             }
         } else {
             metrics.mDisplayLatency                         = 0;
