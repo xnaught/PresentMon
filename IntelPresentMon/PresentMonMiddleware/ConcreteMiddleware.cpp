@@ -817,6 +817,7 @@ static void ReportMetricsHelper(
                 metrics.mClickToPhotonLatency = p->MouseClickTime == 0 ? updatedInputTime :
                     pmSession.TimestampDeltaToUnsignedMilliSeconds(p->MouseClickTime, screenTime);
 
+                // Reset all last received device times
                 chain->mLastReceivedNotDisplayedAllInputTime = 0;
                 chain->mLastReceivedNotDisplayedMouseClickTime = 0;
 
@@ -849,16 +850,6 @@ static void ReportMetricsHelper(
                     chain->mLastReceivedNotDisplayedMouseClickTime = p->MouseClickTime;
                 }
             }
-        }
-
-        if (displayed && displayIndex == appIndex && chain->mLastDisplayedSimStart != 0) {
-            // Calculate the sim start time based on if AppSimStartTime is non-zero
-            auto simStartTime            = p->AppSimStartTime != 0 ? p->AppSimStartTime : metrics.mCPUStart;
-            metrics.mAnimationError      = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedAppScreenTime,
-                                                                                  simStartTime - chain->mLastDisplayedSimStart);
-            chain->mAnimationError.push_back(std::abs(metrics.mAnimationError));
-        } else {
-            metrics.mAnimationError      = 0;
         }
 
         if (p->DisplayedCount == 0) {
@@ -929,7 +920,7 @@ static void ReportMetricsHelper(
                 chain->mInstrumentedReadyTimeToDisplayLatency.push_back(metrics.mInstrumentedReadyTimeToDisplayLatency);
             }
             if (metrics.mPcLatency != 0) {
-                chain->mPcLatency.push_back(metrics.mPcLatency);
+                chain->mMsPcLatency.push_back(metrics.mPcLatency);
             }
         }
 
@@ -1074,7 +1065,7 @@ static void ReportMetrics(
                 if (chain->mLastPresentIsValid) {
                     ReportMetrics(pmSession, mPclI2FsManager, chain, presentEvent);
                 } else {
-                    UpdateChain(chain, *presentEvent);
+                    pmon::mid::UpdateChain(chain, *presentEvent);
                 }
                 // end
             }

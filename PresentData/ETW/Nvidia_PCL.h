@@ -18,6 +18,7 @@ namespace Nvidia_PCL {
         RenderSubmitEnd = 3,
         PresentStart = 4,
         PresentEnd = 5,
-        PCLLatencyPing = 8
+        PCLLatencyPing = 8,
+        OutOfBandPresentStart = 11
     };
 }

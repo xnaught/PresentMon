@@ -20,6 +20,7 @@
 #include <unordered_set>
 #include <windows.h>
 #include <evntcons.h> // must include after windows.h
+#include <functional>
 
 #include "Debug.hpp"
 #include "GpuTrace.hpp"
@@ -160,8 +161,8 @@ struct FlipFrameTypeEvent {
 // using ETW events provided by either the PresentMon provider or 
 // PC Latency stats.
 struct AppTimingData {
-    uint32_t AppProcessId = 0;
-    uint32_t AppFrameId = 0;
+    uint32_t ProcessId = 0;
+    uint32_t FrameId = 0;
     uint64_t AppSleepStartTime = 0;
     uint64_t AppSleepEndTime = 0;
     uint64_t AppSimStartTime = 0;
@@ -179,6 +180,7 @@ struct AppTimingData {
     uint64_t PclPresentEndTime = 0;
     uint64_t PclInputPingTime = 0;
     uint64_t PclInputReceivedTime = 0;
+    uint64_t PclOutOfBandPresentStartTime = 0;
     bool AssignedToPresent = false;
     bool PresentCompleted = false;
 };
@@ -224,7 +226,7 @@ struct PresentEvent {
     uint64_t AppPresentStartTime;       // QPC value of app present start time provided by Intel App Provider
     uint64_t AppPresentEndTime;         // QPC value of app present end time provided by Intel App Provider
     std::pair<uint64_t, InputDeviceType> AppInputSample;    // QPC value of app input data provided by Intel App Provider
-    uint32_t PclFrameId;
+    uint32_t PclFrameId = 0;
     uint64_t PclSimStartTime = 0;
     uint64_t PclSimEndTime = 0;
     uint64_t PclRenderSubmitStartTime = 0;
@@ -499,11 +501,12 @@ struct PMTraceConsumer
                        uint32_t,
                        PairHash<uint32_t, uint64_t>>            mHybridPresentModeBySwapChainPid;       // SwapChain and process id -> HybridPresentMode
 
-    std::unordered_map<uint32_t, uint32_t>                      mNextPclFrameIdByProcessId;             // ProcessId -> Next PCL frame id
     std::unordered_map<std::pair<uint32_t, uint32_t>,
-                       std::shared_ptr<PresentEvent>, PairHash> mPresentByPclFrameId;                   // PCL frame id -> PresentEvent
+        AppTimingData,
+        PairHash<uint32_t, uint32_t>>                           mPclTimingDataByPclFrameId;             // PCL frame id -> PCLTimingData
     std::unordered_map<std::pair<uint32_t, uint32_t>,
-                       AppTimingData, PairHash>                 mPendingAppTimingDataByPclFrameId;      // PCL frame id -> AppTimingData
+                       std::shared_ptr<PresentEvent>,
+                       PairHash<uint32_t, uint32_t>>            mPresentByPclFrameId;                   // PCL frame id -> PresentEvent
     std::unordered_map<uint32_t, uint64_t>                      mLatestPingTimestampByProcessId;        // ProcessId -> Latest Ping Timestamp
 
 
@@ -602,7 +605,7 @@ struct PMTraceConsumer
     
     // -------------------------------------------------------------------------------------------
     // Function for managing app provided events
-    AppTimingData* ExtractAppTimingData(uint32_t processId, uint32_t appFrameId, uint64_t presentStartTime);
+    AppTimingData* ExtractAppTimingData(std::unordered_map<std::pair<uint32_t, uint32_t>, AppTimingData, PairHash<uint32_t, uint32_t>>& timingDataByFrameId, uint32_t processId, uint32_t appFrameId, uint64_t presentStartTime, std::function<uint64_t(const AppTimingData&)> timingSelector);
     bool IsApplicationPresent(std::shared_ptr<PresentEvent> const& present);
     void SetAppTimingDataAsComplete(uint32_t processId, uint32_t appFrameId);
 

@@ -275,6 +275,14 @@ static void UpdateChain(
         chain->mLastAppPresent = p;
     }
 
+    // Set chain->mLastSimStartTime to either p->PclSimStartTime or p->AppSimStartTime depending on
+    // if either are not zero. If both are zero, do not set.
+    if (p->PclSimStartTime != 0) {
+        chain->mLastSimStartTime = p->PclSimStartTime;
+    } else if (p->AppSimStartTime != 0) {
+        chain->mLastSimStartTime = p->AppSimStartTime;
+    }
+
     // Want this to always be updated with the last present regardless if the
     // frame was generated or not
     chain->mLastPresent = p;
@@ -455,7 +463,13 @@ static void ReportMetricsHelper(
             // way to calculate the Xell Gpu latency
             metrics.mMsInstrumentedGpuLatency = InstrumentedStartTime == 0 ? 0 :
                                                 pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, gpuStartTime);
-            metrics.msBetweenSimStarts = chain->mLastPresent == nullptr ? 0 : pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastPresent->PclSimStartTime, p->PresentStartTime);
+
+            if (p->PclSimStartTime != 0) {
+                metrics.mMsBetweenSimStarts = pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastSimStartTime, p->PclSimStartTime);
+            }
+            else if (p->AppSimStartTime != 0) {
+                metrics.mMsBetweenSimStarts = pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastSimStartTime, p->AppSimStartTime);
+            }
         } else {
             metrics.mMsCPUBusy                = 0;
             metrics.mMsCPUWait                = 0;
@@ -465,6 +479,7 @@ static void ReportMetricsHelper(
             metrics.mMsGPUWait                = 0;
             metrics.mMsInstrumentedSleep      = 0;
             metrics.mMsInstrumentedGpuLatency = 0;
+            metrics.mMsBetweenSimStarts       = 0;
         }
 
         // If the frame was displayed regardless of how it was produced, calculate the following
@@ -489,7 +504,7 @@ static void ReportMetricsHelper(
             metrics.mMsInstrumentedLatency = InstrumentedStartTime == 0 ? 0 : 
                 pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, screenTime);
 
-            metrics.mPcLatency = 0.f;
+            metrics.mMsPcLatency = 0.f;
             // Check to see if we have a valid pc latency sim start time. If not we will be unable
             // to produce the pc latency metric
             if (p->PclSimStartTime != 0) {
@@ -519,7 +534,7 @@ static void ReportMetricsHelper(
                 // If we have a non-zero average input to frame start time and PC Latency simulation
                 // start time calculate the PC Latency
                 if (chain->mEmaInput2FrameStartTime != 0.f) {
-                    metrics.mPcLatency = chain->mEmaInput2FrameStartTime +
+                    metrics.mMsPcLatency = chain->mEmaInput2FrameStartTime +
                         pmSession.TimestampDeltaToMilliSeconds(p->PclSimStartTime, p->PresentStartTime) +
                         pmSession.TimestampDeltaToMilliSeconds(p->PresentStartTime, screenTime);
                 }
@@ -533,7 +548,7 @@ static void ReportMetricsHelper(
             metrics.mMsInstrumentedLatency          = 0;
             metrics.mMsInstrumentedRenderLatency    = 0;
             metrics.mMsReadyTimeToDisplayLatency    = 0;
-            metrics.mPcLatency                 = 0;
+            metrics.mMsPcLatency                    = 0;
             if (p->PclSimStartTime != 0) {
                 if (p->PclInputPingTime != 0) {
                     // This frame was dropped but we have valid pc latency input and simulation start
@@ -553,11 +568,11 @@ static void ReportMetricsHelper(
         }
 
         // The following metrics use both the frame's displayed and origin information.
-        metrics.mClickToPhotonLatency   = 0;
-        metrics.mAllInputPhotonLatency  = 0;
-        metrics.mInstrumentedInputTime  = 0;
-        metrics.mAnimationError         = 0;
-        metrics.mAnimationTime          = 0;
+        metrics.mMsClickToPhotonLatency   = 0;
+        metrics.mMsAllInputPhotonLatency  = 0;
+        metrics.mMsInstrumentedInputTime  = 0;
+        metrics.mMsAnimationError         = std::nullopt;
+        metrics.mAnimationTime            = std::nullopt;
 
         if (displayIndex == appIndex) {
             if (displayed) {
@@ -598,7 +613,7 @@ static void ReportMetricsHelper(
                     // If the simulation start time is less than the last displayed simulation start time it means
                     // we are transitioning to app provider events.
                     if (simStartTime > chain->mLastDisplayedSimStartTime) {
-                        metrics.mAnimationError = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
+                        metrics.mMsAnimationError = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedAppScreenTime,
                             simStartTime - chain->mLastDisplayedSimStartTime);
                     }
                 }
@@ -610,12 +625,11 @@ static void ReportMetricsHelper(
                     metrics.mAnimationTime = 0.;
                 }
                 else {
-                    CalculateAnimationTime(pmSession, chain->mFirstAppSimStartTime, simStartTime, metrics.mAnimationTime);
+                    double animationTime = 0.;
+                    CalculateAnimationTime(pmSession, chain->mFirstAppSimStartTime, simStartTime, animationTime);
+                    metrics.mAnimationTime = animationTime;
                 }
             } else {
-                metrics.mMsClickToPhotonLatency = 0;
-                metrics.mMsAllInputPhotonLatency = 0;
-                metrics.mMsInstrumentedInputTime = 0;
                 if (p->InputTime != 0) {
                     chain->mLastReceivedNotDisplayedAllInputTime = p->InputTime;
                 }
@@ -626,44 +640,6 @@ static void ReportMetricsHelper(
                     chain->mLastReceivedNotDisplayedAppProviderInputTime = p->AppInputSample.first;
                 }
             }
-        } else {
-            metrics.mMsClickToPhotonLatency  = 0;
-            metrics.mMsAllInputPhotonLatency = 0;
-            metrics.mMsInstrumentedInputTime = 0;
-        }
-
-        if (displayed && displayIndex == appIndex) {
-            // Calculate the sim start time based on if AppSimStartTime is non-zero
-            auto simStartTime = p->AppSimStartTime != 0 ? p->AppSimStartTime : metrics.mCPUStart;
-
-            if (chain->mLastDisplayedSimStartTime != 0) {
-                // If the simulation start time is less than the last displated simulation start time it means
-                // we are transitioning to app provider events.
-                if (simStartTime > chain->mLastDisplayedSimStartTime) {
-                    metrics.mMsAnimationError = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedAppScreenTime,
-                        simStartTime - chain->mLastDisplayedSimStartTime);
-                }
-                else {
-                    metrics.mMsAnimationError = 0;
-                }
-            } else {
-                metrics.mMsAnimationError = 0;
-            }
-            // If we have a value in app sim start and we haven't set the first
-            // sim start time then we are transitioning from using cpu start to
-            // an application provided timestamp. Set the animation time to zero
-            // for the first frame.
-            if (p->AppSimStartTime != 0 && chain->mFirstAppSimStartTime == 0) {
-                metrics.mAnimationTime = 0.;
-            } else {
-                double animationTime = 0.;
-                CalculateAnimationTime(pmSession, chain->mFirstAppSimStartTime, simStartTime, animationTime);
-                metrics.mAnimationTime = animationTime;
-            }
-            
-        } else {
-            metrics.mMsAnimationError = std::nullopt;
-            metrics.mAnimationTime    = std::nullopt;
         }
 
 

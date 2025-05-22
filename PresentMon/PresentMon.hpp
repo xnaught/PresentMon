@@ -120,7 +120,8 @@ struct FrameMetrics {
     uint64_t mScreenTime = 0;
     FrameType mFrameType = FrameType::NotSet;
     double mMsInstrumentedLatency = 0;
-    double mPcLatency;
+    double mMsPcLatency = 0;
+    double mMsBetweenSimStarts = 0;
 
     // Internal Intel Metrics
     double mMsInstrumentedRenderLatency = 0;
@@ -177,6 +178,9 @@ struct SwapChainData {
     // The most recent application present that has been processed (e.g., output into CSV and/or used
     // for frame statistics).
     std::shared_ptr<PresentEvent> mLastAppPresent;
+
+    // QPC of the last simulation start time iregardless of whether it was displayed or not
+    uint64_t mLastSimStartTime = 0;
 
     // The CPU start and screen time for the most recent frame that was displayed
     uint64_t mLastDisplayedSimStartTime = 0;

@@ -380,8 +380,6 @@ void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
             return;
         }
     }
-
-    #pragma warning(pop)
 }
 
 template<bool... Ts>
