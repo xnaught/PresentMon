@@ -143,7 +143,8 @@ namespace p2c::pmon
                     metricId == PM_METRIC_BETWEEN_SIMULATION_START ||
                     metricId == PM_METRIC_PC_LATENCY ||
                     metricId == PM_METRIC_BETWEEN_DISPLAY_CHANGE ||
-                    metricId == PM_METRIC_UNTIL_DISPLAYED ) {
+                    metricId == PM_METRIC_UNTIL_DISPLAYED ||
+                    metricId == PM_METRIC_INSTRUMENTED_LATENCY) {
                     flags |= Annotation_::FLAG_NAN_MEANS_NOT_AVAILABLE;
                 }
 

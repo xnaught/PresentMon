@@ -806,9 +806,14 @@ static void ReportMetricsHelper(
         if (displayed) {
             chain->mDisplayLatency                       .push_back(metrics.mDisplayLatency);
             chain->mDisplayedTime                        .push_back(metrics.mDisplayedTime);
-            chain->mMsBetweenDisplayChange               .push_back(metrics.mMsBetweenDisplayChange);
             chain->mMsUntilDisplayed                     .push_back(metrics.mMsUntilDisplayed);
             chain->mDropped                              .push_back(0.0);
+            if (metrics.mMsBetweenDisplayChange != 0) {
+                // Only push back the mMsBetweenDisplayChange if it is non-zero. 
+                // mMsBetweenDisplayChange will be zero on the first use of the incoming 
+                // swap chain parameter.
+                chain->mMsBetweenDisplayChange.push_back(metrics.mMsBetweenDisplayChange);
+            }
         } else {
             chain->mDropped       .push_back(1.0);
         }
