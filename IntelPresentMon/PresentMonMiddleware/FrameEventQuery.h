@@ -65,6 +65,9 @@ public:
 		uint64_t mLastReceivedNotDisplayedPclInputTime = 0;
 		// The first app sim start time
 		uint64_t firstAppSimStartTime = 0;
+        // QPC of the last simulation start time regardless of whether it was displayed or not
+		uint64_t lastSimStartTime = 0;
+
 		// Accumlated input to frame start time
 		double mAccumulatedInput2FrameStartTime = 0.f;
 		// Current input to frame start average

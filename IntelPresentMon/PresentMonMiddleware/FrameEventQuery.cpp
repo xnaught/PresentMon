@@ -1051,15 +1051,19 @@ namespace
 			}
 
 			double val = 0.;
-			if (ctx.avgInput2Fs == 0. || ctx.pSourceFrameData->present_event.PclSimStartTime == 0) {
+			auto simStartTime = ctx.pSourceFrameData->present_event.PclSimStartTime != 0 ?
+				ctx.pSourceFrameData->present_event.PclSimStartTime : 
+				ctx.lastSimStartTime;
+			if (ctx.avgInput2Fs == 0. || simStartTime == 0) {
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
 					std::numeric_limits<double>::quiet_NaN();
 				return;
 			}
 
 			val = ctx.avgInput2Fs +
-				TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.PclSimStartTime, ctx.pSourceFrameData->present_event.PresentStartTime, ctx.performanceCounterPeriodMs) +
-				TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.PresentStartTime, ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex], ctx.performanceCounterPeriodMs);
+				TimestampDeltaToUnsignedMilliSeconds(simStartTime, 
+					ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
+					ctx.performanceCounterPeriodMs);
 
 			if (val == 0.) {
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
@@ -1120,6 +1124,58 @@ namespace
 			}
 			auto val = TimestampDeltaToUnsignedMilliSeconds(firstSimStartTime, currentSimTime, ctx.performanceCounterPeriodMs);
 			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + alignof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
+	class BetweenSimStartsGatherCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		BetweenSimStartsGatherCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
+		{
+			double val = 0.;
+			uint64_t currentSimStartTime = 0;
+			if (ctx.pSourceFrameData->present_event.PclSimStartTime != 0) {
+				currentSimStartTime = ctx.pSourceFrameData->present_event.PclSimStartTime;
+            } else if (ctx.pSourceFrameData->present_event.AppSimStartTime != 0) {
+				currentSimStartTime = ctx.pSourceFrameData->present_event.AppSimStartTime;
+            }
+
+			if (ctx.lastSimStartTime == 0 || currentSimStartTime == 0) {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
+				return;
+			}
+
+			val = TimestampDeltaToUnsignedMilliSeconds(
+				ctx.lastSimStartTime, currentSimStartTime,
+				ctx.performanceCounterPeriodMs);
+
+			if (val == 0.) {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
+			}
+			else {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			}
 		}
 		uint32_t GetBeginOffset() const override
 		{
@@ -1337,7 +1393,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_RENDER_PRESENT_LATENCY:
 		return std::make_unique<QpcDeltaGatherFromToCommand_<&Pre::PresentStartTime, &Pre::ReadyTime, 0>>(pos);
 	case PM_METRIC_BETWEEN_SIMULATION_START:
-        return std::make_unique<ReturnNanGatherCommand_>(pos);
+        return std::make_unique<BetweenSimStartsGatherCommand_>(pos);
 	case PM_METRIC_PC_LATENCY:
         return std::make_unique<PcLatencyGatherCommand_<1>>(pos);
 	default:
@@ -1424,6 +1480,10 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
         } else {
 			cpuStart = pFrameDataOfLastAppPresented->present_event.PresentStartTime +
 				pFrameDataOfLastAppPresented->present_event.TimeInPresent;
+		}
+		// Set chain->mLastSimStartTime to either LastPresented->PclSimStartTime
+		if (pFrameDataOfLastAppPresented->present_event.PclSimStartTime != 0) {
+			lastSimStartTime = pFrameDataOfLastAppPresented->present_event.PclSimStartTime;
 		}
 	}
 	else {
