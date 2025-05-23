@@ -593,14 +593,8 @@ void WriteCsvRow<FrameMetrics>(
             fwprintf(fp, L",%u", p.AppFrameId);
         }
         if (args.mTrackPcLatency) {
-            if (metrics.mMsPcLatency == 0.0) {
-                fwprintf(fp, L",NA");
-            }
-            else {
-                fwprintf(fp, L",%u", p.PclFrameId);
-            }
+            fwprintf(fp, L",%u", p.PclFrameId);
         }
-        
     }
     fwprintf(fp, L"\n");
 
