@@ -37,12 +37,6 @@ namespace p2c::client::cef
             int line) override;
 
     protected:
-        // this semaphore protects from race condition between normal shutdown ack sequence and timeout fallback sequence
-        std::binary_semaphore shutdownSemaphore{ 1 };
-        // indicates whether ack was received from render process (or timeout fired)
-        std::atomic<bool> shutdownAcknowledgementFlag = false;
-        bool shutdownRequestFlag = false;
-
         CefRefPtr<CefContextMenuHandler> pContextMenuHandler;
         CefRefPtr<CefBrowser> pBrowser;
         util::AsyncEndpointCollection endpoints;
