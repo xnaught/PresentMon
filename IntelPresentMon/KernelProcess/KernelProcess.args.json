@@ -101,6 +101,10 @@
       "Command": "--ui-option url  \"http://localhost:5173\""
     },
     {
+      "Id": "6dacd0ef-59fc-4c1d-97a1-4f0120e84405",
+      "Command": "--ui-option url  \"http://google.com\""
+    },
+    {
       "Id": "eeaa57c0-80dc-4b72-a051-77843e4706f6",
       "Command": "--ui-option web-root \"C:\\Files\\Repos\\PresentMon\\IntelPresentMon\\AppCef\\ipm-ui-vue\\dist\""
     },

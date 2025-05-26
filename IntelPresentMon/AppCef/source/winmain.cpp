@@ -1,4 +1,4 @@
-﻿// Copyright (C) 2022 Intel Corporation
+// Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
 #include "NanoCefBrowserClient.h"
 #include "NanoCefProcessHandler.h"
@@ -14,6 +14,7 @@
 #include <boost/process.hpp>
 #include <Shobjidl.h>
 #include <include/cef_version.h>
+#include "util/CefLog.h"
 
 
 #pragma comment(lib, "Dwmapi.lib")
@@ -71,14 +72,10 @@ LRESULT CALLBACK BrowserWindowWndProc(HWND window_handle, UINT message, WPARAM w
             && (pBrowserClient->GetBrowser()))
         {
             CefWindowHandle hwnd(pBrowserClient->GetBrowser()->GetHost()->GetWindowHandle());
-            if (hwnd)
-            {
-                RECT rect = { 0 };
+            if (hwnd) {
+                RECT rect{};
                 GetClientRect(window_handle, &rect);
-                HDWP hdwp = BeginDeferWindowPos(1);
-                hdwp = DeferWindowPos(hdwp, hwnd, NULL, rect.left,
-                    rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER);
-                EndDeferWindowPos(hdwp);
+                SetWindowPos(hwnd, NULL, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, SWP_NOZORDER);
             }
         }
         break;
@@ -91,14 +88,12 @@ LRESULT CALLBACK BrowserWindowWndProc(HWND window_handle, UINT message, WPARAM w
         }
         break;
     case WM_ENTERMENULOOP:
-        if (!w_param)
-        {
+        if (!w_param) {
             CefSetOSModalLoop(true);
         }
         break;
     case WM_EXITMENULOOP:
-        if (!w_param)
-        {
+        if (!w_param) {
             CefSetOSModalLoop(false);
         }
         break;
@@ -111,8 +106,7 @@ LRESULT CALLBACK MessageWindowWndProc(HWND window_handle, UINT message, WPARAM w
     switch (message)
     {
     case WM_COMMAND:
-        if (w_param == quitCefCode)
-        {
+        if (w_param == quitCefCode) {
             PostQuitMessage(0);
         }
         break;
@@ -128,7 +122,7 @@ HWND CreateBrowserWindow(HINSTANCE instance_handle, int show_minimize_or_maximiz
     wcex.lpfnWndProc = BrowserWindowWndProc;
     wcex.hInstance = instance_handle;
     wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wcex.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+    wcex.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
     wcex.lpszClassName = BrowserWindowClassName;
     wcex.hIcon = static_cast<HICON>(LoadImage(
         instance_handle, MAKEINTRESOURCE(IDI_ICON1),
@@ -228,7 +222,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             CefSettings settings;
             settings.multi_threaded_message_loop = true;
             settings.remote_debugging_port = is_debug || opt.enableChromiumDebug ? 9009 : 0;
-            settings.background_color = { 0x000000 };
+            settings.background_color = CefColorSetARGB(255, 0, 0, 0);;
             CefString(&settings.cache_path).FromWString(folderResolver.Resolve(infra::util::FolderResolver::Folder::App, L"cef-cache"));
             if (opt.logFolder) {
                 CefString(&settings.log_file).FromString(*opt.logFolder + "\\cef-debug.log");
@@ -236,7 +230,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             else {
                 CefString(&settings.log_file).FromWString(folderResolver.Resolve(infra::util::FolderResolver::Folder::App, L"logs\\cef-debug.log"));
             }
-            settings.log_severity = is_debug ? cef_log_severity_t::LOGSEVERITY_DEFAULT : cef_log_severity_t::LOGSEVERITY_ERROR;
+            settings.log_severity = ToCefLogLevel(util::log::GlobalPolicy::Get().GetLogLevel());
             CefInitialize(main_args, settings, app.get(), nullptr);
         }
         auto hwndBrowser = CreateBrowserWindow(hInstance, nCmdShow);
