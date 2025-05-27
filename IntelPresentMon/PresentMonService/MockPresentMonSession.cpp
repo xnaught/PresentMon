@@ -3,6 +3,7 @@
 #include "MockPresentMonSession.h"
 #include "CliOptions.h"
 #include "..\CommonUtilities\str\String.h"
+#include "Logging.h"
 
 static const std::wstring kMockEtwSessionName = L"MockETWSession";
 
@@ -67,9 +68,10 @@ HANDLE MockPresentMonSession::GetStreamingStartHandle() {
 PM_STATUS MockPresentMonSession::StartTraceSession(uint32_t processId) {
     auto& opt = clio::Options::Get();
 
-    // In a mock PresentMon session we must have an ETL process
+    // In a mock PresentMon session we must have an ETL file
     // if we are starting a trace session
     if (opt.etlTestFile.AsOptional().has_value() == false) {
+        pmlog_error("--etl-test-file requried for mock presentmon session");
         return PM_STATUS::PM_STATUS_FAILURE;
     }
 
@@ -77,12 +79,12 @@ PM_STATUS MockPresentMonSession::StartTraceSession(uint32_t processId) {
     process_trace_finished_ = false;
 
     if (pm_consumer_) {
+        pmlog_error("pmconsumer already created when start trace session called");
         return PM_STATUS::PM_STATUS_SERVICE_ERROR;
     }
 
     auto expectFilteredEvents = IsWindows8Point1OrGreater();
-    auto filterProcessIds =
-        false;  // Does not support process names at this point
+    auto filterProcessIds = false;  // Does not support process names at this point
 
     // Create consumers
     try {
@@ -109,7 +111,7 @@ PM_STATUS MockPresentMonSession::StartTraceSession(uint32_t processId) {
         pm_session_name_ = kMockEtwSessionName;
     }
 
-    std::wstring etl_file_name = pmon::util::str::ToWide(opt.etlTestFile.AsOptional().value());
+    const auto etl_file_name = pmon::util::str::ToWide(*opt.etlTestFile);
 
     // Start the session. If a session with this name is already running, we stop
     // it and start a new session. This is useful if a previous process failed to
