@@ -61,7 +61,7 @@ bool MockPresentMonSession::CheckTraceSessions(bool forceTerminate) {
 }
 
 HANDLE MockPresentMonSession::GetStreamingStartHandle() {
-    return INVALID_HANDLE_VALUE;
+    return evtStreamingStarted_;
 }
 
 PM_STATUS MockPresentMonSession::StartTraceSession(uint32_t processId) {

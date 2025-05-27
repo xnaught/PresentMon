@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include "PresentMonSession.h"
+#include "../CommonUtilities/win/Event.h"
 
 class MockPresentMonSession : public PresentMonSession
 {
@@ -68,6 +69,9 @@ private:
 
     // TODO: Determine if this actually does anything!
     uint32_t target_process_count_;
+
+    // Event for when streaming has started (needed to satisfy virtual interface)
+    pmon::util::win::Event evtStreamingStarted_;
 
     mutable std::mutex session_mutex_;
 };

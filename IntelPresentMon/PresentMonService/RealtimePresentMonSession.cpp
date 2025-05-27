@@ -17,11 +17,10 @@ static const std::wstring kRealTimeSessionName = L"PMService";
 
 RealtimePresentMonSession::RealtimePresentMonSession()
     : target_process_count_(0),
-    quit_output_thread_(false) {
+    quit_output_thread_(false)
+{
     pm_session_name_.clear();
     processes_.clear();
-    HANDLE temp_handle = CreateEvent(NULL, TRUE, FALSE, NULL);
-    streaming_started_.reset(temp_handle);
     pm_consumer_.reset();
 }
 
@@ -58,9 +57,8 @@ PM_STATUS RealtimePresentMonSession::StartStreaming(uint32_t client_process_id,
         }
         // Only signal the streaming started event when we have
         // exactly one stream after returning from StartStreaming.
-        if ((streamer_.NumActiveStreams() == 1) &&
-            (streaming_started_.get() != INVALID_HANDLE_VALUE)) {
-            SetEvent(streaming_started_.get());
+        if ((streamer_.NumActiveStreams() == 1) && evtStreamingStarted_) {
+            evtStreamingStarted_.Set();
         }
         // Also monitor the target process id
         GetProcessInfo(target_process_id);
@@ -72,9 +70,8 @@ PM_STATUS RealtimePresentMonSession::StartStreaming(uint32_t client_process_id,
 void RealtimePresentMonSession::StopStreaming(uint32_t client_process_id,
     uint32_t target_process_id) {
     streamer_.StopStreaming(client_process_id, target_process_id);
-    if ((streamer_.NumActiveStreams() == 0) &&
-        (streaming_started_.get() != INVALID_HANDLE_VALUE)) {
-        ResetEvent(streaming_started_.get());
+    if ((streamer_.NumActiveStreams() == 0) && evtStreamingStarted_) {
+        evtStreamingStarted_.Reset();
         StopTraceSession();
     }
 }
@@ -89,7 +86,7 @@ bool RealtimePresentMonSession::CheckTraceSessions(bool forceTerminate) {
 }
 
 HANDLE RealtimePresentMonSession::GetStreamingStartHandle() {
-    return streaming_started_.get();
+    return evtStreamingStarted_;
 }
 
 void RealtimePresentMonSession::FlushEvents()
@@ -194,8 +191,8 @@ void RealtimePresentMonSession::StopTraceSession() {
 
     // Stop all streams
     streamer_.StopAllStreams();
-    if (streaming_started_.get() != INVALID_HANDLE_VALUE) {
-        ResetEvent(streaming_started_.get());
+    if (evtStreamingStarted_) {
+        evtStreamingStarted_.Reset();
     }
 
     if (pm_consumer_) {
@@ -631,9 +628,8 @@ void RealtimePresentMonSession::CheckForTerminatedRealtimeProcesses(
             // tracking this process call stop streaming until the streamer
             // returns false and no longer holds an NSM for the process.
             streamer_.StopStreaming(processId);
-            if ((streamer_.NumActiveStreams() == 0) &&
-                (streaming_started_.get() != INVALID_HANDLE_VALUE)) {
-                ResetEvent(streaming_started_.get());
+            if ((streamer_.NumActiveStreams() == 0) && evtStreamingStarted_) {
+                evtStreamingStarted_.Reset();
             }
         }
     }

@@ -1,6 +1,6 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-#include <Windows.h>
+#include "../CommonUtilities/win/WinAPI.h"
 #include <tchar.h>
 #include <iostream>
 

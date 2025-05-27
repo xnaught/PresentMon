@@ -7,7 +7,7 @@ constexpr cef_log_severity_t ToCefLogLevel(::pmon::util::log::Level level)
 	using ::pmon::util::log::Level;
 	switch (level) {
 	case Level::Verbose: return cef_log_severity_t::LOGSEVERITY_VERBOSE;
-	case Level::Debug: return cef_log_severity_t::LOGSEVERITY_DEBUG;
+	case Level::Debug: // in CEF, debug and verbose are the same, so we use cef.info for debug
 	case Level::Performance:
 	case Level::Info: return cef_log_severity_t::LOGSEVERITY_INFO;
 	case Level::Warning: return cef_log_severity_t::LOGSEVERITY_WARNING;
