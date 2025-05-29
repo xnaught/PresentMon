@@ -6,13 +6,13 @@
 
 namespace pmon::util
 {
-	uint64_t GetCurrentTimestamp() noexcept
+	int64_t GetCurrentTimestamp() noexcept
 	{
 		LARGE_INTEGER timestamp;
 		if (!QueryPerformanceCounter(&timestamp)) {
 			pmlog_error("qpc failed").hr().every(50);
 		}
-		return (uint64_t)timestamp.QuadPart;
+		return (int64_t)timestamp.QuadPart;
 	}
 	double GetTimestampPeriodSeconds() noexcept
 	{
@@ -22,13 +22,13 @@ namespace pmon::util
 		}
 		return 1.0 / double(freq.QuadPart);
 	}
-	void SpinWaitUntilTimestamp(uint64_t timestamp) noexcept
+	void SpinWaitUntilTimestamp(int64_t timestamp) noexcept
 	{
 		while (GetCurrentTimestamp() < timestamp) {
 			std::this_thread::yield();
 		}
 	}
-	double TimestampDeltaToSeconds(uint64_t start, uint64_t end, double period) noexcept
+	double TimestampDeltaToSeconds(int64_t start, int64_t end, double period) noexcept
 	{
 		return double(end - start) * period;
 	}
@@ -52,7 +52,7 @@ namespace pmon::util
 		const auto delta = TimestampDeltaToSeconds(startTimestamp_, newTimestamp, performanceCounterPeriod_);
 		return delta;
 	}
-	uint64_t QpcTimer::GetStartTimestamp() const noexcept
+	int64_t QpcTimer::GetStartTimestamp() const noexcept
 	{
 		return startTimestamp_;
 	}

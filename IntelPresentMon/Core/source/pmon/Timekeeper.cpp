@@ -22,7 +22,7 @@ namespace p2c::pmon
 		return singleton.locked;
 	}
 
-	double Timekeeper::RelativeToEpoch(uint64_t qpc)
+	double Timekeeper::RelativeToEpoch(int64_t qpc)
 	{
 		return singleton.period * double(qpc - singleton.epoch);
 	}
