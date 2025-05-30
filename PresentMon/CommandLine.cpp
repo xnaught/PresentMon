@@ -299,6 +299,7 @@ void PrintUsage()
         LR"(--track_hw_measurements)", LR"(Tracks HW-measured latency and/or power data coming from a LMT and/or PCAT device.)",
         LR"(--track_app_timing)", LR"(Track app times for each displayed frame; requires application and/or driver instrumentation using Intel-PresentMon provider.)",
         LR"(--track_hybrid_present)", LR"(Tracks if the present is a hybrid present and is performing a cross adapter copy.)",
+        LR"(--set_circular_buffer_size)", LR"(Overide the default present event circular buffer size of 2048. Must be a power of 2.)",
     };
 
     // Layout
@@ -384,6 +385,7 @@ bool ParseCommandLine(int argc, wchar_t** argv)
     args->mTimer = 0;
     args->mHotkeyModifiers = MOD_NOREPEAT;
     args->mHotkeyVirtualKeyCode = 0;
+    args->mPresentEventCircularBufferSize = 0;
     args->mConsoleOutput = ConsoleOutput::Statistics;
     args->mTrackDisplay = true;
     args->mTrackInput = true;
@@ -460,6 +462,7 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         else if (ParseArg(argv[i], L"restart_as_admin"))           { args->mTryToElevate             = true; continue; }
         else if (ParseArg(argv[i], L"terminate_on_proc_exit"))     { args->mTerminateOnProcExit      = true; continue; }
         else if (ParseArg(argv[i], L"terminate_after_timed"))      { args->mTerminateAfterTimer      = true; continue; }
+        else if (ParseArg(argv[i], L"set_circular_buffer_size size")) { if (ParseValue(argv, argc, &i, &args->mPresentEventCircularBufferSize)) { continue; } }
 
         // Beta options:
         else if (ParseArg(argv[i], L"track_frame_type"))      { args->mTrackFrameType      = true; continue; }
@@ -505,6 +508,14 @@ bool ParseCommandLine(int argc, wchar_t** argv)
             (args->mHotkeyModifiers == MOD_NOREPEAT && args->mHotkeyVirtualKeyCode == VK_F12))) {
         PrintHotkeyError();
         return false;
+    }
+
+    // Disallow a circular buffer size that is not a power of 2.
+    if (args->mPresentEventCircularBufferSize != 0) {
+        if ((args->mPresentEventCircularBufferSize & (args->mPresentEventCircularBufferSize - 1)) != 0) {
+            PrintError(L"error: --set_circular_buffer_size must be a power of 2.\n");
+            return false;
+        }
     }
 
     // Ensure only one of --output_file --output_stdout --no_csv.

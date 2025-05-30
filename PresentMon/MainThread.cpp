@@ -253,7 +253,11 @@ int wmain(int argc, wchar_t** argv)
     SetConsoleCtrlHandler(HandleCtrlEvent, TRUE);
 
     // Create event consumers
-    PMTraceConsumer pmConsumer;
+    PMTraceConsumer pmConsumer(
+        args.mPresentEventCircularBufferSize != 0
+        ? args.mPresentEventCircularBufferSize
+        : PMTraceConsumer::PRESENTEVENT_CIRCULAR_BUFFER_SIZE);
+
     pmConsumer.mTrackDisplay               = args.mTrackDisplay;
     pmConsumer.mTrackGPU                   = args.mTrackGPU;
     pmConsumer.mTrackGPUVideo              = args.mTrackGPUVideo;
@@ -382,6 +386,11 @@ int wmain(int argc, wchar_t** argv)
     }
     if (pmSession.mNumEventsLost > 0) {
         PrintWarning(L"warning: %lu ETW events were lost.\n", pmSession.mNumEventsLost);
+    }
+    if (pmConsumer.mNumOverflowedPresents > 0) {
+        PrintWarning(L"warning: %lu overflowed presents detected. This could be due to a high-fps application.\n",
+                     pmConsumer.mNumOverflowedPresents);
+        PrintWarning(L"         Consider increasing the --present_event_circular_buffer_size to a value larger than the default of 2048.\n");
     }
 
     /* We cannot remove the Ctrl handler because it is in an infinite sleep so

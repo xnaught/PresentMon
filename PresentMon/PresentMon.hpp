@@ -66,6 +66,7 @@ struct CommandLineArgs {
     UINT mTimer;
     UINT mHotkeyModifiers;
     UINT mHotkeyVirtualKeyCode;
+    UINT mPresentEventCircularBufferSize;
     TimeUnit mTimeUnit;
     CSVOutput mCSVOutput;
     ConsoleOutput mConsoleOutput;

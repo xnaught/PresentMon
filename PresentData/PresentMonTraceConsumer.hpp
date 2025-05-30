@@ -294,6 +294,8 @@ private:
 
 struct PMTraceConsumer
 {
+    static constexpr int PRESENTEVENT_CIRCULAR_BUFFER_SIZE = 2048;
+
     // -------------------------------------------------------------------------------------------
     // The following are parameters to the analysis, which can be configured prior to starting the
     // trace session.
@@ -353,6 +355,8 @@ struct PMTraceConsumer
     uint32_t mCompletedIndex = 0;       // The index of mCompletedPresents of the oldest completed present.
     uint32_t mCompletedCount = 0;       // The total number of presents in mCompletedPresents.
     uint32_t mReadyCount = 0;           // The number of presents in mCompletedPresents, starting at mCompletedIndex, that are ready to be dequeued.
+    uint32_t mNumOverflowedPresents = 0; // The number of presents that have been lost due to the ring buffer wrapping.
+    uint32_t mCircularBufferSize = 0;   // The size of the ring buffers for presents.
 
     // Mutexs to protect consumer/dequeue access from different threads:
     std::mutex mProcessEventMutex;
@@ -505,6 +509,7 @@ struct PMTraceConsumer
     // Functions for decoding ETW and analysing process and present events.
 
     PMTraceConsumer();
+    PMTraceConsumer(uint32_t circularBufferSize);
     ~PMTraceConsumer();
 
     PMTraceConsumer(const PMTraceConsumer&) = delete;
@@ -566,4 +571,10 @@ struct PMTraceConsumer
     AppTimingData* ExtractAppTimingData(uint32_t processId, uint32_t appFrameId, uint64_t presentStartTime);
     bool IsApplicationPresent(std::shared_ptr<PresentEvent> const& present);
     void SetAppTimingDataAsComplete(uint32_t processId, uint32_t appFrameId);
+
+    inline uint32_t GetRingIndex(uint32_t index)
+    {
+        return index % mCircularBufferSize;
+    }
+
 };
