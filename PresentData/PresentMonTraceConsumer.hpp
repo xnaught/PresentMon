@@ -319,6 +319,7 @@ struct PMTraceConsumer
 
     bool mIsRealtimeSession = true; // allow consumer to have different behavior for realtime vs. offline analysis
     bool mDisableOfflineBackpressure = false;
+    bool mPaceEvents = false;
 
     // -------------------------------------------------------------------------------------------
     // These functions can be used to filter PresentEvents by process from within the consumer.

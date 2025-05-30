@@ -8,6 +8,7 @@
     <ClCompile Include="MainThread.cpp" />
     <ClCompile Include="OutputThread.cpp" />
     <ClCompile Include="Privilege.cpp" />
+    <ClCompile Include="LogSetup.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="PresentMon.hpp" />
