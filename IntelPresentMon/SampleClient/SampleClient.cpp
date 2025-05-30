@@ -1,5 +1,6 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <string>
 #include "Console.h"
@@ -15,6 +16,7 @@
 #include <format>
 #include <chrono>
 #include <conio.h>
+#include <boost/process.hpp>
 #include "../PresentMonAPI2/PresentMonAPI.h"
 #include "../PresentMonAPI2/Internal.h"
 #include "CliOptions.h"
@@ -32,6 +34,8 @@
 #include "LogDemo.h"
 #include "DiagnosticDemo.h"
 
+#include "../CommonUtilities/IntervalWaiter.h"
+
 
 int main(int argc, char* argv[])
 {
@@ -40,6 +44,43 @@ int main(int argc, char* argv[])
             return *e;
         }
         auto& opt = clio::Options::Get();
+
+        // make sure we're using the debug dev version of the pmapi dll
+        pmLoaderSetPathToMiddlewareDll_("PresentMonAPI2.dll");
+
+        // launch the service, getting it to process an ETL gold file (custom object names)
+        namespace bp = boost::process;
+        using namespace std::literals;
+        const auto pipeName = R"(\\.\pipe\pmsvc-ctl-pipe-tt)"s;
+        bp::child svc{
+            "PresentMonService.exe"s,
+            "--timed-stop"s, "10000"s,
+            "--control-pipe"s, pipeName,
+            "--nsm-prefix"s, "pmon_nsm_tt_"s,
+            "--intro-nsm"s, "svc-intro-tt"s,
+            "--etw-session-name"s, "svc-sesh-tt"s,
+            "--etl-test-file"s, R"(..\..\tests\gold\test_case_0.etl)"s,
+        };
+
+        // connect to the service with custom control pipe name
+        std::this_thread::sleep_for(250ms);
+        auto pApi = std::make_unique<pmapi::Session>(pipeName);
+
+        // track the pid we know to be active in the ETL (10792 for gold1
+        auto tracker = pApi->TrackProcess(10792);
+
+        // setup fixed dynamic query for basic metrics (FPS presented)
+        PM_BEGIN_FIXED_DYNAMIC_QUERY(MyDynamicQuery)
+            pmapi::FixedQueryElement fpsAvg{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_AVG };
+        PM_END_FIXED_QUERY query{ *pApi, 200., 50., 1, 1 };
+
+        // output realtime samples to console at a steady interval
+        pmon::util::IntervalWaiter waiter{ 0.1 };
+        while (true) {
+            query.Poll(tracker);
+            std::cout << "FPS: " << query.fpsAvg.As<double>() << std::endl;
+            waiter.Wait();
+        }
 
         if (opt.logDemo) {
             RunLogDemo(*opt.logDemo);
