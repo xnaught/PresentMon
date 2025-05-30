@@ -462,7 +462,7 @@ bool ParseCommandLine(int argc, wchar_t** argv)
         else if (ParseArg(argv[i], L"restart_as_admin"))           { args->mTryToElevate             = true; continue; }
         else if (ParseArg(argv[i], L"terminate_on_proc_exit"))     { args->mTerminateOnProcExit      = true; continue; }
         else if (ParseArg(argv[i], L"terminate_after_timed"))      { args->mTerminateAfterTimer      = true; continue; }
-        else if (ParseArg(argv[i], L"set_circular_buffer_size size")) { if (ParseValue(argv, argc, &i, &args->mPresentEventCircularBufferSize)) { continue; } }
+        else if (ParseArg(argv[i], L"set_circular_buffer_size"))   { if (ParseValue(argv, argc, &i, &args->mPresentEventCircularBufferSize)) { continue; } }
 
         // Beta options:
         else if (ParseArg(argv[i], L"track_frame_type"))      { args->mTrackFrameType      = true; continue; }

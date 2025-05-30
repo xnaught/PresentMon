@@ -388,9 +388,12 @@ int wmain(int argc, wchar_t** argv)
         PrintWarning(L"warning: %lu ETW events were lost.\n", pmSession.mNumEventsLost);
     }
     if (pmConsumer.mNumOverflowedPresents > 0) {
-        PrintWarning(L"warning: %lu overflowed presents detected. This could be due to a high-fps application.\n",
+        PrintWarning(L"warning: %lu overflowed present events detected. This could be due to a high-fps application.\n",
                      pmConsumer.mNumOverflowedPresents);
-        PrintWarning(L"         Consider increasing the --present_event_circular_buffer_size to a value larger than the default of 2048.\n");
+        PrintWarning(L"         Consider increasing the present event circular buffer size to a value larger\n");
+        PrintWarning(L"         than the default of 2048, e.g., --set_circular_buffer_size 4096.\n");
+
+                  
     }
 
     /* We cannot remove the Ctrl handler because it is in an infinite sleep so
