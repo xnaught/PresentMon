@@ -306,18 +306,22 @@ void CharConvert<T>::Convert(const std::string data, T& convertedData, Header co
 }
 
 size_t countDecimalPlaces(double value) {
-    // Convert double to string
     std::string str = std::to_string(value);
+    auto dotPos = str.find('.');
+    if (dotPos == std::string::npos) return 0;
 
-    char const* a = str.c_str();
+    // Get the decimal part
+    std::string decimals = str.substr(dotPos + 1);
 
-    double testNumber = 0.0;
-    double goldNumber = 0.0;
-    int testSucceededCount = sscanf_s(a, "%lf", &testNumber);
+    // Remove trailing zeros
+    decimals.erase(decimals.find_last_not_of('0') + 1);
 
-    const char* testDecimalAddr = strchr(a, '.');
-    size_t testDecimalNumbersCount = testDecimalAddr == nullptr ? 0 : ((a + strlen(a)) - testDecimalAddr - 1);
-    return testDecimalNumbersCount;
+    // Count non-zero decimal digits
+    size_t count = 0;
+    for (char c : decimals) {
+        if (c != '0') ++count;
+    }
+    return count;
 }
 
 template<typename T>
@@ -689,6 +693,9 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
             case Header_MsPCLatency:
                 if (v2MetricRow_.msPcLatency.has_value()) {
                     columnsMatch = Validate(v2MetricRow_.msPcLatency.value(), msPcLatency);
+                    if (!columnsMatch) {
+                        OutputDebugStringA("What!?\n");
+                    }
                 }
                 else
                 {
@@ -779,6 +786,11 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
             default:
                 columnsMatch = true;
                 break;
+            }
+            if (columnsMatch == false) {
+                // If the columns do not match, create an error string
+                // and assert failure.
+                Assert::Fail(CreateErrorString(pair.second, line_).c_str());
             }
             Assert::IsTrue(columnsMatch, CreateErrorString(pair.second, line_).c_str());
         }
