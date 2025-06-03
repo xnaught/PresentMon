@@ -221,8 +221,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
             auto& folderResolver = infra::util::FolderResolver::Get();
             CefSettings settings;
             settings.multi_threaded_message_loop = true;
+            settings.no_sandbox = true;
             settings.remote_debugging_port = is_debug || opt.enableChromiumDebug ? 9009 : 0;
-            settings.background_color = CefColorSetARGB(255, 0, 0, 0);;
+            settings.background_color = CefColorSetARGB(255, 0, 0, 0);
             CefString(&settings.cache_path).FromWString(folderResolver.Resolve(infra::util::FolderResolver::Folder::App, L"cef-cache"));
             if (opt.logFolder) {
                 CefString(&settings.log_file).FromString(*opt.logFolder + "\\cef-debug.log");
