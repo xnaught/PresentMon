@@ -67,11 +67,9 @@ int main(int argc, char* argv[])
         };
 
         // connect to the service with custom control pipe name
-        std::this_thread::sleep_for(50ms);
+        std::this_thread::sleep_for(25ms);
         auto pApi = std::make_unique<pmapi::Session>(pipeName);
 
-        // track the pid we know to be active in the ETL (10792 for gold1
-        auto tracker = pApi->TrackProcess(10792);
 
         // setup fixed dynamic query for basic metrics (FPS presented)
         PM_BEGIN_FIXED_DYNAMIC_QUERY(MyDynamicQuery)
@@ -82,14 +80,23 @@ int main(int argc, char* argv[])
             pmapi::FixedQueryElement frameTime{ this, PM_METRIC_CPU_FRAME_TIME, PM_STAT_NONE };
             pmapi::FixedQueryElement startTime{ this, PM_METRIC_CPU_START_TIME, PM_STAT_NONE };
         PM_END_FIXED_QUERY query2{ *pApi, 50 };
+        // track the pid we know to be active in the ETL (10792 for gold1
+        auto tracker = pApi->TrackProcess(10792);
 
 
-        // output realtime samples to console at a steady interval
-        while (true) {
-            query2.ForEachConsume(tracker, [&] {
-                std::cout << "FrameTime: " << query2.frameTime.As<double>()
-                    << "  Start: " << query2.startTime.As<double>() << std::endl;
-            });
+        try {
+            // output realtime samples to console at a steady interval
+            while (true) {
+                query2.ForEachConsume(tracker, [&] {
+                    std::cout
+                        << "FrameTime: " << query2.frameTime.As<double>()
+                        << "  Start: " << query2.startTime.As<double>() << std::endl;
+                });
+            }
+        }
+        catch (...) {
+            std::this_thread::sleep_for(500ms);
+            return 0;
         }
 
         if (opt.logDemo) {
