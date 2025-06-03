@@ -57,7 +57,7 @@ $Solution  = Join-Path $buildDir "cef.sln"
 
 # 1) Configure with CMake (no vcvars needed)
 Write-Host "→ Running CMake configure..."
-cmake -G "$Generator" -A $Platform "$RedistPath"
+cmake -G "$Generator" -A $Platform -DUSE_SANDBOX=OFF "$RedistPath"
 if ($LASTEXITCODE -ne 0) {
     Write-Error "CMake configuration failed (exit code $LASTEXITCODE)"; Pop-Location; exit $LASTEXITCODE
 }
