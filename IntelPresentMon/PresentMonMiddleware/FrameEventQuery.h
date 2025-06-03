@@ -4,6 +4,7 @@
 #include <vector>
 #include <span>
 #include <memory>
+#include "AppProvidedData.h"
 
 namespace pmapi::intro
 {
@@ -22,9 +23,9 @@ public:
 	struct Context
 	{
 		// functions
-		Context(uint64_t qpcStart, long long perfCounterFrequency, uint64_t appSimStartTime) : qpcStart{ qpcStart },
+		Context(uint64_t qpcStart, long long perfCounterFrequency, SimTrackingData& appProvidedSimTrackingData) : qpcStart{ qpcStart },
 			performanceCounterPeriodMs{ perfCounterFrequency != 0.f ? 1000.0 / perfCounterFrequency : 0.f },
-			firstAppSimStartTime { appSimStartTime} {}
+			appProvidedSimTrackingData{ appProvidedSimTrackingData } {}
 		void UpdateSourceData(const PmNsmFrameData* pSourceFrameData_in,
 			const PmNsmFrameData* pFrameDataOfNextDisplayed,
 			const PmNsmFrameData* pFrameDataofLastPresented,
@@ -42,14 +43,10 @@ public:
 		uint64_t cpuStart = 0;
         // Present start qpc of the previous frame, displayed or not
         uint64_t previousPresentStartQpc = 0;
-		// The simulation start of the last displayed frame
-		uint64_t previousDisplayedSimStartQpc = 0;
 		// Start cpustart qpc of the previously displayed frame
 		uint64_t lastDisplayedCpuStart = 0;
 		// Screen time qpc of the previously displayed frame.
 		uint64_t previousDisplayedQpc = 0;
-		// Screen time qpc of the last displayed application frame.
-		uint64_t previousDisplayedAppQpc = 0;
 		// Screen time qpc of the first display in the next displayed PmNsmFrameData
 		uint64_t nextDisplayedQpc = 0;
 		// Display index to attribute cpu work, gpu work, animation error and
@@ -63,10 +60,7 @@ public:
 		uint64_t mLastReceivedNotDisplayedPclSimStart = 0;
 		// QPC of the last PC Latency pc input
 		uint64_t mLastReceivedNotDisplayedPclInputTime = 0;
-		// The first app sim start time
-		uint64_t firstAppSimStartTime = 0;
-        // QPC of the last simulation start time regardless of whether it was displayed or not
-		uint64_t lastSimStartTime = 0;
+        SimTrackingData appProvidedSimTrackingData{};
 
 		// Accumlated input to frame start time
 		double mAccumulatedInput2FrameStartTime = 0.f;

@@ -8,6 +8,7 @@
 #include <queue>
 #include "../CommonUtilities/Hash.h"
 #include "../CommonUtilities/Math.h"
+#include "AppProvidedData.h"
 
 namespace pmapi::intro
 {
@@ -27,8 +28,11 @@ namespace pmon::mid
 		void AddI2FsValueForProcess(uint32_t processId, uint64_t timeStamp, double value) {
 			auto it = mProcessIdToI2FsValue.find(processId);
 			if (it == mProcessIdToI2FsValue.end()) {
-				
-				it = mProcessIdToI2FsValue.emplace(processId, I2FsValueContainer{ value, timeStamp }).first;
+				auto firstEmaValue = pmon::util::CalculateEma(
+					0.,
+					value,
+					mEmaAlpha);
+				it = mProcessIdToI2FsValue.emplace(processId, I2FsValueContainer{ firstEmaValue, timeStamp }).first;
 				return;
 			}
 			if (timeStamp > it->second.timestamp) {
@@ -204,8 +208,8 @@ namespace pmon::mid
 		uint32_t clientProcessId = 0;
 		// Stream clients mapping to process id
 		std::map<uint32_t, std::unique_ptr<StreamClient>> presentMonStreamClients;
-		// App sim start time for each process id
-		std::map<uint32_t, uint64_t> appSimStartTime;
+		// App provided simulation timing data for each process id
+		std::map<uint32_t, SimTrackingData> appSimTrackingData;
 		std::unique_ptr<ipc::MiddlewareComms> pComms;
 		// Dynamic query handle to frame data delta
 		std::unordered_map<std::pair<const PM_DYNAMIC_QUERY*, uint32_t>, uint64_t> queryFrameDataDeltas;

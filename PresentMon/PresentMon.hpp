@@ -55,6 +55,13 @@ enum class CSVOutput {
     Stdout  // To STDOUT in CSV format
 };
 
+// What the animation error calculation is based on
+enum class AnimationErrorSource {
+    CpuStart,
+    AppProvider,
+    PCLatency,
+};
+
 struct CommandLineArgs {
     std::vector<std::wstring> mTargetProcessNames;
     std::vector<std::wstring> mExcludeProcessNames;
@@ -196,6 +203,10 @@ struct SwapChainData {
     uint64_t mLastReceivedNotDisplayedAppProviderInputTime = 0;
     // QPC of the last PC Latency simulation start
     uint64_t mLastReceivedNotDisplayedPclSimStart = 0;
+
+    // Animation error source. Start with CPU start QPC and switch if
+    // we receive a valid app provider or PCL sim start time.
+    AnimationErrorSource mAnimationErrorSource = AnimationErrorSource::CpuStart;
 
     // Frame statistics
     float mAvgCPUDuration = 0.f;

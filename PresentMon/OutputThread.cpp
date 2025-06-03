@@ -246,17 +246,55 @@ static void UpdateChain(
         if (p->Displayed.empty() == false) {
             if (p->Displayed.back().first == FrameType::NotSet ||
                 p->Displayed.back().first == FrameType::Application) {
-                if (p->AppSimStartTime != 0) {
+                
+                // If the chain animation error source has been set to either
+                // app provider or PCL latency then set the last displayed simulation start time and the
+                // first app simulation start time based on the animation error source type.
+                if (chain->mAnimationErrorSource == AnimationErrorSource::AppProvider) {
                     chain->mLastDisplayedSimStartTime = p->AppSimStartTime;
                     if (chain->mFirstAppSimStartTime == 0) {
                         // Received the first app sim start time.
                         chain->mFirstAppSimStartTime = p->AppSimStartTime;
                     }
-                } else if (chain->mLastAppPresent != nullptr) {
-                    chain->mLastDisplayedSimStartTime = chain->mLastAppPresent->PresentStartTime +
-                        chain->mLastAppPresent->TimeInPresent;
+                    chain->mLastDisplayedAppScreenTime = p->Displayed.back().second;
+                } else if (chain->mAnimationErrorSource == AnimationErrorSource::PCLatency) {
+                    // In the case of PCLatency only set values if pcl sim start time is not zero.
+                    if (p->PclSimStartTime != 0) {
+                        chain->mLastDisplayedSimStartTime = p->PclSimStartTime;
+                        if (chain->mFirstAppSimStartTime == 0) {
+                            // Received the first app sim start time.
+                            chain->mFirstAppSimStartTime = p->PclSimStartTime;
+                        }
+                        chain->mLastDisplayedAppScreenTime = p->Displayed.back().second;
+                    }
+                } else {
+                    // Currently sourcing animation error from CPU start time, however check
+                    // to see if we have a valid app provider or PCL sim start time and set the
+                    // new animation source and set the first app sim start time
+                    if (p->AppSimStartTime != 0) {
+                        chain->mAnimationErrorSource = AnimationErrorSource::AppProvider;
+                        chain->mLastDisplayedSimStartTime = p->AppSimStartTime;
+                        if (chain->mFirstAppSimStartTime == 0) {
+                            // Received the first app sim start time.
+                            chain->mFirstAppSimStartTime = p->AppSimStartTime;
+                        }
+                        chain->mLastDisplayedAppScreenTime = p->Displayed.back().second;
+                    } else if (p->PclSimStartTime != 0) {
+                        chain->mAnimationErrorSource = AnimationErrorSource::PCLatency;
+                        chain->mLastDisplayedSimStartTime = p->PclSimStartTime;
+                        if (chain->mFirstAppSimStartTime == 0) {
+                            // Received the first app sim start time.
+                            chain->mFirstAppSimStartTime = p->PclSimStartTime;
+                        }
+                        chain->mLastDisplayedAppScreenTime = p->Displayed.back().second;
+                    } else {
+                        if (chain->mLastAppPresent != nullptr) {
+                            chain->mLastDisplayedSimStartTime = chain->mLastAppPresent->PresentStartTime +
+                                chain->mLastAppPresent->TimeInPresent;
+                        }
+                        chain->mLastDisplayedAppScreenTime = p->Displayed.back().second;
+                    }
                 }
-                chain->mLastDisplayedAppScreenTime = p->Displayed.back().second;
             }
         }
         // Want this to always be updated with the last displayed screen time regardless if the
@@ -601,9 +639,16 @@ static void ReportMetricsHelper(
                 // start time. Simulation start can be either an app provided sim start time via the provider or
                 // PCL stats or, if not present,the cpu start.
                 uint64_t simStartTime = 0;
-                if (p->AppSimStartTime != 0 || p->PclSimStartTime != 0) {
-                    simStartTime = p->AppSimStartTime != 0 ? p->AppSimStartTime : p->PclSimStartTime;
-                } else {
+                if (chain->mAnimationErrorSource == AnimationErrorSource::AppProvider) {
+                    // If the app provider is the source of the animation error then use the app sim start time.
+                    simStartTime = p->AppSimStartTime;
+                }
+                else if (chain->mAnimationErrorSource == AnimationErrorSource::PCLatency) {
+                    // If the pcl latency is the source of the animation error then use the pcl sim start time.
+                    simStartTime = p->PclSimStartTime;
+                }
+                else if (chain->mAnimationErrorSource == AnimationErrorSource::CpuStart) {
+                    // If the cpu start time is the source of the animation error then use the cpu start time.
                     simStartTime = metrics.mCPUStart;
                 }
 

@@ -1283,10 +1283,10 @@ static void ReportMetrics(
             SetActiveGraphicsAdapter(*devId);
         }
 
-        uint64_t simStartTime = 0;
-        auto iter = appSimStartTime.find(processId);
-        if (iter != appSimStartTime.end()) {
-            simStartTime = iter->second;
+        SimTrackingData appProvidedSimTrackingData{};
+        auto iter = appSimTrackingData.find(processId);
+        if (iter != appSimTrackingData.end()) {
+            appProvidedSimTrackingData = iter->second;
         }
 
         FakePMTraceSession pmSession;
@@ -1296,7 +1296,7 @@ static void ReportMetrics(
         PM_FRAME_QUERY::Context ctx{ 
             nsm_hdr->start_qpc,
             pShmClient->GetQpcFrequency().QuadPart,
-            simStartTime};
+            appProvidedSimTrackingData };
 
         while (frames_copied < frames_to_copy) {
             const PmNsmFrameData* pCurrentFrameData = nullptr;
@@ -1325,10 +1325,6 @@ static void ReportMetrics(
                     pFrameDataOfLastDisplayed,
                     pFrameDataOfLastAppDisplayed,
                     pFrameDataOfPreviousAppFrameOfLastAppDisplayed);
-
-                if (simStartTime == 0 && ctx.firstAppSimStartTime != 0) {
-                    simStartTime = ctx.firstAppSimStartTime;
-                }
 
                 if (ctx.dropped && ctx.pSourceFrameData->present_event.DisplayedCount == 0) {
                         pQuery->GatherToBlob(ctx, pBlob);
@@ -1384,9 +1380,7 @@ static void ReportMetrics(
         }
         // Set to the actual number of frames copied
         numFrames = frames_copied;
-        if (simStartTime != 0) {
-            appSimStartTime[processId] = simStartTime;
-        }
+        appSimTrackingData[processId] = ctx.appProvidedSimTrackingData;
     }
 
     void ConcreteMiddleware::CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)

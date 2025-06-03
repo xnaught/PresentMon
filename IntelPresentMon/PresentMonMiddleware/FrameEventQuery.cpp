@@ -458,7 +458,7 @@ namespace
 	private:
 		uint32_t outputOffset_;
 	};
-	template<uint64_t PmNsmPresentEvent::* pEnd, bool doDroppedCheck, bool calcAnimationTime, bool calcPresentStartTime>
+	template<uint64_t PmNsmPresentEvent::* pEnd, bool calcPresentStartTime>
 	class StartDifferenceGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
@@ -469,36 +469,11 @@ namespace
 		}
 		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
-			if constexpr (calcAnimationTime)  {
-				if constexpr (doDroppedCheck) {
-					if (ctx.dropped) {
-						reinterpret_cast<double&>(pDestBlob[outputOffset_]) = std::numeric_limits<double>::quiet_NaN();
-						return;
-					}
-				}
-				// Calculate the current frame's displayed time 
-				auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-				auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
-					? ctx.nextDisplayedQpc
-					: ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex + 1];
-				const auto displayedTime = TimestampDeltaToUnsignedMilliSeconds(ScreenTime, NextScreenTime, ctx.performanceCounterPeriodMs);
-				if (ctx.sourceFrameDisplayIndex != ctx.appIndex ||
-					displayedTime == 0.0) {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = std::numeric_limits<double>::quiet_NaN();
-					return;
-				}
-				const auto firstSimStartTime = ctx.firstAppSimStartTime != 0 ? ctx.firstAppSimStartTime :
-					ctx.qpcStart;
-				const auto currentSimTime = ctx.pSourceFrameData->present_event.*pEnd != 0 ? ctx.pSourceFrameData->present_event.*pEnd :
-					ctx.cpuStart;
-				const auto val = TimestampDeltaToUnsignedMilliSeconds(firstSimStartTime, currentSimTime, ctx.performanceCounterPeriodMs);
-				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
-			} else if constexpr (calcPresentStartTime) {
+			if constexpr (calcPresentStartTime) {
 				const auto qpcDuration = ctx.pSourceFrameData->present_event.*pEnd - ctx.qpcStart;
 				const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
-			}
-			else {
+			} else {
 				const auto qpcDuration = ctx.cpuStart - ctx.qpcStart;
 				const auto val = ctx.performanceCounterPeriodMs * double(qpcDuration);
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
@@ -817,8 +792,9 @@ namespace
 				}
 			}
 			if constexpr (doZeroCheck) {
-				if (ctx.previousDisplayedSimStartQpc == 0 && ctx.lastDisplayedCpuStart == 0) {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.0;
+				if (ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime == 0 && ctx.lastDisplayedCpuStart == 0) {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 
+						std::numeric_limits<double>::quiet_NaN();
 					return;
 				}
 			}
@@ -833,21 +809,36 @@ namespace
 						std::numeric_limits<double>::quiet_NaN();
 					return;
 				}
-				auto PrevScreenTime = ctx.previousDisplayedAppQpc; // Always use application display time for animation error
-				auto SimStartTime = ctx.pSourceFrameData->present_event.AppSimStartTime != 0 ? 
-					ctx.pSourceFrameData->present_event.AppSimStartTime :
-					ctx.cpuStart;
-				auto PrevSimStartTime = ctx.previousDisplayedSimStartQpc != 0 ?
-					ctx.previousDisplayedSimStartQpc :
+				auto PrevScreenTime = ctx.appProvidedSimTrackingData.lastDisplayedAppScreenTime;
+				// Next calculate the animation error. First calculate the simulation
+				// start time. Simulation start can be either an app provided sim start time via the provider or
+				// PCL stats or, if not present,the cpu start.
+				uint64_t simStartTime = 0;
+				if (ctx.appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::AppProvider && 
+					ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime != 0) {
+					// If the app provider is the source of the animation error then use the app sim start time.
+					simStartTime = ctx.pSourceFrameData->present_event.AppSimStartTime;
+				}
+				else if (ctx.appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::PCLatency &&
+					ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime != 0) {
+					// If the pcl latency is the source of the animation error then use the pcl sim start time.
+					simStartTime = ctx.pSourceFrameData->present_event.PclSimStartTime;
+				}
+				else if (ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime == 0) {
+					// If the cpu start time is the source of the animation error then use the cpu start time.
+					simStartTime = ctx.cpuStart;
+				}
+				auto PrevSimStartTime = ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime != 0 ?
+					ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime :
 					ctx.lastDisplayedCpuStart;
 				// If the simulation start time is less than the last displated simulation start time it means
 				// we are transitioning to app provider events.
-				if (SimStartTime > PrevSimStartTime) {
+				if (simStartTime > PrevSimStartTime) {
 					const auto val = TimestampDeltaToMilliSeconds(ScreenTime - PrevScreenTime,
-						SimStartTime - PrevSimStartTime, ctx.performanceCounterPeriodMs);
+						simStartTime - PrevSimStartTime, ctx.performanceCounterPeriodMs);
 					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 				} else {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.0;
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = std::numeric_limits<double>::quiet_NaN();
 					return;
 				}
 			}
@@ -855,6 +846,79 @@ namespace
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
 					std::numeric_limits<double>::quiet_NaN();
 			}
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + alignof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
+	class AnimationTimeGatherCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		AnimationTimeGatherCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
+		{
+			if (ctx.dropped) {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = std::numeric_limits<double>::quiet_NaN();
+				return;
+			}
+
+			// Calculate the current frame's displayed time 
+			auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
+			auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
+				? ctx.nextDisplayedQpc
+				: ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex + 1];
+			const auto displayedTime = TimestampDeltaToUnsignedMilliSeconds(ScreenTime, NextScreenTime, ctx.performanceCounterPeriodMs);
+			if (ctx.sourceFrameDisplayIndex != ctx.appIndex ||
+				displayedTime == 0.0) {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = std::numeric_limits<double>::quiet_NaN();
+				return;
+			}
+			const auto firstSimStartTime = ctx.appProvidedSimTrackingData.firstAppSimStartTime != 0 ?
+				ctx.appProvidedSimTrackingData.firstAppSimStartTime :
+				ctx.qpcStart;
+			uint64_t currentSimTime = 0;
+			if (ctx.appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::AppProvider) {
+				if (ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime != 0) {
+					// If the app provider is the source of the animation error then use the app sim start time.
+					currentSimTime = ctx.pSourceFrameData->present_event.AppSimStartTime;
+				}
+				else {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+					return;
+				}
+			}
+			else if (ctx.appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::PCLatency) {
+				if (ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime != 0) {
+					// If the pcl latency is the source of the animation error then use the pcl sim start time.
+					currentSimTime = ctx.pSourceFrameData->present_event.PclSimStartTime;
+				}
+				else {
+					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
+					return;
+				}
+			}
+			else if (ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime == 0) {
+				// If the cpu start time is the source of the animation error then use the cpu start time.
+				currentSimTime = ctx.cpuStart;
+			}
+			const auto val = TimestampDeltaToUnsignedMilliSeconds(firstSimStartTime, currentSimTime, ctx.performanceCounterPeriodMs);
+			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 		}
 		uint32_t GetBeginOffset() const override
 		{
@@ -1053,7 +1117,7 @@ namespace
 			double val = 0.;
 			auto simStartTime = ctx.pSourceFrameData->present_event.PclSimStartTime != 0 ?
 				ctx.pSourceFrameData->present_event.PclSimStartTime : 
-				ctx.lastSimStartTime;
+				ctx.appProvidedSimTrackingData.lastAppSimStartTime;
 			if (ctx.avgInput2Fs == 0. || simStartTime == 0) {
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
 					std::numeric_limits<double>::quiet_NaN();
@@ -1089,58 +1153,6 @@ namespace
 		uint32_t outputOffset_;
 		uint16_t outputPaddingSize_;
 	};
-	template<bool doDroppedCheck>
-	class AnimationTimeGatherCommand_ : public pmon::mid::GatherCommand_
-	{
-	public:
-		AnimationTimeGatherCommand_(size_t nextAvailableByteOffset)
-		{
-			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
-			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
-		}
-		void Gather(Context& ctx, uint8_t* pDestBlob) const override
-		{
-			if constexpr (doDroppedCheck) {
-				if (ctx.dropped) {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
-						std::numeric_limits<double>::quiet_NaN();
-					return;
-				}
-			}
-			if (ctx.sourceFrameDisplayIndex != ctx.appIndex) {
-				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 0.;
-				return;
-			}
-			auto firstSimStartTime = ctx.firstAppSimStartTime != 0 ? ctx.firstAppSimStartTime :
-				ctx.qpcStart;
-			uint64_t currentSimTime = 0;
-			if (ctx.pSourceFrameData->present_event.AppSimStartTime != 0 || ctx.pSourceFrameData->present_event.PclSimStartTime != 0) {
-				currentSimTime = ctx.pSourceFrameData->present_event.AppSimStartTime != 0 ?
-					ctx.pSourceFrameData->present_event.AppSimStartTime :
-					ctx.pSourceFrameData->present_event.PclSimStartTime;
-			}
-			else {
-				currentSimTime = ctx.cpuStart;
-			}
-			auto val = TimestampDeltaToUnsignedMilliSeconds(firstSimStartTime, currentSimTime, ctx.performanceCounterPeriodMs);
-			reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
-		}
-		uint32_t GetBeginOffset() const override
-		{
-			return outputOffset_ - outputPaddingSize_;
-		}
-		uint32_t GetEndOffset() const override
-		{
-			return outputOffset_ + alignof(double);
-		}
-		uint32_t GetOutputOffset() const override
-		{
-			return outputOffset_;
-		}
-	private:
-		uint32_t outputOffset_;
-		uint16_t outputPaddingSize_;
-	};
 	class BetweenSimStartsGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
@@ -1159,14 +1171,14 @@ namespace
 				currentSimStartTime = ctx.pSourceFrameData->present_event.AppSimStartTime;
             }
 
-			if (ctx.lastSimStartTime == 0 || currentSimStartTime == 0) {
+			if (ctx.appProvidedSimTrackingData.lastAppSimStartTime == 0 || currentSimStartTime == 0) {
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
 					std::numeric_limits<double>::quiet_NaN();
 				return;
 			}
 
 			val = TimestampDeltaToUnsignedMilliSeconds(
-				ctx.lastSimStartTime, currentSimStartTime,
+				ctx.appProvidedSimTrackingData.lastAppSimStartTime, currentSimStartTime,
 				ctx.performanceCounterPeriodMs);
 
 			if (val == 0.) {
@@ -1350,7 +1362,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_PRESENT_FLAGS:
 		return std::make_unique<CopyGatherCommand_<&Pre::PresentFlags>>(pos);
 	case PM_METRIC_CPU_START_TIME:
-		return std::make_unique<StartDifferenceGatherCommand_<&Pre::PresentStartTime, 0, 0, 0>>(pos);
+		return std::make_unique<StartDifferenceGatherCommand_<&Pre::PresentStartTime, 0>>(pos);
 	case PM_METRIC_CPU_FRAME_TIME:
 	case PM_METRIC_BETWEEN_APP_START:
 		return std::make_unique<CpuFrameQpcFrameTimeCommand_>(pos);
@@ -1367,7 +1379,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_ANIMATION_ERROR:
 		return std::make_unique<AnimationErrorGatherCommand_<1,1>>(pos);
 	case PM_METRIC_ANIMATION_TIME:
-		return std::make_unique<StartDifferenceGatherCommand_<&Pre::AppSimStartTime, 1, 1, 0>>(pos);
+		return std::make_unique<AnimationTimeGatherCommand_>(pos);
 	case PM_METRIC_GPU_LATENCY:
 		return std::make_unique<CpuFrameQpcDifferenceGatherCommand_<&Pre::GPUStartTime, &Pre::AppPropagatedGPUStartTime, 0>>(pos);
 	case PM_METRIC_DISPLAY_LATENCY:
@@ -1379,7 +1391,7 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_INSTRUMENTED_LATENCY:
 		return std::make_unique<DisplayLatencyGatherCommand_<1,0>>(pos);
 	case PM_METRIC_PRESENT_START_TIME:
-		return std::make_unique<StartDifferenceGatherCommand_<&Pre::PresentStartTime, 0, 0, 1>>(pos);
+		return std::make_unique<StartDifferenceGatherCommand_<&Pre::PresentStartTime, 1>>(pos);
 	case PM_METRIC_PRESENT_START_QPC:
 		return std::make_unique<CopyGatherCommand_<&Pre::PresentStartTime>>(pos);
     case PM_METRIC_IN_PRESENT_API:
@@ -1446,7 +1458,8 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 		}
 	}
 
-	if (firstAppSimStartTime == 0) {
+
+	if (appProvidedSimTrackingData.firstAppSimStartTime == 0) {
 		// Handle this rare case at the start of consuming frames and the application is
 		// producing app frame data:
 		// [0] Frame - Not Dropped           - Valid App Data -> Start of raw frame data
@@ -1456,12 +1469,25 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 		// and therefore not enter this function to update source the data. However the correct
 		// app sim start time is at [0] regardless if [1] or [2] are dropped or not
 		if (pFrameDataOfLastDisplayed) {
-			firstAppSimStartTime = pFrameDataOfLastDisplayed->present_event.AppSimStartTime;
+			if (pFrameDataOfLastDisplayed->present_event.AppSimStartTime != 0) {
+				appProvidedSimTrackingData.firstAppSimStartTime = pFrameDataOfLastDisplayed->present_event.AppSimStartTime;
+				appProvidedSimTrackingData.animationErrorSource = AnimationErrorSource::AppProvider;
+			} else if (pFrameDataOfLastDisplayed->present_event.PclSimStartTime != 0){
+				appProvidedSimTrackingData.firstAppSimStartTime = pFrameDataOfLastDisplayed->present_event.PclSimStartTime;
+				appProvidedSimTrackingData.animationErrorSource = AnimationErrorSource::PCLatency;
+			}
 		}
 		// In the case where [0] does not set the firstAppSimStartTime and the current frame is
 		// either [1] or [2] and is not dropped set the firstAppSimStartTime
-		if (firstAppSimStartTime == 0 && !dropped) {
-			firstAppSimStartTime = pSourceFrameData->present_event.AppSimStartTime;
+		if (appProvidedSimTrackingData.firstAppSimStartTime == 0 && !dropped) {
+			if (pSourceFrameData->present_event.AppSimStartTime != 0) {
+				appProvidedSimTrackingData.firstAppSimStartTime = pSourceFrameData->present_event.AppSimStartTime;
+                appProvidedSimTrackingData.animationErrorSource = AnimationErrorSource::AppProvider;
+			}
+			else if (pSourceFrameData->present_event.PclSimStartTime != 0) {
+				appProvidedSimTrackingData.firstAppSimStartTime = pSourceFrameData->present_event.PclSimStartTime;
+				appProvidedSimTrackingData.animationErrorSource = AnimationErrorSource::PCLatency;
+			}
 		}
 	}
 
@@ -1481,9 +1507,12 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 			cpuStart = pFrameDataOfLastAppPresented->present_event.PresentStartTime +
 				pFrameDataOfLastAppPresented->present_event.TimeInPresent;
 		}
-		// Set chain->mLastSimStartTime to either LastPresented->PclSimStartTime
-		if (pFrameDataOfLastAppPresented->present_event.PclSimStartTime != 0) {
-			lastSimStartTime = pFrameDataOfLastAppPresented->present_event.PclSimStartTime;
+		if (appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::PCLatency &&
+			pFrameDataOfLastPresented->present_event.PclSimStartTime != 0) {
+			appProvidedSimTrackingData.lastAppSimStartTime = pFrameDataOfLastAppPresented->present_event.PclSimStartTime;
+		} else if (appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::AppProvider &&
+			pFrameDataOfLastPresented->present_event.AppSimStartTime != 0) {
+			appProvidedSimTrackingData.lastAppSimStartTime = pFrameDataOfLastAppPresented->present_event.AppSimStartTime;
 		}
 	}
 	else {
@@ -1511,14 +1540,25 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 	}
 
 	if (pFrameDataOfLastAppDisplayed && pFrameDataOfLastAppDisplayed->present_event.DisplayedCount > 0) {
-		previousDisplayedAppQpc = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
-		previousDisplayedSimStartQpc = pFrameDataOfLastAppDisplayed->present_event.AppSimStartTime;
+		// Use the animation error source to set the various last displayed sim start and app screen times
+		if (appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::AppProvider) {
+			appProvidedSimTrackingData.lastDisplayedAppSimStartTime = pFrameDataOfLastAppDisplayed->present_event.AppSimStartTime;
+			appProvidedSimTrackingData.lastDisplayedAppScreenTime = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
+		} else if (appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::PCLatency) {
+			// Special handling is required for application data provided by PCL events. In the PCL events
+			// case we use a non-zero PclSimStartTime as an indicator for an application generated frame.
+			if (pFrameDataOfLastAppDisplayed->present_event.PclSimStartTime != 0) {
+				appProvidedSimTrackingData.lastDisplayedAppSimStartTime = pFrameDataOfLastAppDisplayed->present_event.PclSimStartTime;
+				appProvidedSimTrackingData.lastDisplayedAppScreenTime = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
+			}
+		} else {
+			appProvidedSimTrackingData.lastDisplayedAppScreenTime = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
+		}
+		
 	}
 	else {
 		// TODO: log issue or invalidate related columns or drop frame (or some combination)
 		pmlog_info("null pFrameDataOfLastAppDisplayed");
-		previousDisplayedAppQpc = 0;
-		previousDisplayedSimStartQpc = 0;
 	}
 
 	if (pFrameDataOfPreviousAppFrameOfLastAppDisplayed) {
