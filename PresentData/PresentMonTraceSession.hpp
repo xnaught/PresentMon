@@ -15,6 +15,7 @@ struct PMTraceSession {
 
     // event pacing-specific members
     //
+    int64_t mPacingActualLogStartTimestamp = 0;
     int64_t mPacingRealtimeStartTimestamp = 0;
     int64_t mPacingQpcOffset = 0;
     double mPacingQpcPeriod = 0;

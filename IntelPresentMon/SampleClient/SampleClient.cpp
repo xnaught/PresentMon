@@ -33,6 +33,7 @@
 #include "MetricListSample.h"
 #include "LogDemo.h"
 #include "DiagnosticDemo.h"
+#include "LogSetup.h"
 
 #include "../CommonUtilities/IntervalWaiter.h"
 
@@ -48,13 +49,16 @@ int main(int argc, char* argv[])
         // make sure we're using the debug dev version of the pmapi dll
         pmLoaderSetPathToMiddlewareDll_("PresentMonAPI2.dll");
 
+        // setup logging, including middleware intra-process cross-module link
+        p2sam::ConfigureLogging();
+
         // launch the service, getting it to process an ETL gold file (custom object names)
         namespace bp = boost::process;
         using namespace std::literals;
         const auto pipeName = R"(\\.\pipe\pmsvc-ctl-pipe-tt)"s;
         bp::child svc{
             "PresentMonService.exe"s,
-            "--timed-stop"s, "10000"s,
+            "--timed-stop"s, "5000"s,
             "--control-pipe"s, pipeName,
             "--nsm-prefix"s, "pmon_nsm_tt_"s,
             "--intro-nsm"s, "svc-intro-tt"s,
@@ -63,7 +67,7 @@ int main(int argc, char* argv[])
         };
 
         // connect to the service with custom control pipe name
-        std::this_thread::sleep_for(250ms);
+        std::this_thread::sleep_for(50ms);
         auto pApi = std::make_unique<pmapi::Session>(pipeName);
 
         // track the pid we know to be active in the ETL (10792 for gold1
@@ -74,12 +78,18 @@ int main(int argc, char* argv[])
             pmapi::FixedQueryElement fpsAvg{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_AVG };
         PM_END_FIXED_QUERY query{ *pApi, 200., 50., 1, 1 };
 
+        PM_BEGIN_FIXED_FRAME_QUERY(MyFrameQuery)
+            pmapi::FixedQueryElement frameTime{ this, PM_METRIC_CPU_FRAME_TIME, PM_STAT_NONE };
+            pmapi::FixedQueryElement startTime{ this, PM_METRIC_CPU_START_TIME, PM_STAT_NONE };
+        PM_END_FIXED_QUERY query2{ *pApi, 50 };
+
+
         // output realtime samples to console at a steady interval
-        pmon::util::IntervalWaiter waiter{ 0.1 };
         while (true) {
-            query.Poll(tracker);
-            std::cout << "FPS: " << query.fpsAvg.As<double>() << std::endl;
-            waiter.Wait();
+            query2.ForEachConsume(tracker, [&] {
+                std::cout << "FrameTime: " << query2.frameTime.As<double>()
+                    << "  Start: " << query2.startTime.As<double>() << std::endl;
+            });
         }
 
         if (opt.logDemo) {
