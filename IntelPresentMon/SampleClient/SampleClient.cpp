@@ -50,6 +50,7 @@ int main(int argc, char* argv[])
         pmLoaderSetPathToMiddlewareDll_("PresentMonAPI2.dll");
 
         // setup logging, including middleware intra-process cross-module link
+        p2sam::LogChannelManager zLogMan_;
         p2sam::ConfigureLogging();
 
         // launch the service, getting it to process an ETL gold file (custom object names)
@@ -58,7 +59,7 @@ int main(int argc, char* argv[])
         const auto pipeName = R"(\\.\pipe\pmsvc-ctl-pipe-tt)"s;
         bp::child svc{
             "PresentMonService.exe"s,
-            "--timed-stop"s, "5000"s,
+            "--timed-stop"s, "10000"s,
             "--control-pipe"s, pipeName,
             "--nsm-prefix"s, "pmon_nsm_tt_"s,
             "--intro-nsm"s, "svc-intro-tt"s,
@@ -80,8 +81,8 @@ int main(int argc, char* argv[])
             pmapi::FixedQueryElement frameTime{ this, PM_METRIC_CPU_FRAME_TIME, PM_STAT_NONE };
             pmapi::FixedQueryElement startTime{ this, PM_METRIC_CPU_START_TIME, PM_STAT_NONE };
         PM_END_FIXED_QUERY query2{ *pApi, 50 };
-        // track the pid we know to be active in the ETL (10792 for gold1
-        auto tracker = pApi->TrackProcess(10792);
+        // track the pid we know to be active in the ETL (1268 for dwm in  gold_0)
+        auto tracker = pApi->TrackProcess(1268);
 
 
         try {
@@ -89,13 +90,13 @@ int main(int argc, char* argv[])
             while (true) {
                 query2.ForEachConsume(tracker, [&] {
                     std::cout
+                        << "(" << query2.PeekBlobContainer().GetNumBlobsPopulated() << ") "
                         << "FrameTime: " << query2.frameTime.As<double>()
                         << "  Start: " << query2.startTime.As<double>() << std::endl;
                 });
             }
         }
         catch (...) {
-            std::this_thread::sleep_for(500ms);
             return 0;
         }
 
