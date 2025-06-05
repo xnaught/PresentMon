@@ -22,14 +22,7 @@
 #include <stdlib.h>
 #include <unordered_set>
 
-static constexpr int PRESENTEVENT_CIRCULAR_BUFFER_SIZE = 4096;
-
 static uint32_t gNextFrameId = 1;
-
-static inline uint32_t GetRingIndex(uint32_t index)
-{
-    return index % PRESENTEVENT_CIRCULAR_BUFFER_SIZE;
-}
 
 static inline uint64_t GenerateVidPnLayerId(uint32_t vidPnSourceId, uint32_t layerIndex)
 {
@@ -248,6 +241,16 @@ PresentEvent::PresentEvent(uint32_t fid)
 PMTraceConsumer::PMTraceConsumer()
     : mTrackedPresents(PRESENTEVENT_CIRCULAR_BUFFER_SIZE)
     , mCompletedPresents(PRESENTEVENT_CIRCULAR_BUFFER_SIZE)
+    , mCircularBufferSize(PRESENTEVENT_CIRCULAR_BUFFER_SIZE)
+    , mGpuTrace(this)
+{
+    hEventsReadyEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
+}
+
+PMTraceConsumer::PMTraceConsumer(uint32_t circularBufferSize)
+    : mTrackedPresents(circularBufferSize)
+    , mCompletedPresents(circularBufferSize)
+    , mCircularBufferSize(circularBufferSize)
     , mGpuTrace(this)
 {
     hEventsReadyEvent = CreateEventW(nullptr, FALSE, FALSE, nullptr);
@@ -2210,11 +2213,11 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
     if (present != nullptr) {
         uint32_t index;
         // if completed buffer is full
-        if (mCompletedCount == PRESENTEVENT_CIRCULAR_BUFFER_SIZE) {
+        if (mCompletedCount == mCircularBufferSize) {
             // if we are in offline ETL processing mode, block instead of overwriting events
             // unless either A) the buffer is full of non-ready events or B) backpressure disabled via CLI option
             if (!mIsRealtimeSession && mReadyCount != 0 && !mDisableOfflineBackpressure) {
-                mCompletedRingCondition.wait(lock, [this] { return mCompletedCount < PRESENTEVENT_CIRCULAR_BUFFER_SIZE; });
+                mCompletedRingCondition.wait(lock, [this] { return mCompletedCount < mCircularBufferSize; });
                 index = GetRingIndex(mCompletedIndex + mCompletedCount);
                 mCompletedCount++;
             }
@@ -2230,6 +2233,7 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
                 if (mReadyCount > 0) {
                     mReadyCount--;
                 }
+                mNumOverflowedPresents++;
             }
             // otherwise, completed buffer still has available space
         }
