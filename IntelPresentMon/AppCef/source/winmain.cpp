@@ -13,6 +13,7 @@
 #include <dwmapi.h>
 #include <boost/process.hpp>
 #include <Shobjidl.h>
+#include <ShellScalingApi.h>
 #include <include/cef_version.h>
 
 
@@ -207,6 +208,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
     // set the app id so that windows get grouped
     SetCurrentProcessExplicitAppUserModelID(L"Intel.PresentMon");
+
+    // disable DPI scaling
+    SetProcessDpiAwareness(PROCESS_DPI_UNAWARE);
 
     try {
         using namespace client;
