@@ -38,7 +38,7 @@ if (Test-Path $buildDir) {
 # Locate VS / vcvarsall
 $vswhere = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe"
 if (-not (Test-Path $vswhere)) { Write-Error "vswhere.exe not found"; exit 1 }
-$vsRoot = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
+$vsRoot = & $vswhere -latest -products * -prerelease -requires Microsoft.Component.MSBuild -property installationPath
 if (-not $vsRoot) { Write-Error "No Visual Studio with MSBuild found"; exit 1 }
 $vcvars = Join-Path $vsRoot "VC\Auxiliary\Build\vcvarsall.bat"
 if (-not (Test-Path $vcvars)) { Write-Error "vcvarsall.bat not found"; exit 1 }
@@ -57,7 +57,7 @@ $Solution  = Join-Path $buildDir "cef.sln"
 
 # 1) Configure with CMake (no vcvars needed)
 Write-Host "→ Running CMake configure..."
-cmake -G "$Generator" -A $Platform "$RedistPath"
+cmake -G "$Generator" -A $Platform -DUSE_SANDBOX=OFF "$RedistPath"
 if ($LASTEXITCODE -ne 0) {
     Write-Error "CMake configuration failed (exit code $LASTEXITCODE)"; Pop-Location; exit $LASTEXITCODE
 }
