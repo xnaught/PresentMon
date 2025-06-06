@@ -121,7 +121,7 @@ int AddGpuMetric(pmapi::Session& pSession, unsigned int processId, double window
     return 0;
 }
 
-int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, double windowSize, double metricOffset)
+int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, double windowSize, double metricOffset, bool addGPUMetric)
 {
     using namespace std::chrono_literals;
     using namespace pmapi;
@@ -139,7 +139,7 @@ int DynamicQuerySample(std::unique_ptr<pmapi::Session>&& pSession, double window
         }
 
         auto& opt = clio::Options::Get();
-        if (opt.addGPUMetric) {
+        if (addGPUMetric) {
             return AddGpuMetric(*pSession, processId.value(), windowSize, metricOffset);
         }
 

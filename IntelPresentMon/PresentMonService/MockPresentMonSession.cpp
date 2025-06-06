@@ -102,6 +102,7 @@ PM_STATUS MockPresentMonSession::StartTraceSession(uint32_t processId) {
     pm_consumer_->mTrackInput = true;
     pm_consumer_->mTrackFrameType = true;
     pm_consumer_->mTrackAppTiming = true;
+    pm_consumer_->mPaceEvents = opt.pacePlayback;
 
     if (opt.etwSessionName.AsOptional().has_value()) {
         pm_session_name_ =

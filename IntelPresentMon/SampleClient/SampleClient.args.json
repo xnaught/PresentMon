@@ -3,16 +3,24 @@
   "Id": "79fe382a-c29c-4c32-a028-b8d1abdf51b0",
   "Items": [
     {
-      "Id": "91c5d42b-2da5-4d40-96bf-4ba9e1cce907",
-      "Command": "--help"
+      "Id": "2cf4c62a-0c43-4a7f-a686-8dc38ffc3868",
+      "Command": "--middleware-dll-path .\\PresentMonAPI2.dll"
     },
     {
       "Id": "e8bc0b0d-87c9-4465-b3df-ece2942c05a3",
-      "Command": "--introspection-sample"
+      "Command": "--mode PlaybackFrameQuery"
     },
     {
-      "Id": "2cf4c62a-0c43-4a7f-a686-8dc38ffc3868",
-      "Command": "--middleware-dll-path .\\PresentMonAPI2.dll"
+      "Id": "e1a44305-f06a-4ad6-bf18-d253b419f4b1",
+      "Command": "--mode PlaybackDynamicQuery"
+    },
+    {
+      "Id": "4f61f3a5-c311-4af0-95fd-29fea1ab6e06",
+      "Command": "--service-pace-playback"
+    },
+    {
+      "Id": "91c5d42b-2da5-4d40-96bf-4ba9e1cce907",
+      "Command": "--help"
     }
   ]
 }

@@ -7,6 +7,7 @@
 #include "WrapReflect.h"
 #include "../Meta.h"
 #include <bitset>
+#include <map>
 
 
 namespace pmon::util::ref
@@ -111,5 +112,17 @@ namespace pmon::util::ref
 			oss << name << ", ";
 		}
 		oss << "|";
+	}
+
+	template<typename E>
+	auto GenerateEnumKeyMap()
+	{
+		std::map<std::string, E> map;
+		for (int i = 0; i < int(E::Count); i++) {			
+			if (const auto name = reflect::enum_name(E(i)); name.length()) {
+				map[std::string(name)] = E(i);
+			}
+		}
+		return map;
 	}
 }

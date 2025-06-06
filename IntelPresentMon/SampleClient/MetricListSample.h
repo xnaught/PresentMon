@@ -5,10 +5,11 @@
 #include "../PresentMonAPI2/PresentMonAPI.h"
 #include "../Core/source/pmon/RawFrameDataMetricList.h"
 
-int MetricListSample(pmapi::Session& session)
+int MetricListSample(std::unique_ptr<pmapi::Session> pSession)
 {
     namespace rn = std::ranges;
     namespace vi = rn::views;
+    auto& session = *pSession;
 
     std::ofstream out{ "metrics.md" };
 

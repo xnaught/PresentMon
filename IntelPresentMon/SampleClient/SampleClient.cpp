@@ -1,7 +1,6 @@
 // Copyright (C) 2022 Intel Corporation
 // SPDX-License-Identifier: MIT
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include "../CommonUtilities/win/WinAPI.h"
 #include <string>
 #include "Console.h"
 #include <stdint.h>
@@ -37,121 +36,169 @@
 
 #include "../CommonUtilities/IntervalWaiter.h"
 
+void RunPlaybackFrameQuery()
+{
+    auto& opt = clio::Options::Get();
+
+    // launch the service, getting it to process an ETL gold file (custom object names)
+    namespace bp = boost::process;
+    using namespace std::literals;
+    const auto pipeName = R"(\\.\pipe\pmsvc-ctl-pipe-tt)"s;
+    std::vector<std::string> dargs;
+    if (opt.servicePacePlayback) {
+        dargs.push_back("--pace-playback");
+    }
+    bp::child svc{
+        "PresentMonService.exe"s,
+        "--timed-stop"s, "10000"s,
+        "--control-pipe"s, pipeName,
+        "--nsm-prefix"s, "pmon_nsm_tt_"s,
+        "--intro-nsm"s, "svc-intro-tt"s,
+        "--etw-session-name"s, "svc-sesh-tt"s,
+        "--etl-test-file"s, R"(..\..\tests\gold\test_case_0.etl)"s,
+        bp::args(dargs),
+    };
+
+    // connect to the service with custom control pipe name
+    std::this_thread::sleep_for(25ms);
+    auto pApi = std::make_unique<pmapi::Session>(pipeName);
+
+    // setup basic fixed frame query
+    PM_BEGIN_FIXED_FRAME_QUERY(MyFrameQuery)
+        pmapi::FixedQueryElement frameTime{ this, PM_METRIC_CPU_FRAME_TIME, PM_STAT_NONE };
+        pmapi::FixedQueryElement startTime{ this, PM_METRIC_CPU_START_TIME, PM_STAT_NONE };
+    PM_END_FIXED_QUERY query{ *pApi, 50 };
+
+    // track the pid we know to be active in the ETL (1268 for dwm in  gold_0)
+    auto tracker = pApi->TrackProcess(1268);
+
+    try {
+        // output frame events as they are received
+        while (true) {
+            query.ForEachConsume(tracker, [&] { std::cout
+                << "(" << query.PeekBlobContainer().GetNumBlobsPopulated() << ") "
+                << "Start: " << query.startTime.As<double>()
+                << " x FrameTime: " << query.frameTime.As<double>() << std::endl;
+            });
+        }
+    }
+    catch (...) {
+    }
+}
+
+void RunPlaybackDynamicQuery()
+{
+    auto& opt = clio::Options::Get();
+
+    // launch the service, getting it to process an ETL gold file (custom object names)
+    namespace bp = boost::process;
+    using namespace std::literals;
+    const auto pipeName = R"(\\.\pipe\pmsvc-ctl-pipe-tt)"s;
+    std::vector<std::string> dargs;
+    if (opt.servicePacePlayback) {
+        dargs.push_back("--pace-playback");
+    }
+    bp::child svc{
+        "PresentMonService.exe"s,
+        "--timed-stop"s, "10000"s,
+        "--control-pipe"s, pipeName,
+        "--nsm-prefix"s, "pmon_nsm_tt_"s,
+        "--intro-nsm"s, "svc-intro-tt"s,
+        "--etw-session-name"s, "svc-sesh-tt"s,
+        "--etl-test-file"s, R"(..\..\tests\gold\test_case_0.etl)"s,
+        bp::args(dargs),
+    };
+
+    // connect to the service with custom control pipe name
+    std::this_thread::sleep_for(25ms);
+    auto pApi = std::make_unique<pmapi::Session>(pipeName);
+
+    // setup fixed dynamic query for basic metrics (FPS presented)
+    PM_BEGIN_FIXED_DYNAMIC_QUERY(MyDynamicQuery)
+        pmapi::FixedQueryElement fpsAvg{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_AVG };
+    PM_END_FIXED_QUERY query{ *pApi, 200., 50., 1, 1 };
+
+    // track the pid we know to be active in the ETL (1268 for dwm in  gold_0)
+    auto tracker = pApi->TrackProcess(1268);
+
+    try {
+        // output realtime samples to console at a steady interval
+        while (true) {
+            query.Poll(tracker);
+            std::cout << "FPS: " << query.fpsAvg.As<float>() << std::endl;
+            std::this_thread::sleep_for(100ms);
+        }
+    }
+    catch (...) {
+    }
+}
+
 
 int main(int argc, char* argv[])
 {
     try {
+        // command line options initialization
         if (auto e = clio::Options::Init(argc, argv)) {
             return *e;
         }
         auto& opt = clio::Options::Get();
 
-        // make sure we're using the debug dev version of the pmapi dll
-        pmLoaderSetPathToMiddlewareDll_("PresentMonAPI2.dll");
+        // use the middleware in the dev path esp. if we are running debug build
+        // important to do this before any intra-process log linking occurs
+        if (opt.middlewareDllPath) {
+            pmLoaderSetPathToMiddlewareDll_(opt.middlewareDllPath->c_str());
+        }
 
         // setup logging, including middleware intra-process cross-module link
         p2sam::LogChannelManager zLogMan_;
         p2sam::ConfigureLogging();
 
-        // launch the service, getting it to process an ETL gold file (custom object names)
-        namespace bp = boost::process;
-        using namespace std::literals;
-        const auto pipeName = R"(\\.\pipe\pmsvc-ctl-pipe-tt)"s;
-        bp::child svc{
-            "PresentMonService.exe"s,
-            "--timed-stop"s, "10000"s,
-            "--control-pipe"s, pipeName,
-            "--nsm-prefix"s, "pmon_nsm_tt_"s,
-            "--intro-nsm"s, "svc-intro-tt"s,
-            "--etw-session-name"s, "svc-sesh-tt"s,
-            "--etl-test-file"s, R"(..\..\tests\gold\test_case_0.etl)"s,
+        // helper for connecting a pmapi session
+        const auto ConnectSession = [&] {
+            if (opt.controlPipe) {
+                return std::make_unique<pmapi::Session>(*opt.controlPipe);
+            }
+            else {
+                return std::make_unique<pmapi::Session>();
+            }
         };
 
-        // connect to the service with custom control pipe name
-        std::this_thread::sleep_for(25ms);
-        auto pApi = std::make_unique<pmapi::Session>(pipeName);
-
-
-        // setup fixed dynamic query for basic metrics (FPS presented)
-        PM_BEGIN_FIXED_DYNAMIC_QUERY(MyDynamicQuery)
-            pmapi::FixedQueryElement fpsAvg{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_AVG };
-        PM_END_FIXED_QUERY query{ *pApi, 200., 50., 1, 1 };
-
-        PM_BEGIN_FIXED_FRAME_QUERY(MyFrameQuery)
-            pmapi::FixedQueryElement frameTime{ this, PM_METRIC_CPU_FRAME_TIME, PM_STAT_NONE };
-            pmapi::FixedQueryElement startTime{ this, PM_METRIC_CPU_START_TIME, PM_STAT_NONE };
-        PM_END_FIXED_QUERY query2{ *pApi, 50 };
-        // track the pid we know to be active in the ETL (1268 for dwm in  gold_0)
-        auto tracker = pApi->TrackProcess(1268);
-
-
-        try {
-            // output realtime samples to console at a steady interval
-            while (true) {
-                query2.ForEachConsume(tracker, [&] {
-                    std::cout
-                        << "(" << query2.PeekBlobContainer().GetNumBlobsPopulated() << ") "
-                        << "FrameTime: " << query2.frameTime.As<double>()
-                        << "  Start: " << query2.startTime.As<double>() << std::endl;
-                });
-            }
-        }
-        catch (...) {
-            return 0;
-        }
-
-        if (opt.logDemo) {
-            RunLogDemo(*opt.logDemo);
-            return 0;
-        }
-        if (opt.diagDemo) {
-            RunDiagnosticDemo(*opt.diagDemo);
-            return 0;
+        // determine requested mode to run the sample app in
+        switch (*opt.mode) {
+        case clio::Mode::LogDemo:
+            RunLogDemo(*opt.submode);
+            break;
+        case clio::Mode::DiagnosticsDemo:
+            RunDiagnosticDemo(*opt.submode);
+            break;
+        case clio::Mode::Introspection:
+            return IntrospectionSample(ConnectSession());
+        case clio::Mode::CheckMetric:
+            return CheckMetricSample(ConnectSession());
+        case clio::Mode::DynamicQuery:
+            return DynamicQuerySample(ConnectSession(), *opt.windowSize, *opt.metricOffset, false);
+        case clio::Mode::AddGpuMetric:
+            return DynamicQuerySample(ConnectSession(), *opt.windowSize, *opt.metricOffset, true);
+        case clio::Mode::WrapperStaticQuery:
+            return WrapperStaticQuerySample(ConnectSession());
+        case clio::Mode::MetricList:
+            return MetricListSample(ConnectSession());
+        case clio::Mode::FrameQuery:
+            return FrameQuerySample(ConnectSession(), false);
+        case clio::Mode::CsvFrameQuery:
+            return FrameQuerySample(ConnectSession(), true);
+        case clio::Mode::PlaybackDynamicQuery:
+            RunPlaybackDynamicQuery();
+            break;
+        case clio::Mode::PlaybackFrameQuery:
+            RunPlaybackFrameQuery();
+            break;
+        default:
+            throw std::runtime_error{ "unknown sample client mode" };
         }
 
-        if (opt.middlewareDllPath) {
-            pmLoaderSetPathToMiddlewareDll_(opt.middlewareDllPath->c_str());
-        }
-
-        // determine requested activity
-        if (opt.introspectionSample ^ opt.dynamicQuerySample ^ opt.frameQuerySample ^ opt.checkMetricSample ^ opt.wrapperStaticQuerySample ^ opt.metricListSample) {
-            std::unique_ptr<pmapi::Session> pSession;
-            if (opt.controlPipe) {
-                pSession = std::make_unique<pmapi::Session>(*opt.controlPipe);
-            }
-            else {
-                pSession = std::make_unique<pmapi::Session>();
-            }
-
-            if (opt.introspectionSample) {
-                return IntrospectionSample(std::move(pSession));
-            }
-            else if (opt.checkMetricSample) {
-                return CheckMetricSample(std::move(pSession));
-            }
-            else if (opt.dynamicQuerySample) {
-                return DynamicQuerySample(std::move(pSession), *opt.windowSize, *opt.metricOffset);
-            }
-            else if (opt.wrapperStaticQuerySample) {
-                return WrapperStaticQuerySample(std::move(pSession));
-            }
-            else if (opt.metricListSample) {
-                return MetricListSample(*pSession);
-            }
-            else {
-                return FrameQuerySample(std::move(pSession));
-            }
-        }
-        else {
-            std::cout << "SampleClient supports one action at a time. For example:\n";
-            std::cout << "--introspection-sample\n";
-            std::cout << "--wrapper-static-query-sample\n";
-            std::cout << "--dynamic-query-sample [--process-id id | --process-name name.exe] [--add-gpu-metric]\n";
-            std::cout << "--frame-query-sample [--process-id id | --process-name name.exe]  [--gen-csv]\n";
-            std::cout << "--check-metric-sample --metric PM_METRIC_*\n";
-            std::cout << "Use --help to see the full list of commands and configuration options available\n";
-            return -1;
-        }
+        // exit code
+        return 0;
     }
     catch (const std::exception& e) {
         std::cout << "Error: " << e.what() << std::endl;
