@@ -19,6 +19,10 @@
       "Command": "--service-pace-playback"
     },
     {
+      "Id": "eb925d44-532f-43b7-9923-bfeb20770fef",
+      "Command": "--log-level debug"
+    },
+    {
       "Id": "91c5d42b-2da5-4d40-96bf-4ba9e1cce907",
       "Command": "--help"
     }

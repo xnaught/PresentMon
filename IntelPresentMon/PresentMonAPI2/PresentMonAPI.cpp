@@ -386,7 +386,13 @@ PRESENTMON_API2_EXPORT PM_STATUS pmConsumeFrames(PM_FRAME_QUERY_HANDLE handle, u
 	}
 	catch (...) {
 		const auto code = util::GeneratePmStatus();
-		pmlog_error(util::ReportException()).code(code);
+		if (code == PM_STATUS_INVALID_PID) {
+			// invalid pid is an exception that happens at the end of a normal workflow, so don't flag as error
+			pmlog_info(util::ReportException()).code(code);
+		}
+		else {
+			pmlog_error(util::ReportException()).code(code);
+		}
 		return code;
 	}
 }

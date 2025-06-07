@@ -1164,7 +1164,7 @@ static void ReportMetrics(
         const auto nsm_hdr = nsm_view->GetHeader();
         if (!nsm_hdr->process_active) {
             StopStreaming(processId);
-            pmlog_info("Process death detected while consuming frame events").diag();
+            pmlog_dbg("Process death detected while consuming frame events").diag();
             throw Except<ipc::PmStatusError>(PM_STATUS_INVALID_PID, "Process died cannot consume frame events");
         }
 
