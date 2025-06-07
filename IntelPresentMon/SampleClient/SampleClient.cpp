@@ -82,7 +82,11 @@ void RunPlaybackFrameQuery()
             });
         }
     }
-    catch (...) {
+    catch (const pmapi::ApiErrorException& ex) {
+        if (ex.GetCode() != PM_STATUS_INVALID_PID) {
+            throw;
+        }
+        std::cout << "Process exit detected, ending frame processing...\n";
     }
 }
 
