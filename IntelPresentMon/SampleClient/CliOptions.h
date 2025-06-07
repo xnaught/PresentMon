@@ -48,6 +48,7 @@ namespace clio
 		Option<std::string> logAllowList{ this, "--log-allow-list", "", "Path to log allow list (with trace overrides)", CLI::ExistingFile };
 	private: Group gv_{ this, "Service", "Control service options" }; public:
 		Flag servicePacePlayback{ this, "--service-pace-playback", "Pace ETL playback on the service" };
+		Option<std::string> serviceEtlPath{ this, "--service-etl-path", "", "Path of the ETL file to pass to the service for playback" };
 
 		static constexpr const char* description = "Minimal Sample Client for Intel PresentMon service";
 		static constexpr const char* name = "SampleClient.exe";

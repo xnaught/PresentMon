@@ -55,7 +55,7 @@ void RunPlaybackFrameQuery()
         "--nsm-prefix"s, "pmon_nsm_tt_"s,
         "--intro-nsm"s, "svc-intro-tt"s,
         "--etw-session-name"s, "svc-sesh-tt"s,
-        "--etl-test-file"s, R"(..\..\tests\gold\test_case_0.etl)"s,
+        "--etl-test-file"s, opt.serviceEtlPath.AsOptional().value_or(R"(..\..\tests\gold\test_case_0.etl)"s),
         bp::args(dargs),
     };
 
@@ -69,8 +69,8 @@ void RunPlaybackFrameQuery()
         pmapi::FixedQueryElement startTime{ this, PM_METRIC_CPU_START_TIME, PM_STAT_NONE };
     PM_END_FIXED_QUERY query{ *pApi, 50 };
 
-    // track the pid we know to be active in the ETL (1268 for dwm in  gold_0)
-    auto tracker = pApi->TrackProcess(1268);
+    // track the pid we know to be active in the ETL (1268 for dwm in gold_0)
+    auto tracker = pApi->TrackProcess(opt.processId.AsOptional().value_or(1268));
 
     try {
         // output frame events as they are received
@@ -105,7 +105,7 @@ void RunPlaybackDynamicQuery()
         "--nsm-prefix"s, "pmon_nsm_tt_"s,
         "--intro-nsm"s, "svc-intro-tt"s,
         "--etw-session-name"s, "svc-sesh-tt"s,
-        "--etl-test-file"s, R"(..\..\tests\gold\test_case_0.etl)"s,
+        "--etl-test-file"s, opt.serviceEtlPath.AsOptional().value_or(R"(..\..\tests\gold\test_case_0.etl)"s),
         bp::args(dargs),
     };
 
@@ -118,8 +118,8 @@ void RunPlaybackDynamicQuery()
         pmapi::FixedQueryElement fpsAvg{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_AVG };
     PM_END_FIXED_QUERY query{ *pApi, 200., 50., 1, 1 };
 
-    // track the pid we know to be active in the ETL (1268 for dwm in  gold_0)
-    auto tracker = pApi->TrackProcess(1268);
+    // track the pid we know to be active in the ETL (1268 for dwm in gold_0)
+    auto tracker = pApi->TrackProcess(opt.processId.AsOptional().value_or(1268));
 
     try {
         // output realtime samples to console at a steady interval
@@ -166,11 +166,9 @@ int main(int argc, char* argv[])
         // determine requested mode to run the sample app in
         switch (*opt.mode) {
         case clio::Mode::LogDemo:
-            RunLogDemo(*opt.submode);
-            break;
+            RunLogDemo(*opt.submode); break;
         case clio::Mode::DiagnosticsDemo:
-            RunDiagnosticDemo(*opt.submode);
-            break;
+            RunDiagnosticDemo(*opt.submode); break;
         case clio::Mode::Introspection:
             return IntrospectionSample(ConnectSession());
         case clio::Mode::CheckMetric:
@@ -188,11 +186,9 @@ int main(int argc, char* argv[])
         case clio::Mode::CsvFrameQuery:
             return FrameQuerySample(ConnectSession(), true);
         case clio::Mode::PlaybackDynamicQuery:
-            RunPlaybackDynamicQuery();
-            break;
+            RunPlaybackDynamicQuery(); break;
         case clio::Mode::PlaybackFrameQuery:
-            RunPlaybackFrameQuery();
-            break;
+            RunPlaybackFrameQuery(); break;
         default:
             throw std::runtime_error{ "unknown sample client mode" };
         }
