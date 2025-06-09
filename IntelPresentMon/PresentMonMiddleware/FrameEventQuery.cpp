@@ -1541,16 +1541,16 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 
 	if (pFrameDataOfLastAppDisplayed && pFrameDataOfLastAppDisplayed->present_event.DisplayedCount > 0) {
 		// Use the animation error source to set the various last displayed sim start and app screen times
-		if (appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::AppProvider) {
-			appProvidedSimTrackingData.lastDisplayedAppSimStartTime = pFrameDataOfLastAppDisplayed->present_event.AppSimStartTime;
-			appProvidedSimTrackingData.lastDisplayedAppScreenTime = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
-		} else if (appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::PCLatency) {
+		if (appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::PCLatency) {
 			// Special handling is required for application data provided by PCL events. In the PCL events
 			// case we use a non-zero PclSimStartTime as an indicator for an application generated frame.
 			if (pFrameDataOfLastAppDisplayed->present_event.PclSimStartTime != 0) {
 				appProvidedSimTrackingData.lastDisplayedAppSimStartTime = pFrameDataOfLastAppDisplayed->present_event.PclSimStartTime;
 				appProvidedSimTrackingData.lastDisplayedAppScreenTime = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
 			}
+		} else if (appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::AppProvider) {
+			appProvidedSimTrackingData.lastDisplayedAppSimStartTime = pFrameDataOfLastAppDisplayed->present_event.AppSimStartTime;
+			appProvidedSimTrackingData.lastDisplayedAppScreenTime = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
 		} else {
 			appProvidedSimTrackingData.lastDisplayedAppScreenTime = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
 		}

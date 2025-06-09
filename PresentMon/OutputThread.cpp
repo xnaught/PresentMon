@@ -502,10 +502,10 @@ static void ReportMetricsHelper(
             metrics.mMsInstrumentedGpuLatency = InstrumentedStartTime == 0 ? 0 :
                                                 pmSession.TimestampDeltaToUnsignedMilliSeconds(InstrumentedStartTime, gpuStartTime);
 
+            // If we have both a valid pcl sim start time and a valid app sim start time, we use the pcl sim start time.
             if (p->PclSimStartTime != 0) {
                 metrics.mMsBetweenSimStarts = pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastSimStartTime, p->PclSimStartTime);
-            }
-            else if (p->AppSimStartTime != 0) {
+            } else if (p->AppSimStartTime != 0) {
                 metrics.mMsBetweenSimStarts = pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastSimStartTime, p->AppSimStartTime);
             }
         } else {
@@ -639,15 +639,13 @@ static void ReportMetricsHelper(
                 // start time. Simulation start can be either an app provided sim start time via the provider or
                 // PCL stats or, if not present,the cpu start.
                 uint64_t simStartTime = 0;
-                if (chain->mAnimationErrorSource == AnimationErrorSource::AppProvider) {
-                    // If the app provider is the source of the animation error then use the app sim start time.
-                    simStartTime = p->AppSimStartTime;
-                }
-                else if (chain->mAnimationErrorSource == AnimationErrorSource::PCLatency) {
+                if (chain->mAnimationErrorSource == AnimationErrorSource::PCLatency) {
                     // If the pcl latency is the source of the animation error then use the pcl sim start time.
                     simStartTime = p->PclSimStartTime;
-                }
-                else if (chain->mAnimationErrorSource == AnimationErrorSource::CpuStart) {
+                } else if (chain->mAnimationErrorSource == AnimationErrorSource::AppProvider) {
+                    // If the app provider is the source of the animation error then use the app sim start time.
+                    simStartTime = p->AppSimStartTime;
+                } else if (chain->mAnimationErrorSource == AnimationErrorSource::CpuStart) {
                     // If the cpu start time is the source of the animation error then use the cpu start time.
                     simStartTime = metrics.mCPUStart;
                 }

@@ -552,14 +552,38 @@ void UpdateChain(
         if (p.DisplayedCount > 0) {
             if (p.Displayed_FrameType[p.DisplayedCount - 1] == FrameType::NotSet ||
                 p.Displayed_FrameType[p.DisplayedCount - 1] == FrameType::Application) {
-                // Used when calculating animation error
-                if (p.AppSimStartTime != 0) {
-                    chain->mLastDisplayedSimStart = p.AppSimStartTime;
-                } else if (chain->mLastAppPresentIsValid == true) {
-                    chain->mLastDisplayedSimStart = chain->mLastAppPresent.PresentStartTime +
-                        chain->mLastAppPresent.TimeInPresent;
+                // If the chain animation error source has been set to either
+                // app provider or PCL latency then set the last displayed simulation start time and the
+                // first app simulation start time based on the animation error source type.
+                if (chain->mAnimationErrorSource == AnimationErrorSource::AppProvider) {
+                    chain->mLastDisplayedSimStartTime = p.AppSimStartTime;
+                    chain->mLastDisplayedAppScreenTime = p.Displayed_ScreenTime[p.DisplayedCount - 1];
+                } else if (chain->mAnimationErrorSource == AnimationErrorSource::PCLatency) {
+                    // In the case of PCLatency only set values if pcl sim start time is not zero.
+                    if (p.PclSimStartTime != 0) {
+                        chain->mLastDisplayedSimStartTime = p.PclSimStartTime;
+                        chain->mLastDisplayedAppScreenTime = p.Displayed_ScreenTime[p.DisplayedCount - 1];
+                    }
+                } else {
+                    // Currently sourcing animation error from CPU start time, however check
+                    // to see if we have a valid app provider or PCL sim start time and set the
+                    // new animation source and set the first app sim start time
+                    if (p.AppSimStartTime != 0) {
+                        chain->mAnimationErrorSource = AnimationErrorSource::AppProvider;
+                        chain->mLastDisplayedSimStartTime = p.AppSimStartTime;
+                        chain->mLastDisplayedAppScreenTime = p.Displayed_ScreenTime[p.DisplayedCount - 1];
+                    } else if (p.PclSimStartTime != 0) {
+                        chain->mAnimationErrorSource = AnimationErrorSource::PCLatency;
+                        chain->mLastDisplayedSimStartTime = p.PclSimStartTime;
+                        chain->mLastDisplayedAppScreenTime = p.Displayed_ScreenTime[p.DisplayedCount - 1];
+                    } else {
+                        if (chain->mLastAppPresentIsValid == true) {
+                            chain->mLastDisplayedSimStartTime = chain->mLastAppPresent.PresentStartTime +
+                                chain->mLastAppPresent.TimeInPresent;
+                        }
+                        chain->mLastDisplayedAppScreenTime = p.Displayed_ScreenTime[p.DisplayedCount - 1];
+                    }
                 }
-                chain->mLastDisplayedAppScreenTime = p.Displayed_ScreenTime[p.DisplayedCount - 1];
             }
         }
         // TODO: This used to be p.Displayed_ScreenTime[0]. That seems incorrect.
@@ -591,8 +615,7 @@ void UpdateChain(
     // if either are not zero. If both are zero, do not set.
     if (p.PclSimStartTime != 0) {
         chain->mLastSimStartTime = p.PclSimStartTime;
-    }
-    else if (p.AppSimStartTime != 0) {
+    } else if (p.AppSimStartTime != 0) {
         chain->mLastSimStartTime = p.AppSimStartTime;
     }
 
@@ -715,6 +738,7 @@ static void ReportMetricsHelper(
             metrics.mInstrumentedGpuLatency = instrumentedStartTime == 0 ? 0 :
                                       pmSession.TimestampDeltaToUnsignedMilliSeconds(instrumentedStartTime, p->GPUStartTime);
             
+            // If we have both a valid pcl sim start time and a valid app sim start time, we use the pcl sim start time.
             if (p->PclSimStartTime != 0) {
                 metrics.mMsBetweenSimStarts = pmSession.TimestampDeltaToUnsignedMilliSeconds(chain->mLastSimStartTime, p->PclSimStartTime);
             }
@@ -843,19 +867,25 @@ static void ReportMetricsHelper(
                 // start time. Simulation start can be either an app provided sim start time via the provider or
                 // PCL stats or, if not present,the cpu start.
                 uint64_t simStartTime = 0;
-                if (p->AppSimStartTime != 0 || p->PclSimStartTime != 0) {
-                    simStartTime = p->AppSimStartTime != 0 ? p->AppSimStartTime : p->PclSimStartTime;
+                if (chain->mAnimationErrorSource == AnimationErrorSource::PCLatency) {
+                    // If the pcl latency is the source of the animation error then use the pcl sim start time.
+                    simStartTime = p->PclSimStartTime;
                 }
-                else {
+                else if (chain->mAnimationErrorSource == AnimationErrorSource::AppProvider) {
+                    // If the app provider is the source of the animation error then use the app sim start time.
+                    simStartTime = p->AppSimStartTime;
+                }
+                else if (chain->mAnimationErrorSource == AnimationErrorSource::CpuStart) {
+                    // If the cpu start time is the source of the animation error then use the cpu start time.
                     simStartTime = metrics.mCPUStart;
                 }
                 
-                if (chain->mLastDisplayedSimStart != 0) {
+                if (chain->mLastDisplayedSimStartTime != 0) {
                     // If the simulation start time is less than the last displayed simulation start time it means
                     // we are transitioning to app provider events.
-                    if (simStartTime > chain->mLastDisplayedSimStart) {
+                    if (simStartTime > chain->mLastDisplayedSimStartTime) {
                         metrics.mAnimationError = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
-                            simStartTime - chain->mLastDisplayedSimStart);
+                            simStartTime - chain->mLastDisplayedSimStartTime);
                         chain->mAnimationError.push_back(std::abs(metrics.mAnimationError));
                     }
                 }

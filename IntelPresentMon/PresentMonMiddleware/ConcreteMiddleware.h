@@ -129,6 +129,10 @@ namespace pmon::mid
 		uint64_t mLastReceivedNotDisplayedPclSimStart = 0;
 		uint64_t mLastReceivedNotDisplayedPclInputTime = 0;
 
+		// Animation error source. Start with CPU start QPC and switch if
+		// we receive a valid PCL or App Provider simulation start time.
+		AnimationErrorSource mAnimationErrorSource = AnimationErrorSource::CpuStart;
+
 		// Accumulated PC latency input to frame start time due to the 
 		// Present() being dropped
 		double mAccumulatedInput2FrameStartTime = 0.f;
@@ -137,7 +141,7 @@ namespace pmon::mid
 		uint64_t mLastDisplayedScreenTime = 0;    // The last presented frame's ScreenTime (qpc)
 		uint64_t mLastDisplayedAppScreenTime = 0; // The last presented app frame's ScreenTime (qpc)
 		uint64_t display_0_screen_time = 0;       // The first presented frame's ScreenTime (qpc)
-		uint64_t mLastDisplayedSimStart = 0;      // The simulation start of the last displayed frame
+		uint64_t mLastDisplayedSimStartTime = 0;  // The simulation start of the last displayed frame
 		uint32_t display_count = 0;               // The number of presented frames
 		// QPC of the last simulation start time iregardless of whether it was displayed or not
 		uint64_t mLastSimStartTime = 0;

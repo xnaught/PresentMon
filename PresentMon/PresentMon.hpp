@@ -205,7 +205,7 @@ struct SwapChainData {
     uint64_t mLastReceivedNotDisplayedPclSimStart = 0;
 
     // Animation error source. Start with CPU start QPC and switch if
-    // we receive a valid app provider or PCL sim start time.
+    // we receive a valid PCL or App Provider simulation start time.
     AnimationErrorSource mAnimationErrorSource = AnimationErrorSource::CpuStart;
 
     // Frame statistics
