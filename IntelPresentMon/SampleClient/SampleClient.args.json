@@ -23,6 +23,14 @@
       "Command": "--log-level debug"
     },
     {
+      "Id": "6aa07d86-e0a2-46ce-96f2-2b4f6eb6a96a",
+      "Command": "--service-etl-path \"..\\..\\gold\\test_case_0.etl\""
+    },
+    {
+      "Id": "34c14e3c-47f2-46ad-a8c7-e1e875faae30",
+      "Command": "--process-id 6748"
+    },
+    {
       "Id": "91c5d42b-2da5-4d40-96bf-4ba9e1cce907",
       "Command": "--help"
     }

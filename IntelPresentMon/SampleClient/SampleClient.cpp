@@ -49,6 +49,9 @@ void RunPlaybackFrameQuery()
     if (opt.servicePacePlayback) {
         dargs.push_back("--pace-playback");
     }
+    if (opt.serviceEtlPath) {
+        dargs.append_range(std::vector{ "--etl-test-file"s, *opt.serviceEtlPath });
+    }
     bp::child svc{
         "PresentMonService.exe"s,
         // "--timed-stop"s, "10000"s,
@@ -56,7 +59,6 @@ void RunPlaybackFrameQuery()
         "--nsm-prefix"s, "pmon_nsm_tt_"s,
         "--intro-nsm"s, "svc-intro-tt"s,
         "--etw-session-name"s, "svc-sesh-tt"s,
-        "--etl-test-file"s, opt.serviceEtlPath.AsOptional().value_or(R"(..\..\tests\gold\test_case_0.etl)"s),
         bp::args(dargs),
     };
 
@@ -64,6 +66,9 @@ void RunPlaybackFrameQuery()
     pmon::util::pipe::DuplexPipe::WaitForAvailability(pipeName, 500);
     auto pApi = std::make_unique<pmapi::Session>(pipeName);
     std::this_thread::sleep_for(10ms);
+
+    // set ETW flush to realtime
+    pApi->SetEtwFlushPeriod(50);
 
     // setup basic fixed frame query
     PM_BEGIN_FIXED_FRAME_QUERY(MyFrameQuery)

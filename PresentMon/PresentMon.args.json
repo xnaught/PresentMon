@@ -68,11 +68,11 @@
     },
     {
       "Id": "8f014852-6512-466b-99cb-0a8724c36862",
-      "Command": "--output_file gold_boi.csv"
+      "Command": "--output_file gold_5.csv"
     },
     {
       "Id": "1606ee3e-ac1c-4fea-9a87-736864dd1f00",
-      "Command": "--etl_file \"C:\\Users\\Chili\\Desktop\\cpp\\ipm-relay\\Tests\\Gold\\test_case_0.etl\""
+      "Command": "--etl_file \"C:\\Users\\Chili\\Desktop\\cpp\\ipm-relay\\Tests\\Gold\\test_case_5.etl\""
     },
     {
       "Id": "ac45209f-6799-44f5-88d9-b35b6f9015fb",

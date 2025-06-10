@@ -1342,7 +1342,7 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 		}
 	}
 	else {
-		pmlog_info("null pPreviousFrameDataOfLastDisplayed");
+		pmlog_dbg("null pPreviousFrameDataOfLastDisplayed");
 		lastDisplayedCpuStart = 0;
 	}
 	appIndex = std::numeric_limits<size_t>::max();
