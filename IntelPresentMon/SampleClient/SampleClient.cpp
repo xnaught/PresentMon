@@ -35,6 +35,7 @@
 #include "LogSetup.h"
 
 #include "../CommonUtilities/IntervalWaiter.h"
+#include "../CommonUtilities/pipe/Pipe.h"
 
 void RunPlaybackFrameQuery()
 {
@@ -50,7 +51,7 @@ void RunPlaybackFrameQuery()
     }
     bp::child svc{
         "PresentMonService.exe"s,
-        "--timed-stop"s, "10000"s,
+        // "--timed-stop"s, "10000"s,
         "--control-pipe"s, pipeName,
         "--nsm-prefix"s, "pmon_nsm_tt_"s,
         "--intro-nsm"s, "svc-intro-tt"s,
@@ -60,8 +61,9 @@ void RunPlaybackFrameQuery()
     };
 
     // connect to the service with custom control pipe name
-    std::this_thread::sleep_for(25ms);
+    pmon::util::pipe::DuplexPipe::WaitForAvailability(pipeName, 500);
     auto pApi = std::make_unique<pmapi::Session>(pipeName);
+    std::this_thread::sleep_for(10ms);
 
     // setup basic fixed frame query
     PM_BEGIN_FIXED_FRAME_QUERY(MyFrameQuery)
@@ -72,6 +74,7 @@ void RunPlaybackFrameQuery()
     // track the pid we know to be active in the ETL (1268 for dwm in gold_0)
     auto tracker = pApi->TrackProcess(opt.processId.AsOptional().value_or(1268));
 
+    uint32_t frameCount = 0;
     try {
         // output frame events as they are received
         while (true) {
@@ -79,6 +82,7 @@ void RunPlaybackFrameQuery()
                 << "(" << query.PeekBlobContainer().GetNumBlobsPopulated() << ") "
                 << "Start: " << query.startTime.As<double>()
                 << " x FrameTime: " << query.frameTime.As<double>() << std::endl;
+                frameCount++;
             });
         }
     }
@@ -86,7 +90,7 @@ void RunPlaybackFrameQuery()
         if (ex.GetCode() != PM_STATUS_INVALID_PID) {
             throw;
         }
-        std::cout << "Process exit detected, ending frame processing...\n";
+        std::cout << "Process exit detected, ending frame processing (" << frameCount << " frames processed).\n";
     }
 }
 
@@ -114,8 +118,9 @@ void RunPlaybackDynamicQuery()
     };
 
     // connect to the service with custom control pipe name
-    std::this_thread::sleep_for(25ms);
+    pmon::util::pipe::DuplexPipe::WaitForAvailability(pipeName, 500);
     auto pApi = std::make_unique<pmapi::Session>(pipeName);
+    std::this_thread::sleep_for(10ms);
 
     // setup fixed dynamic query for basic metrics (FPS presented)
     PM_BEGIN_FIXED_DYNAMIC_QUERY(MyDynamicQuery)
