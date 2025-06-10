@@ -2532,7 +2532,9 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
             present->ProcessId,
             0,
             present->PresentStartTime,
-            [](const AppTimingData& d) { return d.PclOutOfBandPresentStartTime; });
+            [](const AppTimingData& d) { 
+                return d.PclOutOfBandPresentStartTime != 0 ? d.PclOutOfBandPresentStartTime : d.PclPresentStartTime; 
+            });
         if (pclTimingData) {
             if (present->ProcessId == pclTimingData->ProcessId) {
                 present->PclFrameId = pclTimingData->FrameId;
