@@ -1458,7 +1458,7 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 		}
 	}
 
-
+	AnimationErrorSource initAmimationErrorSource = appProvidedSimTrackingData.animationErrorSource;
 	if (appProvidedSimTrackingData.firstAppSimStartTime == 0) {
 		// Handle this rare case at the start of consuming frames and the application is
 		// producing app frame data:
@@ -1547,8 +1547,16 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 			if (pFrameDataOfLastAppDisplayed->present_event.PclSimStartTime != 0) {
 				appProvidedSimTrackingData.lastDisplayedAppSimStartTime = pFrameDataOfLastAppDisplayed->present_event.PclSimStartTime;
 				appProvidedSimTrackingData.lastDisplayedAppScreenTime = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
+			} else {
+				// If we are transistioning from CPU Start time based animation error source to PCL then we need to update the last displayed app screen time
+				// for the animation error.
+				if (initAmimationErrorSource != appProvidedSimTrackingData.animationErrorSource) {
+					appProvidedSimTrackingData.lastDisplayedAppScreenTime = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
+				}
 			}
 		} else if (appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::AppProvider) {
+            // The above transition check in the PCL case is not needed for the AppProvider case as with the app provided
+			// we know which frames are applicatoin generated.
 			appProvidedSimTrackingData.lastDisplayedAppSimStartTime = pFrameDataOfLastAppDisplayed->present_event.AppSimStartTime;
 			appProvidedSimTrackingData.lastDisplayedAppScreenTime = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
 		} else {
