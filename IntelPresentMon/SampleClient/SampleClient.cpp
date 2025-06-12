@@ -64,26 +64,27 @@ void RunPlaybackFrameQuery()
 
     // connect to the service with custom control pipe name
     pmon::util::pipe::DuplexPipe::WaitForAvailability(pipeName, 500);
-    auto pApi = std::make_unique<pmapi::Session>(pipeName);
+    auto api = pmapi::Session{ pipeName };
     std::this_thread::sleep_for(10ms);
 
     // set ETW flush to realtime
-    pApi->SetEtwFlushPeriod(50);
+    api.SetEtwFlushPeriod(50);
 
     // setup basic fixed frame query
     PM_BEGIN_FIXED_FRAME_QUERY(MyFrameQuery)
         pmapi::FixedQueryElement frameTime{ this, PM_METRIC_CPU_FRAME_TIME, PM_STAT_NONE };
         pmapi::FixedQueryElement startTime{ this, PM_METRIC_CPU_START_TIME, PM_STAT_NONE };
-    PM_END_FIXED_QUERY query{ *pApi, 50 };
+    PM_END_FIXED_QUERY query{ api, 50 };
 
     // track the pid we know to be active in the ETL (1268 for dwm in gold_0)
-    auto tracker = pApi->TrackProcess(opt.processId.AsOptional().value_or(1268));
+    auto tracker = api.TrackProcess(opt.processId.AsOptional().value_or(1268));
+    std::this_thread::sleep_for(500ms);
 
     uint32_t frameCount = 0;
     try {
         // output frame events as they are received
         while (true) {
-            query.ForEachConsume(tracker, [&] { std::cout
+            const auto n = query.ForEachConsume(tracker, [&] { std::cout
                 << "(" << query.PeekBlobContainer().GetNumBlobsPopulated() << ") "
                 << "Start: " << query.startTime.As<double>()
                 << " x FrameTime: " << query.frameTime.As<double>() << std::endl;
