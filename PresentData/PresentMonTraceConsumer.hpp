@@ -501,14 +501,12 @@ struct PMTraceConsumer
                        uint32_t,
                        PairHash<uint32_t, uint64_t>>            mHybridPresentModeBySwapChainPid;       // SwapChain and process id -> HybridPresentMode
 
+    // State used to track pcl events and their associated presents.
     std::unordered_map<std::pair<uint32_t, uint32_t>,
         AppTimingData,
         PairHash<uint32_t, uint32_t>>                           mPclTimingDataByPclFrameId;             // PCL frame id -> PCLTimingData
-    std::unordered_map<std::pair<uint32_t, uint32_t>,
-                       std::shared_ptr<PresentEvent>,
-                       PairHash<uint32_t, uint32_t>>            mPresentByPclFrameId;                   // PCL frame id -> PresentEvent
     std::unordered_map<uint32_t, uint64_t>                      mLatestPingTimestampByProcessId;        // ProcessId -> Latest Ping Timestamp
-
+    bool mUsingOutOfBoundPresentStart = false;
 
     // mGpuTrace tracks work executed on the GPU.
     GpuTrace mGpuTrace;

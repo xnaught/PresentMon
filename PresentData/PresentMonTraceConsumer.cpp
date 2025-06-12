@@ -2011,14 +2011,6 @@ void PMTraceConsumer::StopTrackingPresent(std::shared_ptr<PresentEvent> const& p
     if (p->AppFrameId != 0) {
         SetAppTimingDataAsComplete(p->ProcessId, p->AppFrameId);
     }
-
-    if (p->PclFrameId != 0) {
-        auto PclKey = std::make_pair(p->PclFrameId, p->ProcessId);
-        auto pclFrameIter = mPresentByPclFrameId.find(PclKey);
-        if (pclFrameIter != mPresentByPclFrameId.end()) {
-            mPresentByPclFrameId.erase(pclFrameIter);
-        }
-    }
 }
 
 void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
@@ -2150,6 +2142,35 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
                 }
 
                 CompletePresent(p2);
+            }
+        }
+    }
+
+    if (mTrackPcLatency) {
+        auto* pclTimingData = ExtractAppTimingData(
+            mPclTimingDataByPclFrameId,
+            p->ProcessId,
+            0,
+            p->PresentStartTime,
+            [this](const AppTimingData& d) {
+                if (mUsingOutOfBoundPresentStart) {
+                    return d.PclOutOfBandPresentStartTime;
+                }
+                else {
+                    return d.PclPresentStartTime;
+                }
+            });
+        if (pclTimingData) {
+            if (p->ProcessId == pclTimingData->ProcessId) {
+                p->PclFrameId = pclTimingData->FrameId;
+                p->PclSimStartTime = pclTimingData->PclSimStartTime;
+                p->PclSimEndTime = pclTimingData->PclSimEndTime;
+                p->PclRenderSubmitStartTime = pclTimingData->PclRenderSubmitStartTime;
+                p->PclRenderSubmitEndTime = pclTimingData->PclRenderSubmitEndTime;
+                p->PclPresentStartTime = pclTimingData->PclPresentStartTime;
+                p->PclPresentEndTime = pclTimingData->PclPresentEndTime;
+                p->PclInputPingTime = pclTimingData->PclInputPingTime;
+                p->PclInputReceivedTime = pclTimingData->PclInputReceivedTime;
             }
         }
     }
@@ -2522,32 +2543,6 @@ void PMTraceConsumer::RuntimePresentStop(Runtime runtime, EVENT_HEADER const& hd
             Microsoft_Windows_DXGI::HybridPresentMode hybridPresentMode = (Microsoft_Windows_DXGI::HybridPresentMode)swapIter->second;
             if (hybridPresentMode != Microsoft_Windows_DXGI::HybridPresentMode::NOT_HYBRID) {
                 present->IsHybridPresent = true;
-            }
-        }
-    }
-
-    if (mTrackPcLatency) {
-        auto* pclTimingData = ExtractAppTimingData(
-            mPclTimingDataByPclFrameId,
-            present->ProcessId,
-            0,
-            present->PresentStartTime,
-            [](const AppTimingData& d) { 
-                return d.PclOutOfBandPresentStartTime != 0 ? d.PclOutOfBandPresentStartTime : d.PclPresentStartTime; 
-            });
-        if (pclTimingData) {
-            if (present->ProcessId == pclTimingData->ProcessId) {
-                present->PclFrameId = pclTimingData->FrameId;
-                present->PclSimStartTime = pclTimingData->PclSimStartTime;
-                present->PclSimEndTime = pclTimingData->PclSimEndTime;
-                present->PclRenderSubmitStartTime = pclTimingData->PclRenderSubmitStartTime;
-                present->PclRenderSubmitEndTime = pclTimingData->PclRenderSubmitEndTime;
-                present->PclPresentStartTime = pclTimingData->PclPresentStartTime;
-                present->PclPresentEndTime = pclTimingData->PclPresentEndTime;
-                present->PclInputPingTime = pclTimingData->PclInputPingTime;
-                present->PclInputReceivedTime = pclTimingData->PclInputReceivedTime;
-                // Start tracking using the app frame id to this present
-                mPresentByPclFrameId.emplace(std::make_pair(present->PclFrameId, present->ProcessId), present);
             }
         }
     }
@@ -3044,21 +3039,15 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                     auto processId = pEventRecord->EventHeader.ProcessId;
                     auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
                     auto key = std::make_pair(frameId, processId);
-                    auto ii = mPresentByPclFrameId.find(key);
-                    if (ii != mPresentByPclFrameId.end()) {
-                        DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
-                        ii->second->PclSimStartTime = timestamp;
+                    auto ij = mPclTimingDataByPclFrameId.find(key);
+                    if (ij != mPclTimingDataByPclFrameId.end()) {
+                        ij->second.PclSimStartTime = timestamp;
                     } else {
-                        auto ij = mPclTimingDataByPclFrameId.find(key);
-                        if (ij != mPclTimingDataByPclFrameId.end()) {
-                            ij->second.PclSimStartTime = timestamp;
-                        } else {
-                            AppTimingData data;
-                            data.PclSimStartTime = timestamp;
-                            data.ProcessId = processId;
-                            data.FrameId = frameId;
-                            mPclTimingDataByPclFrameId.emplace(key, data);
-                        }
+                        AppTimingData data;
+                        data.PclSimStartTime = timestamp;
+                        data.ProcessId = processId;
+                        data.FrameId = frameId;
+                        mPclTimingDataByPclFrameId.emplace(key, data);
                     }
                 }
                 break;
@@ -3066,21 +3055,15 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                     auto processId = pEventRecord->EventHeader.ProcessId;
                     auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
                     auto key = std::make_pair(frameId, processId);
-                    auto ii = mPresentByPclFrameId.find(key);
-                    if (ii != mPresentByPclFrameId.end()) {
-                        DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
-                        ii->second->PclSimEndTime = timestamp;
+                    auto ij = mPclTimingDataByPclFrameId.find(key);
+                    if (ij != mPclTimingDataByPclFrameId.end()) {
+                        ij->second.PclSimEndTime = timestamp;
                     } else {
-                        auto ij = mPclTimingDataByPclFrameId.find(key);
-                        if (ij != mPclTimingDataByPclFrameId.end()) {
-                            ij->second.PclSimEndTime = timestamp;
-                        } else {
-                            AppTimingData data;
-                            data.PclSimEndTime = timestamp;
-                            data.ProcessId = processId;
-                            data.FrameId = frameId;
-                            mPclTimingDataByPclFrameId.emplace(key, data);
-                        }
+                        AppTimingData data;
+                        data.PclSimEndTime = timestamp;
+                        data.ProcessId = processId;
+                        data.FrameId = frameId;
+                        mPclTimingDataByPclFrameId.emplace(key, data);
                     }
                 }
                 break;
@@ -3088,21 +3071,15 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                     auto processId = pEventRecord->EventHeader.ProcessId;
                     auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
                     auto key = std::make_pair(frameId, processId);
-                    auto ii = mPresentByPclFrameId.find(key);
-                    if (ii != mPresentByPclFrameId.end()) {
-                        DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
-                        ii->second->PclRenderSubmitStartTime = timestamp;
+                    auto ij = mPclTimingDataByPclFrameId.find(key);
+                    if (ij != mPclTimingDataByPclFrameId.end()) {
+                        ij->second.PclRenderSubmitStartTime = timestamp;
                     } else {
-                        auto ij = mPclTimingDataByPclFrameId.find(key);
-                        if (ij != mPclTimingDataByPclFrameId.end()) {
-                            ij->second.PclRenderSubmitStartTime = timestamp;
-                        } else {
-                            AppTimingData data;
-                            data.PclRenderSubmitStartTime = timestamp;
-                            data.ProcessId = processId;
-                            data.FrameId = frameId;
-                            mPclTimingDataByPclFrameId.emplace(key, data);
-                        }
+                        AppTimingData data;
+                        data.PclRenderSubmitStartTime = timestamp;
+                        data.ProcessId = processId;
+                        data.FrameId = frameId;
+                        mPclTimingDataByPclFrameId.emplace(key, data);
                     }
                 }
                 break;
@@ -3110,21 +3087,15 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                     auto processId = pEventRecord->EventHeader.ProcessId;
                     auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
                     auto key = std::make_pair(frameId, processId);
-                    auto ii = mPresentByPclFrameId.find(key);
-                    if (ii != mPresentByPclFrameId.end()) {
-                        DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
-                        ii->second->PclRenderSubmitEndTime = timestamp;
+                    auto ij = mPclTimingDataByPclFrameId.find(key);
+                    if (ij != mPclTimingDataByPclFrameId.end()) {
+                        ij->second.PclRenderSubmitEndTime = timestamp;
                     } else {
-                        auto ij = mPclTimingDataByPclFrameId.find(key);
-                        if (ij != mPclTimingDataByPclFrameId.end()) {
-                            ij->second.PclRenderSubmitEndTime = timestamp;
-                        } else {
-                            AppTimingData data;
-                            data.PclRenderSubmitEndTime = timestamp;
-                            data.ProcessId = processId;
-                            data.FrameId = frameId;
-                            mPclTimingDataByPclFrameId.emplace(key, data);
-                        }
+                        AppTimingData data;
+                        data.PclRenderSubmitEndTime = timestamp;
+                        data.ProcessId = processId;
+                        data.FrameId = frameId;
+                        mPclTimingDataByPclFrameId.emplace(key, data);
                     }
                 }
                 break;
@@ -3132,21 +3103,15 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                     auto processId = pEventRecord->EventHeader.ProcessId;
                     auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
                     auto key = std::make_pair(frameId, processId);
-                    auto ii = mPresentByPclFrameId.find(key);
-                    if (ii != mPresentByPclFrameId.end()) {
-                        DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
-                        ii->second->AppPresentStartTime = timestamp;
+                    auto ij = mPclTimingDataByPclFrameId.find(key);
+                    if (ij != mPclTimingDataByPclFrameId.end()) {
+                        ij->second.PclPresentStartTime = timestamp;
                     } else {
-                        auto ij = mPclTimingDataByPclFrameId.find(key);
-                        if (ij != mPclTimingDataByPclFrameId.end()) {
-                            ij->second.PclPresentStartTime = timestamp;
-                        } else {
-                            AppTimingData data;
-                            data.PclPresentStartTime = timestamp;
-                            data.ProcessId = processId;
-                            data.FrameId = frameId;
-                            mPclTimingDataByPclFrameId.emplace(key, data);
-                        }
+                        AppTimingData data;
+                        data.PclPresentStartTime = timestamp;
+                        data.ProcessId = processId;
+                        data.FrameId = frameId;
+                        mPclTimingDataByPclFrameId.emplace(key, data);
                     }
                 }
                 break;
@@ -3154,21 +3119,15 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                     auto processId = pEventRecord->EventHeader.ProcessId;
                     auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
                     auto key = std::make_pair(frameId, processId);
-                    auto ii = mPresentByPclFrameId.find(key);
-                    if (ii != mPresentByPclFrameId.end()) {
-                        DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
-                        ii->second->PclPresentEndTime = timestamp;
+                    auto ij = mPclTimingDataByPclFrameId.find(key);
+                    if (ij != mPclTimingDataByPclFrameId.end()) {
+                        ij->second.PclPresentEndTime = timestamp;
                     } else {
-                        auto ij = mPclTimingDataByPclFrameId.find(key);
-                        if (ij != mPclTimingDataByPclFrameId.end()) {
-                            ij->second.PclPresentEndTime = timestamp;
-                        } else {
-                            AppTimingData data;
-                            data.PclPresentEndTime = timestamp;
-                            data.ProcessId = processId;
-                            data.FrameId = frameId;
-                            mPclTimingDataByPclFrameId.emplace(key, data);
-                        }
+                        AppTimingData data;
+                        data.PclPresentEndTime = timestamp;
+                        data.ProcessId = processId;
+                        data.FrameId = frameId;
+                        mPclTimingDataByPclFrameId.emplace(key, data);
                     }
                 }
                 break;
@@ -3176,40 +3135,32 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                     auto processId = pEventRecord->EventHeader.ProcessId;
                     auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
                     auto key = std::make_pair(frameId, processId);
-                    auto ii = mPresentByPclFrameId.find(key);
-                    if (ii != mPresentByPclFrameId.end()) {
-                        DebugAssert(ii->second->ProcessId == pEventRecord->EventHeader.ProcessId);
-                        ii->second->PclInputReceivedTime = timestamp;
+                    auto ij = mPclTimingDataByPclFrameId.find(key);
+                    if (ij != mPclTimingDataByPclFrameId.end()) {
+                        ij->second.PclInputReceivedTime = timestamp;
+                        ij->second.PclInputPingTime = mLatestPingTimestampByProcessId[processId];
                         if (mLatestPingTimestampByProcessId[processId] != 0) {
-                            // Save off the latest PCL input timestamp
-                            ii->second->PclInputPingTime = mLatestPingTimestampByProcessId[processId];
+                            ij->second.PclInputPingTime = mLatestPingTimestampByProcessId[processId];
                             mLatestPingTimestampByProcessId[processId] = 0;
                         }
                     } else {
-                        auto ij = mPclTimingDataByPclFrameId.find(key);
-                        if (ij != mPclTimingDataByPclFrameId.end()) {
-                            ij->second.PclInputReceivedTime = timestamp;
-                            ij->second.PclInputPingTime = mLatestPingTimestampByProcessId[processId];
-                            if (mLatestPingTimestampByProcessId[processId] != 0) {
-                                ij->second.PclInputPingTime = mLatestPingTimestampByProcessId[processId];
-                                mLatestPingTimestampByProcessId[processId] = 0;
-                            }
-                        } else {
-                            AppTimingData data;
-                            data.PclInputReceivedTime = timestamp;
-                            if (mLatestPingTimestampByProcessId[processId] != 0) {
-                                data.PclInputPingTime = mLatestPingTimestampByProcessId[processId];
-                                mLatestPingTimestampByProcessId[processId] = 0;
-                            }
-                            data.ProcessId = processId;
-                            mPclTimingDataByPclFrameId.emplace(key, data);
+                        AppTimingData data;
+                        data.PclInputReceivedTime = timestamp;
+                        if (mLatestPingTimestampByProcessId[processId] != 0) {
+                            data.PclInputPingTime = mLatestPingTimestampByProcessId[processId];
+                            mLatestPingTimestampByProcessId[processId] = 0;
                         }
+                        data.ProcessId = processId;
+                        mPclTimingDataByPclFrameId.emplace(key, data);
                     }
                 }
                 break;
                 case Nvidia_PCL::PCLMarker::OutOfBandPresentStart: {
                     auto processId = pEventRecord->EventHeader.ProcessId;
                     auto timestamp = pEventRecord->EventHeader.TimeStamp.QuadPart;
+                    // If we receive an out of band present start, we will use it
+                    // to attach the pcl timing data to the present
+                    mUsingOutOfBoundPresentStart = true;
                     auto key = std::make_pair(frameId, processId);
                     // We do not track the out of band present in the same way as the other markers.
                     // We only use it in an attempt to attach the pcl timing data to the present
@@ -3243,8 +3194,6 @@ void PMTraceConsumer::HandlePclEvent(EVENT_RECORD* pEventRecord)
                 pmlog_info("Shutting down PCL stats tracking");
                 auto processId = pEventRecord->EventHeader.ProcessId;
                 std::erase_if(mPclTimingDataByPclFrameId, [processId](const auto& p) {
-                    return p.first.second == processId; });
-                std::erase_if(mPresentByPclFrameId, [processId](const auto& p) {
                     return p.first.second == processId; });
                 std::erase_if(mLatestPingTimestampByProcessId, [processId](const auto& p) {
                     return p.first == processId; });
