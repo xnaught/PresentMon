@@ -183,7 +183,7 @@ void StreamClient::PeekPreviousFrames(const PmNsmFrameData** pFrameDataOfLastPre
         uint32_t numFramesTraversed = 0;
         while (pTempFrameData)
         {
-            if (nsm_hdr->from_etl_file) {
+            if (false) {
                 peekIndex = (peekIndex == 0) ? current_max_entries : peekIndex - 1;
                 if (peekIndex == nsm_hdr->tail_idx) {
                     return;
@@ -315,7 +315,7 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         // dequeue frame number. This will be used to track data overruns if
         // the client does not read data fast enough.
         recording_frame_data_ = true;
-        if (nsm_hdr->from_etl_file) {
+        if (false) {
             current_dequeue_frame_num_ = nsm_hdr->head_idx;
             next_dequeue_idx_ = nsm_hdr->head_idx;
         }
@@ -385,7 +385,7 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
             pFrameDataOfPreviousAppFrameOfLastAppDisplayed);
 
         current_dequeue_frame_num_++;
-        if (nsm_hdr->from_etl_file) {
+        if (false) {
             nsm_view->DequeueFrameData();
         }
         return PM_STATUS::PM_STATUS_SUCCESS;
