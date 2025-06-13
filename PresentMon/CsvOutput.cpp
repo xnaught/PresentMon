@@ -1,4 +1,5 @@
 // Copyright (C) 2017-2024 Intel Corporation
+// Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved
 // SPDX-License-Identifier: MIT
 
 #include "PresentMon.hpp"
@@ -156,7 +157,8 @@ void WriteCsvHeader<FrameMetrics1>(FILE* fp)
                      L",PresentMode"
                      L",msUntilRenderComplete"
                      L",msUntilDisplayed"
-                     L",msBetweenDisplayChange");
+                     L",msBetweenDisplayChange"
+                     L",msFlipDelay");
     }
     if (args.mTrackGPU) {
         fwprintf(fp, L",msUntilRenderStart"
@@ -221,11 +223,12 @@ void WriteCsvRow<FrameMetrics1>(
     fwprintf(fp, L",%.*lf,%.*lf", DBL_DIG - 1, metrics.msInPresentApi,
                                   DBL_DIG - 1, metrics.msBetweenPresents);
     if (args.mTrackDisplay) {
-        fwprintf(fp, L",%d,%hs,%.*lf,%.*lf,%.*lf", p.SupportsTearing,
-                                                   PresentModeToString(p.PresentMode),
-                                                   DBL_DIG - 1, metrics.msUntilRenderComplete,
-                                                   DBL_DIG - 1, metrics.msUntilDisplayed,
-                                                   DBL_DIG - 1, metrics.msBetweenDisplayChange);
+        fwprintf(fp, L",%d,%hs,%.*lf,%.*lf,%.*lf,%.*lf", p.SupportsTearing,
+                                                         PresentModeToString(p.PresentMode),
+                                                         DBL_DIG - 1, metrics.msUntilRenderComplete,
+                                                         DBL_DIG - 1, metrics.msUntilDisplayed,
+                                                         DBL_DIG - 1, metrics.msBetweenDisplayChange,
+                                                         DBL_DIG - 1, metrics.msFlipDelay);
     }
     if (args.mTrackGPU) {
         fwprintf(fp, L",%.*lf,%.*lf", DBL_DIG - 1, metrics.msUntilRenderStart,
@@ -335,7 +338,8 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
                     L",DisplayLatency"
                          L",DisplayedTime"
                          L",AnimationError"
-                         L",AnimationTime");
+                         L",AnimationTime"
+                         L",FlipDelay");
         }
         if (args.mTrackInput) {
             fwprintf(fp, L",AllInputToPhotonLatency");
@@ -366,7 +370,8 @@ void WriteCsvHeader<FrameMetrics>(FILE* fp)
         }
         if (args.mTrackDisplay) {
             fwprintf(fp, L",MsAnimationError"
-                L",AnimationTime");
+                L",AnimationTime"
+                L",FlipDelay");
         }
         if (args.mTrackInput) {
             fwprintf(fp, L",MsAllInputToPhotonLatency");
@@ -556,6 +561,11 @@ void WriteCsvRow<FrameMetrics>(
         }
         else {
             fwprintf(fp, L",NA");
+        }
+        if (metrics.mMsFlipDelay == 0.0) {
+            fwprintf(fp, L",NA");
+        } else {
+            fwprintf(fp, L",%.4lf", metrics.mMsFlipDelay);
         }
     }
     if (args.mTrackInput) {
