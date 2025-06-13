@@ -1,4 +1,5 @@
 // Copyright (C) 2017-2024 Intel Corporation
+// Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved
 // SPDX-License-Identifier: MIT
 
 #pragma once
@@ -126,6 +127,9 @@ struct FrameMetrics {
     double mMsInstrumentedGpuLatency = 0;
     double mMsReadyTimeToDisplayLatency = 0;
     double mMsInstrumentedInputTime = 0;
+
+    // Internal NVIDIA Metrics
+    double mMsFlipDelay;
 };
 
 struct FrameMetrics1 {
@@ -139,6 +143,9 @@ struct FrameMetrics1 {
     double msVideoDuration;
     double msSinceInput;
     uint64_t qpcScreenTime;
+
+    // Internal NVIDIA Metrics
+    double msFlipDelay;
 };
 
 struct FrameMetrics2 {
@@ -196,6 +203,9 @@ struct SwapChainData {
     float mAvgDisplayedTime = 0.f;
     float mAvgMsUntilDisplayed = 0.f;
     float mAvgMsBetweenDisplayChange = 0.f;
+
+    // Internal NVIDIA Metrics
+    uint64_t mLastDisplayedFlipDelay = 0;
 };
 
 struct ProcessInfo {
