@@ -36,6 +36,7 @@
 
 #include "../CommonUtilities/IntervalWaiter.h"
 #include "../CommonUtilities/pipe/Pipe.h"
+#include "../CommonUtilities/win/ProcessMapBuilder.h"
 
 void RunPlaybackFrameQuery()
 {
@@ -76,8 +77,16 @@ void RunPlaybackFrameQuery()
         pmapi::FixedQueryElement startTime{ this, PM_METRIC_CPU_START_TIME, PM_STAT_NONE };
     PM_END_FIXED_QUERY query{ api, 50 };
 
-    // track the pid we know to be active in the ETL (1268 for dwm in gold_0)
-    auto tracker = api.TrackProcess(opt.processId.AsOptional().value_or(1268));
+    uint32_t pid = 0;
+    if (opt.processName && !opt.processId) {
+         const auto map = pmon::util::win::ProcessMapBuilder{}.AsNameMap(true);
+         pid = map.at(pmon::util::str::ToWide(*opt.processName)).pid;
+    }
+    else {
+        // track the pid we know to be active in the ETL (1268 for dwm in gold_0)
+        pid = opt.processId.AsOptional().value_or(1268);
+    }
+    auto tracker = api.TrackProcess(pid);
     std::this_thread::sleep_for(500ms);
 
     uint32_t frameCount = 0;
