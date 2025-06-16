@@ -24,7 +24,7 @@ PM_STATUS MockPresentMonSession::StartStreaming(uint32_t client_process_id,
     std::string& nsmFileName) {
 
     PM_STATUS status = streamer_.StartStreaming(client_process_id,
-        target_process_id, nsmFileName, true);
+        target_process_id, nsmFileName, false);
     if (status != PM_STATUS::PM_STATUS_SUCCESS) {
         return status;
     }
