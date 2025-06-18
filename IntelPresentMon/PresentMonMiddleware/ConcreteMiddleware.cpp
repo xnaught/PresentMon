@@ -956,7 +956,7 @@ static void ReportMetrics(
                 // We have run out of data to process, time to go
                 break;
             }
-            frame_data = client->ReadFrameByIdx(index);
+            frame_data = client->ReadFrameByIdx(index, true);
             if (frame_data == nullptr) {
                 break;
             }
@@ -1521,7 +1521,7 @@ static void ReportMetrics(
         }
 
         index = client->GetLatestFrameIndex();
-        frame_data = client->ReadFrameByIdx(index);
+        frame_data = client->ReadFrameByIdx(index, true);
         if (frame_data == nullptr) {
             index = 0;
             return nullptr;
@@ -1560,7 +1560,7 @@ static void ReportMetrics(
                     index++;
                     break;
                 }
-                frame_data = client->ReadFrameByIdx(index);
+                frame_data = client->ReadFrameByIdx(index, true);
                 if (frame_data == nullptr) {
                     return nullptr;
                 }
