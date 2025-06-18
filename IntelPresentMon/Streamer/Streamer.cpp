@@ -25,7 +25,6 @@ static const std::chrono::milliseconds kTimeoutLimitMs =
 Streamer::Streamer()
     : shared_mem_size_(kBufSize),
     start_qpc_(0),
-    stream_mode_(StreamMode::kDefault),
     write_timedout_(false),
     mapfileNamePrefix_{ kGlobalPrefix }
 {
@@ -173,11 +172,12 @@ void Streamer::ProcessPresentEvent(
       process_nsm = iter->second.get();
       // Record start time if it's the first frame.
       if (process_nsm->IsEmpty()) {
-        if (start_qpc_ != 0 && stream_mode_ == StreamMode::kOfflineEtl) {
-          process_nsm->RecordFirstFrameTime(start_qpc_);
-        } else {
-          process_nsm->RecordFirstFrameTime(present_event->PresentStartTime);
-        }
+          if (start_qpc_ && process_nsm->GetHeader()->isPlayback) {
+              process_nsm->RecordFirstFrameTime(start_qpc_);
+          }
+          else {
+              process_nsm->RecordFirstFrameTime(present_event->PresentStartTime);
+          }
       }
     }
 
@@ -189,10 +189,11 @@ void Streamer::ProcessPresentEvent(
       stream_all_nsm = stream_all_iter->second.get();
       // Record start time if it's the first frame.
       if (stream_all_nsm->IsEmpty()) {
-        if (start_qpc_ != 0 && stream_mode_ == StreamMode::kOfflineEtl) {
-          stream_all_nsm->RecordFirstFrameTime(start_qpc_);
-        } else {
-          stream_all_nsm->RecordFirstFrameTime(present_event->PresentStartTime);
+        if (start_qpc_ && stream_all_nsm->GetHeader()->isPlayback) {
+            stream_all_nsm->RecordFirstFrameTime(start_qpc_);
+        }
+        else {
+            stream_all_nsm->RecordFirstFrameTime(present_event->PresentStartTime);
         }
       }
     }
@@ -222,25 +223,23 @@ void Streamer::ProcessPresentEvent(
              sizeof(CpuTelemetryInfo));
 
     if (process_nsm) {
-      // Block write frame data only when in ETL mode and nsm is full
-      auto start = std::chrono::high_resolution_clock::now();
-      std::chrono::milliseconds time_elapsed =
-          std::chrono::milliseconds::zero();
+      auto pHdr = process_nsm->GetHeader();
+      // block here if nsm is full and backpressure is enabled (only in playback modes)
+      if (pHdr->isPlaybackBackpressured && process_nsm->IsFull()) {
+          const auto start = std::chrono::high_resolution_clock::now();
+          do {
+              const auto now = std::chrono::high_resolution_clock::now();
+              const auto time_elapsed = now - start;
+              LOG(INFO) << "NSM is full ...";
+              using namespace std::literals;
+              std::this_thread::sleep_for(25ms);
 
-
-      auto& opt = clio::Options::Get();
-      while ((stream_mode_ == StreamMode::kOfflineEtl ||
-          opt.etlTestFile.AsOptional().has_value()) && process_nsm->IsFull()) {
-        auto now = std::chrono::high_resolution_clock::now();
-        time_elapsed =
-            std::chrono::duration_cast<std::chrono::milliseconds>(now - start);
-        LOG(INFO) << "NSM is full ...";
-
-        if (time_elapsed >= kTimeoutLimitMs) {
-          LOG(ERROR) << "\nServer data write timed out.";
-          write_timedout_ = true;
-          return;
-        }
+              if (time_elapsed >= kTimeoutLimitMs) {
+                  LOG(ERROR) << "\nServer data write timed out.";
+                  write_timedout_ = true;
+                  return;
+              }
+          } while (process_nsm->IsFull());
       }
       process_nsm->WriteTelemetryCapBits(gpu_telemetry_cap_bits,
                                          cpu_telemetry_cap_bits);
@@ -262,7 +261,11 @@ void Streamer::ProcessPresentEvent(
   PM_STATUS Streamer::StartStreaming(uint32_t client_process_id,
                                    uint32_t target_process_id,
                                    std::string& mapfile_name,
-                                   bool from_etl_file) {
+      bool isPlayback,
+      bool isPlaybackPaced,
+      bool isPlaybackRetimed,
+      bool isPlaybackBackpressured,
+      bool isPlaybackResetOldest) {
     auto target_range = client_map_.equal_range(client_process_id);
     auto found = std::any_of(target_range.first, target_range.second,
                              [target_process_id](auto client_entry) {
@@ -288,7 +291,12 @@ void Streamer::ProcessPresentEvent(
     free(pValue);
 
     // create new shared mem for particular process id
-    if (CreateNamedSharedMemory(target_process_id, from_etl_file, mem_size) == false) {
+    if (CreateNamedSharedMemory(target_process_id, mem_size,
+        isPlayback,
+        isPlaybackPaced,
+        isPlaybackRetimed,
+        isPlaybackBackpressured,
+        isPlaybackResetOldest) == false) {
       return PM_STATUS::PM_STATUS_UNABLE_TO_CREATE_NSM;
     }
 
@@ -409,15 +417,24 @@ void Streamer::StopAllStreams() {
 }
 
 bool Streamer::CreateNamedSharedMemory(DWORD process_id,
-                                       bool from_etl_file,
-                                       uint64_t nsm_size_in_bytes) {
+    uint64_t nsm_size_in_bytes,
+    bool isPlayback,
+    bool isPlaybackPaced,
+    bool isPlaybackRetimed,
+    bool isPlaybackBackpressured,
+    bool isPlaybackResetOldest) {
   const std::string mapfile_name = mapfileNamePrefix_ + std::to_string(process_id);
 
   std::lock_guard<std::mutex> lock(nsm_map_mutex_);
   auto iter = process_shared_mem_map_.find(process_id);
   if (iter == process_shared_mem_map_.end()) {
     auto nsm =
-        std::make_unique<NamedSharedMem>(std::move(mapfile_name), nsm_size_in_bytes, from_etl_file);
+        std::make_unique<NamedSharedMem>(std::move(mapfile_name), nsm_size_in_bytes,
+            isPlayback,
+            isPlaybackPaced,
+            isPlaybackRetimed,
+            isPlaybackBackpressured,
+            isPlaybackResetOldest);
     if (nsm->IsNSMCreated()) {
         process_shared_mem_map_.emplace(process_id, std::move(nsm));
         return true;

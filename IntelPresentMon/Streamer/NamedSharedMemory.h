@@ -11,7 +11,12 @@ static const std::string kGlobalPrefix = "Global\\NamedSharedMem_";
 class NamedSharedMem {
  public:
   NamedSharedMem();
-  NamedSharedMem(std::string mapfile_name, uint64_t buf_size, bool from_etl_file);
+  NamedSharedMem(std::string mapfile_name, uint64_t buf_size,
+      bool isPlayback,
+      bool isPlaybackPaced,
+      bool isPlaybackRetimed,
+      bool isPlaybackBackpressured,
+      bool isPlaybackResetOldest);
   ~NamedSharedMem();
   NamedSharedMem(const NamedSharedMem& t) = delete;
   NamedSharedMem& operator=(const NamedSharedMem& t) = delete;
@@ -59,7 +64,7 @@ class NamedSharedMem {
 
  private:
   // Server method to create a shared mem in buf_size bytes
-  HRESULT CreateSharedMem(std::string mapfile_name, uint64_t buf_size, bool from_etl_file);
+  HRESULT CreateSharedMem(std::string mapfile_name, uint64_t buf_size);
   void OutputErrorLog(const char* error_string, DWORD last_error);
   std::string mapfile_name_;
   HANDLE mapfile_handle_;

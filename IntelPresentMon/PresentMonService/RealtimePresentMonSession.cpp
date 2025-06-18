@@ -41,7 +41,7 @@ PM_STATUS RealtimePresentMonSession::StartStreaming(uint32_t client_process_id,
     CloseHandle(target_process_handle);
 
     PM_STATUS status = streamer_.StartStreaming(client_process_id,
-        target_process_id, nsmFileName, false);
+        target_process_id, nsmFileName, false, false, false, false, false);
     if (status != PM_STATUS::PM_STATUS_SUCCESS) {
         return status;
     }

@@ -21,7 +21,13 @@ public:
 
 private:
     // functions
-    PM_STATUS StartTraceSession(uint32_t processId);
+    PM_STATUS StartTraceSession(uint32_t processId, const std::string& etlPath,
+        const std::wstring& etwSessionName,
+        bool isPlayback,
+        bool isPlaybackPaced,
+        bool isPlaybackRetimed,
+        bool isPlaybackBackpressured,
+        bool isPlaybackResetOldest);
     void StopTraceSession();
 
     void DequeueAnalyzedInfo(

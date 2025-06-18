@@ -10,14 +10,12 @@ StreamClient::StreamClient()
     : initialized_(false),
       next_dequeue_idx_(0),
       recording_frame_data_(false),
-      current_dequeue_frame_num_(0),
-      is_etl_stream_client_(false) {}
+      current_dequeue_frame_num_(0) {}
 
 StreamClient::StreamClient(std::string mapfile_name, bool is_etl_stream_client)
     : next_dequeue_idx_(0),
       recording_frame_data_(false),
-      current_dequeue_frame_num_(0),
-      is_etl_stream_client_(is_etl_stream_client) {
+      current_dequeue_frame_num_(0) {
   Initialize(std::move(mapfile_name));
 }
 
@@ -175,25 +173,19 @@ void StreamClient::PeekPreviousFrames(const PmNsmFrameData** pFrameDataOfLastPre
             return;
         }
 
-        uint64_t current_max_entries =
-            (nsm_view->IsFull()) ? nsm_hdr->max_entries - 1 : nsm_hdr->tail_idx;
-
+        // if nsm is not full, last frame read is at idx 0, so stop condition is when we wrap to last idx
+        // otherwise, last frame to read is the one that follows the latest one (which is the oldest one)
+        const auto stopIdx = nsm_view->IsFull() ? this->GetLatestFrameIndex() : nsm_hdr->max_entries - 1;
+        // here, peek index is starting at the frame which follows the current one
+        // this frame is guaranteed to be valid since peekNext call prior to this would exit early if it were not
         uint64_t peekIndex{ next_dequeue_idx_ };
-        auto pTempFrameData = ReadFrameByIdx(peekIndex);
         uint32_t numFramesTraversed = 0;
-        while (pTempFrameData)
-        {
-            if (nsm_hdr->from_etl_file) {
-                peekIndex = (peekIndex == 0) ? current_max_entries : peekIndex - 1;
-                if (peekIndex == nsm_hdr->tail_idx) {
-                    return;
-                }
-            }
-            else {
-                peekIndex = (peekIndex == 0) ? current_max_entries : peekIndex - 1;
-                if (peekIndex == nsm_hdr->head_idx) {
-                    return;
-                }
+        while (true) {
+            // seek back one frame with ring buffer cycling behavior
+            peekIndex = peekIndex == 0 ? (nsm_hdr->max_entries - 1) : (peekIndex - 1);
+            // exit when we hit stopIdx (which is the first frame encountered we should *not* use)
+            if (peekIndex == stopIdx) {
+                return;
             }
             numFramesTraversed++;
             auto pTempFrameData = ReadFrameByIdx(peekIndex);
@@ -298,11 +290,6 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
     // nullify point so that if we exit early it will be null
     *pNsmData = nullptr;
 
-    if (is_etl_stream_client_) {
-        LOG(INFO) << "ETL Client should be using DequeueFrame instead.";
-        return PM_STATUS::PM_STATUS_SERVICE_ERROR;
-    }
-
     auto nsm_view = GetNamedSharedMemView();
     auto nsm_hdr = nsm_view->GetHeader();
     if (!nsm_hdr->process_active) {
@@ -315,13 +302,16 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         // dequeue frame number. This will be used to track data overruns if
         // the client does not read data fast enough.
         recording_frame_data_ = true;
-        if (nsm_hdr->from_etl_file) {
+        if (nsm_hdr->isPlaybackResetOldest) {
+            // during playback it is desirable to start at the very first frame even if we start consuming late
+            // TODO:validate this value seems wrong for current_dequeue_frame_num_
             current_dequeue_frame_num_ = nsm_hdr->head_idx;
             next_dequeue_idx_ = nsm_hdr->head_idx;
         }
         else {
+            // at start or after overrun, reset to most recent frame data
             current_dequeue_frame_num_ = nsm_hdr->num_frames_written;
-            next_dequeue_idx_ = GetLatestFrameIndex();
+            next_dequeue_idx_ = nsm_hdr->tail_idx;
         }
     }
 
@@ -385,7 +375,7 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
             pFrameDataOfPreviousAppFrameOfLastAppDisplayed);
 
         current_dequeue_frame_num_++;
-        if (nsm_hdr->from_etl_file) {
+        if (nsm_hdr->isPlaybackBackpressured) {
             nsm_view->DequeueFrameData();
         }
         return PM_STATUS::PM_STATUS_SUCCESS;

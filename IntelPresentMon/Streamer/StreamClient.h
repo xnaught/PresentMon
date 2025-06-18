@@ -73,5 +73,4 @@ class StreamClient {
   uint64_t next_dequeue_idx_;
   bool recording_frame_data_;
   uint64_t current_dequeue_frame_num_;
-  bool is_etl_stream_client_;
 };
