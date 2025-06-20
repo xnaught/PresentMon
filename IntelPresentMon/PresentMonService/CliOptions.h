@@ -23,7 +23,7 @@ namespace clio
 		Option<long long> timedStop{ this, "--timed-stop", -1, "Signal stop event after specified number of milliseconds" };
 
 	private: Group gr_{ this, "Playback", "Playback of recorded ETL files" }; public:
-		Option<std::string> etlTestFile{ this, "--etl-test-file", "", "Etl test file including necessary path" };
+		Option<std::string> etlTestFile{ this, "--etl-test-file", "", "Etl test file including necessary path", CLI::ExistingFile };
 		Flag pacePlayback{ this, "--pace-playback", "Process ETL events at similar cadence to realtime processing and adjust timestamps" };
 
 	private: Group gl_{ this, "Logging", "Control logging behavior" }; public:

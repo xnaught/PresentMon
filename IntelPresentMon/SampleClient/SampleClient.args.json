@@ -27,8 +27,12 @@
       "Command": "--service-etl-path \"..\\..\\tests\\gold\\test_case_0.etl\""
     },
     {
+      "Id": "1b86666a-d165-4a17-b1e1-10982e568594",
+      "Command": "--service-etl-path hea-win.etl"
+    },
+    {
       "Id": "34c14e3c-47f2-46ad-a8c7-e1e875faae30",
-      "Command": "--process-id 17316"
+      "Command": "--process-id 4136"
     },
     {
       "Id": "b96f747a-a216-4022-9453-82e5d3d59fbb",

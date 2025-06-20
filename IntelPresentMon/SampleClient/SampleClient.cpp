@@ -103,6 +103,7 @@ void RunPlaybackFrameQuery()
     }
     catch (const pmapi::ApiErrorException& ex) {
         if (ex.GetCode() != PM_STATUS_INVALID_PID) {
+            std::cout << "Unexpected Error (" << frameCount << " frames processed).\n";
             throw;
         }
         std::cout << "Process exit detected, ending frame processing (" << frameCount << " frames processed).\n";

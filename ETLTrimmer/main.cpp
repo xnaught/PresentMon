@@ -14,6 +14,7 @@
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
+#include <ranges>
 #include "CliOptions.h"
 #include "../PresentData/PresentMonTraceSession.hpp"
 #include "../PresentData/PresentMonTraceConsumer.hpp"
@@ -21,6 +22,9 @@
 #include "../PresentData/ETW/NT_Process.h"
 #include "../PresentData/ETW/Microsoft_Windows_Kernel_Process.h"
 #include "../PresentData/ETW/Microsoft_Windows_DxgKrnl.h"
+
+namespace rn = std::ranges;
+namespace vi = rn::views;
 
 DEFINE_GUID(IID_ITraceRelogger, 0xF754AD43, 0x3BCC, 0x4286, 0x80, 0x09, 0x9C, 0x5D, 0xA2, 0x14, 0xE8, 0x4E); // {F754AD43-3BCC-4286-8009-9C5DA214E84E}
 DEFINE_GUID(IID_ITraceEventCallback, 0x3ED25501, 0x593F, 0x43E9, 0x8F, 0x38, 0x3A, 0xB4, 0x6F, 0x5A, 0x4A, 0x52); // {3ED25501-593F-43E9-8F38-3AB46F5A4A52}
@@ -116,6 +120,7 @@ private:
     DWORD ref_count_ = 0;
     // operation mode
     Mode mode_;
+    bool listProcesses_ = false;
     // trim region
     std::optional<std::pair<uint64_t, uint64_t>> trimRangeQpc_;
     std::optional<std::pair<double, double>> trimRangeMs_;
@@ -129,14 +134,16 @@ private:
     int keepCount_ = 0;
     std::optional<uint64_t> firstTimestamp_;
     uint64_t lastTimestamp_ = 0;
+    std::unordered_map<uint32_t, uint64_t> eventCountByProcess_;
 
 public:
-    EventCallback(bool infoOnly, std::shared_ptr<Filter> pFilter, bool trimState, bool byId)
+    EventCallback(bool infoOnly, std::shared_ptr<Filter> pFilter, bool trimState, bool byId, bool listProcesses)
         :
         mode_{ infoOnly ? Mode::Analysis : Mode::Trim },
         pFilter_{ std::move(pFilter) },
         trimState_{ trimState },
-        byId_{ byId }
+        byId_{ byId },
+        listProcesses_{ listProcesses }
     {
         // when trimming by timestamp, we must take care not to remove the state data psuedo-events generated
         // at the beginning of the trace (also true state events coming before the trim region)
@@ -244,6 +251,9 @@ public:
         if (mode_ == Mode::Trim) {
             pRelogger->Inject(pEvent);
         }
+        if (listProcesses_) {
+            eventCountByProcess_[hdr.ProcessId]++;
+        }
         return S_OK;
     }
     HRESULT STDMETHODCALLTYPE OnFinalizeProcessTrace(ITraceRelogger* pRelogger)
@@ -269,6 +279,12 @@ public:
     int GetKeepCount() const
     {
         return keepCount_;
+    }
+    auto GetProcessList() const
+    {
+        return eventCountByProcess_
+            | vi::transform([](auto const& kv) {return std::pair{ kv.first, kv.second };})
+            | rn::to<std::vector>();
     }
 };
 
@@ -362,7 +378,7 @@ int main(int argc, const char** argv)
     }
 
     auto pCallbackProcessor = std::make_unique<EventCallback>(!opt.outputFile,
-        pFilter, (bool)opt.trimState, (bool)opt.event);
+        pFilter, (bool)opt.trimState, (bool)opt.event, (bool)opt.listProcesses);
     if (auto hr = pRelogger->RegisterCallback(pCallbackProcessor.get()); FAILED(hr)) {
         std::cout << "Failed to register callback" << std::endl;
     }
@@ -396,8 +412,37 @@ int main(int argc, const char** argv)
         pCallbackProcessor->GetEventCount() - pCallbackProcessor->GetKeepCount());
     std::cout << std::format("Count of persisted events: {:L}\n", pCallbackProcessor->GetKeepCount());
 
+    if (opt.listProcesses) {
+        std::cout << "\n ======== Processes ========\n\n";
+        auto procs = pCallbackProcessor->GetProcessList();
+        std::erase_if(procs, [](auto& p) { return p.first == 0xFFFF'FFFF; });
+        rn::sort(procs, std::greater{}, &decltype(procs)::value_type::second);
+
+        // figure out how wide each column must be (based on the values)
+        size_t pidW = 0, cntW = 0;
+        for (auto& [pid, cnt] : procs) {
+            pidW = std::max(pidW, std::to_string(pid).size());
+            cntW = std::max(cntW, std::to_string(cnt).size());
+        }
+
+        // print header
+        std::cout
+            << std::format("{:>{}}  {:>{}}\n", "PID", pidW, "EVTs", cntW)
+            << std::string(pidW + 2 + cntW, '-') << "\n";
+
+        // print each row, right-aligned into those widths
+        for (auto& [pid, cnt] : procs) {
+            std::cout << std::format("{:>{}}  {:>{}}\n",
+                pid, pidW,
+                cnt, cntW);
+        }
+
+        std::cout << std::endl;
+    }
+
+
     if (!opt.outputFile) {
-        std::cout << "No output specified; running in analysis mode\n";
+        std::cout << "No output specified; ran in analysis mode\n";
     }
     else {
         std::cout << "Output written to: " << *opt.outputFile << std::endl;
