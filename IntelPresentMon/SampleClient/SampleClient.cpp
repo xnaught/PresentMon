@@ -66,10 +66,11 @@ void RunPlaybackFrameQuery()
     // connect to the service with custom control pipe name
     pmon::util::pipe::DuplexPipe::WaitForAvailability(pipeName, 500);
     auto api = pmapi::Session{ pipeName };
-    std::this_thread::sleep_for(10ms);
 
-    // set ETW flush to realtime
-    api.SetEtwFlushPeriod(50);
+    if (!opt.serviceEtlPath) {
+        // set ETW flush to realtime
+        api.SetEtwFlushPeriod(50);
+    }
 
     // setup basic fixed frame query
     PM_BEGIN_FIXED_FRAME_QUERY(MyFrameQuery)
@@ -122,39 +123,51 @@ void RunPlaybackDynamicQuery()
     if (opt.servicePacePlayback) {
         dargs.push_back("--pace-playback");
     }
+    if (opt.serviceEtlPath) {
+        dargs.append_range(std::vector{ "--etl-test-file"s, *opt.serviceEtlPath });
+    }
     bp::child svc{
         "PresentMonService.exe"s,
-        "--timed-stop"s, "10000"s,
+        // "--timed-stop"s, "10000"s,
         "--control-pipe"s, pipeName,
         "--nsm-prefix"s, "pmon_nsm_tt_"s,
         "--intro-nsm"s, "svc-intro-tt"s,
         "--etw-session-name"s, "svc-sesh-tt"s,
-        "--etl-test-file"s, opt.serviceEtlPath.AsOptional().value_or(R"(..\..\tests\gold\test_case_0.etl)"s),
         bp::args(dargs),
     };
 
     // connect to the service with custom control pipe name
     pmon::util::pipe::DuplexPipe::WaitForAvailability(pipeName, 500);
-    auto pApi = std::make_unique<pmapi::Session>(pipeName);
-    std::this_thread::sleep_for(10ms);
+    auto api = pmapi::Session{ pipeName };
+
+    if (!opt.serviceEtlPath) {
+        // set ETW flush to realtime
+        api.SetEtwFlushPeriod(50);
+    }
 
     // setup fixed dynamic query for basic metrics (FPS presented)
     PM_BEGIN_FIXED_DYNAMIC_QUERY(MyDynamicQuery)
         pmapi::FixedQueryElement fpsAvg{ this, PM_METRIC_PRESENTED_FPS, PM_STAT_AVG };
-    PM_END_FIXED_QUERY query{ *pApi, 200., 50., 1, 1 };
+        pmapi::FixedQueryElement gpuAvg{ this, PM_METRIC_GPU_TIME, PM_STAT_AVG };
+    PM_END_FIXED_QUERY query{ api, 200., 50., 1, 1 };
 
     // track the pid we know to be active in the ETL (1268 for dwm in gold_0)
-    auto tracker = pApi->TrackProcess(opt.processId.AsOptional().value_or(1268));
+    auto tracker = api.TrackProcess(opt.processId.AsOptional().value_or(1268));
 
     try {
         // output realtime samples to console at a steady interval
         while (true) {
             query.Poll(tracker);
-            std::cout << "FPS: " << query.fpsAvg.As<float>() << std::endl;
+            std::cout << "FPS: " << query.fpsAvg.As<float>() << " GPUt: " << query.gpuAvg.As<float>() << std::endl;
             std::this_thread::sleep_for(100ms);
         }
     }
-    catch (...) {
+    catch (const pmapi::ApiErrorException& ex) {
+        if (ex.GetCode() != PM_STATUS_INVALID_PID) {
+            std::cout << "Unexpected Error\n";
+            throw;
+        }
+        std::cout << "Process exit detected, ending frame processing.\n";
     }
 }
 
