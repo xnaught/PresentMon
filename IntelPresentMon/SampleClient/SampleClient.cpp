@@ -97,8 +97,8 @@ void RunPlaybackFrameQuery()
             const auto n = query.ForEachConsume(tracker, [&] { std::cout
                 << "(" << query.PeekBlobContainer().GetNumBlobsPopulated() << ") "
                 << "Start: " << query.startTime.As<double>()
-                << " x FrameTime: " << query.frameTime.As<double>() << std::endl;
-                frameCount++;
+                << " x FrameTime: " << query.frameTime.As<double>()
+                << "  (" << ++frameCount << ")\n";
             });
         }
     }

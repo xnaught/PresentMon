@@ -69,6 +69,9 @@ PmNsmFrameData* StreamClient::ReadFrameByIdx(uint64_t frame_idx, bool checked) {
   }
 
   if (shared_mem_view_->IsEmpty()) {
+      if (checked) {
+          pmlog_error("Trying to read from empty nsm ring").pmwatch(frame_idx);
+      }
     return nullptr;
   }
 
@@ -80,17 +83,33 @@ PmNsmFrameData* StreamClient::ReadFrameByIdx(uint64_t frame_idx, bool checked) {
     return nullptr;
   }
 
-  if ((frame_idx > p_header->max_entries - 1) ||
-      ((frame_idx >= p_header->tail_idx) && (!shared_mem_view_->IsFull()))) {
-      if (checked) {
-          try {
-              pmlog_error("Invalid frame idx").pmwatch(frame_idx);
-          }
-          catch (...) {
-              pmlog_error("Invalid frame idx");
-          }
-      }
+  if (frame_idx > p_header->max_entries - 1) {
+      pmlog_error("Bad out of bounds index in circular buffer").pmwatch(frame_idx);
       return nullptr;
+  }
+
+  if (checked) {
+    // when ring is full, every frame is valid for reading
+    // in realtime usage (head not updated on read), this is always the case once the ring wraps once
+    if (!shared_mem_view_->IsFull()) {
+        bool invalid = false;
+        // when ring is not full, there are two cases (head before tail, or vice versa)
+        // head before tail (invalid range potentially non-contiguous/wrapping)
+        if (p_header->tail_idx > p_header->head_idx) {
+            if (frame_idx >= p_header->tail_idx || frame_idx < p_header->head_idx) {
+                invalid = true;
+            }
+        }
+        else { // tail before head (invalid range contiguous in middle)
+            if (frame_idx >= p_header->tail_idx && frame_idx < p_header->head_idx) {
+                invalid = true;
+            }
+        }
+        if (invalid) {
+            pmlog_error("Invalid frame idx").pmwatch(frame_idx);
+            return nullptr;
+        }
+    }
   }
 
   read_offset = frame_idx * sizeof(PmNsmFrameData) + shared_mem_view_->GetBaseOffset();
@@ -190,7 +209,8 @@ void StreamClient::PeekPreviousFrames(const PmNsmFrameData** pFrameDataOfLastPre
                 return;
             }
             numFramesTraversed++;
-            auto pTempFrameData = ReadFrameByIdx(peekIndex, true);
+            // TODO: we can improve checking by independently enabling for forward and backward cases
+            auto pTempFrameData = ReadFrameByIdx(peekIndex, false);
             // We need to traverse back two frames from the next_dequeue_idx to
             // get to the start of the previous frames
             if (numFramesTraversed > 1) {

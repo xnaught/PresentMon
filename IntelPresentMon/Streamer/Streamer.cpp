@@ -423,7 +423,7 @@ bool Streamer::CreateNamedSharedMemory(DWORD process_id,
     bool isPlaybackRetimed,
     bool isPlaybackBackpressured,
     bool isPlaybackResetOldest) {
-  const std::string mapfile_name = mapfileNamePrefix_ + std::to_string(process_id);
+  std::string mapfile_name = mapfileNamePrefix_ + std::to_string(process_id);
 
   std::lock_guard<std::mutex> lock(nsm_map_mutex_);
   auto iter = process_shared_mem_map_.find(process_id);
