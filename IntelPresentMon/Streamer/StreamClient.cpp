@@ -357,14 +357,6 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         return PM_STATUS::PM_STATUS_SUCCESS;
     }
 
-    if (nsm_hdr->tail_idx < next_dequeue_idx_) {
-        if (next_dequeue_idx_ - nsm_hdr->tail_idx < 500)
-        {
-            recording_frame_data_ = false;
-            return PM_STATUS::PM_STATUS_SUCCESS;
-        }
-    }
-
     // Set the rest of the incoming frame pointers in
     // preparation for the various frame data peeks and
     // reads
