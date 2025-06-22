@@ -7,6 +7,8 @@
 
 static const std::wstring kMockEtwSessionName = L"MockETWSession";
 
+using namespace std::literals;
+
 MockPresentMonSession::MockPresentMonSession()
     : quit_output_thread_(false),
     process_trace_finished_(false),
@@ -34,7 +36,7 @@ PM_STATUS MockPresentMonSession::StartStreaming(uint32_t client_process_id,
 
     // TODO: hook up all cli options
     PM_STATUS status = streamer_.StartStreaming(client_process_id,
-        target_process_id, nsmFileName, true, opt.pacePlayback, opt.pacePlayback, false, true);
+        target_process_id, nsmFileName, true, opt.pacePlayback, opt.pacePlayback, !opt.pacePlayback, true);
     if (status != PM_STATUS::PM_STATUS_SUCCESS) {
         return status;
     }
@@ -49,7 +51,7 @@ PM_STATUS MockPresentMonSession::StartStreaming(uint32_t client_process_id,
 
     // TODO: hook up all cli options
     status = StartTraceSession(target_process_id, *opt.etlTestFile, sessionName,
-        true, opt.pacePlayback, opt.pacePlayback, false, true);
+        true, opt.pacePlayback, opt.pacePlayback, !opt.pacePlayback, true);
     if (status == PM_STATUS_FAILURE) {
         // Unable to start a trace session. Destroy the NSM and
         // return status
@@ -398,6 +400,8 @@ void MockPresentMonSession::Consume(TRACEHANDLE traceHandle) {
 
     ProcessTrace(&traceHandle, 1, NULL, NULL);
 
+    std::this_thread::sleep_for(2s);
+
     // This is only needed if we are processing an ETL file and ProcessTrace()
     // returned because the ETL is done.
     process_trace_finished_ = true;
@@ -430,7 +434,7 @@ void MockPresentMonSession::Output() {
         }
 
         // Sleep to reduce overhead.
-        Sleep(100);
+        Sleep(10);
     }
 
     processes_.clear();
@@ -484,24 +488,8 @@ void MockPresentMonSession::UpdateProcesses(
                     processEvent.ImageFileName);
             }
         }
-        else {
-            // Note any process termination in terminatedProcess, to be handled
-            // once the present event stream catches up to the termination time.
-            terminatedProcesses->emplace_back(processEvent.ProcessId,
-                processEvent.QpcTime);
-        }
     }
 }
 
 void MockPresentMonSession::HandleTerminatedProcess(uint32_t processId) {
-    auto iter = processes_.find(processId);
-    if (iter == processes_.end()) {
-        return;  // shouldn't happen.
-    }
-
-    auto processInfo = &iter->second;
-    if (processInfo->mTargetProcess) {
-        target_process_count_ -= 1;
-    }
-    processes_.erase(std::move(iter));
 }
