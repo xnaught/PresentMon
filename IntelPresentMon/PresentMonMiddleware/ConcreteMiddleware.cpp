@@ -1392,8 +1392,8 @@ static void ReportMetrics(
                                         ctx.pSourceFrameData->present_event.PclInputPingTime,
                                         ctx.pSourceFrameData->present_event.PclSimStartTime));
                             }
-                            ctx.avgInput2Fs = mPclI2FsManager.GetI2FsForProcess(ctx.pSourceFrameData->present_event.ProcessId);
                         }
+                        ctx.avgInput2Fs = mPclI2FsManager.GetI2FsForProcess(ctx.pSourceFrameData->present_event.ProcessId);
                         pQuery->GatherToBlob(ctx, pBlob);
                         pBlob += pQuery->GetBlobSize();
                         frames_copied++;

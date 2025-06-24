@@ -361,7 +361,7 @@ std::optional<std::ofstream> CreateCsvFile(std::string& output_dir, std::string&
             ",MsBetweenDisplayChange,MsInPresent,MsRenderPresentLatency"
             ",MsUntilDisplayed,MsPCLatency,CPUStartQPC,MsBetweenAppStart"
             ",MsCPUBusy,MsCPUWait,MsGPULatency,MsGPUTime,MsGPUBusy,MsGPUWait"
-            ",MsVideoBusy,MsAnimationError,AnimationTime,MsAllInputToPhotonLatency"
+            ",MsVideoBusy,MsAnimationError,AnimationTime,MsFlipDelay,MsAllInputToPhotonLatency"
             ",MsClickToPhotonLatency,MsInstrumentedLatency";
         csvFile << std::endl;
         return csvFile;
@@ -420,7 +420,7 @@ std::string TranslateFrameType(PM_FRAME_TYPE frameType) {
 }
 
 void WriteToCSV(std::optional<std::ofstream>& debugCsvFile, const std::string& processName, const unsigned int& processId,
-    PM_QUERY_ELEMENT(&queryElements)[28], pmapi::BlobContainer& blobs)
+    PM_QUERY_ELEMENT(&queryElements)[29], pmapi::BlobContainer& blobs)
 {
 
     if (!debugCsvFile.has_value()) {
@@ -453,9 +453,10 @@ void WriteToCSV(std::optional<std::ofstream>& debugCsvFile, const std::string& p
             const auto msGpuWait = *reinterpret_cast<const double*>(&pBlob[queryElements[22].dataOffset]);
             const auto msAnimationError = *reinterpret_cast<const double*>(&pBlob[queryElements[23].dataOffset]);
             const auto animationTime = *reinterpret_cast<const double*>(&pBlob[queryElements[24].dataOffset]);
-            const auto msAllInputToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[25].dataOffset]);
-            const auto msClickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[26].dataOffset]);
-            const auto msInstrumentedLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[27].dataOffset]);
+            const auto msFlipDelay = *reinterpret_cast<const double*>(&pBlob[queryElements[25].dataOffset]);
+            const auto msAllInputToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[26].dataOffset]);
+            const auto msClickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[27].dataOffset]);
+            const auto msInstrumentedLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[28].dataOffset]);
             *debugCsvFile << processName << ",";
             *debugCsvFile << processId << ",";
             *debugCsvFile << std::hex << "0x" << std::dec << swapChain << ",";
@@ -484,6 +485,7 @@ void WriteToCSV(std::optional<std::ofstream>& debugCsvFile, const std::string& p
             *debugCsvFile << 0 << ",";
             *debugCsvFile << msAnimationError << ",";
             *debugCsvFile << animationTime << ",";
+            *debugCsvFile << msFlipDelay << ",";
             *debugCsvFile << msAllInputToPhotonLatency << ",";
             *debugCsvFile << msClickToPhotonLatency << ",";
             *debugCsvFile << msInstrumentedLatency << std::endl;
@@ -501,7 +503,7 @@ public:
     bool Open(std::wstring const& path, uint32_t processId);
     void Close();
     bool VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-        PM_QUERY_ELEMENT(&queryElements)[28], pmapi::BlobContainer& blobs, std::optional<std::ofstream>& debugCsvFile);
+        PM_QUERY_ELEMENT(&queryElements)[29], pmapi::BlobContainer& blobs, std::optional<std::ofstream>& debugCsvFile);
     bool ResetCsv();
 
 private:
@@ -530,7 +532,7 @@ CsvParser::CsvParser()
 {}
 
 bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsigned int& processId,
-    PM_QUERY_ELEMENT(&queryElements)[28], pmapi::BlobContainer& blobs, std::optional<std::ofstream>& debugCsvFile)
+    PM_QUERY_ELEMENT(&queryElements)[29], pmapi::BlobContainer& blobs, std::optional<std::ofstream>& debugCsvFile)
 {
     if (debugCsvFile.has_value()) {
         WriteToCSV(debugCsvFile, processName, processId, queryElements, blobs);
@@ -563,11 +565,10 @@ bool CsvParser::VerifyBlobAgainstCsv(const std::string& processName, const unsig
         const auto msGpuWait = *reinterpret_cast<const double*>(&pBlob[queryElements[22].dataOffset]);
         const auto msAnimationError = *reinterpret_cast<const double*>(&pBlob[queryElements[23].dataOffset]);
         const auto animationTime = *reinterpret_cast<const double*>(&pBlob[queryElements[24].dataOffset]);
-        const auto msAllInputToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[25].dataOffset]);
-        const auto msClickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[26].dataOffset]);
-        const auto msInstrumentedLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[27].dataOffset]);
-
-
+        const auto msFrameDelay = *reinterpret_cast<const double*>(&pBlob[queryElements[25].dataOffset]);
+        const auto msAllInputToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[26].dataOffset]);
+        const auto msClickToPhotonLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[27].dataOffset]);
+        const auto msInstrumentedLatency = *reinterpret_cast<const double*>(&pBlob[queryElements[28].dataOffset]);
         
         // Read rows until we find one with the process we are interested in
         // or we are out of data.

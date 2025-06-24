@@ -409,8 +409,13 @@ namespace
 				return;
 			}
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
+				auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
+				auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+				if (ii != ctx.flipDelayDataMap.end()) {
+					ScreenTime = ii->second.displayQpc;
+				}
 				const auto val = TimestampDeltaToUnsignedMilliSeconds(start,
-					ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex], ctx.performanceCounterPeriodMs);
+					ScreenTime, ctx.performanceCounterPeriodMs);
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
 			}
 			else
@@ -586,6 +591,10 @@ namespace
 
 			// Calculate the current frame's displayed time 
 			auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
+			auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.flipDelayDataMap.end()) {
+				ScreenTime = ii->second.displayQpc;
+			}
 			auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
 				? ctx.nextDisplayedQpc
 				: ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex + 1];
@@ -639,6 +648,10 @@ namespace
 
 			// Calculate the current frame's displayed time 
 			auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
+			auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.flipDelayDataMap.end()) {
+				ScreenTime = ii->second.displayQpc;
+			}
 			auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
 				? ctx.nextDisplayedQpc
 				: ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex + 1];
@@ -745,6 +758,10 @@ namespace
 				return;
 			}
 			auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
+			auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.flipDelayDataMap.end()) {
+				ScreenTime = ii->second.displayQpc;
+			}
 			auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
                 ? ctx.nextDisplayedQpc
                 : ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex + 1];
@@ -800,6 +817,10 @@ namespace
 			}
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
 				auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
+				auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+				if (ii != ctx.flipDelayDataMap.end()) {
+					ScreenTime = ii->second.displayQpc;
+				}
 				auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
 					? ctx.nextDisplayedQpc
 					: ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex + 1];
@@ -879,7 +900,13 @@ namespace
 			}
 
 			// Calculate the current frame's displayed time 
+			
+			// Check to see if the current present is collapsed and if so use the correct display qpc.
 			auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
+			auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.flipDelayDataMap.end()) {
+				ScreenTime = ii->second.displayQpc;
+			}
 			auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
 				? ctx.nextDisplayedQpc
 				: ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex + 1];
@@ -1044,28 +1071,35 @@ namespace
 				}
 			}
 
+			// Check to see if the current present is collapsed and if so use the correct display qpc.
+			uint64_t displayQpc = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
+			auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.flipDelayDataMap.end()) {
+				displayQpc = ii->second.displayQpc;
+			}
+
 			double updatedInputTime = 0.;
 			double val = 0.;
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
 				if (isMouseClick) {
 					updatedInputTime = ctx.lastReceivedNotDisplayedClickQpc == 0 ? 0. :
 						TimestampDeltaToUnsignedMilliSeconds(ctx.lastReceivedNotDisplayedClickQpc,
-							ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
+							displayQpc,
 							ctx.performanceCounterPeriodMs);
 					val = ctx.pSourceFrameData->present_event.*pStart == 0 ? updatedInputTime :
 						TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pStart,
-							ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
+							displayQpc,
 							ctx.performanceCounterPeriodMs);
 					ctx.lastReceivedNotDisplayedClickQpc = 0;
 				}
 				else {
 					updatedInputTime = ctx.lastReceivedNotDisplayedAllInputTime == 0 ? 0. :
 						TimestampDeltaToUnsignedMilliSeconds(ctx.lastReceivedNotDisplayedAllInputTime,
-							ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
+							displayQpc,
 							ctx.performanceCounterPeriodMs);
 					val = ctx.pSourceFrameData->present_event.*pStart == 0 ? updatedInputTime :
 						TimestampDeltaToUnsignedMilliSeconds(ctx.pSourceFrameData->present_event.*pStart,
-							ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
+							displayQpc,
 							ctx.performanceCounterPeriodMs);
 					ctx.lastReceivedNotDisplayedAllInputTime = 0;
 				}
@@ -1095,7 +1129,6 @@ namespace
 		uint32_t outputOffset_;
 		uint16_t outputPaddingSize_;
 	};
-	template<bool doDroppedCheck>
 	class PcLatencyGatherCommand_ : public pmon::mid::GatherCommand_
 	{
 	public:
@@ -1106,12 +1139,10 @@ namespace
 		}
 		void Gather(Context& ctx, uint8_t* pDestBlob) const override
 		{
-			if constexpr (doDroppedCheck) {
-				if (ctx.dropped) {
-					reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
-						std::numeric_limits<double>::quiet_NaN();
-					return;
-				}
+			if (ctx.dropped) {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
+				return;
 			}
 
 			double val = 0.;
@@ -1124,9 +1155,16 @@ namespace
 				return;
 			}
 
+			// Check to see if the current present is collapsed and if so use the correct display qpc.
+			uint64_t displayQpc = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
+			auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.flipDelayDataMap.end()) {
+				displayQpc = ii->second.displayQpc;
+			}
+
 			val = ctx.avgInput2Fs +
 				TimestampDeltaToUnsignedMilliSeconds(simStartTime, 
-					ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex],
+					displayQpc,
 					ctx.performanceCounterPeriodMs);
 
 			if (val == 0.) {
@@ -1180,6 +1218,57 @@ namespace
 			val = TimestampDeltaToUnsignedMilliSeconds(
 				ctx.appProvidedSimTrackingData.lastAppSimStartTime, currentSimStartTime,
 				ctx.performanceCounterPeriodMs);
+
+			if (val == 0.) {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
+			}
+			else {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = val;
+			}
+		}
+		uint32_t GetBeginOffset() const override
+		{
+			return outputOffset_ - outputPaddingSize_;
+		}
+		uint32_t GetEndOffset() const override
+		{
+			return outputOffset_ + alignof(double);
+		}
+		uint32_t GetOutputOffset() const override
+		{
+			return outputOffset_;
+		}
+	private:
+		uint32_t outputOffset_;
+		uint16_t outputPaddingSize_;
+	};
+	class FlipDelayGatherCommand_ : public pmon::mid::GatherCommand_
+	{
+	public:
+		FlipDelayGatherCommand_(size_t nextAvailableByteOffset)
+		{
+			outputPaddingSize_ = (uint16_t)util::GetPadding(nextAvailableByteOffset, alignof(double));
+			outputOffset_ = uint32_t(nextAvailableByteOffset) + outputPaddingSize_;
+		}
+		void Gather(Context& ctx, uint8_t* pDestBlob) const override
+		{
+
+			if (ctx.dropped) {
+				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
+					std::numeric_limits<double>::quiet_NaN();
+				return;
+			}
+
+            // Calculate the current frame's flip delay
+			uint64_t flipDelay = ctx.pSourceFrameData->present_event.FlipDelay;
+			auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.flipDelayDataMap.end()) {
+                flipDelay = ii->second.flipDelay;
+			}
+
+			double val = 0.;
+			val = TimestampDeltaToMilliSeconds(flipDelay, ctx.performanceCounterPeriodMs);
 
 			if (val == 0.) {
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
@@ -1407,7 +1496,9 @@ std::unique_ptr<mid::GatherCommand_> PM_FRAME_QUERY::MapQueryElementToGatherComm
 	case PM_METRIC_BETWEEN_SIMULATION_START:
         return std::make_unique<BetweenSimStartsGatherCommand_>(pos);
 	case PM_METRIC_PC_LATENCY:
-        return std::make_unique<PcLatencyGatherCommand_<1>>(pos);
+        return std::make_unique<PcLatencyGatherCommand_>(pos);
+	case PM_METRIC_FLIP_DELAY:
+		return std::make_unique<FlipDelayGatherCommand_>(pos);
 	default:
 		pmlog_error("unknown metric id").pmwatch((int)q.metric).diag();
 		return {};
@@ -1507,11 +1598,9 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 			cpuStart = pFrameDataOfLastAppPresented->present_event.PresentStartTime +
 				pFrameDataOfLastAppPresented->present_event.TimeInPresent;
 		}
-		if (appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::PCLatency &&
-			pFrameDataOfLastPresented->present_event.PclSimStartTime != 0) {
+		if (pFrameDataOfLastPresented->present_event.PclSimStartTime != 0) {
 			appProvidedSimTrackingData.lastAppSimStartTime = pFrameDataOfLastAppPresented->present_event.PclSimStartTime;
-		} else if (appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::AppProvider &&
-			pFrameDataOfLastPresented->present_event.AppSimStartTime != 0) {
+		} else if (pFrameDataOfLastPresented->present_event.AppSimStartTime != 0) {
 			appProvidedSimTrackingData.lastAppSimStartTime = pFrameDataOfLastAppPresented->present_event.AppSimStartTime;
 		}
 	}
@@ -1522,7 +1611,35 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 	}
 
 	if (pFrameDataOfNextDisplayed) {
-		nextDisplayedQpc = pFrameDataOfNextDisplayed->present_event.Displayed_ScreenTime[0];
+		if (!dropped) {
+			uint64_t flipDelay = 0;
+			uint64_t currentDisplayQpc = 0;
+			uint64_t nextDisplayQpc = 0;
+			// Check to see if the current frame had it's flip delay and display qpc set due to a 
+            // collapsed present. If so use those values to calculate the next displayed qpc.
+			auto ii = flipDelayDataMap.find(pSourceFrameData->present_event.FrameId);
+			if (ii != flipDelayDataMap.end()) {
+				flipDelay = ii->second.flipDelay;
+                currentDisplayQpc = ii->second.displayQpc;
+			} else {
+				flipDelay = pSourceFrameData->present_event.FlipDelay;
+                currentDisplayQpc = pSourceFrameData->present_event.Displayed_ScreenTime[0];
+			}
+			if (flipDelay != 0 && (currentDisplayQpc > pFrameDataOfNextDisplayed->present_event.Displayed_ScreenTime[0])) {
+                // The next displayed frame is a collapsed present. Update the flip delay data map with the
+                // current frame's flip delay and display qpc.
+                FlipDelayData flipDelayData {};
+                flipDelayData.flipDelay = pFrameDataOfNextDisplayed->present_event.FlipDelay + 
+					(currentDisplayQpc - pFrameDataOfNextDisplayed->present_event.Displayed_ScreenTime[0]);
+				flipDelayData.displayQpc = pSourceFrameData->present_event.Displayed_ScreenTime[0];
+				nextDisplayedQpc = currentDisplayQpc;
+				flipDelayDataMap[pFrameDataOfNextDisplayed->present_event.FrameId] = flipDelayData;
+			} else {
+				nextDisplayedQpc = pFrameDataOfNextDisplayed->present_event.Displayed_ScreenTime[0];
+			}
+		} else {
+			nextDisplayedQpc = pFrameDataOfNextDisplayed->present_event.Displayed_ScreenTime[0];
+		}
 	}
 	else {
 		// TODO: log issue or invalidate related columns or drop frame (or some combination)
@@ -1531,9 +1648,16 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 	}
 	
 	if (pFrameDataOfLastDisplayed && pFrameDataOfLastDisplayed->present_event.DisplayedCount > 0) {
-		previousDisplayedQpc = pFrameDataOfLastDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastDisplayed->present_event.DisplayedCount - 1];
-	}
-	else {
+		// Check to see if the current frame had it's flip delay and display qpc set due to a 
+		// collapsed present. If so use those values to calculate the next displayed qpc.
+		auto ii = flipDelayDataMap.find(pFrameDataOfLastDisplayed->present_event.FrameId);
+		if (ii != flipDelayDataMap.end()) {
+			previousDisplayedQpc = ii->second.displayQpc;
+		}
+		else {
+			previousDisplayedQpc = pFrameDataOfLastDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastDisplayed->present_event.DisplayedCount - 1];
+		}
+	} else {
 		// TODO: log issue or invalidate related columns or drop frame (or some combination)
 		pmlog_info("null pFrameDataOfLastDisplayed");
 		previousDisplayedQpc = 0;
@@ -1541,28 +1665,38 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 
 	if (pFrameDataOfLastAppDisplayed && pFrameDataOfLastAppDisplayed->present_event.DisplayedCount > 0) {
 		// Use the animation error source to set the various last displayed sim start and app screen times
+		uint64_t displayQpc = 0;
+		// Check to see if the current frame had it's flip delay and display qpc set due to a 
+		// collapsed present. If so use those values to calculate the next displayed qpc.
+		auto ii = flipDelayDataMap.find(pFrameDataOfLastAppDisplayed->present_event.FrameId);
+		if (ii != flipDelayDataMap.end()) {
+			displayQpc = ii->second.displayQpc;
+		}
+		else {
+			displayQpc = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
+		}
 		if (appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::PCLatency) {
 			// Special handling is required for application data provided by PCL events. In the PCL events
 			// case we use a non-zero PclSimStartTime as an indicator for an application generated frame.
 			if (pFrameDataOfLastAppDisplayed->present_event.PclSimStartTime != 0) {
 				appProvidedSimTrackingData.lastDisplayedAppSimStartTime = pFrameDataOfLastAppDisplayed->present_event.PclSimStartTime;
-				appProvidedSimTrackingData.lastDisplayedAppScreenTime = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
+
+				appProvidedSimTrackingData.lastDisplayedAppScreenTime = displayQpc;
 			} else {
 				// If we are transistioning from CPU Start time based animation error source to PCL then we need to update the last displayed app screen time
 				// for the animation error.
 				if (initAmimationErrorSource != appProvidedSimTrackingData.animationErrorSource) {
-					appProvidedSimTrackingData.lastDisplayedAppScreenTime = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
+					appProvidedSimTrackingData.lastDisplayedAppScreenTime = displayQpc;
 				}
 			}
 		} else if (appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::AppProvider) {
             // The above transition check in the PCL case is not needed for the AppProvider case as with the app provided
 			// we know which frames are applicatoin generated.
 			appProvidedSimTrackingData.lastDisplayedAppSimStartTime = pFrameDataOfLastAppDisplayed->present_event.AppSimStartTime;
-			appProvidedSimTrackingData.lastDisplayedAppScreenTime = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
+			appProvidedSimTrackingData.lastDisplayedAppScreenTime = displayQpc;
 		} else {
-			appProvidedSimTrackingData.lastDisplayedAppScreenTime = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
+			appProvidedSimTrackingData.lastDisplayedAppScreenTime = displayQpc;
 		}
-		
 	}
 	else {
 		// TODO: log issue or invalidate related columns or drop frame (or some combination)
@@ -1570,7 +1704,6 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 	}
 
 	if (pFrameDataOfPreviousAppFrameOfLastAppDisplayed) {
-		// TODO -> Add a comment here!!
 		if (pFrameDataOfPreviousAppFrameOfLastAppDisplayed->present_event.AppPropagatedPresentStartTime != 0) {
             lastDisplayedCpuStart = pFrameDataOfPreviousAppFrameOfLastAppDisplayed->present_event.AppPropagatedPresentStartTime +
 				pFrameDataOfPreviousAppFrameOfLastAppDisplayed->present_event.AppPropagatedTimeInPresent;
