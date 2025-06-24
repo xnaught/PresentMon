@@ -1313,10 +1313,10 @@ static void ReportMetrics(
             SetActiveGraphicsAdapter(*devId);
         }
 
-        SimTrackingData appProvidedSimTrackingData{};
-        auto iter = appSimTrackingData.find(processId);
-        if (iter != appSimTrackingData.end()) {
-            appProvidedSimTrackingData = iter->second;
+        FrameTimingData currentFrameTimingData{};
+        auto iter = frameTimingData.find(processId);
+        if (iter != frameTimingData.end()) {
+            currentFrameTimingData = iter->second;
         }
 
         FakePMTraceSession pmSession;
@@ -1326,7 +1326,7 @@ static void ReportMetrics(
         PM_FRAME_QUERY::Context ctx{ 
             nsm_hdr->start_qpc,
             pShmClient->GetQpcFrequency().QuadPart,
-            appProvidedSimTrackingData };
+            currentFrameTimingData };
 
         while (frames_copied < frames_to_copy) {
             const PmNsmFrameData* pCurrentFrameData = nullptr;
@@ -1410,7 +1410,16 @@ static void ReportMetrics(
         }
         // Set to the actual number of frames copied
         numFrames = frames_copied;
-        appSimTrackingData[processId] = ctx.appProvidedSimTrackingData;
+        // Trim off any old flip delay data that resides in the FrameTimingData::flipDelayDataMap map
+        // that is older than the last displayed frame id.
+        for (auto it = ctx.frameTimingData.flipDelayDataMap.begin(); it != ctx.frameTimingData.flipDelayDataMap.end();) {
+            if (it->first < ctx.frameTimingData.lastDisplayedFrameId) {
+                it = ctx.frameTimingData.flipDelayDataMap.erase(it); // Erase and move to the next element
+            } else {
+                ++it; // Move to the next element
+            }
+        }
+        frameTimingData[processId] = ctx.frameTimingData;
     }
 
     void ConcreteMiddleware::CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)

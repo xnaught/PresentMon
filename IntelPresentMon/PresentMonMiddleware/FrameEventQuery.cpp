@@ -410,8 +410,8 @@ namespace
 			}
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
 				auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-				auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-				if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
+				auto ii = ctx.frameTimingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+				if (ii != ctx.frameTimingData.flipDelayDataMap.end()) {
 					ScreenTime = ii->second.displayQpc;
 				}
 				const auto val = TimestampDeltaToUnsignedMilliSeconds(start,
@@ -591,8 +591,8 @@ namespace
 
 			// Calculate the current frame's displayed time 
 			auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-			auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-			if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
+			auto ii = ctx.frameTimingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.frameTimingData.flipDelayDataMap.end()) {
 				ScreenTime = ii->second.displayQpc;
 			}
 			auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
@@ -648,8 +648,8 @@ namespace
 
 			// Calculate the current frame's displayed time 
 			auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-			auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-			if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
+			auto ii = ctx.frameTimingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.frameTimingData.flipDelayDataMap.end()) {
 				ScreenTime = ii->second.displayQpc;
 			}
 			auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
@@ -758,8 +758,8 @@ namespace
 				return;
 			}
 			auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-			auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-			if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
+			auto ii = ctx.frameTimingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.frameTimingData.flipDelayDataMap.end()) {
 				ScreenTime = ii->second.displayQpc;
 			}
 			auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
@@ -809,7 +809,7 @@ namespace
 				}
 			}
 			if constexpr (doZeroCheck) {
-				if (ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime == 0 && ctx.lastDisplayedCpuStart == 0) {
+				if (ctx.frameTimingData.lastDisplayedAppSimStartTime == 0 && ctx.lastDisplayedCpuStart == 0) {
 					reinterpret_cast<double&>(pDestBlob[outputOffset_]) = 
 						std::numeric_limits<double>::quiet_NaN();
 					return;
@@ -817,8 +817,8 @@ namespace
 			}
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
 				auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-				auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-				if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
+				auto ii = ctx.frameTimingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+				if (ii != ctx.frameTimingData.flipDelayDataMap.end()) {
 					ScreenTime = ii->second.displayQpc;
 				}
 				auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
@@ -830,27 +830,27 @@ namespace
 						std::numeric_limits<double>::quiet_NaN();
 					return;
 				}
-				auto PrevScreenTime = ctx.appProvidedSimTrackingData.lastDisplayedAppScreenTime;
+				auto PrevScreenTime = ctx.frameTimingData.lastDisplayedAppScreenTime;
 				// Next calculate the animation error. First calculate the simulation
 				// start time. Simulation start can be either an app provided sim start time via the provider or
 				// PCL stats or, if not present,the cpu start.
 				uint64_t simStartTime = 0;
-				if (ctx.appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::AppProvider && 
-					ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime != 0) {
+				if (ctx.frameTimingData.animationErrorSource == AnimationErrorSource::AppProvider && 
+					ctx.frameTimingData.lastDisplayedAppSimStartTime != 0) {
 					// If the app provider is the source of the animation error then use the app sim start time.
 					simStartTime = ctx.pSourceFrameData->present_event.AppSimStartTime;
 				}
-				else if (ctx.appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::PCLatency &&
-					ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime != 0) {
+				else if (ctx.frameTimingData.animationErrorSource == AnimationErrorSource::PCLatency &&
+					ctx.frameTimingData.lastDisplayedAppSimStartTime != 0) {
 					// If the pcl latency is the source of the animation error then use the pcl sim start time.
 					simStartTime = ctx.pSourceFrameData->present_event.PclSimStartTime;
 				}
-				else if (ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime == 0) {
+				else if (ctx.frameTimingData.lastDisplayedAppSimStartTime == 0) {
 					// If the cpu start time is the source of the animation error then use the cpu start time.
 					simStartTime = ctx.cpuStart;
 				}
-				auto PrevSimStartTime = ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime != 0 ?
-					ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime :
+				auto PrevSimStartTime = ctx.frameTimingData.lastDisplayedAppSimStartTime != 0 ?
+					ctx.frameTimingData.lastDisplayedAppSimStartTime :
 					ctx.lastDisplayedCpuStart;
 				// If the simulation start time is less than the last displated simulation start time it means
 				// we are transitioning to app provider events.
@@ -903,8 +903,8 @@ namespace
 			
 			// Check to see if the current present is collapsed and if so use the correct display qpc.
 			auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-			auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-			if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
+			auto ii = ctx.frameTimingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.frameTimingData.flipDelayDataMap.end()) {
 				ScreenTime = ii->second.displayQpc;
 			}
 			auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
@@ -916,12 +916,12 @@ namespace
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) = std::numeric_limits<double>::quiet_NaN();
 				return;
 			}
-			const auto firstSimStartTime = ctx.appProvidedSimTrackingData.firstAppSimStartTime != 0 ?
-				ctx.appProvidedSimTrackingData.firstAppSimStartTime :
+			const auto firstSimStartTime = ctx.frameTimingData.firstAppSimStartTime != 0 ?
+				ctx.frameTimingData.firstAppSimStartTime :
 				ctx.qpcStart;
 			uint64_t currentSimTime = 0;
-			if (ctx.appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::AppProvider) {
-				if (ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime != 0) {
+			if (ctx.frameTimingData.animationErrorSource == AnimationErrorSource::AppProvider) {
+				if (ctx.frameTimingData.lastDisplayedAppSimStartTime != 0) {
 					// If the app provider is the source of the animation error then use the app sim start time.
 					currentSimTime = ctx.pSourceFrameData->present_event.AppSimStartTime;
 				}
@@ -930,8 +930,8 @@ namespace
 					return;
 				}
 			}
-			else if (ctx.appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::PCLatency) {
-				if (ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime != 0) {
+			else if (ctx.frameTimingData.animationErrorSource == AnimationErrorSource::PCLatency) {
+				if (ctx.frameTimingData.lastDisplayedAppSimStartTime != 0) {
 					// If the pcl latency is the source of the animation error then use the pcl sim start time.
 					currentSimTime = ctx.pSourceFrameData->present_event.PclSimStartTime;
 				}
@@ -940,7 +940,7 @@ namespace
 					return;
 				}
 			}
-			else if (ctx.appProvidedSimTrackingData.lastDisplayedAppSimStartTime == 0) {
+			else if (ctx.frameTimingData.lastDisplayedAppSimStartTime == 0) {
 				// If the cpu start time is the source of the animation error then use the cpu start time.
 				currentSimTime = ctx.cpuStart;
 			}
@@ -1073,8 +1073,8 @@ namespace
 
 			// Check to see if the current present is collapsed and if so use the correct display qpc.
 			uint64_t displayQpc = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-			auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-			if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
+			auto ii = ctx.frameTimingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.frameTimingData.flipDelayDataMap.end()) {
 				displayQpc = ii->second.displayQpc;
 			}
 
@@ -1148,7 +1148,7 @@ namespace
 			double val = 0.;
 			auto simStartTime = ctx.pSourceFrameData->present_event.PclSimStartTime != 0 ?
 				ctx.pSourceFrameData->present_event.PclSimStartTime : 
-				ctx.appProvidedSimTrackingData.lastAppSimStartTime;
+				ctx.frameTimingData.lastAppSimStartTime;
 			if (ctx.avgInput2Fs == 0. || simStartTime == 0) {
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
 					std::numeric_limits<double>::quiet_NaN();
@@ -1157,8 +1157,8 @@ namespace
 
 			// Check to see if the current present is collapsed and if so use the correct display qpc.
 			uint64_t displayQpc = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-			auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-			if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
+			auto ii = ctx.frameTimingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.frameTimingData.flipDelayDataMap.end()) {
 				displayQpc = ii->second.displayQpc;
 			}
 
@@ -1209,14 +1209,14 @@ namespace
 				currentSimStartTime = ctx.pSourceFrameData->present_event.AppSimStartTime;
             }
 
-			if (ctx.appProvidedSimTrackingData.lastAppSimStartTime == 0 || currentSimStartTime == 0) {
+			if (ctx.frameTimingData.lastAppSimStartTime == 0 || currentSimStartTime == 0) {
 				reinterpret_cast<double&>(pDestBlob[outputOffset_]) =
 					std::numeric_limits<double>::quiet_NaN();
 				return;
 			}
 
 			val = TimestampDeltaToUnsignedMilliSeconds(
-				ctx.appProvidedSimTrackingData.lastAppSimStartTime, currentSimStartTime,
+				ctx.frameTimingData.lastAppSimStartTime, currentSimStartTime,
 				ctx.performanceCounterPeriodMs);
 
 			if (val == 0.) {
@@ -1262,8 +1262,8 @@ namespace
 
             // Calculate the current frame's flip delay
 			uint64_t flipDelay = ctx.pSourceFrameData->present_event.FlipDelay;
-			auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-			if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
+			auto ii = ctx.frameTimingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.frameTimingData.flipDelayDataMap.end()) {
                 flipDelay = ii->second.flipDelay;
 			}
 
@@ -1549,8 +1549,8 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 		}
 	}
 
-	AnimationErrorSource initAmimationErrorSource = appProvidedSimTrackingData.animationErrorSource;
-	if (appProvidedSimTrackingData.firstAppSimStartTime == 0) {
+	AnimationErrorSource initAmimationErrorSource = frameTimingData.animationErrorSource;
+	if (frameTimingData.firstAppSimStartTime == 0) {
 		// Handle this rare case at the start of consuming frames and the application is
 		// producing app frame data:
 		// [0] Frame - Not Dropped           - Valid App Data -> Start of raw frame data
@@ -1561,23 +1561,23 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 		// app sim start time is at [0] regardless if [1] or [2] are dropped or not
 		if (pFrameDataOfLastDisplayed) {
 			if (pFrameDataOfLastDisplayed->present_event.AppSimStartTime != 0) {
-				appProvidedSimTrackingData.firstAppSimStartTime = pFrameDataOfLastDisplayed->present_event.AppSimStartTime;
-				appProvidedSimTrackingData.animationErrorSource = AnimationErrorSource::AppProvider;
+				frameTimingData.firstAppSimStartTime = pFrameDataOfLastDisplayed->present_event.AppSimStartTime;
+				frameTimingData.animationErrorSource = AnimationErrorSource::AppProvider;
 			} else if (pFrameDataOfLastDisplayed->present_event.PclSimStartTime != 0){
-				appProvidedSimTrackingData.firstAppSimStartTime = pFrameDataOfLastDisplayed->present_event.PclSimStartTime;
-				appProvidedSimTrackingData.animationErrorSource = AnimationErrorSource::PCLatency;
+				frameTimingData.firstAppSimStartTime = pFrameDataOfLastDisplayed->present_event.PclSimStartTime;
+				frameTimingData.animationErrorSource = AnimationErrorSource::PCLatency;
 			}
 		}
 		// In the case where [0] does not set the firstAppSimStartTime and the current frame is
 		// either [1] or [2] and is not dropped set the firstAppSimStartTime
-		if (appProvidedSimTrackingData.firstAppSimStartTime == 0 && !dropped) {
+		if (frameTimingData.firstAppSimStartTime == 0 && !dropped) {
 			if (pSourceFrameData->present_event.AppSimStartTime != 0) {
-				appProvidedSimTrackingData.firstAppSimStartTime = pSourceFrameData->present_event.AppSimStartTime;
-                appProvidedSimTrackingData.animationErrorSource = AnimationErrorSource::AppProvider;
+				frameTimingData.firstAppSimStartTime = pSourceFrameData->present_event.AppSimStartTime;
+				frameTimingData.animationErrorSource = AnimationErrorSource::AppProvider;
 			}
 			else if (pSourceFrameData->present_event.PclSimStartTime != 0) {
-				appProvidedSimTrackingData.firstAppSimStartTime = pSourceFrameData->present_event.PclSimStartTime;
-				appProvidedSimTrackingData.animationErrorSource = AnimationErrorSource::PCLatency;
+				frameTimingData.firstAppSimStartTime = pSourceFrameData->present_event.PclSimStartTime;
+				frameTimingData.animationErrorSource = AnimationErrorSource::PCLatency;
 			}
 		}
 	}
@@ -1599,9 +1599,9 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 				pFrameDataOfLastAppPresented->present_event.TimeInPresent;
 		}
 		if (pFrameDataOfLastPresented->present_event.PclSimStartTime != 0) {
-			appProvidedSimTrackingData.lastAppSimStartTime = pFrameDataOfLastAppPresented->present_event.PclSimStartTime;
+			frameTimingData.lastAppSimStartTime = pFrameDataOfLastAppPresented->present_event.PclSimStartTime;
 		} else if (pFrameDataOfLastPresented->present_event.AppSimStartTime != 0) {
-			appProvidedSimTrackingData.lastAppSimStartTime = pFrameDataOfLastAppPresented->present_event.AppSimStartTime;
+			frameTimingData.lastAppSimStartTime = pFrameDataOfLastAppPresented->present_event.AppSimStartTime;
 		}
 	}
 	else {
@@ -1617,8 +1617,8 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 			uint64_t nextDisplayQpc = 0;
 			// Check to see if the current frame had it's flip delay and display qpc set due to a 
             // collapsed present. If so use those values to calculate the next displayed qpc.
-			auto ii = appProvidedSimTrackingData.flipDelayDataMap.find(pSourceFrameData->present_event.FrameId);
-			if (ii != appProvidedSimTrackingData.flipDelayDataMap.end()) {
+			auto ii = frameTimingData.flipDelayDataMap.find(pSourceFrameData->present_event.FrameId);
+			if (ii != frameTimingData.flipDelayDataMap.end()) {
 				flipDelay = ii->second.flipDelay;
                 currentDisplayQpc = ii->second.displayQpc;
 			} else {
@@ -1633,7 +1633,7 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 					(currentDisplayQpc - pFrameDataOfNextDisplayed->present_event.Displayed_ScreenTime[0]);
 				flipDelayData.displayQpc = pSourceFrameData->present_event.Displayed_ScreenTime[0];
 				nextDisplayedQpc = currentDisplayQpc;
-				appProvidedSimTrackingData.flipDelayDataMap[pFrameDataOfNextDisplayed->present_event.FrameId] = flipDelayData;
+				frameTimingData.flipDelayDataMap[pFrameDataOfNextDisplayed->present_event.FrameId] = flipDelayData;
 			} else {
 				nextDisplayedQpc = pFrameDataOfNextDisplayed->present_event.Displayed_ScreenTime[0];
 			}
@@ -1650,13 +1650,15 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 	if (pFrameDataOfLastDisplayed && pFrameDataOfLastDisplayed->present_event.DisplayedCount > 0) {
 		// Check to see if the current frame had it's flip delay and display qpc set due to a 
 		// collapsed present. If so use those values to calculate the next displayed qpc.
-		auto ii = appProvidedSimTrackingData.flipDelayDataMap.find(pFrameDataOfLastDisplayed->present_event.FrameId);
-		if (ii != appProvidedSimTrackingData.flipDelayDataMap.end()) {
+		auto ii = frameTimingData.flipDelayDataMap.find(pFrameDataOfLastDisplayed->present_event.FrameId);
+		if (ii != frameTimingData.flipDelayDataMap.end()) {
 			previousDisplayedQpc = ii->second.displayQpc;
 		}
 		else {
 			previousDisplayedQpc = pFrameDataOfLastDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastDisplayed->present_event.DisplayedCount - 1];
 		}
+        // Save off the frame id of the last displayed frame to allow for deletion of old flip delay data
+        frameTimingData.lastDisplayedFrameId = pFrameDataOfLastDisplayed->present_event.FrameId;
 	} else {
 		// TODO: log issue or invalidate related columns or drop frame (or some combination)
 		pmlog_info("null pFrameDataOfLastDisplayed");
@@ -1668,34 +1670,34 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 		uint64_t displayQpc = 0;
 		// Check to see if the current frame had it's flip delay and display qpc set due to a 
 		// collapsed present. If so use those values to calculate the next displayed qpc.
-		auto ii = appProvidedSimTrackingData.flipDelayDataMap.find(pFrameDataOfLastAppDisplayed->present_event.FrameId);
-		if (ii != appProvidedSimTrackingData.flipDelayDataMap.end()) {
+		auto ii = frameTimingData.flipDelayDataMap.find(pFrameDataOfLastAppDisplayed->present_event.FrameId);
+		if (ii != frameTimingData.flipDelayDataMap.end()) {
 			displayQpc = ii->second.displayQpc;
 		}
 		else {
 			displayQpc = pFrameDataOfLastAppDisplayed->present_event.Displayed_ScreenTime[pFrameDataOfLastAppDisplayed->present_event.DisplayedCount - 1];
 		}
-		if (appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::PCLatency) {
+		if (frameTimingData.animationErrorSource == AnimationErrorSource::PCLatency) {
 			// Special handling is required for application data provided by PCL events. In the PCL events
 			// case we use a non-zero PclSimStartTime as an indicator for an application generated frame.
 			if (pFrameDataOfLastAppDisplayed->present_event.PclSimStartTime != 0) {
-				appProvidedSimTrackingData.lastDisplayedAppSimStartTime = pFrameDataOfLastAppDisplayed->present_event.PclSimStartTime;
+				frameTimingData.lastDisplayedAppSimStartTime = pFrameDataOfLastAppDisplayed->present_event.PclSimStartTime;
 
-				appProvidedSimTrackingData.lastDisplayedAppScreenTime = displayQpc;
+				frameTimingData.lastDisplayedAppScreenTime = displayQpc;
 			} else {
 				// If we are transistioning from CPU Start time based animation error source to PCL then we need to update the last displayed app screen time
 				// for the animation error.
-				if (initAmimationErrorSource != appProvidedSimTrackingData.animationErrorSource) {
-					appProvidedSimTrackingData.lastDisplayedAppScreenTime = displayQpc;
+				if (initAmimationErrorSource != frameTimingData.animationErrorSource) {
+					frameTimingData.lastDisplayedAppScreenTime = displayQpc;
 				}
 			}
-		} else if (appProvidedSimTrackingData.animationErrorSource == AnimationErrorSource::AppProvider) {
+		} else if (frameTimingData.animationErrorSource == AnimationErrorSource::AppProvider) {
             // The above transition check in the PCL case is not needed for the AppProvider case as with the app provided
 			// we know which frames are applicatoin generated.
-			appProvidedSimTrackingData.lastDisplayedAppSimStartTime = pFrameDataOfLastAppDisplayed->present_event.AppSimStartTime;
-			appProvidedSimTrackingData.lastDisplayedAppScreenTime = displayQpc;
+			frameTimingData.lastDisplayedAppSimStartTime = pFrameDataOfLastAppDisplayed->present_event.AppSimStartTime;
+			frameTimingData.lastDisplayedAppScreenTime = displayQpc;
 		} else {
-			appProvidedSimTrackingData.lastDisplayedAppScreenTime = displayQpc;
+			frameTimingData.lastDisplayedAppScreenTime = displayQpc;
 		}
 	}
 	else {

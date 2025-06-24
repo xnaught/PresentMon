@@ -4,7 +4,7 @@
 #include <vector>
 #include <span>
 #include <memory>
-#include "AppProvidedData.h"
+#include "FrameTimingData.h"
 
 namespace pmapi::intro
 {
@@ -23,9 +23,9 @@ public:
 	struct Context
 	{
 		// functions
-		Context(uint64_t qpcStart, long long perfCounterFrequency, SimTrackingData& appProvidedSimTrackingData) : qpcStart{ qpcStart },
+		Context(uint64_t qpcStart, long long perfCounterFrequency, FrameTimingData& frameTimingData) : qpcStart{ qpcStart },
 			performanceCounterPeriodMs{ perfCounterFrequency != 0.f ? 1000.0 / perfCounterFrequency : 0.f },
-			appProvidedSimTrackingData{ appProvidedSimTrackingData } {}
+			frameTimingData{ frameTimingData } {}
 		void UpdateSourceData(const PmNsmFrameData* pSourceFrameData_in,
 			const PmNsmFrameData* pFrameDataOfNextDisplayed,
 			const PmNsmFrameData* pFrameDataofLastPresented,
@@ -60,7 +60,7 @@ public:
 		uint64_t mLastReceivedNotDisplayedPclSimStart = 0;
 		// QPC of the last PC Latency pc input
 		uint64_t mLastReceivedNotDisplayedPclInputTime = 0;
-        SimTrackingData appProvidedSimTrackingData{};
+        FrameTimingData frameTimingData{};
 
 		// Accumlated input to frame start time
 		double mAccumulatedInput2FrameStartTime = 0.f;

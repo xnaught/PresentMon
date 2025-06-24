@@ -12,7 +12,7 @@ struct FlipDelayData {
 	uint64_t displayQpc = 0;
 };
 
-struct SimTrackingData {
+struct FrameTimingData {
 	// QPC of the very first AppSimStartTime. This will either be from
 	// the app provider or the PCL simulation start time.
 	uint64_t firstAppSimStartTime = 0;
@@ -29,4 +29,5 @@ struct SimTrackingData {
 	AnimationErrorSource animationErrorSource = AnimationErrorSource::CpuStart;
 	// NVIDIA Flip Delay related data
 	std::unordered_map<uint32_t, FlipDelayData> flipDelayDataMap{};
+    uint32_t lastDisplayedFrameId = 0;
 };

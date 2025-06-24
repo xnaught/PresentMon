@@ -36,7 +36,7 @@
     <ClInclude Include="ActionClient.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AppProvidedData.h">
+    <ClInclude Include="FrameTimingData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
