@@ -16,11 +16,6 @@ namespace pmon::mid
 	class GatherCommand_;
 }
 
-struct FlipDelayData {
-	uint64_t flipDelay = 0;
-	uint64_t displayQpc = 0;
-};
-
 struct PM_FRAME_QUERY
 {
 public:
@@ -71,9 +66,6 @@ public:
 		double mAccumulatedInput2FrameStartTime = 0.f;
 		// Current input to frame start average
 		double avgInput2Fs{};
-
-        // NVIDIA Flip Delay related data
-        std::unordered_map<uint32_t, FlipDelayData> flipDelayDataMap{};
 	};
 	// functions
 	PM_FRAME_QUERY(std::span<PM_QUERY_ELEMENT> queryElements);

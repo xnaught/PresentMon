@@ -7,6 +7,11 @@ enum class AnimationErrorSource {
 	PCLatency,
 };
 
+struct FlipDelayData {
+	uint64_t flipDelay = 0;
+	uint64_t displayQpc = 0;
+};
+
 struct SimTrackingData {
 	// QPC of the very first AppSimStartTime. This will either be from
 	// the app provider or the PCL simulation start time.
@@ -22,4 +27,6 @@ struct SimTrackingData {
 	uint64_t lastDisplayedAppSimStartTime = 0;
     uint64_t lastDisplayedAppScreenTime = 0;
 	AnimationErrorSource animationErrorSource = AnimationErrorSource::CpuStart;
+	// NVIDIA Flip Delay related data
+	std::unordered_map<uint32_t, FlipDelayData> flipDelayDataMap{};
 };

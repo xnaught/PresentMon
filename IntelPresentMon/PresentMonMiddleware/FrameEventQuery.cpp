@@ -410,8 +410,8 @@ namespace
 			}
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
 				auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-				auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-				if (ii != ctx.flipDelayDataMap.end()) {
+				auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+				if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
 					ScreenTime = ii->second.displayQpc;
 				}
 				const auto val = TimestampDeltaToUnsignedMilliSeconds(start,
@@ -591,8 +591,8 @@ namespace
 
 			// Calculate the current frame's displayed time 
 			auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-			auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-			if (ii != ctx.flipDelayDataMap.end()) {
+			auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
 				ScreenTime = ii->second.displayQpc;
 			}
 			auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
@@ -648,8 +648,8 @@ namespace
 
 			// Calculate the current frame's displayed time 
 			auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-			auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-			if (ii != ctx.flipDelayDataMap.end()) {
+			auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
 				ScreenTime = ii->second.displayQpc;
 			}
 			auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
@@ -758,8 +758,8 @@ namespace
 				return;
 			}
 			auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-			auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-			if (ii != ctx.flipDelayDataMap.end()) {
+			auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
 				ScreenTime = ii->second.displayQpc;
 			}
 			auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
@@ -817,8 +817,8 @@ namespace
 			}
 			if (ctx.sourceFrameDisplayIndex == ctx.appIndex) {
 				auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-				auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-				if (ii != ctx.flipDelayDataMap.end()) {
+				auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+				if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
 					ScreenTime = ii->second.displayQpc;
 				}
 				auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
@@ -903,8 +903,8 @@ namespace
 			
 			// Check to see if the current present is collapsed and if so use the correct display qpc.
 			auto ScreenTime = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-			auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-			if (ii != ctx.flipDelayDataMap.end()) {
+			auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
 				ScreenTime = ii->second.displayQpc;
 			}
 			auto NextScreenTime = ctx.sourceFrameDisplayIndex == ctx.pSourceFrameData->present_event.DisplayedCount - 1
@@ -1073,8 +1073,8 @@ namespace
 
 			// Check to see if the current present is collapsed and if so use the correct display qpc.
 			uint64_t displayQpc = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-			auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-			if (ii != ctx.flipDelayDataMap.end()) {
+			auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
 				displayQpc = ii->second.displayQpc;
 			}
 
@@ -1157,8 +1157,8 @@ namespace
 
 			// Check to see if the current present is collapsed and if so use the correct display qpc.
 			uint64_t displayQpc = ctx.pSourceFrameData->present_event.Displayed_ScreenTime[ctx.sourceFrameDisplayIndex];
-			auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-			if (ii != ctx.flipDelayDataMap.end()) {
+			auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
 				displayQpc = ii->second.displayQpc;
 			}
 
@@ -1262,8 +1262,8 @@ namespace
 
             // Calculate the current frame's flip delay
 			uint64_t flipDelay = ctx.pSourceFrameData->present_event.FlipDelay;
-			auto ii = ctx.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
-			if (ii != ctx.flipDelayDataMap.end()) {
+			auto ii = ctx.appProvidedSimTrackingData.flipDelayDataMap.find(ctx.pSourceFrameData->present_event.FrameId);
+			if (ii != ctx.appProvidedSimTrackingData.flipDelayDataMap.end()) {
                 flipDelay = ii->second.flipDelay;
 			}
 
@@ -1617,8 +1617,8 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 			uint64_t nextDisplayQpc = 0;
 			// Check to see if the current frame had it's flip delay and display qpc set due to a 
             // collapsed present. If so use those values to calculate the next displayed qpc.
-			auto ii = flipDelayDataMap.find(pSourceFrameData->present_event.FrameId);
-			if (ii != flipDelayDataMap.end()) {
+			auto ii = appProvidedSimTrackingData.flipDelayDataMap.find(pSourceFrameData->present_event.FrameId);
+			if (ii != appProvidedSimTrackingData.flipDelayDataMap.end()) {
 				flipDelay = ii->second.flipDelay;
                 currentDisplayQpc = ii->second.displayQpc;
 			} else {
@@ -1633,7 +1633,7 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 					(currentDisplayQpc - pFrameDataOfNextDisplayed->present_event.Displayed_ScreenTime[0]);
 				flipDelayData.displayQpc = pSourceFrameData->present_event.Displayed_ScreenTime[0];
 				nextDisplayedQpc = currentDisplayQpc;
-				flipDelayDataMap[pFrameDataOfNextDisplayed->present_event.FrameId] = flipDelayData;
+				appProvidedSimTrackingData.flipDelayDataMap[pFrameDataOfNextDisplayed->present_event.FrameId] = flipDelayData;
 			} else {
 				nextDisplayedQpc = pFrameDataOfNextDisplayed->present_event.Displayed_ScreenTime[0];
 			}
@@ -1650,8 +1650,8 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 	if (pFrameDataOfLastDisplayed && pFrameDataOfLastDisplayed->present_event.DisplayedCount > 0) {
 		// Check to see if the current frame had it's flip delay and display qpc set due to a 
 		// collapsed present. If so use those values to calculate the next displayed qpc.
-		auto ii = flipDelayDataMap.find(pFrameDataOfLastDisplayed->present_event.FrameId);
-		if (ii != flipDelayDataMap.end()) {
+		auto ii = appProvidedSimTrackingData.flipDelayDataMap.find(pFrameDataOfLastDisplayed->present_event.FrameId);
+		if (ii != appProvidedSimTrackingData.flipDelayDataMap.end()) {
 			previousDisplayedQpc = ii->second.displayQpc;
 		}
 		else {
@@ -1668,8 +1668,8 @@ void PM_FRAME_QUERY::Context::UpdateSourceData(const PmNsmFrameData* pSourceFram
 		uint64_t displayQpc = 0;
 		// Check to see if the current frame had it's flip delay and display qpc set due to a 
 		// collapsed present. If so use those values to calculate the next displayed qpc.
-		auto ii = flipDelayDataMap.find(pFrameDataOfLastAppDisplayed->present_event.FrameId);
-		if (ii != flipDelayDataMap.end()) {
+		auto ii = appProvidedSimTrackingData.flipDelayDataMap.find(pFrameDataOfLastAppDisplayed->present_event.FrameId);
+		if (ii != appProvidedSimTrackingData.flipDelayDataMap.end()) {
 			displayQpc = ii->second.displayQpc;
 		}
 		else {
