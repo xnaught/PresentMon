@@ -400,7 +400,7 @@ void MockPresentMonSession::Consume(TRACEHANDLE traceHandle) {
 
     ProcessTrace(&traceHandle, 1, NULL, NULL);
 
-    std::this_thread::sleep_for(2s);
+    std::this_thread::sleep_for(5s);
 
     // This is only needed if we are processing an ETL file and ProcessTrace()
     // returned because the ETL is done.
