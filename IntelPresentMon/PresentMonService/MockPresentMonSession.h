@@ -3,6 +3,7 @@
 #pragma once
 #include "PresentMonSession.h"
 #include "../CommonUtilities/win/Event.h"
+#include <fstream>
 
 class MockPresentMonSession : public PresentMonSession
 {
@@ -80,4 +81,6 @@ private:
     pmon::util::win::Event evtStreamingStarted_;
 
     mutable std::mutex session_mutex_;
+
+    std::ofstream slog{ "hea-win-slog.csv" };
 };

@@ -15,6 +15,7 @@ MockPresentMonSession::MockPresentMonSession()
     target_process_count_(0) {
     pm_session_name_.clear();
     pm_consumer_.reset();
+    slog << "FrameId,FailState\n";
 }
 
 bool MockPresentMonSession::IsTraceSessionActive() {
@@ -219,8 +220,19 @@ void MockPresentMonSession::AddPresents(
 
         // Ignore failed and lost presents.
         if (presentEvent->IsLost || presentEvent->PresentFailed) {
+            slog << presentEvent->FrameId << ",";
+            if (presentEvent->IsLost && presentEvent->PresentFailed) {
+                slog << "lost&failed\n";
+            }
+            else if (presentEvent->IsLost) {
+                slog << "lost\n";
+            }
+            else if (presentEvent->PresentFailed) {
+                slog << "failed\n";
+            }
             continue;
         }
+        slog << presentEvent->FrameId << "," << "none\n";
 
         // Stop processing events if we hit the next stop time.
         if (checkStopQpc && presentEvent->PresentStartTime >= stopQpc) {
