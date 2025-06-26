@@ -78,6 +78,9 @@ void RunPlaybackFrameQuery()
         pmapi::FixedQueryElement startTime{ this, PM_METRIC_CPU_START_TIME, PM_STAT_NONE };
     PM_END_FIXED_QUERY query{ api, 50 };
 
+    std::ofstream out{ "hea-win-samp.csv" };
+    out << "CPUStartTimeInMs,FrameTime\n";
+
     uint32_t pid = 0;
     if (opt.processName && !opt.processId) {
          const auto map = pmon::util::win::ProcessMapBuilder{}.AsNameMap(true);
@@ -94,11 +97,13 @@ void RunPlaybackFrameQuery()
     try {
         // output frame events as they are received
         while (true) {
-            const auto n = query.ForEachConsume(tracker, [&] { std::cout
-                << "(" << query.PeekBlobContainer().GetNumBlobsPopulated() << ") "
-                << "Start: " << query.startTime.As<double>()
-                << " x FrameTime: " << query.frameTime.As<double>()
-                << "  (" << ++frameCount << ")\n";
+            const auto n = query.ForEachConsume(tracker, [&] {
+                std::cout
+                    << "(" << query.PeekBlobContainer().GetNumBlobsPopulated() << ") "
+                    << "Start: " << query.startTime.As<double>()
+                    << " x FrameTime: " << query.frameTime.As<double>()
+                    << "  (" << ++frameCount << ")\n";
+                out << query.startTime.As<double>() << "," << query.frameTime.As<double>() << "\n";
             });
         }
     }
