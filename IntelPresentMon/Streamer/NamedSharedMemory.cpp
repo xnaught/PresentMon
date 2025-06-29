@@ -325,6 +325,14 @@ bool NamedSharedMem::IsEmpty() {
     return false;
 }
 
+bool NamedSharedMem::HasUninitializedFrames()
+{
+    if (header_ == nullptr) {
+        return true;
+    }
+    return header_->max_entries > header_->num_frames_written;
+}
+
 void NamedSharedMem::NotifyProcessKilled() {
   header_->process_active = false;
   FlushViewOfFile(header_, sizeof(NamedSharedMemoryHeader));

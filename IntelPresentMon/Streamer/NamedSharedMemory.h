@@ -48,8 +48,15 @@ class NamedSharedMem {
   // TODO(jtseng2): header_ is client used only. Separate GetHeader() API from
   // server.
   const NamedSharedMemoryHeader* GetHeader() { return header_; };
+  // indicates whether the ring buffer has available write space
+  // only meaninful in a backpressured (typically replay) scenario
   bool IsFull();
+  // indicates whether the ring buffer has any unconsumed frames
+  // only meaninful in a backpressured (typically replay) scenario
   bool IsEmpty();
+  // indicates whether every element in the ring buffer contains valid frame information
+  // typically, this is only false until the buffer has wrapped once
+  bool HasUninitializedFrames();
   bool IsNSMCreated() { return buf_created_; };
 
   // Helper frunctions for generating frame statistics

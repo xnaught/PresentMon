@@ -194,9 +194,9 @@ void StreamClient::PeekPreviousFrames(const PmNsmFrameData** pFrameDataOfLastPre
             return;
         }
 
-        // if nsm is not full, last frame read is at idx 0, so stop condition is when we wrap to last idx
-        // otherwise, last frame to read is the one that follows the latest one (which is the oldest one)
-        const auto stopIdx = nsm_view->IsFull() ? this->GetLatestFrameIndex() : nsm_hdr->max_entries - 1;
+        // if nsm is not fully initialized, last frame to read is at idx 0, so stop condition is when we wrap to last idx
+        // otherwise, last frame to read is the one that follows the latest one (which is the oldest one, next one to be overwritten)
+        const auto stopIdx = nsm_view->HasUninitializedFrames() ? nsm_hdr->max_entries - 1 : this->GetLatestFrameIndex();
         // here, peek index is starting at the frame which follows the current one
         // this frame is guaranteed to be valid since peekNext call prior to this would exit early if it were not
         uint64_t peekIndex{ next_dequeue_idx_ };
