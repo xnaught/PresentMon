@@ -3,6 +3,7 @@
 #include "PresentMon.h"
 
 #include "CliOptions.h"
+#include "Logging.h"
 #include "..\CommonUtilities\str\String.h"
 #include "RealtimePresentMonSession.h"
 #include "MockPresentMonSession.h"
@@ -46,6 +47,26 @@ PM_STATUS PresentMon::SelectAdapter(uint32_t adapter_id)
 {
 	// Only the real time trace uses the control libary interface
 	return pSession_->SelectAdapter(adapter_id);
+}
+
+void PresentMon::StartPlayback()
+{
+	if (auto pPlaybackSession = dynamic_cast<MockPresentMonSession*>(pSession_.get())) {
+		pPlaybackSession->StartPlayback();
+	}
+	else {
+		pmlog_error("Bad call to start playback on a non-playback session");
+	}
+}
+
+void PresentMon::StopPlayback()
+{
+	if (auto pPlaybackSession = dynamic_cast<MockPresentMonSession*>(pSession_.get())) {
+		pPlaybackSession->StopPlayback();
+	}
+	else {
+		pmlog_error("Bad call to stop playback on a non-playback session");
+	}
 }
 
 void PresentMon::CheckTraceSessions()

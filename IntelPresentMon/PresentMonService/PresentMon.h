@@ -70,6 +70,8 @@ public:
 	{
 		pSession_->FlushEvents();
 	}
+	void StartPlayback();
+	void StopPlayback();
 private:
 	std::unique_ptr<PresentMonSession> pSession_;
 };

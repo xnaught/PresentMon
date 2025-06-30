@@ -87,6 +87,14 @@ HANDLE MockPresentMonSession::GetStreamingStartHandle() {
     return evtStreamingStarted_;
 }
 
+void MockPresentMonSession::StartPlayback()
+{
+}
+
+void MockPresentMonSession::StopPlayback()
+{
+}
+
 PM_STATUS MockPresentMonSession::StartTraceSession(uint32_t processId, const std::string& etlPath,
     const std::wstring& etwSessionName,
     bool isPlayback,

@@ -18,6 +18,8 @@ public:
     void StopStreaming(uint32_t client_process_id, uint32_t target_process_id) override;
     bool CheckTraceSessions(bool forceTerminate) override;
     HANDLE GetStreamingStartHandle() override;
+    void StartPlayback();
+    void StopPlayback();
 
 private:
     // functions
