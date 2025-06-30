@@ -68,7 +68,7 @@ private:
     std::thread output_thread_;
 
     std::atomic<bool> quit_output_thread_;
-    std::atomic<bool> process_trace_finished_;
+    std::atomic<bool> stop_playback_requested_;
 
     std::unordered_map<uint32_t, ProcessInfo> processes_;
     

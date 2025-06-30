@@ -10,8 +10,8 @@ static const std::wstring kMockEtwSessionName = L"MockETWSession";
 using namespace std::literals;
 
 MockPresentMonSession::MockPresentMonSession()
-    : quit_output_thread_(false),
-    process_trace_finished_(false),
+    :
+    quit_output_thread_(false),
     target_process_count_(0) {
     pm_session_name_.clear();
     pm_consumer_.reset();
@@ -71,7 +71,7 @@ void MockPresentMonSession::StopStreaming(uint32_t client_process_id,
 }
 
 bool MockPresentMonSession::CheckTraceSessions(bool forceTerminate) {
-    if (pm_consumer_ && (process_trace_finished_ == true || streamer_.IsTimedOut())) {
+    if (pm_consumer_ && stop_playback_requested_ == true) {
         StopTraceSession();
         return true;
     }
@@ -93,6 +93,7 @@ void MockPresentMonSession::StartPlayback()
 
 void MockPresentMonSession::StopPlayback()
 {
+    stop_playback_requested_ = true;
 }
 
 PM_STATUS MockPresentMonSession::StartTraceSession(uint32_t processId, const std::string& etlPath,
@@ -104,7 +105,6 @@ PM_STATUS MockPresentMonSession::StartTraceSession(uint32_t processId, const std
     bool isPlaybackResetOldest) {
 
     std::lock_guard<std::mutex> lock(session_mutex_);
-    process_trace_finished_ = false;
 
     if (pm_consumer_) {
         pmlog_error("pmconsumer already created when start trace session called");
@@ -408,11 +408,7 @@ void MockPresentMonSession::Consume(TRACEHANDLE traceHandle) {
 
     ProcessTrace(&traceHandle, 1, NULL, NULL);
 
-    std::this_thread::sleep_for(5s);
-
-    // This is only needed if we are processing an ETL file and ProcessTrace()
-    // returned because the ETL is done.
-    process_trace_finished_ = true;
+    // consider setting nsm header flag here to indicate end of playback without destroying nsm/trace session
 }
 
 void MockPresentMonSession::Output() {
@@ -442,10 +438,9 @@ void MockPresentMonSession::Output() {
         }
 
         // Sleep to reduce overhead.
-        Sleep(10);
+        // TODO: sync this to eliminate overhead / lag
+        std::this_thread::sleep_for(10ms);
     }
-
-    processes_.clear();
 }
 
 void MockPresentMonSession::StartOutputThread() {
