@@ -9,3 +9,4 @@
 #include "acts/SetTelemetryPeriod.h" 
 #include "acts/StartTracking.h" 
 #include "acts/StopTracking.h" 
+#include "acts/StopPlayback.h"
