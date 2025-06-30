@@ -421,3 +421,17 @@ PRESENTMON_API2_EXPORT PM_STATUS pmGetApiVersion(PM_VERSION* pVersion)
 	*pVersion = pmon::bid::GetApiVersion();
 	return PM_STATUS_SUCCESS;
 }
+
+PRESENTMON_API2_EXPORT PM_STATUS pmStopPlayback_(PM_SESSION_HANDLE handle)
+{
+	try {
+		auto& mid = LookupMiddleware_(handle);
+		mid.StopPlayback();
+		return PM_STATUS_SUCCESS;
+	}
+	catch (...) {
+		const auto code = util::GeneratePmStatus();
+		pmlog_error(util::ReportException()).code(code);
+		return code;
+	}
+}

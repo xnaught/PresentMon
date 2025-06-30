@@ -91,6 +91,7 @@ void RunPlaybackFrameQuery()
     std::this_thread::sleep_for(500ms);
 
     uint32_t frameCount = 0;
+    uint32_t emptyCount = 0;
     try {
         // output frame events as they are received
         while (true) {
@@ -101,6 +102,17 @@ void RunPlaybackFrameQuery()
                     << " x FrameTime: " << query.frameTime.As<double>()
                     << "  (" << ++frameCount << ")\n";
             });
+            if (n) {
+                emptyCount = 0;
+            }
+            else {
+                std::this_thread::yield();
+                emptyCount++;
+            }
+
+            if (emptyCount >= 10) {
+                pmStopPlayback_(api.GetHandle());
+            }
         }
     }
     catch (const pmapi::ApiErrorException& ex) {

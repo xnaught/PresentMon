@@ -1247,6 +1247,11 @@ static void ReportMetrics(
         }
     }
 
+    void ConcreteMiddleware::StopPlayback()
+    {
+        pActionClient->DispatchSync(StopPlayback::Params{});
+    }
+
     void ConcreteMiddleware::CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
     {
         auto& output = reinterpret_cast<double&>(pBlob[element.dataOffset]);
