@@ -225,7 +225,7 @@ void RunPlaybackDynamicQueryN()
         };
 
         // connect to the service with custom control pipe name
-        pmon::util::pipe::DuplexPipe::WaitForAvailability(pipeName, 500);
+        pmon::util::pipe::DuplexPipe::WaitForAvailability(pipeName + "-in", 500);
         auto api = pmapi::Session{ pipeName };
 
         std::ofstream csv{ std::format("polled_{}.csv", x)};
