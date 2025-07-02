@@ -21,11 +21,61 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace bp = boost::process;
 namespace fs = std::filesystem;
 namespace rn = std::ranges;
+namespace vi = rn::views;
 using namespace std::literals;
 using namespace pmon;
 
 namespace PacedPollingTests
 {
+	struct Mismatch
+	{
+		size_t sampleIndex;
+		double val0;
+		double val1;
+	};
+
+	struct MetricCompareResult
+	{
+		std::vector<Mismatch> mismatches;
+		double meanSquareError;
+	};
+
+	std::pair<double, double> CalculateDynamicRange(
+		const std::vector<double>& run0,
+		const std::vector<double>& run1)
+	{
+		const auto [minIt0, maxIt0] = rn::minmax_element(run0);
+		const auto [minIt1, maxIt1] = rn::minmax_element(run1);
+		double lo = std::min(*minIt0, *minIt1);
+		double hi = std::max(*maxIt0, *maxIt1);
+		return { lo, hi };
+	}
+
+	MetricCompareResult CompareMetricRuns(
+		const std::vector<double>& run0,
+		const std::vector<double>& run1,
+		double toleranceFactor)
+	{
+		// 1) compute dynamic range & tolerance
+		auto [lo, hi] = CalculateDynamicRange(run0, run1);
+		double tolerance = (hi - lo) * toleranceFactor;
+
+		// 2) loop over corresponding samples and compare for individual mismatch and mse
+		MetricCompareResult result;
+		double sumSq = 0.0;
+		for (auto&& [i, v0, v1] : vi::zip(vi::iota(0ull), run0, run1)) {
+			const auto diff = v0 - v1;
+			sumSq += diff * diff;
+			if (std::abs(diff) > tolerance) {
+				result.mismatches.push_back({ i, v0, v1 });
+			}
+		}
+
+		// 3) finish computing MSE
+		result.meanSquareError = sumSq / static_cast<double>(run0.size());
+		return result;
+	}
+
 	TEST_CLASS(PacedPollingTests)
 	{
 	public:
@@ -35,12 +85,12 @@ namespace PacedPollingTests
 		TEST_METHOD(PollDynamic)
 		{
 			const uint32_t targetPid = 4136;
-			const auto recordingStart = 0s;
+			const auto recordingStart = 6.7s;
 			const auto recordingStop = 20s;
 
 			const auto pipeName = R"(\\.\pipe\pm-poll-test-act)"s;
 			const auto etlName = "hea-win.etl"s;
-			const auto goldCsvName = L"golds\\gold.csv"s;
+			const auto goldCsvName = "polled_gold.csv"s;
 
 			// setup gold standard dataset
 			bool hasGold = false;
@@ -78,6 +128,9 @@ namespace PacedPollingTests
 					if (!dmi.front().IsAvailable() || dmi.front().GetDevice().GetId() != 0) {
 						continue;
 					}
+					if (m.GetDataTypeInfo().GetPolledType() == PM_DATA_TYPE_STRING) {
+						continue;
+					}
 					for (const auto& s : m.GetStatInfo()) {
 						qels.push_back(PM_QUERY_ELEMENT{ m.GetId(), s.GetStat() });
 					}
@@ -86,12 +139,16 @@ namespace PacedPollingTests
 				auto query = api.RegisterDyanamicQuery(qels, 1000., 64.);
 				auto blobs = query.MakeBlobContainer(1);
 
-				const auto dispFpsOffs = rn::find(qels, PM_METRIC_DISPLAYED_FPS, &PM_QUERY_ELEMENT::metric)->dataOffset;
-				const auto presFpsOffs = rn::find(qels, PM_METRIC_PRESENTED_FPS, &PM_QUERY_ELEMENT::metric)->dataOffset;
-
 				std::ofstream csvStream{ std::format("polled_{}.csv", x) };
 				auto csvWriter = csv::make_csv_writer(csvStream);
-				csvWriter << std::array{ "poll-time"s, "disp-fps"s, "pres-fps"s };
+				std::vector<std::string> headerColumns{ "poll-time"s };
+				for (auto& qel : qels) {
+					headerColumns.push_back(std::format("{}({})",
+						pIntro->FindMetric(qel.metric).Introspect().GetSymbol(),
+						pIntro->FindEnum(PM_ENUM_STAT).FindKey((int)qel.stat).GetShortName()
+					));
+				}
+				csvWriter << headerColumns;
 
 				auto tracker = api.TrackProcess(targetPid);
 
@@ -99,22 +156,20 @@ namespace PacedPollingTests
 				const auto startTime = Clock::now();
 				util::IntervalWaiter waiter{ 0.1, 0.001 };
 
-				std::vector<double> procTimes;
-
+				std::vector<double> cells;
+				cells.reserve(qels.size() + 1);
 				for (auto now = Clock::now(), start = Clock::now();
-					(now - start) <= recordingStop; now = Clock::now()) {
-					query.Poll(tracker, blobs);
-					procTimes.push_back(std::chrono::duration<double>(Clock::now() - now).count());
-					csvWriter << std::make_tuple(
-						std::chrono::duration<double>(now - start).count(),
-						reinterpret_cast<const double&>(blobs[0][dispFpsOffs]),
-						reinterpret_cast<const double&>(blobs[0][presFpsOffs])
-					);
+					now - start <= recordingStop; now = Clock::now()) {
+					if (now - start >= recordingStart) {
+						query.Poll(tracker, blobs);
+						cells.push_back(std::chrono::duration<double>(now - start).count());
+						for (auto& qel : qels) {
+							cells.push_back(reinterpret_cast<const double&>(blobs[0][qel.dataOffset]));
+						}
+						csvWriter << cells;
+						cells.clear();
+					}
 					waiter.Wait();
-				}
-
-				for (auto& t : procTimes) {
-					Logger::WriteMessage(std::format("{}\n", t).c_str());
 				}
 			}
 
