@@ -294,11 +294,35 @@ template<
 void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
 {
     auto session = (PMTraceSession*) pEventRecord->UserContext;
-    auto const& hdr = pEventRecord->EventHeader;
+    const auto& hdr = pEventRecord->EventHeader;
 
     if constexpr (!IS_REALTIME_SESSION) {
         if (session->mStartTimestamp.QuadPart == 0) {
             session->mStartTimestamp = hdr.TimeStamp;
+            // one-time capture of timing info needed to calibrate ETL replay event pacing
+            if (session->mPMConsumer->mPaceEvents || session->mPMConsumer->mRetimeEvents) {
+                session->mPacingActualLogStartTimestamp = hdr.TimeStamp.QuadPart;
+                session->mPacingRealtimeStartTimestamp = pmon::util::GetCurrentTimestamp();
+                session->mPacingQpcPeriod = pmon::util::GetTimestampPeriodSeconds();
+                session->mPacingQpcOffset = session->mPacingRealtimeStartTimestamp - hdr.TimeStamp.QuadPart;
+                // override the processing start timestamp with the adjusted value
+                session->mStartTimestamp.QuadPart = session->mPacingRealtimeStartTimestamp;
+                if (session->mPMConsumer->mRetimeEvents) {
+                    // perform the first adjustment of the event header (no wait or calculation necessary)
+                    pEventRecord->EventHeader.TimeStamp.QuadPart = session->mPacingRealtimeStartTimestamp;
+                }
+            }
+        }
+        else if (session->mPMConsumer->mPaceEvents || session->mPMConsumer->mRetimeEvents) {
+            const auto currentQpc = pmon::util::GetCurrentTimestamp();
+            const auto adjustedTimestamp = hdr.TimeStamp.QuadPart + session->mPacingQpcOffset;
+            const auto delta = pmon::util::TimestampDeltaToSeconds(currentQpc, adjustedTimestamp, session->mPacingQpcPeriod);
+            if (session->mPMConsumer->mPaceEvents && delta > 0.001) {
+                session->mPacingWaiter.Wait(delta);
+            }
+            if (session->mPMConsumer->mRetimeEvents) {
+                pEventRecord->EventHeader.TimeStamp.QuadPart = adjustedTimestamp;
+            }
         }
     }
 

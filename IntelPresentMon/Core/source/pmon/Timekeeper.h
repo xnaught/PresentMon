@@ -11,11 +11,11 @@ namespace p2c::pmon
 		static double Now();
 		static void LockNow();
 		static double GetLockedNow();
-		static double RelativeToEpoch(uint64_t qpc);
+		static double RelativeToEpoch(int64_t qpc);
 	private:
 		Timekeeper();
 		static Timekeeper singleton;
-		uint64_t epoch;
+		int64_t epoch;
 		double period;
 		double locked = 0.;
 	};

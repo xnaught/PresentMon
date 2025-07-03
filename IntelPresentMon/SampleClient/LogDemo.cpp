@@ -41,9 +41,6 @@ void g1() {
 
 void RunLogDemo(int mode)
 {
-	p2sam::LogChannelManager zLogMan_;
-	p2sam::ConfigureLogging();
-
 	pmapi::Session sesh;
 
 	for (auto&& o : clio::Options::Get().GetForwardedOptions()) {

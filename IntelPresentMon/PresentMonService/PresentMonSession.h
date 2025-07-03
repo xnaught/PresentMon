@@ -1,7 +1,7 @@
 // Copyright (C) 2022-2023 Intel Corporation
 // SPDX-License-Identifier: MIT
 #pragma once
-#include <Windows.h>
+#include "../CommonUtilities/win/WinAPI.h"
 
 #include <cmath>
 #include <random>
@@ -27,10 +27,6 @@ struct ProcessInfo {
     std::unordered_map<uint64_t, SwapChainData> mSwapChain;
     HANDLE mHandle = INVALID_HANDLE_VALUE;
     bool mTargetProcess = false;
-};
-
-struct HandleDeleter {
-    void operator()(HANDLE handle) const { CloseHandle(handle); }
 };
 
 class PresentMonSession {

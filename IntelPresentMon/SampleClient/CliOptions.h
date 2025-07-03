@@ -1,25 +1,35 @@
 #pragma once
 #include "../CommonUtilities/cli/CliFramework.h"
 #include "../CommonUtilities/log/Level.h"
+#include "../CommonUtilities/ref/StaticReflection.h"
 #include <format>
 
 namespace clio
 {
+	enum class Mode
+	{
+		Introspection,
+		DynamicQuery,
+		FrameQuery,
+		CsvFrameQuery,
+		CheckMetric,
+		MetricList,
+		WrapperStaticQuery,
+		AddGpuMetric,
+		LogDemo,
+		DiagnosticsDemo,
+		PlaybackFrameQuery,
+		PlaybackDynamicQuery,
+		Count,
+	};
+
 	using namespace pmon::util;
 	using namespace pmon::util::cli;
 	struct Options : public OptionsBase<Options>
 	{
 	private: Group gm_{ this, "Mode", "Choose sample mode" }; public:
-		Flag introspectionSample{ this, "--introspection-sample", "Example of how to view availability of all system metrics via introspection" };
-		Flag dynamicQuerySample{ this, "--dynamic-query-sample", "Example of how to use a dynamic query to poll metric data" };
-		Flag frameQuerySample{ this, "--frame-query-sample", "Example of how to use a frame query to consume raw frame data" };
-		Flag checkMetricSample{ this, "--check-metric-sample", "Example of how to check metric availability for a single metric" };
-		Flag metricListSample{ this, "--metric-list-sample", "List of all metrics in markdown format" };
-		Flag wrapperStaticQuerySample{ this, "--wrapper-static-query-sample", "Example of using the wrapper to poll static metric data" };
-		Flag genCsv{ this, "--gen-csv", "Example of creating a csv file from consumed raw frame data" };
-		Flag addGPUMetric{ this, "--add-gpu-metric", "Example of how to search for an available GPU metric and add it to a dynamic query" };
-		Option<int> logDemo{ this, "--log-demo", 0, "Demos of log utility features" };
-		Option<int> diagDemo{ this, "--diag-demo", 0, "Demos of debug diagnostic layer interface" };
+		Option<Mode> mode{ this, "--mode", Mode::Count, "Which demonstration mode to run", CLI::CheckedTransformer{ ref::GenerateEnumKeyMap<Mode>(), CLI::ignore_case } };
+		Option<int> submode{ this, "--submode", 0, "Which submode option to run for the given mode" };
 	private: Group gc_{ this, "Connection", "Control client connection" }; public:
 		Option<std::string> controlPipe{ this, "--control-pipe", "", "Name of the named pipe to use for the client-service control channel" };
 		Option<std::string> introNsm{ this, "--intro-nsm", "", "Name of the NSM used for introspection data" };
@@ -36,14 +46,15 @@ namespace clio
 		Flag logTraceExceptions{ this, "--log-trace-exceptions", "Add stack trace to all thrown exceptions (including SEH exceptions)" };
 		Option<std::string> logDenyList{ this, "--log-deny-list", "", "Path to log deny list (with trace overrides)", CLI::ExistingFile };
 		Option<std::string> logAllowList{ this, "--log-allow-list", "", "Path to log allow list (with trace overrides)", CLI::ExistingFile };
+	private: Group gv_{ this, "Service", "Control service options" }; public:
+		Flag servicePacePlayback{ this, "--service-pace-playback", "Pace ETL playback on the service" };
+		Option<std::string> serviceEtlPath{ this, "--service-etl-path", "", "Path of the ETL file to pass to the service for playback" };
 
 		static constexpr const char* description = "Minimal Sample Client for Intel PresentMon service";
 		static constexpr const char* name = "SampleClient.exe";
 
 	private:
-		// at most only 1 of these options may be present
 		MutualExclusion logListExclusion_{ logDenyList, logAllowList };
-		// these options should not be forwarded (to child processes etc.)
-		NoForward noForward_{ logLevel };
+		Mandatory mandatoryMode_{ mode };
 	};
 }

@@ -735,7 +735,7 @@ static void QueryProcessName(uint32_t processId, ProcessInfo* info)
     auto const& args = GetCommandLineArgs();
 
     wchar_t path[MAX_PATH];
-    wchar_t* processName = L"<unknown>";
+    const wchar_t* processName = L"<unknown>";
     HANDLE handle = NULL;
 
     if (args.mEtlFileName == nullptr) {

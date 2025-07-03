@@ -7,6 +7,10 @@
       "Command": "--input-file original.etl"
     },
     {
+      "Id": "f3106862-df2c-4138-802c-c0fd1bed132d",
+      "Command": "--input-file hea-win.etl"
+    },
+    {
       "Id": "ca527fdf-cf0c-4bc6-a5e5-362394a8487d",
       "Command": "--output-file output-trim-start.etl"
     },
@@ -29,6 +33,10 @@
     {
       "Id": "72aa3f3a-db72-48e5-93ec-11ef00ccf00e",
       "Command": "--trim-state"
+    },
+    {
+      "Id": "57780d91-1c4e-41e3-be08-af75d87aa4f5",
+      "Command": "--list-processes"
     },
     {
       "Id": "ee3aa6c6-1568-4347-8847-ad556ceedbdd",

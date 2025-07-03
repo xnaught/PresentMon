@@ -233,7 +233,7 @@ void PresentMonMainThread(Service* const pSvc)
             }
         }
 
-        PresentMon pm;
+        PresentMon pm{ !opt.etlTestFile };
         PowerTelemetryContainer ptc;
 
         // create service-side comms object for transmitting introspection data to clients

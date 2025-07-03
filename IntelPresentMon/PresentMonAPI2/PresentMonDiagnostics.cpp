@@ -5,6 +5,7 @@
 #include "../CommonUtilities/Exception.h"
 #include "../PresentMonMiddleware/LogSetup.h"
 #include <filesystem>
+#include "Internal.h"
 
 using namespace pmon;
 using namespace pmon::util;

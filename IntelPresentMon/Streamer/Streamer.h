@@ -11,13 +11,6 @@
 #include "gtest/gtest.h"
 #include "NamedSharedMemory.h"
 
-static const uint32_t kEtlSleepTime = 1;
-
-enum class StreamMode : int{
-  kDefault = 0,
-  kOfflineEtl,
-};
-
 class Streamer {
  public:
      Streamer();
@@ -27,10 +20,13 @@ class Streamer {
   PM_STATUS StartStreaming(uint32_t client_process_id,
                            uint32_t target_process_id,
                            std::string& mapfile_name,
-                           bool from_etl_file);
+      bool isPlayback,
+      bool isPlaybackPaced,
+      bool isPlaybackRetimed,
+      bool isPlaybackBackpressured,
+      bool isPlaybackResetOldest);
 
   // Set streaming mode. Default value is real time streaming for single process.
-  void SetStreamMode(StreamMode mode) { stream_mode_ = mode; };
   void StopStreaming(uint32_t client_process_id, uint32_t target_process_id);
   void StopStreaming(uint32_t process_id);
   void StopAllStreams();
@@ -60,7 +56,12 @@ class Streamer {
  private:
   FRIEND_TEST(NamedSharedMemoryTest, CreateNamedSharedMemory);
   FRIEND_TEST(NamedSharedMemoryTestCustomSize, CreateNamedSharedMemory);
-  bool CreateNamedSharedMemory(DWORD process_id, bool from_etl_file, uint64_t nsm_size_in_bytes);
+  bool CreateNamedSharedMemory(DWORD process_id, uint64_t nsm_size_in_bytes,
+      bool isPlayback,
+      bool isPlaybackPaced,
+      bool isPlaybackRetimed,
+      bool isPlaybackBackpressured,
+      bool isPlaybackResetOldest);
   void CopyFromPresentMonPresentEvent(PresentEvent* present_event,
                                       PmNsmPresentEvent* nsm_present_event);
   bool UpdateNSMAttachments(uint32_t process_id, int& ref_count);
@@ -69,7 +70,6 @@ class Streamer {
   std::map<DWORD, std::unique_ptr<NamedSharedMem>> process_shared_mem_map_;
   std::multimap<uint32_t, uint32_t> client_map_;
   uint64_t shared_mem_size_;
-  StreamMode stream_mode_;
   uint64_t start_qpc_;
   // This flag is currently used during etl processing. If the client 
   // misbehaved or died such that streamer is blocked to write frame data, 

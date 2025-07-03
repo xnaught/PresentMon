@@ -10,14 +10,12 @@ StreamClient::StreamClient()
     : initialized_(false),
       next_dequeue_idx_(0),
       recording_frame_data_(false),
-      current_dequeue_frame_num_(0),
-      is_etl_stream_client_(false) {}
+      current_dequeue_frame_num_(0) {}
 
 StreamClient::StreamClient(std::string mapfile_name, bool is_etl_stream_client)
     : next_dequeue_idx_(0),
       recording_frame_data_(false),
-      current_dequeue_frame_num_(0),
-      is_etl_stream_client_(is_etl_stream_client) {
+      current_dequeue_frame_num_(0) {
   Initialize(std::move(mapfile_name));
 }
 
@@ -57,21 +55,24 @@ PmNsmFrameData* StreamClient::ReadLatestFrame() {
 
   uint64_t index = GetLatestFrameIndex();
 
-  return ReadFrameByIdx(index);
+  return ReadFrameByIdx(index, true);
 }
 
-PmNsmFrameData* StreamClient::ReadFrameByIdx(uint64_t frame_id) {
+PmNsmFrameData* StreamClient::ReadFrameByIdx(uint64_t frame_idx, bool checked) {
   PmNsmFrameData* data = nullptr;
   uint64_t read_offset = 0;
 
   if (shared_mem_view_ == nullptr) {
     LOG(ERROR)
         << "Shared mem view is null. Initialze client with mapfile name.";
-    return data;
+    return nullptr;
   }
 
   if (shared_mem_view_->IsEmpty()) {
-    return data;
+      if (checked) {
+          pmlog_error("Trying to read from empty nsm ring").pmwatch(frame_idx);
+      }
+    return nullptr;
   }
 
   auto p_header = shared_mem_view_->GetHeader();
@@ -79,21 +80,39 @@ PmNsmFrameData* StreamClient::ReadFrameByIdx(uint64_t frame_id) {
   if (!p_header->process_active) {
     LOG(ERROR) << "Process is not active. Shared mem view to be destroyed.";
     CloseSharedMemView();
-    return data;
+    return nullptr;
   }
 
-  if ((frame_id > p_header->max_entries - 1) ||
-      ((frame_id > p_header->tail_idx) && (!shared_mem_view_->IsFull()))) {
-    try {
-      LOG(ERROR) << "Invalid frame_id: " << frame_id;
-    } catch (...) {
-      LOG(ERROR) << "Invalid frame.";
+  if (frame_idx > p_header->max_entries - 1) {
+      pmlog_error("Bad out of bounds index in circular buffer").pmwatch(frame_idx);
+      return nullptr;
+  }
+
+  if (checked) {
+    // when ring is full, every frame is valid for reading
+    // in realtime usage (head not updated on read), this is always the case once the ring wraps once
+    if (!shared_mem_view_->IsFull()) {
+        bool invalid = false;
+        // when ring is not full, there are two cases (head before tail, or vice versa)
+        // head before tail (invalid range potentially non-contiguous/wrapping)
+        if (p_header->tail_idx > p_header->head_idx) {
+            if (frame_idx >= p_header->tail_idx || frame_idx < p_header->head_idx) {
+                invalid = true;
+            }
+        }
+        else { // tail before head (invalid range contiguous in middle)
+            if (frame_idx >= p_header->tail_idx && frame_idx < p_header->head_idx) {
+                invalid = true;
+            }
+        }
+        if (invalid) {
+            pmlog_error("Invalid frame idx").pmwatch(frame_idx);
+            return nullptr;
+        }
     }
-    return data;
   }
 
-  read_offset =
-      frame_id * sizeof(PmNsmFrameData) + shared_mem_view_->GetBaseOffset();
+  read_offset = frame_idx * sizeof(PmNsmFrameData) + shared_mem_view_->GetBaseOffset();
 
   data = reinterpret_cast<PmNsmFrameData*>(
       static_cast<char*>((shared_mem_view_->GetBuffer())) + read_offset);
@@ -115,7 +134,7 @@ void StreamClient::PeekNextFrames(const PmNsmFrameData** pNextFrame,
         }
 
         uint64_t peekIndex{ next_dequeue_idx_ };
-        auto pTempFrameData = ReadFrameByIdx(peekIndex);
+        auto pTempFrameData = ReadFrameByIdx(peekIndex, false);
         *pNextFrame = pTempFrameData;
         while (pTempFrameData) {
             if (pTempFrameData->present_event.FinalState == PresentResult::Presented &&
@@ -125,7 +144,7 @@ void StreamClient::PeekNextFrames(const PmNsmFrameData** pNextFrame,
             }
             // advance to next frame with circular buffer wrapping behavior
             peekIndex = (peekIndex + 1) % nsm_view->GetHeader()->max_entries;
-            pTempFrameData = ReadFrameByIdx(peekIndex);
+            pTempFrameData = ReadFrameByIdx(peekIndex, false);
         }
     }
     return;
@@ -175,28 +194,23 @@ void StreamClient::PeekPreviousFrames(const PmNsmFrameData** pFrameDataOfLastPre
             return;
         }
 
-        uint64_t current_max_entries =
-            (nsm_view->IsFull()) ? nsm_hdr->max_entries - 1 : nsm_hdr->tail_idx;
-
+        // if nsm is not fully initialized, last frame to read is at idx 0, so stop condition is when we wrap to last idx
+        // otherwise, last frame to read is the one that follows the latest one (which is the oldest one, next one to be overwritten)
+        const auto stopIdx = nsm_view->HasUninitializedFrames() ? nsm_hdr->max_entries - 1 : this->GetLatestFrameIndex();
+        // here, peek index is starting at the frame which follows the current one
+        // this frame is guaranteed to be valid since peekNext call prior to this would exit early if it were not
         uint64_t peekIndex{ next_dequeue_idx_ };
-        auto pTempFrameData = ReadFrameByIdx(peekIndex);
         uint32_t numFramesTraversed = 0;
-        while (pTempFrameData)
-        {
-            if (nsm_hdr->from_etl_file) {
-                peekIndex = (peekIndex == 0) ? current_max_entries : peekIndex - 1;
-                if (peekIndex == nsm_hdr->tail_idx) {
-                    return;
-                }
-            }
-            else {
-                peekIndex = (peekIndex == 0) ? current_max_entries : peekIndex - 1;
-                if (peekIndex == nsm_hdr->head_idx) {
-                    return;
-                }
+        while (true) {
+            // seek back one frame with ring buffer cycling behavior
+            peekIndex = peekIndex == 0 ? (nsm_hdr->max_entries - 1) : (peekIndex - 1);
+            // exit when we hit stopIdx (which is the first frame encountered we should *not* use)
+            if (peekIndex == stopIdx) {
+                return;
             }
             numFramesTraversed++;
-            auto pTempFrameData = ReadFrameByIdx(peekIndex);
+            // TODO: we can improve checking by independently enabling for forward and backward cases
+            auto pTempFrameData = ReadFrameByIdx(peekIndex, false);
             // We need to traverse back two frames from the next_dequeue_idx to
             // get to the start of the previous frames
             if (numFramesTraversed > 1) {
@@ -298,11 +312,6 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
     // nullify point so that if we exit early it will be null
     *pNsmData = nullptr;
 
-    if (is_etl_stream_client_) {
-        LOG(INFO) << "ETL Client should be using DequeueFrame instead.";
-        return PM_STATUS::PM_STATUS_SERVICE_ERROR;
-    }
-
     auto nsm_view = GetNamedSharedMemView();
     auto nsm_hdr = nsm_view->GetHeader();
     if (!nsm_hdr->process_active) {
@@ -315,13 +324,23 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         // dequeue frame number. This will be used to track data overruns if
         // the client does not read data fast enough.
         recording_frame_data_ = true;
-        if (nsm_hdr->from_etl_file) {
-            current_dequeue_frame_num_ = nsm_hdr->head_idx;
+        if (nsm_hdr->isPlaybackResetOldest) {
+            // during playback it is desirable to start at the very first frame even if we start consuming late
+            if (nsm_view->IsFull()) {
+                // if nsm is full, we have to dequeue all frames currently in the buffer
+                current_dequeue_frame_num_ = nsm_hdr->num_frames_written - nsm_hdr->max_entries;
+            }
+            else {
+                // if nsm is not full, then we must be in the initial state so set to zero (start from the beginning)
+                current_dequeue_frame_num_ = 0;
+            }
+            // always start from the head (oldest frame)
             next_dequeue_idx_ = nsm_hdr->head_idx;
         }
         else {
+            // at start or after overrun, reset to most recent frame data
             current_dequeue_frame_num_ = nsm_hdr->num_frames_written;
-            next_dequeue_idx_ = GetLatestFrameIndex();
+            next_dequeue_idx_ = (nsm_hdr->tail_idx + 1) % nsm_hdr->max_entries;
         }
     }
 
@@ -333,16 +352,9 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
         recording_frame_data_ = false;
         return PM_STATUS::PM_STATUS_SUCCESS;
     }
-    else if (num_pending_frames == 0) {
+    else if (num_pending_frames < 2) {
+        // we need at least 2 pending frames to enable peek-ahead
         return PM_STATUS::PM_STATUS_SUCCESS;
-    }
-
-    if (nsm_hdr->tail_idx < next_dequeue_idx_) {
-        if (next_dequeue_idx_ - nsm_hdr->tail_idx < 500)
-        {
-            recording_frame_data_ = false;
-            return PM_STATUS::PM_STATUS_SUCCESS;
-        }
     }
 
     // Set the rest of the incoming frame pointers in
@@ -358,7 +370,7 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
 
     // First read the current frame. next_dequeue_idx_ sits
     // at next frame we need to dequeue.
-    *pNsmData = ReadFrameByIdx(next_dequeue_idx_);
+    *pNsmData = ReadFrameByIdx(next_dequeue_idx_, true);
     if (*pNsmData) {
         // Good so far. Save off the queue index in case
         // we need to reset
@@ -385,7 +397,7 @@ PM_STATUS StreamClient::ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsm
             pFrameDataOfPreviousAppFrameOfLastAppDisplayed);
 
         current_dequeue_frame_num_++;
-        if (nsm_hdr->from_etl_file) {
+        if (nsm_hdr->isPlaybackBackpressured) {
             nsm_view->DequeueFrameData();
         }
         return PM_STATUS::PM_STATUS_SUCCESS;

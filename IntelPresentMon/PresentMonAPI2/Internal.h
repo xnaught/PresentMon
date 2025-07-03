@@ -42,3 +42,6 @@ PRESENTMON_API2_EXPORT void pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL logLevel,
 // exceptionTrace: capture additional stacktrace at point of throwing of exceptions
 PRESENTMON_API2_EXPORT PM_STATUS pmSetupFileLogging_(const char* filename, PM_DIAGNOSTIC_LEVEL logLevel,
 	PM_DIAGNOSTIC_LEVEL stackTraceLevel, bool exceptionTrace);
+
+// set middleware to log using OutputDebugString
+PRESENTMON_API2_EXPORT PM_STATUS pmStopPlayback_(PM_SESSION_HANDLE handle);

@@ -10,6 +10,7 @@ namespace pmapi
     class ApiErrorException : public Exception {
     public:
         ApiErrorException(PM_STATUS err, const std::string& message = "");
+        PM_STATUS GetCode() const { return errorCode_; }
     private:
         // functions
         static std::string BuildWhatString_(PM_STATUS err, const std::string& message);

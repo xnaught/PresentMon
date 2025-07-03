@@ -59,6 +59,7 @@ void(*pFunc_pmFlushEntryPoint__)() = nullptr;
 void(*pFunc_pmSetupODSLogging__)(PM_DIAGNOSTIC_LEVEL, PM_DIAGNOSTIC_LEVEL, bool) = nullptr;
 PM_STATUS(*pFunc_pmSetupFileLogging__)(const char*, PM_DIAGNOSTIC_LEVEL,
 	PM_DIAGNOSTIC_LEVEL, bool) = nullptr;
+PM_STATUS(*pFunc_pmStopPlayback__)(PM_SESSION_HANDLE) = nullptr;
 
 
 // internal loader state globals
@@ -175,6 +176,7 @@ PRESENTMON_API2_EXPORT PM_STATUS LoadLibrary_()
 			RESOLVE_CPP(pmFlushEntryPoint_);
 			RESOLVE_CPP(pmSetupODSLogging_);
 			RESOLVE_CPP(pmSetupFileLogging_);
+			RESOLVE_CPP(pmStopPlayback_);
 			// if we make it here then we have succeeded
 			middlewareLoadResult_ = PM_STATUS_SUCCESS;
 		}
@@ -382,6 +384,12 @@ PRESENTMON_API2_EXPORT PM_STATUS pmSetupFileLogging_(const char* file, PM_DIAGNO
 {
 	LoadEndpointsIfEmpty_();
 	return pFunc_pmSetupFileLogging__(file, logLevel, stackTraceLevel, exceptionTrace);
+}
+
+PRESENTMON_API2_EXPORT PM_STATUS pmStopPlayback_(PM_SESSION_HANDLE hSession)
+{
+	LoadEndpointsIfEmpty_();
+	return pFunc_pmStopPlayback__(hSession);
 }
 
 

@@ -11,7 +11,12 @@ static const std::string kGlobalPrefix = "Global\\NamedSharedMem_";
 class NamedSharedMem {
  public:
   NamedSharedMem();
-  NamedSharedMem(std::string mapfile_name, uint64_t buf_size, bool from_etl_file);
+  NamedSharedMem(std::string mapfile_name, uint64_t buf_size,
+      bool isPlayback,
+      bool isPlaybackPaced,
+      bool isPlaybackRetimed,
+      bool isPlaybackBackpressured,
+      bool isPlaybackResetOldest);
   ~NamedSharedMem();
   NamedSharedMem(const NamedSharedMem& t) = delete;
   NamedSharedMem& operator=(const NamedSharedMem& t) = delete;
@@ -43,8 +48,15 @@ class NamedSharedMem {
   // TODO(jtseng2): header_ is client used only. Separate GetHeader() API from
   // server.
   const NamedSharedMemoryHeader* GetHeader() { return header_; };
+  // indicates whether the ring buffer has available write space
+  // only meaninful in a backpressured (typically replay) scenario
   bool IsFull();
+  // indicates whether the ring buffer has any unconsumed frames
+  // only meaninful in a backpressured (typically replay) scenario
   bool IsEmpty();
+  // indicates whether every element in the ring buffer contains valid frame information
+  // typically, this is only false until the buffer has wrapped once
+  bool HasUninitializedFrames();
   bool IsNSMCreated() { return buf_created_; };
 
   // Helper frunctions for generating frame statistics
@@ -59,7 +71,7 @@ class NamedSharedMem {
 
  private:
   // Server method to create a shared mem in buf_size bytes
-  HRESULT CreateSharedMem(std::string mapfile_name, uint64_t buf_size, bool from_etl_file);
+  HRESULT CreateSharedMem(std::string mapfile_name, uint64_t buf_size);
   void OutputErrorLog(const char* error_string, DWORD last_error);
   std::string mapfile_name_;
   HANDLE mapfile_handle_;

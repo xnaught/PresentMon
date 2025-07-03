@@ -48,6 +48,7 @@
     <ClInclude Include="source\util\cact\PresentmonInitFailedAction.h" />
     <ClInclude Include="source\util\cact\StalePidAction.h" />
     <ClInclude Include="source\util\cact\TargetLostAction.h" />
+    <ClInclude Include="source\util\CefLog.h" />
     <ClInclude Include="source\util\CliOptions.h" />
     <ClInclude Include="source\util\IpcInvocationManager.h" />
     <ClInclude Include="source\util\AsyncEndpoint.h" />
