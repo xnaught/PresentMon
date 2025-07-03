@@ -118,6 +118,20 @@ namespace PacedPollingTests
 
 				std::vector<PM_QUERY_ELEMENT> qels;
 				for (const auto& m : pIntro->GetMetrics()) {
+					// there is no reliable way of distinguishing CPU telemetry metrics from PresentData-based metrics via introspection
+					// adding CPU device type is an idea, however that would require changing device id of the cpu metrics from 0 to
+					// whatever id is assigned to cpu (probably an upper range like 1024+) and this might break existing code that just
+					// hardcodes device id for the CPU metrics; for the time being use a hardcoded blacklist here
+					if (rn::contains(std::array{
+						PM_METRIC_CPU_UTILIZATION,
+						PM_METRIC_CPU_POWER_LIMIT,
+						PM_METRIC_CPU_POWER,
+						PM_METRIC_CPU_TEMPERATURE,
+						PM_METRIC_CPU_FREQUENCY,
+						PM_METRIC_CPU_CORE_UTILITY,
+						}, m.GetId())) {
+						continue;
+					}
 					if (m.GetType() != PM_METRIC_TYPE_DYNAMIC && m.GetType() != PM_METRIC_TYPE_DYNAMIC_FRAME) {
 						continue;
 					}
@@ -132,7 +146,7 @@ namespace PacedPollingTests
 						continue;
 					}
 					for (const auto& s : m.GetStatInfo()) {
-						qels.push_back(PM_QUERY_ELEMENT{ m.GetId(), s.GetStat() });
+						qels.push_back(PM_QUERY_ELEMENT{ m.GetId(), s.GetStat()});
 					}
 				}
 
