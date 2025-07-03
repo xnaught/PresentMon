@@ -16,6 +16,7 @@
 #include <filesystem>
 #include <array>
 #include <ranges>
+#include <cmath>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace bp = boost::process;
@@ -27,6 +28,51 @@ using namespace pmon;
 
 namespace PacedPollingTests
 {
+	std::vector<double> ExtractColumn(const std::vector<std::vector<double>>& mat, std::size_t i)
+	{
+		return mat | vi::transform([i](auto const& row) { return row[i]; })
+			| rn::to<std::vector>();
+	}
+
+	class BlobReader
+	{
+		struct LookupInfo_
+		{
+			uint64_t offset;
+			PM_DATA_TYPE type;
+		};
+	public:
+		BlobReader(std::span<const PM_QUERY_ELEMENT> qels, std::shared_ptr<pmapi::intro::Root> pIntro)
+		{
+			for (auto& q : qels) {
+				qInfo_.push_back({ q.dataOffset, pIntro->FindMetric(q.metric).GetDataTypeInfo().GetPolledType() });
+			}
+		}
+		void Target(const pmapi::BlobContainer& blobs, uint32_t iBlob = 0)
+		{
+			pFirstByteTarget_ = blobs[iBlob];
+		}
+		template<typename T>
+		T At(size_t iElement)
+		{
+			const auto off = qInfo_[iElement].offset;
+			switch (qInfo_[iElement].type) {
+			case PM_DATA_TYPE_BOOL:   return (T)reinterpret_cast<const bool&>(pFirstByteTarget_[off]);
+			case PM_DATA_TYPE_DOUBLE: return    reinterpret_cast<const double&>(pFirstByteTarget_[off]);
+			case PM_DATA_TYPE_ENUM:   return (T)reinterpret_cast<const int&>(pFirstByteTarget_[off]);
+			case PM_DATA_TYPE_INT32:  return (T)reinterpret_cast<const int32_t&>(pFirstByteTarget_[off]);
+			case PM_DATA_TYPE_STRING: return (T)-1;
+			case PM_DATA_TYPE_UINT32: return (T)reinterpret_cast<const uint32_t&>(pFirstByteTarget_[off]);
+			case PM_DATA_TYPE_UINT64: return (T)reinterpret_cast<const uint64_t&>(pFirstByteTarget_[off]);
+			case PM_DATA_TYPE_VOID:   return (T)-1;
+			}
+			return (T)-1;
+		}
+	private:
+		const uint8_t* pFirstByteTarget_ = nullptr;
+		std::vector<LookupInfo_> qInfo_;
+	};
+
 	struct Mismatch
 	{
 		size_t sampleIndex;
@@ -94,8 +140,12 @@ namespace PacedPollingTests
 
 			// setup gold standard dataset
 			bool hasGold = false;
+
+
+			pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
+			pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
 			
-			for (int x = 0; x < 5; x++) {
+			for (int x = 0; x < 1; x++) {
 				if (x > 0) {
 					std::this_thread::sleep_for(50ms);
 				}
@@ -110,8 +160,6 @@ namespace PacedPollingTests
 				Assert::IsTrue(pmon::util::pipe::DuplexPipe::WaitForAvailability(pipeName + "-in", 500),
 					L"Timeout waiting for service control pipe");
 
-				pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
-				pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
 				pmapi::Session api{ pipeName };
 
 				auto pIntro = api.GetIntrospectionRoot();
@@ -170,20 +218,55 @@ namespace PacedPollingTests
 				const auto startTime = Clock::now();
 				util::IntervalWaiter waiter{ 0.1, 0.001 };
 
+				std::vector<std::vector<double>> rows;
 				std::vector<double> cells;
-				cells.reserve(qels.size() + 1);
+				BlobReader br{ qels, pIntro };
+				br.Target(blobs);
 				for (auto now = Clock::now(), start = Clock::now();
 					now - start <= recordingStop; now = Clock::now()) {
 					if (now - start >= recordingStart) {
+						cells.reserve(qels.size() + 1);
 						query.Poll(tracker, blobs);
 						cells.push_back(std::chrono::duration<double>(now - start).count());
-						for (auto& qel : qels) {
-							cells.push_back(reinterpret_cast<const double&>(blobs[0][qel.dataOffset]));
+						for (size_t i = 0; i < qels.size(); i++) {
+							cells.push_back(br.At<double>(i));
 						}
 						csvWriter << cells;
-						cells.clear();
+						rows.push_back(std::move(cells));
 					}
 					waiter.Wait();
+				}
+
+				// load gold csv to vector of rows
+				csv::CSVReader gold{ goldCsvName };
+				std::vector<std::vector<double>> goldRows;
+				for (auto& row : gold) {
+					std::vector<double> rowData;
+					rowData.reserve(row.size());
+					for (auto& field : row) {
+						rowData.push_back(field.get<double>());
+					}
+					goldRows.push_back(std::move(rowData));
+				}
+
+				// compare all columns of run to gold
+				std::vector<MetricCompareResult> results;
+				for (size_t i = 0; i < goldRows[0].size(); i++) {
+					results.push_back(CompareMetricRuns(
+						ExtractColumn(rows, i),
+						ExtractColumn(goldRows, i),
+						0.01
+					));
+				}
+
+				// output results to csv
+				std::ofstream resStream{ std::format("polled_results.csv", x) };
+				auto resWriter = csv::make_csv_writer(resStream);
+				resWriter << std::array{ "metric"s, "n-miss"s, "mse"s };
+				const auto cols = gold.get_col_names();
+				for (auto&& [i, res] : vi::enumerate(results)) {
+					auto mse = std::isinf(res.meanSquareError) ? -1.0 : res.meanSquareError;
+					resWriter << std::make_tuple(cols[i], res.mismatches.size(), mse);
 				}
 			}
 
