@@ -24,7 +24,12 @@ NamedSharedMem::NamedSharedMem()
       buf_size_(0){};
 
 
-NamedSharedMem::NamedSharedMem(std::string mapfile_name, uint64_t buf_size, bool from_etl_file)
+NamedSharedMem::NamedSharedMem(std::string mapfile_name, uint64_t buf_size,
+    bool isPlayback,
+    bool isPlaybackPaced,
+    bool isPlaybackRetimed,
+    bool isPlaybackBackpressured,
+    bool isPlaybackResetOldest)
     : mapfile_handle_(NULL),
       data_offset_base_(sizeof(NamedSharedMemoryHeader)),
       header_(NULL),
@@ -32,14 +37,20 @@ NamedSharedMem::NamedSharedMem(std::string mapfile_name, uint64_t buf_size, bool
       alloc_granularity_(0),
       refcount_(0),
       buf_created_(false),
-      buf_size_(0){
+      buf_size_(0) {
 
     SYSTEM_INFO system_info;
     GetSystemInfo(&system_info);
     
     alloc_granularity_ = system_info.dwAllocationGranularity;
 
-    CreateSharedMem(std::move(mapfile_name), buf_size, from_etl_file);
+    CreateSharedMem(std::move(mapfile_name), buf_size);
+
+    header_->isPlayback = isPlayback;
+    header_->isPlaybackPaced = isPlaybackPaced;
+    header_->isPlaybackRetimed = isPlaybackRetimed;
+    header_->isPlaybackBackpressured = isPlaybackBackpressured;
+    header_->isPlaybackResetOldest = isPlaybackResetOldest;
 };
 
 void NamedSharedMem::OutputErrorLog(const char* error_string,
@@ -53,7 +64,7 @@ void NamedSharedMem::OutputErrorLog(const char* error_string,
     }
 }
 
-HRESULT NamedSharedMem::CreateSharedMem(std::string mapfile_name, uint64_t buf_size, bool from_etl_file)
+HRESULT NamedSharedMem::CreateSharedMem(std::string mapfile_name, uint64_t buf_size)
 {
     HRESULT hr = S_OK;
 
@@ -133,7 +144,6 @@ HRESULT NamedSharedMem::CreateSharedMem(std::string mapfile_name, uint64_t buf_s
     header_->buf_size = buf_size;
     header_->process_active = true;
     header_->num_frames_written = 0;
-    header_->from_etl_file = from_etl_file;
 
     // Query qpc frequency
     if (!QueryPerformanceFrequency(&header_->qpc_frequency)) {
@@ -313,6 +323,14 @@ bool NamedSharedMem::IsEmpty() {
     }
 
     return false;
+}
+
+bool NamedSharedMem::HasUninitializedFrames()
+{
+    if (header_ == nullptr) {
+        return true;
+    }
+    return header_->max_entries > header_->num_frames_written;
 }
 
 void NamedSharedMem::NotifyProcessKilled() {

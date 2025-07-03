@@ -68,15 +68,23 @@
     },
     {
       "Id": "8f014852-6512-466b-99cb-0a8724c36862",
-      "Command": "--output_file \"F:\\DataAnalysis\\NewLatency\\ETLs\\cs2\\debug.csv\""
-    },
-    {
-      "Id": "8e6c71bd-dbf4-4889-ae15-33ae4a1b6381",
-      "Command": "--track_pc_latency"
+      "Command": "--output_file gold_5.csv"
     },
     {
       "Id": "1606ee3e-ac1c-4fea-9a87-736864dd1f00",
-      "Command": "--etl_file \"F:\\DataAnalysis\\NewLatency\\ETLs\\cs2\\trace.etl\""
+      "Command": "--etl_file \"C:\\Users\\Chili\\Desktop\\cpp\\ipm-relay\\Tests\\Gold\\test_case_5.etl\""
+    },
+    {
+      "Id": "8dc2827c-9d81-4c64-8596-ea11dbd81c8f",
+      "Command": "--output_file hea-win.csv"
+    },
+    {
+      "Id": "aa1520b3-5e47-41a9-b652-95e614c764b9",
+      "Command": "--process_id 4136"
+    },
+    {
+      "Id": "c0a40730-2601-4f8e-8946-136a124c1bee",
+      "Command": "--etl_file hea-win.etl"
     },
     {
       "Id": "ac45209f-6799-44f5-88d9-b35b6f9015fb",

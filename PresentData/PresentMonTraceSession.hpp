@@ -1,6 +1,7 @@
 // Copyright (C) 2017-2024 Intel Corporation
 // Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved
 // SPDX-License-Identifier: MIT
+#include "../IntelPresentMon/CommonUtilities/PrecisionWaiter.h"
 
 struct PMTraceConsumer;
 
@@ -12,6 +13,14 @@ struct PMTraceSession {
     };
 
     PMTraceConsumer* mPMConsumer = nullptr; // Required PMTraceConsumer instance
+
+    // event pacing-specific members
+    //
+    int64_t mPacingActualLogStartTimestamp = 0;
+    int64_t mPacingRealtimeStartTimestamp = 0;
+    int64_t mPacingQpcOffset = 0;
+    double mPacingQpcPeriod = 0;
+    pmon::util::PrecisionWaiter mPacingWaiter{ 0.000'5 };
 
     LARGE_INTEGER mStartTimestamp = {};
     LARGE_INTEGER mTimestampFrequency = {};

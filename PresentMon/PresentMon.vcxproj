@@ -164,6 +164,7 @@
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="ConsumerThread.cpp" />
     <ClCompile Include="CsvOutput.cpp" />
+    <ClCompile Include="LogSetup.cpp" />
     <ClCompile Include="MainThread.cpp" />
     <ClCompile Include="OutputThread.cpp" />
     <ClCompile Include="Privilege.cpp" />

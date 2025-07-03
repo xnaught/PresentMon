@@ -3,12 +3,15 @@
 #include "MockPresentMonSession.h"
 #include "CliOptions.h"
 #include "..\CommonUtilities\str\String.h"
+#include "Logging.h"
 
 static const std::wstring kMockEtwSessionName = L"MockETWSession";
 
+using namespace std::literals;
+
 MockPresentMonSession::MockPresentMonSession()
-    : quit_output_thread_(false),
-    process_trace_finished_(false),
+    :
+    quit_output_thread_(false),
     target_process_count_(0) {
     pm_session_name_.clear();
     pm_consumer_.reset();
@@ -22,13 +25,33 @@ PM_STATUS MockPresentMonSession::StartStreaming(uint32_t client_process_id,
     uint32_t target_process_id,
     std::string& nsmFileName) {
 
+    auto& opt = clio::Options::Get();
+
+    // In a mock PresentMon session we must have an ETL file
+    // if we are starting a trace session
+    if (opt.etlTestFile.AsOptional().has_value() == false) {
+        pmlog_error("--etl-test-file requried for mock presentmon session");
+        return PM_STATUS::PM_STATUS_FAILURE;
+    }
+
+    // TODO: hook up all cli options
     PM_STATUS status = streamer_.StartStreaming(client_process_id,
-        target_process_id, nsmFileName, true);
+        target_process_id, nsmFileName, true, opt.pacePlayback, opt.pacePlayback, !opt.pacePlayback, true);
     if (status != PM_STATUS::PM_STATUS_SUCCESS) {
         return status;
     }
 
-    status = StartTraceSession(target_process_id);
+    std::wstring sessionName;
+    if (opt.etwSessionName.AsOptional().has_value()) {
+        sessionName = pmon::util::str::ToWide(opt.etwSessionName.AsOptional().value());
+    }
+    else {
+        sessionName = kMockEtwSessionName;
+    }
+
+    // TODO: hook up all cli options
+    status = StartTraceSession(target_process_id, *opt.etlTestFile, sessionName,
+        true, opt.pacePlayback, opt.pacePlayback, !opt.pacePlayback, true);
     if (status == PM_STATUS_FAILURE) {
         // Unable to start a trace session. Destroy the NSM and
         // return status
@@ -48,7 +71,7 @@ void MockPresentMonSession::StopStreaming(uint32_t client_process_id,
 }
 
 bool MockPresentMonSession::CheckTraceSessions(bool forceTerminate) {
-    if (pm_consumer_ && (process_trace_finished_ == true || streamer_.IsTimedOut())) {
+    if (pm_consumer_ && stop_playback_requested_ == true) {
         StopTraceSession();
         return true;
     }
@@ -61,28 +84,35 @@ bool MockPresentMonSession::CheckTraceSessions(bool forceTerminate) {
 }
 
 HANDLE MockPresentMonSession::GetStreamingStartHandle() {
-    return INVALID_HANDLE_VALUE;
+    return evtStreamingStarted_;
 }
 
-PM_STATUS MockPresentMonSession::StartTraceSession(uint32_t processId) {
-    auto& opt = clio::Options::Get();
+void MockPresentMonSession::StartPlayback()
+{
+}
 
-    // In a mock PresentMon session we must have an ETL process
-    // if we are starting a trace session
-    if (opt.etlTestFile.AsOptional().has_value() == false) {
-        return PM_STATUS::PM_STATUS_FAILURE;
-    }
+void MockPresentMonSession::StopPlayback()
+{
+    stop_playback_requested_ = true;
+}
+
+PM_STATUS MockPresentMonSession::StartTraceSession(uint32_t processId, const std::string& etlPath,
+    const std::wstring& etwSessionName,
+    bool isPlayback,
+    bool isPlaybackPaced,
+    bool isPlaybackRetimed,
+    bool isPlaybackBackpressured,
+    bool isPlaybackResetOldest) {
 
     std::lock_guard<std::mutex> lock(session_mutex_);
-    process_trace_finished_ = false;
 
     if (pm_consumer_) {
+        pmlog_error("pmconsumer already created when start trace session called");
         return PM_STATUS::PM_STATUS_SERVICE_ERROR;
     }
 
     auto expectFilteredEvents = IsWindows8Point1OrGreater();
-    auto filterProcessIds =
-        false;  // Does not support process names at this point
+    auto filterProcessIds = false;  // Does not support process names at this point
 
     // Create consumers
     try {
@@ -101,16 +131,12 @@ PM_STATUS MockPresentMonSession::StartTraceSession(uint32_t processId) {
     pm_consumer_->mTrackFrameType = true;
     pm_consumer_->mTrackAppTiming = true;
     pm_consumer_->mTrackPcLatency = true;
+    pm_consumer_->mPaceEvents = isPlaybackPaced;
+    pm_consumer_->mRetimeEvents = isPlaybackRetimed;
 
-    if (opt.etwSessionName.AsOptional().has_value()) {
-        pm_session_name_ =
-            pmon::util::str::ToWide(opt.etwSessionName.AsOptional().value());
-    }
-    else {
-        pm_session_name_ = kMockEtwSessionName;
-    }
+    pm_session_name_ = etwSessionName;
 
-    std::wstring etl_file_name = pmon::util::str::ToWide(opt.etlTestFile.AsOptional().value());
+    const auto etl_file_name = pmon::util::str::ToWide(etlPath);
 
     // Start the session. If a session with this name is already running, we stop
     // it and start a new session. This is useful if a previous process failed to
@@ -195,7 +221,6 @@ void MockPresentMonSession::AddPresents(
     // If mStartTimestamp contains a value an etl file is being processed.
     // Set this value in the streamer to have the correct start time.
     streamer_.SetStartQpc(trace_session_.mStartTimestamp.QuadPart);
-    streamer_.SetStreamMode(StreamMode::kOfflineEtl);
 
     for (auto n = presentEvents.size(); i < n; ++i) {
         auto presentEvent = presentEvents[i];
@@ -384,9 +409,7 @@ void MockPresentMonSession::Consume(TRACEHANDLE traceHandle) {
 
     ProcessTrace(&traceHandle, 1, NULL, NULL);
 
-    // This is only needed if we are processing an ETL file and ProcessTrace()
-    // returned because the ETL is done.
-    process_trace_finished_ = true;
+    // consider setting nsm header flag here to indicate end of playback without destroying nsm/trace session
 }
 
 void MockPresentMonSession::Output() {
@@ -416,10 +439,9 @@ void MockPresentMonSession::Output() {
         }
 
         // Sleep to reduce overhead.
-        Sleep(100);
+        // TODO: sync this to eliminate overhead / lag
+        std::this_thread::sleep_for(10ms);
     }
-
-    processes_.clear();
 }
 
 void MockPresentMonSession::StartOutputThread() {
@@ -470,24 +492,8 @@ void MockPresentMonSession::UpdateProcesses(
                     processEvent.ImageFileName);
             }
         }
-        else {
-            // Note any process termination in terminatedProcess, to be handled
-            // once the present event stream catches up to the termination time.
-            terminatedProcesses->emplace_back(processEvent.ProcessId,
-                processEvent.QpcTime);
-        }
     }
 }
 
 void MockPresentMonSession::HandleTerminatedProcess(uint32_t processId) {
-    auto iter = processes_.find(processId);
-    if (iter == processes_.end()) {
-        return;  // shouldn't happen.
-    }
-
-    auto processInfo = &iter->second;
-    if (processInfo->mTargetProcess) {
-        target_process_count_ -= 1;
-    }
-    processes_.erase(std::move(iter));
 }

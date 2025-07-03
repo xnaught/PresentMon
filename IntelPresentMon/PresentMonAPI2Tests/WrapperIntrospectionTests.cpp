@@ -223,7 +223,7 @@ namespace EndToEndTests
 			Assert::AreEqual(3, (int)ver.major);
 			Assert::AreEqual(0, (int)ver.minor);
 			Assert::AreEqual(0, (int)ver.patch);
-			Assert::AreEqual("beta", ver.tag);
+			Assert::AreEqual("", ver.tag);
 			Assert::AreEqual(pmon::bid::BuildIdShortHash(), ver.hash);
 		}
 	};

@@ -167,7 +167,7 @@ int GenCsv(pmapi::Session& pSession, std::string processName, unsigned int proce
     return 0;
 }
 
-int FrameQuerySample(std::unique_ptr<pmapi::Session>&& pSession)
+int FrameQuerySample(std::unique_ptr<pmapi::Session>&& pSession, bool genCsv)
 {
     using namespace std::chrono_literals;
     using namespace pmapi;
@@ -186,7 +186,7 @@ int FrameQuerySample(std::unique_ptr<pmapi::Session>&& pSession)
         }
 
         auto& opt = clio::Options::Get();
-        if (opt.genCsv) {
+        if (genCsv) {
             return GenCsv(*pSession, processName.value(), processId.value());
         }
 

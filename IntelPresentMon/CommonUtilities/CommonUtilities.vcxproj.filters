@@ -246,6 +246,12 @@
     <ClInclude Include="win\Privileges.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="win\ProcessMapBuilder.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="win\Process.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">
@@ -384,6 +390,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="win\Privileges.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="win\ProcessMapBuilder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Math.cpp">

@@ -19,7 +19,7 @@ class StreamClient {
   bool IsInitialized() { return initialized_; };
   // Read the latest frame from shared memory.
   PmNsmFrameData* ReadLatestFrame();
-  PmNsmFrameData* ReadFrameByIdx(uint64_t frame_id);
+  PmNsmFrameData* ReadFrameByIdx(uint64_t frame_id, bool checked);
   // Dequeue a frame of data from shared mem and update the last_read_idx (just get pointer to NsmData)
   PM_STATUS ConsumePtrToNextNsmFrameData(const PmNsmFrameData** pNsmData,
                                          const PmNsmFrameData** pNextFrame,
@@ -73,5 +73,4 @@ class StreamClient {
   uint64_t next_dequeue_idx_;
   bool recording_frame_data_;
   uint64_t current_dequeue_frame_num_;
-  bool is_etl_stream_client_;
 };

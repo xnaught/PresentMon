@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include "PresentMonSession.h"
+#include "../CommonUtilities/win/Event.h"
 
 class MockPresentMonSession : public PresentMonSession
 {
@@ -17,10 +18,18 @@ public:
     void StopStreaming(uint32_t client_process_id, uint32_t target_process_id) override;
     bool CheckTraceSessions(bool forceTerminate) override;
     HANDLE GetStreamingStartHandle() override;
+    void StartPlayback();
+    void StopPlayback();
 
 private:
     // functions
-    PM_STATUS StartTraceSession(uint32_t processId);
+    PM_STATUS StartTraceSession(uint32_t processId, const std::string& etlPath,
+        const std::wstring& etwSessionName,
+        bool isPlayback,
+        bool isPlaybackPaced,
+        bool isPlaybackRetimed,
+        bool isPlaybackBackpressured,
+        bool isPlaybackResetOldest);
     void StopTraceSession();
 
     void DequeueAnalyzedInfo(
@@ -59,7 +68,7 @@ private:
     std::thread output_thread_;
 
     std::atomic<bool> quit_output_thread_;
-    std::atomic<bool> process_trace_finished_;
+    std::atomic<bool> stop_playback_requested_;
 
     std::unordered_map<uint32_t, ProcessInfo> processes_;
     
@@ -68,6 +77,9 @@ private:
 
     // TODO: Determine if this actually does anything!
     uint32_t target_process_count_;
+
+    // Event for when streaming has started (needed to satisfy virtual interface)
+    pmon::util::win::Event evtStreamingStarted_;
 
     mutable std::mutex session_mutex_;
 };

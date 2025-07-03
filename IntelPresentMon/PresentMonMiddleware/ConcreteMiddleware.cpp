@@ -1090,7 +1090,7 @@ static void ReportMetrics(
                 // We have run out of data to process, time to go
                 break;
             }
-            frame_data = client->ReadFrameByIdx(index);
+            frame_data = client->ReadFrameByIdx(index, true);
             if (frame_data == nullptr) {
                 break;
             }
@@ -1298,8 +1298,8 @@ static void ReportMetrics(
         const auto nsm_hdr = nsm_view->GetHeader();
         if (!nsm_hdr->process_active) {
             StopStreaming(processId);
-            pmlog_info("Process death detected while consuming frame events").diag();
-            throw Except<util::Exception>("Process died cannot consume frame events");
+            pmlog_dbg("Process death detected while consuming frame events").diag();
+            throw Except<ipc::PmStatusError>(PM_STATUS_INVALID_PID, "Process died cannot consume frame events");
         }
 
         const auto last_frame_idx = pShmClient->GetLatestFrameIndex();
@@ -1420,6 +1420,11 @@ static void ReportMetrics(
             }
         }
         frameTimingData[processId] = ctx.frameTimingData;
+    }
+
+    void ConcreteMiddleware::StopPlayback()
+    {
+        pActionClient->DispatchSync(StopPlayback::Params{});
     }
 
     void ConcreteMiddleware::CalculateFpsMetric(fpsSwapChainData& swapChain, const PM_QUERY_ELEMENT& element, uint8_t* pBlob, LARGE_INTEGER qpcFrequency)
@@ -1696,7 +1701,7 @@ static void ReportMetrics(
         }
 
         index = client->GetLatestFrameIndex();
-        frame_data = client->ReadFrameByIdx(index);
+        frame_data = client->ReadFrameByIdx(index, true);
         if (frame_data == nullptr) {
             index = 0;
             return nullptr;
@@ -1735,7 +1740,7 @@ static void ReportMetrics(
                     index++;
                     break;
                 }
-                frame_data = client->ReadFrameByIdx(index);
+                frame_data = client->ReadFrameByIdx(index, true);
                 if (frame_data == nullptr) {
                     return nullptr;
                 }

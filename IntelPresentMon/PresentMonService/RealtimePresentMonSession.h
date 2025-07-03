@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include "PresentMonSession.h"
+#include "../CommonUtilities/win/Event.h"
 
 class RealtimePresentMonSession : public PresentMonSession
 {
@@ -68,8 +69,7 @@ private:
     uint32_t target_process_count_;
 
     // Event for when streaming has started
-    std::unique_ptr<std::remove_pointer_t<HANDLE>, HandleDeleter>
-        streaming_started_;
+    pmon::util::win::Event evtStreamingStarted_;
 
     mutable std::mutex session_mutex_;
     mutable std::mutex process_mutex_;
