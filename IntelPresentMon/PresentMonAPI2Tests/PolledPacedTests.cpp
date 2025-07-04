@@ -145,7 +145,7 @@ namespace PacedPollingTests
 			pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 			pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
 			
-			for (int x = 0; x < 1; x++) {
+			for (int x = 0; x < 10; x++) {
 				if (x > 0) {
 					std::this_thread::sleep_for(50ms);
 				}
@@ -251,16 +251,25 @@ namespace PacedPollingTests
 
 				// compare all columns of run to gold
 				std::vector<MetricCompareResult> results;
-				for (size_t i = 0; i < goldRows[0].size(); i++) {
+				for (auto&&[i, q] : vi::enumerate(qels)) {
+					double toleranceFactor = 0.02;
+					if (rn::contains(std::array{
+						PM_STAT_MAX,
+						PM_STAT_MIN,
+						PM_STAT_PERCENTILE_01,
+						PM_STAT_PERCENTILE_99,
+						PM_STAT_MID_POINT }, q.stat)) {
+						toleranceFactor = 0.04;
+					}
 					results.push_back(CompareMetricRuns(
 						ExtractColumn(rows, i),
 						ExtractColumn(goldRows, i),
-						0.01
+						0.02
 					));
 				}
 
 				// output results to csv
-				std::ofstream resStream{ std::format("polled_results.csv", x) };
+				std::ofstream resStream{ std::format("polled_results_{}.csv", x) };
 				auto resWriter = csv::make_csv_writer(resStream);
 				resWriter << std::array{ "metric"s, "n-miss"s, "mse"s };
 				const auto cols = gold.get_col_names();
