@@ -17,6 +17,7 @@
 #include <array>
 #include <ranges>
 #include <cmath>
+#include <numeric>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace bp = boost::process;
@@ -130,21 +131,22 @@ namespace PacedPollingTests
 		}
 		TEST_METHOD(PollDynamic)
 		{
-			const uint32_t targetPid = 4136;
-			const auto recordingStart = 6.7s;
-			const auto recordingStop = 20s;
+			const uint32_t targetPid = 14580;
+			const auto recordingStart = 1s;
+			const auto recordingStop = 22s;
 
 			const auto pipeName = R"(\\.\pipe\pm-poll-test-act)"s;
 			const auto etlName = "hea-win.etl"s;
 			const auto goldCsvName = "polled_gold.csv"s;
 
-			// setup gold standard dataset
-			bool hasGold = false;
-
+			// check for gold
+			bool hasGold = std::filesystem::exists(goldCsvName);
 
 			pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 			pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
 			
+			std::vector<std::vector<MetricCompareResult>> allResults;
+
 			for (int x = 0; x < 10; x++) {
 				if (x > 0) {
 					std::this_thread::sleep_for(50ms);
@@ -237,45 +239,69 @@ namespace PacedPollingTests
 					waiter.Wait();
 				}
 
-				// load gold csv to vector of rows
-				csv::CSVReader gold{ goldCsvName };
-				std::vector<std::vector<double>> goldRows;
-				for (auto& row : gold) {
-					std::vector<double> rowData;
-					rowData.reserve(row.size());
-					for (auto& field : row) {
-						rowData.push_back(field.get<double>());
+				if (hasGold) {
+					// load gold csv to vector of rows
+					csv::CSVReader gold{ goldCsvName };
+					std::vector<std::vector<double>> goldRows;
+					for (auto& row : gold) {
+						std::vector<double> rowData;
+						rowData.reserve(row.size());
+						for (auto& field : row) {
+							rowData.push_back(field.get<double>());
+						}
+						goldRows.push_back(std::move(rowData));
 					}
-					goldRows.push_back(std::move(rowData));
-				}
 
-				// compare all columns of run to gold
-				std::vector<MetricCompareResult> results;
-				for (auto&&[i, q] : vi::enumerate(qels)) {
-					double toleranceFactor = 0.02;
-					if (rn::contains(std::array{
-						PM_STAT_MAX,
-						PM_STAT_MIN,
-						PM_STAT_PERCENTILE_01,
-						PM_STAT_PERCENTILE_99,
-						PM_STAT_MID_POINT }, q.stat)) {
-						toleranceFactor = 0.04;
+					// compare all columns of run to gold
+					std::vector<MetricCompareResult> results;
+					for (auto&& [i, q] : vi::enumerate(qels)) {
+						double toleranceFactor = 0.02;
+						if (rn::contains(std::array{
+							PM_STAT_MAX,
+							PM_STAT_MIN,
+							PM_STAT_PERCENTILE_01,
+							PM_STAT_PERCENTILE_99,
+							PM_STAT_MID_POINT }, q.stat)) {
+							toleranceFactor = 0.04;
+						}
+						results.push_back(CompareMetricRuns(
+							ExtractColumn(rows, i),
+							ExtractColumn(goldRows, i),
+							0.02
+						));
 					}
-					results.push_back(CompareMetricRuns(
-						ExtractColumn(rows, i),
-						ExtractColumn(goldRows, i),
-						0.02
-					));
-				}
 
-				// output results to csv
-				std::ofstream resStream{ std::format("polled_results_{}.csv", x) };
-				auto resWriter = csv::make_csv_writer(resStream);
-				resWriter << std::array{ "metric"s, "n-miss"s, "mse"s };
-				const auto cols = gold.get_col_names();
-				for (auto&& [i, res] : vi::enumerate(results)) {
-					auto mse = std::isinf(res.meanSquareError) ? -1.0 : res.meanSquareError;
-					resWriter << std::make_tuple(cols[i], res.mismatches.size(), mse);
+					// output results to csvs
+					std::ofstream resStream{ std::format("polled_results_{}.csv", x) };
+					auto resWriter = csv::make_csv_writer(resStream);
+					resWriter << std::array{ "metric"s, "n-miss"s, "mse"s };
+					const auto cols = gold.get_col_names();
+					for (auto&& [i, res] : vi::enumerate(results)) {
+						auto mse = std::isinf(res.meanSquareError) ? -0.0001 : res.meanSquareError;
+						resWriter << std::make_tuple(cols[i], res.mismatches.size(), mse);
+					}
+
+					allResults.push_back(std::move(results));
+				}
+			}
+
+			if (hasGold) {
+				// output aggregate results of all runs
+				std::ofstream aggStream{ "polled_agg.csv"s };
+				auto aggWriter = csv::make_csv_writer(aggStream);
+				aggWriter << std::array{ "#"s, "n-miss-total"s, "n-miss-max"s, "mse-total"s, "mse-max"s };
+				for (auto&& [i, columnResults] : vi::enumerate(allResults)) {
+					size_t nMissTotal = 0;
+					size_t nMissMax = 0;
+					double mseTotal = 0.;
+					double mseMax = 0.;
+					for (auto& colRes : columnResults) {
+						nMissTotal += colRes.mismatches.size();
+						nMissMax = std::max(colRes.mismatches.size(), nMissMax);
+						mseTotal += colRes.meanSquareError;
+						mseMax = std::max(colRes.meanSquareError, mseMax);
+					}
+					aggWriter << std::make_tuple(i, nMissTotal, nMissMax, mseTotal, mseMax);
 				}
 			}
 
