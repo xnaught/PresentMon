@@ -98,7 +98,7 @@ namespace PacedPollingTests
 		return { lo, hi };
 	}
 
-	MetricCompareResult CompareMetricRuns(
+	MetricCompareResult CompareRunsForMetric(
 		const std::vector<double>& run0,
 		const std::vector<double>& run1,
 		double toleranceFactor)
@@ -123,6 +123,127 @@ namespace PacedPollingTests
 		return result;
 	}
 
+	std::vector<MetricCompareResult> CompareRuns(
+		std::span<const PM_QUERY_ELEMENT> qels,
+		const std::vector<std::vector<double>>& run0,
+		const std::vector<std::vector<double>>& run1,
+		double toleranceFactor)
+	{
+		std::vector<MetricCompareResult> results;
+		for (auto&& [i, q] : vi::enumerate(qels)) {
+			if (rn::contains(std::array{
+				PM_STAT_MAX,
+				PM_STAT_MIN,
+				PM_STAT_PERCENTILE_01,
+				PM_STAT_PERCENTILE_99,
+				PM_STAT_MID_POINT }, q.stat)) {
+				toleranceFactor *= 3.;
+			}
+			results.push_back(CompareRunsForMetric(
+				ExtractColumn(run0, i),
+				ExtractColumn(run1, i),
+				toleranceFactor
+			));
+		}
+		return results;
+	}
+
+	std::vector<std::vector<double>> LoadRunFromCsv(const std::string& path)
+	{
+		csv::CSVReader gold{ path };
+		std::vector<std::vector<double>> dataRows;
+		for (auto& row : gold) {
+			std::vector<double> rowData;
+			rowData.reserve(row.size());
+			for (auto& field : row) {
+				rowData.push_back(field.get<double>());
+			}
+			dataRows.push_back(std::move(rowData));
+		}
+		return dataRows;
+	}
+
+	std::vector<PM_QUERY_ELEMENT> BuildQueryElementSet(const pmapi::intro::Root& intro)
+	{
+		std::vector<PM_QUERY_ELEMENT> qels;
+		for (const auto& m : intro.GetMetrics()) {
+			// there is no reliable way of distinguishing CPU telemetry metrics from PresentData-based metrics via introspection
+			// adding CPU device type is an idea, however that would require changing device id of the cpu metrics from 0 to
+			// whatever id is assigned to cpu (probably an upper range like 1024+) and this might break existing code that just
+			// hardcodes device id for the CPU metrics; for the time being use a hardcoded blacklist here
+			if (rn::contains(std::array{
+				PM_METRIC_CPU_UTILIZATION,
+				PM_METRIC_CPU_POWER_LIMIT,
+				PM_METRIC_CPU_POWER,
+				PM_METRIC_CPU_TEMPERATURE,
+				PM_METRIC_CPU_FREQUENCY,
+				PM_METRIC_CPU_CORE_UTILITY,
+				}, m.GetId())) {
+				continue;
+			}
+			if (m.GetType() != PM_METRIC_TYPE_DYNAMIC && m.GetType() != PM_METRIC_TYPE_DYNAMIC_FRAME) {
+				continue;
+			}
+			auto dmi = m.GetDeviceMetricInfo();
+			if (dmi.size() != 1) {
+				continue;
+			}
+			if (!dmi.front().IsAvailable() || dmi.front().GetDevice().GetId() != 0) {
+				continue;
+			}
+			if (m.GetDataTypeInfo().GetPolledType() == PM_DATA_TYPE_STRING) {
+				continue;
+			}
+			for (const auto& s : m.GetStatInfo()) {
+				qels.push_back(PM_QUERY_ELEMENT{ m.GetId(), s.GetStat() });
+			}
+		}
+		return qels;
+	}
+
+	std::vector<std::string> MakeHeader(
+		const std::vector<PM_QUERY_ELEMENT>& qels,
+		const pmapi::intro::Root& intro)
+	{
+		std::vector<std::string> headerColumns{ "poll-time"s };
+		for (auto& qel : qels) {
+			headerColumns.push_back(std::format("{}({})",
+				intro.FindMetric(qel.metric).Introspect().GetSymbol(),
+				intro.FindEnum(PM_ENUM_STAT).FindKey((int)qel.stat).GetShortName()
+			));
+		}
+		return headerColumns;
+	}
+
+	void WriteRunToCsv(
+		const std::string& csvFilePath,
+		const std::vector<std::string>& header,
+		const std::vector<std::vector<double>>& runRows)
+	{
+		std::ofstream csvStream{ csvFilePath };
+		auto csvWriter = csv::make_csv_writer(csvStream);
+		csvWriter << header;
+		for (auto& row : runRows) {
+			csvWriter << row;
+		}
+	}
+
+	void WriteResults(
+		const std::string& csvFilePath,
+		const std::vector<std::string>& header,
+		std::vector<MetricCompareResult> results)
+	{
+		// output results to csvs
+		std::ofstream resStream{ csvFilePath };
+		auto resWriter = csv::make_csv_writer(resStream);
+		resWriter << std::array{ "metric"s, "n-miss"s, "mse"s };
+		for (auto&& [i, res] : vi::enumerate(results)) {
+			// we need to protect csv lib from inf values, it does not handle them well
+			auto mse = std::isinf(res.meanSquareError) ? -0.0001 : res.meanSquareError;
+			resWriter << std::make_tuple(header[i], res.mismatches.size(), mse);
+		}
+	}
+
 	TEST_CLASS(PacedPollingTests)
 	{
 	public:
@@ -137,17 +258,21 @@ namespace PacedPollingTests
 
 			const auto pipeName = R"(\\.\pipe\pm-poll-test-act)"s;
 			const auto etlName = "hea-win.etl"s;
-			const auto goldCsvName = "polled_gold.csv"s;
-
-			// check for gold
-			bool hasGold = std::filesystem::exists(goldCsvName);
+			const auto testFileBaseName = "polled_";
+			const auto goldCsvName = testFileBaseName + "gold.csv"s;
+			const auto toleranceFactor = 0.02;
 
 			pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 			pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
 			
-			std::vector<std::vector<MetricCompareResult>> allResults;
+			std::vector<std::vector<std::vector<double>>> allRuns;
+			std::vector<PM_QUERY_ELEMENT> qels;
+			std::vector<std::string> header;
 
+			// generate playback polling data for N runs
 			for (int x = 0; x < 10; x++) {
+				// short sleep at the beginning of very run but the first
+				// waiting to make sure previous svc has cleaned up 100%
 				if (x > 0) {
 					std::this_thread::sleep_for(50ms);
 				}
@@ -158,136 +283,69 @@ namespace PacedPollingTests
 					"--intro-nsm"s, "pm_poll_test_intro"s,
 					"--etl-test-file"s, etlName,
 					"--pace-playback" };
-
+				// wait until child svc is ready to accept connections, fail if it takes too long
 				Assert::IsTrue(pmon::util::pipe::DuplexPipe::WaitForAvailability(pipeName + "-in", 500),
 					L"Timeout waiting for service control pipe");
-
+				// connect to svc and get introspection
 				pmapi::Session api{ pipeName };
-
 				auto pIntro = api.GetIntrospectionRoot();
-
-				std::vector<PM_QUERY_ELEMENT> qels;
-				for (const auto& m : pIntro->GetMetrics()) {
-					// there is no reliable way of distinguishing CPU telemetry metrics from PresentData-based metrics via introspection
-					// adding CPU device type is an idea, however that would require changing device id of the cpu metrics from 0 to
-					// whatever id is assigned to cpu (probably an upper range like 1024+) and this might break existing code that just
-					// hardcodes device id for the CPU metrics; for the time being use a hardcoded blacklist here
-					if (rn::contains(std::array{
-						PM_METRIC_CPU_UTILIZATION,
-						PM_METRIC_CPU_POWER_LIMIT,
-						PM_METRIC_CPU_POWER,
-						PM_METRIC_CPU_TEMPERATURE,
-						PM_METRIC_CPU_FREQUENCY,
-						PM_METRIC_CPU_CORE_UTILITY,
-						}, m.GetId())) {
-						continue;
-					}
-					if (m.GetType() != PM_METRIC_TYPE_DYNAMIC && m.GetType() != PM_METRIC_TYPE_DYNAMIC_FRAME) {
-						continue;
-					}
-					auto dmi = m.GetDeviceMetricInfo();
-					if (dmi.size() != 1) {
-						continue;
-					}
-					if (!dmi.front().IsAvailable() || dmi.front().GetDevice().GetId() != 0) {
-						continue;
-					}
-					if (m.GetDataTypeInfo().GetPolledType() == PM_DATA_TYPE_STRING) {
-						continue;
-					}
-					for (const auto& s : m.GetStatInfo()) {
-						qels.push_back(PM_QUERY_ELEMENT{ m.GetId(), s.GetStat()});
-					}
+				// build the query element set via introspect if not yet built (first run only)
+				if (qels.empty()) {
+					qels = BuildQueryElementSet(*pIntro);
 				}
-
+				// build the header if necessary
+				if (header.empty()) {
+					header = MakeHeader(qels, *pIntro);
+				}
+				// register query and create necessary blob
 				auto query = api.RegisterDyanamicQuery(qels, 1000., 64.);
 				auto blobs = query.MakeBlobContainer(1);
-
-				std::ofstream csvStream{ std::format("polled_{}.csv", x) };
-				auto csvWriter = csv::make_csv_writer(csvStream);
-				std::vector<std::string> headerColumns{ "poll-time"s };
-				for (auto& qel : qels) {
-					headerColumns.push_back(std::format("{}({})",
-						pIntro->FindMetric(qel.metric).Introspect().GetSymbol(),
-						pIntro->FindEnum(PM_ENUM_STAT).FindKey((int)qel.stat).GetShortName()
-					));
-				}
-				csvWriter << headerColumns;
-
+				// start tracking target
 				auto tracker = api.TrackProcess(targetPid);
-
+				// get the waiter and the timer clocks ready
 				using Clock = std::chrono::high_resolution_clock;
 				const auto startTime = Clock::now();
 				util::IntervalWaiter waiter{ 0.1, 0.001 };
-
+				// run polling loop and poll into vector
 				std::vector<std::vector<double>> rows;
 				std::vector<double> cells;
 				BlobReader br{ qels, pIntro };
 				br.Target(blobs);
 				for (auto now = Clock::now(), start = Clock::now();
 					now - start <= recordingStop; now = Clock::now()) {
+					// skip recording while time has not reached start time
 					if (now - start >= recordingStart) {
 						cells.reserve(qels.size() + 1);
 						query.Poll(tracker, blobs);
+						// first column is the time as measured in polling loop
 						cells.push_back(std::chrono::duration<double>(now - start).count());
+						// remaining columns are from the query
 						for (size_t i = 0; i < qels.size(); i++) {
 							cells.push_back(br.At<double>(i));
 						}
-						csvWriter << cells;
 						rows.push_back(std::move(cells));
 					}
 					waiter.Wait();
 				}
-
-				if (hasGold) {
-					// load gold csv to vector of rows
-					csv::CSVReader gold{ goldCsvName };
-					std::vector<std::vector<double>> goldRows;
-					for (auto& row : gold) {
-						std::vector<double> rowData;
-						rowData.reserve(row.size());
-						for (auto& field : row) {
-							rowData.push_back(field.get<double>());
-						}
-						goldRows.push_back(std::move(rowData));
-					}
-
-					// compare all columns of run to gold
-					std::vector<MetricCompareResult> results;
-					for (auto&& [i, q] : vi::enumerate(qels)) {
-						double toleranceFactor = 0.02;
-						if (rn::contains(std::array{
-							PM_STAT_MAX,
-							PM_STAT_MIN,
-							PM_STAT_PERCENTILE_01,
-							PM_STAT_PERCENTILE_99,
-							PM_STAT_MID_POINT }, q.stat)) {
-							toleranceFactor = 0.04;
-						}
-						results.push_back(CompareMetricRuns(
-							ExtractColumn(rows, i),
-							ExtractColumn(goldRows, i),
-							0.02
-						));
-					}
-
-					// output results to csvs
-					std::ofstream resStream{ std::format("polled_results_{}.csv", x) };
-					auto resWriter = csv::make_csv_writer(resStream);
-					resWriter << std::array{ "metric"s, "n-miss"s, "mse"s };
-					const auto cols = gold.get_col_names();
-					for (auto&& [i, res] : vi::enumerate(results)) {
-						auto mse = std::isinf(res.meanSquareError) ? -0.0001 : res.meanSquareError;
-						resWriter << std::make_tuple(cols[i], res.mismatches.size(), mse);
-					}
-
-					allResults.push_back(std::move(results));
-				}
+				// write the full run data to csv file
+				WriteRunToCsv(std::format("{}{}.csv", testFileBaseName, allRuns.size()), header, rows);
+				// append run data to the vector of all runs
+				allRuns.push_back(std::move(rows));
 			}
 
-			if (hasGold) {
+			// compare all runs against gold if exists
+			if (std::filesystem::exists(goldCsvName)) {
+				std::vector<std::vector<MetricCompareResult>> allResults;
+				// load gold csv
+				auto gold = LoadRunFromCsv(goldCsvName);
+				// loop over all runs in memory and compare with gold, write results
+				for (auto&& [i, run] : vi::enumerate(allRuns)) {
+					auto results = CompareRuns(qels, run, gold, toleranceFactor);
+					WriteResults(std::format("{}results_{}.csv", testFileBaseName, i), header, results);
+					allResults.push_back(std::move(results));
+				}
 				// output aggregate results of all runs
-				std::ofstream aggStream{ "polled_agg.csv"s };
+				std::ofstream aggStream{ std::format("{}results_agg.csv", testFileBaseName) };
 				auto aggWriter = csv::make_csv_writer(aggStream);
 				aggWriter << std::array{ "#"s, "n-miss-total"s, "n-miss-max"s, "mse-total"s, "mse-max"s };
 				for (auto&& [i, columnResults] : vi::enumerate(allResults)) {
@@ -304,13 +362,33 @@ namespace PacedPollingTests
 					aggWriter << std::make_tuple(i, nMissTotal, nMissMax, mseTotal, mseMax);
 				}
 			}
+			else { // if gold doesn't exist, do cartesian project comparison of all
+				std::vector<size_t> mismatchTotals(allRuns.size(), 0);
+				for (size_t iA = 0; iA < allRuns.size(); ++iA) {
+					for (size_t iB = iA + 1; iB < allRuns.size(); ++iB) {
+						// compare run A vs run B
+						auto results = CompareRuns(qels, allRuns[iA], allRuns[iB], toleranceFactor);
+						// write per-pair results
+						WriteResults(std::format("{}carte_{}_{}.csv", testFileBaseName, iA, iB), header, results);
 
+						// accumulate total mismatches for ranking
+						size_t sumMiss = 0;
+						for (const auto& res : results) {
+							sumMiss += res.mismatches.size();
+						}
+						mismatchTotals[iA] += sumMiss;
+						mismatchTotals[iB] += sumMiss;
+					}
+				}
 
-			// compare csv to gold
-			// attempt 1 quantization step phase shift matching (+/-)
-			// perform majority fallback 3x w/ shift matching for each
-
-			// if it doesn't exist, fail (instruct to examine and gild)
+				// write aggregate ranking of runs by total mismatches
+				std::ofstream aggStream{ std::format("{}carte_agg.csv", testFileBaseName) };
+				auto aggWriter = csv::make_csv_writer(aggStream);
+				aggWriter << std::array{ "#"s, "n-miss-total"s };
+				for (size_t i = 0; i < mismatchTotals.size(); ++i) {
+					aggWriter << std::make_tuple(i, mismatchTotals[i]);
+				}
+			}
 		}
 	};
 }
