@@ -262,9 +262,11 @@ namespace PacedPollingTests
 
 			const auto pipeName = R"(\\.\pipe\pm-poll-test-act)"s;
 			const auto etlName = "hea-win.etl"s;
-			const auto testFileBaseName = "polled_";
-			const auto goldCsvName = testFileBaseName + "gold.csv"s;
+			const auto goldCsvPath = R"(..\..\Tests\PacedGold\polled_gold.csv)"s;
+			const auto outputBasePath = R"(PacedTest\Polled1\)"s;
 			const auto toleranceFactor = 0.02;
+
+			std::filesystem::create_directories(outputBasePath);
 
 			pmLoaderSetPathToMiddlewareDll_("./PresentMonAPI2.dll");
 			pmSetupODSLogging_(PM_DIAGNOSTIC_LEVEL_DEBUG, PM_DIAGNOSTIC_LEVEL_ERROR, false);
@@ -333,7 +335,7 @@ namespace PacedPollingTests
 						waiter.Wait();
 					}
 					// write the full run data to csv file
-					WriteRunToCsv(std::format("{}{}.csv", testFileBaseName, allRuns.size()), header, rows);
+					WriteRunToCsv(std::format("{}test_run_{}.csv", outputBasePath, allRuns.size()), header, rows);
 					// append run data to the vector of all runs
 					allRuns.push_back(std::move(rows));
 				}
@@ -342,21 +344,21 @@ namespace PacedPollingTests
 			Run(1);
 
 			// compare all runs against gold if exists
-			if (std::filesystem::exists(goldCsvName)) {
+			if (std::filesystem::exists(goldCsvPath)) {
 				std::vector<std::vector<MetricCompareResult>> allResults;
 				// load gold csv
-				auto gold = LoadRunFromCsv(goldCsvName);
+				auto gold = LoadRunFromCsv(goldCsvPath);
 				const auto DoComparison = [&] {
 					// loop over all runs in memory and compare with gold, write results
 					for (auto&& [i, run] : vi::enumerate(allRuns)) {
 						auto results = CompareRuns(qels, run, gold, toleranceFactor);
-						WriteResults(std::format("{}results_{}.csv", testFileBaseName, i), header, results);
+						WriteResults(std::format("{}results_{}.csv", outputBasePath, i), header, results);
 						allResults.push_back(std::move(results));
 					}
 				};
 				const auto ValidateAndWriteAggregateResults = [&] {
 					// output aggregate results of all runs
-					std::ofstream aggStream{ std::format("{}results_agg.csv", testFileBaseName) };
+					std::ofstream aggStream{ outputBasePath + "results_agg.csv"s };
 					auto aggWriter = csv::make_csv_writer(aggStream);
 					aggWriter << std::array{ "#"s, "n-miss-total"s, "n-miss-max"s, "mse-total"s, "mse-max"s };
 					int nFail = 0;
@@ -372,10 +374,13 @@ namespace PacedPollingTests
 							mseMax = std::max(colRes.meanSquareError, mseMax);
 						}
 						aggWriter << std::make_tuple(i, nMissTotal, nMissMax, mseTotal, mseMax);
-						if (nMissTotal > 8 || nMissMax > 3) {
+						const auto rowCount = allRuns[i].size();
+						// fail if any single column has too many mismatches, or if the total of all
+						// columns exceeds a threshold (same idea for mse below as well)
+						if (nMissTotal > size_t(rowCount / 33.) || nMissMax > size_t(rowCount / 100.)) {
 							nFail++;
 						}
-						else if (mseTotal > 600. || mseMax > 300.) {
+						else if (mseTotal > rowCount * 2.5 || mseMax > double(rowCount)) {
 							nFail++;
 						}
 					}
@@ -384,7 +389,6 @@ namespace PacedPollingTests
 				DoComparison();
 				if (ValidateAndWriteAggregateResults() == 0) {
 					Logger::WriteMessage("One-shot success");
-					return;
 				}
 				else {
 					Run(9);
@@ -400,7 +404,7 @@ namespace PacedPollingTests
 						// compare run A vs run B
 						auto results = CompareRuns(qels, allRuns[iA], allRuns[iB], toleranceFactor);
 						// write per-pair results
-						WriteResults(std::format("{}carte_{}_{}.csv", testFileBaseName, iA, iB), header, results);
+						WriteResults(std::format("{}round_robin_{}_{}.csv", outputBasePath, iA, iB), header, results);
 
 						// accumulate total mismatches for ranking
 						size_t sumMiss = 0;
@@ -413,7 +417,7 @@ namespace PacedPollingTests
 				}
 
 				// write aggregate ranking of runs by total mismatches
-				std::ofstream aggStream{ std::format("{}carte_agg.csv", testFileBaseName) };
+				std::ofstream aggStream{ outputBasePath + "round_robin_agg.csv"s };
 				auto aggWriter = csv::make_csv_writer(aggStream);
 				aggWriter << std::array{ "#"s, "n-miss-total"s };
 				for (size_t i = 0; i < mismatchTotals.size(); ++i) {
