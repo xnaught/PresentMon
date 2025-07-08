@@ -5,6 +5,8 @@
 #include <CommonUtilities/Exception.h>
 #include <CommonUtilities/ref/WrapReflect.h>
 #include <ranges>
+// disable faulty warnings on lock
+#pragma warning(disable: 26117 26110)
 
 namespace rn = std::ranges;
 namespace vi = rn::views;
