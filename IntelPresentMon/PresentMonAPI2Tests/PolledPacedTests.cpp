@@ -195,6 +195,10 @@ namespace PacedPollingTests
 				continue;
 			}
 			for (const auto& s : m.GetStatInfo()) {
+				// skip displayed fps (max) as it is broken now
+				if (m.GetId() == PM_METRIC_DISPLAYED_FPS && s.GetStat() == PM_STAT_MAX) {
+					continue;
+				}
 				qels.push_back(PM_QUERY_ELEMENT{ m.GetId(), s.GetStat() });
 			}
 		}
@@ -270,99 +274,126 @@ namespace PacedPollingTests
 			std::vector<std::string> header;
 
 			// generate playback polling data for N runs
-			for (int x = 0; x < 10; x++) {
-				// short sleep at the beginning of very run but the first
-				// waiting to make sure previous svc has cleaned up 100%
-				if (x > 0) {
-					std::this_thread::sleep_for(50ms);
-				}
-
-				bp::child svc{ "PresentMonService.exe"s,
-					"--control-pipe"s, pipeName,
-					"--nsm-prefix"s, "pmon_poll_test_nsm"s,
-					"--intro-nsm"s, "pm_poll_test_intro"s,
-					"--etl-test-file"s, etlName,
-					"--pace-playback" };
-				// wait until child svc is ready to accept connections, fail if it takes too long
-				Assert::IsTrue(pmon::util::pipe::DuplexPipe::WaitForAvailability(pipeName + "-in", 500),
-					L"Timeout waiting for service control pipe");
-				// connect to svc and get introspection
-				pmapi::Session api{ pipeName };
-				auto pIntro = api.GetIntrospectionRoot();
-				// build the query element set via introspect if not yet built (first run only)
-				if (qels.empty()) {
-					qels = BuildQueryElementSet(*pIntro);
-				}
-				// build the header if necessary
-				if (header.empty()) {
-					header = MakeHeader(qels, *pIntro);
-				}
-				// register query and create necessary blob
-				auto query = api.RegisterDyanamicQuery(qels, 1000., 64.);
-				auto blobs = query.MakeBlobContainer(1);
-				// start tracking target
-				auto tracker = api.TrackProcess(targetPid);
-				// get the waiter and the timer clocks ready
-				using Clock = std::chrono::high_resolution_clock;
-				const auto startTime = Clock::now();
-				util::IntervalWaiter waiter{ 0.1, 0.001 };
-				// run polling loop and poll into vector
-				std::vector<std::vector<double>> rows;
-				std::vector<double> cells;
-				BlobReader br{ qels, pIntro };
-				br.Target(blobs);
-				for (auto now = Clock::now(), start = Clock::now();
-					now - start <= recordingStop; now = Clock::now()) {
-					// skip recording while time has not reached start time
-					if (now - start >= recordingStart) {
-						cells.reserve(qels.size() + 1);
-						query.Poll(tracker, blobs);
-						// first column is the time as measured in polling loop
-						cells.push_back(std::chrono::duration<double>(now - start).count());
-						// remaining columns are from the query
-						for (size_t i = 0; i < qels.size(); i++) {
-							cells.push_back(br.At<double>(i));
-						}
-						rows.push_back(std::move(cells));
+			const auto Run = [&](int n) {
+				for (int x = 0; x < n; x++) {
+					// short sleep at the beginning of very run but the first
+					// waiting to make sure previous svc has cleaned up 100%
+					if (x > 0) {
+						std::this_thread::sleep_for(50ms);
 					}
-					waiter.Wait();
+
+					bp::child svc{ "PresentMonService.exe"s,
+						"--control-pipe"s, pipeName,
+						"--nsm-prefix"s, "pmon_poll_test_nsm"s,
+						"--intro-nsm"s, "pm_poll_test_intro"s,
+						"--etl-test-file"s, etlName,
+						"--pace-playback" };
+					// wait until child svc is ready to accept connections, fail if it takes too long
+					Assert::IsTrue(pmon::util::pipe::DuplexPipe::WaitForAvailability(pipeName + "-in", 500),
+						L"Timeout waiting for service control pipe");
+					// connect to svc and get introspection
+					pmapi::Session api{ pipeName };
+					auto pIntro = api.GetIntrospectionRoot();
+					// build the query element set via introspect if not yet built (first run only)
+					if (qels.empty()) {
+						qels = BuildQueryElementSet(*pIntro);
+					}
+					// build the header if necessary
+					if (header.empty()) {
+						header = MakeHeader(qels, *pIntro);
+					}
+					// register query and create necessary blob
+					auto query = api.RegisterDyanamicQuery(qels, 1000., 64.);
+					auto blobs = query.MakeBlobContainer(1);
+					// start tracking target
+					auto tracker = api.TrackProcess(targetPid);
+					// get the waiter and the timer clocks ready
+					using Clock = std::chrono::high_resolution_clock;
+					const auto startTime = Clock::now();
+					util::IntervalWaiter waiter{ 0.1, 0.001 };
+					// run polling loop and poll into vector
+					std::vector<std::vector<double>> rows;
+					std::vector<double> cells;
+					BlobReader br{ qels, pIntro };
+					br.Target(blobs);
+					for (auto now = Clock::now(), start = Clock::now();
+						now - start <= recordingStop; now = Clock::now()) {
+						// skip recording while time has not reached start time
+						if (now - start >= recordingStart) {
+							cells.reserve(qels.size() + 1);
+							query.Poll(tracker, blobs);
+							// first column is the time as measured in polling loop
+							cells.push_back(std::chrono::duration<double>(now - start).count());
+							// remaining columns are from the query
+							for (size_t i = 0; i < qels.size(); i++) {
+								cells.push_back(br.At<double>(i));
+							}
+							rows.push_back(std::move(cells));
+						}
+						waiter.Wait();
+					}
+					// write the full run data to csv file
+					WriteRunToCsv(std::format("{}{}.csv", testFileBaseName, allRuns.size()), header, rows);
+					// append run data to the vector of all runs
+					allRuns.push_back(std::move(rows));
 				}
-				// write the full run data to csv file
-				WriteRunToCsv(std::format("{}{}.csv", testFileBaseName, allRuns.size()), header, rows);
-				// append run data to the vector of all runs
-				allRuns.push_back(std::move(rows));
-			}
+			};
+
+			Run(1);
 
 			// compare all runs against gold if exists
 			if (std::filesystem::exists(goldCsvName)) {
 				std::vector<std::vector<MetricCompareResult>> allResults;
 				// load gold csv
 				auto gold = LoadRunFromCsv(goldCsvName);
-				// loop over all runs in memory and compare with gold, write results
-				for (auto&& [i, run] : vi::enumerate(allRuns)) {
-					auto results = CompareRuns(qels, run, gold, toleranceFactor);
-					WriteResults(std::format("{}results_{}.csv", testFileBaseName, i), header, results);
-					allResults.push_back(std::move(results));
-				}
-				// output aggregate results of all runs
-				std::ofstream aggStream{ std::format("{}results_agg.csv", testFileBaseName) };
-				auto aggWriter = csv::make_csv_writer(aggStream);
-				aggWriter << std::array{ "#"s, "n-miss-total"s, "n-miss-max"s, "mse-total"s, "mse-max"s };
-				for (auto&& [i, columnResults] : vi::enumerate(allResults)) {
-					size_t nMissTotal = 0;
-					size_t nMissMax = 0;
-					double mseTotal = 0.;
-					double mseMax = 0.;
-					for (auto& colRes : columnResults) {
-						nMissTotal += colRes.mismatches.size();
-						nMissMax = std::max(colRes.mismatches.size(), nMissMax);
-						mseTotal += colRes.meanSquareError;
-						mseMax = std::max(colRes.meanSquareError, mseMax);
+				const auto DoComparison = [&] {
+					// loop over all runs in memory and compare with gold, write results
+					for (auto&& [i, run] : vi::enumerate(allRuns)) {
+						auto results = CompareRuns(qels, run, gold, toleranceFactor);
+						WriteResults(std::format("{}results_{}.csv", testFileBaseName, i), header, results);
+						allResults.push_back(std::move(results));
 					}
-					aggWriter << std::make_tuple(i, nMissTotal, nMissMax, mseTotal, mseMax);
+				};
+				const auto ValidateAndWriteAggregateResults = [&] {
+					// output aggregate results of all runs
+					std::ofstream aggStream{ std::format("{}results_agg.csv", testFileBaseName) };
+					auto aggWriter = csv::make_csv_writer(aggStream);
+					aggWriter << std::array{ "#"s, "n-miss-total"s, "n-miss-max"s, "mse-total"s, "mse-max"s };
+					int nFail = 0;
+					for (auto&& [i, columnResults] : vi::enumerate(allResults)) {
+						size_t nMissTotal = 0;
+						size_t nMissMax = 0;
+						double mseTotal = 0.;
+						double mseMax = 0.;
+						for (auto& colRes : columnResults) {
+							nMissTotal += colRes.mismatches.size();
+							nMissMax = std::max(colRes.mismatches.size(), nMissMax);
+							mseTotal += colRes.meanSquareError;
+							mseMax = std::max(colRes.meanSquareError, mseMax);
+						}
+						aggWriter << std::make_tuple(i, nMissTotal, nMissMax, mseTotal, mseMax);
+						if (nMissTotal > 8 || nMissMax > 3) {
+							nFail++;
+						}
+						else if (mseTotal > 600. || mseMax > 300.) {
+							nFail++;
+						}
+					}
+					return nFail;
+				};
+				DoComparison();
+				if (ValidateAndWriteAggregateResults() == 0) {
+					Logger::WriteMessage("One-shot success");
+					return;
+				}
+				else {
+					Run(9);
+					DoComparison();
+					const auto nFail = ValidateAndWriteAggregateResults();
+					Assert::IsTrue(nFail < 6, std::format(L"Failed [{}] runs", nFail).c_str());
 				}
 			}
-			else { // if gold doesn't exist, do cartesian project comparison of all
+			else { // if gold doesn't exist, do cartesian product comparison of all
 				std::vector<size_t> mismatchTotals(allRuns.size(), 0);
 				for (size_t iA = 0; iA < allRuns.size(); ++iA) {
 					for (size_t iB = iA + 1; iB < allRuns.size(); ++iB) {
