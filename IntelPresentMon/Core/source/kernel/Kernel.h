@@ -14,6 +14,7 @@
 #include <boost/process.hpp>
 #include "OverlaySpec.h"
 #include "KernelHandler.h"
+#include "../iact/ActionClient.h"
 
 #pragma comment(lib, "user32")
 #pragma comment(lib, "winmm")

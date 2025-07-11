@@ -11,24 +11,24 @@ namespace p2c::iact
     using namespace util;
 
     // define minimial context for client side connection
-    struct InjectionLibExecutionContext;
-    struct InjectionLibSessionContext
+    struct CoreInjectionExecutionContext;
+    struct CoreInjectionSessionContext
     {
         // common session context items
-        std::unique_ptr<ipc::act::SymmetricActionConnector<InjectionLibExecutionContext>> pConn;
+        std::unique_ptr<ipc::act::SymmetricActionConnector<CoreInjectionExecutionContext>> pConn;
         uint32_t remotePid = 0;
         uint32_t nextCommandToken = 0;
     };
-    struct InjectionLibExecutionContext
+    struct CoreInjectionExecutionContext
     {
         // types
-        using SessionContextType = InjectionLibSessionContext;
+        using SessionContextType = CoreInjectionSessionContext;
 
         // data
         std::optional<uint32_t> responseWriteTimeoutMs;
     };
 
-    using ClientBase = ipc::act::SymmetricActionClient<InjectionLibExecutionContext>;
+    using ClientBase = ipc::act::SymmetricActionClient<CoreInjectionExecutionContext>;
     class ActionClient : public ClientBase
     {
     public:

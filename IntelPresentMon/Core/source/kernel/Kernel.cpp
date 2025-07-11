@@ -15,6 +15,8 @@
 #include <CommonUtilities/Exception.h>
 #include <CommonUtilities/win/Utilities.h>
 #include <boost/process/windows.hpp>
+#include "../../../FlashInjectorLibrary/act/Common.h"
+#include "../../../CommonUtilities/pipe/Pipe.h"
 
 
 using namespace std::literals;
@@ -177,6 +179,12 @@ namespace p2c::kern
             injectorProcess->backgroundColor = backgroundColor;
             injectorProcess->width = width;
             injectorProcess->rightShift = rightShift;
+
+            std::thread{ [pid = injectorProcess->lastTrackedPid] {
+                const auto pipeName = inj::act::MakePipeName(pid);
+                ::pmon::util::pipe::DuplexPipe::WaitForAvailability(pipeName + "-in", 100'000, 250);
+                auto pClient = std::make_unique<iact::ActionClient>(pipeName);                
+            } }.detach();
         }
     }
 
