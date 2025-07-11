@@ -163,15 +163,11 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="iact\ActionRegistration.cpp" />
     <ClCompile Include="LibraryInject.cpp" />
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CliOptions.h" />
-    <ClInclude Include="iact\AllActions.h" />
-    <ClInclude Include="iact\InjectorExecutionContext.h" />
-    <ClInclude Include="iact\OpenSession.h" />
     <ClInclude Include="LibraryInject.h" />
     <ClInclude Include="Logging.h" />
     <ClInclude Include="resource1.h" />

@@ -6,7 +6,7 @@
 #define ACT_NAME OpenSession
 #define ACT_EXEC_CTX InjectorExecutionContext
 #define ACT_TYPE AsyncActionBase_
-#define ACT_NS inj::iact
+#define ACT_NS inj::act
 
 namespace ACT_NS
 {
@@ -18,28 +18,26 @@ namespace ACT_NS
 		static constexpr const char* Identifier = STRINGIFY(ACT_NAME);
 		struct Params
 		{
-			uint32_t remotePid;
-			InjectorSessionContext::Type remoteType;
+			uint32_t kernelPid;
 
 			template<class A> void serialize(A& ar) {
-				ar(remotePid, remoteType);
+				ar(kernelPid);
 			}
 		};
 		struct Response {
-			uint32_t injectorPid;
+			uint32_t injectedLibPid;
 
 			template<class A> void serialize(A& ar) {
-				ar(injectorPid);
+				ar(injectedLibPid);
 			}
 		};
 	private:
 		friend class ACT_TYPE<ACT_NAME, ACT_EXEC_CTX>;
 		static Response Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
 		{
-			stx.remotePid = in.remotePid;
-			stx.clientType = in.remoteType;
-			const Response res{ .injectorPid = GetCurrentProcessId() };
-			pmlog_info(std::format("Injector open action for cli={} inj={}", in.remotePid, res.injectorPid));
+			stx.remotePid = in.kernelPid;
+			const Response res{ .injectedLibPid = GetCurrentProcessId() };
+			pmlog_info(std::format("Injector open action for cli={} inj={}", in.kernelPid, res.injectedLibPid));
 			return res;
 		}
 	};

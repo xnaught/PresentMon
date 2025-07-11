@@ -4,14 +4,15 @@
 
 namespace GfxLayer::Extension
 {
-	OverlayRenderer_D3D11::OverlayRenderer_D3D11(OverlayConfig config, IDXGISwapChain3* pSwapChain, ID3D11Device* pDevice) :
+	OverlayRenderer_D3D11::OverlayRenderer_D3D11(const OverlayConfig& config,
+		IDXGISwapChain3* pSwapChain, ID3D11Device* pDevice) :
 		OverlayRenderer(config, pSwapChain),
 		m_pDevice(pDevice)
 	{
-		LoadRenderState();
+		InitializeRenderState(config);
 	}
 
-	void OverlayRenderer_D3D11::LoadRenderState()
+	void OverlayRenderer_D3D11::InitializeRenderState(const OverlayConfig& config)
 	{
 		ComPtr<ID3D10Blob> pVSBlob = nullptr;
 		Quad::CompileShader(Quad::pVertexShader, "VS", "vs_5_0", &pVSBlob);
@@ -52,7 +53,7 @@ namespace GfxLayer::Extension
 		CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Index Buffer)");
 
 		Quad::ConstantBuffer cbData = { 0 };
-		std::memcpy(cbData.Color, GetConfig().BackgroundColor, sizeof(cbData.Color));
+		std::memcpy(cbData.Color, config.BackgroundColor, sizeof(cbData.Color));
 
 		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
 		bufferDesc.ByteWidth = sizeof(Quad::ConstantBuffer);
@@ -62,7 +63,7 @@ namespace GfxLayer::Extension
 		hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &m_pConstantBufferBackground);
 		CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Background Constant Buffe)");
 
-		std::memcpy(cbData.Color, GetConfig().BarColor, sizeof(cbData.Color));
+		std::memcpy(cbData.Color, config.BarColor, sizeof(cbData.Color));
 		hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &m_pConstantBufferBar);
 		CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Bar Constant Buffe)");
 
@@ -122,17 +123,23 @@ namespace GfxLayer::Extension
 		pImmediateContext->ExecuteCommandList(pCmdList.Get(), true);
 	}
 
-	void OverlayRenderer_D3D11::Resize(unsigned bufferCount, unsigned width, unsigned height)
+	void OverlayRenderer_D3D11::UpdateViewport(const OverlayConfig& cfg)
 	{
-		OverlayRenderer::Resize(bufferCount, width, height);
-
-		m_Rtvs.clear();
-		m_Rtvs.resize(bufferCount);
-
 		auto rect = GetScissorRect();
 		m_Viewport.TopLeftX = FLOAT(rect.left);
 		m_Viewport.TopLeftY = FLOAT(rect.top);
 		m_Viewport.Width = FLOAT(rect.right - rect.left);
 		m_Viewport.Height = FLOAT(rect.bottom - rect.top);
+	}
+
+	void OverlayRenderer_D3D11::UpdateConfig(const OverlayConfig& cfg)
+	{
+	}
+
+	void OverlayRenderer_D3D11::Resize(unsigned bufferCount, unsigned width, unsigned height)
+	{
+		OverlayRenderer::Resize(bufferCount, width, height);
+		m_Rtvs.clear();
+		m_Rtvs.resize(bufferCount);
 	}
 }

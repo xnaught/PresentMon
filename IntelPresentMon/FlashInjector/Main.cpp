@@ -12,6 +12,7 @@
 
 #include "LibraryInject.h"
 #include "Logging.h"
+#include "../Interprocess/source/act/SymmetricActionServer.h"
 
 namespace stdfs = std::filesystem;
 using namespace pmon::util;
@@ -26,7 +27,7 @@ namespace pmon::util::log
     }
 }
 
-int main (int argc, char **argv)
+int main(int argc, char** argv)
 {
     // Initialize arguments
     if (auto res = clio::Options::Init(argc, argv)) {
@@ -36,22 +37,22 @@ int main (int argc, char **argv)
 
     auto executableName = *opts.exeName;
 
-    stdfs::path dxgiOverlayPath;
+    stdfs::path injectorPath;
     {
         std::vector<char> buffer(MAX_PATH);
         auto size = GetModuleFileNameA(NULL, buffer.data(), static_cast<DWORD>(buffer.size()));
         if (size == 0) {
-            LOGE << "Failed to get DXGIOverlay executable path.";
+            LOGE << "Failed to get this executable path.";
         }
-        dxgiOverlayPath = std::string(buffer.begin(), buffer.begin() + size);
-        dxgiOverlayPath = dxgiOverlayPath.parent_path();
+        injectorPath = std::string(buffer.begin(), buffer.begin() + size);
+        injectorPath = injectorPath.parent_path();
     }
- 
+
     // DLL to inject
-    const stdfs::path libraryPath = dxgiOverlayPath / std::format("FlashInjectorLibrary-{}.dll", PM_BUILD_PLATFORM);
+    const stdfs::path libraryPath = injectorPath / std::format("FlashInjectorLibrary-{}.dll", PM_BUILD_PLATFORM);
 
     // Configuration file
-    auto cfgFilePath = stdfs::temp_directory_path()/"GfxLayer.cfg";
+    auto cfgFilePath = stdfs::temp_directory_path() / "GfxLayer.cfg";
     LOGI << "    Writing configuration to " << cfgFilePath;
 
     std::ofstream cfgFile(cfgFilePath);
