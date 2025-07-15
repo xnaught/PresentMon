@@ -134,6 +134,7 @@ namespace GfxLayer::Extension
 
 	void OverlayRenderer_D3D11::UpdateConfig(const OverlayConfig& cfg)
 	{
+		UpdateViewport(cfg);
 	}
 
 	void OverlayRenderer_D3D11::Resize(unsigned bufferCount, unsigned width, unsigned height)

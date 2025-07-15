@@ -2,6 +2,10 @@
 #include <filesystem>
 #include <boost/process/v2/windows/creation_flags.hpp>
 #include "../../../FlashInjectorLibrary/act/Common.h"
+#include "../../../FlashInjectorLibrary/act/PushConfig.h"
+
+// TODO: mutex lock warnings, try enabling if msvc fixes broken static analysis here
+#pragma warning (disable : 26110 26117)
 
 namespace p2c::kern
 {
@@ -104,12 +108,15 @@ namespace p2c::kern
 					int pid = std::stoi(line);
 					const auto pipeName = inj::act::MakePipeName(pid);
 					::pmon::util::pipe::DuplexPipe::WaitForAvailability(pipeName + "-in", 2'000, 250);
-					std::lock_guard lk(actionClientMutex_);
-					injectionPointClient_.emplace(pipeName);
-					pmlog_info("Connected to injection point").pmwatch(pid);
+					{
+						std::lock_guard lk{ actionClientMutex_ };
+						injectionPointClient_.emplace(pipeName);
+						pmlog_info("Connected to injection point").pmwatch(pid);
+					}
+					PushConfig_();
 				}
 				catch (...) {
-					pmlog_error("Failed to write target name to injector");
+					pmlog_error("Failed to read attachment from injector");
 				}
 			}
 
@@ -121,6 +128,9 @@ namespace p2c::kern
 	}
 	void InjectorComplex::InjectorModule_::PushConfig_()
 	{
-
+		std::lock_guard lk{ actionClientMutex_ };
+		if (injectionPointClient_ && injectionPointClient_->IsRunning()) {
+			injectionPointClient_->DispatchSync(inj::act::PushConfig::Params{ config_ });
+		}
 	}
 }

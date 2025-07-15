@@ -78,7 +78,7 @@
     <ClInclude Include="act\OpenSession.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="act\InjectorExecutionContext.h">
+    <ClInclude Include="act\InjectionPointExecutionContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="act\Common.h">
@@ -91,6 +91,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Extension\OverlayConfigPack.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="act\PushConfig.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

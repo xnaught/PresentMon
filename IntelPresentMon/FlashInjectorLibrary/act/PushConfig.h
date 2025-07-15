@@ -1,9 +1,10 @@
 #pragma once
 #include "../../Interprocess/source/act/ActionHelper.h"
 #include "InjectionPointExecutionContext.h"
+#include "../Extension/OverlayConfigPack.h"
 #include <format>
 
-#define ACT_NAME OpenSession
+#define ACT_NAME PushConfig
 #define ACT_EXEC_CTX InjectionPointExecutionContext
 #define ACT_TYPE AsyncActionBase_
 #define ACT_NS inj::act
@@ -16,29 +17,22 @@ namespace ACT_NS
 	{
 	public:
 		static constexpr const char* Identifier = STRINGIFY(ACT_NAME);
-		struct Params
+		struct Params : GfxLayer::Extension::OverlayConfig
 		{
-			uint32_t kernelPid;
-
 			template<class A> void serialize(A& ar) {
-				ar(kernelPid);
+				ar(BarSize, BarRightShift, BarColor, RenderBackground, BackgroundColor);
 			}
 		};
 		struct Response {
-			uint32_t injectedLibPid;
-
 			template<class A> void serialize(A& ar) {
-				ar(injectedLibPid);
 			}
 		};
 	private:
 		friend class ACT_TYPE<ACT_NAME, ACT_EXEC_CTX>;
 		static Response Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
 		{
-			stx.remotePid = in.kernelPid;
-			const Response res{ .injectedLibPid = GetCurrentProcessId() };
-			pmlog_info(std::format("Injector open action for cli={} inj={}", in.kernelPid, res.injectedLibPid));
-			return res;
+			GfxLayer::Extension::OverlayConfigPack::Get().Update(in);
+			return {};
 		}
 	};
 

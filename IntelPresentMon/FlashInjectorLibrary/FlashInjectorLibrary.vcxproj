@@ -21,8 +21,9 @@
   <ItemGroup>
     <ClInclude Include="act\AllActions.h" />
     <ClInclude Include="act\Common.h" />
-    <ClInclude Include="act\InjectorExecutionContext.h" />
+    <ClInclude Include="act\InjectionPointExecutionContext.h" />
     <ClInclude Include="act\OpenSession.h" />
+    <ClInclude Include="act\PushConfig.h" />
     <ClInclude Include="ApiId.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="Custom\API_D3D11.h" />

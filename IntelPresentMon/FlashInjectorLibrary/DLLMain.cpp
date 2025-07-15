@@ -8,7 +8,7 @@
 #include "Hooks/Hooks.h"
 #include "Custom/Extensions.h"
 #include "../FlashInjector/Logging.h"
-#include "act/InjectorExecutionContext.h"
+#include "act/InjectionPointExecutionContext.h"
 #include "act/Common.h"
 
 using namespace pmon::util;
@@ -45,7 +45,7 @@ namespace GfxLayer
 
         // start action server
         pServer = std::make_unique<inj::act::ActionServer>(
-            inj::act::InjectorExecutionContext{},
+            inj::act::InjectionPointExecutionContext{},
             inj::act::MakePipeName(GetCurrentProcessId()), 2, ""
         );
     }
