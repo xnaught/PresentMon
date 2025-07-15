@@ -59,6 +59,7 @@
     <ClInclude Include="source\infra\util\CooldownTimer.h" />
     <ClInclude Include="source\infra\util\FolderResolver.h" />
     <ClInclude Include="source\kernel\DataFetchPack.h" />
+    <ClInclude Include="source\kernel\InjectorComplex.h" />
     <ClInclude Include="source\kernel\MetricPackMapper.h" />
     <ClInclude Include="source\pmon\AdapterInfo.h" />
     <ClInclude Include="source\pmon\DynamicQuery.h" />
@@ -133,6 +134,7 @@
     <ClCompile Include="source\infra\LogSetup.cpp" />
     <ClCompile Include="source\infra\util\CooldownTimer.cpp" />
     <ClCompile Include="source\infra\util\FolderResolver.cpp" />
+    <ClCompile Include="source\kernel\InjectorComplex.cpp" />
     <ClCompile Include="source\pmon\DynamicQuery.cpp" />
     <ClCompile Include="source\pmon\metric\DynamicPollingFetcher.cpp" />
     <ClCompile Include="source\pmon\StatisticsTracker.cpp" />

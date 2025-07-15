@@ -11,10 +11,8 @@
 #include <Core/source/win/Process.h>
 #include <Core/source/pmon/PresentMon.h>
 #include <CommonUtilities/mt/Thread.h>
-#include <boost/process.hpp>
 #include "OverlaySpec.h"
 #include "KernelHandler.h"
-#include "../iact/ActionClient.h"
 
 #pragma comment(lib, "user32")
 #pragma comment(lib, "winmm")
@@ -30,6 +28,7 @@ namespace p2c::gfx
 
 namespace p2c::kern
 {
+    class InjectorComplex;
     struct OverlaySpec;
     class OverlayContainer;
 
@@ -37,19 +36,6 @@ namespace p2c::kern
     {
         Process(win::Process base) : win::Process{ std::move(base) } {}
         std::optional<std::wstring> windowName;
-    };
-
-    struct InjectorProcess
-    {
-        boost::process::child injectorProcess;
-        uint32_t lastTrackedPid;
-        std::string trackedName;
-        bool is32Bit = false;
-        bool enableBackground = false;
-        float width = 0.f;
-        float rightShift = 0.f;
-        gfx::Color flashColor;
-        gfx::Color backgroundColor;
     };
 
     class Kernel
@@ -86,7 +72,7 @@ namespace p2c::kern
         std::optional<bool> pushedCaptureActive;
         std::unique_ptr<OverlaySpec> pPushedSpec;
         std::unique_ptr<OverlayContainer> pOverlayContainer;
-        std::optional<InjectorProcess> injectorProcess;
+        std::unique_ptr<InjectorComplex> pInjectorComplex;
         mutable std::condition_variable cv;
         mutable std::mutex mtx;
         std::binary_semaphore constructionSemaphore;

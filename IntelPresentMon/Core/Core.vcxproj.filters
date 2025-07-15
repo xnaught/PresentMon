@@ -93,6 +93,7 @@
     <ClInclude Include="source\infra\Logging.h" />
     <ClInclude Include="source\win\HotkeyListener.h" />
     <ClInclude Include="source\iact\ActionClient.h" />
+    <ClInclude Include="source\kernel\InjectorComplex.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\win\MessageMap.cpp" />
@@ -154,6 +155,7 @@
     <ClCompile Include="source\infra\LogSetup.cpp" />
     <ClCompile Include="source\win\HotkeyListener.cpp" />
     <ClCompile Include="source\iact\ActionClient.cpp" />
+    <ClCompile Include="source\kernel\InjectorComplex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cpp.hint" />

@@ -1,5 +1,6 @@
 #include "../CommonUtilities/win/WinAPI.h"
 #include "../CommonUtilities/str/String.h"
+#include "../CommonUtilities/win/Utilities.h"
 #include "CliOptions.h"
 
 #include <set>
@@ -35,8 +36,6 @@ int main(int argc, char** argv)
     }
     auto& opts = clio::Options::Get();
 
-    auto executableName = *opts.exeName;
-
     stdfs::path injectorPath;
     {
         std::vector<char> buffer(MAX_PATH);
@@ -51,60 +50,7 @@ int main(int argc, char** argv)
     // DLL to inject
     const stdfs::path libraryPath = injectorPath / std::format("FlashInjectorLibrary-{}.dll", PM_BUILD_PLATFORM);
 
-    // Configuration file
-    auto cfgFilePath = stdfs::temp_directory_path() / "GfxLayer.cfg";
-    LOGI << "    Writing configuration to " << cfgFilePath;
-
-    std::ofstream cfgFile(cfgFilePath);
-    //if (opts.logFile) {
-    //    auto logFile = stdfs::absolute(*opts.logFile);
-    //    stdfs::remove(logFile);
-
-    //    auto opt = "LogFile=" + logFile.string();
-    //    LOGI << "        " << opt;
-    //    cfgFile << opt << std::endl;
-    //}
-    if (opts.waitForUserInput) {
-        auto opt = "WaitForUserInput=1";
-        LOGI << "        " << opt;
-        cfgFile << opt << std::endl;
-    }
-    if (opts.barSize) {
-        auto opt = "BarSize=" + std::to_string(*opts.barSize);
-        LOGI << "        " << opt;
-        cfgFile << opt << std::endl;
-    }
-    if (opts.barRightShift)
-    {
-        auto opt = "BarRightShift=" + std::to_string(*opts.barRightShift);
-        LOGI << "        " << opt;
-        cfgFile << opt << std::endl;
-    }
-    if (opts.barColor)
-    {
-        auto opt = "BarColor=" + *opts.barColor;
-        LOGI << "        " << opt;
-        cfgFile << opt << std::endl;
-    }
-    if (opts.backgroundColor)
-    {
-        auto opt = "BackgroundColor=" + *opts.backgroundColor;
-        LOGI << "        " << opt;
-        cfgFile << opt << std::endl;
-    }
-    if (opts.renderBackground)
-    {
-        auto opt = "RenderBackground=1";
-        LOGI << "        " << opt;
-        cfgFile << opt << std::endl;
-    }
-    cfgFile.close();
-
-    LOGI << "";
-    LOGI << "Inject options: ";
-    LOGI << "    Executable name: " << executableName;
-    LOGI << "    DLL to inject:  " << libraryPath;
-    LOGI << "";
+    const bool weAre32Bit = PM_BUILD_PLATFORM == "Win32"s;
 
     if (!stdfs::exists(libraryPath)) {
         LOGE << "Cannot find library: " << libraryPath;
@@ -113,21 +59,42 @@ int main(int argc, char** argv)
 
     LOGI << "Waiting for processes that match executable name...";
 
+    std::mutex nameMutex;
+    std::string targetModuleName;
+
+    std::thread{ [&] {
+        std::string line;
+        while (true) {
+            std::getline(std::cin, line);
+            std::lock_guard lk{ nameMutex };
+            targetModuleName = str::ToLower(line);
+        }
+    } }.detach();
+
     std::unordered_set<DWORD> processesAttached;
     while (true) {
-        auto processes = LibraryInject::GetProcessNames();
-        auto executableNameLower = str::ToLower(executableName);
-
-        for (auto&& [processId, processName] : processes) {
-            const auto processNameLower = str::ToLower(processName);
-            if (processNameLower == executableNameLower && !processesAttached.contains(processId)) {
-                LOGI << "    Injecting DLL to process with PID: " << processId;
-                LibraryInject::Attach(processId, libraryPath);
-                processesAttached.insert(processId);
+        const auto tgt = [&] {
+            std::lock_guard lk{ nameMutex };
+            return targetModuleName;
+        }();
+        if (!tgt.empty()) {
+            auto processes = LibraryInject::GetProcessNames();
+            for (auto&& [processId, processName] : processes) {
+                const auto processNameLower = str::ToLower(processName);
+                if (processNameLower == tgt && !processesAttached.contains(processId)) {
+                    auto hProcTarget = win::OpenProcess(processId, PROCESS_QUERY_LIMITED_INFORMATION);
+                    if (win::ProcessIs32Bit(hProcTarget) == weAre32Bit) {
+                        LOGI << "    Injecting DLL to process with PID: " << processId;
+                        LibraryInject::Attach(processId, libraryPath);
+                        processesAttached.insert(processId);
+                        // inform kernel of attachment so it can connect the action client
+                        std::cout << processId << std::endl;
+                    }
+                }
             }
         }
         // check for new matching processes every n milliseconds
-        std::this_thread::sleep_for(*opts.pollPeriod * 1ms);
+        std::this_thread::sleep_for(50ms);
     }
 
     return 0;
