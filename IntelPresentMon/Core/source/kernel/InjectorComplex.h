@@ -39,11 +39,11 @@ namespace p2c::kern
         };
     public:
         void SetActive(bool active);
-        bool IsActive() const;
+        bool IsActive(bool lock = true) const;
         void UpdateConfig(const GfxLayer::Extension::OverlayConfig& cfg);
         void ChangeTarget(std::optional<std::string> targetModuleName);
     private:
-        std::mutex mtx_;
+        mutable std::mutex mtx_;
         std::optional<std::string> targetModuleName_;
         std::unique_ptr<InjectorModule_> pInjector32_;
         std::unique_ptr<InjectorModule_> pInjector64_;

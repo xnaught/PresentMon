@@ -15,7 +15,7 @@ namespace p2c::kern
 	void InjectorComplex::SetActive(bool active)
 	{
 		std::lock_guard lk{ mtx_ };
-		if (!IsActive() && active) {
+		if (!IsActive(false) && active) {
 			pInjector32_ = std::make_unique<InjectorModule_>(true);
 			pInjector64_ = std::make_unique<InjectorModule_>(false);
 		}
@@ -24,14 +24,19 @@ namespace p2c::kern
 			pInjector64_.reset();
 		}
 	}
-	bool InjectorComplex::IsActive() const
+	bool InjectorComplex::IsActive(bool lock) const
 	{
+		std::unique_lock lk{ mtx_, std::defer_lock };
+		if (lock) {
+			lk.lock();
+		}
+		assert(bool(pInjector32_) == bool(pInjector64_));
 		return (bool)pInjector32_;
 	}
 	void InjectorComplex::UpdateConfig(const GfxLayer::Extension::OverlayConfig& cfg)
 	{
 		std::lock_guard lk{ mtx_ };
-		if (IsActive()) {
+		if (IsActive(false)) {
 			pInjector32_->UpdateConfig(cfg);
 			pInjector64_->UpdateConfig(cfg);
 		}
@@ -39,7 +44,8 @@ namespace p2c::kern
 	void InjectorComplex::ChangeTarget(std::optional<std::string> targetModuleName)
 	{
 		std::lock_guard lk{ mtx_ };
-		if (IsActive()) {
+		if (IsActive(false) && targetModuleName_ != targetModuleName) {
+			pmlog_dbg("Writting new target name to injectors").pmwatch(targetModuleName.value_or(""s));
 			targetModuleName_ = targetModuleName;
 			pInjector32_->ChangeTarget(targetModuleName);
 			pInjector64_->ChangeTarget(targetModuleName);
@@ -58,7 +64,7 @@ namespace p2c::kern
 		injectorProcess_.emplace(
 			ioctx_,
 			path.string(),
-			/* args = */ std::vector<std::string>{},
+			/* no args = */ std::vector<std::string>{},
 			bp2::windows::process_creation_flags<CREATE_NO_WINDOW>(),
 			bp2::process_stdio{ pipeIn_, pipeOut_, {} }
 		);
@@ -68,7 +74,6 @@ namespace p2c::kern
 			// when someone does listenerThread_.request_stop(),
 			// this callback will fire and break ioctx_.run()
 			std::stop_callback cb{ st, [this] { ioctx_.stop(); } };
-
 			// kick off the first async read
 			SpawnReadPidTask_();
 			// enter Asio’s event loop
@@ -84,9 +89,14 @@ namespace p2c::kern
 	}
 	void InjectorComplex::InjectorModule_::ChangeTarget(std::optional<std::string> targetModuleName)
 	{
+		// disconnect if connected to an injection point already (previous target)
+		{
+			std::lock_guard lk{ actionClientMutex_ };
+			injectionPointClient_.reset();
+		}
+
 		// Format the new line into writeBuffer_
 		std::ostream{ &writeBuffer_ } << targetModuleName.value_or(""s) << std::endl;
-
 		// Issue async write into the child’s stdin pipe
 		as::async_write(pipeIn_, writeBuffer_, [this](boost::system::error_code ec, std::size_t bytes_transferred) {
 			if (ec) {
@@ -129,8 +139,14 @@ namespace p2c::kern
 	void InjectorComplex::InjectorModule_::PushConfig_()
 	{
 		std::lock_guard lk{ actionClientMutex_ };
-		if (injectionPointClient_ && injectionPointClient_->IsRunning()) {
-			injectionPointClient_->DispatchSync(inj::act::PushConfig::Params{ config_ });
+		if (injectionPointClient_) {
+			if (injectionPointClient_->IsRunning()) {
+				injectionPointClient_->DispatchSync(inj::act::PushConfig::Params{ config_ });
+			}
+			else {
+				pmlog_dbg("Disconnection detected, destroying client");
+				injectionPointClient_.reset();
+			}
 		}
 	}
 }
