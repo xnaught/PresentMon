@@ -27,7 +27,8 @@ namespace GfxLayer::Extension
 		void			UpdateConfig(const OverlayConfig& cfg) override;
 
 	private:
-		void 										InitializeRenderState(const OverlayConfig& config);
+		void 										InitializeRenderState_(const OverlayConfig& config);
+		void										InitializeColorConstantBuffers_(const OverlayConfig& config);
 
 		ComPtr<ID3D10Device>						m_pDevice{};
 		std::vector<ComPtr<ID3D10RenderTargetView>>	m_Rtvs;
