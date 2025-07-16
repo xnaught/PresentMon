@@ -82,8 +82,7 @@ namespace GfxLayer::Extension
 	}
 
 	void OverlayRenderer_D3D12::UpdateViewport(const OverlayConfig& cfg)
-	{
-	}
+	{}
 
 	void OverlayRenderer_D3D12::UpdateConfig(const OverlayConfig& cfg)
 	{

@@ -9,10 +9,34 @@ namespace GfxLayer::Extension
 		OverlayRenderer(config, pSwapChain),
 		m_pDevice(pDevice)
 	{
-		InitializeRenderState(config);
+		InitializeRenderState_(config);
 	}
 
-	void OverlayRenderer_D3D11::InitializeRenderState(const OverlayConfig& config)
+	void OverlayRenderer_D3D11::InitializeColorConstantBuffers_(const OverlayConfig& config)
+	{
+		// background
+		{
+			const D3D11_SUBRESOURCE_DATA initData{ .pSysMem = config.BackgroundColor.data() };
+			D3D11_BUFFER_DESC bufferDesc{};
+			bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+			bufferDesc.ByteWidth = sizeof(config.BackgroundColor);
+			bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+			auto hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &m_pConstantBufferBackground);
+			CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Background Constant Buffer)");
+		}
+		// flash
+		{
+			const D3D11_SUBRESOURCE_DATA initData{ .pSysMem = config.BarColor.data() };
+			D3D11_BUFFER_DESC bufferDesc{};
+			bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+			bufferDesc.ByteWidth = sizeof(config.BarColor);
+			bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+			auto hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &m_pConstantBufferBar);
+			CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Background Constant Buffer)");
+		}
+	}
+
+	void OverlayRenderer_D3D11::InitializeRenderState_(const OverlayConfig& config)
 	{
 		ComPtr<ID3D10Blob> pVSBlob = nullptr;
 		Quad::CompileShader(Quad::pVertexShader, "VS", "vs_5_0", &pVSBlob);
@@ -52,23 +76,9 @@ namespace GfxLayer::Extension
 		hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &m_pIndexBuffer);
 		CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Index Buffer)");
 
-		Quad::ConstantBuffer cbData = { 0 };
-		std::memcpy(cbData.Color, config.BackgroundColor.data(), sizeof(cbData.Color));
-
-		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		bufferDesc.ByteWidth = sizeof(Quad::ConstantBuffer);
-		bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-		bufferDesc.CPUAccessFlags = 0;
-		initData.pSysMem = &cbData;
-		hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &m_pConstantBufferBackground);
-		CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Background Constant Buffe)");
-
-		std::memcpy(cbData.Color, config.BarColor.data(), sizeof(cbData.Color));
-		hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &m_pConstantBufferBar);
-		CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Bar Constant Buffe)");
+		InitializeColorConstantBuffers_(config);
 
 		// Create a deferred context
-
 		hr = m_pDevice->CreateDeferredContext(0, &m_pDeferredContext);
 		CheckResult(hr, "D3D11 - Failed to create ID3D11DeviceContext");
 	}
@@ -135,6 +145,7 @@ namespace GfxLayer::Extension
 	void OverlayRenderer_D3D11::UpdateConfig(const OverlayConfig& cfg)
 	{
 		UpdateViewport(cfg);
+		InitializeColorConstantBuffers_(cfg);
 	}
 
 	void OverlayRenderer_D3D11::Resize(unsigned bufferCount, unsigned width, unsigned height)

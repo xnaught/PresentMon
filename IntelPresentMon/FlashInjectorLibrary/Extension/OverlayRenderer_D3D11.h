@@ -26,7 +26,8 @@ namespace GfxLayer::Extension
 		void			UpdateConfig(const OverlayConfig& cfg) override;
 
 	private:
-		void 										InitializeRenderState(const OverlayConfig& config);
+		void 										InitializeRenderState_(const OverlayConfig& config);
+		void										InitializeColorConstantBuffers_(const OverlayConfig& config);
 
 		ComPtr<ID3D11Device>						m_pDevice{};
 		ComPtr<ID3D11DeviceContext>					m_pDeferredContext;
