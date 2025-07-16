@@ -13,6 +13,7 @@
 #include <CommonUtilities/mt/Thread.h>
 #include "OverlaySpec.h"
 #include "KernelHandler.h"
+#include "../../../FlashInjectorLibrary/Extension/OverlayConfig.h"
 
 #pragma comment(lib, "user32")
 #pragma comment(lib, "winmm")
@@ -46,8 +47,9 @@ namespace p2c::kern
         Kernel& operator=(const Kernel&) = delete;
         ~Kernel();
         void PushSpec(std::unique_ptr<OverlaySpec> pSpec);
-        void UpdateInjection(bool enableInjection, std::optional<uint32_t> pid, bool enableBackground,
-            const gfx::Color& flashColor, const gfx::Color& backgroundColor, float width, float rightShift);
+        void UpdateInjection(bool enableInjection, std::optional<uint32_t> currentlyTargettedPid,
+            std::optional<std::string> overrideTargetName,
+            const GfxLayer::Extension::OverlayConfig& cfg);
         void ClearOverlay();
         void SetAdapter(uint32_t id);
         std::vector<pmon::AdapterInfo> EnumerateAdapters() const;

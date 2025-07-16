@@ -58,7 +58,7 @@ namespace GfxLayer::Extension
 		// Load Constant Buffers
 
 		Quad::ConstantBuffer cbData = { 0 };
-		std::memcpy(cbData.Color, config.BackgroundColor, sizeof(cbData.Color));
+		std::memcpy(cbData.Color, config.BackgroundColor.data(), sizeof(cbData.Color));
 
 		bufferDesc.Usage = D3D10_USAGE_DEFAULT;
 		bufferDesc.ByteWidth = sizeof(Quad::ConstantBuffer);
@@ -68,7 +68,7 @@ namespace GfxLayer::Extension
 		hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &m_pConstantBufferBackground);
 		CheckResult(hr, "D3D10 - Failed to create ID3D10Buffer (Background Constant Buffe)");
 
-		std::memcpy(cbData.Color, config.BarColor, sizeof(cbData.Color));
+		std::memcpy(cbData.Color, config.BarColor.data(), sizeof(cbData.Color));
 		hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &m_pConstantBufferBar);
 		CheckResult(hr, "D3D10 - Failed to create ID3D10Buffer (Bar Constant Buffe)");
 

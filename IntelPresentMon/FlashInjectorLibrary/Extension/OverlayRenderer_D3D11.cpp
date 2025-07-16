@@ -53,7 +53,7 @@ namespace GfxLayer::Extension
 		CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Index Buffer)");
 
 		Quad::ConstantBuffer cbData = { 0 };
-		std::memcpy(cbData.Color, config.BackgroundColor, sizeof(cbData.Color));
+		std::memcpy(cbData.Color, config.BackgroundColor.data(), sizeof(cbData.Color));
 
 		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
 		bufferDesc.ByteWidth = sizeof(Quad::ConstantBuffer);
@@ -63,7 +63,7 @@ namespace GfxLayer::Extension
 		hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &m_pConstantBufferBackground);
 		CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Background Constant Buffe)");
 
-		std::memcpy(cbData.Color, config.BarColor, sizeof(cbData.Color));
+		std::memcpy(cbData.Color, config.BarColor.data(), sizeof(cbData.Color));
 		hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &m_pConstantBufferBar);
 		CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Bar Constant Buffe)");
 

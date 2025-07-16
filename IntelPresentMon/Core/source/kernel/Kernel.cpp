@@ -55,30 +55,29 @@ namespace p2c::kern
         cv.notify_one();
     }
 
-    void Kernel::UpdateInjection(bool enableInjection, std::optional<uint32_t> pid, bool enableBackground, 
-        const gfx::Color& flashColor, const gfx::Color& backgroundColor, float width, float rightShift)
+    void Kernel::UpdateInjection(bool enableInjection, std::optional<uint32_t> currentlyTargettedPid,
+        std::optional<std::string> overrideTargetName,
+        const GfxLayer::Extension::OverlayConfig& cfg)
     {
         HandleMarshalledException_();
+        auto config = cfg;
         pInjectorComplex->SetActive(enableInjection);
         if (enableInjection) {
-            if (pid) {
+            if (overrideTargetName) {
+                pInjectorComplex->ChangeTarget(std::move(*overrideTargetName));
+            }
+            else if (currentlyTargettedPid) {
                 try {
-                    auto hProc = cwin::OpenProcess(*pid);
+                    auto hProc = cwin::OpenProcess(*currentlyTargettedPid);
                     auto modName = cwin::GetExecutableModulePath(hProc).filename().string();
                     pInjectorComplex->ChangeTarget(std::move(modName));
                 }
                 catch (...) {
-                    pmlog_warn("Failed target process lookup").pmwatch(*pid);
+                    pmlog_warn("Failed target process lookup").pmwatch(*currentlyTargettedPid);
                     pInjectorComplex->ChangeTarget({});
                 }
             }
-            pInjectorComplex->UpdateConfig({
-                .BarSize = width,
-                .BarRightShift = rightShift,
-                .BarColor = { flashColor.r, flashColor.g, flashColor.b, flashColor.a },
-                .RenderBackground = enableBackground,
-                .BackgroundColor = { backgroundColor.r, backgroundColor.g, backgroundColor.b, backgroundColor.a },
-            });
+            pInjectorComplex->UpdateConfig(cfg);
         }
     }
 

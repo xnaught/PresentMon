@@ -3,6 +3,7 @@
 #include "InjectionPointExecutionContext.h"
 #include "../Extension/OverlayConfigPack.h"
 #include <format>
+#include <cereal/types/array.hpp>
 
 #define ACT_NAME PushConfig
 #define ACT_EXEC_CTX InjectionPointExecutionContext

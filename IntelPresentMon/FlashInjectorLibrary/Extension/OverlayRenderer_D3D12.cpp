@@ -59,10 +59,10 @@ namespace GfxLayer::Extension
 
 	void OverlayRenderer_D3D12::Render(bool renderBar)
 	{
-		float* pColor = m_config.BackgroundColor;
+		float* pColor = m_config.BackgroundColor.data();
 		if (renderBar)
 		{
-			pColor = m_config.BarColor;
+			pColor = m_config.BarColor.data();
 		}
 
 		auto backBufferIdx = GetSwapChain()->GetCurrentBackBufferIndex();
