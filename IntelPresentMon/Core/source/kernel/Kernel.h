@@ -8,7 +8,7 @@
 #include <optional>
 #include <string>
 #include <semaphore>
-#include <Core/source/win/Process.h>
+#include <CommonUtilities/win/Process.h>
 #include <Core/source/pmon/PresentMon.h>
 #include <CommonUtilities/mt/Thread.h>
 #include "OverlaySpec.h"
@@ -33,9 +33,9 @@ namespace p2c::kern
     struct OverlaySpec;
     class OverlayContainer;
 
-    struct Process : public win::Process
+    struct Process : public ::pmon::util::win::Process
     {
-        Process(win::Process base) : win::Process{ std::move(base) } {}
+        Process(::pmon::util::win::Process base) : ::pmon::util::win::Process{ std::move(base) } {}
         std::optional<std::wstring> windowName;
     };
 

@@ -9,7 +9,7 @@
 #include "OverlayContainer.h"
 #include "TargetLostException.h"
 #include <Core/source/win/ProcessMapBuilder.h>
-#include <Core/source/win/com/WbemConnection.h>
+#include <CommonUtilities/win/com/WbemConnection.h>
 #include <Core/source/cli/CliOptions.h>
 #include <CommonUtilities/str/String.h>
 #include <CommonUtilities/Exception.h>
@@ -165,7 +165,7 @@ namespace p2c::kern
             auto& opt = cli::Options::Get();
 
             // connect to wbem
-            win::com::WbemConnection wbemConn;
+            ::pmon::util::win::com::WbemConnection wbemConn;
 
             // connection names control from cli override / svc-as-child
             auto controlPipe = opt.controlPipe.AsOptional();
