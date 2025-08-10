@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -150,7 +150,7 @@
       <Message>Generating Build IDs</Message>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>force-run-nonexist.fake</Outputs>
+      <Outputs>force-run-nonexist.fake;generated\build_id.h;generated\signature_a_prev.txt;generated\signature_b_prev.txt</Outputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -206,7 +206,7 @@
       <Message>Generating Build IDs</Message>
     </CustomBuildStep>
     <CustomBuildStep>
-      <Outputs>force-run-nonexist.fake</Outputs>
+      <Outputs>force-run-nonexist.fake;generated\build_id.h;generated\signature_a_prev.txt;generated\signature_b_prev.txt</Outputs>
     </CustomBuildStep>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
