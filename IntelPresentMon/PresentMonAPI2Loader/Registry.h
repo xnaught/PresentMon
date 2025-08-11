@@ -1,6 +1,6 @@
 #pragma once
-#include "../CommonUtilities/reg/Registry.h"
-#include "../PresentMonService/GlobalIdentifiers.h"
+#include <CommonUtilities/reg/Registry.h>
+#include <PresentMonService/GlobalIdentifiers.h>
 
 using namespace pmon::util;
 struct Reg : public reg::RegistryBase<Reg, HKEY_LOCAL_MACHINE>

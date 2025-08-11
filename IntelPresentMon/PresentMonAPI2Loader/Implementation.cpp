@@ -1,10 +1,10 @@
-#include "../PresentMonAPI2/PresentMonAPI.h"
-#include "../PresentMonAPI2/Internal.h"
-#include "../PresentMonAPI2/PresentMonDiagnostics.h"
-#include "../CommonUtilities/win/WinAPI.h"
-#include "../CommonUtilities/Exception.h"
-#include "../Interprocess/source/PmStatusError.h"
-#include "../Versioning/PresentMonAPIVersion.h"
+#include <PresentMonAPI2/PresentMonAPI.h>
+#include <PresentMonAPI2/Internal.h>
+#include <PresentMonAPI2/PresentMonDiagnostics.h>
+#include <CommonUtilities/win/WinAPI.h>
+#include <CommonUtilities/Exception.h>
+#include <Interprocess/source/PmStatusError.h>
+#include <Versioning/PresentMonAPIVersion.h>
 #include <functional>
 #include <vector>
 #include <cassert>
