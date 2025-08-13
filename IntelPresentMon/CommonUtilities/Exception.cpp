@@ -3,7 +3,6 @@
 #include <sstream>
 #include "log/GlobalPolicy.h"
 #include "log/StackTrace.h"
-#include <PresentMonAPI2/PresentMonAPI.h>
 #include <format>
 
 
