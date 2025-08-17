@@ -94,18 +94,22 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <CustomBuildBeforeTargets>BuildGenerateSources</CustomBuildBeforeTargets>
     <CustomBuildAfterTargets>BuildGenerateSources</CustomBuildAfterTargets>
+    <TargetName>IPM$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <CustomBuildBeforeTargets>BuildGenerateSources</CustomBuildBeforeTargets>
     <CustomBuildAfterTargets>BuildGenerateSources</CustomBuildAfterTargets>
+    <TargetName>IPM$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <CustomBuildBeforeTargets>BuildGenerateSources</CustomBuildBeforeTargets>
     <CustomBuildAfterTargets>BuildGenerateSources</CustomBuildAfterTargets>
+    <TargetName>IPM$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <CustomBuildBeforeTargets>BuildGenerateSources</CustomBuildBeforeTargets>
     <CustomBuildAfterTargets>BuildGenerateSources</CustomBuildAfterTargets>
+    <TargetName>IPM$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnabled>false</VcpkgEnabled>
