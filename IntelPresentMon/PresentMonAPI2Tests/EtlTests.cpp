@@ -4,7 +4,8 @@
 #include <fstream>
 #include "CppUnitTest.h"
 #include "StatusComparison.h"
-#include <boost/process.hpp>
+#include <boost/process/v1/child.hpp>
+#include <boost/process/v1/io.hpp>
 #include "CsvHelper.h"
 #include "../PresentMonAPI2Loader/Loader.h"
 #include "../CommonUtilities/pipe/Pipe.h"
@@ -13,6 +14,7 @@
 #include <format>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+namespace bp = boost::process::v1;
 
 namespace EtlTests
 {
@@ -91,7 +93,7 @@ namespace EtlTests
 
 	TEST_CLASS(GoldEtlCsvTests)
 	{
-		std::optional<boost::process::child> oChild;
+		std::optional<boost::process::v1::child> oChild;
 	public:
 		TEST_METHOD_CLEANUP(Cleanup)
 		{
@@ -115,7 +117,6 @@ namespace EtlTests
 
 		TEST_METHOD(OpenServiceTest)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -141,7 +142,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(OpenMockSessionTest)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -181,7 +181,6 @@ namespace EtlTests
 
 		TEST_METHOD(ConsumeBlobsTest)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -253,7 +252,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc000v2Presenter10792)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -303,7 +301,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc000v2DWM1268)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -353,7 +350,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc000v2Presenter8320)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -403,7 +399,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc000v2Presenter11648)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -453,7 +448,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc000v2Presenter3976)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -503,7 +497,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc000v2Presenter11112)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -553,7 +546,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc000v2Presenter2032)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -603,7 +595,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc000v2Presenter5988)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -660,7 +651,6 @@ namespace EtlTests
 			// the process is not active and exit. Need to add some type of synchronization
 			// in mock presentmon session to not shutdown the session until notified
 			// by close session call.
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -710,7 +700,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc000v2Presenter11100)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -766,7 +755,6 @@ namespace EtlTests
 			// mock presentmon session is writing a present to the nsm that is
 			// earlier than the console application allows because of swap chain
 			// initialization that is not implemented in the mock presentmon session.
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -816,7 +804,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc001v2Presenter24560)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -866,7 +853,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc001v2devenv24944)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -916,7 +902,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc002v2Dwm1300)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -966,7 +951,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc002v2Presenter10016)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1016,7 +1000,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc002v2Presenter5348)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1066,7 +1049,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc002v2Presenter5220)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1116,7 +1098,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc003v2Dwm1252)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1166,7 +1147,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc003v2Presenter5892)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1216,7 +1196,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc003v2Presenter10112)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1273,7 +1252,6 @@ namespace EtlTests
 			// the process is not active and exit. Need to add some type of synchronization
 			// in mock presentmon session to not shutdown the session until notified
 			// by close session call.
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1323,7 +1301,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc004v2Presenter5192)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1375,7 +1352,6 @@ namespace EtlTests
 		{
 			Assert::AreEqual(true, false, L"*** Expected Failure. WIP.");
 			// Expected failure due to incorrect swap chain handling by middleware.
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1425,7 +1401,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc004v2Presenter8536)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1482,7 +1457,6 @@ namespace EtlTests
 			// the process is not active and exit. Need to add some type of synchronization
 			// in mock presentmon session to not shutdown the session until notified
 			// by close session call.
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1534,7 +1508,6 @@ namespace EtlTests
 		{
 			Assert::AreEqual(true, false, L"*** Expected Failure. WIP.");
 			// Expected failure due to incorrect swap chain handling by middleware.
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1586,7 +1559,6 @@ namespace EtlTests
 		{
 			Assert::AreEqual(true, false, L"*** Expected Failure. WIP.");
 			// Expected failure due to incorrect swap chain handling by middleware.
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1636,7 +1608,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc006v2CPXellOn10796Ext)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1692,7 +1663,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc007v2CPXellOnFgOn11320Ext)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1749,7 +1719,6 @@ namespace EtlTests
 			// mock presentmon session is writing a present to the nsm that is
 			// earlier than the console application allows because of swap chain
 			// initialization that is not implemented in the mock presentmon session.
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1801,7 +1770,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc009v2F124XellOnFgOn10340Ext)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1855,7 +1823,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc010v2ReprojLatency9688Ext)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
