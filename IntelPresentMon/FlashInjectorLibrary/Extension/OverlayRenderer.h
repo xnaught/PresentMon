@@ -6,6 +6,8 @@ using Microsoft::WRL::ComPtr;
 #include "../Context.h"
 #include "../NonCopyable.h"
 #include "OverlayConfig.h"
+#include <chrono>
+#include <optional>
 
 namespace GfxLayer::Extension
 {
@@ -32,9 +34,11 @@ namespace GfxLayer::Extension
 		virtual void			UpdateConfig(const OverlayConfig& cfg) = 0;
 
 	private:
+		using clock = std::chrono::high_resolution_clock;
 		OverlayConfig			m_currentConfig;
 		ComPtr<IDXGISwapChain3>	m_pSwapChain;
 		unsigned m_width;
 		unsigned m_height;
+		std::optional<clock::time_point> m_flashStartTime;
 	};
 }

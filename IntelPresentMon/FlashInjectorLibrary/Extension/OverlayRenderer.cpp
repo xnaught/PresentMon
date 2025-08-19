@@ -3,8 +3,10 @@
 #include "../Logging.h"
 #include "OverlayConfigPack.h"
 
-namespace GfxLayer::Extension
+namespace GfxLayer::Extension 
 {
+	using namespace std::literals;
+
 	void CheckResult(HRESULT result, const char* pMessage)
 	{
 		if (FAILED(result))
@@ -50,30 +52,20 @@ namespace GfxLayer::Extension
 			UpdateConfig(m_currentConfig);
 		}
 
-		static unsigned s_frameCounter = 0;
-		static bool s_mouseClicked = false;
+		bool flashStartedThisFrame = false;
+		if (!m_flashStartTime && (GetAsyncKeyState(VK_LBUTTON) & 0x8000)) {
+			m_flashStartTime = clock::now();
+			flashStartedThisFrame = true;
+		}
 
-		if (GetAsyncKeyState(VK_LBUTTON) & 0x8000)
-		{
-			if (!s_mouseClicked)
-			{
-				s_frameCounter = 16;
+		if (m_flashStartTime) {
+			if (flashStartedThisFrame || (clock::now() - *m_flashStartTime >= 40ms)) {
+				Render(true);
 			}
-			s_mouseClicked = true;
-		}
-		else
-		{
-			s_mouseClicked = false;
-		}
-
-		if (s_frameCounter > 0)
-		{
-			Render(true);
-			--s_frameCounter;
-		}
-		else if (m_currentConfig.RenderBackground)
-		{
-			Render(false);
+			else {
+				Render(false);
+				m_flashStartTime.reset();
+			}
 		}
 	}
 }
