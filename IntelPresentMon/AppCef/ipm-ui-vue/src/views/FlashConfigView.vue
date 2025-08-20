@@ -127,6 +127,22 @@ watch(
         </v-col>
       </v-row>
 
+      <v-row class="mt-8">
+        <v-col cols="3">
+          Flash Duration
+          <p class="text-medium-emphasis text-caption mb-0">Duration of the flash in seconds.</p>
+        </v-col>
+        <v-col cols="9">
+          <v-slider
+            v-model="prefs.preferences.flashInjectionFlashDuration"
+            :min="0"
+            :max="1"
+            :step="0.001"
+            thumb-label="always"
+          ></v-slider>
+        </v-col>
+      </v-row>
+
       <v-row class="mt-4">
         <v-col>
           <h3>Notes</h3>

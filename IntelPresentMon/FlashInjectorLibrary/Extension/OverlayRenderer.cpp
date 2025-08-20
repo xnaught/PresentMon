@@ -71,7 +71,8 @@ namespace GfxLayer::Extension
 		// if we have a flash start we might need to draw flash
 		if (m_flashStartTime) {
 			// draw flash if initiated this frame OR within flash duration
-			if (flashStartedThisFrame || (clock::now() - *m_flashStartTime < 400ms)) {
+			const std::chrono::duration<float> flashDuration{ m_currentConfig.FlashDuration };
+			if (flashStartedThisFrame || (clock::now() - *m_flashStartTime < flashDuration)) {
 				Render(true);
 			}
 			else {

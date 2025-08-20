@@ -149,6 +149,7 @@ namespace ACT_NS
                 bool flashInjectionBackgroundEnable;
                 Color flashInjectionBackgroundColor;
                 float flashInjectionRightShift;
+                float flashInjectionFlashDuration;
 
                 template<class A> void serialize(A& ar) {
                     ar(capturePath, captureDelay, enableCaptureDelay,
@@ -161,7 +162,7 @@ namespace ACT_NS
                         enableAutotargetting, upscaleFactor, adapterId, enableFlashInjection,
                         flashInjectionSize, flashInjectionEnableTargetOverride, flashInjectionTargetOverride,
                         flashInjectionColor, flashInjectionBackgroundEnable, flashInjectionBackgroundColor,
-                        flashInjectionRightShift);
+                        flashInjectionRightShift, flashInjectionFlashDuration);
                 }
             } preferences;
 
@@ -193,6 +194,7 @@ namespace ACT_NS
                 .BarColor = in.preferences.flashInjectionColor.AsArray(),
                 .RenderBackground = in.preferences.flashInjectionBackgroundEnable,
                 .BackgroundColor = in.preferences.flashInjectionBackgroundColor.AsArray(),
+                .FlashDuration = in.preferences.flashInjectionFlashDuration,
             };
             const auto flashTgtOverride = in.preferences.flashInjectionEnableTargetOverride ?
                 std::optional{ in.preferences.flashInjectionTargetOverride } : std::nullopt;
