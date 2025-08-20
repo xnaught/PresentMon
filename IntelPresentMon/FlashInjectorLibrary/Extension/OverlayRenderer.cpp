@@ -53,19 +53,35 @@ namespace GfxLayer::Extension
 		}
 
 		bool flashStartedThisFrame = false;
-		if (!m_flashStartTime && (GetAsyncKeyState(VK_LBUTTON) & 0x8000)) {
-			m_flashStartTime = clock::now();
-			flashStartedThisFrame = true;
+		// we only check mouse state if we're not currently in a flash
+		if (!m_flashStartTime) {
+			if (GetAsyncKeyState(VK_LBUTTON) & 0x8000) {
+				// if lmb is down, start a flash as long as we're not in holdoff
+				if (!m_clickHoldoff) {
+					m_flashStartTime = clock::now();
+					flashStartedThisFrame = true;
+					m_clickHoldoff = true;
+				}
+			}
+			else {
+				// if lmb up (and not in flash) remove the holdoff so another flash could begin
+				m_clickHoldoff = false;
+			}
 		}
-
+		// if we have a flash start we might need to draw flash
 		if (m_flashStartTime) {
-			if (flashStartedThisFrame || (clock::now() - *m_flashStartTime >= 40ms)) {
+			// draw flash if initiated this frame OR within flash duration
+			if (flashStartedThisFrame || (clock::now() - *m_flashStartTime < 400ms)) {
 				Render(true);
 			}
 			else {
-				Render(false);
+				// reset flash time if duration lapsed
 				m_flashStartTime.reset();
 			}
+		}
+		// if we're not in flash, we might need to draw background
+		if (!m_flashStartTime && m_currentConfig.RenderBackground) {
+			Render(false);
 		}
 	}
 }

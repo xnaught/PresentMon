@@ -40,5 +40,6 @@ namespace GfxLayer::Extension
 		unsigned m_width;
 		unsigned m_height;
 		std::optional<clock::time_point> m_flashStartTime;
+		bool m_clickHoldoff = false;
 	};
 }
