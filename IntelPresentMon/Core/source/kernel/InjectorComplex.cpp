@@ -45,7 +45,7 @@ namespace p2c::kern
 	{
 		std::lock_guard lk{ mtx_ };
 		if (IsActive(false) && targetModuleName_ != targetModuleName) {
-			pmlog_dbg("Writting new target name to injectors").pmwatch(targetModuleName.value_or(""s));
+			pmlog_dbg("Writing new target name to injectors").pmwatch(targetModuleName.value_or(""s));
 			targetModuleName_ = targetModuleName;
 			pInjector32_->ChangeTarget(targetModuleName);
 			pInjector64_->ChangeTarget(targetModuleName);
@@ -66,7 +66,7 @@ namespace p2c::kern
 			path.string(),
 			/* no args = */ std::vector<std::string>{},
 			bp2::windows::process_creation_flags<CREATE_NO_WINDOW>(),
-			bp2::process_stdio{ pipeIn_, pipeOut_, {} }
+			bp2::process_stdio{ pipeIn_, pipeOut_, nullptr }
 		);
 
 		// Start the listener thread; on stop request we'll call ioctx_.stop()
