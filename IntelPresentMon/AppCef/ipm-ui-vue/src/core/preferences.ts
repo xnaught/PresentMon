@@ -61,6 +61,7 @@ export interface Preferences {
     flashInjectionBackgroundColor:RgbaColor;
     flashInjectionRightShift:number;
     flashInjectionFlashDuration:number;
+    flashInjectionUseRainbow:boolean;
 };
 
 export function makeDefaultPreferences(): Preferences {
@@ -131,6 +132,7 @@ export function makeDefaultPreferences(): Preferences {
         },
         flashInjectionRightShift: 0.5,
         flashInjectionFlashDuration: 0.05,
+        flashInjectionUseRainbow: false,
     };
 }
 

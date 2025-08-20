@@ -57,7 +57,7 @@ namespace GfxLayer::Extension
 		}
 	}
 
-	void OverlayRenderer_D3D12::Render(bool renderBar)
+	void OverlayRenderer_D3D12::Render(bool renderBar, bool useRainbow)
 	{
 		float* pColor = m_config.BackgroundColor.data();
 		if (renderBar)

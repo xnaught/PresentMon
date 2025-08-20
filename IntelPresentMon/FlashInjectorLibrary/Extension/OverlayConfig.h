@@ -11,5 +11,6 @@ namespace GfxLayer::Extension
 		bool  RenderBackground = false;
 		std::array<float, 4> BackgroundColor = { 0.f, 0.f, 0.f, 1.f };
 		float FlashDuration = 0.05f;
+		bool UseRainbow = false;
 	};
 }

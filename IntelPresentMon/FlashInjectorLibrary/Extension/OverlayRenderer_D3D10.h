@@ -20,7 +20,7 @@ namespace GfxLayer::Extension
 		void										Resize(unsigned bufferCount, unsigned width, unsigned height) override;
 
 	protected:
-		void										Render(bool renderBar) override;
+		void										Render(bool renderBar, bool useRainbow) override;
 		// this is triggered both by Resize and by UpdateConfig
 		void			UpdateViewport(const OverlayConfig& cfg) override;
 		// called from Render when it is detected that config has changed (via IPC action)

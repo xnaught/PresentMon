@@ -4,6 +4,36 @@
 
 namespace GfxLayer::Extension
 {
+	HRESULT OverlayRenderer_D3D11::CreateBuffer_(UINT byteWidth,
+		D3D11_USAGE usage,
+		UINT bindFlags,
+		UINT cpuAccessFlags,
+		const void* initData,
+		ID3D11Buffer** ppBuffer)
+	{
+		D3D11_BUFFER_DESC desc{};
+		desc.Usage = usage;
+		desc.ByteWidth = byteWidth;
+		desc.BindFlags = bindFlags;
+		desc.CPUAccessFlags = cpuAccessFlags;
+		desc.MiscFlags = 0;
+
+		D3D11_SUBRESOURCE_DATA srd{};
+		const D3D11_SUBRESOURCE_DATA* pSRD = nullptr;
+		if (initData) { srd.pSysMem = initData; pSRD = &srd; }
+
+		return m_pDevice->CreateBuffer(&desc, pSRD, ppBuffer);
+	}
+
+	HRESULT OverlayRenderer_D3D11::CreateConstantBuffer_(const void* data,
+		UINT dataSizeBytes,
+		ID3D11Buffer** ppBuffer)
+	{
+		// Round up to 16-byte multiple
+		UINT cbSize = (dataSizeBytes + 15u) & ~15u;
+		return CreateBuffer_(cbSize, D3D11_USAGE_DEFAULT, D3D11_BIND_CONSTANT_BUFFER, 0, data, ppBuffer);
+	}
+
 	OverlayRenderer_D3D11::OverlayRenderer_D3D11(const OverlayConfig& config,
 		IDXGISwapChain3* pSwapChain, ID3D11Device* pDevice) :
 		OverlayRenderer(config, pSwapChain),
@@ -16,23 +46,42 @@ namespace GfxLayer::Extension
 	{
 		// background
 		{
-			const D3D11_SUBRESOURCE_DATA initData{ .pSysMem = config.BackgroundColor.data() };
-			D3D11_BUFFER_DESC bufferDesc{};
-			bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-			bufferDesc.ByteWidth = sizeof(config.BackgroundColor);
-			bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-			auto hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &m_pConstantBufferBackground);
+			auto hr = CreateConstantBuffer_(config.BackgroundColor.data(),
+				sizeof(config.BackgroundColor), &m_pConstantBufferBackground);
 			CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Background Constant Buffer)");
 		}
 		// flash
 		{
-			const D3D11_SUBRESOURCE_DATA initData{ .pSysMem = config.BarColor.data() };
-			D3D11_BUFFER_DESC bufferDesc{};
-			bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-			bufferDesc.ByteWidth = sizeof(config.BarColor);
-			bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-			auto hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &m_pConstantBufferBar);
+			auto hr = CreateConstantBuffer_(config.BarColor.data(),
+				sizeof(config.BarColor), &m_pConstantBufferBar);
 			CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Background Constant Buffer)");
+		}
+		// rainbow
+		if (m_rainbowConstantBufferPtrs.empty()) {
+			static constexpr std::array<std::array<float, 4>, 16> rainbowColors = { {
+				{{1.00f, 0.00f, 0.00f, 1.0f}}, // red
+				{{1.00f, 0.50f, 0.00f, 1.0f}}, // orange
+				{{1.00f, 1.00f, 0.00f, 1.0f}}, // yellow
+				{{0.75f, 1.00f, 0.00f, 1.0f}}, // chartreuse
+				{{0.00f, 1.00f, 0.00f, 1.0f}}, // green
+				{{0.00f, 1.00f, 0.60f, 1.0f}}, // spring green
+				{{0.00f, 1.00f, 1.00f, 1.0f}}, // cyan
+				{{0.00f, 0.60f, 1.00f, 1.0f}}, // azure
+				{{0.00f, 0.00f, 1.00f, 1.0f}}, // blue
+				{{0.40f, 0.00f, 1.00f, 1.0f}}, // indigo
+				{{0.60f, 0.00f, 1.00f, 1.0f}}, // violet
+				{{0.80f, 0.00f, 0.80f, 1.0f}}, // purple
+				{{1.00f, 0.00f, 1.00f, 1.0f}}, // magenta
+				{{1.00f, 0.00f, 0.60f, 1.0f}}, // rose
+				{{1.00f, 0.20f, 0.40f, 1.0f}}, // salmon
+				{{1.00f, 0.40f, 0.60f, 1.0f}}, // pink
+			} };
+			for (auto& color : rainbowColors) {
+				ComPtr<ID3D11Buffer> cb;
+				auto hr = CreateConstantBuffer_(color.data(), sizeof(color), &cb);
+				CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Rainbow Constant Buffer)");
+				m_rainbowConstantBufferPtrs.push_back(std::move(cb));
+			}
 		}
 	}
 
@@ -83,12 +132,20 @@ namespace GfxLayer::Extension
 		CheckResult(hr, "D3D11 - Failed to create ID3D11DeviceContext");
 	}
 
-	void OverlayRenderer_D3D11::Render(bool renderBar)
+	void OverlayRenderer_D3D11::Render(bool renderBar, bool useRainbow)
 	{
-		ID3D11Buffer* pConstantBuffer = m_pConstantBufferBackground.Get();
-		if (renderBar)
-		{
-			pConstantBuffer = m_pConstantBufferBar.Get();
+		ID3D11Buffer* pConstantBuffer = nullptr;
+		if (renderBar) {
+			if (useRainbow) {
+				const auto nRainbowColors = m_rainbowConstantBufferPtrs.size();
+				pConstantBuffer = m_rainbowConstantBufferPtrs[GetFlashFrameIndex() % nRainbowColors].Get();
+			}
+			else {
+				pConstantBuffer = m_pConstantBufferBar.Get();
+			}
+		}
+		else {
+			pConstantBuffer = m_pConstantBufferBackground.Get();
 		}
 
 		// Cache the render target view

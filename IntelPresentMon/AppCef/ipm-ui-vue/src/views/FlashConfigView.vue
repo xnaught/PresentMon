@@ -97,6 +97,16 @@ watch(
 
       <v-row class="mt-8">
         <v-col cols="3">
+          Rainbow Flash
+          <p class="text-medium-emphasis text-caption mb-0">Cycle through a rainbow of colors instead of using above flash color.</p>
+        </v-col>
+        <v-col cols="9">
+          <v-switch v-model="prefs.preferences.flashInjectionUseRainbow" label="Enable"></v-switch>
+        </v-col>
+      </v-row>
+
+      <v-row class="mt-8">
+        <v-col cols="3">
           Flash Width
           <p class="text-medium-emphasis text-caption mb-0">Width of the flash rectangle and background</p>
         </v-col>

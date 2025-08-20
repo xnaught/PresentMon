@@ -27,11 +27,13 @@ namespace GfxLayer::Extension
 		IDXGISwapChain3*		GetSwapChain() const;
 
 	protected:
-		virtual void			Render(bool renderBar) = 0;
+		virtual void			Render(bool renderBar, bool useRainbow) = 0;
 		// this is triggered both by Resize and by UpdateConfig
 		virtual void			UpdateViewport(const OverlayConfig& cfg) = 0;
 		// called from Render when it is detected that config has changed (via IPC action)
 		virtual void			UpdateConfig(const OverlayConfig& cfg) = 0;
+		// get frame number from start of flash -> used for rainbow
+		size_t GetFlashFrameIndex() const;
 
 	private:
 		using clock = std::chrono::high_resolution_clock;
@@ -41,5 +43,6 @@ namespace GfxLayer::Extension
 		unsigned m_height;
 		std::optional<clock::time_point> m_flashStartTime;
 		bool m_clickHoldoff = false;
+		size_t m_flashFrameIndex = 0;
 	};
 }

@@ -91,7 +91,7 @@ namespace GfxLayer::Extension
 		CheckResult(hr, "D3D10 - Failed to create ID3D10StateBlock");
 	}
 
-	void OverlayRenderer_D3D10::Render(bool renderBar)
+	void OverlayRenderer_D3D10::Render(bool renderBar, bool useRainbow)
 	{
 		ID3D10Buffer* pConstantBuffer = m_pConstantBufferBackground.Get();
 		if (renderBar)

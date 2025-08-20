@@ -61,6 +61,7 @@ namespace GfxLayer::Extension
 					m_flashStartTime = clock::now();
 					flashStartedThisFrame = true;
 					m_clickHoldoff = true;
+					m_flashFrameIndex = 0;
 				}
 			}
 			else {
@@ -68,12 +69,16 @@ namespace GfxLayer::Extension
 				m_clickHoldoff = false;
 			}
 		}
+		else {
+			// increment frame index for rainbow effect
+			m_flashFrameIndex++;
+		}
 		// if we have a flash start we might need to draw flash
 		if (m_flashStartTime) {
 			// draw flash if initiated this frame OR within flash duration
 			const std::chrono::duration<float> flashDuration{ m_currentConfig.FlashDuration };
 			if (flashStartedThisFrame || (clock::now() - *m_flashStartTime < flashDuration)) {
-				Render(true);
+				Render(true, m_currentConfig.UseRainbow);
 			}
 			else {
 				// reset flash time if duration lapsed
@@ -82,8 +87,13 @@ namespace GfxLayer::Extension
 		}
 		// if we're not in flash, we might need to draw background
 		if (!m_flashStartTime && m_currentConfig.RenderBackground) {
-			Render(false);
+			Render(false, m_currentConfig.UseRainbow);
 		}
+	}
+
+	size_t OverlayRenderer::GetFlashFrameIndex() const
+	{
+		return m_flashFrameIndex;
 	}
 }
 
