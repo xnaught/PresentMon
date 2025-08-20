@@ -52,7 +52,9 @@ namespace p2c::kern
 		}
 	}
 	InjectorComplex::InjectorModule_::InjectorModule_(bool is32Bit)
-		: pipeOut_(ioctx_), pipeIn_(ioctx_)
+		:
+		pipeOut_{ ioctx_ },
+		pipeIn_{ ioctx_ }
 	{
 		// Determine the correct injector executable
 		auto exe = is32Bit
@@ -86,21 +88,33 @@ namespace p2c::kern
 		if (injectionPointClient_) {
 			PushConfig_();
 		}
-	}
-	void InjectorComplex::InjectorModule_::ChangeTarget(std::optional<std::string> targetModuleName)
+	}void InjectorComplex::InjectorModule_::ChangeTarget(std::optional<std::string> targetModuleName)
 	{
-		// disconnect if connected to an injection point already (previous target)
+		// Drop any prior action client (as you had)
 		{
 			std::lock_guard lk{ actionClientMutex_ };
 			injectionPointClient_.reset();
 		}
 
-		// Format the new line into writeBuffer_
-		std::ostream{ &writeBuffer_ } << targetModuleName.value_or(""s) << std::endl;
-		// Issue async write into the child’s stdin pipe
-		as::async_write(pipeIn_, writeBuffer_, [this](boost::system::error_code ec, std::size_t bytes_transferred) {
+		// Build one message per call; child expects a newline for getline()
+		auto msg = targetModuleName.value_or(std::string{}) + "\n";
+
+		// Always hop to the io_context thread to ensure serialization and buffer (string) lifetime
+		as::post(ioctx_, [this, m = std::move(msg)] {
+			if (!pipeIn_.is_open()) {
+				pmlog_warn("Injector stdin is closed; cannot send target");
+				return;
+			}
+
+			boost::system::error_code ec;
+			const auto n = as::write(pipeIn_, as::buffer(m), ec);
 			if (ec) {
-				pmlog_error("Failed to write target name to injector");
+				// Common Windows pipe errors:
+				// 109 = ERROR_BROKEN_PIPE, 232 = ERROR_NO_DATA, 233 = ERROR_PIPE_NOT_CONNECTED
+				pmlog_error("Sync write to injector failed").pmwatch(ec.value());
+			}
+			else if (n != m.size()) {
+				pmlog_error("Short write to injector").pmwatch(n).pmwatch(m.size());
 			}
 		});
 	}
