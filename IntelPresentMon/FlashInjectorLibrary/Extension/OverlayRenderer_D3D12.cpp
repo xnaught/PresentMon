@@ -59,11 +59,19 @@ namespace GfxLayer::Extension
 
 	void OverlayRenderer_D3D12::Render(bool renderBar, bool useRainbow)
 	{
-		float* pColor = m_config.BackgroundColor.data();
-		if (renderBar)
-		{
-			pColor = m_config.BarColor.data();
+		const float* pColor = nullptr;
+		if (renderBar) {
+			if (useRainbow) {
+				pColor = GetRainbowColors().at(GetRainbowIndex()).data();
+			}
+			else {
+				pColor = m_config.BarColor.data();
+			}
 		}
+		else {
+			pColor = m_config.BackgroundColor.data();
+		}
+
 
 		auto backBufferIdx = GetSwapChain()->GetCurrentBackBufferIndex();
 		auto rtvHandle = m_RtvHeap->GetCPUDescriptorHandleForHeapStart();

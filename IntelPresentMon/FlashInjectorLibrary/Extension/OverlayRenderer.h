@@ -32,10 +32,33 @@ namespace GfxLayer::Extension
 		virtual void			UpdateViewport(const OverlayConfig& cfg) = 0;
 		// called from Render when it is detected that config has changed (via IPC action)
 		virtual void			UpdateConfig(const OverlayConfig& cfg) = 0;
-		// get frame number from start of flash -> used for rainbow
-		size_t GetFlashFrameIndex() const;
+		// get rainbow index for current flash frame
+		size_t GetRainbowIndex() const;
+		// get array of rainbow colors
+		static constexpr const std::array<std::array<float, 4>, 16>& GetRainbowColors()
+		{
+			return m_rainbowColors;
+		}
 
 	private:
+		static constexpr std::array<std::array<float, 4>, 16> m_rainbowColors = { {
+			{{1.00f, 0.00f, 0.00f, 1.0f}}, // red
+			{{1.00f, 0.50f, 0.00f, 1.0f}}, // orange
+			{{1.00f, 1.00f, 0.00f, 1.0f}}, // yellow
+			{{0.75f, 1.00f, 0.00f, 1.0f}}, // chartreuse
+			{{0.00f, 1.00f, 0.00f, 1.0f}}, // green
+			{{0.00f, 1.00f, 0.60f, 1.0f}}, // spring green
+			{{0.00f, 1.00f, 1.00f, 1.0f}}, // cyan
+			{{0.00f, 0.60f, 1.00f, 1.0f}}, // azure
+			{{0.00f, 0.00f, 1.00f, 1.0f}}, // blue
+			{{0.40f, 0.00f, 1.00f, 1.0f}}, // indigo
+			{{0.60f, 0.00f, 1.00f, 1.0f}}, // violet
+			{{0.80f, 0.00f, 0.80f, 1.0f}}, // purple
+			{{1.00f, 0.00f, 1.00f, 1.0f}}, // magenta
+			{{1.00f, 0.00f, 0.60f, 1.0f}}, // rose
+			{{1.00f, 0.20f, 0.40f, 1.0f}}, // salmon
+			{{1.00f, 0.40f, 0.60f, 1.0f}}, // pink
+		} };
 		using clock = std::chrono::high_resolution_clock;
 		OverlayConfig			m_currentConfig;
 		ComPtr<IDXGISwapChain3>	m_pSwapChain;

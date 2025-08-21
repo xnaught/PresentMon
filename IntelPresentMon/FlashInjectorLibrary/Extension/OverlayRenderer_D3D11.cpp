@@ -58,25 +58,7 @@ namespace GfxLayer::Extension
 		}
 		// rainbow
 		if (m_rainbowConstantBufferPtrs.empty()) {
-			static constexpr std::array<std::array<float, 4>, 16> rainbowColors = { {
-				{{1.00f, 0.00f, 0.00f, 1.0f}}, // red
-				{{1.00f, 0.50f, 0.00f, 1.0f}}, // orange
-				{{1.00f, 1.00f, 0.00f, 1.0f}}, // yellow
-				{{0.75f, 1.00f, 0.00f, 1.0f}}, // chartreuse
-				{{0.00f, 1.00f, 0.00f, 1.0f}}, // green
-				{{0.00f, 1.00f, 0.60f, 1.0f}}, // spring green
-				{{0.00f, 1.00f, 1.00f, 1.0f}}, // cyan
-				{{0.00f, 0.60f, 1.00f, 1.0f}}, // azure
-				{{0.00f, 0.00f, 1.00f, 1.0f}}, // blue
-				{{0.40f, 0.00f, 1.00f, 1.0f}}, // indigo
-				{{0.60f, 0.00f, 1.00f, 1.0f}}, // violet
-				{{0.80f, 0.00f, 0.80f, 1.0f}}, // purple
-				{{1.00f, 0.00f, 1.00f, 1.0f}}, // magenta
-				{{1.00f, 0.00f, 0.60f, 1.0f}}, // rose
-				{{1.00f, 0.20f, 0.40f, 1.0f}}, // salmon
-				{{1.00f, 0.40f, 0.60f, 1.0f}}, // pink
-			} };
-			for (auto& color : rainbowColors) {
+			for (auto& color : GetRainbowColors()) {
 				ComPtr<ID3D11Buffer> cb;
 				auto hr = CreateConstantBuffer_(color.data(), sizeof(color), &cb);
 				CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Rainbow Constant Buffer)");
@@ -97,8 +79,7 @@ namespace GfxLayer::Extension
 		hr = m_pDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, &m_pPixelShader);
 		CheckResult(hr, "D3D11 - Failed to create ID3D11PixelShader");
 
-		D3D11_INPUT_ELEMENT_DESC layout[] =
-		{
+		const D3D11_INPUT_ELEMENT_DESC layout[] = {
 			{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
 		};
 		hr = m_pDevice->CreateInputLayout(layout, 1, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), &m_pVertexLayout);
@@ -137,8 +118,7 @@ namespace GfxLayer::Extension
 		ID3D11Buffer* pConstantBuffer = nullptr;
 		if (renderBar) {
 			if (useRainbow) {
-				const auto nRainbowColors = m_rainbowConstantBufferPtrs.size();
-				pConstantBuffer = m_rainbowConstantBufferPtrs[GetFlashFrameIndex() % nRainbowColors].Get();
+				pConstantBuffer = m_rainbowConstantBufferPtrs[GetRainbowIndex()].Get();
 			}
 			else {
 				pConstantBuffer = m_pConstantBufferBar.Get();
@@ -152,8 +132,7 @@ namespace GfxLayer::Extension
 
 		auto* pSwapChain = GetSwapChain();
 		auto  idx = pSwapChain->GetCurrentBackBufferIndex();
-		if (!m_Rtvs[idx])
-		{
+		if (!m_Rtvs[idx]) {
 			ComPtr<ID3D11Texture2D> pBackBuffer = nullptr;
 			pSwapChain->GetBuffer(0, IID_PPV_ARGS(&pBackBuffer));
 			auto hr = m_pDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, &m_Rtvs[idx]);

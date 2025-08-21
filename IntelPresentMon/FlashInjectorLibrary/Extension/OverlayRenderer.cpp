@@ -91,9 +91,9 @@ namespace GfxLayer::Extension
 		}
 	}
 
-	size_t OverlayRenderer::GetFlashFrameIndex() const
+	size_t OverlayRenderer::GetRainbowIndex() const
 	{
-		return m_flashFrameIndex;
+		return m_flashFrameIndex % m_rainbowColors.size();
 	}
 }
 
