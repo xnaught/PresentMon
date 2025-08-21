@@ -122,7 +122,7 @@ namespace GfxLayer::Extension
 		CheckResult(hr, "D3D10 - Failed to create ID3D10StateBlock");
 	}
 
-	void OverlayRenderer_D3D10::Render(bool renderBar, bool useRainbow)
+	void OverlayRenderer_D3D10::Render(bool renderBar, bool useRainbow, bool enableBackground)
 	{
 		ID3D10Buffer* pConstantBuffer = nullptr;
 		if (renderBar) {
@@ -179,7 +179,7 @@ namespace GfxLayer::Extension
 
 	void OverlayRenderer_D3D10::UpdateViewport(const OverlayConfig& cfg)
 	{
-		auto rect = GetScissorRect();
+		auto rect = GetScissorRects().fg;
 		m_Viewport.TopLeftX = rect.left;
 		m_Viewport.TopLeftY = rect.top;
 		m_Viewport.Width = rect.right - rect.left;

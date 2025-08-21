@@ -19,7 +19,7 @@ namespace GfxLayer::Extension
 		void Resize(unsigned bufferCount, unsigned width, unsigned height) override;
 
 	protected:
-		void Render(bool renderBar, bool useRainbow) override;
+		void Render(bool renderBar, bool useRainbow, bool enableBackground) override;
 		// this is triggered both by Resize and by UpdateConfig
 		void UpdateViewport(const OverlayConfig& cfg) override;
 		// called from Render when it is detected that config has changed (via IPC action)
@@ -52,6 +52,7 @@ namespace GfxLayer::Extension
 		ComPtr<ID3D11PixelShader>					m_pPixelShader;
 		ComPtr<ID3D11InputLayout>					m_pVertexLayout;
 
-		D3D11_VIEWPORT								m_Viewport{};
+		D3D11_VIEWPORT								m_foregrountViewport{};
+		D3D11_VIEWPORT								m_backgroundViewport{};
 	};
 }

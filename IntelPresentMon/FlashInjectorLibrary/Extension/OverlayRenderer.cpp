@@ -21,15 +21,17 @@ namespace GfxLayer::Extension
 		m_pSwapChain(pSwapChain)
 	{}
 
-	RECT OverlayRenderer::GetScissorRect() const
+	ScissorRects OverlayRenderer::GetScissorRects() const
 	{
-		const float rectWidth = m_width * m_currentConfig.BarSize;
-		RECT scissor;
-		scissor.left = LONG((m_width - rectWidth) * m_currentConfig.BarRightShift);
-		scissor.top = 0;
-		scissor.right = LONG(scissor.left + rectWidth);
-		scissor.bottom = m_height;
-		return scissor;
+		const float wfg = m_width * m_currentConfig.BarSize;
+		const float wbg = m_width * m_currentConfig.BackgroundSize;
+		const float w = std::max(wfg, wbg);
+		const float c = (m_width - w) * m_currentConfig.BarRightShift + 0.5f * w;
+
+		ScissorRects r{};
+		r.fg = { LONG(c - 0.5f * wfg), 0, LONG(c - 0.5f * wfg + wfg), LONG(m_height) };
+		r.bg = { LONG(c - 0.5f * wbg), 0, LONG(c - 0.5f * wbg + wbg), LONG(m_height) };
+		return r;
 	}
 
 	IDXGISwapChain3* OverlayRenderer::GetSwapChain() const
@@ -78,7 +80,7 @@ namespace GfxLayer::Extension
 			// draw flash if initiated this frame OR within flash duration
 			const std::chrono::duration<float> flashDuration{ m_currentConfig.FlashDuration };
 			if (flashStartedThisFrame || (clock::now() - *m_flashStartTime < flashDuration)) {
-				Render(true, m_currentConfig.UseRainbow);
+				Render(true, m_currentConfig.UseRainbow, m_currentConfig.RenderBackground);
 			}
 			else {
 				// reset flash time if duration lapsed
@@ -87,7 +89,7 @@ namespace GfxLayer::Extension
 		}
 		// if we're not in flash, we might need to draw background
 		if (!m_flashStartTime && m_currentConfig.RenderBackground) {
-			Render(false, m_currentConfig.UseRainbow);
+			Render(false, m_currentConfig.UseRainbow, true);
 		}
 	}
 

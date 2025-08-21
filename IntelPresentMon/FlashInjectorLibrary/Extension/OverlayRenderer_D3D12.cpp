@@ -57,7 +57,7 @@ namespace GfxLayer::Extension
 		}
 	}
 
-	void OverlayRenderer_D3D12::Render(bool renderBar, bool useRainbow)
+	void OverlayRenderer_D3D12::Render(bool renderBar, bool useRainbow, bool enableBackground)
 	{
 		const float* pColor = nullptr;
 		if (renderBar) {
@@ -77,7 +77,7 @@ namespace GfxLayer::Extension
 		auto rtvHandle = m_RtvHeap->GetCPUDescriptorHandleForHeapStart();
 		rtvHandle.ptr = rtvHandle.ptr + (m_RtvDescriptorSize * backBufferIdx);
 
-		auto  scissorRect = GetScissorRect();
+		auto  scissorRect = GetScissorRects().fg;
 		auto* pCmdAllocator = m_CmdAllocators[backBufferIdx].Get();
 		auto* pCmdList = m_CmdLists[backBufferIdx].Get();
 		pCmdAllocator->Reset();

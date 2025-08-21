@@ -13,6 +13,12 @@ namespace GfxLayer::Extension
 {
 	void CheckResult(HRESULT result, const char* pMessage);
 
+	struct ScissorRects
+	{
+		RECT fg;
+		RECT bg;
+	};
+
 	class OverlayRenderer : public NonCopyable
 	{
 	public:
@@ -20,24 +26,34 @@ namespace GfxLayer::Extension
 		virtual ~OverlayRenderer() = default;
 
 		// called from a hook whenever the host is resizing its render targets
-		virtual void			Resize(unsigned bufferCount, unsigned width, unsigned height) = 0;
+		virtual void Resize(unsigned bufferCount, unsigned width, unsigned height) = 0;
 
-		void					NewFrame();
-		RECT					GetScissorRect() const;
-		IDXGISwapChain3*		GetSwapChain() const;
+		void NewFrame();
+		ScissorRects GetScissorRects() const;
+		IDXGISwapChain3* GetSwapChain() const;
 
 	protected:
-		virtual void			Render(bool renderBar, bool useRainbow) = 0;
+		virtual void Render(bool renderBar, bool useRainbow, bool enableBackground) = 0;
 		// this is triggered both by Resize and by UpdateConfig
-		virtual void			UpdateViewport(const OverlayConfig& cfg) = 0;
+		virtual void UpdateViewport(const OverlayConfig& cfg) = 0;
 		// called from Render when it is detected that config has changed (via IPC action)
-		virtual void			UpdateConfig(const OverlayConfig& cfg) = 0;
+		virtual void UpdateConfig(const OverlayConfig& cfg) = 0;
 		// get rainbow index for current flash frame
 		size_t GetRainbowIndex() const;
 		// get array of rainbow colors
 		static constexpr const std::array<std::array<float, 4>, 16>& GetRainbowColors()
 		{
 			return m_rainbowColors;
+		}
+		template<class T>
+		static T MakeViewport(const RECT& r)
+		{
+			return T{
+				.TopLeftX = FLOAT(r.left),
+				.TopLeftY = FLOAT(r.top),
+				.Width = FLOAT(r.right - r.left),
+				.Height = FLOAT(r.bottom - r.top),
+			};
 		}
 
 	private:

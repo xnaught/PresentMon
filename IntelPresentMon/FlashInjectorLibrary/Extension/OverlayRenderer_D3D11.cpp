@@ -113,21 +113,8 @@ namespace GfxLayer::Extension
 		CheckResult(hr, "D3D11 - Failed to create ID3D11DeviceContext");
 	}
 
-	void OverlayRenderer_D3D11::Render(bool renderBar, bool useRainbow)
+	void OverlayRenderer_D3D11::Render(bool renderBar, bool useRainbow, bool enableBackground)
 	{
-		ID3D11Buffer* pConstantBuffer = nullptr;
-		if (renderBar) {
-			if (useRainbow) {
-				pConstantBuffer = m_rainbowConstantBufferPtrs[GetRainbowIndex()].Get();
-			}
-			else {
-				pConstantBuffer = m_pConstantBufferBar.Get();
-			}
-		}
-		else {
-			pConstantBuffer = m_pConstantBufferBackground.Get();
-		}
-
 		// Cache the render target view
 
 		auto* pSwapChain = GetSwapChain();
@@ -146,16 +133,32 @@ namespace GfxLayer::Extension
 		UINT stride = sizeof(Quad::Vertex);
 		UINT offset = 0;
 
-		m_pDeferredContext->RSSetViewports(1, &m_Viewport);
+		// set common state
 		m_pDeferredContext->OMSetRenderTargets(1, &pRtv, nullptr);
 		m_pDeferredContext->IASetInputLayout(m_pVertexLayout.Get());
 		m_pDeferredContext->IASetVertexBuffers(0, 1, &pVertexBuffer, &stride, &offset);
 		m_pDeferredContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 		m_pDeferredContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		m_pDeferredContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
-		m_pDeferredContext->PSSetConstantBuffers(0, 1, &pConstantBuffer);
 		m_pDeferredContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
-		m_pDeferredContext->DrawIndexed(6, 0, 0);
+		// issue fg/bg draw calls
+		const auto Draw = [&](ID3D11Buffer* pConstantBuffer, const D3D11_VIEWPORT& vp) {
+			m_pDeferredContext->RSSetViewports(1, &vp);
+			m_pDeferredContext->PSSetConstantBuffers(0, 1, &pConstantBuffer);
+			m_pDeferredContext->DrawIndexed(6, 0, 0);
+		};
+		if (renderBar) {
+			if (enableBackground && m_backgroundViewport.Width > m_foregrountViewport.Width) {
+				Draw(m_pConstantBufferBackground.Get(), m_backgroundViewport);
+			}
+			Draw(useRainbow ?
+				m_rainbowConstantBufferPtrs[GetRainbowIndex()].Get() :
+				m_pConstantBufferBar.Get(),
+				m_foregrountViewport);
+		}
+		else {
+			Draw(m_pConstantBufferBackground.Get(), m_backgroundViewport);
+		}
 
 		// Finish recording and obtain a command list
 		
@@ -171,11 +174,9 @@ namespace GfxLayer::Extension
 
 	void OverlayRenderer_D3D11::UpdateViewport(const OverlayConfig& cfg)
 	{
-		auto rect = GetScissorRect();
-		m_Viewport.TopLeftX = FLOAT(rect.left);
-		m_Viewport.TopLeftY = FLOAT(rect.top);
-		m_Viewport.Width = FLOAT(rect.right - rect.left);
-		m_Viewport.Height = FLOAT(rect.bottom - rect.top);
+		const auto scissors = GetScissorRects();
+		m_foregrountViewport = MakeViewport<D3D11_VIEWPORT>(scissors.fg);
+		m_backgroundViewport = MakeViewport<D3D11_VIEWPORT>(scissors.bg);
 	}
 
 	void OverlayRenderer_D3D11::UpdateConfig(const OverlayConfig& cfg)
