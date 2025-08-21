@@ -4,6 +4,36 @@
 
 namespace GfxLayer::Extension
 {
+	HRESULT OverlayRenderer_D3D10::CreateBuffer_(UINT byteWidth,
+		D3D10_USAGE usage,
+		UINT bindFlags,
+		UINT cpuAccessFlags,
+		const void* initData,
+		ID3D10Buffer** ppBuffer)
+	{
+		D3D10_BUFFER_DESC desc{};
+		desc.Usage = usage;
+		desc.ByteWidth = byteWidth;
+		desc.BindFlags = bindFlags;
+		desc.CPUAccessFlags = cpuAccessFlags;
+		desc.MiscFlags = 0;
+
+		D3D10_SUBRESOURCE_DATA srd{};
+		const D3D10_SUBRESOURCE_DATA* pSRD = nullptr;
+		if (initData) { srd.pSysMem = initData; pSRD = &srd; }
+
+		return m_pDevice->CreateBuffer(&desc, pSRD, ppBuffer);
+	}
+
+	HRESULT OverlayRenderer_D3D10::CreateConstantBuffer_(const void* data,
+		UINT dataSizeBytes,
+		ID3D10Buffer** ppBuffer)
+	{
+		// Round up to 16-byte multiple
+		UINT cbSize = (dataSizeBytes + 15u) & ~15u;
+		return CreateBuffer_(cbSize, D3D10_USAGE_DEFAULT, D3D10_BIND_CONSTANT_BUFFER, 0, data, ppBuffer);
+	}
+
 	OverlayRenderer_D3D10::OverlayRenderer_D3D10(const OverlayConfig& config, IDXGISwapChain3* pSwapChain, ID3D10Device* pDevice):
 		OverlayRenderer(config, pSwapChain),
 		m_pDevice(pDevice)
@@ -15,23 +45,24 @@ namespace GfxLayer::Extension
 	{
 		// background
 		{
-			const D3D10_SUBRESOURCE_DATA initData{ .pSysMem = config.BackgroundColor.data() };
-			D3D10_BUFFER_DESC bufferDesc{};
-			bufferDesc.Usage = D3D10_USAGE_DEFAULT;
-			bufferDesc.ByteWidth = sizeof(config.BackgroundColor);
-			bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-			auto hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &m_pConstantBufferBackground);
-			CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Background Constant Buffer)");
+			auto hr = CreateConstantBuffer_(config.BackgroundColor.data(),
+				sizeof(config.BackgroundColor), &m_pConstantBufferBackground);
+			CheckResult(hr, "D3D10 - Failed to create ID3D10Buffer (Background Constant Buffer)");
 		}
 		// flash
 		{
-			const D3D10_SUBRESOURCE_DATA initData{ .pSysMem = config.BarColor.data() };
-			D3D10_BUFFER_DESC bufferDesc{};
-			bufferDesc.Usage = D3D10_USAGE_DEFAULT;
-			bufferDesc.ByteWidth = sizeof(config.BarColor);
-			bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-			auto hr = m_pDevice->CreateBuffer(&bufferDesc, &initData, &m_pConstantBufferBar);
-			CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Background Constant Buffer)");
+			auto hr = CreateConstantBuffer_(config.BarColor.data(),
+				sizeof(config.BarColor), &m_pConstantBufferBar);
+			CheckResult(hr, "D3D10 - Failed to create ID3D10Buffer (Background Constant Buffer)");
+		}
+		// rainbow
+		if (m_rainbowConstantBufferPtrs.empty()) {
+			for (auto& color : GetRainbowColors()) {
+				ComPtr<ID3D10Buffer> cb;
+				auto hr = CreateConstantBuffer_(color.data(), sizeof(color), &cb);
+				CheckResult(hr, "D3D10 - Failed to create ID3D10Buffer (Rainbow Constant Buffer)");
+				m_rainbowConstantBufferPtrs.push_back(std::move(cb));
+			}
 		}
 	}
 
@@ -93,10 +124,17 @@ namespace GfxLayer::Extension
 
 	void OverlayRenderer_D3D10::Render(bool renderBar, bool useRainbow)
 	{
-		ID3D10Buffer* pConstantBuffer = m_pConstantBufferBackground.Get();
-		if (renderBar)
-		{
-			pConstantBuffer = m_pConstantBufferBar.Get();
+		ID3D10Buffer* pConstantBuffer = nullptr;
+		if (renderBar) {
+			if (useRainbow) {
+				pConstantBuffer = m_rainbowConstantBufferPtrs[GetRainbowIndex()].Get();
+			}
+			else {
+				pConstantBuffer = m_pConstantBufferBar.Get();
+			}
+		}
+		else {
+			pConstantBuffer = m_pConstantBufferBackground.Get();
 		}
 
 		// Capture the current state
