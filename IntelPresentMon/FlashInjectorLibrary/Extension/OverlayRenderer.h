@@ -49,10 +49,10 @@ namespace GfxLayer::Extension
 		static T MakeViewport(const RECT& r)
 		{
 			return T{
-				.TopLeftX = FLOAT(r.left),
-				.TopLeftY = FLOAT(r.top),
-				.Width = FLOAT(r.right - r.left),
-				.Height = FLOAT(r.bottom - r.top),
+				.TopLeftX = decltype(std::declval<T>().TopLeftX)(r.left),
+				.TopLeftY = decltype(std::declval<T>().TopLeftY)(r.top),
+				.Width = decltype(std::declval<T>().Width)(r.right - r.left),
+				.Height = decltype(std::declval<T>().Height)(r.bottom - r.top),
 			};
 		}
 

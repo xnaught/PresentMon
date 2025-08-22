@@ -53,6 +53,7 @@ namespace GfxLayer::Extension
 		ComPtr<ID3D10InputLayout>					m_pVertexLayout;
 		ComPtr<ID3D10StateBlock>					m_pStateBlock;
 
-		D3D10_VIEWPORT								m_Viewport{};
+		D3D10_VIEWPORT								m_foregrountViewport{};
+		D3D10_VIEWPORT								m_backgroundViewport{};
 	};
 }

@@ -124,19 +124,6 @@ namespace GfxLayer::Extension
 
 	void OverlayRenderer_D3D10::Render(bool renderBar, bool useRainbow, bool enableBackground)
 	{
-		ID3D10Buffer* pConstantBuffer = nullptr;
-		if (renderBar) {
-			if (useRainbow) {
-				pConstantBuffer = m_rainbowConstantBufferPtrs[GetRainbowIndex()].Get();
-			}
-			else {
-				pConstantBuffer = m_pConstantBufferBar.Get();
-			}
-		}
-		else {
-			pConstantBuffer = m_pConstantBufferBackground.Get();
-		}
-
 		// Capture the current state
 
 		m_pStateBlock->Capture();
@@ -160,17 +147,33 @@ namespace GfxLayer::Extension
 		UINT stride = sizeof(Quad::Vertex);
 		UINT offset = 0;
 
+		// set common state
 		m_pDevice->ClearState();
-		m_pDevice->RSSetViewports(1, &m_Viewport);
 		m_pDevice->OMSetRenderTargets(1, &pRtv, nullptr);
 		m_pDevice->IASetInputLayout(m_pVertexLayout.Get());
 		m_pDevice->IASetVertexBuffers(0, 1, &pVertexBuffer, &stride, &offset);
 		m_pDevice->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 		m_pDevice->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		m_pDevice->VSSetShader(m_pVertexShader.Get());
-		m_pDevice->PSSetConstantBuffers(0, 1, &pConstantBuffer);
 		m_pDevice->PSSetShader(m_pPixelShader.Get());
-		m_pDevice->DrawIndexed(6, 0, 0);
+		// issue fg/bg draw calls
+		const auto Draw = [&](ID3D10Buffer* pConstantBuffer, const D3D10_VIEWPORT& vp) {
+			m_pDevice->RSSetViewports(1, &vp);
+			m_pDevice->PSSetConstantBuffers(0, 1, &pConstantBuffer);
+			m_pDevice->DrawIndexed(6, 0, 0);
+		};
+		if (renderBar) {
+			if (enableBackground && m_backgroundViewport.Width > m_foregrountViewport.Width) {
+				Draw(m_pConstantBufferBackground.Get(), m_backgroundViewport);
+			}
+			Draw(useRainbow ?
+				m_rainbowConstantBufferPtrs[GetRainbowIndex()].Get() :
+				m_pConstantBufferBar.Get(),
+				m_foregrountViewport);
+		}
+		else {
+			Draw(m_pConstantBufferBackground.Get(), m_backgroundViewport);
+		}
 
 		// Restore the previous state
 
@@ -179,11 +182,9 @@ namespace GfxLayer::Extension
 
 	void OverlayRenderer_D3D10::UpdateViewport(const OverlayConfig& cfg)
 	{
-		auto rect = GetScissorRects().fg;
-		m_Viewport.TopLeftX = rect.left;
-		m_Viewport.TopLeftY = rect.top;
-		m_Viewport.Width = rect.right - rect.left;
-		m_Viewport.Height = rect.bottom - rect.top;
+		const auto scissors = GetScissorRects();
+		m_foregrountViewport = MakeViewport<D3D10_VIEWPORT>(scissors.fg);
+		m_backgroundViewport = MakeViewport<D3D10_VIEWPORT>(scissors.bg);
 	}
 
 	void OverlayRenderer_D3D10::UpdateConfig(const OverlayConfig& cfg)
