@@ -17,7 +17,7 @@
         
         <MediaTemplate EmbedCab="yes" />
 
-        <?define console_app_ver = 2.3.1 ?>
+        <?define console_app_ver = 2.4.0 ?>
         <?define console_app_path = $(pm.GetConsoleAppPath($(var.SolutionDir), $(var.console_app_ver))) ?>
         <?define console_app_filename = $(pm.GetConsoleAppFileName($(var.console_app_ver))) ?>
         <?define has_console_app = $(pm.CheckFileExists($(var.console_app_path))) ?>
