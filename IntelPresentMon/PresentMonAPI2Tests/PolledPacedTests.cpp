@@ -256,12 +256,12 @@ namespace PacedPollingTests
 		}
 		TEST_METHOD(PollDynamic)
 		{
-			const uint32_t targetPid = 14580;
+			const uint32_t targetPid = 12820;
 			const auto recordingStart = 1s;
-			const auto recordingStop = 22s;
+			const auto recordingStop = 14s;
 
 			const auto pipeName = R"(\\.\pipe\pm-poll-test-act)"s;
-			const auto etlName = "hea-win.etl"s;
+			const auto etlName = "Heaven-win-vsync-2080ti.etl"s;
 			const auto goldCsvPath = R"(..\..\Tests\PacedGold\polled_gold.csv)"s;
 			const auto outputBasePath = R"(PacedTest\Polled1\)"s;
 			const auto toleranceFactor = 0.02;
@@ -341,8 +341,6 @@ namespace PacedPollingTests
 				}
 			};
 
-			Run(1);
-
 			// compare all runs against gold if exists
 			if (std::filesystem::exists(goldCsvPath)) {
 				std::vector<std::vector<MetricCompareResult>> allResults;
@@ -386,18 +384,27 @@ namespace PacedPollingTests
 					}
 					return nFail;
 				};
+				// first attempt to compare single run against gold
+				Run(1);
 				DoComparison();
 				if (ValidateAndWriteAggregateResults() == 0) {
 					Logger::WriteMessage("One-shot success");
 				}
 				else {
-					Run(9);
+					// first single run fails, run N times and see if enough pass to seem plausible
+					allResults.clear();
+					const int nRuns = 9;
+					Run(nRuns);
 					DoComparison();
 					const auto nFail = ValidateAndWriteAggregateResults();
-					Assert::IsTrue(nFail < 6, std::format(L"Failed [{}] runs", nFail).c_str());
+					Assert::IsTrue(nFail < (int)std::roundf(nRuns * 0.667f),
+						std::format(L"Failed [{}] runs (of {})", nFail, nRuns).c_str());
+					Logger::WriteMessage(std::format(L"Retry success (failed [{}] of [{}])", nFail, nRuns).c_str());
 				}
 			}
 			else { // if gold doesn't exist, do cartesian product comparison of all
+				const int nRuns = 9;
+				Run(nRuns);
 				std::vector<size_t> mismatchTotals(allRuns.size(), 0);
 				for (size_t iA = 0; iA < allRuns.size(); ++iA) {
 					for (size_t iB = iA + 1; iB < allRuns.size(); ++iB) {
@@ -423,6 +430,9 @@ namespace PacedPollingTests
 				for (size_t i = 0; i < mismatchTotals.size(); ++i) {
 					aggWriter << std::make_tuple(i, mismatchTotals[i]);
 				}
+				// hardcode a fail because this execution path requires analysis and
+				// selection of a gold result to lock in
+				Assert::IsTrue(false, L"Run complete, analysis is required to select gold result.");
 			}
 		}
 	};
