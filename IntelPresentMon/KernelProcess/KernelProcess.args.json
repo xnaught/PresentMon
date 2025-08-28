@@ -86,7 +86,7 @@
     },
     {
       "Id": "04169744-d7a6-46e6-a1dd-ec3854547dcd",
-      "Command": "--help"
+      "Command": "test --help"
     },
     {
       "Id": "0a44a142-1ca4-4e76-9632-bad6e9e845ff",

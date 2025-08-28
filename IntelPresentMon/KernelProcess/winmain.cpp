@@ -19,6 +19,7 @@
 #include <boost/process/v2/windows/as_user_launcher.hpp>
 #include <array>
 #include <ranges>
+#include <iostream>
 
 
 using namespace pmon;
@@ -58,6 +59,27 @@ namespace kproc
 		// data
 		KernelServer& server_;
 	};
+
+	bool TryAttachToParentConsole_()
+	{
+		if (AttachConsole(ATTACH_PARENT_PROCESS)) {
+			// Rebind stdout/stderr to the console
+			FILE* f;
+			freopen_s(&f, "CONOUT$", "w", stdout);
+			freopen_s(&f, "CONOUT$", "w", stderr);
+			return true;
+		}
+		return false;
+	}
+
+	void AllocAndBindConsole_()
+	{
+		AllocConsole();
+		FILE* f;
+		freopen_s(&f, "CONOUT$", "w", stdout);
+		freopen_s(&f, "CONOUT$", "w", stderr);
+		freopen_s(&f, "CONIN$", "r", stdin);
+	}
 }
 
 int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
@@ -75,8 +97,18 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		// parse the command line arguments and make them globally available
 		if (auto err = cli::Options::Init(__argc, __argv, true)) {
 			if (*err == 0) {
-				MessageBoxA(nullptr, cli::Options::GetDiagnostics().c_str(), "Command Line Help",
-					MB_ICONINFORMATION | MB_APPLMODAL | MB_SETFOREGROUND);
+				// we don't have a console connection by default, so get one
+				const bool fromTerminal = TryAttachToParentConsole_();
+				if (!fromTerminal) {
+					AllocAndBindConsole_();
+				}
+				std::cout << cli::Options::GetDiagnostics() << std::endl;
+				std::cout << "Scroll up to see full help." << std::endl;
+				// if we're not run from terminal, make sure created console does not close immediately
+				if (!fromTerminal) {
+					std::cout << "Press <ENTER> to continue...";
+					std::cin.get();
+				}
 			}
 			else {
 				MessageBoxA(nullptr, cli::Options::GetDiagnostics().c_str(), "Command Line Parse Error",
