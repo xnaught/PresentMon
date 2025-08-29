@@ -125,6 +125,9 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			pmLoaderSetPathToMiddlewareDll_(path->c_str());
 		}
 
+		// test logging for subcommands feature
+		pmlog_info("Checking CLI subcommand operation").pmwatch(opt.subcTest_.Active());
+
 		// create logging system and ensure cleanup before main ext
 		LogChannelManager zLogMan_;
 

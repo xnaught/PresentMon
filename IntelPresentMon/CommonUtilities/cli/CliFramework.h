@@ -40,7 +40,7 @@ namespace pmon::util::cli
 		std::vector<std::pair<std::string, std::string>> GetForwardedOptions() const;
 	private:
 		void AddGroup_(std::string name, std::string desc);
-		void AddSubcommand_(std::string name, std::string desc);
+		CLI::App* AddSubcommand_(std::string name, std::string desc);
 		void RegisterElement_(OptionsElement_* pElement);
 	protected:
 		// types
@@ -232,8 +232,8 @@ namespace pmon::util::cli
 		void SetForwarding_(OptionsElement_& el, bool forwarding = false) { el.forwarding_ = forwarding; }
 		void AddGroup_(OptionsContainer& con, std::string name, std::string desc = {}) {
 			con.AddGroup_(std::move(name), std::move(desc)); }
-		void AddSubcommand_(OptionsContainer& con, std::string name, std::string desc = {}) {
-			con.AddSubcommand_(std::move(name), std::move(desc)); }
+		const CLI::App* AddSubcommand_(OptionsContainer& con, std::string name, std::string desc = {}) {
+			return con.AddSubcommand_(std::move(name), std::move(desc)); }
 	};
 
 	class MutualExclusion : RuleBase_
@@ -314,8 +314,17 @@ namespace pmon::util::cli
 	public:
 		Subcommand(OptionsContainer* pCon, std::string name, std::string desc = {})
 		{
-			AddSubcommand_(*pCon, std::move(name), std::move(desc));
+			pSubcommand_ = AddSubcommand_(*pCon, std::move(name), std::move(desc));
 		}
+		bool Active() const
+		{
+			if (pSubcommand_) {
+				return pSubcommand_->parsed();
+			}
+			return false;
+		}
+	private:
+		const CLI::App* pSubcommand_ = nullptr;
 	};
 
 	class SilentGroup : RuleBase_

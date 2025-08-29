@@ -74,9 +74,10 @@ namespace pmon::util::cli
 			pCurrentSubcommand_->add_option_group(std::move(name), std::move(desc));
 		}
 	}
-	void OptionsContainer::AddSubcommand_(std::string name, std::string desc)
+	CLI::App* OptionsContainer::AddSubcommand_(std::string name, std::string desc)
 	{
 		pCurrentSubcommand_ = app_.add_subcommand(std::move(name), std::move(desc));
+		return pCurrentSubcommand_;
 	}
 	void OptionsContainer::RegisterElement_(OptionsElement_* pElement)
 	{

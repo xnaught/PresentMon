@@ -44,7 +44,7 @@ namespace p2c::cli
 	private: Group gi_{ this, "Internal", "Internal options, do not supply manually"}; public:
 		Option<std::string> middlewareDllPath{ this, "--middleware-dll-path", "", "Override middleware DLL path discovery with custom path" };
 
-	private: Subcommand tsu_{ this, "test", "Testing subcommand feature" }; public:
+	Subcommand subcTest_{ this, "test", "Testing subcommand feature" }; public:
 	private: Group tsg_{ this, "Standard", "Standard options for test subcommand" }; public:
 		Flag testFlagMe{ this, "--test,-t", "Testing a flag" };
 	
