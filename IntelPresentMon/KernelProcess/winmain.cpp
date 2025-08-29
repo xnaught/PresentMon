@@ -144,11 +144,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		// launch the service as a child process if desired (typically during development)
 		const auto logSvcPipe = opt.logSvcPipe.AsOptional().value_or(
 			std::format("pm2-child-svc-log-{}", GetCurrentProcessId()));
-		as::io_context svcIoctx;
+		as::io_context ioctx;
 		std::optional<bp2::basic_process<as::io_context::executor_type>> svcChild;
 		if (opt.svcAsChild) {
 			svcChild = bp2::windows::default_launcher{}(
-				svcIoctx, "PresentMonService.exe"s, std::vector{
+				ioctx, "PresentMonService.exe"s, std::vector{
 				"--control-pipe"s, *opt.controlPipe,
 				"--nsm-prefix"s, "pm-frame-nsm"s,
 				"--intro-nsm"s, *opt.shmName,
@@ -236,15 +236,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			"--p2c-log-pipe-name"s, cefLogPipe
 		}); 
 		// launch the CEF browser process, which in turn launches all the other processes in the CEF process constellation
-		// TODO: can we use a single ioctx for all child processes?
-		boost::asio::io_context cefIoctx;
 		auto cefChild = [&] {
 			if (util::win::WeAreElevated()) {
 				try {
 					pmlog_info("detected elevation, attempting integrity downgrade");
 					auto mediumTokenPack = util::win::PrepareMediumIntegrityToken();
 					return bp2::windows::as_user_launcher{ mediumTokenPack.hMediumToken.Get() }(
-						cefIoctx, "PresentMonUI.exe"s, args
+						ioctx, "PresentMonUI.exe"s, args
 					);
 				}
 				catch (...) {
@@ -252,7 +250,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				}
 			}
 			return bp2::windows::default_launcher{}(
-				cefIoctx, "PresentMonUI.exe"s, args
+				ioctx, "PresentMonUI.exe"s, args
 			);
 		}(); 
 
