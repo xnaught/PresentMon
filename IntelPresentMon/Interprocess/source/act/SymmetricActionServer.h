@@ -26,13 +26,14 @@ namespace pmon::ipc::act
         using SessionContextType = typename ExecCtx::SessionContextType;
     public:
         SymmetricActionServer(ExecCtx context, std::string basePipeName,
-            uint32_t reservedPipeInstanceCount, std::string securityString)
+            uint32_t reservedPipeInstanceCount, std::string securityString, bool allowConnectionlessSend = false)
             :
             reservedPipeInstanceCount_{ reservedPipeInstanceCount },
             basePipeName_{ std::move(basePipeName) },
             security_{ std::move(securityString) },
             ctx_{ std::move(context) },
-            worker_{ std::format("symact-{}-srv", MakeWorkerName_(basePipeName_)), &SymmetricActionServer::Run_, this}
+            worker_{ std::format("symact-{}-srv", MakeWorkerName_(basePipeName_)), &SymmetricActionServer::Run_, this},
+            allowConnectionlessSend_{ allowConnectionlessSend }
         {
             assert(reservedPipeInstanceCount_ > 0);
         }
@@ -49,16 +50,30 @@ namespace pmon::ipc::act
         {
             assert(IsRunning());
             // TODO: server needs an actual way to specify which client endpoint to transmit to
+            if (sessions_.empty()) {
+                if (allowConnectionlessSend_) {
+                    return ResponseFromParams<Params>{};
+                }
+                assert(false && "Server attempting to send when no client is connected");
+                pmlog_error("Server attempting to send when no client is connected");
+            }
             auto& stx = sessions_.begin()->second;
             return stx.pConn->DispatchSync(std::forward<Params>(params), ioctx_, stx);
         }
         template<class Params>
-        auto DispatchDetached(Params&& params)
+        void DispatchDetached(Params&& params)
         {
             assert(IsRunning());
             // TODO: server needs an actual way to specify which client endpoint to transmit to
+            if (sessions_.empty()) {
+                if (allowConnectionlessSend_) {
+                    return;
+                }
+                assert(false && "Server attempting to send when no client is connected");
+                pmlog_error("Server attempting to send when no client is connected");
+            }
             auto& stx = sessions_.begin()->second;
-            return stx.pConn->DispatchDetached(std::forward<Params>(params), ioctx_, stx);
+            stx.pConn->DispatchDetached(std::forward<Params>(params), ioctx_, stx);
         }
         bool IsRunning() const
         {
@@ -150,6 +165,7 @@ namespace pmon::ipc::act
             return remotePid;
         }
         // data
+        bool allowConnectionlessSend_ = false;
         uint32_t reservedPipeInstanceCount_;
         std::string basePipeName_;
         std::string security_;

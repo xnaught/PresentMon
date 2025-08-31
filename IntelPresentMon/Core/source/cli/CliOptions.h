@@ -44,9 +44,9 @@ namespace p2c::cli
 	private: Group gi_{ this, "Internal", "Internal options, do not supply manually"}; public:
 		Option<std::string> middlewareDllPath{ this, "--middleware-dll-path", "", "Override middleware DLL path discovery with custom path" };
 
-	Subcommand subcTest_{ this, "test", "Testing subcommand feature" }; public:
-	private: Group tsg_{ this, "Standard", "Standard options for test subcommand" }; public:
-		Flag testFlagMe{ this, "--test,-t", "Testing a flag" };
+	Subcommand subcCapture{ this, "capture", "Perform headless capture of frame event data to .csv" }; public:
+	private: Group gcaps_{ this, "Standard", "Standard options for the capture subcommand" }; public:
+		Option<uint32_t> capPid{ this, "--pid", 0, "PID of the process to track" };
 	
 
 		static constexpr const char* description = "PresentMon performance overlay and trace capture application";

@@ -114,7 +114,11 @@
     },
     {
       "Id": "01098f07-6207-4778-b3e6-911bd3d5444b",
-      "Command": "test"
+      "Command": "capture"
+    },
+    {
+      "Id": "05f54862-3aec-41de-a6fc-d8414c6337f7",
+      "Command": "--pid 10212"
     }
   ]
 }

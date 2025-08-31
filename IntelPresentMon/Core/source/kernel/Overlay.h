@@ -40,6 +40,7 @@ namespace p2c::kern
             std::shared_ptr<OverlaySpec> pSpec_, 
             pmon::PresentMon* pm_,
             std::unique_ptr<MetricPackMapper> pPackMapper_,
+            bool headless,
             std::optional<gfx::Vec2I> pos = {});
         ~Overlay();
         void UpdateTargetRect(const gfx::RectI& newRect);
@@ -57,6 +58,7 @@ namespace p2c::kern
         std::unique_ptr<Overlay> SacrificeClone(std::optional<HWND> hWnd_ = {}, std::shared_ptr<OverlaySpec> pSpec_ = {});
         std::unique_ptr<Overlay> RetargetPidClone(::pmon::util::win::Process proc_);
         const gfx::RectI& GetTargetRect() const;
+        bool IsHeadless() const;
     private:
         // functions
         void AdjustOverlaySituation_(OverlaySpec::OverlayPosition position);
@@ -112,7 +114,7 @@ namespace p2c::kern
         gfx::RectI targetRect;
         std::atomic<bool> targetFullscreen;
         std::unique_ptr<win::KernelWindow> pWindow;
-        gfx::Graphics gfx;
+        std::unique_ptr<gfx::Graphics> pGfx;
         std::shared_ptr<gfx::lay::Element> pRoot;
         std::shared_ptr<pmon::RawFrameDataWriter> pWriter;
         std::shared_ptr<gfx::lay::TextElement> pCaptureIndicatorText;
@@ -120,5 +122,6 @@ namespace p2c::kern
         bool hideDuringCapture;
         bool hideAlways;
         std::optional<std::chrono::high_resolution_clock::time_point> lastMoveTime;
+        bool headless;
     };
 }

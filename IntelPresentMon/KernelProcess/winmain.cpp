@@ -125,14 +125,14 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			pmLoaderSetPathToMiddlewareDll_(path->c_str());
 		}
 
-		// test logging for subcommands feature
-		pmlog_info("Checking CLI subcommand operation").pmwatch(opt.subcTest_.Active());
-
 		// create logging system and ensure cleanup before main ext
 		LogChannelManager zLogMan_;
 
 		// configure the logging system (partially based on command line options)
 		ConfigureLogging();
+
+		// determine if we're running headless
+		const bool headless = opt.subcCapture.Active();
 
 		// set the app id so that windows get grouped
 		// TODO: verify operation when multiple app instances running concurrently
@@ -192,7 +192,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		// this server receives a connection from the CEF render process
 		const auto actName = std::format(R"(\\.\pipe\ipm-cef-channel-{})", GetCurrentProcessId());
 		KernelServer server{ kact::KernelExecutionContext{ .ppKernel = &pKernel, .pHotkeys = &hotkeys },
-			actName, 1, "D:(A;;GA;;;WD)S:(ML;;NW;;;ME)" };
+			actName, 1, "D:(A;;GA;;;WD)S:(ML;;NW;;;ME)", headless };
 		// set the hotkey manager to send notifications via the action server
 		hotkeys.SetHandler([&](int action) {
 			server.DispatchDetached(p2c::client::util::cact::HotkeyFiredAction::Params{ .actionId = action });
@@ -200,65 +200,81 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		// this handler receives events from the kernel and transmits them to the render process via the server
 		KernelHandler kernHandler{ server };
 		// the kernel manages the PresentMon data collection and the overlay rendering
-		p2c::kern::Kernel kernel{ &kernHandler };
+		p2c::kern::Kernel kernel{ &kernHandler, headless };
 		// new we set this pointer, giving the server access to the Kernel
 		pKernel = &kernel;
 
-		// compose optional cli args for cef process tree
-		auto args = std::vector<std::string>{
-			opt.filesWorking ? "--p2c-files-working"s : ""s,
-			opt.traceExceptions ? "--p2c-trace-exceptions"s : ""s,
-			opt.logFolder ? "--p2c-log-folder"s : "", *opt.logFolder,
-		} | vi::filter(std::not_fn(&std::string::empty)) | rn::to<std::vector>();
-		bool allOriginsAllowed = false;
-		for (auto& f : *opt.uiFlags) {
-			if (f == "enable-chromium-debug") {
-				// needed in order to connect Chrome debuggers to CEF
-				args.push_back("--remote-allow-origins=*");
-				allOriginsAllowed = true;
+		if (!headless) {
+			// compose optional cli args for cef process tree
+			auto args = std::vector<std::string>{
+				opt.filesWorking ? "--p2c-files-working"s : ""s,
+				opt.traceExceptions ? "--p2c-trace-exceptions"s : ""s,
+				opt.logFolder ? "--p2c-log-folder"s : "", *opt.logFolder,
+			} | vi::filter(std::not_fn(&std::string::empty)) | rn::to<std::vector>();
+			bool allOriginsAllowed = false;
+			for (auto& f : *opt.uiFlags) {
+				if (f == "enable-chromium-debug") {
+					// needed in order to connect Chrome debuggers to CEF
+					args.push_back("--remote-allow-origins=*");
+					allOriginsAllowed = true;
+				}
+				args.push_back("--p2c-" + f);
 			}
-			args.push_back("--p2c-" + f);
-		}
-		for (auto& o : *opt.uiOptions) {
-			if (o.first == "url" && is_debug && !allOriginsAllowed) {
-				// needed in order to connect Chrome debuggers to CEF
-				args.push_back("--remote-allow-origins=*");
+			for (auto& o : *opt.uiOptions) {
+				if (o.first == "url" && is_debug && !allOriginsAllowed) {
+					// needed in order to connect Chrome debuggers to CEF
+					args.push_back("--remote-allow-origins=*");
+				}
+				args.push_back("--p2c-" + o.first);
+				args.push_back(o.second);
 			}
-			args.push_back("--p2c-" + o.first);
-			args.push_back(o.second);
-		}
-		const auto cefLogPipe = std::format("pm-ui-log-{}", GetCurrentProcessId());
-		// add fixed CLI options to the args vector
-		args.append_range(std::vector{
-			"--p2c-log-level"s, util::log::GetLevelName(*opt.logLevel),
-			"--p2c-log-trace-level"s, util::log::GetLevelName(*opt.logTraceLevel),
-			"--p2c-act-name"s, actName,
-			"--p2c-log-pipe-name"s, cefLogPipe
-		}); 
-		// launch the CEF browser process, which in turn launches all the other processes in the CEF process constellation
-		auto cefChild = [&] {
-			if (util::win::WeAreElevated()) {
-				try {
-					pmlog_info("detected elevation, attempting integrity downgrade");
-					auto mediumTokenPack = util::win::PrepareMediumIntegrityToken();
-					return bp2::windows::as_user_launcher{ mediumTokenPack.hMediumToken.Get() }(
-						ioctx, "PresentMonUI.exe"s, args
+			const auto cefLogPipe = std::format("pm-ui-log-{}", GetCurrentProcessId());
+			// add fixed CLI options to the args vector
+			args.append_range(std::vector{
+				"--p2c-log-level"s, util::log::GetLevelName(*opt.logLevel),
+				"--p2c-log-trace-level"s, util::log::GetLevelName(*opt.logTraceLevel),
+				"--p2c-act-name"s, actName,
+				"--p2c-log-pipe-name"s, cefLogPipe
+				});
+			// launch the CEF browser process, which in turn launches all the other processes in the CEF process constellation
+			auto cefChild = [&] {
+				if (util::win::WeAreElevated()) {
+					try {
+						pmlog_info("detected elevation, attempting integrity downgrade");
+						auto mediumTokenPack = util::win::PrepareMediumIntegrityToken();
+						return bp2::windows::as_user_launcher{ mediumTokenPack.hMediumToken.Get() }(
+							ioctx, "PresentMonUI.exe"s, args
+							);
+					}
+					catch (...) {
+						pmlog_warn(util::ReportException("Failed to downgrade integrity, falling back to standard process spawn"));
+					}
+				}
+				return bp2::windows::default_launcher{}(
+					ioctx, "PresentMonUI.exe"s, args
 					);
-				}
-				catch (...) {
-					pmlog_warn(util::ReportException("Failed to downgrade integrity, falling back to standard process spawn"));
-				}
-			}
-			return bp2::windows::default_launcher{}(
-				ioctx, "PresentMonUI.exe"s, args
-			);
-		}(); 
+			}();
 
-		// connect logging to the CEF process constellation
-		ConnectToLoggingSourcePipe(cefLogPipe);
+			// connect logging to the CEF process constellation
+			ConnectToLoggingSourcePipe(cefLogPipe);
 
-		// don't exit this process until the CEF control panel exits
-		cefChild.wait();
+			// don't exit this process until the CEF control panel exits
+			cefChild.wait();
+		}
+		else {
+			pmlog_info("Running headless capture");
+			auto pSpec = std::make_unique<kern::OverlaySpec>(kern::OverlaySpec{
+				.pid = *opt.capPid,
+				.etwFlushPeriod = 0.1,
+				.manualEtwFlush = true,
+				.telemetrySamplingPeriodMs = 100,
+				.hideAlways = true,
+			});
+			kernel.PushSpec(std::move(pSpec));
+			kernel.SetCapture(true);
+			std::this_thread::sleep_for(10s);
+			kernel.SetCapture(false);
+		}
 
 		pmlog_info("== kernel process exiting ==");
 	}
