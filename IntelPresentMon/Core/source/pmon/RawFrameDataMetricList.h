@@ -16,7 +16,7 @@ namespace p2c::pmon
         std::optional<uint32_t> index;
     };
 
-    inline std::vector<RawFrameQueryElementDefinition> GetRawFrameDataMetricList(uint32_t activeDeviceId, bool enableTimestamp)
+    inline std::vector<RawFrameQueryElementDefinition> GetDefaultRawFrameDataMetricList(uint32_t activeDeviceId, bool enableTimestamp)
     {
         namespace rn = std::ranges;
         using Element = RawFrameQueryElementDefinition;
@@ -96,4 +96,5 @@ namespace p2c::pmon
 
         return queryElements;
     }
+
 }

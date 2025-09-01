@@ -130,7 +130,11 @@
     },
     {
       "Id": "a228f5ab-b00f-4a34-9dae-29f443740b6f",
-      "Command": "--output Captures/shazbot422.csv"
+      "Command": "--output Captures/yaboi.csv"
+    },
+    {
+      "Id": "b4e270ad-cd80-4d91-91e0-40222d597af6",
+      "Command": "--metrics PM_METRIC_CPU_START_TIME PM_METRIC_BETWEEN_PRESENTS"
     }
   ]
 }

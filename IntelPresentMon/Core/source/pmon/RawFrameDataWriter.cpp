@@ -17,6 +17,38 @@ namespace p2c::pmon
 
     namespace
     {
+        std::vector<RawFrameQueryElementDefinition> MakeMetricList_(std::vector<std::string> metricSymbols,
+            uint32_t activeDeviceId, const pmapi::intro::Root& introRoot)
+        {
+            const auto metricLookup = [&] {
+                std::unordered_map<std::string, PM_METRIC> lookup;
+                const auto metrics = introRoot.GetMetrics();
+                lookup.reserve(metrics.size());
+                for (const auto& m : metrics) {
+                    lookup[m.Introspect().GetSymbol()] = m.GetId();
+                }
+                return lookup;
+            }();
+            std::vector<RawFrameQueryElementDefinition> elements;
+            elements.reserve(metricSymbols.size());
+            for (auto& metricSymbol : metricSymbols) {
+                try {
+                    const auto metricId = metricLookup.at(metricSymbol);
+                    const auto& metric = introRoot.FindMetric(metricId);
+                    elements.push_back(RawFrameQueryElementDefinition{
+                        .metricId = metricLookup.at(metricSymbol),
+                        .deviceId = metric.GetDeviceMetricInfo().front().GetDevice().GetType() ==
+                            PM_DEVICE_TYPE_GRAPHICS_ADAPTER ? activeDeviceId : 0,
+                        .index = 0,
+                    });
+                }
+                catch (...) {
+                    pmlog_error("Failed to add metric").pmwatch(metricSymbol);
+                }
+            }
+            return elements;
+        }
+
         class StreamFlagPreserver_
         {
         public:
@@ -312,10 +344,16 @@ namespace p2c::pmon
         pAnimationErrorTracker{ frameStatsPath ? std::make_unique<StatisticsTracker>() : nullptr },
         file{ path }
     {
-        auto queryElements = GetRawFrameDataMetricList(activeDeviceId, cli::Options::Get().enableTimestampColumn);
-        pQueryElementContainer = std::make_unique<QueryElementContainer_>(queryElements, session, introRoot);
-        blobs = pQueryElementContainer->MakeBlobs(numberOfBlobs);
-                
+        const auto& opt = cli::Options::Get();
+        std::vector<RawFrameQueryElementDefinition> elements;
+        if (opt.capMetrics) {
+            elements = MakeMetricList_(*opt.capMetrics, activeDeviceId, introRoot);
+        }
+        else {
+            GetDefaultRawFrameDataMetricList(activeDeviceId, opt.enableTimestampColumn);
+        }
+        pQueryElementContainer = std::make_unique<QueryElementContainer_>(std::move(elements), session, introRoot);
+        blobs = pQueryElementContainer->MakeBlobs(numberOfBlobs);                
         // write header
         pQueryElementContainer->WriteHeader(file);
     }
