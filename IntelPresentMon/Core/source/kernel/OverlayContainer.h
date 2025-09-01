@@ -23,7 +23,7 @@ namespace p2c::kern
         void RebuildDocument(std::shared_ptr<OverlaySpec> pSpec_);
         void InitiateClose();
         void RunTick();
-        void SetCaptureState(bool active, std::wstring path, std::wstring name);
+        void SetCaptureState(bool active);
         bool IsTargetLive() const;
         const ::pmon::util::win::Process& GetProcess() const;
         void UpdateTargetFullscreenStatus();

@@ -264,33 +264,37 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		}
 		else {
 			DWORD pid;
-			if (opt.capPid) {
-				pmlog_info("Running headless capture").pmwatch(*opt.capPid);
-				pid = *opt.capPid;
+			if (opt.capTargetPid) {
+				pmlog_info("Running headless capture").pmwatch(*opt.capTargetPid);
+				pid = *opt.capTargetPid;
 			}
-			else if (opt.capName) {
-				pmlog_info("Running headless capture").pmwatch(*opt.capName);
+			else if (opt.capTargetName) {
+				pmlog_info("Running headless capture").pmwatch(*opt.capTargetName);
 				const auto procs = util::win::ProcessMapBuilder{}.AsNameMap(true);
-				const auto target = util::str::ToWide(util::str::ToLower(*opt.capName));
+				const auto target = util::str::ToWide(util::str::ToLower(*opt.capTargetName));
 				try {
 					pid = procs.at(target).pid;
 				}
 				catch (...) {
 					pmlog_error("Failed to find any processes matching supplied main module name")
-						.pmwatch(*opt.capName).no_trace();
+						.pmwatch(*opt.capTargetName).no_trace();
 					return -1;
 				}
 			}
+			auto fullPathOverride = opt.capOutput.AsOptional().transform([](const auto& path) {
+				return util::str::ToWide(path);
+			});
 			auto pSpec = std::make_unique<kern::OverlaySpec>(kern::OverlaySpec{
 				.pid = pid,
-				.etwFlushPeriod = 100.,
+				.captureFullPathOverride = std::move(fullPathOverride),
+				.etwFlushPeriod = 20.,
 				.manualEtwFlush = true,
 				.telemetrySamplingPeriodMs = 100,
 				.hideAlways = true,
 			});
 			kernel.PushSpec(std::move(pSpec));
 			kernel.SetCapture(true);
-			std::this_thread::sleep_for(10s);
+			std::this_thread::sleep_for(*opt.capDuration * 1s + 0.12s);
 			kernel.SetCapture(false);
 		}
 

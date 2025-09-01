@@ -12,6 +12,7 @@
 #include <Core/source/win/StandardWindow.h>
 #include <Core/source/win/OverlayWindow.h>
 #include <Core/source/cli/CliOptions.h>
+#include <Core/source/infra/util/FolderResolver.h>
 #include <ranges>
 #include <set>
 #include <chrono>
@@ -421,18 +422,29 @@ namespace p2c::kern
         }
     }
 
-    void Overlay::SetCaptureState(bool active, std::wstring path, std::wstring name)
+    void Overlay::SetCaptureState(bool active)
     {
         pmlog_info(std::format("Capture set to {}", active));
 
-        if (active && !pWriter)
-        {
+        if (active && !pWriter) {
+            std::wstring fullPath;
             const std::chrono::zoned_time now{ std::chrono::current_zone(), std::chrono::system_clock::now() };
-            auto fullPath = std::format(L"{0}{1}-{3}-{2:%y}{2:%m}{2:%d}-{2:%H}{2:%M}{2:%OS}.csv", path, name, now, proc.name);
+            if (pSpec->captureFullPathOverride) {
+                fullPath = std::move(*pSpec->captureFullPathOverride);
+            }
+            else {
+                const auto folder = infra::util::FolderResolver::Get().Resolve(infra::util::FolderResolver::Folder::Documents)
+                    + L"\\Captures\\";
+                fullPath = std::format(L"{0}{1}-{3}-{2:%y}{2:%m}{2:%d}-{2:%H}{2:%M}{2:%OS}.csv",
+                    folder, pSpec->captureName, now, proc.name);
+            }
             // create optional path for stats file
             auto fullStatsPath = [&]() -> std::optional<std::wstring> {
                 if (pSpec->generateStats) {
-                    return std::format(L"{0}{1}-{3}-{2:%y}{2:%m}{2:%d}-{2:%H}{2:%M}{2:%OS}-stats.csv", path, name, now, proc.name);
+                    const auto folder = infra::util::FolderResolver::Get().Resolve(infra::util::FolderResolver::Folder::Documents)
+                        + L"\\Captures\\";
+                    return std::format(L"{0}{1}-{3}-{2:%y}{2:%m}{2:%d}-{2:%H}{2:%M}{2:%OS}-stats.csv",
+                        folder, pSpec->captureName, now, proc.name);
                 }
                 else {
                     return std::nullopt;
@@ -440,8 +452,7 @@ namespace p2c::kern
             }();
             pWriter = { pm->MakeRawFrameDataWriter(std::move(fullPath), std::move(fullStatsPath), proc.pid, proc.name) };
         }
-        else if (!active && pWriter)
-        {
+        else if (!active && pWriter) {
             pWriter.reset();
         }
 

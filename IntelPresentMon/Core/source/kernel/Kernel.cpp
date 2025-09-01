@@ -283,9 +283,7 @@ namespace p2c::kern
                     }
                 }
                 else if (pushedCaptureActive) {
-                    std::wstring path = infra::util::FolderResolver::Get()
-                        .Resolve(infra::util::FolderResolver::Folder::Documents) + L"\\Captures\\";
-                    pOverlayContainer->SetCaptureState(*pushedCaptureActive, std::move(path), pOverlayContainer->GetSpec().captureName);
+                    pOverlayContainer->SetCaptureState(*pushedCaptureActive);
                     pushedCaptureActive.reset();
                 }
             }

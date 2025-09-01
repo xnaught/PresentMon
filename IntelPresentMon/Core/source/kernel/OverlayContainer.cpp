@@ -80,9 +80,9 @@ namespace p2c::kern
             else throw;
         }
     }
-    void OverlayContainer::SetCaptureState(bool active, std::wstring path, std::wstring name)
+    void OverlayContainer::SetCaptureState(bool active)
     {
-        pOverlay->SetCaptureState(active, std::move(path), std::move(name));
+        pOverlay->SetCaptureState(active);
     }
     bool OverlayContainer::IsTargetLive() const
     {
