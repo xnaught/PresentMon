@@ -118,7 +118,11 @@
     },
     {
       "Id": "05f54862-3aec-41de-a6fc-d8414c6337f7",
-      "Command": "--pid 10212"
+      "Command": "--target-pid 10212"
+    },
+    {
+      "Id": "b1fed477-ce24-4a76-90b8-708955b7045d",
+      "Command": "--target-name hEaven.exe"
     }
   ]
 }

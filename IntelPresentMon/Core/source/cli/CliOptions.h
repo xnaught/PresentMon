@@ -46,7 +46,8 @@ namespace p2c::cli
 
 	Subcommand subcCapture{ this, "capture", "Perform headless capture of frame event data to .csv" }; public:
 	private: Group gcaps_{ this, "Standard", "Standard options for the capture subcommand" }; public:
-		Option<uint32_t> capPid{ this, "--pid", 0, "PID of the process to track" };
+		Option<uint32_t> capPid{ this, "--target-pid", {}, "PID of the process to track" };
+		Option<std::string> capName{ this, "--target-name", {}, "Main module name of the process to track" };
 	
 
 		static constexpr const char* description = "PresentMon performance overlay and trace capture application";

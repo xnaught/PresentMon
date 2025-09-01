@@ -13,6 +13,7 @@
 #include <Core/source/infra/LogSetup.h>
 #include <CommonUtilities/win/Utilities.h>
 #include <CommonUtilities/win/Privileges.h>
+#include <CommonUtilities/win/ProcessMapBuilder.h>
 #include <Versioning/BuildId.h>
 #include <Shobjidl.h>
 #include <boost/process/v2/process.hpp>
@@ -262,10 +263,27 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			cefChild.wait();
 		}
 		else {
-			pmlog_info("Running headless capture");
+			DWORD pid;
+			if (opt.capPid) {
+				pmlog_info("Running headless capture").pmwatch(*opt.capPid);
+				pid = *opt.capPid;
+			}
+			else if (opt.capName) {
+				pmlog_info("Running headless capture").pmwatch(*opt.capName);
+				const auto procs = util::win::ProcessMapBuilder{}.AsNameMap(true);
+				const auto target = util::str::ToWide(util::str::ToLower(*opt.capName));
+				try {
+					pid = procs.at(target).pid;
+				}
+				catch (...) {
+					pmlog_error("Failed to find any processes matching supplied main module name")
+						.pmwatch(*opt.capName).no_trace();
+					return -1;
+				}
+			}
 			auto pSpec = std::make_unique<kern::OverlaySpec>(kern::OverlaySpec{
-				.pid = *opt.capPid,
-				.etwFlushPeriod = 0.1,
+				.pid = pid,
+				.etwFlushPeriod = 100.,
 				.manualEtwFlush = true,
 				.telemetrySamplingPeriodMs = 100,
 				.hideAlways = true,
