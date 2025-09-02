@@ -303,12 +303,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				.captureFullPathOverride = std::move(fullPathOverride),
 				.etwFlushPeriod = 20.,
 				.manualEtwFlush = true,
-				.telemetrySamplingPeriodMs = 100,
+				.telemetrySamplingPeriodMs = *opt.capTelemetryPeriod,
 				.hideAlways = true,
 			});
 			kernel.PushSpec(std::move(pSpec));
 			kernel.SetCapture(true);
-			std::this_thread::sleep_for(*opt.capDuration * 1s + 0.12s);
+			std::this_thread::sleep_for(*opt.capDuration * 1s + 0.3s);
 			kernel.SetCapture(false);
 		}
 

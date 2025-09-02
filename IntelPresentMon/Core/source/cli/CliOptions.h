@@ -49,6 +49,7 @@ namespace p2c::cli
 		Option<uint32_t> capTargetPid{ this, "--target-pid", {}, "PID of the process to track" };
 		Option<std::string> capTargetName{ this, "--target-name", {}, "Main module name of the process to track" };
 		Option<double> capDuration{ this, "--duration", 10., "How long to capture for in seconds" };
+		Option<uint32_t> capTelemetryPeriod{ this, "--telemetry-period", 100, "Time between GPU/CPU telemetry samples in ms" };
 		Option<std::string> capOutput{ this, "--output", {}, "Name of the output CSV file, optionally with absolute or relative path" };
 		Option<std::vector<std::string>> capMetrics{ this, "--metrics", {}, "List of metrics to capture as columns in the output CSV file" };
 	

@@ -138,7 +138,11 @@
         },
         {
           "Id": "b4e270ad-cd80-4d91-91e0-40222d597af6",
-          "Command": "--metrics PM_METRIC_APPLICATION PM_METRIC_CPU_START_TIME PM_METRIC_BETWEEN_PRESENTS"
+          "Command": "--metrics PM_METRIC_APPLICATION PM_METRIC_CPU_START_TIME PM_METRIC_BETWEEN_PRESENTS PM_METRIC_GPU_TEMPERATURE"
+        },
+        {
+          "Id": "23a7f71a-08ab-4932-a78a-79dfbf9327b4",
+          "Command": "--telemetry-period 50"
         }
       ]
     }
