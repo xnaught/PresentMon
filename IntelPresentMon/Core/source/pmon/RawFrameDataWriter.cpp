@@ -39,7 +39,6 @@ namespace p2c::pmon
                         .metricId = metricLookup.at(metricSymbol),
                         .deviceId = metric.GetDeviceMetricInfo().front().GetDevice().GetType() ==
                             PM_DEVICE_TYPE_GRAPHICS_ADAPTER ? activeDeviceId : 0,
-                        .index = 0,
                     });
                 }
                 catch (...) {
@@ -78,6 +77,7 @@ namespace p2c::pmon
             virtual ~Annotation_() = default;
             virtual void Write(std::ostream& out, const uint8_t* pBytes) const = 0;
             std::string columnName;
+            size_t queryElementIndex = 0;
             static std::unique_ptr<Annotation_> MakeTyped(PM_METRIC metricId, uint32_t deviceId,
                 const pmapi::intro::MetricView& metric);
 
@@ -117,6 +117,30 @@ namespace p2c::pmon
                     out << *reinterpret_cast<const T*>(pBytes);
                 }
             }
+        };
+        struct ProcessNameAnnotation_ : public Annotation_
+        {
+            ProcessNameAnnotation_(std::string name)
+                :
+                name_{ std::move(name) }
+            {}
+            void Write(std::ostream& out, const uint8_t*) const override
+            {
+                out << name_;
+            }
+            std::string name_;
+        };
+        struct PidAnnotation_ : public Annotation_
+        {
+            PidAnnotation_(uint32_t pid)
+                :
+                pid_{ pid }
+            {}
+            void Write(std::ostream& out, const uint8_t*) const override
+            {
+                out << pid_;
+            }
+            uint32_t pid_;
         };
         template<>
         struct TypedAnnotation_<void> : public Annotation_
@@ -219,15 +243,29 @@ namespace p2c::pmon
     {
     public:
         QueryElementContainer_(std::span<const RawFrameQueryElementDefinition> elements,
-            pmapi::Session& session, const pmapi::intro::Root& introRoot)
+            pmapi::Session& session, const pmapi::intro::Root& introRoot, std::string procName, uint32_t pid)
         {
             for (auto& el : elements) {
+                // check for specific fill-in metrics
+                if (el.metricId == PM_METRIC_APPLICATION) {
+                    annotationPtrs_.push_back(std::make_unique<ProcessNameAnnotation_>(procName));
+                    annotationPtrs_.back()->columnName = "Application";
+                    continue;
+                }
+                else if (el.metricId == (PM_METRIC)PM_METRIC_INTERNAL_PROCESS_ID_) {
+                    annotationPtrs_.push_back(std::make_unique<PidAnnotation_>(pid));
+                    annotationPtrs_.back()->columnName = "ProcessID";
+                    continue;
+                }
                 const auto metric = introRoot.FindMetric(el.metricId);
-                annotationPtrs_.push_back(Annotation_::MakeTyped(el.metricId, el.deviceId, metric));          
-                // append index if array metric
+                annotationPtrs_.push_back(Annotation_::MakeTyped(el.metricId, el.deviceId, metric));
+                // append metric array index to column name if array metric
                 if (el.index.has_value()) {
                     annotationPtrs_.back()->columnName += std::format("[{}]", *el.index);
                 }
+                // set index into query elements
+                annotationPtrs_.back()->queryElementIndex = queryElements_.size();
+                // add to query elements
                 queryElements_.push_back(PM_QUERY_ELEMENT{
                     .metric = el.metricId,
                     .stat = PM_STAT_NONE,
@@ -301,14 +339,14 @@ namespace p2c::pmon
         }
         void WriteFrame(uint32_t pid, const std::string& procName, std::ostream& out, const uint8_t* pBlob)
         {
-            // TODO: use metrics from procname and pid
-            // process details are hardcoded here
-            out << procName << ',' << pid;
+            // TODO: use metrics from procname and pid piped through middleware (after IPC upgrade)
             // loop over each element (column/field) in a frame of data
-            for (auto&& [pAnno, query] : std::views::zip(annotationPtrs_, queryElements_)) {
-                out << ',';
+            for (auto&& [i, pAnno] : annotationPtrs_ | vi::enumerate) {
+                if (i) {
+                    out << ',';
+                }
                 // using output from the query registration of get offset of column's data
-                const auto pBytes = pBlob + query.dataOffset;
+                const auto pBytes = pBlob + queryElements_[pAnno->queryElementIndex].dataOffset;
                 // annotation contains polymorphic info to reinterpret and convert bytes
                 pAnno->Write(out, pBytes);
             }
@@ -316,9 +354,11 @@ namespace p2c::pmon
         }
         void WriteHeader(std::ostream& out)
         {
-            out << "Application,ProcessID";
-            for (const auto& pAnno : annotationPtrs_) {
-                out << ',' << pAnno->columnName;
+            for (auto&& [i,pAnno] : annotationPtrs_ | vi::enumerate) {
+                if (i) {
+                    out << ',';
+                }
+                out << pAnno->columnName;
             }
             out << std::endl;
         }
@@ -350,9 +390,10 @@ namespace p2c::pmon
             elements = MakeMetricList_(*opt.capMetrics, activeDeviceId, introRoot);
         }
         else {
-            GetDefaultRawFrameDataMetricList(activeDeviceId, opt.enableTimestampColumn);
+            elements = GetDefaultRawFrameDataMetricList(activeDeviceId, opt.enableTimestampColumn);
         }
-        pQueryElementContainer = std::make_unique<QueryElementContainer_>(std::move(elements), session, introRoot);
+        pQueryElementContainer = std::make_unique<QueryElementContainer_>(std::move(elements), session,
+            introRoot, ::pmon::util::str::ToNarrow(processName), procTracker.GetPid());
         blobs = pQueryElementContainer->MakeBlobs(numberOfBlobs);                
         // write header
         pQueryElementContainer->WriteHeader(file);

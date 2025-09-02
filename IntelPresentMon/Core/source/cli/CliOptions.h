@@ -50,7 +50,7 @@ namespace p2c::cli
 		Option<std::string> capTargetName{ this, "--target-name", {}, "Main module name of the process to track" };
 		Option<double> capDuration{ this, "--duration", 10., "How long to capture for in seconds" };
 		Option<std::string> capOutput{ this, "--output", {}, "Name of the output CSV file, optionally with absolute or relative path" };
-		Option<std::vector<std::string>> capMetrics{ this, "--metrics", {}, "Metrics to capture as columns in the output CSV file" };
+		Option<std::vector<std::string>> capMetrics{ this, "--metrics", {}, "List of metrics to capture as columns in the output CSV file" };
 	
 
 		static constexpr const char* description = "PresentMon performance overlay and trace capture application";
