@@ -103,7 +103,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				if (!fromTerminal) {
 					AllocAndBindConsole_();
 				}
-				std::cout << cli::Options::GetDiagnostics() << std::endl;
+				std::cout << std::endl << cli::Options::GetDiagnostics() << std::endl;
 				std::cout << "Scroll up to see full help." << std::endl;
 				// if we're not run from terminal, make sure created console does not close immediately
 				if (!fromTerminal) {
@@ -112,8 +112,14 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				}
 			}
 			else {
-				MessageBoxA(nullptr, cli::Options::GetDiagnostics().c_str(), "Command Line Parse Error",
-					MB_ICONERROR | MB_APPLMODAL | MB_SETFOREGROUND);
+				const bool fromTerminal = TryAttachToParentConsole_();
+				if (fromTerminal) {
+					std::cout << std::endl << cli::Options::GetDiagnostics() << std::endl;
+				}
+				else {
+					MessageBoxA(nullptr, cli::Options::GetDiagnostics().c_str(), "Command Line Parse Error",
+						MB_ICONERROR | MB_APPLMODAL | MB_SETFOREGROUND);
+				}
 			}
 			return *err;
 		}
