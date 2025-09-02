@@ -104,7 +104,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 					AllocAndBindConsole_();
 				}
 				std::cout << std::endl << cli::Options::GetDiagnostics() << std::endl;
-				std::cout << "Scroll up to see full help." << std::endl;
 				// if we're not run from terminal, make sure created console does not close immediately
 				if (!fromTerminal) {
 					std::cout << "Press <ENTER> to continue...";
@@ -124,6 +123,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			return *err;
 		}
 		const auto& opt = cli::Options::Get();
+		// do some post validation here
+		if (opt.subcCapture.Active()) {
+			// make sure target is specified
+			if (!opt.capTargetName && !opt.capTargetPid) {
+				TryAttachToParentConsole_();
+				std::cout << std::endl << "Must specify one of --target-name or --target-pid for capture" << std::endl;
+				return -1;
+			}
+		}
 		if (opt.filesWorking) {
 			infra::util::FolderResolver::SetDevMode();
 		}

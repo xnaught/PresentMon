@@ -57,7 +57,8 @@ namespace p2c::cli
 		static constexpr const char* name = "PresentMon.exe";
 
 	private:
-		MutualExclusion excl_{ logDenyList, logAllowList };
-		Dependency incl_{ etwSessionName, svcAsChild };
+		MutualExclusion exclCapTgt_{ capTargetPid, capTargetName };
+		MutualExclusion exclLogList_{ logDenyList, logAllowList };
+		Dependency inclSvcSes_{ etwSessionName, svcAsChild };
 	};
 }
