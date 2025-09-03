@@ -95,15 +95,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 #endif
 
 	try {
+		// if we were run from a parent with a console (terminal?), try to attach there
+		const bool fromTerminal = TryAttachToParentConsole_();
 		// parse the command line arguments and make them globally available
 		if (auto err = cli::Options::Init(__argc, __argv, true)) {
 			if (*err == 0) {
 				// we don't have a console connection by default, so get one
-				const bool fromTerminal = TryAttachToParentConsole_();
 				if (!fromTerminal) {
 					AllocAndBindConsole_();
 				}
-				std::cout << std::endl << cli::Options::GetDiagnostics() << std::endl;
+				std::cout << cli::Options::GetDiagnostics() << std::endl;
 				// if we're not run from terminal, make sure created console does not close immediately
 				if (!fromTerminal) {
 					std::cout << "Press <ENTER> to continue...";
@@ -111,9 +112,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				}
 			}
 			else {
-				const bool fromTerminal = TryAttachToParentConsole_();
 				if (fromTerminal) {
-					std::cout << std::endl << cli::Options::GetDiagnostics() << std::endl;
+					std::cerr << cli::Options::GetDiagnostics() << std::endl;
 				}
 				else {
 					MessageBoxA(nullptr, cli::Options::GetDiagnostics().c_str(), "Command Line Parse Error",
@@ -127,8 +127,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		if (opt.subcCapture.Active()) {
 			// make sure target is specified
 			if (!opt.capTargetName && !opt.capTargetPid) {
-				TryAttachToParentConsole_();
-				std::cout << std::endl << "Must specify one of --target-name or --target-pid for capture" << std::endl;
+				std::cerr << "Must specify one of --target-name or --target-pid for capture" << std::endl;
 				return -1;
 			}
 		}
@@ -148,6 +147,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		// determine if we're running headless
 		const bool headless = opt.subcCapture.Active();
+
+		// pipe logging into stdio when running headless
+		if (headless) {
+			ConfigureHeadlessLogging();
+		}
 
 		// set the app id so that windows get grouped
 		// TODO: verify operation when multiple app instances running concurrently
@@ -280,7 +284,15 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			DWORD pid;
 			if (opt.capTargetPid) {
 				pmlog_info("Running headless capture").pmwatch(*opt.capTargetPid);
-				pid = *opt.capTargetPid;
+				try {
+					util::win::OpenProcess(*opt.capTargetPid);
+					pid = *opt.capTargetPid;
+				}
+				catch (...) {
+					pmlog_error("Failed to find any process with specified pid")
+						.pmwatch(*opt.capTargetPid).no_trace();
+					return -1;
+				}
 			}
 			else if (opt.capTargetName) {
 				pmlog_info("Running headless capture").pmwatch(*opt.capTargetName);
@@ -306,10 +318,12 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				.telemetrySamplingPeriodMs = *opt.capTelemetryPeriod,
 				.hideAlways = true,
 			});
+			std::cout << "Starting capture..." << std::endl;
 			kernel.PushSpec(std::move(pSpec));
 			kernel.SetCapture(true);
 			std::this_thread::sleep_for(*opt.capDuration * 1s + 0.3s);
 			kernel.SetCapture(false);
+			std::cout << "Capture complete." << std::endl;
 		}
 
 		pmlog_info("== kernel process exiting ==");
