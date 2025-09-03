@@ -33,6 +33,13 @@ namespace p2c::pmon
             elements.reserve(metricSymbols.size());
             for (auto& metricSymbol : metricSymbols) {
                 try {
+                    // special case for pid, which is not an api metric but needs to be available in headless
+                    if (metricSymbol == "PM_METRIC_INTERNAL_PROCESS_ID_") {
+                        elements.push_back(RawFrameQueryElementDefinition{
+                            .metricId = (PM_METRIC)PM_METRIC_INTERNAL_PROCESS_ID_,
+                        });
+                        continue;
+                    }
                     const auto metricId = metricLookup.at(metricSymbol);
                     const auto& metric = introRoot.FindMetric(metricId);
                     elements.push_back(RawFrameQueryElementDefinition{
