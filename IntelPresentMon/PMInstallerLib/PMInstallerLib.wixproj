@@ -6,7 +6,7 @@
     <IntermediateOutputPath>obj\</IntermediateOutputPath>
     <OutputPath>bin\</OutputPath>
     <!-- Point these at YOUR WiX 3.x install -->
-    <WixToolPath>C:\Program Files (x86)\WiX Toolset v3.11\bin\</WixToolPath>
+    <WixToolPath>$(WIX)bin\</WixToolPath>
     <WixTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <!-- Define the two variables your .wxs uses -->
     <DefineConstants>

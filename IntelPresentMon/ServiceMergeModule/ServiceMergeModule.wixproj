@@ -6,7 +6,7 @@
     <IntermediateOutputPath>obj\</IntermediateOutputPath>
     <OutputPath>$(SolutionDir)build\$(Configuration)\en-us\</OutputPath>
     <!-- Point to your WiX 3.11 install -->
-    <WixToolPath>C:\Program Files (x86)\WiX Toolset v3.11\bin\</WixToolPath>
+    <WixToolPath>$(WIX)bin\</WixToolPath>
     <WixTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
     <!-- If your wixlib expects a specific DirectoryRef Id -->
     <DefineConstants>PM.ServiceDirId=service_folder</DefineConstants>
