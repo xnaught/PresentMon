@@ -8,6 +8,8 @@
 #include "../AppCef/source/util/cact/PresentmonInitFailedAction.h"
 #include "../AppCef/source/util/cact/StalePidAction.h"
 #include "../AppCef/source/util/cact/HotkeyFiredAction.h"
+#include "../PresentMonAPIWrapper/PresentMonAPIWrapper.h"
+#include "../PresentMonAPIWrapperCommon/EnumMap.h"
 #include <Core/source/cli/CliOptions.h>
 #include <PresentMonAPI2Loader/Loader.h>
 #include <Core/source/infra/LogSetup.h>
@@ -131,6 +133,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				return -1;
 			}
 		}
+		if (opt.subcList.Active()) {
+			// make sure target is specified
+			if (!opt.listMetrics && !opt.listDevices) {
+				std::cerr << "Must specify one of --metrics or --devices for list" << std::endl;
+				return -1;
+			}
+		}
 		if (opt.filesWorking) {
 			infra::util::FolderResolver::SetDevMode();
 		}
@@ -146,7 +155,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		ConfigureLogging();
 
 		// determine if we're running headless
-		const bool headless = opt.subcCapture.Active();
+		const bool headless = opt.subcCapture.Active() || opt.subcList.Active();
 
 		// pipe logging into stdio when running headless
 		if (headless) {
@@ -203,6 +212,62 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		//        );
 		//    }
 		//} pmcatch_report;
+
+		// if we are just listing, do not launch Kernel, just use API directly here and exit
+		if (opt.subcList.Active()) {
+			// connect to service
+			auto session = [&] {
+				if (svcChild || opt.controlPipe) {
+					return pmapi::Session{ *opt.controlPipe };
+				}
+				else {
+					return pmapi::Session{};
+				}
+			}();
+			// get introspection data
+			auto pIntro = session.GetIntrospectionRoot();
+			// get lookup for metric type enum
+			auto pMetricTypeLut = pmapi::EnumMap::GetKeyMap(PM_ENUM_METRIC_TYPE);
+			// list metrics
+			if (opt.listMetrics) {
+				std::cout << "List of metrics:\n";
+				for (auto&& m : pIntro->GetMetrics()) {
+					// filtering
+					auto t = m.GetType();
+					if (opt.listFilterFrame) {
+						if (t == PM_METRIC_TYPE_DYNAMIC) {
+							continue;
+						}
+					}
+					if (opt.listFilterDynamic) {
+						if (t == PM_METRIC_TYPE_STATIC) {
+							continue;
+						}
+					}
+					auto&& s = m.Introspect();
+					if (opt.listSearch) {
+						auto search = [nd = util::str::ToLower(*opt.listSearch)](const std::string& hs) {
+							return util::str::ToLower(hs).contains(nd);
+						};
+						if (!search(s.GetSymbol()) && !search(s.GetName()) && !search(s.GetDescription())) {
+							continue;
+						}
+					}
+					// output
+					std::cout << s.GetSymbol() << "  [" << pMetricTypeLut->at(t).narrowName << "]:\n";
+					std::cout << "   " << s.GetDescription() << "\n\n";
+				}
+			}
+			// list adapter devices
+			if (opt.listDevices) {
+				std::cout << "List of graphics adapters:\n";
+				for (auto&& d : pIntro->GetDevices()) {
+					if (!d.GetId()) continue;
+					std::cout << d.GetName() << " [" << d.GetId() << "] (" << d.IntrospectVendor().GetName() << ")\n";
+				}
+			}
+			return 0;
+		}
 
 		// this pointer serves as a way to set the kernel on the server exec context after the server is created
 		p2c::kern::Kernel* pKernel = nullptr;
@@ -280,7 +345,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			// don't exit this process until the CEF control panel exits
 			cefChild.wait();
 		}
-		else {
+		else if (opt.subcCapture.Active()) {
 			DWORD pid;
 			if (opt.capTargetPid) {
 				pmlog_info("Running headless capture").pmwatch(*opt.capTargetPid);

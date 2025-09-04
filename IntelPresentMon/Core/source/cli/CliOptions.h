@@ -52,6 +52,14 @@ namespace p2c::cli
 		Option<uint32_t> capTelemetryPeriod{ this, "--telemetry-period", 100, "Time between GPU/CPU telemetry samples in ms" };
 		Option<std::string> capOutput{ this, "--output", {}, "Name of the output CSV file, optionally with absolute or relative path" };
 		Option<std::vector<std::string>> capMetrics{ this, "--metrics", {}, "List of metrics to capture as columns in the output CSV file" };
+
+	Subcommand subcList{ this, "list", "List entities for use with PresentMon SDK/headless CLI" }; public:
+	private: Group glists_{ this, "Standard", "Standard options for the list subcommand" }; public:
+		Flag listMetrics{ this, "--metrics,-m", "Output a list of available metrics" };
+		Flag listDevices{ this, "--devices,-d", "Output a list of available graphics adapters" };
+		Flag listFilterFrame{ this, "--filter-frame,-f", "Filter to only metrics available for use with frame event capture" };
+		Flag listFilterDynamic{ this, "--filter-dynamic,-y", "Filter to only metrics available for use with dynamic polling" };
+		Option<std::string> listSearch{ this, "--search", {}, "Substring to filter metric results on (case-insensitive)" };
 	
 
 		static constexpr const char* description = "PresentMon performance overlay and trace capture application";
@@ -59,7 +67,11 @@ namespace p2c::cli
 
 	private:
 		MutualExclusion exclCapTgt_{ capTargetPid, capTargetName };
+		MutualExclusion exclListFilter_{ listFilterFrame, listFilterDynamic };
 		MutualExclusion exclLogList_{ logDenyList, logAllowList };
 		Dependency inclSvcSes_{ etwSessionName, svcAsChild };
+		Dependency inclListFrame_{ listFilterFrame, listMetrics };
+		Dependency inclListDyna_{ listFilterDynamic, listMetrics };
+		Dependency inclListSearch_{ listSearch, listMetrics };
 	};
 }
