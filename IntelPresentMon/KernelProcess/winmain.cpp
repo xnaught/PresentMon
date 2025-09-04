@@ -62,6 +62,32 @@ namespace kproc
 		// data
 		KernelServer& server_;
 	};
+	class HeadlessKernelHandler : public p2c::kern::KernelHandler
+	{
+	public:
+		void OnTargetLost(uint32_t pid) override
+		{
+			std::cerr << "Target lost.\n";
+			stopEvent_.Set();
+		}
+		void OnOverlayDied() override
+		{
+			std::cerr << "Tracking terminated.\n";
+			stopEvent_.Set();
+		}
+		void OnPresentmonInitFailed() override
+		{
+			std::cerr << "PresentMon initialization failed. Check PresentMon service status.\n";
+			stopEvent_.Set();
+		}
+		void OnStalePidSelected() override
+		{
+			std::cerr << "Target not present.\n";
+			stopEvent_.Set();
+		}
+		// data
+		::pmon::util::win::Event stopEvent_;
+	};
 
 	bool TryAttachToParentConsole_()
 	{
@@ -281,13 +307,22 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		hotkeys.SetHandler([&](int action) {
 			server.DispatchDetached(p2c::client::util::cact::HotkeyFiredAction::Params{ .actionId = action });
 		});
-		// this handler receives events from the kernel and transmits them to the render process via the server
-		KernelHandler kernHandler{ server };
+		// select which handler to use for kernel async events/signals
+		auto pKernelHandler = [&]() -> std::unique_ptr<::p2c::kern::KernelHandler> {
+			if (headless) {
+				// this handler receives events from the kernel and prints to cerr while signaling early exit
+				return std::make_unique<HeadlessKernelHandler>();
+			}
+			else {
+				// this handler receives events from the kernel and transmits them to the render process via the server
+				return std::make_unique<KernelHandler>(server);
+			}
+		}();
 		// the kernel manages the PresentMon data collection and the overlay rendering
-		p2c::kern::Kernel kernel{ &kernHandler, headless };
+		p2c::kern::Kernel kernel{ pKernelHandler.get(), headless};
 		// new we set this pointer, giving the server access to the Kernel
 		pKernel = &kernel;
-
+		// run the UI when not headless
 		if (!headless) {
 			// compose optional cli args for cef process tree
 			auto args = std::vector<std::string>{
@@ -386,9 +421,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			std::cout << "Starting capture..." << std::endl;
 			kernel.PushSpec(std::move(pSpec));
 			kernel.SetCapture(true);
-			std::this_thread::sleep_for(*opt.capDuration * 1s + 0.3s);
+			// wait for desired capture duration, with option to wake early on kernel signal
+			const auto dur = *opt.capDuration * 1s + 0.3s;
+			auto res = util::win::WaitAnyEventFor(dur, dynamic_cast<HeadlessKernelHandler*>(pKernelHandler.get())->stopEvent_);
 			kernel.SetCapture(false);
-			std::cout << "Capture complete." << std::endl;
+			if (!res) {
+				std::cout << "Capture complete." << std::endl;
+			}
+			else {
+				std::cerr << "Capture terminated prematurely." << std::endl;
+			}
 		}
 
 		pmlog_info("== kernel process exiting ==");

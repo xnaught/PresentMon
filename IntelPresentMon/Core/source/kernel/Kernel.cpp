@@ -221,7 +221,7 @@ namespace p2c::kern
                 }
                 catch (...) {
                     pHandler->OnOverlayDied();
-                    pmlog_error("Overlay died w/ except. => " + ReportException().first).no_trace();
+                    pmlog_error("Tracking system terminated w/ exception => " + ReportException().first).no_trace();
                     pOverlayContainer.reset();
                     pPushedSpec.reset();
                 }

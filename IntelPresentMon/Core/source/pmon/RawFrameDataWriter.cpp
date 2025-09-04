@@ -57,6 +57,9 @@ namespace p2c::pmon
                     pmlog_error("Failed to add metric").pmwatch(metricSymbol);
                 }
             }
+            if (elements.empty()) {
+                pmlog_error("No valid metrics specified for frame event capture").raise<::pmon::util::Exception>();
+            }
             return elements;
         }
 
