@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: MIT
 #include "RawFrameDataWriter.h"
 #include <CommonUtilities/str/String.h>
+#include <CommonUtilities/Exception.h>
 #include <PresentMonAPIWrapper/FrameQuery.h>
 #include <PresentMonAPIWrapperCommon/EnumMap.h>
 #include <format>
@@ -42,6 +43,10 @@ namespace p2c::pmon
                     }
                     const auto metricId = metricLookup.at(metricSymbol);
                     const auto& metric = introRoot.FindMetric(metricId);
+                    // make sure metric is valid for a frame query
+                    if (metric.GetType() == PM_METRIC_TYPE_DYNAMIC) {
+                        pmlog_error("Specified metric does not support frame query").raise<::pmon::util::Exception>();
+                    }
                     elements.push_back(RawFrameQueryElementDefinition{
                         .metricId = metricLookup.at(metricSymbol),
                         .deviceId = metric.GetDeviceMetricInfo().front().GetDevice().GetType() ==
