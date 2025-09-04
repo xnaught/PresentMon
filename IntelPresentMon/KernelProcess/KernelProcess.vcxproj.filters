@@ -73,4 +73,7 @@
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="presentmon-cli.cmd" />
+  </ItemGroup>
 </Project>
