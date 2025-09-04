@@ -11,8 +11,8 @@
         <Package
             InstallerVersion="200"
             Compressed="yes"
-            InstallScope="perMachine">
-        </Package>
+            InstallScope="perMachine"
+		></Package>
 
         <MediaTemplate EmbedCab="yes" />
 
@@ -244,8 +244,8 @@
                     KeyPath="yes">
                     <util:EventManifest
                         MessageFile="[#Intel_PresentMon.dll]"
-                        ResourceFile="[#Intel_PresentMon.dll]">
-                    </util:EventManifest>
+                        ResourceFile="[#Intel_PresentMon.dll]"
+					></util:EventManifest>
                 </File>
             </Component>
         </ComponentGroup>
@@ -311,6 +311,16 @@
                     KeyPath="yes">
                 </File>
             </Component>
+			<Component
+                Id="pm_app_cli_script"
+                Guid="EFFCBD82-BF3D-43CE-9442-E8293466F77B">
+				<File
+                    Id="pm_app_cli_script"
+                    Name="presentmon-cli.cmd"
+                    Source="$(var.PresentMon.TargetDir)presentmon-cli.cmd"
+                    KeyPath="yes">
+				</File>
+			</Component>
 			<Component
                 Id="pm_app_target_block_list_txt"
                 Guid="203B303F-A097-4B1E-BFA0-895794F192C1">
