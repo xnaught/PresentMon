@@ -1874,7 +1874,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc011CP2077Pcl2FgOffRelexOffExt)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
@@ -1928,7 +1927,6 @@ namespace EtlTests
 		}
 		TEST_METHOD(Tc012MarvelOnNvPcl3FgOnAutoReflexOnFrameDelayExt)
 		{
-			namespace bp = boost::process;
 			using namespace std::string_literals;
 			using namespace std::chrono_literals;
 
