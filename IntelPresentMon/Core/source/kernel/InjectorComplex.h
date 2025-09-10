@@ -27,15 +27,14 @@ namespace p2c::kern
             void SpawnReadPidTask_();
             void PushConfig_();
             as::io_context ioctx_;
-            as::readable_pipe                  pipeOut_;    // child's stdout to us
             as::writable_pipe                  pipeIn_;     // us to child's stdin
-            std::optional<bp2::process>        injectorProcess_;
+            as::readable_pipe                  pipeOut_;    // child's stdout to us
             as::streambuf                      readBuffer_;
-            as::streambuf                      writeBuffer_;
             std::jthread                       listenerThread_;
             std::mutex                         actionClientMutex_;
             std::optional<iact::ActionClient>  injectionPointClient_;
             GfxLayer::Extension::OverlayConfig config_;
+            std::optional<bp2::process>        injectorProcess_;
         };
     public:
         void SetActive(bool active);
