@@ -281,7 +281,16 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 					}
 					// output
 					std::cout << s.GetSymbol() << "  [" << pMetricTypeLut->at(t).narrowName << "]:\n";
-					std::cout << "   " << s.GetDescription() << "\n\n";
+					std::cout << "   " << s.GetDescription() << "\n";
+					if (opt.listMetricsStats) {
+						// output list of stats for this metric if requested
+						std::cout << "   Stats: { ";
+						for (auto&& s : m.GetStatInfo()) {
+							std::cout << s.IntrospectStat().GetSymbol() << " ";
+						}
+						std::cout << "}\n";
+					}
+					std::cout << "\n";
 				}
 			}
 			// list adapter devices

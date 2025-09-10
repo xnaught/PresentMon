@@ -56,6 +56,7 @@ namespace p2c::cli
 	Subcommand subcList{ this, "list", "List entities for use with PresentMon SDK/headless CLI" }; public:
 	private: Group glists_{ this, "Standard", "Standard options for the list subcommand" }; public:
 		Flag listMetrics{ this, "--metrics,-m", "Output a list of available metrics" };
+		Flag listMetricsStats{ this, "--stats,-s", "Output a list of available stats for each metric" };
 		Flag listDevices{ this, "--devices,-d", "Output a list of available graphics adapters" };
 		Flag listFilterFrame{ this, "--filter-frame,-f", "Filter to only metrics available for use with frame event capture" };
 		Flag listFilterDynamic{ this, "--filter-dynamic,-y", "Filter to only metrics available for use with dynamic polling" };
@@ -73,5 +74,6 @@ namespace p2c::cli
 		Dependency inclListFrame_{ listFilterFrame, listMetrics };
 		Dependency inclListDyna_{ listFilterDynamic, listMetrics };
 		Dependency inclListSearch_{ listSearch, listMetrics };
+		Dependency inclListMetricsStats_{ listMetricsStats, listMetrics };
 	};
 }
