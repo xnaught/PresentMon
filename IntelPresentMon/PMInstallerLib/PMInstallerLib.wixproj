@@ -2,9 +2,9 @@
   <PropertyGroup>
     <!-- WiX 3.x library output -->
     <OutputType>Library</OutputType>
-    <OutputName>PMService</OutputName>
-    <IntermediateOutputPath>obj\</IntermediateOutputPath>
-    <OutputPath>bin\</OutputPath>
+    <OutputName>PMInstallerLib</OutputName>
+    <IntermediateOutputPath>$(SolutionDir)build\obj\$(MSBuildProjectName)-$(Platform)-$(Configuration)</IntermediateOutputPath>
+    <OutputPath>$(SolutionDir)build\$(Configuration)</OutputPath>
     <!-- Point these at YOUR WiX 3.x install -->
     <WixToolPath>$(WIX)bin\</WixToolPath>
     <WixTargetsPath>$(MSBuildExtensionsPath32)\Microsoft\WiX\v3.x\Wix.targets</WixTargetsPath>
