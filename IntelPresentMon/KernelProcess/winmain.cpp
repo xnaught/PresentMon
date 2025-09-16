@@ -96,6 +96,7 @@ namespace kproc
 			FILE* f;
 			freopen_s(&f, "CONOUT$", "w", stdout);
 			freopen_s(&f, "CONOUT$", "w", stderr);
+			freopen_s(&f, "CONIN$", "r", stdin);
 			return true;
 		}
 		return false;
@@ -430,16 +431,47 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			std::cout << "Starting capture..." << std::endl;
 			kernel.PushSpec(std::move(pSpec));
 			kernel.SetCapture(true);
-			// wait for desired capture duration, with option to wake early on kernel signal
-			const auto dur = *opt.capDuration * 1s + 0.3s;
-			auto res = util::win::WaitAnyEventFor(dur, dynamic_cast<HeadlessKernelHandler*>(pKernelHandler.get())->stopEvent_);
+			// setup thread to handle stdin commands (currently only stop capture -> quit)
+			util::win::Event stopCommandEvent;
+			std::thread{ [&] {
+				std::ios::sync_with_stdio(false);
+				for (std::string line; std::getline(std::cin, line);) {
+					const auto trimmed = util::str::TrimWhitespace(line);
+					if (trimmed == "%q") {
+						stopCommandEvent.Set();
+						break;
+					}
+				}
+				pmlog_dbg("Exiting stdin command listener thread");
+			} }.detach();
+			// wait for desired capture duration, with option to wake early on kernel signal or %q command
+			if (opt.capDuration) {
+				const auto dur = *opt.capDuration * 1s + 0.3s;
+				auto res = util::win::WaitAnyEventFor(dur,
+					dynamic_cast<HeadlessKernelHandler*>(pKernelHandler.get())->stopEvent_,
+					stopCommandEvent);
+				if (!res) {
+					std::cout << "Capture complete." << std::endl;
+				}
+				else if (*res == 1) {
+					std::cerr << "Capture terminated by %q command." << std::endl;
+				}
+				else {
+					std::cerr << "Capture terminated prematurely." << std::endl;
+				}
+			}
+			else { // wait indefinitely until %q command received or kernel signal
+				auto res = util::win::WaitAnyEvent(
+					dynamic_cast<HeadlessKernelHandler*>(pKernelHandler.get())->stopEvent_,
+					stopCommandEvent);
+				if (res && *res == 1) {
+					std::cerr << "Capture terminated by %q command." << std::endl;
+				}
+				else {
+					std::cerr << "Capture terminated prematurely." << std::endl;
+				}
+			}
 			kernel.SetCapture(false);
-			if (!res) {
-				std::cout << "Capture complete." << std::endl;
-			}
-			else {
-				std::cerr << "Capture terminated prematurely." << std::endl;
-			}
 		}
 
 		pmlog_info("== kernel process exiting ==");
