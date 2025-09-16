@@ -4,7 +4,7 @@ setlocal
 rem Resolve the intel presentmon exe beside this script
 set "EXE=%~dp0PresentMon.exe"
 if not exist "%EXE%" (
-  echo MyApp.exe not found next to the script: "%EXE%"
+  echo PresentMon.exe not found next to the script: "%EXE%"
   exit /b 9009
 )
 
