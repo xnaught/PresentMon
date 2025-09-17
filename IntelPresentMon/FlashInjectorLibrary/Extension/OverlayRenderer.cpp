@@ -31,6 +31,7 @@ namespace GfxLayer::Extension
 		ScissorRects r{};
 		r.fg = { LONG(c - 0.5f * wfg), 0, LONG(c - 0.5f * wfg + wfg), LONG(m_height) };
 		r.bg = { LONG(c - 0.5f * wbg), 0, LONG(c - 0.5f * wbg + wbg), LONG(m_height) };
+		r.rb = { 0, 0, LONG(m_width * 0.05f), LONG(m_height) };
 		return r;
 	}
 
@@ -63,17 +64,12 @@ namespace GfxLayer::Extension
 					m_flashStartTime = clock::now();
 					flashStartedThisFrame = true;
 					m_clickHoldoff = true;
-					m_flashFrameIndex = 0;
 				}
 			}
 			else {
 				// if lmb up (and not in flash) remove the holdoff so another flash could begin
 				m_clickHoldoff = false;
 			}
-		}
-		else {
-			// increment frame index for rainbow effect
-			m_flashFrameIndex++;
 		}
 		// if we have a flash start we might need to draw flash
 		if (m_flashStartTime) {
@@ -87,15 +83,17 @@ namespace GfxLayer::Extension
 				m_flashStartTime.reset();
 			}
 		}
-		// if we're not in flash, we might need to draw background
-		if (!m_flashStartTime && m_currentConfig.RenderBackground) {
-			Render(false, m_currentConfig.UseRainbow, true);
+		// if we're not in flash, we might need to draw background or rainbow
+		else if (m_currentConfig.RenderBackground || m_currentConfig.UseRainbow) {
+			Render(false, m_currentConfig.UseRainbow, m_currentConfig.RenderBackground);
 		}
+		// advance index for rainbow strip every frame
+		m_rainbowFrameIndex++;
 	}
 
 	size_t OverlayRenderer::GetRainbowIndex() const
 	{
-		return m_flashFrameIndex % m_rainbowColors.size();
+		return m_rainbowFrameIndex % m_rainbowColors.size();
 	}
 }
 

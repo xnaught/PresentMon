@@ -17,6 +17,7 @@ namespace GfxLayer::Extension
 	{
 		RECT fg;
 		RECT bg;
+		RECT rb;
 	};
 
 	class OverlayRenderer : public NonCopyable
@@ -82,6 +83,6 @@ namespace GfxLayer::Extension
 		unsigned m_height;
 		std::optional<clock::time_point> m_flashStartTime;
 		bool m_clickHoldoff = false;
-		size_t m_flashFrameIndex = 0;
+		size_t m_rainbowFrameIndex = 0;
 	};
 }

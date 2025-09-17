@@ -97,8 +97,8 @@ watch(
 
       <v-row class="mt-8">
         <v-col cols="3">
-          Rainbow Flash
-          <p class="text-medium-emphasis text-caption mb-0">Cycle through a rainbow of colors instead of using above flash color.</p>
+          Rainbow Strip
+          <p class="text-medium-emphasis text-caption mb-0">Draw a strip on the left-hand side of the screen that cycles through colors every frame.</p>
         </v-col>
         <v-col cols="9">
           <v-switch v-model="prefs.preferences.flashInjectionUseRainbow" label="Enable"></v-switch>
