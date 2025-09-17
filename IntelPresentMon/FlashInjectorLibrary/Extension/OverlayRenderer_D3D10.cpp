@@ -162,17 +162,15 @@ namespace GfxLayer::Extension
 			m_pDevice->PSSetConstantBuffers(0, 1, &pConstantBuffer);
 			m_pDevice->DrawIndexed(6, 0, 0);
 		};
-		if (renderBar) {
-			if (enableBackground && m_backgroundViewport.Width > m_foregrountViewport.Width) {
-				Draw(m_pConstantBufferBackground.Get(), m_backgroundViewport);
-			}
-			Draw(useRainbow ?
-				m_rainbowConstantBufferPtrs[GetRainbowIndex()].Get() :
-				m_pConstantBufferBar.Get(),
-				m_foregrountViewport);
+		if (useRainbow) {
+			Draw(m_rainbowConstantBufferPtrs[GetRainbowIndex()].Get(), m_rainbowViewport);
 		}
-		else {
+		// draw background before flash bar if enabled, but only if A) not flash or B) background larger than flash
+		if (enableBackground && (m_backgroundViewport.Width > m_foregrountViewport.Width || !renderBar)) {
 			Draw(m_pConstantBufferBackground.Get(), m_backgroundViewport);
+		}
+		if (renderBar) {
+			Draw(m_pConstantBufferBar.Get(), m_foregrountViewport);
 		}
 
 		// Restore the previous state
@@ -185,6 +183,7 @@ namespace GfxLayer::Extension
 		const auto scissors = GetScissorRects();
 		m_foregrountViewport = MakeViewport<D3D10_VIEWPORT>(scissors.fg);
 		m_backgroundViewport = MakeViewport<D3D10_VIEWPORT>(scissors.bg);
+		m_rainbowViewport = MakeViewport<D3D10_VIEWPORT>(scissors.rb);
 	}
 
 	void OverlayRenderer_D3D10::UpdateConfig(const OverlayConfig& cfg)

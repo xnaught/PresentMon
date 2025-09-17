@@ -55,5 +55,6 @@ namespace GfxLayer::Extension
 
 		D3D10_VIEWPORT								m_foregrountViewport{};
 		D3D10_VIEWPORT								m_backgroundViewport{};
+		D3D10_VIEWPORT								m_rainbowViewport{};
 	};
 }

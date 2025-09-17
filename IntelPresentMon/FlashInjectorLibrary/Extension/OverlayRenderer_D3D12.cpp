@@ -82,19 +82,17 @@ namespace GfxLayer::Extension
 		pCmdAllocator->Reset();
 		pCmdList->Reset(pCmdAllocator, nullptr);
 		const auto scissors = GetScissorRects();
-		if (renderBar) {
-			const auto bgWidth = scissors.bg.right - scissors.bg.left;
-			const auto fgWidth = scissors.fg.right - scissors.fg.left;
-			if (enableBackground && bgWidth > fgWidth) {
-				pCmdList->ClearRenderTargetView(rtvHandle, m_config.BackgroundColor.data(), 1, &scissors.bg);
-			}
-			const auto pColor = useRainbow ?
-				GetRainbowColors().at(GetRainbowIndex()).data() :
-				m_config.BarColor.data();
-			pCmdList->ClearRenderTargetView(rtvHandle, pColor, 1, &scissors.fg);
+		const auto bgWidth = scissors.bg.right - scissors.bg.left;
+		const auto fgWidth = scissors.fg.right - scissors.fg.left;
+		if (useRainbow) {
+			pCmdList->ClearRenderTargetView(rtvHandle, GetRainbowColors().at(GetRainbowIndex()).data(), 1, &scissors.rb);
 		}
-		else {
+		// draw background before flash bar if enabled, but only if A) not flash or B) background larger than flash
+		if (enableBackground && (bgWidth > fgWidth || !renderBar)) {
 			pCmdList->ClearRenderTargetView(rtvHandle, m_config.BackgroundColor.data(), 1, &scissors.bg);
+		}
+		if (renderBar) {
+			pCmdList->ClearRenderTargetView(rtvHandle, m_config.BarColor.data(), 1, &scissors.fg);
 		}
 		pCmdList->Close();
 
