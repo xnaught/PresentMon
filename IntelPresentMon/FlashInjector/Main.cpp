@@ -18,7 +18,6 @@
 
 #include "LibraryInject.h"
 #include "Logging.h"
-#include "../Interprocess/source/act/SymmetricActionServer.h"
 
 namespace stdfs = std::filesystem;
 using namespace pmon::util;
@@ -35,8 +34,11 @@ namespace pmon::util::log
 
 int main(int argc, char** argv)
 {
+    // Initial logging
+    LOGI << "Injector process started" << std::endl;
+
     // Initialize arguments
-    if (auto res = clio::Options::Init(argc, argv)) {
+    if (auto res = clio::Options::Init(argc, argv, true)) {
         return *res;
     }
     auto& opts = clio::Options::Get();
@@ -46,7 +48,7 @@ int main(int argc, char** argv)
         std::vector<char> buffer(MAX_PATH);
         auto size = GetModuleFileNameA(NULL, buffer.data(), static_cast<DWORD>(buffer.size()));
         if (size == 0) {
-            LOGE << "Failed to get this executable path.";
+            LOGE << "Failed to get this executable path." << std::endl;;
         }
         injectorPath = std::string(buffer.begin(), buffer.begin() + size);
         injectorPath = injectorPath.parent_path();
@@ -58,11 +60,11 @@ int main(int argc, char** argv)
     const bool weAre32Bit = PM_BUILD_PLATFORM == "Win32"s;
 
     if (!stdfs::exists(libraryPath)) {
-        LOGE << "Cannot find library: " << libraryPath;
+        LOGE << "Cannot find library: " << libraryPath << std::endl;;
         exit(1);
     }
 
-    LOGI << "Waiting for processes that match executable name...";
+    LOGI << "Waiting for processes that match executable name..." << std::endl;
 
     std::mutex targetModuleNameMtx;
     std::wstring targetModuleName;
@@ -95,7 +97,7 @@ int main(int argc, char** argv)
                     // check that bitness matches that of this injector
                     auto hProcTarget = win::OpenProcess(proc->pid, PROCESS_QUERY_LIMITED_INFORMATION);
                     if (win::ProcessIs32Bit(hProcTarget) == weAre32Bit) {
-                        LOGI << "    Injecting DLL to process with PID: " << proc->pid;
+                        LOGI << "    Injecting DLL to process with PID: " << proc->pid << std::endl;;
                         // perform the actual injection
                         LibraryInject::Attach(proc->pid, libraryPath);
                         // inform kernel of attachment so it can connect the action client

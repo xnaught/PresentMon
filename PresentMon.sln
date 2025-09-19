@@ -67,6 +67,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{B4CC5828-9638-42EC-A692-E81E8227DD84}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
+		Directory.Build.props = Directory.Build.props
 		IntelPresentMon\metrics.csv = IntelPresentMon\metrics.csv
 		vcpkg.json = vcpkg.json
 	EndProjectSection

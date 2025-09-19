@@ -26,6 +26,7 @@ namespace p2c::cli
 		Flag traceExceptions{ this, "--trace-exceptions", "Add stack trace to all thrown exceptions (including SEH exceptions)" };
 		Flag enableDiagnostic{ this, "--enable-diagnostic", "Enable debug diagnostic layer forwarding (duplicates exiisting log entries)" };
 		Flag filesWorking{ this, "--files-working", "Use the working directory for file storage" };
+		Flag waitForDebugger{ this, "--wait-for-debugger", "On entry wait for debugger to be attached, then break" };
 
 	private: Group gl_{ this, "Logging", "Customize logging for this tool"}; public:
 		Option<log::Level> logLevel{ this, "--log-level", log::Level::Error, "Severity to log at", logLevelTf_ };

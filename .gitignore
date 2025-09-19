@@ -57,3 +57,5 @@ PresentMon/ddETWExternalEvents.h
 PresentMon/ddETWExternalEvents.rc
 
 PresentMon/ddETWExternalEventsTEMP.BIN
+
+Directory.Build.props
