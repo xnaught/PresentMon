@@ -72,20 +72,21 @@ namespace GfxLayer::Extension
 			}
 		}
 		// if we have a flash start we might need to draw flash
+		bool needFlash = false;
 		if (m_flashStartTime) {
 			// draw flash if initiated this frame OR within flash duration
 			const std::chrono::duration<float> flashDuration{ m_currentConfig.FlashDuration };
 			if (flashStartedThisFrame || (clock::now() - *m_flashStartTime < flashDuration)) {
-				Render(true, m_currentConfig.UseRainbow, m_currentConfig.RenderBackground);
+				needFlash = true;
 			}
 			else {
 				// reset flash time if duration lapsed
 				m_flashStartTime.reset();
 			}
 		}
-		// if we're not in flash, we might need to draw background or rainbow
-		else if (m_currentConfig.RenderBackground || m_currentConfig.UseRainbow) {
-			Render(false, m_currentConfig.UseRainbow, m_currentConfig.RenderBackground);
+		// only draw if we have flash or background or rainbow active
+		if (needFlash || m_currentConfig.RenderBackground || m_currentConfig.UseRainbow) {
+			Render(needFlash, m_currentConfig.UseRainbow, m_currentConfig.RenderBackground);
 		}
 		// advance index for rainbow strip every frame
 		m_rainbowFrameIndex++;
