@@ -1,9 +1,6 @@
 #include "../CommonUtilities/win/WinAPI.h"
 #include "../CommonUtilities/str/String.h"
 #include "../CommonUtilities/win/Utilities.h"
-#include "../CommonUtilities/win/com/WbemConnection.h"
-#include "../CommonUtilities/win/com/WbemListener.h"
-#include "../CommonUtilities/win/com/ProcessSpawnSink.h"
 #include "../CommonUtilities/win/Event.h"
 #include "CliOptions.h"
 
@@ -13,6 +10,7 @@
 #include <iostream>
 #include <filesystem>
 #include <thread>
+#include <mutex>
 #include <format>
 #include <atomic>
 
@@ -67,45 +65,39 @@ int main(int argc, char** argv)
     LOGI << "Waiting for processes that match executable name..." << std::endl;
 
     std::mutex targetModuleNameMtx;
-    std::wstring targetModuleName;
+    std::string targetModuleName;
     // thread whose sole job is to read from stdin without blocking the main thread
     std::thread{ [&] {
         std::string line;
         while (true) {
             std::getline(std::cin, line);
             std::lock_guard lk{ targetModuleNameMtx };
-            targetModuleName = str::ToWide(str::ToLower(line));
+            targetModuleName = str::ToLower(line);
         }
     } }.detach();
 
-    win::Event procSpawnEvt{ false };
-    win::com::WbemConnection wbConn;
-    win::com::ProcessSpawnSink::EventQueue procSpawnQueue{ [&] { procSpawnEvt.Set(); } };
-    auto pSpawnListener = wbConn.MakeListener<win::com::ProcessSpawnSink>(procSpawnQueue, 0.05f);
-
+    // keep a set of processes already attached so we don't attempt multiple attachments per process
+    std::unordered_set<DWORD> processesAttached;
     while (true) {
-        // wait until a process is spawned (queue has at least one spawn event added)
-        win::WaitAnyEvent(procSpawnEvt);
         // atomic load target name and skip if empty string
         const auto tgt = [&] { std::lock_guard lk{ targetModuleNameMtx }; return targetModuleName; }();
         if (!tgt.empty()) {
-            // keep popping process spawn events off the queue until it is empty
-            for (std::optional<win::Process> proc; proc = procSpawnQueue.Pop();) {
-                // case insensitive string compare spawned process name vs target
-                const auto processNameLower = str::ToLower(proc->name);
-                if (processNameLower == tgt) {
-                    // check that bitness matches that of this injector
-                    auto hProcTarget = win::OpenProcess(proc->pid, PROCESS_QUERY_LIMITED_INFORMATION);
+            for (auto&& [processId, processName] : LibraryInject::GetProcessNames()) {
+                const auto processNameLower = str::ToLower(processName);
+                if (processNameLower == tgt && !processesAttached.contains(processId)) {
+                    auto hProcTarget = win::OpenProcess(processId, PROCESS_QUERY_LIMITED_INFORMATION);
                     if (win::ProcessIs32Bit(hProcTarget) == weAre32Bit) {
-                        LOGI << "    Injecting DLL to process with PID: " << proc->pid << std::endl;;
-                        // perform the actual injection
-                        LibraryInject::Attach(proc->pid, libraryPath);
+                        LibraryInject::Attach(processId, libraryPath);
+                        LOGI << "    Injected DLL to process with PID: " << processId << std::endl;
+                        processesAttached.insert(processId);
                         // inform kernel of attachment so it can connect the action client
-                        std::cout << proc->pid << std::endl;
+                        std::cout << processId << std::endl;
                     }
                 }
             }
         }
+        // check for new processes only every N ms to reduce CPU load
+        std::this_thread::sleep_for(40ms);
     }
 
     return 0;
