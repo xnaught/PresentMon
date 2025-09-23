@@ -68,6 +68,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Common", "Common", "{B4CC58
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
 		IntelPresentMon\metrics.csv = IntelPresentMon\metrics.csv
+		vcpkg-configuration.json = vcpkg-configuration.json
 		vcpkg.json = vcpkg.json
 	EndProjectSection
 EndProject

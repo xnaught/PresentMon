@@ -4,7 +4,7 @@
 #include <IntelPresentMon/PresentMonAPI2/PresentMonDiagnostics.h>
 #include "../win/Event.h"
 #include <atomic>
-#include <concurrentqueue/concurrentqueue.h>
+#include <concurrentqueue/moodycamel/concurrentqueue.h>
 #include "Entry.h"
 
 
