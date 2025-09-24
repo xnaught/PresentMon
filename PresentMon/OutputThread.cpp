@@ -985,6 +985,15 @@ static void ProcessEvents(
         // Handle any process events that occurred before this present
         if (checkProcessTime) {
             while ((*processEvents)[processEventIndex].QpcTime < presentTime) {
+                auto& processEvent = (*processEvents)[processEventIndex];
+
+                // If this is a termination event for the same process as the current present,
+                // skip processing this termination to avoid removing the process info we need
+                if (!processEvent.IsStartEvent && processEvent.ProcessId == presentEvent->ProcessId) {
+                    // Don't process this termination yet - we have a present from this process to handle first
+                    break;
+                }
+
                 ProcessProcessEvent((*processEvents)[processEventIndex]);
                 processEventIndex += 1;
                 if (processEventIndex == processEventCount) {
