@@ -15,6 +15,8 @@
 #include "../../PresentData/PresentMonTraceSession.hpp"
 #include "PowerTelemetryContainer.h"
 
+#include "../PresentMonAPI2Tests/ServiceTestCommands.h"
+
 
 struct SwapChainData {
     uint32_t mPresentHistoryCount;
@@ -43,6 +45,7 @@ public:
     std::vector<std::shared_ptr<pwr::PowerTelemetryAdapter>> EnumerateAdapters();
     std::string GetCpuName();
     double GetCpuPowerLimit();
+    pmon::test::service::Status GetTestingStatus() const;
 
     PM_STATUS SelectAdapter(uint32_t adapter_id);
     PM_STATUS SetGpuTelemetryPeriod(uint32_t period_ms);

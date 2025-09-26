@@ -2,6 +2,16 @@
 // SPDX-License-Identifier: MIT
 #include "PresentMonSession.h"
 
+pmon::test::service::Status PresentMonSession::GetTestingStatus() const
+{
+    return pmon::test::service::Status{
+        .nsmStreamedPids = streamer_.GetActiveStreamPids(),
+        .activeAdapterId = current_telemetry_adapter_id_,
+        .telemetryPeriodMs = gpu_telemetry_period_ms_,
+        .etwFlushPeriodMs = etw_flush_period_ms_,
+    };
+}
+
 void PresentMonSession::SetCpu(const std::shared_ptr<pwr::cpu::CpuTelemetry>& pCpu) {
     cpu_ = pCpu.get();
 }

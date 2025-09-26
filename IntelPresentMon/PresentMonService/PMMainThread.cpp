@@ -17,6 +17,7 @@
 #include "../CommonUtilities/win/Event.h"
 
 #include "../CommonUtilities/log/GlogShim.h"
+#include "testing/TestControl.h"
 
 using namespace std::literals;
 using namespace pmon;
@@ -305,6 +306,12 @@ void PresentMonMainThread(Service* const pSvc)
 
         // start thread for manual ETW event buffer flushing
         std::jthread flushThread{ EventFlushThreadEntry_, pSvc, &pm };
+
+        // communication controller for testing purposes
+        std::unique_ptr<pmon::svc::testing::TestControlModule> pTcm;
+        if (opt.enableTestControl) {
+            pTcm = std::make_unique<pmon::svc::testing::TestControlModule>(&pm);
+        }
 
         while (WaitForSingleObjectEx(pSvc->GetServiceStopHandle(), 0, FALSE) != WAIT_OBJECT_0) {
             pm.CheckTraceSessions();

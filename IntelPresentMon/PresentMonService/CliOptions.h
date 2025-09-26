@@ -34,6 +34,8 @@ namespace clio
 		Flag disableIpcLog{ this, "--disable-ipc-log", "Disable logging to named pipe connection" };
 		Option<Level> logLevel{ this, "--log-level", Level::Error, "Severity to log at", logLevelTf_ };
 
+	private: Group gt_{ this, "Testing", "Automated testing features" }; public:
+		Flag enableTestControl{ this, "--enable-test-control", "Enable test control over stdio" };
 
 		static constexpr const char* description = "Intel PresentMon service for frame and system performance measurement";
 		static constexpr const char* name = "PresentMonService.exe";

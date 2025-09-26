@@ -70,6 +70,10 @@ public:
 	{
 		pSession_->FlushEvents();
 	}
+	auto GetTestingStatus() const
+	{
+		return pSession_->GetTestingStatus();
+	}
 	void StartPlayback();
 	void StopPlayback();
 private:
