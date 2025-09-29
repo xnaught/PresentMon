@@ -13,26 +13,23 @@ int MultiClientTest(std::unique_ptr<pmapi::Session> pSession)
 		pSession->SetTelemetryPollingPeriod(0, *opt.telemetryPeriodMs);
 	}
 
-	//std::string line;
+	std::string line;
 
-	//// ping to signal init finished
-	//std::getline(std::cin, line);
-	//if (line != "%ping") {
-	//	std::cout << "error-ping%%}" << std::endl;
-	//	return -1;
-	//}
-	//std::cout << "ping-ok%%}" << std::endl;
+	// ping to signal init finished
+	std::getline(std::cin, line);
+	if (line != "%ping") {
+		std::cout << "ping-error%%}" << std::endl;
+		return -1;
+	}
+	std::cout << "ping-ok%%}" << std::endl;
 
-	//// wait for quit
-	//std::getline(std::cin, line);
-	//if (line != "%quit") {
-	//	std::cout << "error-quit%%}" << std::endl;
-	//	return -1;
-	//}
-	//std::cout << "quit-ok%%}" << std::endl;
-
-
-	std::this_thread::sleep_for(1.5s);
+	// wait for quit
+	std::getline(std::cin, line);
+	if (line != "%quit") {
+		std::cout << "quit-error%%}" << std::endl;
+		return -1;
+	}
+	std::cout << "quit-ok%%}" << std::endl;
 
 	return 0;
 }

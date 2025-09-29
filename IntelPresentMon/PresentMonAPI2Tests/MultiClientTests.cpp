@@ -36,22 +36,22 @@ namespace MultiClientTests
 		}
 		~ClientProcess()
 		{
-			if (client_.is_open()) {
-				Assert::AreEqual( "quit-ok"s, Quit());
+			if (client_.running()) {
+				Quit();
 			}
 		}
-		std::string Quit()
+		void Quit()
 		{
-			auto ret = Command("quit");
+			Assert::IsTrue(client_.running());
+			Assert::AreEqual("quit-ok"s, Command("quit"));
 			client_.wait();
-			return ret;
 		}
 		std::string Command(const std::string command)
 		{
 			// write command string
 			as::write(pipeToClient_, as::buffer(std::format("%{}\n", command)));
 			// read response with special terminator sequence
-			std::size_t n = as::read_until(pipeFromClient_, readBufferFromClient_, "%%}\n");
+			std::size_t n = as::read_until(pipeFromClient_, readBufferFromClient_, "%%}\r\n");
 			
 			std::string payload;
 			payload.resize(n - 5);
@@ -156,29 +156,16 @@ namespace MultiClientTests
 				Assert::IsFalse((bool)status.etwFlushPeriodMs);
 			}
 			// launch a client
-			//ClientProcess client{
-			//	ioctx_,
-			//	std::vector<std::string>{
-			//		"--control-pipe"s, controlPipe_,
-			//		"--intro-nsm"s, introNsm_,
-			//		"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
-			//		"--mode"s, "MultiClient"s,
-			//		"--telemetry-period-ms"s, "63"s
-			//	},
-			//};
-			bp::process client1{
+			ClientProcess client{
 				ioctx_,
-				"SampleClient.exe"s,
 				std::vector<std::string>{
 					"--control-pipe"s, controlPipe_,
 					"--intro-nsm"s, introNsm_,
 					"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
 					"--mode"s, "MultiClient"s,
 					"--telemetry-period-ms"s, "63"s
-				}
-			};			
-			// grace period
-			std::this_thread::sleep_for(350ms);
+				},
+			};
 			// check that telemetry period has changed
 			{
 				const auto status = CommandServiceStatus();
@@ -196,9 +183,8 @@ namespace MultiClientTests
 				Assert::IsFalse((bool)status.etwFlushPeriodMs);
 			}
 			// launch a client
-			bp::process client1{
+			ClientProcess client1{
 				ioctx_,
-				"SampleClient.exe"s,
 				std::vector<std::string>{
 					"--control-pipe"s, controlPipe_,
 					"--intro-nsm"s, introNsm_,
@@ -207,8 +193,6 @@ namespace MultiClientTests
 					"--telemetry-period-ms"s, "63"s
 				}
 			};
-			// grace period
-			std::this_thread::sleep_for(350ms);
 			// check that telemetry period has changed
 			{
 				const auto status = CommandServiceStatus();
@@ -216,9 +200,8 @@ namespace MultiClientTests
 			}
 
 			// launch a client
-			bp::process client2{
+			ClientProcess client2{
 				ioctx_,
-				"SampleClient.exe"s,
 				std::vector<std::string>{
 					"--control-pipe"s, controlPipe_,
 					"--intro-nsm"s, introNsm_,
@@ -227,8 +210,6 @@ namespace MultiClientTests
 					"--telemetry-period-ms"s, "163"s
 				}
 			};
-			// grace period
-			std::this_thread::sleep_for(350ms);
 			// verify that telemetry period remains the same
 			{
 				const auto status = CommandServiceStatus();
@@ -246,9 +227,8 @@ namespace MultiClientTests
 				Assert::IsFalse((bool)status.etwFlushPeriodMs);
 			}
 			// launch a client
-			bp::process client1{
+			ClientProcess client1{
 				ioctx_,
-				"SampleClient.exe"s,
 				std::vector<std::string>{
 					"--control-pipe"s, controlPipe_,
 					"--intro-nsm"s, introNsm_,
@@ -257,8 +237,6 @@ namespace MultiClientTests
 					"--telemetry-period-ms"s, "63"s
 				}
 			};
-			// grace period
-			std::this_thread::sleep_for(350ms);
 			// check that telemetry period has changed
 			{
 				const auto status = CommandServiceStatus();
@@ -266,9 +244,8 @@ namespace MultiClientTests
 			}
 
 			// launch a client
-			bp::process client2{
+			ClientProcess client2{
 				ioctx_,
-				"SampleClient.exe"s,
 				std::vector<std::string>{
 					"--control-pipe"s, controlPipe_,
 					"--intro-nsm"s, introNsm_,
@@ -277,8 +254,6 @@ namespace MultiClientTests
 					"--telemetry-period-ms"s, "36"s
 				}
 			};
-			// grace period
-			std::this_thread::sleep_for(350ms);
 			// check that telemetry period has changed
 			{
 				const auto status = CommandServiceStatus();
@@ -296,9 +271,8 @@ namespace MultiClientTests
 				Assert::IsFalse((bool)status.etwFlushPeriodMs);
 			}
 			// launch a client
-			bp::process client1{
+			ClientProcess client1{
 				ioctx_,
-				"SampleClient.exe"s,
 				std::vector<std::string>{
 					"--control-pipe"s, controlPipe_,
 					"--intro-nsm"s, introNsm_,
@@ -307,18 +281,14 @@ namespace MultiClientTests
 					"--telemetry-period-ms"s, "63"s
 				}
 			};
-			// grace period
-			std::this_thread::sleep_for(350ms);
 			// check that telemetry period has changed
 			{
 				const auto status = CommandServiceStatus();
 				Assert::AreEqual(63u, status.telemetryPeriodMs);
 			}
-
 			// launch a client
-			bp::process client2{
+			ClientProcess client2{
 				ioctx_,
-				"SampleClient.exe"s,
 				std::vector<std::string>{
 					"--control-pipe"s, controlPipe_,
 					"--intro-nsm"s, introNsm_,
@@ -327,12 +297,25 @@ namespace MultiClientTests
 					"--telemetry-period-ms"s, "36"s
 				}
 			};
-			// grace period
-			std::this_thread::sleep_for(350ms);
 			// check that telemetry period has changed
 			{
 				const auto status = CommandServiceStatus();
 				Assert::AreEqual(36u, status.telemetryPeriodMs);
+			}
+
+			// kill client 2
+			client2.Quit();
+			// verify reversion to client 1's request
+			{
+				const auto status = CommandServiceStatus();
+				Assert::AreEqual(63u, status.telemetryPeriodMs);
+			}
+			// kill client 1
+			client1.Quit();
+			// verify reversion to default
+			{
+				const auto status = CommandServiceStatus();
+				Assert::AreEqual(16u, status.telemetryPeriodMs);
 			}
 		}
 	};
