@@ -1,5 +1,7 @@
 #pragma once
 #include "../../Interprocess/source/act/ActionHelper.h"
+#include <CommonUtilities/rng/MemberSlice.h>
+#include <CommonUtilities/rng/OptionalMinMax.h>
 #include <format>
 #include <ranges>
 
@@ -7,6 +9,11 @@
 #define ACT_EXEC_CTX ActionExecutionContext
 #define ACT_NS ::pmon::svc::acts
 #define ACT_TYPE AsyncActionBase_
+
+// TODO: copied from legacy api header
+// find a better home for these defines, and how to communicate them to app devs
+#define MIN_PM_TELEMETRY_PERIOD 1
+#define MAX_PM_TELEMETRY_PERIOD 1000
 
 namespace pmon::svc::acts
 {
@@ -31,11 +38,26 @@ namespace pmon::svc::acts
 		friend class ACT_TYPE<ACT_NAME, ACT_EXEC_CTX>;
 		static Response Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
 		{
-			if (auto sta = ctx.pPmon->SetGpuTelemetryPeriod(in.telemetrySamplePeriodMs); sta != PM_STATUS_SUCCESS) {
+			// make sure requested period is within allowed range
+			if (in.telemetrySamplePeriodMs) {
+				if (in.telemetrySamplePeriodMs < MIN_PM_TELEMETRY_PERIOD ||
+					in.telemetrySamplePeriodMs > MAX_PM_TELEMETRY_PERIOD) {
+					const auto sta = PM_STATUS::PM_STATUS_OUT_OF_RANGE;
+					pmlog_error("Set telemetry period failed").pmwatch(in.telemetrySamplePeriodMs).code(sta);
+					throw util::Except<ActionExecutionError>(sta);
+				}
+			}
+			// set request for this session
+			stx.requestedTelemetryPeriodMs = in.telemetrySamplePeriodMs;
+			// gather requests across all sessions
+			auto&& reqPeriods = util::rng::MemberSlice(*ctx.pSessionMap, &SessionContext::requestedTelemetryPeriodMs);
+			// determine the prioritized setting among those
+			const auto prioritizedPeriod = util::rng::OptionalMin(reqPeriods);
+			// execute the setting on the service system
+			if (auto sta = ctx.pPmon->SetGpuTelemetryPeriod(prioritizedPeriod); sta != PM_STATUS_SUCCESS) {
 				pmlog_error("Set telemetry period failed").code(sta);
 				throw util::Except<ActionExecutionError>(sta);
 			}
-			stx.requestedTelemetryPeriodMs = in.telemetrySamplePeriodMs;
 			pmlog_dbg(std::format("Setting telemetry sample period to {}ms", in.telemetrySamplePeriodMs));
 			return {};
 		}

@@ -53,17 +53,9 @@ PM_STATUS PresentMonSession::SelectAdapter(uint32_t adapter_id) {
     return PM_STATUS::PM_STATUS_SUCCESS;
 }
 
-// TODO: copied from legacy api header
-// find a better home for these defines, and how to communicate them to app devs
-#define MIN_PM_TELEMETRY_PERIOD 1
-#define MAX_PM_TELEMETRY_PERIOD 1000
-
-PM_STATUS PresentMonSession::SetGpuTelemetryPeriod(uint32_t period_ms) {
-    if (period_ms < MIN_PM_TELEMETRY_PERIOD ||
-        period_ms > MAX_PM_TELEMETRY_PERIOD) {
-        return PM_STATUS::PM_STATUS_OUT_OF_RANGE;
-    }
-    gpu_telemetry_period_ms_ = period_ms;
+PM_STATUS PresentMonSession::SetGpuTelemetryPeriod(std::optional<uint32_t> period_ms)
+{
+    gpu_telemetry_period_ms_ = period_ms.value_or(default_gpu_telemetry_period_ms_);
     return PM_STATUS_SUCCESS;
 }
 

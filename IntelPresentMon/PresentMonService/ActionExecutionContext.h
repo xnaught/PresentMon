@@ -37,8 +37,9 @@ namespace pmon::svc::acts
         using SessionContextType = ActionSessionContext;
 
         // data
-        Service* pSvc;
-        PresentMon* pPmon;
+        Service* pSvc = nullptr;
+        PresentMon* pPmon = nullptr;
+        const std::unordered_map<uint32_t, SessionContextType>* pSessionMap = nullptr;
         std::optional<uint32_t> responseWriteTimeoutMs;
 
         // functions
