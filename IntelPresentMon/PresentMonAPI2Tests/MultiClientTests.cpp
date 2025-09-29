@@ -22,8 +22,57 @@ using namespace pmon;
 
 namespace MultiClientTests
 {
+	class ClientProcess
+	{
+	public:
+		ClientProcess(as::io_context& ioctx_, std::vector<std::string> args)
+			:
+			pipeFromClient_{ ioctx_ },
+			pipeToClient_{ ioctx_ },
+			client_{ ioctx_, "SampleClient.exe"s, std::move(args),
+				bp::process_stdio{ pipeToClient_, pipeFromClient_, nullptr } }
+		{
+			Assert::AreEqual("ping-ok"s, Command("ping"));
+		}
+		~ClientProcess()
+		{
+			if (client_.is_open()) {
+				Assert::AreEqual( "quit-ok"s, Quit());
+			}
+		}
+		std::string Quit()
+		{
+			auto ret = Command("quit");
+			client_.wait();
+			return ret;
+		}
+		std::string Command(const std::string command)
+		{
+			// write command string
+			as::write(pipeToClient_, as::buffer(std::format("%{}\n", command)));
+			// read response with special terminator sequence
+			std::size_t n = as::read_until(pipeFromClient_, readBufferFromClient_, "%%}\n");
+			
+			std::string payload;
+			payload.resize(n - 5);
+
+			std::istream is(&readBufferFromClient_);
+			is.read(&payload[0], static_cast<std::streamsize>(payload.size()));
+			readBufferFromClient_.consume(5); // remove terminator sequence
+
+			return payload;
+		}
+	private:
+		as::readable_pipe pipeFromClient_;   // client's stdout
+		as::streambuf readBufferFromClient_; // client's stdout
+		as::writable_pipe pipeToClient_;     // client's stdin
+		bp::process client_;
+	};
+
 	TEST_CLASS(MultiClientTests)
 	{
+		static constexpr const char* controlPipe_ = R"(\\.\pipe\pm-multi-test-ctrl)";
+		static constexpr const char* introNsm_ = "pm_multi_test_intro";
 		std::thread ioctxRunThread_;
 		as::io_context ioctx_;
 		bp::process service_{ ioctx_ };
@@ -69,9 +118,9 @@ namespace MultiClientTests
 				ioctx_,
 				"PresentMonService.exe"s,
 				std::vector<std::string>{
-					"--control-pipe"s, R"(\\.\pipe\pm-multi-test-ctrl)"s,
+					"--control-pipe"s, controlPipe_,
 					"--nsm-prefix"s, "pm_multi_test_nsm"s,
-					"--intro-nsm"s, "pm_multi_test_intro"s,
+					"--intro-nsm"s, introNsm_,
 					"--enable-test-control"s,
 				},
 				bp::process_stdio{ pipeToSvc_, pipeFromSvc_, nullptr }
@@ -90,9 +139,201 @@ namespace MultiClientTests
 		}
 		TEST_METHOD(ServiceCommandTest)
 		{
+			// verify initial status
 			const auto status = CommandServiceStatus();
-			Assert::IsTrue(!status.etwFlushPeriodMs);
 			Assert::AreEqual(0ull, status.nsmStreamedPids.size());
+			Assert::AreEqual(16u, status.telemetryPeriodMs);
+			Assert::IsFalse((bool)status.etwFlushPeriodMs);
+		}
+		// basic test to see single client changing telemetry
+		TEST_METHOD(TelemetryPeriodTest1)
+		{
+			// verify initial status
+			{
+				const auto status = CommandServiceStatus();
+				Assert::AreEqual(0ull, status.nsmStreamedPids.size());
+				Assert::AreEqual(16u, status.telemetryPeriodMs);
+				Assert::IsFalse((bool)status.etwFlushPeriodMs);
+			}
+			// launch a client
+			//ClientProcess client{
+			//	ioctx_,
+			//	std::vector<std::string>{
+			//		"--control-pipe"s, controlPipe_,
+			//		"--intro-nsm"s, introNsm_,
+			//		"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
+			//		"--mode"s, "MultiClient"s,
+			//		"--telemetry-period-ms"s, "63"s
+			//	},
+			//};
+			bp::process client1{
+				ioctx_,
+				"SampleClient.exe"s,
+				std::vector<std::string>{
+					"--control-pipe"s, controlPipe_,
+					"--intro-nsm"s, introNsm_,
+					"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
+					"--mode"s, "MultiClient"s,
+					"--telemetry-period-ms"s, "63"s
+				}
+			};			
+			// grace period
+			std::this_thread::sleep_for(350ms);
+			// check that telemetry period has changed
+			{
+				const auto status = CommandServiceStatus();
+				Assert::AreEqual(63u, status.telemetryPeriodMs);
+			}
+		}
+		// two client test, 2nd client has superceded period
+		TEST_METHOD(TelemetryPeriodTest2)
+		{
+			// verify initial status
+			{
+				const auto status = CommandServiceStatus();
+				Assert::AreEqual(0ull, status.nsmStreamedPids.size());
+				Assert::AreEqual(16u, status.telemetryPeriodMs);
+				Assert::IsFalse((bool)status.etwFlushPeriodMs);
+			}
+			// launch a client
+			bp::process client1{
+				ioctx_,
+				"SampleClient.exe"s,
+				std::vector<std::string>{
+					"--control-pipe"s, controlPipe_,
+					"--intro-nsm"s, introNsm_,
+					"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
+					"--mode"s, "MultiClient"s,
+					"--telemetry-period-ms"s, "63"s
+				}
+			};
+			// grace period
+			std::this_thread::sleep_for(350ms);
+			// check that telemetry period has changed
+			{
+				const auto status = CommandServiceStatus();
+				Assert::AreEqual(63u, status.telemetryPeriodMs);
+			}
+
+			// launch a client
+			bp::process client2{
+				ioctx_,
+				"SampleClient.exe"s,
+				std::vector<std::string>{
+					"--control-pipe"s, controlPipe_,
+					"--intro-nsm"s, introNsm_,
+					"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
+					"--mode"s, "MultiClient"s,
+					"--telemetry-period-ms"s, "163"s
+				}
+			};
+			// grace period
+			std::this_thread::sleep_for(350ms);
+			// verify that telemetry period remains the same
+			{
+				const auto status = CommandServiceStatus();
+				Assert::AreEqual(63u, status.telemetryPeriodMs);
+			}
+		}
+		// two client test, 2nd client overrides
+		TEST_METHOD(TelemetryPeriodTest3)
+		{
+			// verify initial status
+			{
+				const auto status = CommandServiceStatus();
+				Assert::AreEqual(0ull, status.nsmStreamedPids.size());
+				Assert::AreEqual(16u, status.telemetryPeriodMs);
+				Assert::IsFalse((bool)status.etwFlushPeriodMs);
+			}
+			// launch a client
+			bp::process client1{
+				ioctx_,
+				"SampleClient.exe"s,
+				std::vector<std::string>{
+					"--control-pipe"s, controlPipe_,
+					"--intro-nsm"s, introNsm_,
+					"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
+					"--mode"s, "MultiClient"s,
+					"--telemetry-period-ms"s, "63"s
+				}
+			};
+			// grace period
+			std::this_thread::sleep_for(350ms);
+			// check that telemetry period has changed
+			{
+				const auto status = CommandServiceStatus();
+				Assert::AreEqual(63u, status.telemetryPeriodMs);
+			}
+
+			// launch a client
+			bp::process client2{
+				ioctx_,
+				"SampleClient.exe"s,
+				std::vector<std::string>{
+					"--control-pipe"s, controlPipe_,
+					"--intro-nsm"s, introNsm_,
+					"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
+					"--mode"s, "MultiClient"s,
+					"--telemetry-period-ms"s, "36"s
+				}
+			};
+			// grace period
+			std::this_thread::sleep_for(350ms);
+			// check that telemetry period has changed
+			{
+				const auto status = CommandServiceStatus();
+				Assert::AreEqual(36u, status.telemetryPeriodMs);
+			}
+		}
+		// two client test, verify override and reversion
+		TEST_METHOD(TelemetryPeriodTest4)
+		{
+			// verify initial status
+			{
+				const auto status = CommandServiceStatus();
+				Assert::AreEqual(0ull, status.nsmStreamedPids.size());
+				Assert::AreEqual(16u, status.telemetryPeriodMs);
+				Assert::IsFalse((bool)status.etwFlushPeriodMs);
+			}
+			// launch a client
+			bp::process client1{
+				ioctx_,
+				"SampleClient.exe"s,
+				std::vector<std::string>{
+					"--control-pipe"s, controlPipe_,
+					"--intro-nsm"s, introNsm_,
+					"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
+					"--mode"s, "MultiClient"s,
+					"--telemetry-period-ms"s, "63"s
+				}
+			};
+			// grace period
+			std::this_thread::sleep_for(350ms);
+			// check that telemetry period has changed
+			{
+				const auto status = CommandServiceStatus();
+				Assert::AreEqual(63u, status.telemetryPeriodMs);
+			}
+
+			// launch a client
+			bp::process client2{
+				ioctx_,
+				"SampleClient.exe"s,
+				std::vector<std::string>{
+					"--control-pipe"s, controlPipe_,
+					"--intro-nsm"s, introNsm_,
+					"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
+					"--mode"s, "MultiClient"s,
+					"--telemetry-period-ms"s, "36"s
+				}
+			};
+			// grace period
+			std::this_thread::sleep_for(350ms);
+			// check that telemetry period has changed
+			{
+				const auto status = CommandServiceStatus();
+				Assert::AreEqual(36u, status.telemetryPeriodMs);
+			}
 		}
 	};
 }

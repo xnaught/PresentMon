@@ -21,6 +21,7 @@ namespace clio
 		PlaybackFrameQuery,
 		PlaybackDynamicQuery,
 		IntrospectAllDynamicOptions,
+		MultiClient,
 		Count,
 	};
 
@@ -41,6 +42,8 @@ namespace clio
 		Option<unsigned int> processId{ this, "--process-id", 0, "Process Id to use for polling or frame data capture" };
 		Option<std::string> processName{ this, "--process-name", "", "Name of process to use for polling or frame data capture" };
 		Option<std::string> metric{ this, "--metric", "", "PM_METRIC, ex. PM_METRIC_PRESENTED_FPS" };
+		Option<unsigned int> telemetryPeriodMs{ this, "--telemetry-period-ms", {}, "Telemetry period in milliseconds" };
+		Option<unsigned int> etwFlushPeriodMs{ this, "--etw-flush-period-ms", {}, "ETW manual flush period in milliseconds" };
 	private: Group gl_{ this, "Logging", "Control logging behavior" }; public:
 		Option<log::Level> logLevel{ this, "--log-level", log::Level::Error, "Severity to log at", CLI::CheckedTransformer{ log::GetLevelMapNarrow(), CLI::ignore_case } };
 		Option<log::Level> logTraceLevel{ this, "--log-trace-level", log::Level::Error, "Severity to print stacktrace at", CLI::CheckedTransformer{ log::GetLevelMapNarrow(), CLI::ignore_case } };
