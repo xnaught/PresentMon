@@ -181,183 +181,137 @@ namespace MultiClientTests
 		}
 		// verify client lifetime
 		TEST_METHOD(ClientLaunchTest)
-		{		
+		{
 			ClientProcess client{
 				fixture_.ioctx,
 			};
 		}
-		//// basic test to see single client changing telemetry
-		//TEST_METHOD(TelemetryPeriodTest1)
-		//{
-		//	// verify initial status
-		//	{
-		//		const auto status = CommandServiceStatus();
-		//		Assert::AreEqual(0ull, status.nsmStreamedPids.size());
-		//		Assert::AreEqual(16u, status.telemetryPeriodMs);
-		//		Assert::IsFalse((bool)status.etwFlushPeriodMs);
-		//	}
-		//	// launch a client
-		//	ClientProcess client{
-		//		ioctx_,
-		//		std::vector<std::string>{
-		//			"--control-pipe"s, controlPipe_,
-		//			"--intro-nsm"s, introNsm_,
-		//			"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
-		//			"--mode"s, "MultiClient"s,
-		//			"--telemetry-period-ms"s, "63"s
-		//		},
-		//	};
-		//	// check that telemetry period has changed
-		//	{
-		//		const auto status = CommandServiceStatus();
-		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
-		//	}
-		//}
-		//// two client test, 2nd client has superceded period
-		//TEST_METHOD(TelemetryPeriodTest2)
-		//{
-		//	// verify initial status
-		//	{
-		//		const auto status = CommandServiceStatus();
-		//		Assert::AreEqual(0ull, status.nsmStreamedPids.size());
-		//		Assert::AreEqual(16u, status.telemetryPeriodMs);
-		//		Assert::IsFalse((bool)status.etwFlushPeriodMs);
-		//	}
-		//	// launch a client
-		//	ClientProcess client1{
-		//		ioctx_,
-		//		std::vector<std::string>{
-		//			"--control-pipe"s, controlPipe_,
-		//			"--intro-nsm"s, introNsm_,
-		//			"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
-		//			"--mode"s, "MultiClient"s,
-		//			"--telemetry-period-ms"s, "63"s
-		//		}
-		//	};
-		//	// check that telemetry period has changed
-		//	{
-		//		const auto status = CommandServiceStatus();
-		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
-		//	}
+	};
 
-		//	// launch a client
-		//	ClientProcess client2{
-		//		ioctx_,
-		//		std::vector<std::string>{
-		//			"--control-pipe"s, controlPipe_,
-		//			"--intro-nsm"s, introNsm_,
-		//			"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
-		//			"--mode"s, "MultiClient"s,
-		//			"--telemetry-period-ms"s, "163"s
-		//		}
-		//	};
-		//	// verify that telemetry period remains the same
-		//	{
-		//		const auto status = CommandServiceStatus();
-		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
-		//	}
-		//}
-		//// two client test, 2nd client overrides
-		//TEST_METHOD(TelemetryPeriodTest3)
-		//{
-		//	// verify initial status
-		//	{
-		//		const auto status = CommandServiceStatus();
-		//		Assert::AreEqual(0ull, status.nsmStreamedPids.size());
-		//		Assert::AreEqual(16u, status.telemetryPeriodMs);
-		//		Assert::IsFalse((bool)status.etwFlushPeriodMs);
-		//	}
-		//	// launch a client
-		//	ClientProcess client1{
-		//		ioctx_,
-		//		std::vector<std::string>{
-		//			"--control-pipe"s, controlPipe_,
-		//			"--intro-nsm"s, introNsm_,
-		//			"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
-		//			"--mode"s, "MultiClient"s,
-		//			"--telemetry-period-ms"s, "63"s
-		//		}
-		//	};
-		//	// check that telemetry period has changed
-		//	{
-		//		const auto status = CommandServiceStatus();
-		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
-		//	}
+	TEST_CLASS(TelemetryPeriodTests)
+	{
+		CommonTestFixture fixture_;
 
-		//	// launch a client
-		//	ClientProcess client2{
-		//		ioctx_,
-		//		std::vector<std::string>{
-		//			"--control-pipe"s, controlPipe_,
-		//			"--intro-nsm"s, introNsm_,
-		//			"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
-		//			"--mode"s, "MultiClient"s,
-		//			"--telemetry-period-ms"s, "36"s
-		//		}
-		//	};
-		//	// check that telemetry period has changed
-		//	{
-		//		const auto status = CommandServiceStatus();
-		//		Assert::AreEqual(36u, status.telemetryPeriodMs);
-		//	}
-		//}
-		//// two client test, verify override and reversion
-		//TEST_METHOD(TelemetryPeriodTest4)
-		//{
-		//	// verify initial status
-		//	{
-		//		const auto status = CommandServiceStatus();
-		//		Assert::AreEqual(0ull, status.nsmStreamedPids.size());
-		//		Assert::AreEqual(16u, status.telemetryPeriodMs);
-		//		Assert::IsFalse((bool)status.etwFlushPeriodMs);
-		//	}
-		//	// launch a client
-		//	ClientProcess client1{
-		//		ioctx_,
-		//		std::vector<std::string>{
-		//			"--control-pipe"s, controlPipe_,
-		//			"--intro-nsm"s, introNsm_,
-		//			"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
-		//			"--mode"s, "MultiClient"s,
-		//			"--telemetry-period-ms"s, "63"s
-		//		}
-		//	};
-		//	// check that telemetry period has changed
-		//	{
-		//		const auto status = CommandServiceStatus();
-		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
-		//	}
-		//	// launch a client
-		//	ClientProcess client2{
-		//		ioctx_,
-		//		std::vector<std::string>{
-		//			"--control-pipe"s, controlPipe_,
-		//			"--intro-nsm"s, introNsm_,
-		//			"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
-		//			"--mode"s, "MultiClient"s,
-		//			"--telemetry-period-ms"s, "36"s
-		//		}
-		//	};
-		//	// check that telemetry period has changed
-		//	{
-		//		const auto status = CommandServiceStatus();
-		//		Assert::AreEqual(36u, status.telemetryPeriodMs);
-		//	}
+	public:
+		TEST_METHOD_INITIALIZE(Setup)
+		{
+			fixture_.Setup();
+		}
+		TEST_METHOD_CLEANUP(Cleanup)
+		{
+			fixture_.Cleanup();
+		}
+		// basic test to see single client changing telemetry
+		TEST_METHOD(OneClientSetting)
+		{
+			// launch a client
+			ClientProcess client{
+				fixture_.ioctx, {
+					"--telemetry-period-ms"s, "63"s,
+				},
+			};
+			// check that telemetry period has changed
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(63u, status.telemetryPeriodMs);
+			}
+		}
+		// two client test, 2nd client has superceded period
+		TEST_METHOD(SecondClientSuperseded)
+		{
+			// launch a client
+			ClientProcess client1{
+				fixture_.ioctx, {
+					"--telemetry-period-ms"s, "63"s,
+				},
+			};
+			// check that telemetry period has changed
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(63u, status.telemetryPeriodMs);
+			}
 
-		//	// kill client 2
-		//	client2.Quit();
-		//	// verify reversion to client 1's request
-		//	{
-		//		const auto status = CommandServiceStatus();
-		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
-		//	}
-		//	// kill client 1
-		//	client1.Quit();
-		//	// verify reversion to default
-		//	{
-		//		const auto status = CommandServiceStatus();
-		//		Assert::AreEqual(16u, status.telemetryPeriodMs);
-		//	}
-		//}
+			// launch a client
+			ClientProcess client2{
+				fixture_.ioctx, {
+					"--telemetry-period-ms"s, "135"s,
+				},
+			};
+			// check that telemetry period has not changed
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(63u, status.telemetryPeriodMs);
+			}
+		}
+		// two client test, 2nd client overrides
+		TEST_METHOD(SecondClientOverrides)
+		{
+			// launch a client
+			ClientProcess client1{
+				fixture_.ioctx, {
+					"--telemetry-period-ms"s, "63"s,
+				},
+			};
+			// check that telemetry period has changed
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(63u, status.telemetryPeriodMs);
+			}
+
+			// launch a client
+			ClientProcess client2{
+				fixture_.ioctx, {
+					"--telemetry-period-ms"s, "36"s,
+				},
+			};
+			// check that telemetry period has been overrided
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(36u, status.telemetryPeriodMs);
+			}
+		}
+		// two client test, verify override and then reversion when clients disconnect
+		TEST_METHOD(TwoClientReversion)
+		{
+			// launch a client
+			ClientProcess client1{
+				fixture_.ioctx, {
+					"--telemetry-period-ms"s, "63"s,
+				},
+			};
+			// check that telemetry period has changed
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(63u, status.telemetryPeriodMs);
+			}
+
+			// launch a client
+			ClientProcess client2{
+				fixture_.ioctx, {
+					"--telemetry-period-ms"s, "36"s,
+				},
+			};
+			// check that telemetry period has been overrided
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(36u, status.telemetryPeriodMs);
+			}
+
+			// kill client 2
+			client2.Quit();
+			// verify reversion to client 1's request
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(63u, status.telemetryPeriodMs);
+			}
+
+			// kill client 1
+			client1.Quit();
+			// verify reversion to default
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(16u, status.telemetryPeriodMs);
+			}
+		}
 	};
 }
