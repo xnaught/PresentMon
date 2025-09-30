@@ -1,6 +1,5 @@
 #pragma once
 #include "../Interprocess/source/act/SymmetricActionConnector.h"
-#include "../CommonUtilities/pipe/ManualAsyncEvent.h"
 #include <memory>
 #include <set>
 #include <unordered_map>
@@ -43,11 +42,7 @@ namespace pmon::svc::acts
         std::optional<uint32_t> responseWriteTimeoutMs;
 
         // functions
-        void Dispose(SessionContextType& stx)
-        {
-            for (auto& tracked : stx.trackedPids) {
-                pPmon->StopStreaming(stx.remotePid, tracked);
-            }
-        }
+        void Dispose(SessionContextType& stx);
+        void UpdateTelemetryPeriod() const;
     };
 }

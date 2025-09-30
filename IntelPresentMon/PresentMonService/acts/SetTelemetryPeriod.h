@@ -1,7 +1,5 @@
 #pragma once
 #include "../../Interprocess/source/act/ActionHelper.h"
-#include <CommonUtilities/rng/MemberSlice.h>
-#include <CommonUtilities/rng/OptionalMinMax.h>
 #include <format>
 #include <ranges>
 
@@ -49,16 +47,11 @@ namespace pmon::svc::acts
 			}
 			// set request for this session
 			stx.requestedTelemetryPeriodMs = in.telemetrySamplePeriodMs;
-			// gather requests across all sessions
-			auto&& reqPeriods = util::rng::MemberSlice(*ctx.pSessionMap, &SessionContext::requestedTelemetryPeriodMs);
-			// determine the prioritized setting among those
-			const auto prioritizedPeriod = util::rng::OptionalMin(reqPeriods);
-			// execute the setting on the service system
-			if (auto sta = ctx.pPmon->SetGpuTelemetryPeriod(prioritizedPeriod); sta != PM_STATUS_SUCCESS) {
-				pmlog_error("Set telemetry period failed").code(sta);
-				throw util::Except<ActionExecutionError>(sta);
-			}
-			pmlog_dbg(std::format("Setting telemetry sample period to {}ms", in.telemetrySamplePeriodMs));
+			// update the service
+			ctx.UpdateTelemetryPeriod();
+
+			pmlog_dbg(std::format("Requested telemetry sample period of {}ms by client [{}]",
+				in.telemetrySamplePeriodMs, stx.remotePid));
 			return {};
 		}
 	};
