@@ -55,6 +55,12 @@ namespace MultiClientTests
 			Assert::AreEqual("quit-ok"s, Command("quit"));
 			process_.wait();
 		}
+		void Murder()
+		{
+			Assert::IsTrue(process_.running());
+			::TerminateProcess(process_.handle().native_handle(), 0xDEAD);
+			process_.wait();
+		}
 		std::string Command(const std::string command)
 		{
 			// send command
@@ -307,6 +313,55 @@ namespace MultiClientTests
 
 			// kill client 1
 			client1.Quit();
+			// verify reversion to default
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(16u, status.telemetryPeriodMs);
+			}
+		}
+		// verify reversion on sudden client death
+		TEST_METHOD(ClientMurderReversion)
+		{
+			// launch a client
+			ClientProcess client1{
+				fixture_.ioctx, {
+					"--telemetry-period-ms"s, "63"s,
+				},
+			};
+			// check that telemetry period has changed
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(63u, status.telemetryPeriodMs);
+			}
+
+			// launch a client
+			ClientProcess client2{
+				fixture_.ioctx, {
+					"--telemetry-period-ms"s, "36"s,
+				},
+			};
+			// check that telemetry period has been overrided
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(36u, status.telemetryPeriodMs);
+			}
+
+			// murder client 2
+			client2.Murder();
+			// there is a lag between when a process is abruptly terminated and when the pipe ruptures
+			// causing the Service session to be disposed; tolerate max 5ms
+			std::this_thread::sleep_for(5ms);
+			// verify reversion to client 1's request
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(63u, status.telemetryPeriodMs);
+			}
+
+			// murder client 1
+			client1.Murder();
+			// there is a lag between when a process is abruptly terminated and when the pipe ruptures
+			// causing the Service session to be disposed; tolerate max 5ms
+			std::this_thread::sleep_for(5ms);
 			// verify reversion to default
 			{
 				const auto status = fixture_.service->QueryStatus();
