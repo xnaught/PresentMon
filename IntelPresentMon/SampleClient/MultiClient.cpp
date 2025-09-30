@@ -12,6 +12,9 @@ int MultiClientTest(std::unique_ptr<pmapi::Session> pSession)
 	if (opt.telemetryPeriodMs) {
 		pSession->SetTelemetryPollingPeriod(0, *opt.telemetryPeriodMs);
 	}
+	if (opt.etwFlushPeriodMs) {
+		pSession->SetEtwFlushPeriod(*opt.etwFlushPeriodMs);
+	}
 
 	std::string line;
 

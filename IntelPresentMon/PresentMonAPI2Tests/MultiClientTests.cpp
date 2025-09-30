@@ -369,4 +369,187 @@ namespace MultiClientTests
 			}
 		}
 	};
+
+	TEST_CLASS(EtwFlushPeriodTests)
+	{
+		CommonTestFixture fixture_;
+
+	public:
+		TEST_METHOD_INITIALIZE(Setup)
+		{
+			fixture_.Setup();
+		}
+		TEST_METHOD_CLEANUP(Cleanup)
+		{
+			fixture_.Cleanup();
+		}
+		// basic test to see single client changing flush
+		TEST_METHOD(OneClientSetting)
+		{
+			// launch a client
+			ClientProcess client{
+				fixture_.ioctx, {
+					"--etw-flush-period-ms"s, "50"s,
+				},
+			};
+			// check that flush period has changed
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::IsTrue((bool)status.etwFlushPeriodMs);
+				Assert::AreEqual(50u, *status.etwFlushPeriodMs);
+			}
+		}
+		// two client test, 2nd client has superceded period
+		TEST_METHOD(SecondClientSuperseded)
+		{
+			// launch a client
+			ClientProcess client1{
+				fixture_.ioctx, {
+					"--etw-flush-period-ms"s, "50"s,
+				},
+			};
+			// check that flush period has changed
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::IsTrue((bool)status.etwFlushPeriodMs);
+				Assert::AreEqual(50u, *status.etwFlushPeriodMs);
+			}
+
+			// launch a client
+			ClientProcess client2{
+				fixture_.ioctx, {
+					"--etw-flush-period-ms"s, "65"s,
+				},
+			};
+			// check that flush period has not changed
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::IsTrue((bool)status.etwFlushPeriodMs);
+				Assert::AreEqual(50u, *status.etwFlushPeriodMs);
+			}
+		}
+		//// two client test, 2nd client overrides
+		//TEST_METHOD(SecondClientOverrides)
+		//{
+		//	// launch a client
+		//	ClientProcess client1{
+		//		fixture_.ioctx, {
+		//			"--telemetry-period-ms"s, "50"s,
+		//		},
+		//	};
+		//	// check that telemetry period has changed
+		//	{
+		//		const auto status = fixture_.service->QueryStatus();
+		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
+		//	}
+
+		//	// launch a client
+		//	ClientProcess client2{
+		//		fixture_.ioctx, {
+		//			"--telemetry-period-ms"s, "36"s,
+		//		},
+		//	};
+		//	// check that telemetry period has been overrided
+		//	{
+		//		const auto status = fixture_.service->QueryStatus();
+		//		Assert::AreEqual(36u, status.telemetryPeriodMs);
+		//	}
+		//}
+		//// two client test, verify override and then reversion when clients disconnect
+		//TEST_METHOD(TwoClientReversion)
+		//{
+		//	// launch a client
+		//	ClientProcess client1{
+		//		fixture_.ioctx, {
+		//			"--telemetry-period-ms"s, "63"s,
+		//		},
+		//	};
+		//	// check that telemetry period has changed
+		//	{
+		//		const auto status = fixture_.service->QueryStatus();
+		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
+		//	}
+
+		//	// launch a client
+		//	ClientProcess client2{
+		//		fixture_.ioctx, {
+		//			"--telemetry-period-ms"s, "36"s,
+		//		},
+		//	};
+		//	// check that telemetry period has been overrided
+		//	{
+		//		const auto status = fixture_.service->QueryStatus();
+		//		Assert::AreEqual(36u, status.telemetryPeriodMs);
+		//	}
+
+		//	// kill client 2
+		//	client2.Quit();
+		//	// verify reversion to client 1's request
+		//	{
+		//		const auto status = fixture_.service->QueryStatus();
+		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
+		//	}
+
+		//	// kill client 1
+		//	client1.Quit();
+		//	// verify reversion to default
+		//	{
+		//		const auto status = fixture_.service->QueryStatus();
+		//		Assert::AreEqual(16u, status.telemetryPeriodMs);
+		//	}
+		//}
+		//// verify reversion on sudden client death
+		//TEST_METHOD(ClientMurderReversion)
+		//{
+		//	// launch a client
+		//	ClientProcess client1{
+		//		fixture_.ioctx, {
+		//			"--telemetry-period-ms"s, "63"s,
+		//		},
+		//	};
+		//	// check that telemetry period has changed
+		//	{
+		//		const auto status = fixture_.service->QueryStatus();
+		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
+		//	}
+
+		//	// launch a client
+		//	ClientProcess client2{
+		//		fixture_.ioctx, {
+		//			"--telemetry-period-ms"s, "36"s,
+		//		},
+		//	};
+		//	// check that telemetry period has been overrided
+		//	{
+		//		const auto status = fixture_.service->QueryStatus();
+		//		Assert::AreEqual(36u, status.telemetryPeriodMs);
+		//	}
+
+		//	// murder client 2
+		//	client2.Murder();
+		//	// there is a lag between when a process is abruptly terminated and when the pipe ruptures
+		//	// causing the Service session to be disposed; tolerate max 5ms
+		//	std::this_thread::sleep_for(5ms);
+		//	// verify reversion to client 1's request
+		//	{
+		//		const auto status = fixture_.service->QueryStatus();
+		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
+		//	}
+
+		//	// murder client 1
+		//	client1.Murder();
+		//	// there is a lag between when a process is abruptly terminated and when the pipe ruptures
+		//	// causing the Service session to be disposed; tolerate max 5ms
+		//	std::this_thread::sleep_for(5ms);
+		//	// verify reversion to default
+		//	{
+		//		const auto status = fixture_.service->QueryStatus();
+		//		Assert::AreEqual(16u, status.telemetryPeriodMs);
+		//	}
+		//}
+		
+		// auto-flush recovery
+		// valid range test
+		// auto-flush wins test
+	};
 }
