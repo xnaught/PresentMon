@@ -1,32 +1,50 @@
 #include "TestControl.h"
 #include "../PresentMon.h"
+#include "../Service.h"
 #include <iostream>
 #include <sstream>
 #include <cereal/archives/json.hpp>
 
 namespace pmon::svc::testing
 {
-	TestControlModule::TestControlModule(const PresentMon* pSession)
+	TestControlModule::TestControlModule(const PresentMon* pPmon, Service* pService)
 		:
-		pPresentMon_{ pSession },
+		pPresentMon_{ pPmon },
+		pService_{ pService },
 		worker_{ &TestControlModule::Run_, this }
 	{}
 	void TestControlModule::Run_()
 	{
 		std::string line;
+		// wait for ping before entering main execution mode
+		while (std::getline(std::cin, line)) {
+			if (line == "%ping") {
+				WriteResponse_("ping-ok");
+				break;
+			}
+			else {
+				WriteResponse_("err-expect-ping");
+			}
+		}
+		// command execution loop
 		while (std::getline(std::cin, line)) {
 			if (line == "%quit") {
-				std::cout << "{%QUIT_OK%}" << std::endl;
+				SetEvent(pService_->GetServiceStopHandle());
+				WriteResponse_("quit-ok");
 				break;
 			}
 			else if (line == "%status") {
 				std::ostringstream oss;
 				cereal::JSONOutputArchive{ oss }(pPresentMon_->GetTestingStatus());
-				std::cout << "{%" << oss.str() << "%}" << std::endl;
+				WriteResponse_(oss.str());
 			}
 			else {
-				std::cout << "{%BAD_COMMAND%}" << std::endl;
+				WriteResponse_("err-bad-command");
 			}
 		}
+	}
+	void TestControlModule::WriteResponse_(const std::string& payload)
+	{
+		std::cout << std::format("%%{{{}}}%%\n", payload) << std::flush;
 	}
 }

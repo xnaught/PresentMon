@@ -310,12 +310,12 @@ void PresentMonMainThread(Service* const pSvc)
         // communication controller for testing purposes
         std::unique_ptr<pmon::svc::testing::TestControlModule> pTcm;
         if (opt.enableTestControl) {
-            pTcm = std::make_unique<pmon::svc::testing::TestControlModule>(&pm);
+            pTcm = std::make_unique<pmon::svc::testing::TestControlModule>(&pm, pSvc);
         }
 
-        while (WaitForSingleObjectEx(pSvc->GetServiceStopHandle(), 0, FALSE) != WAIT_OBJECT_0) {
+        // periodically check trace sessions while waiting for service stop event
+        while (!util::win::WaitAnyEventFor(250ms, pSvc->GetServiceStopHandle())) {
             pm.CheckTraceSessions();
-            SleepEx(1000, (bool)opt.timedStop);
         }
 
         // Stop the PresentMon sessions
