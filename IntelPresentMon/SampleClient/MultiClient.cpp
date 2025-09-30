@@ -18,18 +18,18 @@ int MultiClientTest(std::unique_ptr<pmapi::Session> pSession)
 	// ping to signal init finished
 	std::getline(std::cin, line);
 	if (line != "%ping") {
-		std::cout << "ping-error%%}" << std::endl;
+		std::cout << "%%{ping-error}%%" << std::endl;
 		return -1;
 	}
-	std::cout << "ping-ok%%}" << std::endl;
+	std::cout << "%%{ping-ok}%%" << std::endl;
 
 	// wait for quit
 	std::getline(std::cin, line);
 	if (line != "%quit") {
-		std::cout << "quit-error%%}" << std::endl;
+		std::cout << "%%{quit-error}%%" << std::endl;
 		return -1;
 	}
-	std::cout << "quit-ok%%}" << std::endl;
+	std::cout << "%%{quit-ok}%%" << std::endl;
 
 	return 0;
 }

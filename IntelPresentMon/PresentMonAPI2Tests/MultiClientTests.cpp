@@ -137,32 +137,54 @@ namespace MultiClientTests
 		}
 	};
 
-	TEST_CLASS(MultiClientTests)
+	struct CommonTestFixture
 	{
-		std::thread ioctxRunThread_;
-		as::io_context ioctx_;
-		std::optional<ServiceProcess> service_;
+		std::thread ioctxRunThread;
+		as::io_context ioctx;
+		std::optional<ServiceProcess> service;
+
+		void Setup()
+		{
+			service.emplace(ioctx);
+			ioctxRunThread = std::thread{ [&] {pmquell(ioctx.run()); } };
+		}
+		void Cleanup()
+		{
+			service.reset();
+			ioctxRunThread.join();
+			// sleep after every test to ensure that named pipe is no longer available
+			std::this_thread::sleep_for(50ms);
+		}
+	};
+
+	TEST_CLASS(CommonFixtureTests)
+	{
+		CommonTestFixture fixture_;
 
 	public:
 		TEST_METHOD_INITIALIZE(Setup)
 		{
-			service_.emplace(ioctx_);
-			ioctxRunThread_ = std::thread{ [&] {pmquell(ioctx_.run()); } };
+			fixture_.Setup();
 		}
 		TEST_METHOD_CLEANUP(Cleanup)
 		{
-			service_.reset();
-			ioctxRunThread_.join();
-			// sleep after every test to ensure that named pipe is no longer available
-			std::this_thread::sleep_for(50ms);
+			fixture_.Cleanup();
 		}
-		TEST_METHOD(ServiceCommandTest)
+		// verify service lifetime and status command functionality
+		TEST_METHOD(ServiceStatusTest)
 		{
 			// verify initial status
-			const auto status = service_->QueryStatus();
+			const auto status = fixture_.service->QueryStatus();
 			Assert::AreEqual(0ull, status.nsmStreamedPids.size());
 			Assert::AreEqual(16u, status.telemetryPeriodMs);
 			Assert::IsFalse((bool)status.etwFlushPeriodMs);
+		}
+		// verify client lifetime
+		TEST_METHOD(ClientLaunchTest)
+		{		
+			ClientProcess client{
+				fixture_.ioctx,
+			};
 		}
 		//// basic test to see single client changing telemetry
 		//TEST_METHOD(TelemetryPeriodTest1)
