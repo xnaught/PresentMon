@@ -429,128 +429,128 @@ namespace MultiClientTests
 				Assert::AreEqual(50u, *status.etwFlushPeriodMs);
 			}
 		}
-		//// two client test, 2nd client overrides
-		//TEST_METHOD(SecondClientOverrides)
-		//{
-		//	// launch a client
-		//	ClientProcess client1{
-		//		fixture_.ioctx, {
-		//			"--telemetry-period-ms"s, "50"s,
-		//		},
-		//	};
-		//	// check that telemetry period has changed
-		//	{
-		//		const auto status = fixture_.service->QueryStatus();
-		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
-		//	}
+		// two client test, 2nd client overrides (smaller value wins)
+		TEST_METHOD(SecondClientOverrides)
+		{
+			// launch a client
+			ClientProcess client1{
+				fixture_.ioctx, {
+					"--etw-flush-period-ms"s, "50"s,
+				},
+			};
+			// check that flush period has changed
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::IsTrue((bool)status.etwFlushPeriodMs);
+				Assert::AreEqual(50u, *status.etwFlushPeriodMs);
+			}
 
-		//	// launch a client
-		//	ClientProcess client2{
-		//		fixture_.ioctx, {
-		//			"--telemetry-period-ms"s, "36"s,
-		//		},
-		//	};
-		//	// check that telemetry period has been overrided
-		//	{
-		//		const auto status = fixture_.service->QueryStatus();
-		//		Assert::AreEqual(36u, status.telemetryPeriodMs);
-		//	}
-		//}
-		//// two client test, verify override and then reversion when clients disconnect
-		//TEST_METHOD(TwoClientReversion)
-		//{
-		//	// launch a client
-		//	ClientProcess client1{
-		//		fixture_.ioctx, {
-		//			"--telemetry-period-ms"s, "63"s,
-		//		},
-		//	};
-		//	// check that telemetry period has changed
-		//	{
-		//		const auto status = fixture_.service->QueryStatus();
-		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
-		//	}
+			// launch a second client with a smaller period (should override)
+			ClientProcess client2{
+				fixture_.ioctx, {
+					"--etw-flush-period-ms"s, "35"s,
+				},
+			};
+			// check that flush period has been overridden
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::IsTrue((bool)status.etwFlushPeriodMs);
+				Assert::AreEqual(35u, *status.etwFlushPeriodMs);
+			}
+		}
+		// two client test, verify override and then reversion when clients disconnect
+		TEST_METHOD(TwoClientReversion)
+		{
+			// launch a client
+			ClientProcess client1{
+				fixture_.ioctx, {
+					"--etw-flush-period-ms"s, "50"s,
+				},
+			};
+			// check that flush period has changed
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::IsTrue((bool)status.etwFlushPeriodMs);
+				Assert::AreEqual(50u, *status.etwFlushPeriodMs);
+			}
 
-		//	// launch a client
-		//	ClientProcess client2{
-		//		fixture_.ioctx, {
-		//			"--telemetry-period-ms"s, "36"s,
-		//		},
-		//	};
-		//	// check that telemetry period has been overrided
-		//	{
-		//		const auto status = fixture_.service->QueryStatus();
-		//		Assert::AreEqual(36u, status.telemetryPeriodMs);
-		//	}
+			// launch a second client with a smaller period (override)
+			ClientProcess client2{
+				fixture_.ioctx, {
+					"--etw-flush-period-ms"s, "35"s,
+				},
+			};
+			// verify overridden to smaller value
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::IsTrue((bool)status.etwFlushPeriodMs);
+				Assert::AreEqual(35u, *status.etwFlushPeriodMs);
+			}
 
-		//	// kill client 2
-		//	client2.Quit();
-		//	// verify reversion to client 1's request
-		//	{
-		//		const auto status = fixture_.service->QueryStatus();
-		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
-		//	}
+			// kill client 2; should revert to client 1's request
+			client2.Quit();
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::IsTrue((bool)status.etwFlushPeriodMs);
+				Assert::AreEqual(50u, *status.etwFlushPeriodMs);
+			}
 
-		//	// kill client 1
-		//	client1.Quit();
-		//	// verify reversion to default
-		//	{
-		//		const auto status = fixture_.service->QueryStatus();
-		//		Assert::AreEqual(16u, status.telemetryPeriodMs);
-		//	}
-		//}
-		//// verify reversion on sudden client death
-		//TEST_METHOD(ClientMurderReversion)
-		//{
-		//	// launch a client
-		//	ClientProcess client1{
-		//		fixture_.ioctx, {
-		//			"--telemetry-period-ms"s, "63"s,
-		//		},
-		//	};
-		//	// check that telemetry period has changed
-		//	{
-		//		const auto status = fixture_.service->QueryStatus();
-		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
-		//	}
+			// kill client 1; should revert to default (1000 ms per ServiceStatusTest)
+			client1.Quit();
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::IsTrue((bool)status.etwFlushPeriodMs);
+				Assert::AreEqual(1000u, *status.etwFlushPeriodMs);
+			}
+		}
+		// verify reversion on sudden client death
+		TEST_METHOD(ClientMurderReversion)
+		{
+			// launch a client
+			ClientProcess client1{
+				fixture_.ioctx, {
+					"--etw-flush-period-ms"s, "50"s,
+				},
+			};
+			// check that flush period has changed
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::IsTrue((bool)status.etwFlushPeriodMs);
+				Assert::AreEqual(50u, *status.etwFlushPeriodMs);
+			}
 
-		//	// launch a client
-		//	ClientProcess client2{
-		//		fixture_.ioctx, {
-		//			"--telemetry-period-ms"s, "36"s,
-		//		},
-		//	};
-		//	// check that telemetry period has been overrided
-		//	{
-		//		const auto status = fixture_.service->QueryStatus();
-		//		Assert::AreEqual(36u, status.telemetryPeriodMs);
-		//	}
+			// launch a second client with a smaller period (override)
+			ClientProcess client2{
+				fixture_.ioctx, {
+					"--etw-flush-period-ms"s, "35"s,
+				},
+			};
+			// verify overridden value
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::IsTrue((bool)status.etwFlushPeriodMs);
+				Assert::AreEqual(35u, *status.etwFlushPeriodMs);
+			}
 
-		//	// murder client 2
-		//	client2.Murder();
-		//	// there is a lag between when a process is abruptly terminated and when the pipe ruptures
-		//	// causing the Service session to be disposed; tolerate max 5ms
-		//	std::this_thread::sleep_for(5ms);
-		//	// verify reversion to client 1's request
-		//	{
-		//		const auto status = fixture_.service->QueryStatus();
-		//		Assert::AreEqual(63u, status.telemetryPeriodMs);
-		//	}
+			// murder client 2; allow brief lag for pipe/session cleanup
+			client2.Murder();
+			std::this_thread::sleep_for(5ms);
+			// verify reversion to client 1's request
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::IsTrue((bool)status.etwFlushPeriodMs);
+				Assert::AreEqual(50u, *status.etwFlushPeriodMs);
+			}
 
-		//	// murder client 1
-		//	client1.Murder();
-		//	// there is a lag between when a process is abruptly terminated and when the pipe ruptures
-		//	// causing the Service session to be disposed; tolerate max 5ms
-		//	std::this_thread::sleep_for(5ms);
-		//	// verify reversion to default
-		//	{
-		//		const auto status = fixture_.service->QueryStatus();
-		//		Assert::AreEqual(16u, status.telemetryPeriodMs);
-		//	}
-		//}
-		
-		// auto-flush recovery
-		// valid range test
-		// auto-flush wins test
+			// murder client 1; allow brief lag for pipe/session cleanup
+			client1.Murder();
+			std::this_thread::sleep_for(5ms);
+			// verify reversion to default
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::IsTrue((bool)status.etwFlushPeriodMs);
+				Assert::AreEqual(1000u, *status.etwFlushPeriodMs);
+			}
+		}
 	};
 }
