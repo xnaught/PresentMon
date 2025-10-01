@@ -16,12 +16,8 @@ using namespace std::literals;
 static const std::wstring kRealTimeSessionName = L"PMService";
 
 RealtimePresentMonSession::RealtimePresentMonSession()
-    : target_process_count_(0),
-    quit_output_thread_(false)
 {
-    pm_session_name_.clear();
-    processes_.clear();
-    pm_consumer_.reset();
+    ResetEtwFlushPeriod();
 }
 
 bool RealtimePresentMonSession::IsTraceSessionActive() {
@@ -99,6 +95,11 @@ void RealtimePresentMonSession::FlushEvents()
     if (ControlTraceW(trace_session_.mSessionHandle, nullptr, &props, EVENT_TRACE_CONTROL_FLUSH)) {
         pmlog_warn("Failed manual flush of ETW event buffer").hr();
     }
+}
+
+void RealtimePresentMonSession::ResetEtwFlushPeriod()
+{
+    etw_flush_period_ms_ = default_realtime_etw_flush_period_ms_;
 }
 
 PM_STATUS RealtimePresentMonSession::StartTraceSession() {

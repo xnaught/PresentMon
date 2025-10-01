@@ -40,6 +40,7 @@ public:
     virtual bool CheckTraceSessions(bool forceTerminate) = 0;
     virtual HANDLE GetStreamingStartHandle() = 0;
     virtual void FlushEvents() {}
+    virtual void ResetEtwFlushPeriod() = 0;
 
     void SetCpu(const std::shared_ptr<pwr::cpu::CpuTelemetry>& pCpu);
     std::vector<std::shared_ptr<pwr::PowerTelemetryAdapter>> EnumerateAdapters();
@@ -67,7 +68,10 @@ public:
     // Set the initial telemetry period to 16ms
     static constexpr uint32_t default_gpu_telemetry_period_ms_ = 16;
     uint32_t gpu_telemetry_period_ms_ = default_gpu_telemetry_period_ms_;
-    // etw flushing behavior defaults to auto (1000ms) flushing
+    // initial default etw flush period for realtime is 1000ms
+    // realtime trace sessions always manually flush
+    static constexpr uint32_t default_realtime_etw_flush_period_ms_ = 1000;
+    // empty optional means automatic flushing active
     std::atomic<std::optional<uint32_t>> etw_flush_period_ms_;
 
     Streamer streamer_;

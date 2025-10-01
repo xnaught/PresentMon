@@ -65,7 +65,12 @@ uint32_t PresentMonSession::GetGpuTelemetryPeriod() {
 
 PM_STATUS PresentMonSession::SetEtwFlushPeriod(std::optional<uint32_t> periodMs)
 {
-    etw_flush_period_ms_ = periodMs;
+    if (periodMs) {
+        etw_flush_period_ms_ = *periodMs;
+    }
+    else {
+        ResetEtwFlushPeriod();
+    }
     return PM_STATUS_SUCCESS;
 }
 

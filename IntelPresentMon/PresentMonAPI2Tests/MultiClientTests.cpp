@@ -183,7 +183,8 @@ namespace MultiClientTests
 			const auto status = fixture_.service->QueryStatus();
 			Assert::AreEqual(0ull, status.nsmStreamedPids.size());
 			Assert::AreEqual(16u, status.telemetryPeriodMs);
-			Assert::IsFalse((bool)status.etwFlushPeriodMs);
+			Assert::IsTrue((bool)status.etwFlushPeriodMs);
+			Assert::AreEqual(1000u, *status.etwFlushPeriodMs);
 		}
 		// verify client lifetime
 		TEST_METHOD(ClientLaunchTest)
