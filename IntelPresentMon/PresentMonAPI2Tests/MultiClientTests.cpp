@@ -11,12 +11,14 @@
 #include <boost/process.hpp>
 #include <cereal/archives/json.hpp>
 #include <sstream>
+#include <filesystem>
 #include "ServiceTestCommands.h"
 
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace bp = boost::process;
 namespace as = boost::asio;
+namespace fs = std::filesystem;
 using namespace std::literals;
 using namespace pmon;
 
@@ -24,6 +26,23 @@ namespace MultiClientTests
 {
 	static constexpr const char* controlPipe_ = R"(\\.\pipe\pm-multi-test-ctrl)";
 	static constexpr const char* introNsm_ = "pm_multi_test_intro";
+	static constexpr const char* logFolder_ = "TestLogs\\MultiClient";
+	static constexpr const char* logLevel_ = "info";
+
+	TEST_MODULE_INITIALIZE(ModuleInit)
+	{
+		// Wipe the log folder before any tests run
+		try {
+			if (fs::exists(logFolder_)) {
+				fs::remove_all(logFolder_);
+			}
+			fs::create_directories(logFolder_);
+		}
+		catch (const std::exception& ex) {
+			Logger::WriteMessage(std::format("Failed to wipe log folder: {}\n", ex.what()).c_str());
+			throw; // let MSTest see this as a test infrastructure error
+		}
+	}
 
 	class TestProcess
 	{
@@ -36,6 +55,8 @@ namespace MultiClientTests
 				bp::process_stdio{ pipeTo_, pipeFrom_, nullptr } }
 		{
 			Assert::AreEqual("ping-ok"s, Command("ping"));
+			Logger::WriteMessage(std::format(" - Launched process {{{}}} [{}]\n",
+				executable, process_.id()).c_str());
 		}
 		~TestProcess()
 		{
@@ -116,6 +137,9 @@ namespace MultiClientTests
 				"--nsm-prefix"s, "pm_multi_test_nsm"s,
 				"--intro-nsm"s, introNsm_,
 				"--enable-test-control"s,
+				"--log-dir"s, logFolder_,
+				"--log-name-pid"s,
+				"--log-level"s, std::string(logLevel_),
 			};
 			allArgs.append_range(customArgs);
 			return allArgs;
@@ -136,6 +160,9 @@ namespace MultiClientTests
 				"--control-pipe"s, controlPipe_,
 				"--intro-nsm"s, introNsm_,
 				"--middleware-dll-path"s, "PresentMonAPI2.dll"s,
+				"--log-folder"s, std::string(logFolder_),
+				"--log-name-pid"s,
+				"--log-level"s, std::string(logLevel_),
 				"--mode"s, "MultiClient"s,
 			};
 			allArgs.append_range(customArgs);

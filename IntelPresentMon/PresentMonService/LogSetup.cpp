@@ -85,8 +85,16 @@ namespace logsetup
 			}
 			if (opt.logDir || reg.logDir.Exists()) {
 				const auto dir = opt.logDir ? *opt.logDir : reg.logDir;
-				const std::chrono::zoned_time now{ std::chrono::current_zone(), std::chrono::system_clock::now() };
-				auto fullPath = std::format("{0}\\pmsvc-log-{1:%y}{1:%m}{1:%d}-{1:%H}{1:%M}{1:%OS}.txt", dir, now);
+				std::string tag;
+				if (opt.logNamePid) {
+					tag = std::to_string(GetCurrentProcessId());
+				}
+				else {
+					const std::chrono::zoned_time now{ std::chrono::current_zone(),
+						std::chrono::system_clock::now() };
+					tag = std::format("{0:%y}{0:%m}{0:%d}-{0:%H}{0:%M}{0:%OS}", now);
+				}
+				auto fullPath = std::format("{}\\pmsvc-log-{}.txt", dir, tag);
 				pChannel->AttachComponent(std::make_shared<BasicFileDriver>( std::make_shared<TextFormatter>(),
 					std::make_shared<SimpleFileStrategy>(fullPath)), "drv:file");
 			}

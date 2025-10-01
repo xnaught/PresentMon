@@ -33,6 +33,7 @@ namespace clio
 		Flag enableDebuggerLog{ this, "--enable-debugger-log", "Enable logging to system debugger" };
 		Flag disableIpcLog{ this, "--disable-ipc-log", "Disable logging to named pipe connection" };
 		Option<Level> logLevel{ this, "--log-level", Level::Error, "Severity to log at", logLevelTf_ };
+		Flag logNamePid{ this, "--log-name-pid", "Append PID to log files instead of timestamp" };
 
 	private: Group gt_{ this, "Testing", "Automated testing features" }; public:
 		Flag enableTestControl{ this, "--enable-test-control", "Enable test control over stdio" };
