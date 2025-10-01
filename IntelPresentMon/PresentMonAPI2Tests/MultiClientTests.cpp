@@ -44,16 +44,49 @@ namespace MultiClientTests
 		}
 	}
 
+	class JobManager
+	{
+	public:
+		JobManager()
+			:
+			hJob_{ ::CreateJobObjectA(nullptr, nullptr) }
+		{
+			if (!hJob_) ThrowLastError_("CreateJobObject");
+
+			JOBOBJECT_EXTENDED_LIMIT_INFORMATION li{};
+			li.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+			if (!::SetInformationJobObject(
+				hJob_, JobObjectExtendedLimitInformation, &li, sizeof(li))) {
+				ThrowLastError_("SetInformationJobObject");
+			}
+		}
+		// Attach a child process HANDLE to the job.
+		void Attach(HANDLE process_handle) const
+		{
+			if (!::AssignProcessToJobObject(hJob_, process_handle)) {
+				ThrowLastError_("AssignProcessToJobObject");
+			}
+		}
+	private:
+		static void ThrowLastError_(const char* where)
+		{
+			throw std::system_error(::GetLastError(), std::system_category(), where);
+		}
+
+		util::win::Handle hJob_;
+	};
+
 	class TestProcess
 	{
 	public:
-		TestProcess(as::io_context& ioctx, const std::string& executable, const std::vector<std::string>& args)
+		TestProcess(as::io_context& ioctx, JobManager& jm, const std::string& executable, const std::vector<std::string>& args)
 			:
 			pipeFrom_{ ioctx },
 			pipeTo_{ ioctx },
 			process_{ ioctx, executable, args,
 				bp::process_stdio{ pipeTo_, pipeFrom_, nullptr } }
 		{
+			jm.Attach(process_.native_handle());
 			Assert::AreEqual("ping-ok"s, Command("ping"));
 			Logger::WriteMessage(std::format(" - Launched process {{{}}} [{}]\n",
 				executable, process_.id()).c_str());
@@ -79,7 +112,7 @@ namespace MultiClientTests
 		void Murder()
 		{
 			Assert::IsTrue(process_.running());
-			::TerminateProcess(process_.handle().native_handle(), 0xDEAD);
+			::TerminateProcess(process_.native_handle(), 0xDEAD);
 			process_.wait();
 		}
 		std::string Command(const std::string command)
@@ -118,9 +151,9 @@ namespace MultiClientTests
 	class ServiceProcess : public TestProcess
 	{
 	public:
-		ServiceProcess(as::io_context& ioctx, const std::vector<std::string>& customArgs = {})
+		ServiceProcess(as::io_context& ioctx, JobManager& jm, const std::vector<std::string>& customArgs = {})
 			:
-			TestProcess{ ioctx, "PresentMonService.exe"s, MakeArgs_(customArgs) }
+			TestProcess{ ioctx, jm, "PresentMonService.exe"s, MakeArgs_(customArgs) }
 		{}
 		test::service::Status QueryStatus()
 		{
@@ -149,9 +182,9 @@ namespace MultiClientTests
 	class ClientProcess : public TestProcess
 	{
 	public:
-		ClientProcess(as::io_context& ioctx, const std::vector<std::string>& customArgs = {})
+		ClientProcess(as::io_context& ioctx, JobManager& jm, const std::vector<std::string>& customArgs = {})
 			:
-			TestProcess{ ioctx, "SampleClient.exe"s, MakeArgs_(customArgs) }
+			TestProcess{ ioctx, jm, "SampleClient.exe"s, MakeArgs_(customArgs) }
 		{}
 	private:
 		std::vector<std::string> MakeArgs_(const std::vector<std::string>& customArgs)
@@ -172,13 +205,14 @@ namespace MultiClientTests
 
 	struct CommonTestFixture
 	{
+		JobManager jobMan;
 		std::thread ioctxRunThread;
 		as::io_context ioctx;
 		std::optional<ServiceProcess> service;
 
 		void Setup()
 		{
-			service.emplace(ioctx);
+			service.emplace(ioctx, jobMan);
 			ioctxRunThread = std::thread{ [&] {pmquell(ioctx.run()); } };
 		}
 		void Cleanup()
@@ -187,6 +221,10 @@ namespace MultiClientTests
 			ioctxRunThread.join();
 			// sleep after every test to ensure that named pipe is no longer available
 			std::this_thread::sleep_for(50ms);
+		}
+		ClientProcess LaunchClient(std::vector<std::string> args = {})
+		{
+			return ClientProcess{ ioctx, jobMan, std::move(args) };
 		}
 	};
 
@@ -216,9 +254,7 @@ namespace MultiClientTests
 		// verify client lifetime
 		TEST_METHOD(ClientLaunchTest)
 		{
-			ClientProcess client{
-				fixture_.ioctx,
-			};
+			auto client = fixture_.LaunchClient();
 		}
 	};
 
@@ -239,11 +275,9 @@ namespace MultiClientTests
 		TEST_METHOD(OneClientSetting)
 		{
 			// launch a client
-			ClientProcess client{
-				fixture_.ioctx, {
-					"--telemetry-period-ms"s, "63"s,
-				},
-			};
+			auto client = fixture_.LaunchClient({
+				"--telemetry-period-ms"s, "63"s,
+			});
 			// check that telemetry period has changed
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -254,11 +288,9 @@ namespace MultiClientTests
 		TEST_METHOD(SecondClientSuperseded)
 		{
 			// launch a client
-			ClientProcess client1{
-				fixture_.ioctx, {
-					"--telemetry-period-ms"s, "63"s,
-				},
-			};
+			auto client1 = fixture_.LaunchClient({
+				"--telemetry-period-ms"s, "63"s,
+			});
 			// check that telemetry period has changed
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -266,11 +298,9 @@ namespace MultiClientTests
 			}
 
 			// launch a client
-			ClientProcess client2{
-				fixture_.ioctx, {
-					"--telemetry-period-ms"s, "135"s,
-				},
-			};
+			auto client2 = fixture_.LaunchClient({
+				"--telemetry-period-ms"s, "135"s,
+			});
 			// check that telemetry period has not changed
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -281,11 +311,9 @@ namespace MultiClientTests
 		TEST_METHOD(SecondClientOverrides)
 		{
 			// launch a client
-			ClientProcess client1{
-				fixture_.ioctx, {
-					"--telemetry-period-ms"s, "63"s,
-				},
-			};
+			auto client1 = fixture_.LaunchClient({
+				"--telemetry-period-ms"s, "63"s,
+			});
 			// check that telemetry period has changed
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -293,11 +321,9 @@ namespace MultiClientTests
 			}
 
 			// launch a client
-			ClientProcess client2{
-				fixture_.ioctx, {
-					"--telemetry-period-ms"s, "36"s,
-				},
-			};
+			auto client2 = fixture_.LaunchClient({
+				"--telemetry-period-ms"s, "36"s,
+			});
 			// check that telemetry period has been overrided
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -308,11 +334,9 @@ namespace MultiClientTests
 		TEST_METHOD(TwoClientReversion)
 		{
 			// launch a client
-			ClientProcess client1{
-				fixture_.ioctx, {
-					"--telemetry-period-ms"s, "63"s,
-				},
-			};
+			auto client1 = fixture_.LaunchClient({
+				"--telemetry-period-ms"s, "63"s,
+			});
 			// check that telemetry period has changed
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -320,11 +344,9 @@ namespace MultiClientTests
 			}
 
 			// launch a client
-			ClientProcess client2{
-				fixture_.ioctx, {
-					"--telemetry-period-ms"s, "36"s,
-				},
-			};
+			auto client2 = fixture_.LaunchClient({
+				"--telemetry-period-ms"s, "36"s,
+			});
 			// check that telemetry period has been overrided
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -351,11 +373,9 @@ namespace MultiClientTests
 		TEST_METHOD(ClientMurderReversion)
 		{
 			// launch a client
-			ClientProcess client1{
-				fixture_.ioctx, {
-					"--telemetry-period-ms"s, "63"s,
-				},
-			};
+			auto client1 = fixture_.LaunchClient({
+				"--telemetry-period-ms"s, "63"s,
+			});
 			// check that telemetry period has changed
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -363,11 +383,9 @@ namespace MultiClientTests
 			}
 
 			// launch a client
-			ClientProcess client2{
-				fixture_.ioctx, {
-					"--telemetry-period-ms"s, "36"s,
-				},
-			};
+			auto client2 = fixture_.LaunchClient({
+				"--telemetry-period-ms"s, "36"s,
+			});
 			// check that telemetry period has been overrided
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -415,11 +433,9 @@ namespace MultiClientTests
 		TEST_METHOD(OneClientSetting)
 		{
 			// launch a client
-			ClientProcess client{
-				fixture_.ioctx, {
-					"--etw-flush-period-ms"s, "50"s,
-				},
-			};
+			auto client = fixture_.LaunchClient({
+				"--etw-flush-period-ms"s, "50"s,
+			});
 			// check that flush period has changed
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -431,11 +447,9 @@ namespace MultiClientTests
 		TEST_METHOD(SecondClientSuperseded)
 		{
 			// launch a client
-			ClientProcess client1{
-				fixture_.ioctx, {
-					"--etw-flush-period-ms"s, "50"s,
-				},
-			};
+			auto client1 = fixture_.LaunchClient({
+				"--etw-flush-period-ms"s, "50"s,
+			});
 			// check that flush period has changed
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -444,11 +458,9 @@ namespace MultiClientTests
 			}
 
 			// launch a client
-			ClientProcess client2{
-				fixture_.ioctx, {
-					"--etw-flush-period-ms"s, "65"s,
-				},
-			};
+			auto client2 = fixture_.LaunchClient({
+				"--etw-flush-period-ms"s, "65"s,
+			});
 			// check that flush period has not changed
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -460,11 +472,9 @@ namespace MultiClientTests
 		TEST_METHOD(SecondClientOverrides)
 		{
 			// launch a client
-			ClientProcess client1{
-				fixture_.ioctx, {
-					"--etw-flush-period-ms"s, "50"s,
-				},
-			};
+			auto client1 = fixture_.LaunchClient({
+				"--etw-flush-period-ms"s, "50"s,
+			});
 			// check that flush period has changed
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -473,11 +483,9 @@ namespace MultiClientTests
 			}
 
 			// launch a second client with a smaller period (should override)
-			ClientProcess client2{
-				fixture_.ioctx, {
-					"--etw-flush-period-ms"s, "35"s,
-				},
-			};
+			auto client2 = fixture_.LaunchClient({
+				"--etw-flush-period-ms"s, "35"s,
+			});
 			// check that flush period has been overridden
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -489,11 +497,9 @@ namespace MultiClientTests
 		TEST_METHOD(TwoClientReversion)
 		{
 			// launch a client
-			ClientProcess client1{
-				fixture_.ioctx, {
-					"--etw-flush-period-ms"s, "50"s,
-				},
-			};
+			auto client1 = fixture_.LaunchClient({
+				"--etw-flush-period-ms"s, "50"s,
+			});
 			// check that flush period has changed
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -502,11 +508,9 @@ namespace MultiClientTests
 			}
 
 			// launch a second client with a smaller period (override)
-			ClientProcess client2{
-				fixture_.ioctx, {
-					"--etw-flush-period-ms"s, "35"s,
-				},
-			};
+			auto client2 = fixture_.LaunchClient({
+				"--etw-flush-period-ms"s, "35"s,
+			});
 			// verify overridden to smaller value
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -534,11 +538,9 @@ namespace MultiClientTests
 		TEST_METHOD(ClientMurderReversion)
 		{
 			// launch a client
-			ClientProcess client1{
-				fixture_.ioctx, {
-					"--etw-flush-period-ms"s, "50"s,
-				},
-			};
+			auto client1 = fixture_.LaunchClient({
+				"--etw-flush-period-ms"s, "50"s,
+			});
 			// check that flush period has changed
 			{
 				const auto status = fixture_.service->QueryStatus();
@@ -547,11 +549,9 @@ namespace MultiClientTests
 			}
 
 			// launch a second client with a smaller period (override)
-			ClientProcess client2{
-				fixture_.ioctx, {
-					"--etw-flush-period-ms"s, "35"s,
-				},
-			};
+			auto client2 = fixture_.LaunchClient({
+				"--etw-flush-period-ms"s, "35"s,
+			});
 			// verify overridden value
 			{
 				const auto status = fixture_.service->QueryStatus();
