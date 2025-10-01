@@ -26,7 +26,6 @@ namespace pmon::svc::acts
         std::optional<uint32_t> requestedAdapterId;
         std::optional<uint32_t> requestedTelemetryPeriodMs;
         std::optional<uint32_t> requestedEtwFlushPeriodMs;
-        std::optional<bool> requestedEtwFlushEnabled;
         std::string clientBuildId;
     };
 
@@ -44,5 +43,6 @@ namespace pmon::svc::acts
         // functions
         void Dispose(SessionContextType& stx);
         void UpdateTelemetryPeriod() const;
+        void UpdateEtwFlushPeriod() const;
     };
 }

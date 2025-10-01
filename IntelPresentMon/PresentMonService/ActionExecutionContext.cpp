@@ -12,6 +12,8 @@ namespace pmon::svc::acts
         }
         stx.requestedTelemetryPeriodMs.reset();
         UpdateTelemetryPeriod();
+        stx.requestedEtwFlushPeriodMs.reset();
+        UpdateEtwFlushPeriod();
     }
     void ActionExecutionContext::UpdateTelemetryPeriod() const
     {
@@ -21,6 +23,18 @@ namespace pmon::svc::acts
         const auto prioritizedPeriod = util::rng::OptionalMin(reqPeriods);
         // execute the setting on the service system
         if (auto sta = pPmon->SetGpuTelemetryPeriod(prioritizedPeriod); sta != PM_STATUS_SUCCESS) {
+            pmlog_error("Set telemetry period failed").code(sta);
+            throw util::Except<ipc::act::ActionExecutionError>(sta);
+        }
+    }
+    void ActionExecutionContext::UpdateEtwFlushPeriod() const
+    {
+        // gather requests across all sessions
+        auto&& reqPeriods = util::rng::MemberSlice(*pSessionMap, &SessionContextType::requestedEtwFlushPeriodMs);
+        // determine the prioritized setting among those
+        const auto prioritizedPeriod = util::rng::OptionalMin(reqPeriods);
+        // execute the setting on the service system
+        if (auto sta = pPmon->SetEtwFlushPeriod(prioritizedPeriod); sta != PM_STATUS_SUCCESS) {
             pmlog_error("Set telemetry period failed").code(sta);
             throw util::Except<ipc::act::ActionExecutionError>(sta);
         }
