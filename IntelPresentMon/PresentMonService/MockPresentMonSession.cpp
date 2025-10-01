@@ -18,7 +18,7 @@ MockPresentMonSession::MockPresentMonSession()
 }
 
 bool MockPresentMonSession::IsTraceSessionActive() {
-    return (pm_consumer_ != nullptr);
+    return session_active_.load(std::memory_order_acquire);
 }
 
 PM_STATUS MockPresentMonSession::StartStreaming(uint32_t client_process_id,
@@ -71,7 +71,7 @@ void MockPresentMonSession::StopStreaming(uint32_t client_process_id,
 }
 
 bool MockPresentMonSession::CheckTraceSessions(bool forceTerminate) {
-    if (pm_consumer_ && stop_playback_requested_ == true) {
+    if (session_active_.load(std::memory_order_acquire) && stop_playback_requested_ == true) {
         StopTraceSession();
         return true;
     }
@@ -170,6 +170,9 @@ PM_STATUS MockPresentMonSession::StartTraceSession(uint32_t processId, const std
     // Set the process id for this etl session
     etlProcessId_ = processId;
 
+    // Mark session as active (atomic operation)
+    session_active_.store(true, std::memory_order_release);
+
     // Start the consumer and output threads
     StartConsumerThread(trace_session_.mTraceHandle);
     StartOutputThread();
@@ -177,7 +180,9 @@ PM_STATUS MockPresentMonSession::StartTraceSession(uint32_t processId, const std
 }
 
 void MockPresentMonSession::StopTraceSession() {
-    std::lock_guard<std::mutex> lock(session_mutex_);
+    // PHASE 1: Signal shutdown and wait for threads to observe it
+    session_active_.store(false, std::memory_order_release);
+
     // Stop the trace session.
     trace_session_.Stop();
 
@@ -185,6 +190,9 @@ void MockPresentMonSession::StopTraceSession() {
     // consumers).
     WaitForConsumerThreadToExit();
     StopOutputThread();
+
+    // PHASE 2: Safe cleanup after threads have finished
+    std::lock_guard<std::mutex> lock(session_mutex_);
 
     // Stop all streams
     streamer_.StopAllStreams();
@@ -207,8 +215,11 @@ void MockPresentMonSession::WaitForConsumerThreadToExit() {
 void MockPresentMonSession::DequeueAnalyzedInfo(
     std::vector<ProcessEvent>* processEvents,
     std::vector<std::shared_ptr<PresentEvent>>* presentEvents) {
-    pm_consumer_->DequeueProcessEvents(*processEvents);
-    pm_consumer_->DequeuePresentEvents(*presentEvents);
+    // Check if session is active before accessing pm_consumer_ (atomic guard)
+    if (session_active_.load(std::memory_order_acquire) && pm_consumer_) {
+        pm_consumer_->DequeueProcessEvents(*processEvents);
+        pm_consumer_->DequeuePresentEvents(*presentEvents);
+    }
 }
 
 void MockPresentMonSession::AddPresents(
@@ -217,10 +228,12 @@ void MockPresentMonSession::AddPresents(
     uint64_t stopQpc, bool* hitStopQpc) {
     auto i = *presentEventIndex;
 
-    assert(trace_session_.mStartTimestamp.QuadPart != 0);
-    // If mStartTimestamp contains a value an etl file is being processed.
-    // Set this value in the streamer to have the correct start time.
-    streamer_.SetStartQpc(trace_session_.mStartTimestamp.QuadPart);
+    // If session is active and mStartTimestamp contains a value, an etl file is being processed.
+    // Set this value in the streamer to have the correct start time (atomic guard).
+    if (session_active_.load(std::memory_order_acquire)) {
+        assert(trace_session_.mStartTimestamp.QuadPart != 0);
+        streamer_.SetStartQpc(trace_session_.mStartTimestamp.QuadPart);
+    }
 
     for (auto n = presentEvents.size(); i < n; ++i) {
         auto presentEvent = presentEvents[i];
