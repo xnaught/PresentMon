@@ -31,7 +31,7 @@ namespace pmon::svc::acts
 		friend class ACT_TYPE<ACT_NAME, ACT_EXEC_CTX>;
 		static Response Execute_(const ACT_EXEC_CTX& ctx, SessionContext& stx, Params&& in)
 		{
-			if (in.etwFlushPeriodMs && (*in.etwFlushPeriodMs < 1 || *in.etwFlushPeriodMs > 1000)) {
+			if (in.etwFlushPeriodMs && *in.etwFlushPeriodMs > PM_ETW_FLUSH_PERIOD_MAX) {
 				const auto sta = PM_STATUS::PM_STATUS_OUT_OF_RANGE;
 				pmlog_error("Set ETW flush period failed: out of range").pmwatch(*in.etwFlushPeriodMs).code(sta);
 				throw util::Except<ActionExecutionError>(sta);
