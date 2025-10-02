@@ -39,8 +39,8 @@ void EventFlushThreadEntry_(Service* const srv, PresentMon* const pm)
 
     // this is the interval to wait when manual flush is disabled
     // we still want to run the inner loop to poll in case it gets enabled
-    const double disabledInterval = 0.25;
-    double currentInterval = pm->GetEtwFlushPeriod().value_or(disabledInterval);
+    const uint32_t disabledIntervalMs = 250u;
+    double currentInterval = (double)pm->GetEtwFlushPeriod().value_or(disabledIntervalMs) / 1000.;
     IntervalWaiter waiter{ currentInterval };
 
     // outer dormant loop waits for either start of process tracking or service exit
@@ -72,7 +72,7 @@ void EventFlushThreadEntry_(Service* const srv, PresentMon* const pm)
             }
             else {
                 pmlog_verb(v::etwq)("Detected disabled ETW flush, using idle poll period");
-                currentInterval = disabledInterval;
+                currentInterval = disabledIntervalMs / 1000.;
             }
         }
     }
