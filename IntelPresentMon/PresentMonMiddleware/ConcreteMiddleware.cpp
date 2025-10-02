@@ -884,7 +884,7 @@ static void ReportMetricsHelper(
                     // If the simulation start time is less than the last displayed simulation start time it means
                     // we are transitioning to app provider events.
                     if (simStartTime > chain->mLastDisplayedSimStartTime) {
-                        metrics.mAnimationError = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedScreenTime,
+                        metrics.mAnimationError = pmSession.TimestampDeltaToMilliSeconds(screenTime - chain->mLastDisplayedAppScreenTime,
                             simStartTime - chain->mLastDisplayedSimStartTime);
                         chain->mAnimationError.push_back(std::abs(metrics.mAnimationError));
                     }
