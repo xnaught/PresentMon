@@ -603,5 +603,16 @@ namespace MultiClientTests
 				Assert::AreEqual(1000u, *status.etwFlushPeriodMs);
 			}
 		}
+		// verify range check error high
+		TEST_METHOD(OutOfRangeHigh)
+		{
+			// launch a client
+			auto client = fixture_.LaunchClient({
+				"--etw-flush-period-ms"s, "1500"s,
+				"--test-expect-error"s,
+			});
+			// check for expected error
+			Assert::AreEqual("err-check-ok:PM_STATUS_OUT_OF_RANGE"s, client.Command("err-check"));
+		}
 	};
 }
