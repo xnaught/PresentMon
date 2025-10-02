@@ -11,12 +11,17 @@ int MultiClientTest(std::unique_ptr<pmapi::Session> pSession)
 	auto& opt = clio::Options::Get();
 
 	std::optional<PM_STATUS> errorStatus;
+	pmapi::ProcessTracker tracker;
+
 	try {
 		if (opt.telemetryPeriodMs) {
 			pSession->SetTelemetryPollingPeriod(0, *opt.telemetryPeriodMs);
 		}
 		if (opt.etwFlushPeriodMs) {
 			pSession->SetEtwFlushPeriod(*opt.etwFlushPeriodMs);
+		}
+		if (opt.processId) {
+			tracker = pSession->TrackProcess(*opt.processId);
 		}
 	}
 	catch (const pmapi::ApiErrorException& e) {

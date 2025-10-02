@@ -205,6 +205,26 @@ namespace MultiClientTests
 		}
 	};
 
+	class PresenterProcess
+	{
+	public:
+		PresenterProcess(as::io_context& ioctx, JobManager& jm, const std::vector<std::string>& customArgs = {})
+			:
+			process_{ ioctx, path_, customArgs }
+		{
+			jm.Attach(process_.native_handle());
+			Logger::WriteMessage(std::format(" - Launched process {{{}}} [{}]\n",
+				path_, process_.id()).c_str());
+		}
+		uint32_t GetId() const
+		{
+			return process_.id();
+		}
+	private:
+		static constexpr const char* path_ = R"(..\..\Tools\PresentBench.exe)";
+		bp::process process_;
+	};
+
 	struct CommonTestFixture
 	{
 		JobManager jobMan;
@@ -227,6 +247,10 @@ namespace MultiClientTests
 		ClientProcess LaunchClient(std::vector<std::string> args = {})
 		{
 			return ClientProcess{ ioctx, jobMan, std::move(args) };
+		}
+		PresenterProcess LaunchPresenter(std::vector<std::string> args = {})
+		{
+			return PresenterProcess{ ioctx, jobMan, std::move(args) };
 		}
 	};
 
@@ -257,6 +281,16 @@ namespace MultiClientTests
 		TEST_METHOD(ClientLaunchTest)
 		{
 			auto client = fixture_.LaunchClient();
+		}
+		// verify client can track presenter via service
+		TEST_METHOD(TrackPresenter)
+		{
+			// launch target for tracking
+			auto presenter = fixture_.LaunchPresenter();
+			// launch client
+			auto client1 = fixture_.LaunchClient({
+				"--process-id"s, std::to_string(presenter.GetId()),
+			});
 		}
 	};
 
@@ -613,6 +647,91 @@ namespace MultiClientTests
 			});
 			// check for expected error
 			Assert::AreEqual("err-check-ok:PM_STATUS_OUT_OF_RANGE"s, client.Command("err-check"));
+		}
+	};
+
+
+
+	TEST_CLASS(TrackingTests)
+	{
+		CommonTestFixture fixture_;
+
+	public:
+		TEST_METHOD_INITIALIZE(Setup)
+		{
+			fixture_.Setup();
+		}
+		TEST_METHOD_CLEANUP(Cleanup)
+		{
+			fixture_.Cleanup();
+		}
+		// verify process untrack (stream stop) when all clients close sessions
+		TEST_METHOD(UntrackOnClose)
+		{
+			// launch target for tracking
+			auto presenter = fixture_.LaunchPresenter();
+			std::this_thread::sleep_for(30ms);
+			// launch clients
+			auto client1 = fixture_.LaunchClient({
+				"--process-id"s, std::to_string(presenter.GetId()),
+			});
+			auto client2 = fixture_.LaunchClient({
+				"--process-id"s, std::to_string(presenter.GetId()),
+			});
+			// verify tracking status at service
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(1ull, status.nsmStreamedPids.size());
+			}
+			// one client quits
+			client1.Quit();
+			// verify tracking status at service
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(1ull, status.nsmStreamedPids.size());
+			}
+			// other client quits
+			client2.Quit();
+			// verify tracking stopped at service
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(0ull, status.nsmStreamedPids.size());
+			}
+		}
+		// verify process untrack (stream stop) when clients die suddenly
+		TEST_METHOD(UntrackOnMurder)
+		{
+			// launch target for tracking
+			auto presenter = fixture_.LaunchPresenter();
+			std::this_thread::sleep_for(30ms);
+			// launch clients
+			auto client1 = fixture_.LaunchClient({
+				"--process-id"s, std::to_string(presenter.GetId()),
+			});
+			auto client2 = fixture_.LaunchClient({
+				"--process-id"s, std::to_string(presenter.GetId()),
+			});
+			// verify tracking status at service
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(1ull, status.nsmStreamedPids.size());
+			}
+			// one client dies
+			client1.Murder();
+			std::this_thread::sleep_for(5ms);
+			// verify tracking status at service
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(1ull, status.nsmStreamedPids.size());
+			}
+			// other client dies
+			client2.Murder();
+			std::this_thread::sleep_for(5ms);
+			// verify tracking stopped at service
+			{
+				const auto status = fixture_.service->QueryStatus();
+				Assert::AreEqual(0ull, status.nsmStreamedPids.size());
+			}
 		}
 	};
 }
