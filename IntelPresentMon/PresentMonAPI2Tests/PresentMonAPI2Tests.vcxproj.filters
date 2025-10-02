@@ -44,7 +44,7 @@
     <ClInclude Include="CsvHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ServiceTestCommands.h">
+    <ClInclude Include="TestCommands.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

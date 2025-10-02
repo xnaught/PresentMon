@@ -125,7 +125,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CsvHelper.h" />
-    <ClInclude Include="ServiceTestCommands.h" />
+    <ClInclude Include="TestCommands.h" />
     <ClInclude Include="StatusComparison.h" />
     <ClInclude Include="Utilities.h" />
   </ItemGroup>

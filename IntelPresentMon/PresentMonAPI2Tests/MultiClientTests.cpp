@@ -12,7 +12,7 @@
 #include <cereal/archives/json.hpp>
 #include <sstream>
 #include <filesystem>
-#include "ServiceTestCommands.h"
+#include "TestCommands.h"
 
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -188,6 +188,14 @@ namespace MultiClientTests
 			:
 			TestProcess{ ioctx, jm, "SampleClient.exe"s, MakeArgs_(customArgs) }
 		{}
+		test::client::FrameResponse GetFrames()
+		{
+			test::client::FrameResponse resp;
+			std::istringstream is{ Command("get-frames") };
+			cereal::JSONInputArchive{ is }(resp);
+			Assert::AreEqual("get-frames-ok"s, resp.status);
+			return resp;
+		}
 	private:
 		std::vector<std::string> MakeArgs_(const std::vector<std::string>& customArgs)
 		{
@@ -288,9 +296,26 @@ namespace MultiClientTests
 			// launch target for tracking
 			auto presenter = fixture_.LaunchPresenter();
 			// launch client
-			auto client1 = fixture_.LaunchClient({
+			auto client = fixture_.LaunchClient({
 				"--process-id"s, std::to_string(presenter.GetId()),
 			});
+		}
+		// verify client can record presenter frame data
+		TEST_METHOD(RecordFrames)
+		{
+			// launch target for tracking
+			auto presenter = fixture_.LaunchPresenter();
+			std::this_thread::sleep_for(150ms);
+			// launch client
+			auto client = fixture_.LaunchClient({
+				"--process-id"s, std::to_string(presenter.GetId()),
+				"--run-time"s, "1.15"s,
+				"--etw-flush-period-ms"s, "8"s,
+			});
+			// verify frame data received
+			const auto frames = std::move(client.GetFrames().frames);
+			Logger::WriteMessage(std::format("Read [{}] frames\n", frames.size()).c_str());
+			Assert::IsTrue(frames.size() >= 25ull, L"Minimum threshold frames received");
 		}
 	};
 

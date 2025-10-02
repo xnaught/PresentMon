@@ -1,10 +1,15 @@
 #include "MultiClient.h"
 #include "CliOptions.h"
 #include <PresentMonAPIWrapperCommon/EnumMap.h>
+#include <PresentMonAPIWrapper/FixedQuery.h>
 #include <chrono>
 #include <iostream>
+#include <PresentMonAPI2Tests/TestCommands.h>
+#include <cereal/archives/json.hpp>
 
 using namespace std::literals;
+using namespace pmon::test::client;
+using Clock = std::chrono::steady_clock;
 
 int MultiClientTest(std::unique_ptr<pmapi::Session> pSession)
 {
@@ -52,11 +57,49 @@ int MultiClientTest(std::unique_ptr<pmapi::Session> pSession)
 		std::cout << "%%{err-check-ok:" << err << "}%%" << std::endl;
 	}
 
+	// capture frames if requested
+	std::vector<Frame> frames;
+	if (opt.runTime) {
+		PM_BEGIN_FIXED_FRAME_QUERY(FrameQuery)
+			pmapi::FixedQueryElement cpuStartTime{ this, PM_METRIC_CPU_START_TIME };
+			pmapi::FixedQueryElement msBetweenPresents{ this, PM_METRIC_BETWEEN_PRESENTS };
+			pmapi::FixedQueryElement msUntilDisplayed{ this, PM_METRIC_UNTIL_DISPLAYED };
+			pmapi::FixedQueryElement msGpuBusy{ this, PM_METRIC_GPU_BUSY };
+		PM_END_FIXED_QUERY query{ *pSession, 1'000 };
+		
+		const auto start = Clock::now();
+		while (Clock::now() - start < 1s * *opt.runTime) {
+			query.ForEachConsume(tracker, [&] {
+				frames.push_back(Frame{
+					.receivedTime = std::chrono::duration<double>(Clock::now() - start).count(),
+					.cpuStartTime = query.cpuStartTime,
+					.msBetweenPresents = query.msBetweenPresents,
+					.msUntilDisplayed = query.msUntilDisplayed,
+					.msGpuBusy = query.msGpuBusy,
+				});
+			});
+			std::this_thread::sleep_for(5ms);
+		}
+	}
+
 	// wait for command
 	while (std::getline(std::cin, line)) {
 		if (line == "%quit") {
 			std::cout << "%%{quit-ok}%%" << std::endl;
 			return 0;
+		}
+		else if (line == "%get-frames") {
+			FrameResponse resp;
+			if (!opt.runTime) {
+				resp.status = "get-frames-err:not-recorded";
+			}
+			else {
+				resp.status = "get-frames-ok";
+				resp.frames = frames;
+			}
+			std::ostringstream oss;
+			cereal::JSONOutputArchive{ oss }(resp);
+			std::cout << "%%{" << oss.str() << "}%%" << std::endl;
 		}
 		else {
 			std::cout << "%%{err-bad-command}%%" << std::endl;

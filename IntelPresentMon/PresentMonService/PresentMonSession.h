@@ -15,7 +15,7 @@
 #include "../../PresentData/PresentMonTraceSession.hpp"
 #include "PowerTelemetryContainer.h"
 
-#include "../PresentMonAPI2Tests/ServiceTestCommands.h"
+#include "../PresentMonAPI2Tests/TestCommands.h"
 
 
 struct SwapChainData {
