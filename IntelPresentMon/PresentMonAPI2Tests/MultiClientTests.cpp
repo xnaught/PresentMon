@@ -414,6 +414,17 @@ namespace MultiClientTests
 				Assert::AreEqual(16u, status.telemetryPeriodMs);
 			}
 		}
+		// verify range check error low
+		TEST_METHOD(OutOfRangeLow)
+		{
+			// launch a client
+			auto client = fixture_.LaunchClient({
+				"--telemetry-period-ms"s, "3"s,
+				"--test-expect-error"s,
+			});
+			// check for expected error
+			Assert::AreEqual("err-check-ok:PM_STATUS_OUT_OF_RANGE"s, client.Command("err-check"));
+		}
 	};
 
 	TEST_CLASS(EtwFlushPeriodTests)

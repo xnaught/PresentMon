@@ -226,8 +226,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmFreeIntrospectionRoot(const PM_INTROSPECTION_
 PRESENTMON_API2_EXPORT PM_STATUS pmSetTelemetryPollingPeriod(PM_SESSION_HANDLE handle, uint32_t deviceId, uint32_t timeMs)
 {
 	try {
-		LookupMiddleware_(handle).SetTelemetryPollingPeriod(deviceId, timeMs);
-		return PM_STATUS_SUCCESS;
+		return LookupMiddleware_(handle).SetTelemetryPollingPeriod(deviceId, timeMs);
 	}
 	catch (...) {
 		const auto code = util::GeneratePmStatus();
@@ -239,8 +238,7 @@ PRESENTMON_API2_EXPORT PM_STATUS pmSetTelemetryPollingPeriod(PM_SESSION_HANDLE h
 PRESENTMON_API2_EXPORT PM_STATUS pmSetEtwFlushPeriod(PM_SESSION_HANDLE handle, uint32_t periodMs)
 {
 	try {
-		LookupMiddleware_(handle).SetEtwFlushPeriod(periodMs ? std::optional{ periodMs } : std::nullopt);
-		return PM_STATUS_SUCCESS;
+		return LookupMiddleware_(handle).SetEtwFlushPeriod(periodMs ? std::optional{ periodMs } : std::nullopt);
 	}
 	catch (...) {
 		const auto code = util::GeneratePmStatus();
