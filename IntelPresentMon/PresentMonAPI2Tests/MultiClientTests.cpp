@@ -44,6 +44,8 @@ namespace MultiClientTests
 		}
 	}
 
+	// ties child processes to the current test case and ensures
+	// they are terminated regardless of how test run ends
 	class JobManager
 	{
 	public:
@@ -420,6 +422,17 @@ namespace MultiClientTests
 			// launch a client
 			auto client = fixture_.LaunchClient({
 				"--telemetry-period-ms"s, "3"s,
+				"--test-expect-error"s,
+			});
+			// check for expected error
+			Assert::AreEqual("err-check-ok:PM_STATUS_OUT_OF_RANGE"s, client.Command("err-check"));
+		}
+		// verify range check error high
+		TEST_METHOD(OutOfRangeHigh)
+		{
+			// launch a client
+			auto client = fixture_.LaunchClient({
+				"--telemetry-period-ms"s, "6000"s,
 				"--test-expect-error"s,
 			});
 			// check for expected error
