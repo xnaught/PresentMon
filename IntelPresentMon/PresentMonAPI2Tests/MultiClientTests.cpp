@@ -87,9 +87,9 @@ namespace MultiClientTests
 				bp::process_stdio{ pipeTo_, pipeFrom_, nullptr } }
 		{
 			jm.Attach(process_.native_handle());
-			Assert::AreEqual("ping-ok"s, Command("ping"));
 			Logger::WriteMessage(std::format(" - Launched process {{{}}} [{}]\n",
 				executable, process_.id()).c_str());
+			Assert::AreEqual("ping-ok"s, Command("ping"));
 		}
 		~TestProcess()
 		{
