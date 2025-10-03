@@ -1,9 +1,6 @@
 #include "../CommonUtilities/win/WinAPI.h"
 #include "../CommonUtilities/str/String.h"
 #include "../CommonUtilities/win/Utilities.h"
-#include "../CommonUtilities/win/com/WbemConnection.h"
-#include "../CommonUtilities/win/com/WbemListener.h"
-#include "../CommonUtilities/win/com/ProcessSpawnSink.h"
 #include "../CommonUtilities/win/Event.h"
 #include "CliOptions.h"
 
@@ -13,12 +10,12 @@
 #include <iostream>
 #include <filesystem>
 #include <thread>
+#include <mutex>
 #include <format>
 #include <atomic>
 
 #include "LibraryInject.h"
 #include "Logging.h"
-#include "../Interprocess/source/act/SymmetricActionServer.h"
 
 namespace stdfs = std::filesystem;
 using namespace pmon::util;
@@ -35,85 +32,72 @@ namespace pmon::util::log
 
 int main(int argc, char** argv)
 {
-    try {
-        // Initialize arguments
-        if (auto res = clio::Options::Init(argc, argv)) {
-            return *res;
+    // Initial logging
+    LOGI << "Injector process started" << std::endl;
+
+    // Initialize arguments
+    if (auto res = clio::Options::Init(argc, argv, true)) {
+        return *res;
+    }
+    auto& opts = clio::Options::Get();
+
+    stdfs::path injectorPath;
+    {
+        std::vector<char> buffer(MAX_PATH);
+        auto size = GetModuleFileNameA(NULL, buffer.data(), static_cast<DWORD>(buffer.size()));
+        if (size == 0) {
+            LOGE << "Failed to get this executable path." << std::endl;;
         }
-        auto& opts = clio::Options::Get();
+        injectorPath = std::string(buffer.begin(), buffer.begin() + size);
+        injectorPath = injectorPath.parent_path();
+    }
 
-        stdfs::path injectorPath;
-        {
-            std::vector<char> buffer(MAX_PATH);
-            auto size = GetModuleFileNameA(NULL, buffer.data(), static_cast<DWORD>(buffer.size()));
-            if (size == 0) {
-                LOGE << "Failed to get this executable path.";
-            }
-            injectorPath = std::string(buffer.begin(), buffer.begin() + size);
-            injectorPath = injectorPath.parent_path();
-        }
+    // DLL to inject
+    const stdfs::path libraryPath = injectorPath / std::format("FlashInjectorLibrary-{}.dll", PM_BUILD_PLATFORM);
 
-        // DLL to inject
-        const stdfs::path libraryPath = injectorPath / std::format("FlashInjectorLibrary-{}.dll", PM_BUILD_PLATFORM);
+    const bool weAre32Bit = PM_BUILD_PLATFORM == "Win32"s;
 
-        const bool weAre32Bit = PM_BUILD_PLATFORM == "Win32"s;
+    if (!stdfs::exists(libraryPath)) {
+        LOGE << "Cannot find library: " << libraryPath << std::endl;;
+        exit(1);
+    }
 
-        if (!stdfs::exists(libraryPath)) {
-            LOGE << "Cannot find library: " << libraryPath;
-            exit(1);
-        }
+    LOGI << "Waiting for processes that match executable name..." << std::endl;
 
-        LOGI << "Waiting for processes that match executable name...";
-
-        std::mutex targetModuleNameMtx;
-        std::wstring targetModuleName;
-        // thread whose sole job is to read from stdin without blocking the main thread
-        std::thread{ [&] {
-            std::string line;
-            while (true) {
-                std::getline(std::cin, line);
-                std::lock_guard lk{ targetModuleNameMtx };
-                targetModuleName = str::ToWide(str::ToLower(line));
-            }
-        } }.detach();
-
-        win::Event procSpawnEvt{ false };
-        win::com::WbemConnection wbConn;
-        win::com::ProcessSpawnSink::EventQueue procSpawnQueue{ [&] { procSpawnEvt.Set(); } };
-        auto pSpawnListener = wbConn.MakeListener<win::com::ProcessSpawnSink>(procSpawnQueue, 0.05f);
-
+    std::mutex targetModuleNameMtx;
+    std::string targetModuleName;
+    // thread whose sole job is to read from stdin without blocking the main thread
+    std::thread{ [&] {
+        std::string line;
         while (true) {
-            // wait until a process is spawned (queue has at least one spawn event added)
-            win::WaitAnyEvent(procSpawnEvt);
-            // atomic load target name and skip if empty string
-            const auto tgt = [&] { std::lock_guard lk{ targetModuleNameMtx }; return targetModuleName; }();
-            if (!tgt.empty()) {
-                // keep popping process spawn events off the queue until it is empty
-                for (std::optional<win::Process> proc; proc = procSpawnQueue.Pop();) {
-                    // case insensitive string compare spawned process name vs target
-                    const auto processNameLower = str::ToLower(proc->name);
-                    if (processNameLower == tgt) {
-                        // check that bitness matches that of this injector
-                        auto hProcTarget = win::OpenProcess(proc->pid, PROCESS_QUERY_LIMITED_INFORMATION);
-                        if (win::ProcessIs32Bit(hProcTarget) == weAre32Bit) {
-                            LOGI << "    Injecting DLL to process with PID: " << proc->pid;
-                            // perform the actual injection
-                            LibraryInject::Attach(proc->pid, libraryPath);
-                            // inform kernel of attachment so it can connect the action client
-                            std::cout << proc->pid << std::endl;
-                        }
+            std::getline(std::cin, line);
+            std::lock_guard lk{ targetModuleNameMtx };
+            targetModuleName = str::ToLower(line);
+        }
+    } }.detach();
+
+    // keep a set of processes already attached so we don't attempt multiple attachments per process
+    std::unordered_set<DWORD> processesAttached;
+    while (true) {
+        // atomic load target name and skip if empty string
+        const auto tgt = [&] { std::lock_guard lk{ targetModuleNameMtx }; return targetModuleName; }();
+        if (!tgt.empty()) {
+            for (auto&& [processId, processName] : LibraryInject::GetProcessNames()) {
+                const auto processNameLower = str::ToLower(processName);
+                if (processNameLower == tgt && !processesAttached.contains(processId)) {
+                    auto hProcTarget = win::OpenProcess(processId, PROCESS_QUERY_LIMITED_INFORMATION);
+                    if (win::ProcessIs32Bit(hProcTarget) == weAre32Bit) {
+                        LibraryInject::Attach(processId, libraryPath);
+                        LOGI << "    Injected DLL to process with PID: " << processId << std::endl;
+                        processesAttached.insert(processId);
+                        // inform kernel of attachment so it can connect the action client
+                        std::cout << processId << std::endl;
                     }
                 }
             }
         }
-    }
-    catch (const std::exception& e) {
-        LOGE << "Exception caught in Main: " << e.what() << std::endl;
-        return -1;
-    }
-    catch (...) {
-        LOGE << "Unknown exception caught in Main" << std::endl;
-        return -1;
+        // check for new processes only every N ms to reduce CPU load
+        std::this_thread::sleep_for(40ms);
     }
 
     return 0;

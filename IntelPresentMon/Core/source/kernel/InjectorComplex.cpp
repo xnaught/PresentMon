@@ -54,22 +54,38 @@ namespace p2c::kern
 	InjectorComplex::InjectorModule_::InjectorModule_(bool is32Bit)
 		:
 		pipeOut_{ ioctx_ },
-		pipeIn_{ ioctx_ }
+		pipeIn_{ ioctx_ },
+		pipeErr_{ ioctx_ },
+		is32Bit_{ is32Bit },
+		injectorProcess_{ ioctx_ }
 	{
 		// Determine the correct injector executable
 		auto exe = is32Bit
 			? "FlashInjector-Win32.exe"
 			: "FlashInjector-x64.exe";
-		auto path = std::filesystem::current_path() / exe;
 
-		// Spawn the child with Asio pipes for stdin/stdout (stderr inherited)
-		injectorProcess_.emplace(
+		// Spawn the child with Asio pipes for stdin/stdout/stderr
+		injectorProcess_ = bp2::process{
 			ioctx_,
-			path.string(),
+			exe, // using relative path to injector here due to issue with boost.process (following up)
 			/* no args = */ std::vector<std::string>{},
 			bp2::windows::process_creation_flags<CREATE_NO_WINDOW>(),
-			bp2::process_stdio{ pipeIn_, pipeOut_, nullptr }
-		);
+			bp2::process_stdio{ pipeIn_, pipeOut_, pipeErr_ }
+		};
+
+		// if logging at debug level, pump stderr into pmlog
+		namespace log = ::pmon::util::log;
+		if (log::GlobalPolicy::Get().GetLogLevel() >= log::Level::Debug) {
+			errListenerThread_ = std::jthread{ [this](std::stop_token st) {
+				// when someone does listenerThread_.request_stop(),
+				// this callback will fire and break ioctx_.run()
+				std::stop_callback cb{ st, [this] { ioctx_.stop(); } };
+				// kick off the first async read
+				SpawnReadErrTask_();
+				// enter Asio’s event loop
+				ioctx_.run();
+			} };
+		}
 
 		// Start the listener thread; on stop request we'll call ioctx_.stop()
 		listenerThread_ = std::jthread{ [this](std::stop_token st) {
@@ -146,6 +162,30 @@ namespace p2c::kern
 			// queue the next read (unless we're shutting down)
 			if (pipeOut_.is_open()) {
 				SpawnReadPidTask_();
+			}
+		});
+	}
+	void InjectorComplex::InjectorModule_::SpawnReadErrTask_()
+	{
+		as::async_read_until(pipeErr_, errBuffer_, '\n',
+			[this](boost::system::error_code ec, std::size_t /*bytes*/) {
+			if (!ec) {
+				// read a line out from the asio buffer
+				std::istream is(&errBuffer_);
+				std::string stderrLine;
+				std::getline(is, stderrLine);
+
+				try {
+					pmlog_dbg("Stderr from injector").pmwatch(is32Bit_).pmwatch(stderrLine);
+				}
+				catch (...) {
+					pmlog_error("Failed to read stderr from injector");
+				}
+			}
+
+			// queue the next read (unless we're shutting down)
+			if (pipeErr_.is_open()) {
+				SpawnReadErrTask_();
 			}
 		});
 	}

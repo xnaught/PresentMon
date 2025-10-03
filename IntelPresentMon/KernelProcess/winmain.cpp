@@ -85,6 +85,14 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			return *err;
 		}
 		const auto& opt = cli::Options::Get();
+		// pause process to allow for attaching debugger
+		if (opt.waitForDebugger) {
+			while (!IsDebuggerPresent()) {
+				std::this_thread::sleep_for(5ms);
+			}
+			DebugBreak();
+		}
+		// resolve files relative to output folder instead of installed/user folders during development
 		if (opt.filesWorking) {
 			infra::util::FolderResolver::SetDevMode();
 		}
