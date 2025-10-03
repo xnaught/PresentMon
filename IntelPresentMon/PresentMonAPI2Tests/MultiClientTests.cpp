@@ -19,6 +19,7 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 namespace bp = boost::process;
 namespace as = boost::asio;
 namespace fs = std::filesystem;
+namespace vi = std::views;
 using namespace std::literals;
 using namespace pmon;
 
@@ -63,9 +64,9 @@ namespace MultiClientTests
 			}
 		}
 		// Attach a child process HANDLE to the job.
-		void Attach(HANDLE process_handle) const
+		void Attach(HANDLE hChild) const
 		{
-			if (!::AssignProcessToJobObject(hJob_, process_handle)) {
+			if (!::AssignProcessToJobObject(hJob_, hChild)) {
 				ThrowLastError_("AssignProcessToJobObject");
 			}
 		}
@@ -101,9 +102,9 @@ namespace MultiClientTests
 		}
 
 		TestProcess(const TestProcess&) = delete;
-		TestProcess & operator=(const TestProcess&) = delete;
-		TestProcess(TestProcess&&) = delete;
-		TestProcess & operator=(TestProcess&&) = delete;
+		TestProcess& operator=(const TestProcess&) = delete;
+		TestProcess(TestProcess&& other) noexcept = delete;
+		TestProcess& operator=(TestProcess&& other) noexcept = delete;
 
 		void Quit()
 		{
@@ -259,6 +260,10 @@ namespace MultiClientTests
 		PresenterProcess LaunchPresenter(std::vector<std::string> args = {})
 		{
 			return PresenterProcess{ ioctx, jobMan, std::move(args) };
+		}
+		std::unique_ptr<ClientProcess> LaunchClientAsPtr(std::vector<std::string> args = {})
+		{
+			return std::make_unique<ClientProcess>(ioctx, jobMan, std::move(args));
 		}
 	};
 
@@ -675,8 +680,6 @@ namespace MultiClientTests
 		}
 	};
 
-
-
 	TEST_CLASS(TrackingTests)
 	{
 		CommonTestFixture fixture_;
@@ -756,6 +759,29 @@ namespace MultiClientTests
 			{
 				const auto status = fixture_.service->QueryStatus();
 				Assert::AreEqual(0ull, status.nsmStreamedPids.size());
+			}
+		}
+		// test a large number of clients running
+		TEST_METHOD(ClientStressTest)
+		{
+			// launch target for tracking
+			auto presenter = fixture_.LaunchPresenter();
+			std::this_thread::sleep_for(250ms);
+			// launch clients
+			std::vector<std::unique_ptr<ClientProcess>> clientPtrs;
+			for (int i = 0; i < 32; i++) {
+				clientPtrs.push_back(fixture_.LaunchClientAsPtr({
+					"--process-id"s, std::to_string(presenter.GetId()),
+					"--run-time"s, "2.25"s,
+					"--etw-flush-period-ms"s, "8"s,
+				}));
+			}
+			// verify they all have read frames
+			for (auto&&[i, pClient] : vi::enumerate(clientPtrs)) {
+				const auto frames = std::move(pClient->GetFrames().frames);
+				Logger::WriteMessage(std::format("Read [{}] frames from client #{}\n",
+					frames.size(), i).c_str());
+				Assert::IsTrue(frames.size() >= 100ull, L"Minimum threshold frames received");
 			}
 		}
 	};
