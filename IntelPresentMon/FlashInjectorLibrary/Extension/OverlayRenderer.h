@@ -79,8 +79,8 @@ namespace GfxLayer::Extension
 		using clock = std::chrono::high_resolution_clock;
 		OverlayConfig			m_currentConfig;
 		ComPtr<IDXGISwapChain3>	m_pSwapChain;
-		unsigned m_width;
-		unsigned m_height;
+		unsigned m_width = 0;
+		unsigned m_height = 0;
 		std::optional<clock::time_point> m_flashStartTime;
 		bool m_clickHoldoff = false;
 		size_t m_rainbowFrameIndex = 0;

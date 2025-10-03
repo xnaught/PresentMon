@@ -297,8 +297,15 @@ public:
     }
     ~TempFile()
     {
-        std::filesystem::remove((const wchar_t*)name_);
+        pmquell(std::filesystem::remove((const wchar_t*)name_))
     }
+
+    TempFile() = default;
+    TempFile(const TempFile&) = delete;
+    TempFile& operator=(const TempFile&) = delete;
+    TempFile(TempFile&&) = delete;
+    TempFile& operator=(TempFile&&) = delete;
+
 private:
     CComBSTR name_ = "null-log.etl.tmp";
 };
