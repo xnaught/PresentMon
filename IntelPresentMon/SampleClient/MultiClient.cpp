@@ -86,6 +86,7 @@ int MultiClientTest(std::unique_ptr<pmapi::Session> pSession)
 	while (std::getline(std::cin, line)) {
 		if (line == "%quit") {
 			std::cout << "%%{quit-ok}%%" << std::endl;
+			std::this_thread::sleep_for(25ms);
 			return 0;
 		}
 		else if (line == "%get-frames") {

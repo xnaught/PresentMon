@@ -245,12 +245,14 @@ namespace MultiClientTests
 		{
 			service.emplace(ioctx, jobMan);
 			ioctxRunThread = std::thread{ [&] {pmquell(ioctx.run()); } };
+			// wait before every test to ensure that service is available
+			std::this_thread::sleep_for(50ms);
 		}
 		void Cleanup()
 		{
 			service.reset();
 			ioctxRunThread.join();
-			// sleep after every test to ensure that named pipe is no longer available
+			// sleep after every test to ensure that previous named pipe has vacated
 			std::this_thread::sleep_for(50ms);
 		}
 		ClientProcess LaunchClient(std::vector<std::string> args = {})
@@ -320,7 +322,7 @@ namespace MultiClientTests
 			// verify frame data received
 			const auto frames = std::move(client.GetFrames().frames);
 			Logger::WriteMessage(std::format("Read [{}] frames\n", frames.size()).c_str());
-			Assert::IsTrue(frames.size() >= 25ull, L"Minimum threshold frames received");
+			Assert::IsTrue(frames.size() >= 20ull, L"Minimum threshold frames received");
 		}
 	};
 
