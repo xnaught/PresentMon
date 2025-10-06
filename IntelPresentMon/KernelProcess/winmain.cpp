@@ -1,4 +1,4 @@
-﻿#include "../CommonUtilities/win/WinAPI.h"
+#include "../CommonUtilities/win/WinAPI.h"
 #include "../Core/source/kernel/Kernel.h"
 #include "../Core/source/infra/util/FolderResolver.h"
 #include "../Interprocess/source/act/SymmetricActionServer.h"
@@ -167,6 +167,14 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				return -1;
 			}
 		}
+		// pause process to allow for attaching debugger
+		if (opt.waitForDebugger) {
+			while (!IsDebuggerPresent()) {
+				std::this_thread::sleep_for(5ms);
+			}
+			DebugBreak();
+		}
+		// resolve files relative to output folder instead of installed/user folders during development
 		if (opt.filesWorking) {
 			infra::util::FolderResolver::SetDevMode();
 		}

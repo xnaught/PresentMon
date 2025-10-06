@@ -54,7 +54,7 @@ namespace GfxLayer::Extension
 		{
 			auto hr = CreateConstantBuffer_(config.BarColor.data(),
 				sizeof(config.BarColor), &m_pConstantBufferBar);
-			CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Background Constant Buffer)");
+			CheckResult(hr, "D3D11 - Failed to create ID3D11Buffer (Flash Constant Buffer)");
 		}
 		// rainbow
 		if (m_rainbowConstantBufferPtrs.empty()) {
@@ -147,17 +147,15 @@ namespace GfxLayer::Extension
 			m_pDeferredContext->PSSetConstantBuffers(0, 1, &pConstantBuffer);
 			m_pDeferredContext->DrawIndexed(6, 0, 0);
 		};
-		if (renderBar) {
-			if (enableBackground && m_backgroundViewport.Width > m_foregrountViewport.Width) {
-				Draw(m_pConstantBufferBackground.Get(), m_backgroundViewport);
-			}
-			Draw(useRainbow ?
-				m_rainbowConstantBufferPtrs[GetRainbowIndex()].Get() :
-				m_pConstantBufferBar.Get(),
-				m_foregrountViewport);
+		if (useRainbow) {
+			Draw(m_rainbowConstantBufferPtrs[GetRainbowIndex()].Get(), m_rainbowViewport);
 		}
-		else {
+		// draw background before flash bar if enabled, but only if A) not flash or B) background larger than flash
+		if (enableBackground && (m_backgroundViewport.Width > m_foregrountViewport.Width || !renderBar)) {
 			Draw(m_pConstantBufferBackground.Get(), m_backgroundViewport);
+		}
+		if (renderBar) {
+			Draw(m_pConstantBufferBar.Get(), m_foregrountViewport);
 		}
 
 		// Finish recording and obtain a command list
@@ -177,6 +175,7 @@ namespace GfxLayer::Extension
 		const auto scissors = GetScissorRects();
 		m_foregrountViewport = MakeViewport<D3D11_VIEWPORT>(scissors.fg);
 		m_backgroundViewport = MakeViewport<D3D11_VIEWPORT>(scissors.bg);
+		m_rainbowViewport = MakeViewport<D3D11_VIEWPORT>(scissors.rb);
 	}
 
 	void OverlayRenderer_D3D11::UpdateConfig(const OverlayConfig& cfg)

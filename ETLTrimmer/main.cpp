@@ -297,8 +297,15 @@ public:
     }
     ~TempFile()
     {
-        std::filesystem::remove((const wchar_t*)name_);
+        pmquell(std::filesystem::remove((const wchar_t*)name_))
     }
+
+    TempFile() = default;
+    TempFile(const TempFile&) = delete;
+    TempFile& operator=(const TempFile&) = delete;
+    TempFile(TempFile&&) = delete;
+    TempFile& operator=(TempFile&&) = delete;
+
 private:
     CComBSTR name_ = "null-log.etl.tmp";
 };
@@ -374,6 +381,8 @@ int main(int argc, const char** argv)
         traceConsumer.mTrackGPUVideo = true;  // ... GPU video work (separately from non-video GPU work).
         traceConsumer.mTrackInput = true;     // ... keyboard/mouse latency.
         traceConsumer.mTrackFrameType = true; // ... the frame type communicated through the Intel-PresentMon provider.
+        traceConsumer.mTrackAppTiming = true; // ... app timing data communicated through the Intel-PresentMon provider.
+        traceConsumer.mTrackPcLatency = true; // ... Nvidia PCL stats.
         EnableProvidersListing(0, nullptr, &traceConsumer, true, true, pFilter);
     }
 
