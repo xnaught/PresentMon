@@ -3,6 +3,7 @@
 #pragma once
 #include "PresentMonSession.h"
 #include <memory>
+#include <span>
 
 class PresentMon
 {
@@ -27,10 +28,9 @@ public:
 	std::string GetCpuName() { return pSession_->GetCpuName(); }
 	double GetCpuPowerLimit() { return pSession_->GetCpuPowerLimit(); }
 	PM_STATUS SelectAdapter(uint32_t adapter_id);
-	PM_STATUS SetGpuTelemetryPeriod(uint32_t period_ms)
+	PM_STATUS SetGpuTelemetryPeriod(std::optional<uint32_t> telemetryPeriodRequestsMs)
 	{
-		// Only the real time trace sets GPU telemetry period
-		return pSession_->SetGpuTelemetryPeriod(period_ms);
+		return pSession_->SetGpuTelemetryPeriod(telemetryPeriodRequestsMs);
 	}
 	uint32_t GetGpuTelemetryPeriod()
 	{
@@ -69,6 +69,10 @@ public:
 	void FlushEvents()
 	{
 		pSession_->FlushEvents();
+	}
+	auto GetTestingStatus() const
+	{
+		return pSession_->GetTestingStatus();
 	}
 	void StartPlayback();
 	void StopPlayback();

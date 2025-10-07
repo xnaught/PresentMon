@@ -10,11 +10,8 @@ static const std::wstring kMockEtwSessionName = L"MockETWSession";
 using namespace std::literals;
 
 MockPresentMonSession::MockPresentMonSession()
-    :
-    quit_output_thread_(false),
-    target_process_count_(0) {
-    pm_session_name_.clear();
-    pm_consumer_.reset();
+{
+    ResetEtwFlushPeriod();
 }
 
 bool MockPresentMonSession::IsTraceSessionActive() {
@@ -85,6 +82,11 @@ bool MockPresentMonSession::CheckTraceSessions(bool forceTerminate) {
 
 HANDLE MockPresentMonSession::GetStreamingStartHandle() {
     return evtStreamingStarted_;
+}
+
+void MockPresentMonSession::ResetEtwFlushPeriod()
+{
+    etw_flush_period_ms_.store(std::nullopt);
 }
 
 void MockPresentMonSession::StartPlayback()

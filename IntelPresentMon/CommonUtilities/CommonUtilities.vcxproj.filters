@@ -273,6 +273,12 @@
     <ClInclude Include="win\com\WbemSink.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="rng\MemberSlice.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="rng\OptionalMinMax.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">

@@ -229,7 +229,7 @@ namespace pmapi
 		// device slot is 1-based index referring to the array of devices passed in with the FixedQueryContainer ctor
 		// 1st parameter should be "this" (see example at top of this file)
 		FixedQueryElement(FixedQueryContainer_* pContainer, PM_METRIC metric,
-			PM_STAT stat, uint32_t deviceSlot = 0, uint32_t index = 0);
+			PM_STAT stat = PM_STAT_NONE, uint32_t deviceSlot = 0, uint32_t index = 0);
 		// access this result as a specific static data type, assigning to the pass-in reference
 		// this will perform the conversion based on the runtime information about the metric's type
 		// enum types will use the introspection system to generate human-readable strings

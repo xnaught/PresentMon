@@ -31,6 +31,7 @@
 #include "CheckMetricSample.h"
 #include "WrapperStaticQuery.h"
 #include "MetricListSample.h"
+#include "MultiClient.h"
 #include "LogDemo.h"
 #include "DiagnosticDemo.h"
 #include "LogSetup.h"
@@ -365,6 +366,8 @@ int main(int argc, char* argv[])
             return FrameQuerySample(ConnectSession(), false);
         case clio::Mode::CsvFrameQuery:
             return FrameQuerySample(ConnectSession(), true);
+        case clio::Mode::MultiClient:
+            return MultiClientTest(ConnectSession());
         case clio::Mode::PlaybackDynamicQuery:
             RunPlaybackDynamicQueryN(); break;
         case clio::Mode::PlaybackFrameQuery:

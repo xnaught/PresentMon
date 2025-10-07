@@ -84,6 +84,8 @@
     <ClInclude Include="ref\StaticReflection.h" />
     <ClInclude Include="ref\WrapReflect.h" />
     <ClInclude Include="reg\Registry.h" />
+    <ClInclude Include="rng\MemberSlice.h" />
+    <ClInclude Include="rng\OptionalMinMax.h" />
     <ClInclude Include="rng\PairToRange.h" />
     <ClInclude Include="str\String.h" />
     <ClInclude Include="third\reflect.hpp" />

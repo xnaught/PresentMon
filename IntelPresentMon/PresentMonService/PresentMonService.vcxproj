@@ -113,6 +113,7 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ActionExecutionContext.cpp" />
     <ClCompile Include="ActionRegistration.cpp" />
     <ClCompile Include="LogSetup.cpp" />
     <ClCompile Include="MockPresentMonSession.cpp" />
@@ -124,6 +125,7 @@
     <ClCompile Include="ServiceMain.cpp" />
     <ClCompile Include="PresentMon.cpp" />
     <ClCompile Include="PresentMonSession.cpp" />
+    <ClCompile Include="testing\TestControl.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="acts\EnumerateAdapters.h" />
@@ -153,6 +155,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="Service.h" />
     <ClInclude Include="ActionExecutionContext.h" />
+    <ClInclude Include="testing\TestControl.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\PresentData\PresentData.vcxproj">
