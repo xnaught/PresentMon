@@ -45,11 +45,36 @@ namespace p2c::cli
 	private: Group gi_{ this, "Internal", "Internal options, do not supply manually"}; public:
 		Option<std::string> middlewareDllPath{ this, "--middleware-dll-path", "", "Override middleware DLL path discovery with custom path" };
 
+	Subcommand subcCapture{ this, "capture", "Perform headless capture of frame event data to .csv" }; public:
+	private: Group gcaps_{ this, "Standard", "Standard options for the capture subcommand" }; public:
+		Option<uint32_t> capTargetPid{ this, "--target-pid", {}, "PID of the process to track" };
+		Option<std::string> capTargetName{ this, "--target-name", {}, "Main module name of the process to track" };
+		Option<double> capDuration{ this, "--duration", 10., "How long to capture for in seconds" };
+		Option<uint32_t> capTelemetryPeriod{ this, "--telemetry-period", 100, "Time between GPU/CPU telemetry samples in ms" };
+		Option<std::string> capOutput{ this, "--output", {}, "Name of the output CSV file, optionally with absolute or relative path" };
+		Option<std::vector<std::string>> capMetrics{ this, "--metrics", {}, "List of metrics to capture as columns in the output CSV file" };
+
+	Subcommand subcList{ this, "list", "List entities for use with PresentMon SDK/headless CLI" }; public:
+	private: Group glists_{ this, "Standard", "Standard options for the list subcommand" }; public:
+		Flag listMetrics{ this, "--metrics,-m", "Output a list of available metrics" };
+		Flag listMetricsStats{ this, "--stats,-s", "Output a list of available stats for each metric" };
+		Flag listDevices{ this, "--devices,-d", "Output a list of available graphics adapters" };
+		Flag listFilterFrame{ this, "--filter-frame,-f", "Filter to only metrics available for use with frame event capture" };
+		Flag listFilterDynamic{ this, "--filter-dynamic,-y", "Filter to only metrics available for use with dynamic polling" };
+		Option<std::string> listSearch{ this, "--search", {}, "Substring to filter metric results on (case-insensitive)" };
+	
+
 		static constexpr const char* description = "PresentMon performance overlay and trace capture application";
 		static constexpr const char* name = "PresentMon.exe";
 
 	private:
-		MutualExclusion excl_{ logDenyList, logAllowList };
-		Dependency incl_{ etwSessionName, svcAsChild };
+		MutualExclusion exclCapTgt_{ capTargetPid, capTargetName };
+		MutualExclusion exclListFilter_{ listFilterFrame, listFilterDynamic };
+		MutualExclusion exclLogList_{ logDenyList, logAllowList };
+		Dependency inclSvcSes_{ etwSessionName, svcAsChild };
+		Dependency inclListFrame_{ listFilterFrame, listMetrics };
+		Dependency inclListDyna_{ listFilterDynamic, listMetrics };
+		Dependency inclListSearch_{ listSearch, listMetrics };
+		Dependency inclListMetricsStats_{ listMetricsStats, listMetrics };
 	};
 }

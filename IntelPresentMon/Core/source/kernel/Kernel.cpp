@@ -25,12 +25,13 @@ namespace p2c::kern
 {
     using str::ToWide;
 
-    Kernel::Kernel(KernelHandler* pHandler)
+    Kernel::Kernel(KernelHandler* pHandler, bool headless)
         :
         pHandler{ pHandler },
         constructionSemaphore{ 0 },
         thread{ "kernel", &Kernel::ThreadProcedure_, this},
-        pInjectorComplex{ std::make_unique<InjectorComplex>() }
+        pInjectorComplex{ std::make_unique<InjectorComplex>() },
+        headless{ headless }
     {
         constructionSemaphore.acquire();
         HandleMarshalledException_();
@@ -197,7 +198,7 @@ namespace p2c::kern
                     {
                         // spawn overlay (container)
                         ConfigurePresentMon_(*pPushedSpec);
-                        pOverlayContainer = std::make_unique<OverlayContainer>(wbemConn, std::move(pPushedSpec), &*pm);
+                        pOverlayContainer = std::make_unique<OverlayContainer>(wbemConn, std::move(pPushedSpec), &*pm, headless);
                     }
                     if (pOverlayContainer && !dying)
                     {
@@ -220,7 +221,7 @@ namespace p2c::kern
                 }
                 catch (...) {
                     pHandler->OnOverlayDied();
-                    pmlog_error("Overlay died w/ except. => " + ReportException().first).no_trace();
+                    pmlog_error("Tracking system terminated w/ exception => " + ReportException().first).no_trace();
                     pOverlayContainer.reset();
                     pPushedSpec.reset();
                 }
@@ -248,20 +249,23 @@ namespace p2c::kern
     void Kernel::RunOverlayLoop_()
     {
         // this loop runs while the overlay window is active
-        while (pOverlayContainer)
-        {
+        while (pOverlayContainer) {
             // checking thread sync signals
             {
                 std::lock_guard lk{ mtx };
-                if (dying || clearRequested)
-                {
-                    pOverlayContainer->InitiateClose();
+                if (dying || clearRequested) {
                     pPushedSpec.reset();
                     clearRequested = false;
                     inhibitTargetLostSignal = true;
+                    if (!headless) {
+                        pOverlayContainer->InitiateClose();
+                    }
+                    else {
+                        pOverlayContainer.reset();
+                        return;
+                    }
                 }
-                else if (pPushedSpec)
-                {
+                else if (pPushedSpec) {
                     auto& curSpec = pOverlayContainer->GetSpec();
                     if (pPushedSpec->pid != curSpec.pid) {
                         pOverlayContainer->InitiateClose();
@@ -278,11 +282,8 @@ namespace p2c::kern
                         pOverlayContainer->RebuildDocument(std::move(pPushedSpec));
                     }
                 }
-                else if (pushedCaptureActive)
-                {
-                    std::wstring path = infra::util::FolderResolver::Get()
-                        .Resolve(infra::util::FolderResolver::Folder::Documents) + L"\\Captures\\";
-                    pOverlayContainer->SetCaptureState(*pushedCaptureActive, std::move(path), pOverlayContainer->GetSpec().captureName);
+                else if (pushedCaptureActive) {
+                    pOverlayContainer->SetCaptureState(*pushedCaptureActive);
                     pushedCaptureActive.reset();
                 }
             }
@@ -290,10 +291,8 @@ namespace p2c::kern
             // process windows messages
             {
                 MSG msg;
-                while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE))
-                {
-                    if (msg.message == WM_QUIT)
-                    {
+                while (PeekMessageW(&msg, nullptr, 0, 0, PM_REMOVE)) {
+                    if (msg.message == WM_QUIT) {
                         if (!dying && !inhibitTargetLostSignal) {
                             pHandler->OnTargetLost(pOverlayContainer->GetProcess().pid);
                         }
@@ -306,8 +305,7 @@ namespace p2c::kern
                 }
             }
             // handle data and overlay
-            if (pOverlayContainer)
-            {
+            if (pOverlayContainer) {
                 pOverlayContainer->RunTick();
             }
         }

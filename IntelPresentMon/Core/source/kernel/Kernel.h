@@ -42,7 +42,7 @@ namespace p2c::kern
     class Kernel
     {
     public:
-        Kernel(KernelHandler* pHandler);
+        Kernel(KernelHandler* pHandler, bool headless);
         Kernel(const Kernel&) = delete;
         Kernel& operator=(const Kernel&) = delete;
         ~Kernel();
@@ -81,5 +81,6 @@ namespace p2c::kern
         std::exception_ptr marshalledException;
         std::atomic<bool> hasMarshalledException = false;
         ::pmon::util::mt::Thread thread;
+        bool headless;
     };
 }

@@ -150,6 +150,9 @@
     <ProjectReference Include="..\Interprocess\Interprocess.vcxproj">
       <Project>{ca23d648-daef-4f06-81d5-fe619bd31f0b}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\PresentMonAPIWrapper\PresentMonAPIWrapper.vcxproj">
+      <Project>{cee032ed-b0d3-47f8-bdae-d46757b0061b}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\Versioning\Versioning.vcxproj">
       <Project>{c73aa532-e532-4d93-9279-905444653c08}</Project>
     </ProjectReference>
@@ -178,6 +181,14 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="flask.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="presentmon-cli.cmd">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <FileType>Document</FileType>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release-EDSS|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </CopyFileToFolders>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
