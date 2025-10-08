@@ -26,5 +26,9 @@ namespace p2c::v
 #else
 		inline constexpr bool metric = true;
 #endif
-		inline constexpr bool hotkey2 = false;
+#ifndef VVV_HOTKEY // system for handling capture/overlay control hotkeys
+		inline constexpr bool hotkey = false;
+#else
+		inline constexpr bool hotkey = true;
+#endif
 }

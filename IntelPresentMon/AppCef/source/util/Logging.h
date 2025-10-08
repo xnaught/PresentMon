@@ -11,9 +11,4 @@ namespace p2c::v
 #else
 	inline constexpr bool v8async = true;
 #endif
-#ifndef VVV_HOTKEY // system that processes raw keyboard input
-	inline constexpr bool hotkey = false;
-#else
-	inline constexpr bool hotkey = true;
-#endif	
 }
