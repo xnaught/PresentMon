@@ -23,6 +23,7 @@ using namespace std::literals;
 using namespace pmon;
 using namespace svc;
 using namespace util;
+using v = log::V;
 
 
 std::string GetIntrospectionShmName()

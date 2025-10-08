@@ -15,6 +15,7 @@ namespace pmon::util::log
 			case Level::Performance: return "Performance";
 			case Level::Debug: return "Debug";
 			case Level::Verbose: return "Verbose";
+			case Level::Verbose2: return "Verbose2";
 			default: return "Unknown";
 			}
 		} catch (...) {}

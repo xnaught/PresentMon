@@ -199,10 +199,11 @@ namespace p2c::kern
                     GetWindowThreadProcessId(hWnd, &pid);
 
                     if (pid == pProc->pid) {
-                        if constexpr (v::procwatch) {
+                        if (log::GlobalPolicy::VCheck(v::procwatch)) {
                             RECT r;
                             GetWindowRect(hWnd, &r);
-                            pmlog_verb(true)(std::format("handle-proc-spawn-enum-win | pid:{:5} hwd:{:8x} own:{:8x} vis:{} siz:{} nam:{}",
+                            pmlog_(log::Level::Verbose).note(std::format(
+                                "handle-proc-spawn-enum-win | pid:{:5} hwd:{:8x} own:{:8x} vis:{} siz:{} nam:{}",
                                 pid,
                                 reinterpret_cast<uintptr_t>(hWnd),
                                 reinterpret_cast<uintptr_t>(GetWindow(hWnd, GW_OWNER)),

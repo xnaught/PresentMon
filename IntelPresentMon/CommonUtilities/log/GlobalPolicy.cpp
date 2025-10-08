@@ -77,4 +77,20 @@ namespace pmon::util::log
 	{
 		subsystem_ = sys;
 	}
+	void GlobalPolicy::ActivateVerboseModule(V mod) noexcept
+	{
+		activeVerboseModules_ |= (1 >> int(mod));
+	}
+	void GlobalPolicy::DeactivateVerboseModule(V mod) noexcept
+	{
+		activeVerboseModules_ &= ~(1 >> int(mod));
+	}
+	bool GlobalPolicy::CheckVerboseModule(V mod) const noexcept
+	{
+		return activeVerboseModules_ & (1 >> int(mod));
+	}
+	void GlobalPolicy::ClearVerboseModules() noexcept
+	{
+		activeVerboseModules_ = 0;
+	}
 }

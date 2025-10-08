@@ -398,7 +398,7 @@ namespace p2c::kern
         if (scheduler_.AtPoll() && !IsHidden_()) {
             pmlog_mark mkPoll;
             UpdateGraphData_(pmon::Timekeeper::GetLockedNow());
-            pmlog_perf(v::overlay)("Data update time").mark(mkPoll);
+            pmlog_perf(clog::p::overlay)("Data update time").mark(mkPoll);
         }
         if (scheduler_.AtRender()) {
             // handle hide during move logic (show if time elapsed and now otherwise hidden)
@@ -414,7 +414,7 @@ namespace p2c::kern
             if (!IsHidden_()) {
                 pmlog_mark mkRender;
                 Render_();
-                pmlog_perf(v::overlay)("Overlay draw time").mark(mkRender);
+                pmlog_perf(clog::p::overlay)("Overlay draw time").mark(mkRender);
             }
         }
         if (scheduler_.AtTrace() && pWriter) {

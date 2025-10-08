@@ -279,6 +279,9 @@
     <ClInclude Include="rng\OptionalMinMax.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="log\Verbose.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cli\CliFramework.cpp">
