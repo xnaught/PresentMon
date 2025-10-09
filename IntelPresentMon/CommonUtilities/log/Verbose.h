@@ -1,4 +1,6 @@
 #pragma once
+#include <string>
+#include <map>
 
 namespace pmon::util::log
 {
@@ -10,6 +12,10 @@ namespace pmon::util::log
 		core_metric,
 		core_hotkey,
 		core_window,
-		etwq
+		etwq,
+		Count
 	};
+
+	std::string GetVerboseModuleName(V mod) noexcept;
+	std::map<std::string, V> GetVerboseModuleMapNarrow() noexcept;
 }

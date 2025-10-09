@@ -440,6 +440,9 @@
     <ClCompile Include="win\com\WbemSink.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="log\Verbose.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="vcpkg.json" />

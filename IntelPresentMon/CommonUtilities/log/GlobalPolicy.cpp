@@ -79,15 +79,15 @@ namespace pmon::util::log
 	}
 	void GlobalPolicy::ActivateVerboseModule(V mod) noexcept
 	{
-		activeVerboseModules_ |= (1 >> int(mod));
+		activeVerboseModules_ |= (1 << int(mod));
 	}
 	void GlobalPolicy::DeactivateVerboseModule(V mod) noexcept
 	{
-		activeVerboseModules_ &= ~(1 >> int(mod));
+		activeVerboseModules_ &= ~(1 << int(mod));
 	}
 	bool GlobalPolicy::CheckVerboseModule(V mod) const noexcept
 	{
-		return activeVerboseModules_ & (1 >> int(mod));
+		return activeVerboseModules_ & (1 << int(mod));
 	}
 	void GlobalPolicy::ClearVerboseModules() noexcept
 	{

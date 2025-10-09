@@ -29,7 +29,7 @@ namespace pmon::util::log
 		for (int n = (int)Level::Fatal; n <= (int)Level::Verbose; n++) {
 			const auto lvl = Level(n);
 			auto key = ToLower(GetLevelName(lvl));
-			if (key != "unknown") {
+			if (key != "Unknown") {
 				map[std::move(key)] = lvl;
 			}
 		}
