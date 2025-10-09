@@ -1,6 +1,7 @@
 #pragma once
 #include "../CommonUtilities/cli/CliFramework.h"
 #include "../CommonUtilities/log/Level.h"
+#include "../CommonUtilities/log/Verbose.h"
 #include "GlobalIdentifiers.h"
 
 namespace clio
@@ -11,6 +12,7 @@ namespace clio
 	{
 	private:
 		CLI::CheckedTransformer logLevelTf_{ GetLevelMapNarrow(), CLI::ignore_case };
+		CLI::CheckedTransformer logVmodTf_{ GetVerboseModuleMapNarrow(), CLI::ignore_case };
 
 	private: Group gc_{ this, "Connection", "Control client connection" }; public:
 		Option<std::string> etwSessionName{ this, "--etw-session-name", "", "Name to use when creating the ETW session" };
@@ -34,6 +36,7 @@ namespace clio
 		Flag disableIpcLog{ this, "--disable-ipc-log", "Disable logging to named pipe connection" };
 		Option<Level> logLevel{ this, "--log-level", Level::Error, "Severity to log at", logLevelTf_ };
 		Flag logNamePid{ this, "--log-name-pid", "Append PID to log files instead of timestamp" };
+		Option<std::vector<V>> logVerboseModules{ this, "--log-verbose-modules", {}, "Verbose logging modules to enable", logVmodTf_ };
 
 	private: Group gt_{ this, "Testing", "Automated testing features" }; public:
 		Flag enableTestControl{ this, "--enable-test-control", "Enable test control over stdio" };

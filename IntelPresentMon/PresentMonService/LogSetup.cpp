@@ -77,6 +77,11 @@ namespace logsetup
 			if (opt.logLevel || reg.logLevel.Exists()) {
 				GlobalPolicy::Get().SetLogLevel(opt.logLevel ? *opt.logLevel : reg.logLevel);
 			}
+			if (opt.logVerboseModules) {
+				for (auto mod : *opt.logVerboseModules) {
+					GlobalPolicy::Get().ActivateVerboseModule(mod);
+				}
+			}
 			if (!opt.enableStdioLog) {
 				pChannel->AttachComponent({}, "drv:std");
 			}
