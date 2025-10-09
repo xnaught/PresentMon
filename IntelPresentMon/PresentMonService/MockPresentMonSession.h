@@ -85,4 +85,5 @@ private:
     pmon::util::win::Event evtStreamingStarted_;
 
     mutable std::mutex session_mutex_;
+    std::atomic<bool> session_active_{false};  // Lock-free session state for hot path queries
 };

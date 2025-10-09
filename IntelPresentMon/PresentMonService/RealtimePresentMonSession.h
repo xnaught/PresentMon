@@ -74,4 +74,5 @@ private:
 
     mutable std::mutex session_mutex_;
     mutable std::mutex process_mutex_;
+    std::atomic<bool> session_active_{false};  // Lock-free session state for hot path queries
 };
