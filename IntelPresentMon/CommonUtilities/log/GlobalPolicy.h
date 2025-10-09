@@ -31,11 +31,7 @@ namespace pmon::util::log
 		static GlobalPolicy& Get() noexcept;
 		static bool VCheck(V mod) noexcept
 		{
-			auto& self = Get();
-			if (int(self.GetLogLevel()) >= int(Level::Verbose)) {
-				return self.CheckVerboseModule(mod);
-			}
-			return false;
+			return Get().CheckVerboseModule(mod);
 		}
 	private:
 		// functions
