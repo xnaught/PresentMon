@@ -27,6 +27,7 @@ namespace pmon::util::log
 		void DeactivateVerboseModule(V mod) noexcept;
 		bool CheckVerboseModule(V mod) const noexcept;
 		void ClearVerboseModules() noexcept;
+		void StoreVerboseModules(uint64_t modset) noexcept;
 		static GlobalPolicy& Get() noexcept;
 		static bool VCheck(V mod) noexcept
 		{

@@ -79,18 +79,22 @@ namespace pmon::util::log
 	}
 	void GlobalPolicy::ActivateVerboseModule(V mod) noexcept
 	{
-		activeVerboseModules_ |= (1 << int(mod));
+		activeVerboseModules_ |= (1ull << uint64_t(mod));
 	}
 	void GlobalPolicy::DeactivateVerboseModule(V mod) noexcept
 	{
-		activeVerboseModules_ &= ~(1 << int(mod));
+		activeVerboseModules_ &= ~(1ull << uint64_t(mod));
 	}
 	bool GlobalPolicy::CheckVerboseModule(V mod) const noexcept
 	{
-		return activeVerboseModules_ & (1 << int(mod));
+		return activeVerboseModules_ & (1ull << uint64_t(mod));
 	}
 	void GlobalPolicy::ClearVerboseModules() noexcept
 	{
 		activeVerboseModules_ = 0;
+	}
+	void GlobalPolicy::StoreVerboseModules(uint64_t modset) noexcept
+	{
+		activeVerboseModules_.store(modset);
 	}
 }
