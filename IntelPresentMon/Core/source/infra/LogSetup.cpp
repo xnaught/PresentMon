@@ -136,6 +136,14 @@ namespace p2c
 					getters.getGlobalPolicy().SetLogLevel(*opt.logLevel);
 				}
 			}
+			if (opt.logVerboseModules) {
+				for (auto mod : *opt.logVerboseModules) {
+					pol.ActivateVerboseModule(mod);
+					if (getters) {
+						getters.getGlobalPolicy().ActivateVerboseModule(mod);
+					}
+				}
+			}
 			if (opt.logTraceLevel) {
 				pol.SetTraceLevel(*opt.logTraceLevel);
 				if (getters) {

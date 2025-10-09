@@ -15,6 +15,7 @@ namespace pmon::util::log
 			case Level::Performance: return "Performance";
 			case Level::Debug: return "Debug";
 			case Level::Verbose: return "Verbose";
+			case Level::Verbose2: return "Verbose2";
 			default: return "Unknown";
 			}
 		} catch (...) {}
@@ -28,7 +29,7 @@ namespace pmon::util::log
 		for (int n = (int)Level::Fatal; n <= (int)Level::Verbose; n++) {
 			const auto lvl = Level(n);
 			auto key = ToLower(GetLevelName(lvl));
-			if (key != "unknown") {
+			if (key != "Unknown") {
 				map[std::move(key)] = lvl;
 			}
 		}

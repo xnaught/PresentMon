@@ -210,17 +210,24 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		as::io_context ioctx;
 		std::optional<bp2::basic_process<as::io_context::executor_type>> svcChild;
 		if (opt.svcAsChild) {
-			svcChild = bp2::windows::default_launcher{}(
-				ioctx, "PresentMonService.exe"s, std::vector{
+			// compile fixed CLI options
+			auto args = std::vector<std::string>{
 				"--control-pipe"s, *opt.controlPipe,
 				"--nsm-prefix"s, "pm-frame-nsm"s,
 				"--intro-nsm"s, *opt.shmName,
 				"--etw-session-name"s, *opt.etwSessionName,
 				"--log-level"s, util::log::GetLevelName(util::log::GlobalPolicy::Get().GetLogLevel()),
 				"--log-pipe-name"s, logSvcPipe,
-				"--enable-stdio-log"s
-			});
-
+				"--enable-stdio-log"s,
+			};
+			// append verbose module options
+			if (opt.logVerboseModules) {
+				args.push_back("--log-verbose-modules"s);
+				args.append_range(*opt.logVerboseModules | vi::transform(util::log::GetVerboseModuleName));
+			}
+			// launch service child process
+			svcChild = bp2::windows::default_launcher{}(ioctx, "PresentMonService.exe"s, std::move(args));
+			// wait for pipe availability of service api
 			if (!::pmon::util::win::WaitForNamedPipe(*opt.controlPipe + "-in", 1500)) {
 				pmlog_error("timeout waiting for child service control pipe to go online");
 				return -1;
@@ -346,8 +353,13 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 			auto args = std::vector<std::string>{
 				opt.filesWorking ? "--p2c-files-working"s : ""s,
 				opt.traceExceptions ? "--p2c-trace-exceptions"s : ""s,
-				opt.logFolder ? "--p2c-log-folder"s : "", *opt.logFolder,
+				opt.logFolder ? "--p2c-log-folder"s : ""s, *opt.logFolder,
 			} | vi::filter(std::not_fn(&std::string::empty)) | rn::to<std::vector>();
+			// forward verbose module options
+			if (opt.logVerboseModules) {
+				args.push_back("--p2c-log-verbose-modules"s);
+				args.append_range(*opt.logVerboseModules | vi::transform(util::log::GetVerboseModuleName));
+			}
 			bool allOriginsAllowed = false;
 			for (auto& f : *opt.uiFlags) {
 				if (f == "enable-chromium-debug") {
@@ -372,7 +384,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 				"--p2c-log-trace-level"s, util::log::GetLevelName(*opt.logTraceLevel),
 				"--p2c-act-name"s, actName,
 				"--p2c-log-pipe-name"s, cefLogPipe
-				});
+			});
 			// launch the CEF browser process, which in turn launches all the other processes in the CEF process constellation
 			auto cefChild = [&] {
 				if (util::win::WeAreElevated()) {

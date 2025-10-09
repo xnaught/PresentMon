@@ -10,8 +10,8 @@
 #include <shlwapi.h>
 
 using namespace pmon;
-using namespace svc;
 using namespace std::literals;
+using v = util::log::V;
 
 static const std::wstring kRealTimeSessionName = L"PMService";
 
@@ -245,8 +245,8 @@ void RealtimePresentMonSession::AddPresents(
     }
 
     // logging of ETW latency
-    if constexpr (svc::v::etwq) {
-        pmlog_verb(svc::v::etwq)(std::format("Processing [{}] frames", presentEvents.size()));
+    if (util::log::GlobalPolicy::VCheck(v::etwq)) {
+        pmlog_(util::log::Level::Verbose).note(std::format("Processing [{}] frames", presentEvents.size()));
         for (auto& p : presentEvents) {
             if (p->FinalState == PresentResult::Presented) {
                 const auto per = util::GetTimestampPeriodSeconds();
@@ -254,7 +254,7 @@ void RealtimePresentMonSession::AddPresents(
                 // TODO: Presents can now have multiple displayed frames if we are tracking
                 // frame types. For now take the first displayed frame for logging stats
                 const auto lag = util::TimestampDeltaToSeconds(p->Displayed[0].second, now, per);
-                pmlog_verb(svc::v::etwq)(std::format("Frame [{}] lag: {} ms", p->FrameId, lag * 1000.));
+                pmlog_(util::log::Level::Verbose).note(std::format("Frame [{}] lag: {} ms", p->FrameId, lag * 1000.));
             }
         }
     }

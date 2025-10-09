@@ -12,6 +12,7 @@ namespace p2c::cli
 	{
 	private:
 		CLI::CheckedTransformer logLevelTf_{ log::GetLevelMapNarrow(), CLI::ignore_case };
+		CLI::CheckedTransformer logVmodTf_{ log::GetVerboseModuleMapNarrow(), CLI::ignore_case };
 
 	private: Group gs_{ this, "Standard", "Useful to end users in production"}; public:
 		Flag allowTearing{ this, "--allow-tearing", "Allow tearing presents for overlay (optional, might affect VRR)" };
@@ -37,6 +38,7 @@ namespace p2c::cli
 		Option<std::string> logSvcPipe{ this, "--log-svc-pipe", ::pmon::gid::defaultLogPipeBaseName, "Base name of pipe to use when connecting to service IPC log" };
 		Flag logSvcPipeEnable{ this, "--log-svc-pipe-enable", "Enable pipe connection to service IPC log stream" };
 		Flag logMiddlewareCopy{ this, "--log-middleware-copy", "Copy log entries from middleware channel to this client" };
+		Option<std::vector<log::V>> logVerboseModules{ this, "--log-verbose-modules", {}, "Verbose logging modules to enable", logVmodTf_ };
 
 	private: Group gu_{ this, "CEF UI", "Options to pass thru to the CEF UI system" }; public:
 		Option<std::vector<std::pair<std::string, std::string>>> uiOptions{ this, "--ui-option", {}, "Parameterized options to pass to UI process (omit --p2c- prefix)" };
