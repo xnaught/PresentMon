@@ -1,7 +1,8 @@
 #pragma once
-#include "../IntelPresentMon/CommonUtilities/Exception.h"
-#include "../IntelPresentMon/CommonUtilities/Meta.h"
-#include "../IntelPresentMon/CommonUtilities/log/Log.h"
+
+// #include "../IntelPresentMon/CommonUtilities/Exception.h"
+// #include "../IntelPresentMon/CommonUtilities/Meta.h"
+// #include "../IntelPresentMon/CommonUtilities/log/Log.h"
 #include <windows.h>
 #include <stdexcept>
 
@@ -14,7 +15,9 @@
 #include <string>
 #include <optional>
 
-PM_DEFINE_EX(TraceLoggingError);
+#include "shims.h"
+
+using TraceLoggingError = std::runtime_error;
 
 class TraceLoggingContext
 {
@@ -36,8 +39,8 @@ public:
     template<typename T>
     T GetNumericPropertyValue(const std::wstring& propertyName) const
     {
-        using pmon::util::Except;
-        using pmon::util::dependent_false;
+        // using pmon::util::Except;
+        using shims::dependent_false;
 
         unsigned propertyCount = this->mpTraceEventInfo->PropertyCount;
 

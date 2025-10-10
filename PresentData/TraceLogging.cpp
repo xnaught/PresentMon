@@ -1,7 +1,7 @@
 #include "TraceLogging.h"
 #include "ETW\Nvidia_PCL.h"
 
-using pmon::util::Except;
+// using shims::Except;
 
 
 bool TraceLoggingContext::DecodeTraceLoggingEventRecord(EVENT_RECORD* pEventRecord)
@@ -76,7 +76,7 @@ bool TraceLoggingContext::SetupTraceLoggingInfoBuffer()
 
     if (status != ERROR_SUCCESS)
     {
-        pmlog_warn("Failure when calling TdhGetEventInformation").hr(status);
+        // pmlog_warn("Failure when calling TdhGetEventInformation").hr(status);
         return false;
     }
 

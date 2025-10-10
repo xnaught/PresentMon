@@ -304,8 +304,8 @@ void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
             // one-time capture of timing info needed to calibrate ETL replay event pacing
             if (session->mPMConsumer->mPaceEvents || session->mPMConsumer->mRetimeEvents) {
                 session->mPacingActualLogStartTimestamp = hdr.TimeStamp.QuadPart;
-                session->mPacingRealtimeStartTimestamp = pmon::util::GetCurrentTimestamp();
-                session->mPacingQpcPeriod = pmon::util::GetTimestampPeriodSeconds();
+                session->mPacingRealtimeStartTimestamp = shims::GetCurrentTimestamp();
+                session->mPacingQpcPeriod = shims::GetTimestampPeriodSeconds();
                 session->mPacingQpcOffset = session->mPacingRealtimeStartTimestamp - hdr.TimeStamp.QuadPart;
                 // override the processing start timestamp with the adjusted value
                 session->mStartTimestamp.QuadPart = session->mPacingRealtimeStartTimestamp;
@@ -316,9 +316,9 @@ void CALLBACK EventRecordCallback(EVENT_RECORD* pEventRecord)
             }
         }
         else if (session->mPMConsumer->mPaceEvents || session->mPMConsumer->mRetimeEvents) {
-            const auto currentQpc = pmon::util::GetCurrentTimestamp();
+            const auto currentQpc = shims::GetCurrentTimestamp();
             const auto adjustedTimestamp = hdr.TimeStamp.QuadPart + session->mPacingQpcOffset;
-            const auto delta = pmon::util::TimestampDeltaToSeconds(currentQpc, adjustedTimestamp, session->mPacingQpcPeriod);
+            const auto delta = shims::TimestampDeltaToSeconds(currentQpc, adjustedTimestamp, session->mPacingQpcPeriod);
             if (session->mPMConsumer->mPaceEvents && delta > 0.001) {
                 session->mPacingWaiter.Wait(delta);
             }

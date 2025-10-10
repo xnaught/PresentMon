@@ -27,7 +27,7 @@
 #include "GpuTrace.hpp"
 #include "TraceConsumer.hpp"
 #include "NvidiaTraceConsumer.hpp"
-#include "../IntelPresentMon/CommonUtilities/Hash.h"
+// #include "../IntelPresentMon/CommonUtilities/Hash.h"
 
 // PresentMode represents the different paths a present can take on windows.
 //
@@ -481,7 +481,7 @@ struct PMTraceConsumer
     struct PairHash {
         size_t operator()(const std::pair<T, U>& p) const noexcept
         {
-            using namespace pmon::util::hash;
+            using namespace shims;
             return DualHash(p.first, p.second);
         }
     };

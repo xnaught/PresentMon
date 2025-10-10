@@ -16,7 +16,7 @@
 #include "ETW/Microsoft_Windows_Win32k.h"
 #include "ETW/NT_Process.h"
 
-#include "../IntelPresentMon/CommonUtilities/Meta.h"
+// #include "../IntelPresentMon/CommonUtilities/Meta.h"
 
 #include <assert.h>
 #include <dxgi.h>
@@ -227,7 +227,7 @@ void PrintEventHeaderHelper_(EVENT_RECORD* eventRecord, EventMetadata* metadata,
 {
     wprintf(L" %s=", propName);
 
-    using ParamType = pmon::util::FunctionPtrTraits<F>::template ParameterType<0>;
+    using ParamType = shims::FunctionPtrTraits<F>::template ParameterType<0>;
     propFunc(metadata->GetEventData<std::remove_cvref_t<ParamType>>(eventRecord, propName));
 
     if constexpr (sizeof...(T)) {

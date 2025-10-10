@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: MIT
 #pragma once
 #include <stdint.h>
-#include "../IntelPresentMon/CommonUtilities/log/Log.h"
+// #include "../IntelPresentMon/CommonUtilities/log/Log.h"
+#include "shims.h"
 
 #ifndef PRESENTMON_ENABLE_DEBUG_TRACE
 #ifdef NDEBUG
