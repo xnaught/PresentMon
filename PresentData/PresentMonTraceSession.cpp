@@ -454,7 +454,7 @@ PEVENT_RECORD_CALLBACK GetEventRecordCallback(bool t1, bool t2, bool t3, bool t4
         : GetEventRecordCallback<Ts..., false>(t2, t3, t4, t5);
 }
 
-ULONG CALLBACK BufferCallback(EVENT_TRACE_LOGFILE* pLogFile)
+ULONG CALLBACK BufferCallback(EVENT_TRACE_LOGFILEW* pLogFile)
 {
     auto session = (PMTraceSession*) pLogFile->Context;
     return session->mContinueProcessingBuffers; // TRUE = continue processing events, FALSE = return out of ProcessTrace()
