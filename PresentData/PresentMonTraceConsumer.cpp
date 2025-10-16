@@ -2026,7 +2026,34 @@ void PMTraceConsumer::RemoveLostPresent(std::shared_ptr<PresentEvent> p)
 {
     VerboseTraceBeforeModifyingPresent(p.get());
     p->IsLost = true;
-    CompletePresent(p);
+
+    if (p->IsCompleted) {
+        // Present is already completed but lost - simulate what Present_Stop would do
+        if (p->WaitingForPresentStop) {
+            VerboseTraceBeforeModifyingPresent(p.get());
+            p->WaitingForPresentStop = false;
+
+            // Remove from thread tracking since Present_Stop won't come
+            auto ii = mPresentByThreadId.find(p->ThreadId);
+            if (ii != mPresentByThreadId.end() && ii->second == p) {
+                mPresentByThreadId.erase(ii);
+            }
+            if (p->DriverThreadId != 0) {
+                auto jj = mPresentByThreadId.find(p->DriverThreadId);
+                if (jj != mPresentByThreadId.end() && jj->second == p) {
+                    mPresentByThreadId.erase(jj);
+                }
+            }
+
+            // Make ready for dequeue
+            UpdateReadyCount(true);
+        }
+        // If not waiting for Present_Stop, it should already be cleaned up properly
+    }
+    else {
+        // Present is not completed yet - complete it normally
+        CompletePresent(p);
+    }
 }
 
 void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
