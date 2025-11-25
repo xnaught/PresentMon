@@ -147,7 +147,7 @@ public:
             }
             else
             {
-                static_assert(dependent_false<T>::value, "Unsupported type in GetNumericPropertyValue");
+                static_assert(DependentFalse<T>, "Unsupported type in GetNumericPropertyValue");
             }
         }
 

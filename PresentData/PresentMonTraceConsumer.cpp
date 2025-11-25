@@ -965,9 +965,6 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
             auto present = FindPresentBySubmitSequence(submitSequence);
             if (present != nullptr) {
 
-                // Apply Nvidia FlipDelay, if any, to the presentEvent
-                mNvTraceConsumer.ApplyFlipDelay(present.get(), hdr.ThreadId);
-
                 // Complete the GPU tracking for this frame.
                 //
                 // For some present modes (e.g., Hardware_Legacy_Flip) this may be
@@ -991,6 +988,8 @@ void PMTraceConsumer::HandleDXGKEvent(EVENT_RECORD* pEventRecord)
                         if (FlipEntryStatusAfterFlip != (uint32_t) Microsoft_Windows_DxgKrnl::FlipEntryStatus::FlipWaitHSync) {
 
                             SetScreenTime(present, hdr.TimeStamp.QuadPart + present->FlipDelay);
+                            // Apply Nvidia FlipDelay, if any, to the presentEvent
+                            mNvTraceConsumer.ApplyFlipDelay(present.get(), hdr.ThreadId);
 
                             if (present->PresentMode == PresentMode::Hardware_Legacy_Flip) {
                                 CompletePresent(present);
@@ -2293,7 +2292,6 @@ void PMTraceConsumer::CompletePresent(std::shared_ptr<PresentEvent> const& p)
                             present->InputType = p2->InputType;
                         }
                     }
-                    break;
                 }
                 p2->WaitingForFrameId = false;
             }
@@ -2683,7 +2681,8 @@ void PMTraceConsumer::HandleProcessEvent(EVENT_RECORD* pEventRecord)
 
     if (hdr.ProviderId == Microsoft_Windows_Kernel_Process::GUID) {
         switch (hdr.EventDescriptor.Id) {
-        case Microsoft_Windows_Kernel_Process::ProcessStart_Start::Id: {
+        case Microsoft_Windows_Kernel_Process::ProcessStart_Start::Id:
+        case Microsoft_Windows_Kernel_Process::ProcessRundown_Info::Id: {
             EventDataDesc desc[] = {
                 { L"ProcessID" },
                 { L"ImageName" },
