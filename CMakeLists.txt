@@ -31,6 +31,7 @@ add_library(presentdata SHARED
     PresentData/Debug.cpp
     PresentData/GpuTrace.hpp
     PresentData/GpuTrace.cpp
+    PresentData/IFilterBuildListener.h
     PresentData/NvidiaTraceConsumer.hpp
     PresentData/NvidiaTraceConsumer.cpp
     PresentData/PresentMonTraceConsumer.hpp

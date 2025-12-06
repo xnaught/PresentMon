@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 // #include "../IntelPresentMon/CommonUtilities/PrecisionWaiter.h"
 #include "shims.h"
+#include "IFilterBuildListener.h"
 
 struct PMTraceConsumer;
 
