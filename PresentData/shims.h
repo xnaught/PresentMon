@@ -21,9 +21,10 @@ auto Except(R&&... args)
 namespace shims {
 // ::-- Meta.h ---------------------------------------------------------------::
 template <typename T>
-struct DependentFalse : std::false_type
-{
-};
+struct DependentFalseT : std::false_type {};
+
+template<typename T>
+inline constexpr bool DependentFalse = DependentFalseT<T>::value;
 
 size_t HashCombine(size_t lhs, size_t rhs) noexcept;
 
