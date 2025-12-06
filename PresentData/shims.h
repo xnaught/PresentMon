@@ -21,7 +21,7 @@ auto Except(R&&... args)
 namespace shims {
 // ::-- Meta.h ---------------------------------------------------------------::
 template <typename T>
-struct dependent_false : std::false_type
+struct DependentFalse : std::false_type
 {
 };
 

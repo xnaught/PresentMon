@@ -40,7 +40,7 @@ public:
     T GetNumericPropertyValue(const std::wstring& propertyName) const
     {
         // using pmon::util::Except;
-        using shims::dependent_false;
+        using shims::DependentFalse;
 
         unsigned propertyCount = this->mpTraceEventInfo->PropertyCount;
 
