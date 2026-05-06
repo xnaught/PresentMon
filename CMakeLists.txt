@@ -27,6 +27,7 @@ add_library(presentdata SHARED
     PresentData/ETW/NV_DD.h
     PresentData/ETW/Nvidia_PCL.h
 
+    PresentData/ConsoleAdapter.h
     PresentData/Debug.hpp
     PresentData/Debug.cpp
     PresentData/GpuTrace.hpp
@@ -34,6 +35,7 @@ add_library(presentdata SHARED
     PresentData/IFilterBuildListener.h
     PresentData/NvidiaTraceConsumer.hpp
     PresentData/NvidiaTraceConsumer.cpp
+    PresentData/PresentEventEnums.hpp
     PresentData/PresentMonTraceConsumer.hpp
     PresentData/PresentMonTraceConsumer.cpp
     PresentData/PresentMonTraceSession.hpp

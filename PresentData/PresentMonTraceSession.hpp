@@ -7,6 +7,15 @@
 
 struct PMTraceConsumer;
 
+struct EtwStatus {
+    double mEtwBufferFillPct;
+    ULONG mEtwBuffersInUse;
+    ULONG mEtwTotalBuffers;
+    ULONG mEtwEventsLost;
+    ULONG mEtwBuffersLost;
+    ULONG mNumOverflowedPresents;
+};
+
 struct PMTraceSession {
     enum TimestampType {
         TIMESTAMP_TYPE_QPC = 1,
@@ -29,6 +38,7 @@ struct PMTraceSession {
     uint64_t mStartFileTime = 0;
     TimestampType mTimestampType = TIMESTAMP_TYPE_QPC;
 
+    GUID mSessionGuid = {};
     TRACEHANDLE mSessionHandle = 0;                         // invalid session handles are 0
     TRACEHANDLE mTraceHandle = INVALID_PROCESSTRACE_HANDLE; // invalid trace handles are INVALID_PROCESSTRACE_HANDLE
 
@@ -38,10 +48,18 @@ struct PMTraceSession {
     ULONG mNumBuffersLost = 0;
 
     bool mIsRealtimeSession = false;
+    shims::SampleStatistics<double> mEtwEventLatencyStatsMs;
+    int64_t mEtwEventLatencyStatsWindowStartQpc = 0;
 
-    ULONG Start(wchar_t const* etlPath,      // If nullptr, start a live/realtime tracing session
-                wchar_t const* sessionName); // Required session name
+    // Cached ETW status for CSV output (updated periodically via QueryEtwStatus)
+    mutable EtwStatus mCachedEtwStatus = {};
+
+    ULONG Start(wchar_t const* etlPath,        // If nullptr, start a live/realtime tracing session
+                wchar_t const* sessionName,    // Required session name
+                bool enableProviders = true);  // Enable providers on start
     void Stop();
+    ULONG StartProviders();
+    void StopProviders();
 
     double TimestampDeltaToMilliSeconds(uint64_t timestampDelta) const;
     double TimestampDeltaToMilliSeconds(uint64_t timestampFrom, uint64_t timestampTo) const;
@@ -49,6 +67,10 @@ struct PMTraceSession {
     double TimestampToMilliSeconds(uint64_t timestamp) const;
     void TimestampToLocalSystemTime(uint64_t timestamp, SYSTEMTIME* st, uint64_t* ns) const;
     uint64_t MilliSecondsDeltaToTimestamp(double millisecondsDelta) const;
+
+    bool QueryEtwStatus(EtwStatus* status) const;
+    void ProcessEtwEventLatencyStats(uint64_t eventQpcTimestamp);
+    void ResetEtwEventLatencyStats();
 };
 
 ULONG StopNamedTraceSession(wchar_t const* sessionName);
