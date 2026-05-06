@@ -712,7 +712,7 @@ bool PMTraceSession::QueryEtwStatus(EtwStatus* status) const
     return true;
 }
 
-void PMTraceSession::ProcessEtwEventLatencyStats(uint64_t eventQpcTimestamp)
+void PMTraceSession::ProcessEtwEventLatencyStats(uint64_t)
 {
     // const auto statsEnabled = pmon::util::log::GlobalPolicy::Get().GetLogLevel() >= pmon::util::log::Level::Debug;
     // if (!statsEnabled) {
